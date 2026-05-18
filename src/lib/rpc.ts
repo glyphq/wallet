@@ -1,4 +1,5 @@
 import { createQubicClient } from "@qubic.org/rpc";
+export { createQubicClient };
 export { estimateTargetTick, pollUntilConfirmed, waitForTick } from "@qubic.org/rpc";
 export type {
   QubicClient,
