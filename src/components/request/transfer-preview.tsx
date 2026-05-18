@@ -13,9 +13,15 @@ export interface TransferRequest {
   [key: string]: unknown;
 }
 
+export interface ApproveResult {
+  txHash: string;
+  targetTick: number;
+  identity: string;
+}
+
 interface TransferPreviewProps {
   request: TransferRequest;
-  onApprove: (txHash: string) => void;
+  onApprove: (result: ApproveResult) => void;
   onReject: () => void;
 }
 
@@ -79,7 +85,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         broadcastAt: Date.now(),
       });
 
-      onApprove(hash);
+      onApprove({ txHash: hash, targetTick: tick, identity });
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");
       setProcessing(false);
