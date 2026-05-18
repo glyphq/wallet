@@ -39,6 +39,15 @@ export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
     }
   }
 
+  async function clearNow() {
+    try {
+      await invoke("clear_clipboard");
+    } catch {
+      await navigator.clipboard.writeText("").catch(() => {});
+    }
+    setCountdown(null);
+  }
+
   function toggle() {
     if (!expanded) copy();
     setExpanded((v) => !v);
@@ -68,15 +77,38 @@ export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
       {countdown !== null && (
         <div
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
-            color: "var(--color-text-disabled)",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-3)",
             marginTop: "var(--space-1)",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
           }}
         >
-          [CLIPBOARD CLEARS IN {countdown}s]
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-mono-sm)",
+              color: "var(--color-text-disabled)",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+            }}
+          >
+            [CLIPBOARD CLEARS IN {countdown}s]
+          </span>
+          <button
+            onClick={clearNow}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-mono-sm)",
+              color: "var(--color-text-secondary)",
+              letterSpacing: "0.05em",
+              padding: 0,
+            }}
+          >
+            CLEAR NOW
+          </button>
         </div>
       )}
     </div>
