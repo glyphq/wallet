@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, ArrowUp, ArrowDown, Clock, Settings } from "lucide-react";
+import { Home, ArrowUp, ArrowDown, Clock, Settings, Eye, EyeOff } from "lucide-react";
 import { AppShell } from "@/layouts/app-shell";
 import { Modal } from "@/components/modal";
 import { Tag } from "@/components/tag";
@@ -43,6 +43,7 @@ export default function DashboardScreen() {
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
+  const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const isLocked = useSessionStore((s) => s.isLocked);
   const wallets = useSessionStore((s) => s.wallets);
@@ -145,7 +146,14 @@ export default function DashboardScreen() {
         )}
 
         {/* Balance hero */}
-        <div style={{ textAlign: "center", padding: "var(--space-8) 0" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-8) 0", position: "relative" }}>
+          <button
+            onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
+            style={{ position: "absolute", top: 0, right: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center" }}
+            title={settings.hideBalances ? "Show balances" : "Hide balances"}
+          >
+            {settings.hideBalances ? <EyeOff size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}
+          </button>
           {settings.hideBalances ? (
             <span style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-disabled)" }}>
               ••••••
