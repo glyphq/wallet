@@ -37,6 +37,7 @@ export default function HistoryScreen() {
   useAutoLock();
 
   const settings = usePersistedStore((s) => s.settings);
+  const hideBalances = settings.hideBalances;
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const removePendingTx = usePersistedStore((s) => s.removePendingTx);
   const wallets = useSessionStore((s) => s.wallets);
@@ -161,7 +162,7 @@ export default function HistoryScreen() {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-status-warning)" }}>
-                {isIncoming ? "+" : "−"}{formatAmount(p.amount)}
+                {hideBalances ? "••••••" : `${isIncoming ? "+" : "−"}${formatAmount(p.amount)}`}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
             </div>
@@ -204,7 +205,7 @@ export default function HistoryScreen() {
                   ? (isIncoming ? "var(--color-status-success)" : "var(--color-text-primary)")
                   : "var(--color-text-disabled)",
               }}>
-                {isIncoming ? "+" : "−"}{amount}
+                {hideBalances ? "••••••" : `${isIncoming ? "+" : "−"}${amount}`}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
             </div>
@@ -240,7 +241,7 @@ export default function HistoryScreen() {
 
             <DetailRow label="Amount">
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
-                {formatAmount(detail.amount)} QU
+                {hideBalances ? "••••••" : `${formatAmount(detail.amount)} QU`}
               </span>
             </DetailRow>
 
