@@ -38,6 +38,7 @@ const SendScreen = lazy(() => import("@/screens/send/send-screen"));
 const ReceiveScreen = lazy(() => import("@/screens/receive/receive-screen"));
 const HistoryScreen = lazy(() => import("@/screens/history/history-screen"));
 const ContactsScreen = lazy(() => import("@/screens/contacts/contacts-screen"));
+const RequestScreen = lazy(() => import("@/screens/request/request-screen"));
 
 export const router = createHashRouter([
   { path: "/", element: <Screen component={RootScreen} /> },
@@ -52,4 +53,5 @@ export const router = createHashRouter([
   { path: "/receive", element: <Screen component={ReceiveScreen} /> },
   { path: "/history", element: <Screen component={HistoryScreen} /> },
   { path: "/contacts", element: <Screen component={ContactsScreen} /> },
+  { path: "/request", element: <Screen component={RequestScreen} /> },
 ]);

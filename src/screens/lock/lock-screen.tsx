@@ -30,6 +30,7 @@ export default function LockScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
   const unlock = useSessionStore((s) => s.unlock);
+  const pendingRequest = useSessionStore((s) => s.pendingRequest);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
 
@@ -44,7 +45,7 @@ export default function LockScreen() {
       const wallets = seeds.map(createWallet);
       unlock(vault.id, seeds, wallets);
       touchVaultUnlocked(vault.id);
-      navigate("/dashboard", { replace: true });
+      navigate(pendingRequest ? "/request" : "/dashboard", { replace: true });
     } catch {
       setError("WRONG PASSWORD");
     } finally {
