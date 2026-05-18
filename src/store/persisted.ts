@@ -41,7 +41,7 @@ export interface AppSettings {
   lockOnSleep: boolean;
   lockOnWindowBlur: boolean;
   clipboardClearSeconds: number;
-  theme: "dark" | "light" | "system";
+  theme: "dark" | "graphite" | "midnight" | "light" | "system";
   network: NetworkConfig;
   activeVaultId: string | null;
   activeAccountIndex: number;
