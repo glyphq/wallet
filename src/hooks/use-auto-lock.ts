@@ -11,11 +11,16 @@ export function useAutoLock() {
   const isLocked = useSessionStore((s) => s.isLocked);
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
   const lockOnWindowBlur = usePersistedStore((s) => s.settings.lockOnWindowBlur);
+  const lockOnSleep = usePersistedStore((s) => s.settings.lockOnSleep);
 
-  // Keep Rust timer in sync with the persisted setting
+  // Keep Rust timer in sync with persisted settings
   useEffect(() => {
     invoke("set_lock_timeout", { minutes: autoLockMinutes }).catch(() => {});
   }, [autoLockMinutes]);
+
+  useEffect(() => {
+    invoke("set_lock_on_sleep", { enabled: lockOnSleep }).catch(() => {});
+  }, [lockOnSleep]);
 
   // Core lock listener + activity reset events
   useEffect(() => {
