@@ -19,6 +19,7 @@ export default function SecurityScreen() {
 
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
   const lockOnWindowBlur = usePersistedStore((s) => s.settings.lockOnWindowBlur);
+  const lockOnSleep = usePersistedStore((s) => s.settings.lockOnSleep);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   function setLockTimeout(minutes: number) {
@@ -89,6 +90,38 @@ export default function SecurityScreen() {
             );
           })}
         </div>
+      </div>
+
+      {/* Lock on sleep */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <button
+          onClick={() => updateSettings({ lockOnSleep: !lockOnSleep })}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-4)",
+            padding: "var(--space-4)",
+            background: "none",
+            border: `1px solid ${lockOnSleep ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+            borderRadius: "var(--radius-sharp)",
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Lock on sleep
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              Lock when the screen locks or machine sleeps
+            </div>
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: lockOnSleep ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
+            {lockOnSleep ? "[ON]" : "[OFF]"}
+          </span>
+        </button>
       </div>
 
       {/* Window blur */}
