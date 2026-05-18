@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "Space Mono", "Courier New", monospace;
+  --font-display: "Doto", monospace;
+}
+
+/* ── Dark mode (default) ─────────────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Backgrounds */
+  --color-bg-base:     #000000;
+  --color-bg-surface:  #0f0f0f;
+  --color-bg-elevated: #181818;
+  --color-bg-subtle:   #1f1f1f;
+
+  /* Text */
+  --color-text-display:   #ffffff;
+  --color-text-primary:   #e8e8e8;
+  --color-text-secondary: #909090;
+  --color-text-disabled:  #484848;
+
+  /* Borders */
+  --color-border-strong: #2a2a2a;
+  --color-border-subtle: #181818;
+
+  /* Status — data encoding only, never decoration */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-error:   #d71921;
+
+  /* Vault accents — visual distinction between vaults */
+  --color-vault-slate:   #64748b;
+  --color-vault-red:     #ef4444;
+  --color-vault-amber:   #f59e0b;
+  --color-vault-emerald: #10b981;
+  --color-vault-sky:     #0ea5e9;
+  --color-vault-violet:  #8b5cf6;
+}
+
+/* ── Light mode ──────────────────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg-base:     #f5f3ef;
+  --color-bg-surface:  #edeae4;
+  --color-bg-elevated: #e5e1da;
+  --color-bg-subtle:   #ddd9d2;
+
+  --color-text-display:   #0a0a0a;
+  --color-text-primary:   #1a1a1a;
+  --color-text-secondary: #666660;
+  --color-text-disabled:  #a8a8a0;
+
+  --color-border-strong: #c8c4bc;
+  --color-border-subtle: #d8d4cc;
+
+  --color-status-success: #16a34a;
+  --color-status-warning: #d97706;
+  --color-status-error:   #b91c1c;
+
+  --color-vault-slate:   #64748b;
+  --color-vault-red:     #ef4444;
+  --color-vault-amber:   #f59e0b;
+  --color-vault-emerald: #10b981;
+  --color-vault-sky:     #0ea5e9;
+  --color-vault-violet:  #8b5cf6;
+}
+
+/* ── Type scale ──────────────────────────────────────────────────── */
+:root {
+  --text-display:  3rem;
+  --text-headline: 1.5rem;
+  --text-body:     0.9375rem;
+  --text-label:    0.75rem;
+  --text-mono-lg:  1rem;
+  --text-mono-sm:  0.6875rem;
+  --text-caption:  0.6875rem;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Radius */
+  --radius-sharp: 4px;
+  --radius-card:  8px;
+  --radius-pill:  9999px;
+
+  /* Motion */
+  --duration-fast: 80ms;
+  --duration-base: 160ms;
+  --duration-slow: 200ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
