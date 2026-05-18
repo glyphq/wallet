@@ -106,7 +106,7 @@ export default function DashboardScreen() {
         { icon: ArrowUp, label: "SEND", active: false, action: () => navigate("/send") },
         { icon: ArrowDown, label: "RECEIVE", active: false, action: () => navigate("/receive") },
         { icon: Clock, label: "HISTORY", active: false, action: () => navigate("/history") },
-        { icon: Settings, label: "SETTINGS", active: false, action: () => navigate("/vaults") },
+        { icon: Settings, label: "SETTINGS", active: false, action: () => navigate("/settings") },
       ].map(({ icon: Icon, label, active, action }) => (
         <button
           key={label}
