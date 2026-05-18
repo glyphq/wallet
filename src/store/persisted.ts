@@ -129,6 +129,7 @@ interface PersistedState {
   removeContact: (id: string) => void;
   addPendingTx: (tx: PendingTx) => void;
   removePendingTx: (hash: string) => void;
+  approveDapp: (dapp: ApprovedDapp) => void;
 }
 
 export const usePersistedStore = create<PersistedState>()(
@@ -193,6 +194,19 @@ export const usePersistedStore = create<PersistedState>()(
 
       removePendingTx: (hash) =>
         set((s) => ({ pendingTxs: s.pendingTxs.filter((t) => t.hash !== hash) })),
+
+      approveDapp: (dapp) =>
+        set((s) => {
+          const existing = s.settings.approvedDapps.find((d) => d.origin === dapp.origin);
+          const approvedDapps = existing
+            ? s.settings.approvedDapps.map((d) =>
+                d.origin === dapp.origin
+                  ? { ...d, name: dapp.name, approvedAt: dapp.approvedAt, permissions: [...new Set([...d.permissions, ...dapp.permissions])] }
+                  : d
+              )
+            : [...s.settings.approvedDapps, dapp];
+          return { settings: { ...s.settings, approvedDapps } };
+        }),
     }),
     {
       name: "sigil-persisted",
