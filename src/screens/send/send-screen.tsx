@@ -81,7 +81,7 @@ export default function SendScreen() {
     try {
       const dest = destUpper as Parameters<typeof wallet.buildTransfer>[0]["destination"];
       const amount = BigInt(Math.round(Number(amountStr.trim())));
-      const targetTick = estimateTargetTick(tickInfo.tick ?? 0, 10);
+      const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
       const { encoded, hash } = await wallet.buildTransfer({
         destination: dest,
@@ -191,7 +191,7 @@ export default function SendScreen() {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             <ReviewRow label="From" value={`${accountName} · ${truncate(identity)}`} />
             <ReviewRow label="To" value={matchedContact ? `${matchedContact.name} · ${truncate(destUpper)}` : truncate(destUpper)} />
-            <ReviewRow label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, 10)) : "—"} />
+            <ReviewRow label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
             <ReviewRow label="Fee" value="None" />
           </div>
 
