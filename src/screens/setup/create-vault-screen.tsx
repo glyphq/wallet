@@ -13,6 +13,21 @@ import type { Seed } from "@/lib/crypto";
 
 type Step = 1 | 2 | 3 | 4;
 
+interface CharTile {
+  id: number;
+  char: string;
+  used: boolean;
+}
+
+function shuffledTiles(seed: string): CharTile[] {
+  const arr: CharTile[] = seed.split("").map((char, id) => ({ id, char, used: false }));
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 const COLORS: VaultColor[] = ["slate", "red", "amber", "emerald", "sky", "violet"];
 
 const COLOR_CSS: Record<VaultColor, string> = {
@@ -45,15 +60,17 @@ export default function CreateVaultScreen() {
   const [name, setName] = useState("");
   const [color, setColor] = useState<VaultColor>("slate");
   const [seed] = useState<Seed>(() => generateRandomSeed());
-  const [confirmInput, setConfirmInput] = useState("");
   const [password, setPassword] = useState("");
   const [nameError, setNameError] = useState("");
-  const [confirmError, setConfirmError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Step 3: character grid state
+  const [tiles, setTiles] = useState<CharTile[]>(() => shuffledTiles(seed));
+  const [confirmed, setConfirmed] = useState("");
+  const [gridError, setGridError] = useState(false);
+
   const strength = strengthOf(password);
-  const seedMatch = confirmInput.replace(/\s+/g, "") === seed;
 
   function goStep2() {
     if (!name.trim()) { setNameError("NAME REQUIRED"); return; }
@@ -71,10 +88,24 @@ export default function CreateVaultScreen() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function goStep4() {
-    if (!seedMatch) { setConfirmError("SEED DOES NOT MATCH"); return; }
-    setConfirmError("");
-    setStep(4);
+  function handleTile(tileId: number, char: string) {
+    const next = confirmed.length;
+    if (next >= seed.length) return;
+    if (char === seed[next]) {
+      const newConfirmed = confirmed + char;
+      setConfirmed(newConfirmed);
+      setTiles((ts) => ts.map((t) => (t.id === tileId ? { ...t, used: true } : t)));
+      if (newConfirmed.length === seed.length) setStep(4);
+    } else {
+      setGridError(true);
+      setTimeout(() => setGridError(false), 500);
+    }
+  }
+
+  function resetGrid() {
+    setConfirmed("");
+    setTiles((ts) => ts.map((t) => ({ ...t, used: false })));
+    setGridError(false);
   }
 
   async function finish() {
@@ -215,28 +246,86 @@ export default function CreateVaultScreen() {
           </div>
         )}
 
-        {/* Step 3 — Backup confirmation */}
+        {/* Step 3 — Backup confirmation grid */}
         {step === 3 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             <div>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-2)" }}>
                 Confirm your backup.
               </div>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-                Type your seed to prove you have it.
+                Tap each character in order.
               </div>
             </div>
 
-            <Input
-              label="Seed phrase"
-              value={confirmInput}
-              onChange={(e) => { setConfirmInput(e.target.value); if (confirmError) setConfirmError(""); }}
-              error={confirmError}
-              placeholder="55 characters, lowercase"
-              autoFocus
-            />
+            {/* Progress display */}
+            <div
+              aria-label={`Confirmed ${confirmed.length} of ${seed.length} characters`}
+              aria-live="polite"
+              style={{
+                background: "var(--color-bg-surface)",
+                border: "1px solid",
+                borderColor: gridError ? "var(--color-status-error)" : "var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-3)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+                letterSpacing: "0.1em",
+                lineHeight: 1.9,
+                minHeight: 72,
+                wordBreak: "break-all",
+                transition: "border-color 0.12s ease-out",
+              }}
+            >
+              <span style={{ color: "var(--color-text-display)" }}>{confirmed}</span>
+              <span style={{ color: "var(--color-text-disabled)" }}>{"_".repeat(seed.length - confirmed.length)}</span>
+            </div>
 
-            <Button onClick={goStep4} disabled={!seedMatch}>Confirm</Button>
+            {/* Character tile grid */}
+            <div
+              role="group"
+              aria-label="Seed character tiles"
+              style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 4 }}
+            >
+              {tiles.map((tile) => (
+                <button
+                  key={tile.id}
+                  onClick={() => handleTile(tile.id, tile.char)}
+                  disabled={tile.used}
+                  aria-label={tile.used ? undefined : `Character ${tile.char}`}
+                  aria-hidden={tile.used}
+                  style={{
+                    height: 32,
+                    background: tile.used ? "transparent" : "var(--color-bg-elevated)",
+                    border: "1px solid",
+                    borderColor: tile.used ? "transparent" : "var(--color-border-strong)",
+                    borderRadius: "var(--radius-sharp)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--text-mono-sm)",
+                    color: tile.used ? "transparent" : "var(--color-text-display)",
+                    cursor: tile.used ? "default" : "pointer",
+                    transition: "background 0.08s ease-out, color 0.08s ease-out, border-color 0.08s ease-out",
+                    padding: 0,
+                  }}
+                >
+                  {tile.used ? "" : tile.char}
+                </button>
+              ))}
+            </div>
+
+            {confirmed.length > 0 && (
+              <button
+                onClick={resetGrid}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+                  color: "var(--color-text-disabled)", letterSpacing: "0.05em",
+                  textAlign: "right", padding: 0, alignSelf: "flex-end",
+                }}
+              >
+                CLEAR
+              </button>
+            )}
           </div>
         )}
 

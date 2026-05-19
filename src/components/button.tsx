@@ -71,7 +71,6 @@ export function Button({
         border: "1px solid",
         cursor: disabled || loading ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
-        outline: "none",
         ...VARIANT[variant],
         ...SIZE[size],
         ...SHAPE[shape],
