@@ -50,6 +50,9 @@ export function AnimatedLayout() {
   } else if (prev === "/request") {
     // Returning from request: fade in only (request slides out below)
     initial = { opacity: 0 };
+  } else if (cur === "/lock" || prev === "/lock") {
+    // Lock/unlock uses its own internal scale animation — outer wrapper fades only
+    initial = { opacity: 0 };
   } else {
     const goingDeeper = getDepth(cur) >= getDepth(prev);
     initial = { opacity: 0, x: goingDeeper ? 20 : -20 };
