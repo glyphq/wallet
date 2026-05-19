@@ -79,27 +79,25 @@ jobs:
           ref: ${{ needs.version-or-publish.outputs.tag }}
 
       - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libssl-dev \
-            libgtk-3-dev \
-            libglib2.0-dev \
-            libdbus-1-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libsoup-3.0-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: >-
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+            libssl-dev libgtk-3-dev libglib2.0-dev libdbus-1-dev
+            libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
+          version: 1.0
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: sccache
+        uses: mozilla/sccache-action@v0.0.9
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-targets: "false"
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -110,6 +108,9 @@ jobs:
 
       - name: Build Tauri app
         run: bun tauri build
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: sccache
 
       - name: Upload artifacts
         uses: softprops/action-gh-release@v2
@@ -139,10 +140,14 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
+      - name: sccache
+        uses: mozilla/sccache-action@v0.0.9
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-targets: "false"
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -153,6 +158,9 @@ jobs:
 
       - name: Build Tauri app (universal)
         run: bun tauri build --target universal-apple-darwin
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: sccache
 
       - name: Upload artifacts
         uses: softprops/action-gh-release@v2
@@ -180,10 +188,14 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: sccache
+        uses: mozilla/sccache-action@v0.0.9
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-targets: "false"
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -201,6 +213,9 @@ jobs:
 
       - name: Build Tauri app
         run: bun tauri build
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: sccache
 
       - name: Upload artifacts
         uses: softprops/action-gh-release@v2
