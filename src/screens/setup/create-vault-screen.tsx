@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
@@ -13,19 +13,12 @@ import type { Seed } from "@/lib/crypto";
 
 type Step = 1 | 2 | 3 | 4;
 
-interface CharTile {
-  id: number;
-  char: string;
-  used: boolean;
-}
-
-function shuffledTiles(seed: string): CharTile[] {
-  const arr: CharTile[] = seed.split("").map((char, id) => ({ id, char, used: false }));
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+function pickCheckPositions(seed: string, count = 4): number[] {
+  const positions = new Set<number>();
+  while (positions.size < count) {
+    positions.add(Math.floor(Math.random() * seed.length));
   }
-  return arr;
+  return Array.from(positions).sort((a, b) => a - b);
 }
 
 const COLORS: VaultColor[] = ["slate", "red", "amber", "emerald", "sky", "violet"];
@@ -65,10 +58,12 @@ export default function CreateVaultScreen() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Step 3: character grid state
-  const [tiles, setTiles] = useState<CharTile[]>(() => shuffledTiles(seed));
-  const [confirmed, setConfirmed] = useState("");
-  const [gridError, setGridError] = useState(false);
+  // Step 3: spot-check state (4 random positions)
+  const [checkPositions] = useState<number[]>(() => pickCheckPositions(seed));
+  const [checkInputs, setCheckInputs] = useState(["", "", "", ""]);
+  const checkRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const checkComplete = checkPositions.every((pos, i) => checkInputs[i] === seed[pos]);
 
   const strength = strengthOf(password);
 
@@ -88,24 +83,20 @@ export default function CreateVaultScreen() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleTile(tileId: number, char: string) {
-    const next = confirmed.length;
-    if (next >= seed.length) return;
-    if (char === seed[next]) {
-      const newConfirmed = confirmed + char;
-      setConfirmed(newConfirmed);
-      setTiles((ts) => ts.map((t) => (t.id === tileId ? { ...t, used: true } : t)));
-      if (newConfirmed.length === seed.length) setStep(4);
-    } else {
-      setGridError(true);
-      setTimeout(() => setGridError(false), 500);
-    }
+  function handleCheckInput(idx: number, raw: string) {
+    const val = raw.slice(-1).toLowerCase();
+    setCheckInputs((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
+    if (val) checkRefs.current[idx + 1]?.focus();
   }
 
-  function resetGrid() {
-    setConfirmed("");
-    setTiles((ts) => ts.map((t) => ({ ...t, used: false })));
-    setGridError(false);
+  function handleCheckKey(idx: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !checkInputs[idx]) {
+      checkRefs.current[idx - 1]?.focus();
+    }
   }
 
   async function finish() {
@@ -246,86 +237,94 @@ export default function CreateVaultScreen() {
           </div>
         )}
 
-        {/* Step 3 — Backup confirmation grid */}
+        {/* Step 3 — Spot-check backup */}
         {step === 3 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <div>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-2)" }}>
                 Confirm your backup.
               </div>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-                Tap each character in order.
+                Fill in the highlighted characters.
               </div>
             </div>
 
-            {/* Progress display */}
+            {/* Seed with blanked positions */}
             <div
-              aria-label={`Confirmed ${confirmed.length} of ${seed.length} characters`}
-              aria-live="polite"
+              aria-label="Seed phrase with blanked positions"
               style={{
                 background: "var(--color-bg-surface)",
-                border: "1px solid",
-                borderColor: gridError ? "var(--color-status-error)" : "var(--color-border-strong)",
+                border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sharp)",
-                padding: "var(--space-3)",
+                padding: "var(--space-4)",
                 fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-sm)",
-                letterSpacing: "0.1em",
-                lineHeight: 1.9,
-                minHeight: 72,
+                fontSize: "var(--text-mono-lg)",
+                letterSpacing: "0.08em",
+                lineHeight: 1.8,
                 wordBreak: "break-all",
-                transition: "border-color 0.12s ease-out",
               }}
             >
-              <span style={{ color: "var(--color-text-display)" }}>{confirmed}</span>
-              <span style={{ color: "var(--color-text-disabled)" }}>{"_".repeat(seed.length - confirmed.length)}</span>
+              {seed.split("").map((char, i) => {
+                const blankIdx = checkPositions.indexOf(i);
+                if (blankIdx !== -1) {
+                  const filled = checkInputs[blankIdx];
+                  const correct = filled === char;
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        display: "inline-block",
+                        minWidth: "0.75em",
+                        textAlign: "center",
+                        background: filled ? (correct ? "var(--color-status-success)" : "var(--color-status-error)") : "var(--color-bg-elevated)",
+                        color: filled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
+                        borderRadius: 2,
+                        transition: "background 0.1s ease-out",
+                      }}
+                    >
+                      {filled || "_"}
+                    </span>
+                  );
+                }
+                return <span key={i} style={{ color: "var(--color-text-display)" }}>{char}</span>;
+              })}
             </div>
 
-            {/* Character tile grid */}
-            <div
-              role="group"
-              aria-label="Seed character tiles"
-              style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 4 }}
-            >
-              {tiles.map((tile) => (
-                <button
-                  key={tile.id}
-                  onClick={() => handleTile(tile.id, tile.char)}
-                  disabled={tile.used}
-                  aria-label={tile.used ? undefined : `Character ${tile.char}`}
-                  aria-hidden={tile.used}
-                  style={{
-                    height: 32,
-                    background: tile.used ? "transparent" : "var(--color-bg-elevated)",
-                    border: "1px solid",
-                    borderColor: tile.used ? "transparent" : "var(--color-border-strong)",
-                    borderRadius: "var(--radius-sharp)",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "var(--text-mono-sm)",
-                    color: tile.used ? "transparent" : "var(--color-text-display)",
-                    cursor: tile.used ? "default" : "pointer",
-                    transition: "background 0.08s ease-out, color 0.08s ease-out, border-color 0.08s ease-out",
-                    padding: 0,
-                  }}
-                >
-                  {tile.used ? "" : tile.char}
-                </button>
+            {/* 4 labeled inputs */}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)" }}>
+              {checkPositions.map((pos, i) => (
+                <div key={pos} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", flex: 1 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                    #{pos + 1}
+                  </span>
+                  <input
+                    ref={(el) => { checkRefs.current[i] = el; }}
+                    value={checkInputs[i]}
+                    onChange={(e) => handleCheckInput(i, e.target.value)}
+                    onKeyDown={(e) => handleCheckKey(i, e)}
+                    maxLength={1}
+                    autoFocus={i === 0}
+                    aria-label={`Character at position ${pos + 1}`}
+                    className="sigil-input"
+                    style={{
+                      width: "100%",
+                      textAlign: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--text-mono-lg)",
+                      background: "var(--color-bg-subtle)",
+                      borderRadius: "var(--radius-sharp)",
+                      padding: "var(--space-3) 0",
+                      borderColor: checkInputs[i]
+                        ? (checkInputs[i] === seed[pos] ? "var(--color-status-success)" : "var(--color-status-error)")
+                        : undefined,
+                      transition: "border-color 0.1s ease-out",
+                    }}
+                  />
+                </div>
               ))}
             </div>
 
-            {confirmed.length > 0 && (
-              <button
-                onClick={resetGrid}
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-                  color: "var(--color-text-disabled)", letterSpacing: "0.05em",
-                  textAlign: "right", padding: 0, alignSelf: "flex-end",
-                }}
-              >
-                CLEAR
-              </button>
-            )}
+            <Button onClick={() => setStep(4)} disabled={!checkComplete}>Confirm</Button>
           </div>
         )}
 
