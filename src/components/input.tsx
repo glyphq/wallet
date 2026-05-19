@@ -8,6 +8,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({ label, error, style, id, containerStyle, ...props }: InputProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  const errorId = inputId ? `${inputId}-error` : undefined;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
@@ -31,6 +32,8 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
         id={inputId}
         className="sigil-input"
         data-error={error ? "true" : undefined}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error && errorId ? errorId : undefined}
         style={{
           background: "var(--color-bg-subtle)",
           borderRadius: "var(--radius-sharp)",
@@ -44,6 +47,8 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
       />
       {error && (
         <span
+          id={errorId}
+          role="alert"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "var(--text-mono-sm)",

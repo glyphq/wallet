@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { animate } from "motion/react";
 import { Home, ArrowUp, ArrowDown, Clock, Settings, Eye, EyeOff } from "lucide-react";
 import { AppShell } from "@/layouts/app-shell";
 import { Modal } from "@/components/modal";
@@ -29,8 +30,37 @@ const HEALTH_COLOR: Record<string, string> = {
   offline: "var(--color-status-error)",
 };
 
-function formatBalance(amount: bigint): string {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+function formatQu(amount: number): string {
+  return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function AnimatedBalance({ value }: { value: bigint }) {
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const prevRef = useRef<number | null>(null);
+  const num = Number(value);
+
+  useEffect(() => {
+    if (prevRef.current === null) {
+      prevRef.current = num;
+      return;
+    }
+    const from = prevRef.current;
+    prevRef.current = num;
+    const controls = animate(from, num, {
+      duration: 0.5,
+      ease: "easeOut",
+      onUpdate: (v) => {
+        if (spanRef.current) spanRef.current.textContent = formatQu(v);
+      },
+    });
+    return () => controls.stop();
+  }, [num]);
+
+  return (
+    <span ref={spanRef} aria-live="polite" aria-atomic="true">
+      {formatQu(num)}
+    </span>
+  );
 }
 
 function padTick(tick: number | undefined): string {
@@ -114,6 +144,7 @@ export default function DashboardScreen() {
         <button
           key={label}
           onClick={action}
+          aria-current={active ? "page" : undefined}
           style={{
             flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
             background: "none", border: "none", cursor: "pointer", padding: 0,
@@ -151,8 +182,8 @@ export default function DashboardScreen() {
         <div style={{ textAlign: "center", padding: "var(--space-8) 0", position: "relative" }}>
           <button
             onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
+            aria-label={settings.hideBalances ? "Show balances" : "Hide balances"}
             style={{ position: "absolute", top: 0, right: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center" }}
-            title={settings.hideBalances ? "Show balances" : "Hide balances"}
           >
             {settings.hideBalances ? <EyeOff size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}
           </button>
@@ -163,7 +194,7 @@ export default function DashboardScreen() {
           ) : (
             <div style={{ display: "inline-flex", alignItems: "baseline", gap: "var(--space-2)" }}>
               <span style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-                {balanceLoading ? "[LOADING...]" : balance ? formatBalance(balance.balance) : "—"}
+                {balanceLoading ? "[LOADING...]" : balance ? <AnimatedBalance value={balance.balance} /> : "—"}
               </span>
               {!balanceLoading && balance && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>
