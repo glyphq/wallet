@@ -5,6 +5,7 @@
     "sigil": "0.1.0"
   },
   "changesets": [
+    "fix-ipc-hydration-notifications-skeleton",
     "fix-loading-binary-conflict"
   ]
 }
