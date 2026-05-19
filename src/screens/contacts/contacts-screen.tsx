@@ -104,8 +104,11 @@ export default function ContactsScreen() {
       {filtered.map((contact, i) => (
         <div key={contact.id}>
           {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
+            <button
+              onClick={() => navigate(`/send?to=${contact.identity}`)}
+              style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
+            >
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
                 {contact.name}
               </div>
@@ -117,8 +120,8 @@ export default function ContactsScreen() {
                   {contact.note}
                 </div>
               )}
-            </div>
-            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            </button>
+            <div style={{ display: "flex", gap: "var(--space-2)", flexShrink: 0 }}>
               <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openEdit(contact)}>Edit</Button>
               <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setDeleting(contact)}>Remove</Button>
             </div>

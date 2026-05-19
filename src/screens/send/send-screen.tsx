@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
+import { Modal } from "@/components/modal";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useAutoLock } from "@/hooks/use-auto-lock";
@@ -22,12 +23,14 @@ function truncate(id: string): string {
 
 export default function SendScreen() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   useAutoLock();
 
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
   const contacts = usePersistedStore((s) => s.contacts);
   const addContact = usePersistedStore((s) => s.addContact);
+  const updateContact = usePersistedStore((s) => s.updateContact);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const wallets = useSessionStore((s) => s.wallets);
 
@@ -35,7 +38,7 @@ export default function SendScreen() {
   const { data: tickInfo } = useTickInfo();
 
   const [step, setStep] = useState<Step>("input");
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState(() => searchParams.get("to") ?? "");
   const [amountStr, setAmountStr] = useState("");
   const [destError, setDestError] = useState("");
   const [amountError, setAmountError] = useState("");
@@ -44,6 +47,9 @@ export default function SendScreen() {
   const [savedTargetTick, setSavedTargetTick] = useState(0);
   const [watchConfirmation, setWatchConfirmation] = useState(false);
   const [watchResult, setWatchResult] = useState<"pending" | "confirmed" | "failed">("pending");
+
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState("");
 
   // Save-contact state shown in done step
   const [saveName, setSaveName] = useState("");
@@ -120,6 +126,8 @@ export default function SendScreen() {
         broadcastAt: Date.now(),
       });
 
+      if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
+
       setSavedTargetTick(targetTick);
       setTxHash(hash);
       setStep("done");
@@ -163,18 +171,30 @@ export default function SendScreen() {
       {/* ── Input ── */}
       {step === "input" && (
         <>
-          <Input
-            label="To"
-            value={destination}
-            onChange={(e) => { setDestination(e.target.value); setDestError(""); }}
-            error={destError}
-            placeholder="60-character identity"
-          />
-          {matchedContact && !destError && (
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "calc(-1 * var(--space-4))" }}>
-              {matchedContact.name}
+          <div>
+            <Input
+              label="To"
+              value={destination}
+              onChange={(e) => { setDestination(e.target.value); setDestError(""); }}
+              error={destError}
+              placeholder="60-character identity"
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-1)" }}>
+              {matchedContact && !destError ? (
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+                  {matchedContact.name}
+                </span>
+              ) : <span />}
+              {contacts.length > 0 && (
+                <button
+                  onClick={() => { setPickerSearch(""); setShowPicker(true); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}
+                >
+                  FROM CONTACTS ↓
+                </button>
+              )}
             </div>
-          )}
+          </div>
 
           <Input
             label="Amount (QU)"
@@ -191,6 +211,15 @@ export default function SendScreen() {
           </div>
 
           <Button onClick={goReview}>Review</Button>
+
+          <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-6)", paddingTop: "var(--space-2)" }}>
+            <button onClick={() => navigate("/send-many")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
+              SEND TO MANY →
+            </button>
+            <button onClick={() => navigate("/burn")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
+              BURN QU →
+            </button>
+          </div>
         </>
       )}
 
@@ -352,6 +381,40 @@ export default function SendScreen() {
           </Button>
         </div>
       )}
+
+      <Modal open={showPicker} onClose={() => setShowPicker(false)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <input
+            autoFocus
+            value={pickerSearch}
+            onChange={(e) => setPickerSearch(e.target.value)}
+            placeholder="Search contacts..."
+            style={{ background: "var(--color-bg-subtle)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", padding: "var(--space-2) var(--space-3)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)", outline: "none", width: "100%", boxSizing: "border-box" }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", maxHeight: 280, overflowY: "auto" }}>
+            {contacts
+              .filter((c) => !pickerSearch || c.name.toLowerCase().includes(pickerSearch.toLowerCase()) || c.identity.toLowerCase().startsWith(pickerSearch.toLowerCase()))
+              .map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setDestination(c.identity); setDestError(""); setShowPicker(false); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-sharp)" }}
+                >
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{c.name}</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                    {c.identity.slice(0, 8)}...{c.identity.slice(-8)}
+                  </div>
+                </button>
+              ))}
+            {contacts.filter((c) => !pickerSearch || c.name.toLowerCase().includes(pickerSearch.toLowerCase()) || c.identity.toLowerCase().startsWith(pickerSearch.toLowerCase())).length === 0 && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-4)", textAlign: "center" }}>
+                [NO RESULTS]
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setShowPicker(false)}>Cancel</Button>
+        </div>
+      </Modal>
 
     </AppShell>
   );
