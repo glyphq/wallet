@@ -1,0 +1,133 @@
+import { useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+
+const win = getCurrentWindow();
+
+function WinBtn({
+  onClick,
+  label,
+  danger,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: 46,
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: hovered
+          ? danger
+            ? "var(--color-status-error)"
+            : "var(--color-bg-elevated)"
+          : "transparent",
+        border: "none",
+        cursor: "pointer",
+        color: hovered && danger ? "#fff" : "var(--color-text-disabled)",
+        transition: "background 80ms, color 80ms",
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function TitleBar() {
+  const [maximized, setMaximized] = useState(false);
+
+  useEffect(() => {
+    win.isMaximized().then(setMaximized);
+    const unlisten = win.listen("tauri://resize", async () => {
+      setMaximized(await win.isMaximized());
+    });
+    return () => { unlisten.then((f) => f()); };
+  }, []);
+
+  return (
+    <div
+      data-tauri-drag-region
+      style={{
+        height: 36,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        background: "var(--color-bg-base)",
+        borderBottom: "1px solid var(--color-border-subtle)",
+        flexShrink: 0,
+        userSelect: "none",
+      }}
+    >
+      {/* Identity — drag region, not interactive */}
+      <div
+        data-tauri-drag-region
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "0 12px",
+          pointerEvents: "none",
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <polygon
+            points="6,1 11,6 6,11 1,6"
+            stroke="var(--color-text-disabled)"
+            strokeWidth="1.2"
+          />
+        </svg>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.5625rem",
+            letterSpacing: "0.2em",
+            color: "var(--color-text-disabled)",
+          }}
+        >
+          SIGIL
+        </span>
+      </div>
+
+      {/* Window controls */}
+      <div style={{ display: "flex", height: "100%" }}>
+        <WinBtn onClick={() => win.minimize()} label="Minimize">
+          <svg width="10" height="2" viewBox="0 0 10 2">
+            <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </WinBtn>
+
+        <WinBtn onClick={() => win.toggleMaximize()} label={maximized ? "Restore" : "Maximize"}>
+          {maximized ? (
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <rect x="2.5" y="0.6" width="6.9" height="6.9" stroke="currentColor" strokeWidth="1.2" />
+              <polyline points="0.6,2.5 0.6,9.4 7.5,9.4" stroke="currentColor" strokeWidth="1.2" fill="none" />
+            </svg>
+          ) : (
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <rect x="0.6" y="0.6" width="8.8" height="8.8" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          )}
+        </WinBtn>
+
+        <WinBtn onClick={() => win.close()} label="Close" danger>
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
+            <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </WinBtn>
+      </div>
+    </div>
+  );
+}

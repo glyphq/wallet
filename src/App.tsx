@@ -8,6 +8,7 @@ import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } fro
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useUpdater } from "@/hooks/use-updater";
 import { configureRpc } from "@/lib/rpc";
+import { TitleBar } from "@/components/title-bar";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,7 +105,10 @@ export default function App() {
       <AppearanceApplier />
       <RpcSyncer />
       <GlobalListeners />
-      <RouterProvider router={router} />
+      <TitleBar />
+      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+        <RouterProvider router={router} />
+      </div>
     </QueryClientProvider>
   );
 }
