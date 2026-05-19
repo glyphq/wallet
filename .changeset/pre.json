@@ -6,6 +6,7 @@
   },
   "changesets": [
     "feat-custom-titlebar",
+    "feat-phase6-polish",
     "fix-ipc-hydration-notifications-skeleton",
     "fix-loading-binary-conflict"
   ]
