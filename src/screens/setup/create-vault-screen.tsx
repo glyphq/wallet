@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -22,10 +23,6 @@ const COLOR_CSS: Record<VaultColor, string> = {
   sky: "var(--color-vault-sky)",
   violet: "var(--color-vault-violet)",
 };
-
-function formatSeed(seed: string) {
-  return seed.match(/.{1,5}/g)?.join(" ") ?? seed;
-}
 
 function strengthOf(pw: string) {
   if (pw.length < 10) return { label: "TOO SHORT", level: 0, color: "var(--color-status-error)" };
@@ -152,6 +149,8 @@ export default function CreateVaultScreen() {
                   <button
                     key={c}
                     onClick={() => setColor(c)}
+                    aria-label={`Vault color: ${c}`}
+                    aria-pressed={color === c}
                     style={{
                       width: 24, height: 24, borderRadius: "50%",
                       background: COLOR_CSS[c],
@@ -182,19 +181,31 @@ export default function CreateVaultScreen() {
               </div>
             </div>
 
-            <div style={{
-              background: "var(--color-bg-surface)",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-sharp)",
-              padding: "var(--space-4)",
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--text-mono-lg)",
-              color: "var(--color-text-display)",
-              letterSpacing: "0.08em",
-              lineHeight: 1.8,
-              wordBreak: "break-all",
-            }}>
-              {formatSeed(seed)}
+            <div
+              aria-label="Your seed phrase"
+              style={{
+                background: "var(--color-bg-surface)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-4)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-lg)",
+                color: "var(--color-text-display)",
+                letterSpacing: "0.08em",
+                lineHeight: 1.8,
+                wordBreak: "break-all",
+              }}
+            >
+              {(seed.match(/.{1,5}/g) ?? []).map((group, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03, duration: 0.08, ease: "easeOut" }}
+                >
+                  {group}{" "}
+                </motion.span>
+              ))}
             </div>
 
             <Button variant="secondary" shape="sharp" size="md" style={{ width: "auto" }} onClick={copySeed}>

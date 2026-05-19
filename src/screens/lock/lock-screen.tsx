@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { Fingerprint } from "lucide-react";
+import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVault, createWallet } from "@/lib/vault";
@@ -93,7 +94,12 @@ export default function LockScreen() {
 
   return (
     <FullPage>
-      <div style={{ width: "100%", maxWidth: 320 }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        style={{ width: "100%", maxWidth: 320 }}
+      >
         {vault && (
           <div style={{ textAlign: "center", marginBottom: "var(--space-12)" }}>
             <div
@@ -152,6 +158,7 @@ export default function LockScreen() {
           <button
             onClick={onBiometric}
             disabled={loading}
+            aria-label="Unlock with biometrics"
             style={{
               display: "flex",
               alignItems: "center",
@@ -179,7 +186,7 @@ export default function LockScreen() {
             </span>
           </button>
         )}
-      </div>
+      </motion.div>
     </FullPage>
   );
 }

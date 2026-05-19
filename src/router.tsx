@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { createHashRouter } from "react-router-dom";
+import { AnimatedLayout } from "@/layouts/animated-layout";
 
 const Loading = () => (
   <div
@@ -51,27 +52,32 @@ const SettingsContactsScreen = lazy(() => import("@/screens/settings/contacts-sc
 const NotificationsScreen = lazy(() => import("@/screens/settings/notifications-screen"));
 
 export const router = createHashRouter([
-  { path: "/", element: <Screen component={RootScreen} /> },
-  { path: "/lock", element: <Screen component={LockScreen} /> },
-  { path: "/setup", element: <Screen component={WelcomeScreen} /> },
-  { path: "/setup/create", element: <Screen component={CreateVaultScreen} /> },
-  { path: "/setup/import", element: <Screen component={ImportVaultScreen} /> },
-  { path: "/dashboard", element: <Screen component={DashboardScreen} /> },
-  { path: "/vaults", element: <Screen component={VaultsScreen} /> },
-  { path: "/vaults/:id", element: <Screen component={VaultDetailScreen} /> },
-  { path: "/send", element: <Screen component={SendScreen} /> },
-  { path: "/send-many", element: <Screen component={SendManyScreen} /> },
-  { path: "/burn", element: <Screen component={BurnScreen} /> },
-  { path: "/stake", element: <Screen component={StakeScreen} /> },
-  { path: "/receive", element: <Screen component={ReceiveScreen} /> },
-  { path: "/history", element: <Screen component={HistoryScreen} /> },
-  { path: "/contacts", element: <Screen component={ContactsScreen} /> },
-  { path: "/request", element: <Screen component={RequestScreen} /> },
-  { path: "/settings", element: <Screen component={SettingsScreen} /> },
-  { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
-  { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
-  { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
-  { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
-  { path: "/settings/contacts", element: <Screen component={SettingsContactsScreen} /> },
-  { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
+  {
+    element: <AnimatedLayout />,
+    children: [
+      { path: "/", element: <Screen component={RootScreen} /> },
+      { path: "/lock", element: <Screen component={LockScreen} /> },
+      { path: "/setup", element: <Screen component={WelcomeScreen} /> },
+      { path: "/setup/create", element: <Screen component={CreateVaultScreen} /> },
+      { path: "/setup/import", element: <Screen component={ImportVaultScreen} /> },
+      { path: "/dashboard", element: <Screen component={DashboardScreen} /> },
+      { path: "/vaults", element: <Screen component={VaultsScreen} /> },
+      { path: "/vaults/:id", element: <Screen component={VaultDetailScreen} /> },
+      { path: "/send", element: <Screen component={SendScreen} /> },
+      { path: "/send-many", element: <Screen component={SendManyScreen} /> },
+      { path: "/burn", element: <Screen component={BurnScreen} /> },
+      { path: "/stake", element: <Screen component={StakeScreen} /> },
+      { path: "/receive", element: <Screen component={ReceiveScreen} /> },
+      { path: "/history", element: <Screen component={HistoryScreen} /> },
+      { path: "/contacts", element: <Screen component={ContactsScreen} /> },
+      { path: "/request", element: <Screen component={RequestScreen} /> },
+      { path: "/settings", element: <Screen component={SettingsScreen} /> },
+      { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
+      { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
+      { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
+      { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
+      { path: "/settings/contacts", element: <Screen component={SettingsContactsScreen} /> },
+      { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
+    ],
+  },
 ]);
