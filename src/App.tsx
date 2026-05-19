@@ -6,6 +6,7 @@ import { useDeepLink } from "@/hooks/use-deep-link";
 import { usePersistedStore } from "@/store/persisted";
 import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
+import { useUpdater } from "@/hooks/use-updater";
 import { configureRpc } from "@/lib/rpc";
 
 const queryClient = new QueryClient({
@@ -93,6 +94,7 @@ function RpcSyncer() {
 function GlobalListeners() {
   useDeepLink();
   useNotificationTriggers();
+  useUpdater();
   return null;
 }
 

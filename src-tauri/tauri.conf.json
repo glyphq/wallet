@@ -43,6 +43,12 @@
       "desktop": {
         "schemes": ["sigil"]
       }
+    },
+    "updater": {
+      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/sigil-app/sigil/releases/latest/download/latest.json"
+      ]
     }
   }
 }
