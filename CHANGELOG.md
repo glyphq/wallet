@@ -1,5 +1,11 @@
 # sigil
 
+## 0.2.0-beta.2
+
+### Minor Changes
+
+- 0d7ab29: Add custom title bar replacing the OS native one. Includes drag region, minimize/maximize/close controls with hover states, and fullscreen prevention on Windows.
+
 ## 0.1.1-beta.1
 
 ### Patch Changes
