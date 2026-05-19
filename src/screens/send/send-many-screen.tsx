@@ -12,7 +12,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { isIdentity } from "@/lib/crypto";
+import { isValidIdentity } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { QUTIL } from "@/lib/contracts";
 
@@ -71,7 +71,7 @@ export default function SendManyScreen() {
   function validateAll(): boolean {
     let ok = true;
     const updated = recipients.map((r) => {
-      const identityError = isIdentity(r.identity.trim().toUpperCase()) ? "" : "INVALID IDENTITY";
+      const identityError = isValidIdentity(r.identity.trim().toUpperCase()) ? "" : "INVALID IDENTITY";
       const amount = Number(r.amount.trim());
       const amountError = r.amount.trim() && !isNaN(amount) && amount > 0 ? "" : "INVALID AMOUNT";
       if (identityError || amountError) ok = false;

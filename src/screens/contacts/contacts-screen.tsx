@@ -7,7 +7,7 @@ import { Modal } from "@/components/modal";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { useAutoLock } from "@/hooks/use-auto-lock";
-import { isIdentity } from "@/lib/crypto";
+import { isValidIdentity } from "@/lib/crypto";
 
 function truncate(id: string): string {
   if (id.length <= 16) return id;
@@ -44,7 +44,7 @@ export default function ContactsScreen() {
   }
 
   function validateIdentity(id: string): boolean {
-    if (!isIdentity(id)) { setIdentityError("INVALID IDENTITY — 60 UPPERCASE LETTERS"); return false; }
+    if (!isValidIdentity(id)) { setIdentityError("INVALID IDENTITY — 60 UPPERCASE LETTERS"); return false; }
     setIdentityError("");
     return true;
   }

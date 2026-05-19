@@ -11,7 +11,7 @@ import { useSessionStore } from "@/store/session";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
-import { isIdentity } from "@/lib/crypto";
+import { isValidIdentity } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
@@ -79,7 +79,7 @@ export default function SendScreen() {
 
   function validateInputs(): boolean {
     let ok = true;
-    if (!isIdentity(destUpper)) {
+    if (!isValidIdentity(destUpper)) {
       setDestError("INVALID IDENTITY");
       ok = false;
     } else {
