@@ -1,4 +1,5 @@
 mod auto_lock;
+mod biometric;
 mod clipboard;
 mod commands;
 mod deep_link;
@@ -36,6 +37,10 @@ pub fn run() {
             commands::copy_to_clipboard,
             commands::clear_clipboard,
             commands::post_callback,
+            biometric::check_biometric_available,
+            biometric::enable_biometric,
+            biometric::biometric_unlock,
+            biometric::disable_biometric,
         ])
         .run(tauri::generate_context!())
         .expect("error while running sigil");
