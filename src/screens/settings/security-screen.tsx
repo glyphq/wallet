@@ -1,8 +1,10 @@
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { AppShell } from "@/layouts/app-shell";
 import { usePersistedStore } from "@/store/persisted";
 import { useAutoLock } from "@/hooks/use-auto-lock";
+import { unlockVault } from "@/lib/vault";
 
 const TIMEOUT_OPTIONS: { label: string; value: number }[] = [
   { label: "1 minute", value: 1 },
@@ -28,7 +30,55 @@ export default function SecurityScreen() {
   const lockOnWindowBlur = usePersistedStore((s) => s.settings.lockOnWindowBlur);
   const lockOnSleep = usePersistedStore((s) => s.settings.lockOnSleep);
   const clipboardClearSeconds = usePersistedStore((s) => s.settings.clipboardClearSeconds);
+  const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds);
+  const vaults = usePersistedStore((s) => s.vaults);
+  const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
+
+  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
+  const bioEnabled = vault ? biometricVaultIds.includes(vault.id) : false;
+
+  const [bioAvailable, setBioAvailable] = useState<boolean | null>(null);
+  const [enabling, setEnabling] = useState(false);
+  const [enablePw, setEnablePw] = useState("");
+  const [enableError, setEnableError] = useState("");
+  const [enableLoading, setEnableLoading] = useState(false);
+  const pwRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    invoke<boolean>("check_biometric_available").then(setBioAvailable).catch(() => setBioAvailable(false));
+  }, []);
+
+  useEffect(() => {
+    if (enabling) setTimeout(() => pwRef.current?.focus(), 50);
+  }, [enabling]);
+
+  async function handleEnable() {
+    if (!vault) return;
+    setEnableLoading(true);
+    setEnableError("");
+    try {
+      await unlockVault(vault.encryptedData, enablePw);
+      await invoke("enable_biometric", { vaultId: vault.id, password: enablePw });
+      updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
+      setEnabling(false);
+      setEnablePw("");
+    } catch {
+      setEnableError("WRONG PASSWORD");
+    } finally {
+      setEnableLoading(false);
+    }
+  }
+
+  async function handleDisable() {
+    if (!vault) return;
+    try {
+      await invoke("disable_biometric", { vaultId: vault.id });
+    } catch {
+      // keyring entry may already be gone
+    }
+    updateSettings({ biometricVaultIds: biometricVaultIds.filter((id) => id !== vault.id) });
+  }
 
   function setLockTimeout(minutes: number) {
     updateSettings({ autoLockMinutes: minutes });
@@ -210,6 +260,154 @@ export default function SecurityScreen() {
             );
           })}
         </div>
+      </div>
+
+      {/* Biometric unlock */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+            Biometric unlock
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+            Use Touch ID or Windows Hello to unlock vaults
+          </div>
+        </div>
+
+        {bioAvailable === null && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            [CHECKING...]
+          </span>
+        )}
+
+        {bioAvailable === false && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            [NOT AVAILABLE ON THIS DEVICE]
+          </span>
+        )}
+
+        {bioAvailable === true && !vault && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            [NO VAULT SELECTED]
+          </span>
+        )}
+
+        {bioAvailable === true && vault && !bioEnabled && !enabling && (
+          <button
+            onClick={() => setEnabling(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "var(--space-3) var(--space-4)",
+              background: "none",
+              border: "1px solid var(--color-border-strong)",
+              borderRadius: "var(--radius-sharp)",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
+              Enable for {vault.name}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+              [OFF]
+            </span>
+          </button>
+        )}
+
+        {enabling && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              Confirm your vault password to enable biometric unlock
+            </div>
+            <input
+              ref={pwRef}
+              type="password"
+              value={enablePw}
+              onChange={(e) => setEnablePw(e.target.value)}
+              placeholder="••••••••••"
+              onKeyDown={(e) => e.key === "Enter" && handleEnable()}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+                color: "var(--color-text-primary)",
+                background: "var(--color-bg-elevated)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-3) var(--space-4)",
+                outline: "none",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+            {enableError && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+                {enableError}
+              </span>
+            )}
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <button
+                onClick={handleEnable}
+                disabled={enableLoading || !enablePw}
+                style={{
+                  flex: 1,
+                  padding: "var(--space-3)",
+                  background: "none",
+                  border: "1px solid var(--color-text-display)",
+                  borderRadius: "var(--radius-sharp)",
+                  cursor: enableLoading || !enablePw ? "default" : "pointer",
+                  opacity: enableLoading || !enablePw ? 0.4 : 1,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-sm)",
+                  color: "var(--color-text-display)",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {enableLoading ? "[SAVING...]" : "[CONFIRM]"}
+              </button>
+              <button
+                onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
+                style={{
+                  padding: "var(--space-3) var(--space-4)",
+                  background: "none",
+                  border: "1px solid var(--color-border-strong)",
+                  borderRadius: "var(--radius-sharp)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-sm)",
+                  color: "var(--color-text-secondary)",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                [CANCEL]
+              </button>
+            </div>
+          </div>
+        )}
+
+        {bioAvailable === true && vault && bioEnabled && (
+          <button
+            onClick={handleDisable}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "var(--space-3) var(--space-4)",
+              background: "none",
+              border: "1px solid var(--color-text-display)",
+              borderRadius: "var(--radius-sharp)",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>
+              Enabled for {vault.name}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+              [DISABLE]
+            </span>
+          </button>
+        )}
       </div>
 
     </AppShell>
