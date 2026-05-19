@@ -111,11 +111,18 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 const _disk = new LazyStore("sigil.json");
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T | null> =>
+  Promise.race([promise, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
+
 const tauriStorage: StateStorage = {
   getItem: async (name) => {
     try {
-      return (await _disk.get<string>(name)) ?? null;
-    } catch {
+      console.log("[store] getItem start", name);
+      const result = await withTimeout(_disk.get<string>(name), 3000);
+      console.log("[store] getItem done", name, result === null ? "null/timeout" : "ok");
+      return result ?? null;
+    } catch (e) {
+      console.error("[store] getItem error", name, e);
       return null;
     }
   },

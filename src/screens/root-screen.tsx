@@ -20,7 +20,15 @@ export default function RootScreen() {
     const current = usePersistedStore.persist.hasHydrated();
     console.log("[root] setting hydrated:", current);
     setHydrated(current);
-    return unsub;
+    // Belt-and-suspenders: if IPC never completes, unblock navigation after 4s
+    const timer = setTimeout(() => {
+      console.log("[root] hydration timeout — forcing hydrated=true");
+      setHydrated(true);
+    }, 4000);
+    return () => {
+      unsub();
+      clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
