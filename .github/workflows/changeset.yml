@@ -1,0 +1,42 @@
+name: Changesets
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: changeset-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version-or-publish:
+    name: Version or tag release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Create version PR or tag release
+        uses: changesets/action@v1
+        with:
+          # Called when changesets are present — bumps versions + generates CHANGELOG
+          version: bun run version
+          # Called after version PR is merged — pushes git tag → triggers release.yml
+          publish: bun run tag-release
+          title: "chore: version packages"
+          commit: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

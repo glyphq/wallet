@@ -46,12 +46,6 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      - name: Set version from tag
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
-
       - name: Build Tauri app
         run: bun tauri build
 
@@ -88,12 +82,6 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      - name: Set version from tag
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
-          sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
-
       - name: Build Tauri app (universal)
         run: bun tauri build --target universal-apple-darwin
 
@@ -127,13 +115,6 @@ jobs:
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
-
-      - name: Set version from tag
-        shell: pwsh
-        run: |
-          $version = $env:GITHUB_REF_NAME -replace '^v', ''
-          (Get-Content src-tauri/tauri.conf.json) -replace '"version": ".*"', """version"": ""$version""" | Set-Content src-tauri/tauri.conf.json
-          (Get-Content src-tauri/Cargo.toml) -replace '^version = ".*"', "version = ""$version""" | Set-Content src-tauri/Cargo.toml
 
       - name: Build Tauri app
         run: bun tauri build
