@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { invoke } from "@tauri-apps/api/core";
+import { Fingerprint } from "lucide-react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVault, createWallet } from "@/lib/vault";
@@ -25,6 +27,7 @@ export default function LockScreen() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [bioFailures, setBioFailures] = useState(0);
 
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
@@ -33,21 +36,47 @@ export default function LockScreen() {
   const pendingRequest = useSessionStore((s) => s.pendingRequest);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
+  const bioEnabled = vault ? settings.biometricVaultIds.includes(vault.id) : false;
 
   const { register, handleSubmit } = useForm<FormValues>();
+
+  async function doUnlock(password: string) {
+    if (!vault) return;
+    const seeds = await unlockVault(vault.encryptedData, password);
+    const wallets = seeds.map(createWallet);
+    unlock(vault.id, seeds, wallets);
+    touchVaultUnlocked(vault.id);
+    navigate(pendingRequest ? "/request" : "/dashboard", { replace: true });
+  }
 
   async function onSubmit({ password }: FormValues) {
     if (!vault) return;
     setLoading(true);
     setError("");
     try {
-      const seeds = await unlockVault(vault.encryptedData, password);
-      const wallets = seeds.map(createWallet);
-      unlock(vault.id, seeds, wallets);
-      touchVaultUnlocked(vault.id);
-      navigate(pendingRequest ? "/request" : "/dashboard", { replace: true });
+      await doUnlock(password);
     } catch {
       setError("WRONG PASSWORD");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onBiometric() {
+    if (!vault || bioFailures >= 3) return;
+    setLoading(true);
+    setError("");
+    try {
+      const password = await invoke<string>("biometric_unlock", { vaultId: vault.id });
+      await doUnlock(password);
+    } catch {
+      const next = bioFailures + 1;
+      setBioFailures(next);
+      if (next >= 3) {
+        setError("TOO MANY FAILURES — USE PASSWORD");
+      } else {
+        setError("BIOMETRIC FAILED");
+      }
     } finally {
       setLoading(false);
     }
@@ -118,6 +147,38 @@ export default function LockScreen() {
             Unlock
           </Button>
         </form>
+
+        {bioEnabled && bioFailures < 3 && (
+          <button
+            onClick={onBiometric}
+            disabled={loading}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "var(--space-2)",
+              marginTop: "var(--space-6)",
+              width: "100%",
+              background: "none",
+              border: "none",
+              cursor: loading ? "default" : "pointer",
+              opacity: loading ? 0.4 : 1,
+              padding: "var(--space-2)",
+            }}
+          >
+            <Fingerprint size={18} color="var(--color-text-secondary)" strokeWidth={1.5} />
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+                color: "var(--color-text-secondary)",
+                letterSpacing: "0.05em",
+              }}
+            >
+              USE BIOMETRIC
+            </span>
+          </button>
+        )}
       </div>
     </FullPage>
   );
