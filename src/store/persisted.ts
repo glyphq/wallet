@@ -50,6 +50,7 @@ export interface AppSettings {
   currency: "USD" | "EUR" | "BTC";
   tickOffset: number;
   debugMode: boolean;
+  biometricVaultIds: string[];
 }
 
 export interface Contact {
@@ -88,6 +89,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   currency: "USD",
   tickOffset: 10,
   debugMode: false,
+  biometricVaultIds: [],
 };
 
 const _disk = new LazyStore("sigil.json");
