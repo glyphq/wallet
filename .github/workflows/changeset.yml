@@ -63,13 +63,26 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-or-publish.outputs.tag }}
+
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          VERSION="${{ needs.version-or-publish.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          ESCAPED=$(printf '%s\n' "$VERSION" | sed 's/[.]/[.]/g')
+          BODY=$(awk "/^## ${ESCAPED}/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md | sed '/^[[:space:]]*$/d' | sed '$ s/$/\n/')
+          printf 'body<<%s\n%s\n%s\n' "EOF" "$BODY" "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Create draft release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version-or-publish.outputs.tag }}
           draft: true
           prerelease: true
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.body }}
 
   release-linux:
     name: Release (Linux)
