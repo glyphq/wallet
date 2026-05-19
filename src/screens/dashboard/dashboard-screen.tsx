@@ -300,7 +300,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, currentTick, onView
   const removePendingTx = usePersistedStore((s) => s.removePendingTx);
 
   const isExpired = (p: { targetTick: number }) =>
-    currentTick > 0 && currentTick > p.targetTick;
+    currentTick > 0 && currentTick > p.targetTick + 30;
 
   // Cleanup: remove confirmed or definitively expired pending txs
   useEffect(() => {
