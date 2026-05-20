@@ -107,7 +107,9 @@ jobs:
           version: 1.0
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.88.0"
 
       - name: sccache
         uses: mozilla/sccache-action@v0.0.9
@@ -164,10 +166,10 @@ jobs:
           ref: ${{ needs.version-or-publish.outputs.tag }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-
-      - name: Add macOS universal targets
-        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.88.0"
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: sccache
         uses: mozilla/sccache-action@v0.0.9
@@ -223,7 +225,9 @@ jobs:
           ref: ${{ needs.version-or-publish.outputs.tag }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.88.0"
 
       - name: sccache
         uses: mozilla/sccache-action@v0.0.9
