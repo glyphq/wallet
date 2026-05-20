@@ -26,6 +26,8 @@ import {
 type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
 
+const QEARN_MIN_LOCK = 10_000_000;
+
 interface Position {
   epoch: number;
   lockedAmount: bigint;
@@ -100,6 +102,10 @@ export default function StakeScreen() {
     const amount = Number(amountStr.trim());
     if (!amountStr.trim() || isNaN(amount) || amount <= 0) {
       setAmountError("INVALID AMOUNT");
+      return;
+    }
+    if (amount < QEARN_MIN_LOCK) {
+      setAmountError(`MINIMUM ${QEARN_MIN_LOCK.toLocaleString()} QU`);
       return;
     }
     setAmountError("");

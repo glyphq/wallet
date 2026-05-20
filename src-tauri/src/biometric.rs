@@ -2,7 +2,7 @@ use keyring::Entry;
 use tauri::command;
 
 fn keyring_entry(vault_id: &str) -> Result<Entry, String> {
-    Entry::new("sigil", &format!("bio:{vault_id}")).map_err(|e| e.to_string())
+    Entry::new("sigil-bio", vault_id).map_err(|e| e.to_string())
 }
 
 // ── macOS: LAContext via objc ──────────────────────────────────────────────
@@ -136,9 +136,11 @@ pub async fn check_biometric_available() -> bool {
 #[command]
 pub async fn enable_biometric(vault_id: String, password: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        keyring_entry(&vault_id)?
-            .set_password(&password)
-            .map_err(|e| e.to_string())
+        let entry = keyring_entry(&vault_id)?;
+        entry.set_password(&password).map_err(|e| e.to_string())?;
+        // Verify the credential is readable immediately after storing
+        entry.get_password().map_err(|e| format!("stored but unreadable: {e}"))?;
+        Ok(())
     })
     .await
     .map_err(|e| e.to_string())?

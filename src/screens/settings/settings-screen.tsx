@@ -26,7 +26,7 @@ export default function SettingsScreen() {
   const statusBar = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/dashboard")}
         style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
       >
         ← BACK

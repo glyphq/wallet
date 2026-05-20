@@ -59,12 +59,18 @@ export default function SecurityScreen() {
     setEnableError("");
     try {
       await unlockVault(vault.encryptedData, enablePw);
+    } catch {
+      setEnableError("WRONG PASSWORD");
+      setEnableLoading(false);
+      return;
+    }
+    try {
       await invoke("enable_biometric", { vaultId: vault.id, password: enablePw });
       updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
       setEnabling(false);
       setEnablePw("");
-    } catch {
-      setEnableError("WRONG PASSWORD");
+    } catch (e) {
+      setEnableError(`SECURE STORAGE FAILED: ${e}`);
     } finally {
       setEnableLoading(false);
     }
