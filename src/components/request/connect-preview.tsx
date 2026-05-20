@@ -104,16 +104,21 @@ export function ConnectPreview({ dappName, dappOrigin, request, onApprove, onRej
 
       {/* Requested permissions */}
       {permissions.length > 0 && (
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-            Permissions requested
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+              Will ask you to approve
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              {permissions.map((p) => (
+                <div key={p} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em" }}>
+                  · {PERMISSION_LABELS[p] ?? p}
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            {permissions.map((p) => (
-              <div key={p} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em" }}>
-                · {PERMISSION_LABELS[p] ?? p}
-              </div>
-            ))}
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+            Each action will show a confirmation screen. Nothing is signed without your approval.
           </div>
         </div>
       )}
