@@ -3,6 +3,7 @@ import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
+import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getRpcClient } from "@/lib/rpc";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
@@ -109,15 +110,20 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const settings = usePersistedStore((s) => s.settings);
   const vault = vaults.find((v) => v.id === settings.activeVaultId);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
+  const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const { data: tickInfo } = useTickInfo();
+  const { data: balanceData } = useBalance(wallet?.identity ?? null);
 
   const identity = wallet?.identity ?? "";
+  const balance = balanceData?.balance ?? null;
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
+  const hasAmount = (request.amount ?? 0) > 0;
+  const insufficientBalance = hasAmount && balance !== null && BigInt(request.amount!) > balance;
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
   const contractName = CONTRACT_NAMES[request.contract_index] ?? `CONTRACT #${request.contract_index}`;
   const inputTypeLabel = INPUT_TYPE_LABELS[`${request.contract_index}:${request.input_type}`] ?? `Input ${request.input_type}`;
   const destination: Identity = contractIndexToIdentity(request.contract_index);
-  const hasAmount = (request.amount ?? 0) > 0;
   const payloadBytes = useMemo(
     () => (request.payload ? base64ToBytes(request.payload) : new Uint8Array(0)),
     [request.payload],
@@ -293,13 +299,23 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         </div>
       )}
 
+      {insufficientBalance && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          [INSUFFICIENT BALANCE]
+        </div>
+      )}
+      {hasPendingTx && !insufficientBalance && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+          [TRANSFER PENDING — WAIT FOR CONFIRMATION]
+        </div>
+      )}
       {txError && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
           [{txError}]
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError}>
+      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx}>
         Sign and send
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>

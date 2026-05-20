@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useTickInfo } from "@/hooks/use-tick-info";
+import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getRpcClient } from "@/lib/rpc";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 
@@ -45,9 +46,14 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const vault = vaults.find((v) => v.id === settings.activeVaultId);
   const contacts = usePersistedStore((s) => s.contacts);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
+  const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const { data: tickInfo } = useTickInfo();
+  const { data: balanceData } = useBalance(wallet?.identity ?? null);
 
   const identity = wallet?.identity ?? "";
+  const balance = balanceData?.balance ?? null;
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
+  const insufficientBalance = balance !== null && BigInt(request.amount) > balance;
   const toContact = contacts.find((c) => c.identity === request.to);
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
@@ -143,13 +149,23 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         <Row label="Fee" value="None" />
       </div>
 
+      {insufficientBalance && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          [INSUFFICIENT BALANCE]
+        </div>
+      )}
+      {hasPendingTx && !insufficientBalance && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+          [TRANSFER PENDING — WAIT FOR CONFIRMATION]
+        </div>
+      )}
       {txError && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
           [{txError}]
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError}>
+      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx}>
         Sign and send
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>

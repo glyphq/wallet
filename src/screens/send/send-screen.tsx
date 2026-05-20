@@ -33,6 +33,7 @@ export default function SendScreen() {
   const addContact = usePersistedStore((s) => s.addContact);
   const updateContact = usePersistedStore((s) => s.updateContact);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
+  const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
 
   const wallet = wallets[settings.activeAccountIndex] ?? null;
@@ -60,6 +61,7 @@ export default function SendScreen() {
 
   const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? "Account";
   const identity = wallet?.identity ?? "";
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
 
   const { data: recentTxs } = useTxHistory(identity || null);
 
@@ -91,6 +93,9 @@ export default function SendScreen() {
     const amount = amountStr.trim();
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       setAmountError("INVALID AMOUNT");
+      ok = false;
+    } else if (balance !== null && BigInt(amount) > balance) {
+      setAmountError("INSUFFICIENT BALANCE");
       ok = false;
     } else {
       setAmountError("");
@@ -249,7 +254,13 @@ export default function SendScreen() {
 
           <Divider />
 
-          <Button onClick={send}>Sign and send</Button>
+          {hasPendingTx && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+              [TRANSFER PENDING — WAIT FOR CONFIRMATION]
+            </div>
+          )}
+
+          <Button onClick={send} disabled={hasPendingTx}>Sign and send</Button>
           <Button variant="secondary" shape="sharp" onClick={() => setStep("input")}>Edit</Button>
         </>
       )}
