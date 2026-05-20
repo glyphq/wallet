@@ -20,7 +20,9 @@ Beyond deep linking, it's a full-featured Qubic wallet:
 - Qearn staking — lock and unlock positions directly from the wallet
 - Address book with one-click send
 - Auto-lock on idle, OS sleep, or window blur
+- Biometric unlock — Windows Hello / Touch ID / macOS biometrics via OS secure storage
 - Privacy mode — hides all balances across every screen
+- Auto-updates — Settings footer shows available releases; user-triggered download and install with live progress
 
 **Seeds never leave your device. No server ever sees your seed or password.** Everything is encrypted locally with AES-256-GCM + PBKDF2 (600,000 iterations).
 
@@ -54,7 +56,7 @@ The installer ends up in `src-tauri/target/release/bundle/`.
 ### First run
 
 1. Launch → Welcome screen
-2. **Create vault**: name → generate seed (write it down) → confirm backup → set password → dashboard
+2. **Create vault**: name → generate seed (write it down) → spot-check backup (4 random positions to confirm) → set password → dashboard
 3. **Import vault**: paste existing 55-char seed → name → password → dashboard
 
 ### Send QU
@@ -105,6 +107,16 @@ Contacts → add by name + identity. Clicking a contact row navigates to Send wi
 | Server state | TanStack Query v5 |
 | Qubic SDK | `@qubic.org/types`, `@qubic.org/crypto`, `@qubic.org/tx`, `@qubic.org/wallet`, `@qubic.org/rpc`, `@qubic.org/contracts` |
 | Design system | Nothing Design — OLED black, Space Grotesk + Space Mono, mechanical UI |
+
+### Biometric unlock
+
+Settings → Security → enable biometric. Sigil prompts for your vault password once to verify it, then stores it in the OS secure store (Windows Credential Manager / macOS Keychain / libsecret on Linux). On subsequent unlocks, the OS biometric prompt retrieves the password — Sigil never stores it on disk itself.
+
+### Auto-updates
+
+When Sigil starts, it checks for a new release after an 8-second delay (to avoid slowing startup). If one is available, Settings shows `[UPDATE AVAILABLE vX.Y.Z]`. Click it to download and install; progress is shown live. The app relaunches automatically when the install completes.
+
+Updates are signed with a Tauri signing key. The public key is embedded in the app bundle — unsigned or tampered packages are rejected.
 
 ---
 
