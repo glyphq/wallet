@@ -20,7 +20,7 @@ const NAMED: Sponsor[] = [
 ];
 
 // Simulate a long tail of smaller sponsors for layout testing
-const TAIL: Sponsor[] = Array.from({ length: 490 }, (_, i) => ({
+const TAIL: Sponsor[] = Array.from({ length: 90 }, (_, i) => ({
   name: `sponsor_${i + 1}`,
   // Exponential decay: most donate ~10–50M QU, a few hit 100M+
   amount: Math.round(10_000_000 * Math.pow(0.993, i) + 1_000_000),
