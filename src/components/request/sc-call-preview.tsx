@@ -22,7 +22,7 @@ export interface ScCallRequest {
   contract_index: number;
   input_type: number;
   from?: string;
-  amount?: number;
+  amount?: number | string;
   payload?: string; // base64-encoded binary
   tick_offset?: number;
   [key: string]: unknown;
@@ -35,8 +35,12 @@ interface ScCallPreviewProps {
 }
 
 
-function formatAmount(n: number | bigint): string {
-  return Number(n).toLocaleString();
+function formatAmount(n: number | string | bigint): string {
+  try {
+    return BigInt(n).toLocaleString();
+  } catch {
+    return String(n);
+  }
 }
 
 function base64ToHex(b64: string): string {
@@ -108,8 +112,9 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const identity = wallet?.identity ?? "";
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
-  const hasAmount = (request.amount ?? 0) > 0;
-  const insufficientBalance = hasAmount && balance !== null && BigInt(request.amount!) > balance;
+  const requestAmount = (() => { try { return request.amount != null ? BigInt(request.amount) : 0n; } catch { return 0n; } })();
+  const hasAmount = requestAmount > 0n;
+  const insufficientBalance = hasAmount && balance !== null && requestAmount > balance;
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
   const contractName = CONTRACT_NAMES[request.contract_index] ?? `Contract #${request.contract_index}`;
@@ -144,7 +149,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
     setProcessing(true);
     setTxError("");
     try {
-      const amount = BigInt(request.amount ?? 0);
+      const amount = requestAmount;
       const tick = estimateTargetTick(tickInfo.tick ?? 0, tickOffset);
 
       const { encoded, hash } = await wallet.buildScTransaction({
@@ -188,7 +193,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         </div>
         {hasAmount && (
           <div style={{ marginTop: "var(--space-3)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>
-            {formatAmount(request.amount!)} QU
+            {formatAmount(requestAmount)} QU
           </div>
         )}
       </div>
@@ -217,7 +222,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       {/* ── Decoded: Qearn Lock ── */}
       {isQearnLock && hasAmount && (
         <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          LOCK {formatAmount(request.amount!)} QU FOR STAKING
+          LOCK {formatAmount(requestAmount)} QU FOR STAKING
         </div>
       )}
 
@@ -267,7 +272,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {!fromError && <Row label="From" value={`${accountName} · ${truncate(identity)}`} />}
         <Row label="To" value={truncate(destination as string)} />
-        {hasAmount && <Row label="Amount" value={`${formatAmount(request.amount!)} QU`} />}
+        {hasAmount && <Row label="Amount" value={`${formatAmount(requestAmount)} QU`} />}
         <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
       </div>
 

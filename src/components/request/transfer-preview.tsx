@@ -9,7 +9,7 @@ import { isValidIdentity } from "@/lib/crypto";
 
 export interface TransferRequest {
   to: string;
-  amount: number;
+  amount: number | string;
   from?: string;
   tick_offset?: number;
   [key: string]: unknown;
@@ -27,8 +27,12 @@ interface TransferPreviewProps {
   onReject: () => void;
 }
 
-function formatAmount(n: number): string {
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+function formatAmount(n: number | string | bigint): string {
+  try {
+    return BigInt(n).toLocaleString();
+  } catch {
+    return String(n);
+  }
 }
 
 function truncate(id: string): string {
@@ -54,19 +58,20 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const identity = wallet?.identity ?? "";
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
-  const insufficientBalance = balance !== null && BigInt(request.amount) > balance;
+  const requestAmount = (() => { try { return BigInt(request.amount); } catch { return null; } })();
+  const insufficientBalance = balance !== null && requestAmount !== null && requestAmount > balance;
   const invalidDestination = !isValidIdentity(request.to);
   const toContact = contacts.find((c) => c.identity === request.to);
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
 
   async function approve() {
-    if (!wallet || !tickInfo) return;
+    if (!wallet || !tickInfo || requestAmount === null) return;
     setProcessing(true);
     setTxError("");
     try {
       const dest = request.to as Parameters<typeof wallet.buildTransfer>[0]["destination"];
-      const amount = BigInt(request.amount);
+      const amount = requestAmount;
       const tick = estimateTargetTick(tickInfo.tick ?? 0, tickOffset);
 
       const { encoded, hash } = await wallet.buildTransfer({
@@ -151,6 +156,11 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         <Row label="Fee" value="None" />
       </div>
 
+      {requestAmount === null && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          [INVALID AMOUNT]
+        </div>
+      )}
       {invalidDestination && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
           [INVALID DESTINATION IDENTITY]
@@ -172,7 +182,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || invalidDestination || insufficientBalance || hasPendingTx}>
+      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx}>
         Sign and send
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>
