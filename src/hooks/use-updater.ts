@@ -7,6 +7,8 @@ export interface UpdaterState {
   appVersion: string;
   update: Update | null;
   checking: boolean;
+  upToDate: boolean;
+  checkError: boolean;
   installing: boolean;
   progress: number;
   install: () => Promise<void>;
@@ -16,6 +18,8 @@ export function useUpdater(): UpdaterState {
   const [appVersion, setAppVersion] = useState("");
   const [update, setUpdate] = useState<Update | null>(null);
   const [checking, setChecking] = useState(true);
+  const [upToDate, setUpToDate] = useState(false);
+  const [checkError, setCheckError] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -25,8 +29,14 @@ export function useUpdater(): UpdaterState {
     // Delay check to avoid slowing down startup
     const timer = setTimeout(() => {
       check()
-        .then((u) => setUpdate(u ?? null))
-        .catch(() => {})
+        .then((u) => {
+          if (u) {
+            setUpdate(u);
+          } else {
+            setUpToDate(true);
+          }
+        })
+        .catch(() => setCheckError(true))
         .finally(() => setChecking(false));
     }, 8_000);
 
@@ -52,5 +62,5 @@ export function useUpdater(): UpdaterState {
     }
   }
 
-  return { appVersion, update, checking, installing, progress, install };
+  return { appVersion, update, checking, upToDate, checkError, installing, progress, install };
 }
