@@ -24,10 +24,16 @@ export function useAutoLock() {
 
   // Core lock listener + activity reset events
   useEffect(() => {
-    const unlistenPromise = listen("sigil:lock", () => {
+    let unlisten: (() => void) | undefined;
+    let active = true;
+
+    listen("sigil:lock", () => {
       invoke("clear_clipboard").catch(() => {});
       lock();
       navigate("/lock", { replace: true });
+    }).then((fn) => {
+      if (!active) fn();
+      else unlisten = fn;
     });
 
     const resetTimer = () => {
@@ -39,7 +45,8 @@ export function useAutoLock() {
     window.addEventListener("click", resetTimer, { passive: true });
 
     return () => {
-      unlistenPromise.then((fn) => fn());
+      active = false;
+      unlisten?.();
       window.removeEventListener("mousemove", resetTimer);
       window.removeEventListener("keydown", resetTimer);
       window.removeEventListener("click", resetTimer);

@@ -50,10 +50,14 @@ export function TitleBar() {
   useEffect(() => {
     win.isMaximized().then(setMaximized);
     let unlisten: (() => void) | undefined;
+    let active = true;
     win.listen("tauri://resize", async () => {
       setMaximized(await win.isMaximized());
-    }).then((u) => { unlisten = u; });
-    return () => { unlisten?.(); };
+    }).then((u) => {
+      if (!active) u();
+      else unlisten = u;
+    });
+    return () => { active = false; unlisten?.(); };
   }, [win]);
 
   return (
