@@ -58,7 +58,7 @@
       }
     },
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFDMkI5NkEyODM2QjA1QTQKUldTa0JXdURvcFlySEh0SHB6d0FEaFI4azBrZTVGMmZhNTBhSzllU250NnZoZ1JRbHZ6bGRwVDMK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhFMUQ5MjkxMEVFRUY1MUQKUldRZDllNE9rWklkamd2UUpHNVZrWEVEQkNOQmtRVmhtclBtR2t2RVk2dWhpWW44OWdtVmZLczQK",
       "endpoints": [
         "https://github.com/sigil-oss/sigil.app/releases/latest/download/latest.json"
       ]
