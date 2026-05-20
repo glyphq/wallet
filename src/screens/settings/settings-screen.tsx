@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { AppShell } from "@/layouts/app-shell";
 import { useAutoLock } from "@/hooks/use-auto-lock";
+import { useUpdater } from "@/hooks/use-updater";
 
 interface SettingsRow {
   label: string;
@@ -22,6 +23,7 @@ const ROWS: SettingsRow[] = [
 export default function SettingsScreen() {
   const navigate = useNavigate();
   useAutoLock();
+  const { appVersion, update, checking, installing, progress, install } = useUpdater();
 
   const statusBar = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -73,6 +75,42 @@ export default function SettingsScreen() {
           )}
         </button>
       ))}
+
+      {/* Version + update footer */}
+      <div style={{ marginTop: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        {update && (
+          <button
+            onClick={install}
+            disabled={installing}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "var(--space-3) var(--space-4)",
+              background: "none",
+              border: "1px solid var(--color-status-success)",
+              borderRadius: "var(--radius-sharp)",
+              cursor: installing ? "default" : "pointer",
+              width: "100%",
+              opacity: installing ? 0.6 : 1,
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
+              {installing
+                ? progress > 0 ? `[DOWNLOADING... ${progress}%]` : "[DOWNLOADING...]"
+                : `[UPDATE AVAILABLE v${update.version}]`}
+            </span>
+            {!installing && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
+                INSTALL →
+              </span>
+            )}
+          </button>
+        )}
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+          {appVersion ? `v${appVersion}` : ""}{checking && !update ? " [CHECKING...]" : ""}
+        </span>
+      </div>
     </AppShell>
   );
 }

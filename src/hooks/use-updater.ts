@@ -1,34 +1,56 @@
-import { useEffect } from "react";
-import { check } from "@tauri-apps/plugin-updater";
+import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { notify } from "@/lib/notifications";
+import { getVersion } from "@tauri-apps/api/app";
+import { useEffect, useState } from "react";
 
-export function useUpdater() {
+export interface UpdaterState {
+  appVersion: string;
+  update: Update | null;
+  checking: boolean;
+  installing: boolean;
+  progress: number;
+  install: () => Promise<void>;
+}
+
+export function useUpdater(): UpdaterState {
+  const [appVersion, setAppVersion] = useState("");
+  const [update, setUpdate] = useState<Update | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [installing, setInstalling] = useState(false);
+  const [progress, setProgress] = useState(0);
+
   useEffect(() => {
-    let cancelled = false;
-
-    async function checkForUpdate() {
-      try {
-        const update = await check();
-        if (cancelled || !update?.available) return;
-
-        await notify(
-          "Update available",
-          `Sigil ${update.version} is ready to install`,
-        );
-
-        await update.downloadAndInstall();
-        await relaunch();
-      } catch {
-        // Silently ignore — update check failing should never surface to user
-      }
-    }
+    getVersion().then(setAppVersion).catch(() => {});
 
     // Delay check to avoid slowing down startup
-    const timer = setTimeout(checkForUpdate, 8_000);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => {
+      check()
+        .then((u) => setUpdate(u ?? null))
+        .catch(() => {})
+        .finally(() => setChecking(false));
+    }, 8_000);
+
+    return () => clearTimeout(timer);
   }, []);
+
+  async function install() {
+    if (!update) return;
+    setInstalling(true);
+    let downloaded = 0;
+    let total = 0;
+    try {
+      await update.downloadAndInstall((event) => {
+        if (event.event === "Started") total = event.data.contentLength ?? 0;
+        if (event.event === "Progress") {
+          downloaded += event.data.chunkLength;
+          setProgress(total > 0 ? Math.round((downloaded / total) * 100) : 0);
+        }
+      });
+      await relaunch();
+    } catch {
+      setInstalling(false);
+    }
+  }
+
+  return { appVersion, update, checking, installing, progress, install };
 }
