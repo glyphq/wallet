@@ -113,9 +113,10 @@ For callback testing, run `nc -l 9999` (or `ncat -l -p 9999`) in a terminal to r
 ### 1b. Import seed
 1. From Welcome screen, click **Import seed**
 2. Paste the 55-char seed from step 1a (or a known seed)
-3. Enter vault name + color → **Next**
-4. Set password → **Import**
-5. Verify the identity on dashboard matches the known seed's identity
+3. **Seed field must be masked** (show ● characters, not plaintext) — verify no shoulder-surfing risk
+4. Enter vault name + color → **Next**
+5. Set password → **Import**
+6. Verify the identity on dashboard matches the known seed's identity
 
 ### 1c. Import vault file
 1. From Welcome screen, click the file import option
@@ -328,15 +329,23 @@ For callback testing, run `nc -l 9999` (or `ncat -l -p 9999`) in a terminal to r
 9. Enable "Transaction resolved" → wait for pending tx to confirm → notification fires
 10. Click **Send test notification** → notification appears immediately
 
+### 10a. No false notifications on account switch
+1. Enable all notification types
+2. Unlock to dashboard — note the active account's identity
+3. Switch to a different account (one that already has transaction history)
+4. **No "Confirmed" notifications should fire** for the new account's existing transactions
+5. Switch back to the first account → still no spurious notifications
+
 ---
 
 ## 11. Settings
 
 ### 11a. Network
 1. Settings → Network
-2. Change RPC endpoint to an invalid URL → error shown
-3. Change to a valid alternate endpoint → tick updates in status bar
-4. Switch to testnet (if applicable) → network label updates
+2. Type a malformed URL (e.g., `not-a-url`) → clicking **Test & save** shows `[UNREACHABLE]` immediately (no network request made)
+3. Change both fields to a valid alternate endpoint → **Test & save** → tick number displayed in green
+4. After a successful save, balance and transaction data should refresh from the new endpoint (stale data is flushed)
+5. Click **RESET** → fields revert to mainnet defaults; balance refreshes
 
 ### 11b. Appearance
 1. Settings → Appearance
