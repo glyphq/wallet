@@ -14,6 +14,7 @@ export function useTxHistory(identity: string | null | undefined) {
       return result.value.transactions;
     },
     enabled: !!identity,
+    staleTime: 5_000,
     refetchInterval: 10_000,
   });
 }

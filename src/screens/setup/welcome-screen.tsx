@@ -38,7 +38,7 @@ export default function WelcomeScreen() {
       try {
         const text = await file.text();
         const parsed = JSON.parse(text);
-        if (parsed.sigil !== 1 || !parsed.vault || !parsed.name) throw new Error("bad format");
+        if (parsed.sigil !== 1 || !parsed.vault || !parsed.name?.trim()) throw new Error("bad format");
         setImportData({
           name: parsed.name,
           color: parsed.color ?? "slate",

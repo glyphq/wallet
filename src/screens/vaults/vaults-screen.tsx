@@ -126,7 +126,7 @@ export default function VaultsScreen() {
       try {
         const text = await file.text();
         const parsed = JSON.parse(text);
-        if (parsed.sigil !== 1 || !parsed.vault || !parsed.name) throw new Error();
+        if (parsed.sigil !== 1 || !parsed.vault || !parsed.name?.trim()) throw new Error();
         setImportData({ name: parsed.name, color: parsed.color ?? "slate", accounts: parsed.accounts ?? [], vault: parsed.vault as VaultData });
         setImportPassword("");
         setImportError("");
