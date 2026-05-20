@@ -176,10 +176,7 @@ export const usePersistedStore = create<PersistedState>()(
       pendingTxs: [],
 
       addVault: (vault) =>
-        set((s) => ({
-          vaults: [...s.vaults, vault],
-          settings: { ...s.settings, activeVaultId: vault.id },
-        })),
+        set((s) => ({ vaults: [...s.vaults, vault] })),
 
       updateVault: (id, updates) =>
         set((s) => ({

@@ -19,6 +19,7 @@ interface ImportFileData {
 export default function WelcomeScreen() {
   const navigate = useNavigate();
   const addVault = usePersistedStore((s) => s.addVault);
+  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
   const unlock = useSessionStore((s) => s.unlock);
   const pendingRequest = useSessionStore((s) => s.pendingRequest);
 
@@ -70,6 +71,7 @@ export default function WelcomeScreen() {
         accounts: importData.accounts,
         encryptedData: importData.vault,
       });
+      setActiveVault(newVaultId);
       unlock(newVaultId, seeds, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
