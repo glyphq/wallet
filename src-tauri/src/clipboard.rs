@@ -37,19 +37,16 @@ impl ClipboardState {
 
 pub fn spawn_clipboard_watcher(app: AppHandle) {
     let state = app.state::<ClipboardState>();
-    let clear_at = Arc::clone(&state.clear_at);
+    let clipboard_state = ClipboardState {
+        clear_at: Arc::clone(&state.clear_at),
+    };
 
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_secs(1));
 
-        let should_clear = {
-            let guard = clear_at.lock().unwrap();
-            guard.map_or(false, |at| Instant::now() >= at)
-        };
-
-        if should_clear {
+        if clipboard_state.should_clear() {
             app.clipboard().write_text("").ok();
-            *clear_at.lock().unwrap() = None;
+            clipboard_state.cancel_clear();
         }
     });
 }
