@@ -7,12 +7,14 @@ on:
       - '**.md'
       - 'sponsors.json'
       - '.changeset/**'
+      - '.github/**'
   pull_request:
     branches: [main]
     paths-ignore:
       - '**.md'
       - 'sponsors.json'
       - '.changeset/**'
+      - '.github/**'
 
 concurrency:
   group: ci-${{ github.ref }}
