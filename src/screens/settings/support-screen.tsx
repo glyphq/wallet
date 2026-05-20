@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { AppShell } from "@/layouts/app-shell";
@@ -22,7 +22,7 @@ function formatQu(n: number): string {
   return n.toLocaleString("en-US");
 }
 
-// ── Sigil generation ────────────────────────────────────────────────────────
+// ── Identicon (GitHub / Raycast style, FNV-1a) ───────────────────────────────
 
 function fnv1a(str: string): number {
   let hash = 0x811c9dc5;
@@ -33,80 +33,135 @@ function fnv1a(str: string): number {
   return hash;
 }
 
-function lcg(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    return s / 0x100000000;
-  };
-}
-
-function buildSigil(name: string): { points: [number, number][]; lines: [number, number, number, number][] } {
+// 5×5 grid, horizontally mirrored — 15 bits from the hash
+function buildIdenticon(name: string): boolean[][] {
   const hash = fnv1a(name);
-  const rand = lcg(hash);
-  const count = 4 + (hash % 3); // 4, 5, or 6 points
-  const cx = 50, cy = 50, r = 33;
-
-  const angles = Array.from({ length: count }, () => rand() * Math.PI * 2);
-  angles.sort((a, b) => a - b);
-  const points: [number, number][] = angles.map((a) => [
-    cx + r * Math.cos(a),
-    cy + r * Math.sin(a),
-  ]);
-
-  const lines: [number, number, number, number][] = [];
-  // Polygon edges
-  for (let i = 0; i < count; i++) {
-    const [x1, y1] = points[i];
-    const [x2, y2] = points[(i + 1) % count];
-    lines.push([x1, y1, x2, y2]);
-  }
-  // Skip-1 diagonals (creates star/pentagram effect)
-  if (count >= 5) {
-    for (let i = 0; i < count; i++) {
-      const [x1, y1] = points[i];
-      const [x2, y2] = points[(i + 2) % count];
-      lines.push([x1, y1, x2, y2]);
-    }
-  }
-
-  return { points, lines };
+  return Array.from({ length: 5 }, (_, row) =>
+    [0, 1, 2, 1, 0].map((col) => ((hash >>> (row * 3 + col)) & 1) === 1)
+  );
 }
 
-function Sigil({ name, size, active }: { name: string; size: number; active: boolean }) {
-  const { points, lines } = buildSigil(name);
-  const color = active ? "var(--color-bg-base)" : "var(--color-text-display)";
+function Identicon({ name, size, invert = false }: { name: string; size: number; invert?: boolean }) {
+  const grid = buildIdenticon(name);
+  const color = invert ? "var(--color-bg-base)" : "var(--color-text-display)";
+  // 10px margin each side → 80px grid → 16px per cell → 13px cell, 3px gap
+  const margin = 10, spacing = 16, cell = 13, radius = 2.5;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }} aria-hidden>
-      {lines.map(([x1, y1, x2, y2], i) => (
-        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="1.5" strokeOpacity="0.7" />
-      ))}
-      {points.map(([cx, cy], i) => (
-        <circle key={i} cx={cx} cy={cy} r="2" fill={color} />
-      ))}
-      <circle cx="50" cy="50" r="2" fill={color} fillOpacity="0.5" />
+      {grid.map((row, ri) =>
+        row.map((filled, ci) =>
+          filled ? (
+            <rect
+              key={`${ri}-${ci}`}
+              x={margin + ci * spacing}
+              y={margin + ri * spacing}
+              width={cell}
+              height={cell}
+              rx={radius}
+              fill={color}
+            />
+          ) : null
+        )
+      )}
     </svg>
   );
 }
 
+// ── Sponsor detail sheet ──────────────────────────────────────────────────────
+
+function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => void }) {
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 50 }}
+      />
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "var(--color-bg-base)",
+          borderRadius: "12px 12px 0 0",
+          borderTop: "1px solid var(--color-border-strong)",
+          zIndex: 51,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "var(--space-4) var(--space-6) var(--space-8)",
+          gap: "var(--space-5)",
+        }}
+      >
+        {/* Handle */}
+        <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
+
+        {/* Identicon */}
+        <div style={{
+          background: "var(--color-bg-elevated)",
+          border: "1px solid var(--color-border-strong)",
+          borderRadius: "var(--radius-sharp)",
+          padding: "var(--space-5)",
+        }}>
+          <Identicon name={sponsor.name} size={120} />
+        </div>
+
+        {/* Info */}
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <span style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--text-headline)",
+            color: "var(--color-text-display)",
+            letterSpacing: "0.1em",
+          }}>
+            {sponsor.name.toUpperCase()}
+          </span>
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-mono-sm)",
+            color: "var(--color-text-secondary)",
+            letterSpacing: "0.05em",
+          }}>
+            {formatQu(sponsor.amount)} QU
+          </span>
+        </div>
+
+        <button
+          onClick={onClose}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: "var(--space-2)" }}
+        >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            [CLOSE]
+          </span>
+        </button>
+      </motion.div>
+    </>
+  );
+}
+
+// ── Sponsor grid ──────────────────────────────────────────────────────────────
+
 function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Sponsor | null>(null);
   const max = Math.max(...sponsors.map((s) => s.amount), 1);
 
   if (sponsors.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-        <div
-          style={{
-            width: MIN_PX,
-            height: MIN_PX,
-            border: "1px dashed var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+        <div style={{
+          width: MIN_PX, height: MIN_PX,
+          border: "1px dashed var(--color-border-strong)",
+          borderRadius: "var(--radius-sharp)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>?</span>
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
@@ -116,79 +171,47 @@ function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
     );
   }
 
-  const active = selected !== null ? sponsors[selected] : null;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-      {/* Selected sponsor label — fixed height so grid doesn't shift */}
-      <div style={{ minHeight: 36, textAlign: "center" }}>
-        {active ? (
-          <motion.div
-            key={selected}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}
-          >
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-              {active.name}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              {formatQu(active.amount)} QU
-            </span>
-          </motion.div>
-        ) : (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            TAP A BLOCK
-          </span>
-        )}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "var(--space-2)",
-          justifyContent: "center",
-          alignItems: "flex-end",
-        }}
-      >
+    <>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", justifyContent: "center", alignItems: "flex-end" }}>
         {sponsors.map((sponsor, i) => {
           const size = blockSize(sponsor.amount, max);
-          const isSelected = selected === i;
           return (
             <motion.button
               key={i}
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: Math.min(i * 0.015, 1.5), duration: 0.2, ease: "easeOut" }}
-              onClick={() => setSelected(isSelected ? null : i)}
+              onClick={() => setSelected(sponsor)}
               aria-label={`Sponsor: ${sponsor.name}`}
               style={{
-                width: size,
-                height: size,
-                background: isSelected ? "var(--color-text-display)" : "var(--color-bg-elevated)",
-                border: `1px solid ${isSelected ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+                width: size, height: size,
+                background: "var(--color-bg-elevated)",
+                border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sharp)",
                 cursor: "pointer",
                 flexShrink: 0,
                 padding: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: "flex", alignItems: "center", justifyContent: "center",
                 overflow: "hidden",
-                transition: "background 0.12s ease, border-color 0.12s ease",
               }}
             >
-              <Sigil name={sponsor.name} size={size} active={isSelected} />
+              <Identicon name={sponsor.name} size={size} />
             </motion.button>
           );
         })}
       </div>
 
-    </div>
+      <AnimatePresence>
+        {selected && (
+          <SponsorSheet sponsor={selected} onClose={() => setSelected(null)} />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function SupportScreen() {
   const navigate = useNavigate();
@@ -223,14 +246,7 @@ export default function SupportScreen() {
           </div>
         </div>
 
-        <div
-          style={{
-            background: "var(--color-bg-elevated)",
-            border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
-            padding: "var(--space-4)",
-          }}
-        >
+        <div style={{ background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", padding: "var(--space-4)" }}>
           <QRCodeSVG
             value={DONATION_IDENTITY}
             size={160}
@@ -248,7 +264,7 @@ export default function SupportScreen() {
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
           aria-label="Copy donation identity"
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", wordBreak: "break-all", textAlign: "center", display: "block" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
             {DONATION_IDENTITY.slice(0, 10)}...{DONATION_IDENTITY.slice(-10)}
           </span>
         </button>
