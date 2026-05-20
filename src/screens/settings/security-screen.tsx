@@ -329,6 +329,7 @@ export default function SecurityScreen() {
             <input
               ref={pwRef}
               type="password"
+              autoComplete="new-password"
               value={enablePw}
               onChange={(e) => setEnablePw(e.target.value)}
               placeholder="••••••••••"
