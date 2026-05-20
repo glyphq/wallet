@@ -218,14 +218,14 @@ export default function CreateVaultScreen() {
                 wordBreak: "break-all",
               }}
             >
-              {(seed.match(/.{1,5}/g) ?? []).map((group, i) => (
+              {seed.split("").map((char, i) => (
                 <motion.span
                   key={i}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03, duration: 0.08, ease: "easeOut" }}
+                  transition={{ delay: i * 0.03, duration: 0.06, ease: "easeOut" }}
                 >
-                  {group}{" "}
+                  {char}{(i + 1) % 5 === 0 && i < seed.length - 1 ? " " : ""}
                 </motion.span>
               ))}
             </div>
