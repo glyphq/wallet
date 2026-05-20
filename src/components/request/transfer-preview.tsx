@@ -5,6 +5,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getRpcClient } from "@/lib/rpc";
 import { useSigningAccount } from "@/hooks/use-signing-account";
+import { isValidIdentity } from "@/lib/crypto";
 
 export interface TransferRequest {
   to: string;
@@ -54,6 +55,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const insufficientBalance = balance !== null && BigInt(request.amount) > balance;
+  const invalidDestination = !isValidIdentity(request.to);
   const toContact = contacts.find((c) => c.identity === request.to);
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
@@ -149,6 +151,11 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         <Row label="Fee" value="None" />
       </div>
 
+      {invalidDestination && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          [INVALID DESTINATION IDENTITY]
+        </div>
+      )}
       {insufficientBalance && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
           [INSUFFICIENT BALANCE]
@@ -165,7 +172,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx}>
+      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || invalidDestination || insufficientBalance || hasPendingTx}>
         Sign and send
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>
