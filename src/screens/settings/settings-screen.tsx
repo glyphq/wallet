@@ -24,7 +24,7 @@ const ROWS: SettingsRow[] = [
 export default function SettingsScreen() {
   const navigate = useNavigate();
   useAutoLock();
-  const { appVersion, update, checking, installing, progress, install } = useUpdater();
+  const { appVersion, update, checking, upToDate, checkError, installing, progress, install } = useUpdater();
 
   const statusBar = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -108,8 +108,11 @@ export default function SettingsScreen() {
             )}
           </button>
         )}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          {appVersion ? `v${appVersion}` : ""}{checking && !update ? " [CHECKING...]" : ""}
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: checkError ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+          {appVersion ? `v${appVersion}` : ""}
+          {checking ? " [CHECKING...]" : ""}
+          {upToDate ? " [UP TO DATE]" : ""}
+          {checkError ? " [UPDATE CHECK FAILED]" : ""}
         </span>
       </div>
     </AppShell>
