@@ -25,7 +25,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
     set({ unlockedVaultId: vaultId, seeds, wallets, isLocked: false }),
 
   lock: () =>
-    set({ unlockedVaultId: null, seeds: [], wallets: [], isLocked: true }),
+    set({ unlockedVaultId: null, seeds: [], wallets: [], isLocked: true, pendingRequest: null }),
 
   setPendingRequest: (raw) => set({ pendingRequest: raw }),
 }));
