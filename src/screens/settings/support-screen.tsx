@@ -19,7 +19,7 @@ function blockSize(amount: number, max: number): number {
 }
 
 function formatQu(n: number): string {
-  return n.toLocaleString();
+  return n.toLocaleString("en-US");
 }
 
 // ── Sigil generation ────────────────────────────────────────────────────────
