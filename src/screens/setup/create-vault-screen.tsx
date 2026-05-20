@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
@@ -66,6 +66,14 @@ export default function CreateVaultScreen() {
 
   const checkComplete = checkPositions.every((pos, i) => checkInputs[i] === seed[pos]);
 
+  const [seedRevealed, setSeedRevealed] = useState(true);
+  useEffect(() => {
+    if (step !== 2) return;
+    setSeedRevealed(true);
+    const t = setTimeout(() => setSeedRevealed(false), 30_000);
+    return () => clearTimeout(t);
+  }, [step]);
+
   const strength = strengthOf(password);
 
   function goStep2() {
@@ -76,7 +84,7 @@ export default function CreateVaultScreen() {
 
   async function copySeed() {
     try {
-      await invoke("copy_to_clipboard", { text: seed, clearAfterSecs: 0 });
+      await invoke("copy_to_clipboard", { text: seed, clearAfterSecs: 60 });
     } catch {
       await navigator.clipboard.writeText(seed).catch(() => {});
     }
@@ -206,35 +214,64 @@ export default function CreateVaultScreen() {
             </div>
 
             <div
+              role="region"
               aria-label="Your seed phrase"
-              style={{
-                background: "var(--color-bg-surface)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
-                padding: "var(--space-4)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-lg)",
-                color: "var(--color-text-display)",
-                letterSpacing: "0.08em",
-                lineHeight: 1.8,
-                wordBreak: "break-all",
-              }}
+              style={{ position: "relative" }}
             >
-              {seed.split("").map((char, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03, duration: 0.06, ease: "easeOut" }}
+              <div
+                style={{
+                  background: "var(--color-bg-surface)",
+                  border: "1px solid var(--color-border-strong)",
+                  borderRadius: "var(--radius-sharp)",
+                  padding: "var(--space-4)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-lg)",
+                  color: "var(--color-text-display)",
+                  letterSpacing: "0.08em",
+                  lineHeight: 1.8,
+                  wordBreak: "break-all",
+                  filter: seedRevealed ? "none" : "blur(6px)",
+                  userSelect: seedRevealed ? "text" : "none",
+                  transition: "filter 0.2s ease-out",
+                }}
+                aria-hidden={!seedRevealed}
+              >
+                {seed.split("").map((char, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.03, duration: 0.06, ease: "easeOut" }}
+                  >
+                    {char}{(i + 1) % 5 === 0 && i < seed.length - 1 ? " " : ""}
+                  </motion.span>
+                ))}
+              </div>
+              {!seedRevealed && (
+                <button
+                  onClick={() => setSeedRevealed(true)}
+                  style={{
+                    position: "absolute", inset: 0, width: "100%", background: "none",
+                    border: "none", cursor: "pointer", display: "flex", alignItems: "center",
+                    justifyContent: "center", borderRadius: "var(--radius-sharp)",
+                  }}
+                  aria-label="Reveal seed phrase"
                 >
-                  {char}{(i + 1) % 5 === 0 && i < seed.length - 1 ? " " : ""}
-                </motion.span>
-              ))}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                    [TAP TO REVEAL]
+                  </span>
+                </button>
+              )}
             </div>
 
-            <Button variant="secondary" shape="sharp" size="md" style={{ width: "auto" }} onClick={copySeed}>
-              {copied ? "[COPIED]" : "Copy to clipboard"}
-            </Button>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <Button variant="secondary" shape="sharp" size="md" style={{ flex: 1 }} onClick={copySeed}>
+                {copied ? "[COPIED]" : "Copy"}
+              </Button>
+              <Button variant="secondary" shape="sharp" size="md" style={{ flex: 1 }} onClick={() => setSeedRevealed((v) => !v)}>
+                {seedRevealed ? "Hide" : "Reveal"}
+              </Button>
+            </div>
             <Button onClick={() => setStep(3)}>I've written it down</Button>
           </div>
         )}
