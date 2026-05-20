@@ -37,7 +37,7 @@ export function useNotificationTriggers() {
     const current = balanceData?.balance ?? null;
     if (current !== null && prevBalanceRef.current !== null && current > prevBalanceRef.current) {
       const diff = current - prevBalanceRef.current;
-      notify("QU Received", `+${Number(diff).toLocaleString()} QU${identity ? ` → ${truncateId(identity)}` : ""}`);
+      notify("QU Received", `+${diff.toLocaleString()} QU${identity ? ` → ${truncateId(identity)}` : ""}`);
     }
     if (current !== null) prevBalanceRef.current = current;
   }, [balanceData?.balance]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -55,7 +55,7 @@ export function useNotificationTriggers() {
           if (tx.contractName) {
             notify(tx.contractName, "Transaction broadcast");
           } else {
-            notify("QU Sent", `${Number(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination)}`);
+            notify("QU Sent", `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination)}`);
           }
         }
       }
@@ -72,6 +72,13 @@ export function useNotificationTriggers() {
   const { data: txHistory } = useTxHistory(pendingTxs.length > 0 ? identity : null);
   const confirmedHashesRef = useRef<Set<string>>(new Set());
   const historyInitializedRef = useRef(false);
+
+  // Reset history tracking when the active account changes so we don't fire
+  // false "Confirmed" notifications for the new account's existing history.
+  useEffect(() => {
+    historyInitializedRef.current = false;
+    confirmedHashesRef.current = new Set();
+  }, [identity]);
 
   // Immediately refresh history when a pending tx's target tick is processed
   useEffect(() => {
@@ -110,7 +117,7 @@ export function useNotificationTriggers() {
       confirmedHashesRef.current.add(pending.hash);
       removePendingTx(pending.hash);
       if (enabled && onConfirmed) {
-        const label = pending.contractName ?? `${Number(pending.amount).toLocaleString()} QU`;
+        const label = pending.contractName ?? `${BigInt(pending.amount).toLocaleString()} QU`;
         if (histTx.moneyFlew) {
           notify("Confirmed", `${label} — confirmed on chain`);
         } else {
@@ -130,7 +137,7 @@ export function useNotificationTriggers() {
         confirmedHashesRef.current.add(pending.hash);
         removePendingTx(pending.hash);
         if (enabled && onConfirmed) {
-          const label = pending.contractName ?? `${Number(pending.amount).toLocaleString()} QU`;
+          const label = pending.contractName ?? `${BigInt(pending.amount).toLocaleString()} QU`;
           notify("Tick Missed", `${label} — target tick expired`);
         }
       }
