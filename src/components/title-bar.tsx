@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-
-const win = getCurrentWindow();
 
 function WinBtn({
   onClick,
@@ -46,16 +44,17 @@ function WinBtn({
 }
 
 export function TitleBar() {
+  const win = useMemo(() => getCurrentWindow(), []);
   const [maximized, setMaximized] = useState(false);
 
   useEffect(() => {
     win.isMaximized().then(setMaximized);
-    const unlisten = win.listen("tauri://resize", async () => {
-      if (await win.isFullscreen()) await win.setFullscreen(false);
+    let unlisten: (() => void) | undefined;
+    win.listen("tauri://resize", async () => {
       setMaximized(await win.isMaximized());
-    });
-    return () => { unlisten.then((f) => f()); };
-  }, []);
+    }).then((u) => { unlisten = u; });
+    return () => { unlisten?.(); };
+  }, [win]);
 
   return (
     <div
