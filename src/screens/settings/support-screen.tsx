@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { useAutoLock } from "@/hooks/use-auto-lock";
-import { DONATION_IDENTITY, SPONSORS, type Sponsor } from "@/data/sponsors";
+import { DONATION_IDENTITY, SPONSORS_URL, type Sponsor } from "@/data/sponsors";
 
 const GITHUB_URL = "https://github.com/sigil-oss/sigil.app";
 
@@ -217,6 +218,13 @@ export default function SupportScreen() {
   const navigate = useNavigate();
   useAutoLock();
 
+  const { data: sponsors = [] } = useQuery<Sponsor[]>({
+    queryKey: ["sponsors"],
+    queryFn: () => fetch(SPONSORS_URL).then((r) => r.json()),
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
+  });
+
   const statusBar = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
       <button
@@ -285,7 +293,7 @@ export default function SupportScreen() {
         </div>
 
         <div style={{ maxHeight: 220, overflowY: "auto" }}>
-          <SponsorGrid sponsors={SPONSORS} />
+          <SponsorGrid sponsors={sponsors} />
         </div>
 
         <button

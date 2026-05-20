@@ -3,8 +3,16 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'sponsors.json'
+      - '.changeset/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'sponsors.json'
+      - '.changeset/**'
 
 concurrency:
   group: ci-${{ github.ref }}
