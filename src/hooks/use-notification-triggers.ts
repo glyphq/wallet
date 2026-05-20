@@ -15,6 +15,7 @@ export function useNotificationTriggers() {
   const wallets = useSessionStore((s) => s.wallets);
   const activeIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
+  const removePendingTx = usePersistedStore((s) => s.removePendingTx);
   const enabled = usePersistedStore((s) => s.settings.notificationsEnabled);
   const onReceived = usePersistedStore((s) => s.settings.notifyOnReceived);
   const onSent = usePersistedStore((s) => s.settings.notifyOnSent);
@@ -64,7 +65,8 @@ export function useNotificationTriggers() {
   // ── Confirmed / expired: driven by lastProcessedTick + tx history ─────
   const { data: lastProcessedTickData } = useLastProcessedTick();
   const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
-  const { data: txHistory } = useTxHistory(enabled && onConfirmed ? identity : null);
+  // Always fetch history when there are pending txs — cleanup must run regardless of notification prefs.
+  const { data: txHistory } = useTxHistory(pendingTxs.length > 0 ? identity : null);
   const confirmedHashesRef = useRef<Set<string>>(new Set());
   const historyInitializedRef = useRef(false);
 
@@ -75,20 +77,23 @@ export function useNotificationTriggers() {
     if (hasReady) queryClient.invalidateQueries({ queryKey: ["tx-history", identity] });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
 
-  // Confirmed: tx appeared in history
+  // Confirmed: tx appeared in history — always remove; notify if enabled.
   useEffect(() => {
     if (!txHistory) return;
 
+    const historyHashSet = new Set(txHistory.map((t) => t.hash).filter(Boolean) as string[]);
+
     if (!historyInitializedRef.current) {
       historyInitializedRef.current = true;
-      const historyHashSet = new Set(txHistory.map((t) => t.hash).filter(Boolean) as string[]);
+      // On first load, silently remove pending txs already in history (no notification).
       for (const p of pendingTxs) {
-        if (historyHashSet.has(p.hash)) confirmedHashesRef.current.add(p.hash);
+        if (historyHashSet.has(p.hash)) {
+          confirmedHashesRef.current.add(p.hash);
+          removePendingTx(p.hash);
+        }
       }
       return;
     }
-
-    if (!enabled || !onConfirmed) return;
 
     const historyMap = new Map<string, (typeof txHistory)[number]>();
     for (const t of txHistory) {
@@ -100,25 +105,30 @@ export function useNotificationTriggers() {
       const histTx = historyMap.get(pending.hash);
       if (!histTx) continue;
       confirmedHashesRef.current.add(pending.hash);
-      const label = pending.contractName ?? `${Number(pending.amount).toLocaleString()} QU`;
-      if (histTx.moneyFlew) {
-        notify("Confirmed", `${label} — confirmed on chain`);
-      } else {
-        notify("Transaction Failed", `${label} — money did not fly`);
+      removePendingTx(pending.hash);
+      if (enabled && onConfirmed) {
+        const label = pending.contractName ?? `${Number(pending.amount).toLocaleString()} QU`;
+        if (histTx.moneyFlew) {
+          notify("Confirmed", `${label} — confirmed on chain`);
+        } else {
+          notify("Transaction Failed", `${label} — money did not fly`);
+        }
       }
     }
   }, [txHistory]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Expired: tx never appeared in history after target tick + 2 processed ticks
-  // (+2 buffer so history has time to arrive before we declare failure)
+  // Expired: tx never appeared in history after target tick + 2 processed ticks — always remove; notify if enabled.
   useEffect(() => {
-    if (!enabled || !onConfirmed || !lastProcessedTick) return;
+    if (!lastProcessedTick) return;
     for (const pending of pendingTxs) {
       if (confirmedHashesRef.current.has(pending.hash)) continue;
       if (lastProcessedTick >= pending.targetTick + 2) {
         confirmedHashesRef.current.add(pending.hash);
-        const label = pending.contractName ?? `${Number(pending.amount).toLocaleString()} QU`;
-        notify("Tick Missed", `${label} — target tick expired`);
+        removePendingTx(pending.hash);
+        if (enabled && onConfirmed) {
+          const label = pending.contractName ?? `${Number(pending.amount).toLocaleString()} QU`;
+          notify("Tick Missed", `${label} — target tick expired`);
+        }
       }
     }
   }, [lastProcessedTick, pendingTxs]); // eslint-disable-line react-hooks/exhaustive-deps
