@@ -51,13 +51,16 @@ function AnimatedBalance({ value }: { value: bigint }) {
       onUpdate: (v) => {
         if (spanRef.current) spanRef.current.textContent = formatQu(v);
       },
+      onComplete: () => {
+        if (spanRef.current) spanRef.current.textContent = formatQu(value);
+      },
     });
     return () => controls.stop();
-  }, [num]);
+  }, [num]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <span ref={spanRef} aria-live="polite" aria-atomic="true">
-      {formatQu(num)}
+      {formatQu(value)}
     </span>
   );
 }

@@ -22,6 +22,7 @@ import {
   qearnGetLockInfoPerEpoch,
 } from "@/lib/contracts";
 import { qk } from "@/lib/query-keys";
+import { formatQu } from "@/lib/format";
 
 type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
@@ -356,7 +357,7 @@ export default function StakeScreen() {
         <>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-              {Number(amountStr).toLocaleString()}
+              {formatQu(amountStr)}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>QU</div>
           </div>
