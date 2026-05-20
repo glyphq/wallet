@@ -14,12 +14,12 @@ Use any valid 55-char Qubic seed. Generate one with: bun run dev → "Create wal
 **Requirements for deep link testing:**
 - Sigil must be **installed** (not just running via `bun run dev`) — the `sigil://` scheme is only registered in the OS by the installer
 - On Windows: verify the scheme is registered at `HKCU\Software\Classes\sigil`
-- On macOS/Linux: same applies — use a release build
+- On macOS: test with `open "sigil://v1/request?..."` in Terminal
+- On Linux: test with `xdg-open "sigil://v1/request?..."` in Terminal
 
-**Test dApp page** — create `test.html` locally and open it via a local server (not `file://` — browsers block custom-scheme navigation from file origins):
+**Test dApp page** — save as `test.html` and serve locally (browsers block custom-scheme navigation from `file://` origins):
 
 ```bash
-# Serve test.html on localhost:8080
 npx serve . -p 8080
 # or: python3 -m http.server 8080
 ```
@@ -30,7 +30,8 @@ npx serve . -p 8080
 <body>
 <script>
 function toBase64Url(str) {
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 function request(type, params) {
   const payload = toBase64Url(JSON.stringify({
@@ -40,21 +41,51 @@ function request(type, params) {
     exp: Math.floor(Date.now() / 1000) + 300,
     ...params
   }));
-  const url = `sigil://v1/request?d=${payload}&cb=http://localhost:9999/cb`;
   const a = document.createElement('a');
-  a.href = url;
+  a.href = `sigil://v1/request?d=${payload}&cb=http://localhost:9999/cb`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
+
+// Test identities
+const ALICE = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+// Replace these with real values from a sign_message response to test verify_message
+const TEST_SIG    = '<base64-signature-from-sign-response>';
+const TEST_PUBKEY = '<base64-public-key-from-sign-response>';
+const TEST_MSG    = 'Hello Sigil';
 </script>
-<button onclick="request('transfer', { to: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', amount: 1 })">Transfer</button>
-<button onclick="request('connect', {})">Connect</button>
+
+<h3>Transfers</h3>
+<button onclick="request('transfer', { to: ALICE, amount: 1 })">Transfer 1 QU</button>
+<button onclick="request('transfer', { to: ALICE, amount: 999999999 })">Transfer (insufficient)</button>
+
+<h3>Connect</h3>
+<button onclick="request('connect', {})">Connect (no permissions)</button>
+<button onclick="request('connect', { permissions: ['transfer','sign_message'] })">Connect (with permissions)</button>
+
+<h3>Sign message</h3>
+<button onclick="request('sign_message', { message: 'Hello Sigil' })">Sign message</button>
+<button onclick="request('sign_message', { message: 'Hello Sigil', from: ALICE })">Sign (specific identity — expect error)</button>
+
+<h3>Verify message</h3>
+<button onclick="request('verify_message', { message: TEST_MSG, signature: TEST_SIG, public_key: TEST_PUBKEY })">Verify (should be VALID)</button>
+<button onclick="request('verify_message', { message: 'tampered', signature: TEST_SIG, public_key: TEST_PUBKEY })">Verify (should be INVALID)</button>
+<button onclick="request('verify_message', { message: TEST_MSG, signature: 'AAAA', public_key: TEST_PUBKEY })">Verify (bad signature)</button>
+
+<h3>SC calls</h3>
+<button onclick="request('sc_call', { contract_index: 6, input_type: 1, amount: 10000000 })">Qearn lock</button>
+<button onclick="request('sc_call', { contract_index: 99, input_type: 5 })">Unknown contract</button>
+
+<h3>Edge cases</h3>
+<button onclick="request('transfer', { to: ALICE, amount: 1, exp: Math.floor(Date.now()/1000) - 1 })">Expired request</button>
+<button onclick="(() => { const a = document.createElement('a'); a.href='sigil://v1/request?d=notbase64'; document.body.appendChild(a); a.click(); document.body.removeChild(a); })()">Malformed request</button>
 </body>
 </html>
 ```
 
-For callback testing, run `nc -l 9999` (or similar) to receive the POST.
+For callback testing, run `nc -l 9999` (or `ncat -l -p 9999`) in a terminal to receive the POST body.
 
 ---
 
@@ -332,72 +363,129 @@ For callback testing, run `nc -l 9999` (or similar) to receive the POST.
 
 ## 12. Deep Link / dApp Requests
 
-Open `test.html` in a browser. Sigil must be running (or installed).
+Open `test.html` in a browser (served via localhost). Sigil must be installed (not just `bun run dev`).
 
 ### 12a. Transfer request
-1. Click **Transfer** button in test page
-2. Sigil focuses and bottom sheet slides up
-3. Sheet shows: amount (1 QU), destination identity, target tick, fee (None)
-4. Destination not in contacts → raw identity shown
-5. Click **Sign and send** → sheet closes, success screen
-6. Callback URL receives POST with `{status: "ok", tx_hash, target_tick, identity}`
-7. Click **Reject** instead → callback receives `{status: "rejected"}`
+1. Click **Transfer 1 QU** in test page — Sigil focuses, bottom sheet slides up
+2. Sheet shows: amount (1 QU), destination identity, target tick, fee (None)
+3. Click **Sign and send** → success screen shows tx hash and `[CALLBACK DELIVERED]`
+4. `nc` terminal receives: `{"status":"signed","nonce":"...","type":"transfer","identity":"...","tx_hash":"...","target_tick":...}`
+5. Click **← BACK** (reject) instead → callback receives `{"status":"rejected",...,"reason":"user_rejected"}`
 
 ### 12b. Transfer — balance guard
-1. Modify test page `amount` to exceed current balance
+1. Click **Transfer (insufficient)** button (amount = 999,999,999)
 2. Sheet shows `[INSUFFICIENT BALANCE]`, approve button disabled
 
 ### 12c. Transfer — account picker
-1. Remove `from` field from test payload
-2. Sheet shows "Sign as" pill buttons for each account
-3. Select different account → identity in detail row updates
+1. Add a second account to the vault, then trigger **Transfer 1 QU**
+2. Sheet shows "Sign as" pill buttons — one per account
+3. Select a different account → "From" row updates to the new identity
+4. Approve → tx signed with the selected account
 
-### 12d. Connect request
-1. Click **Connect** in test page
-2. Sheet shows: dApp name, origin, permission checkboxes
-3. Select permissions → **Approve**
-4. Callback receives `{status: "ok", identity, permissions: [...]}`
-5. Approved dApp appears in Settings → Approved dApps
+### 12d. Connect — no permissions
+1. Click **Connect (no permissions)**
+2. Sheet shows dApp name, origin, account selector
+3. Approve → callback receives `{"status":"connected","identity":"...","permissions":[]}`
+4. Settings → Approved dApps → entry appears
 
-### 12e. SC call request (Qearn lock example)
+### 12e. Connect — with permissions
+1. Click **Connect (with permissions)**
+2. Sheet lists "Transfer QU" and "Sign messages" in the permissions section
+3. Approve → callback includes `"permissions":["transfer","sign_message"]`
+4. Settings → Approved dApps → entry shows both permissions
+
+### 12f. Sign message — active account
+1. Click **Sign message**
+2. Sheet shows: `[OFF-CHAIN — NO TRANSACTION WILL BE BROADCAST]`, the message text, "From" row with account name + truncated identity
+3. Single vault account: no "Sign as" picker shown
+4. Click **Sign message** → success screen shows `[SIGNED]` tag and base64 signature
+5. Callback receives: `{"status":"signed","signature":"<base64>","public_key":"<base64>","identity":"..."}`
+6. **Save the `signature`, `public_key`, and `message` values** — needed for verify tests below
+
+### 12g. Sign message — account picker
+1. Add a second account to the vault, then trigger **Sign message**
+2. "Sign as" pill buttons appear — one per account
+3. Select the non-active account → "From" row updates
+4. Approve → signature is from the selected account's identity
+
+### 12h. Sign message — specific identity (error)
+1. Click **Sign (specific identity — expect error)**
+2. Sheet shows `[IDENTITY NOT IN THIS VAULT]` in red; **Sign message** button disabled
+
+### 12i. Sign message — no callback
+1. Modify the test page to remove `&cb=http://localhost:9999/cb` from the URL
+2. Trigger **Sign message** and approve
+3. Success screen shows `[SIGNED]` and a **Copy result** button (not `[CALLBACK DELIVERED]`)
+4. Click Copy result → paste elsewhere → JSON with signature fields
+
+### 12j. Verify message — valid signature
+1. Fill `TEST_SIG`, `TEST_PUBKEY`, `TEST_MSG` in test.html with values from step 12f
+2. Click **Verify (should be VALID)**
+3. Sheet shows: `[OFF-CHAIN — SIGNATURE VERIFICATION ONLY]`, the message text, "Claimed signer" identity, truncated signature
+4. Click **Verify & respond** → success screen shows green `[VALID]` tag and "Result: VALID"
+5. Callback receives: `{"status":"verified","valid":true,"identity":"..."}`
+
+### 12k. Verify message — invalid signature
+1. Click **Verify (should be INVALID)** (same key, different message — "tampered")
+2. Sheet shows the tampered message and the same claimed signer
+3. Click **Verify & respond** → success screen shows red `[INVALID]` tag and "Result: INVALID"
+4. Callback receives: `{"status":"verified","valid":false,"identity":"..."}`
+
+### 12l. Verify message — bad signature bytes
+1. Click **Verify (bad signature)** (signature is `"AAAA"` — too short)
+2. Sheet may show the form; clicking **Verify & respond** should show an error or return `valid: false`
+
+### 12m. Verify message — no callback
+1. Remove the callback from the URL and trigger **Verify (should be VALID)**
+2. Approve → success screen shows `[VALID]` and a **Copy result** button
+3. Copy result → JSON includes `"valid": true`
+
+### 12n. SC call — Qearn lock
 ```js
-request('sc_call', {
-  contract_index: 6,  // Qearn
-  input_type: 1,      // LockInQearn
-  amount: 10000000
-})
+request('sc_call', { contract_index: 6, input_type: 1, amount: 10000000 })
 ```
 1. Sheet shows "Qearn · Lock in Qearn", amount "10,000,000 QU"
 2. Detail row: "LOCK 10,000,000 QU FOR STAKING"
-3. Approve → tx broadcast, callback receives result
+3. Approve → tx broadcast; callback receives result
 
-### 12f. SC call — unknown contract
-```js
-request('sc_call', { contract_index: 99, input_type: 5, payload: toBase64Url('hello') })
-```
-1. Sheet shows "CONTRACT #99 · Input 5"
-2. `[SHOW PAYLOAD · 5B]` toggle → raw hex visible
+### 12o. SC call — unknown contract
+1. Click **Unknown contract**
+2. Sheet shows "CONTRACT #99 · Input 5" with no payload
+3. Approve disabled if no payload / balance issue — or proceeds and broadcasts
 
-### 12g. Sign message request
-```js
-request('sign_message', { message: 'Hello Sigil' })
-```
-1. Sheet shows message text + "off-chain — no transaction will be broadcast"
-2. Approve → callback receives `{status: "ok", signature, public_key}`
+### 12p. Expired request
+1. Click **Expired request** — `exp` is set one second in the past
+2. Sigil should silently ignore the request — no sheet appears, no crash
 
-### 12h. Expired request
-1. Set `exp` to a past timestamp (e.g., `Math.floor(Date.now()/1000) - 1`)
-2. Sigil should silently ignore the request (no sheet appears)
+### 12q. Malformed request
+1. Click **Malformed request** — `d` parameter is not valid base64
+2. Sigil should silently ignore it — no crash, no sheet
 
-### 12i. Malformed request
-1. Use `sigil://v1/request?d=notbase64&cb=https://example.com`
-2. Sigil should ignore it silently (no crash, no sheet)
+### 12r. Cold-start deep link (app closed)
+1. **Quit Sigil completely**
+2. Click any request button in the test page (e.g., **Sign message**)
+3. Sigil launches and shows the lock screen
+4. Unlock with password (or biometric)
+5. After unlock, the request sheet should appear automatically
+6. Approve or reject — callback is delivered normally
 
-### 12j. No-vault state
-1. Delete all vaults (or fresh install before onboarding)
+### 12s. Locked-while-open deep link
+1. Sigil running and **locked**
+2. Click a request button in the test page
+3. Sigil focuses on the lock screen — no sheet visible yet
+4. Unlock → request sheet appears immediately
+
+### 12t. Permission gate — auto-reject
+1. Complete **Connect (with permissions)** for a dApp, granting only `transfer`
+2. Trigger **Sign message** from that same origin (without the `cb` to make it easy to observe)
+3. Sigil should auto-reject and navigate to dashboard — no sheet shown
+4. Callback (if present) receives `{"status":"rejected","reason":"permission_denied"}`
+
+### 12u. No-vault deep link
+1. Delete all vaults (or use a fresh install before onboarding)
 2. Trigger a deep link request
-3. Welcome screen should show a message that a dApp request is waiting
-4. After creating a vault, the request should be processed
+3. Welcome screen should indicate a dApp request is waiting
+4. After creating a vault and unlocking, the request should be processed
 
 ---
 
@@ -423,7 +511,7 @@ request('sign_message', { message: 'Hello Sigil' })
 
 ## 15. Animations & Transitions
 
-These are visual checks — no pass/fail criteria, just ensure nothing looks broken.
+Visual checks — no pass/fail criteria, just ensure nothing looks broken.
 
 | Transition | Expected |
 |---|---|
@@ -449,6 +537,11 @@ Run after any significant code change:
 - [ ] Receive screen QR matches sending identity
 - [ ] Deep link transfer → approve → callback received
 - [ ] Deep link transfer → reject → callback received
+- [ ] Deep link sign message → approve → `[SIGNED]` + callback with signature
+- [ ] Deep link sign message → no callback → `[SIGNED]` + Copy result button
+- [ ] Deep link verify message (valid) → `[VALID]` green tag
+- [ ] Deep link verify message (invalid) → `[INVALID]` red tag
+- [ ] Deep link cold-start: quit app, trigger link, unlock, request appears
 - [ ] Contacts: add, send to, verify last-used updates
 - [ ] Privacy mode: toggle on, verify all amounts hidden; toggle off
 - [ ] Settings: change auto-lock to 1m, wait, verify locks
@@ -466,7 +559,7 @@ Run after any significant code change:
 - Credential storage: `Control Panel → Credential Manager → Windows Credentials` → look for `sigil-vault/{uuid}` entries
 
 ### macOS
-- Deep link: `sigil://` handled via Info.plist `CFBundleURLTypes`; test with `open sigil://v1/request?...` in Terminal
+- Deep link: `sigil://` handled via Info.plist `CFBundleURLTypes`; test with `open "sigil://v1/request?..."` in Terminal
 - Touch ID: must be enrolled in System Settings → Touch ID & Password
 - Keychain: entries visible in Keychain Access under "sigil-bio"
 - Universal build: same binary runs on Intel and Apple Silicon
