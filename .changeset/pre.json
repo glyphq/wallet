@@ -8,6 +8,7 @@
     "feat-custom-titlebar",
     "feat-phase6-polish",
     "feat-updater-biometric-ux",
+    "fix-biometric-a11y-autocomplete",
     "fix-ipc-hydration-notifications-skeleton",
     "fix-loading-binary-conflict"
   ]
