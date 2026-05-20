@@ -6,5 +6,7 @@ export interface Sponsor {
 export const DONATION_IDENTITY =
   "UVYAOYTNYCRBVFBHNFIJUEOUEPEDIDUWWEAXKFSJEBJVASCQEROJOVOEEATL";
 
-export const SPONSORS_URL =
-  "https://raw.githubusercontent.com/sigil-oss/sigil.app/main/sponsors.json";
+// Identity → display name overrides, committed to the repo.
+// Fetched at runtime so a merged PR reflects immediately without a rebuild.
+export const SPONSOR_NAMES_URL =
+  "https://raw.githubusercontent.com/sigil-oss/sigil.app/main/sponsor-names.json";
