@@ -1,3 +1,6 @@
+[demo.webm](https://github.com/user-attachments/assets/cc8601bc-fa6a-47dc-83c4-4ff5ec957e3b)
+
+
 # Sigil
 
 Self-custodial Qubic wallet with native dApp deep linking. Desktop-first — Windows, macOS, Linux.
