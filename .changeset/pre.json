@@ -7,6 +7,7 @@
   "changesets": [
     "feat-custom-titlebar",
     "feat-phase6-polish",
+    "feat-updater-biometric-ux",
     "fix-ipc-hydration-notifications-skeleton",
     "fix-loading-binary-conflict"
   ]
