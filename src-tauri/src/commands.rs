@@ -60,29 +60,36 @@ pub fn clear_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
 }
 
 fn is_private_host(host: &str) -> bool {
-    matches!(host, "localhost" | "::1")
-        || host.starts_with("127.")
-        || host.starts_with("10.")
-        || host.starts_with("169.254.")
-        || host.starts_with("192.168.")
-        || host.starts_with("172.")
-            && host
-                .split('.')
-                .nth(1)
-                .and_then(|s| s.parse::<u8>().ok())
-                .map(|n| (16..=31).contains(&n))
-                .unwrap_or(false)
+    // Strip IPv6 brackets so [fd00::1] → fd00::1
+    let h = host.trim_matches(|c| c == '[' || c == ']').to_ascii_lowercase();
+    if matches!(h.as_str(), "localhost" | "::1") { return true; }
+    if h.starts_with("127.") || h.starts_with("10.") || h.starts_with("169.254.") || h.starts_with("192.168.") { return true; }
+    if let Some(rest) = h.strip_prefix("172.") {
+        // unwrap_or(0) is safe: a non-numeric second octet is not a valid 172.16-31 address
+        let octet: u8 = rest.split('.').next().and_then(|s| s.parse().ok()).unwrap_or(0);
+        if (16..=31).contains(&octet) { return true; }
+    }
+    // IPv6 unique-local (fc00::/7) and link-local (fe80::/10)
+    if h.starts_with("fc") || h.starts_with("fd") || h.starts_with("fe80") { return true; }
+    false
 }
+
+const MAX_CALLBACK_BODY: usize = 4 * 1024; // 4 KB
 
 #[tauri::command]
 pub async fn post_callback(url: String, body: String) -> Result<(), String> {
-    let parsed = url::Url::parse(&url).map_err(|_| "invalid callback URL".to_string())?;
-
-    if parsed.scheme() != "https" {
-        return Err("callback URL must use HTTPS".into());
+    if body.len() > MAX_CALLBACK_BODY {
+        return Err("callback body exceeds 4 KB limit".into());
     }
+
+    let parsed = url::Url::parse(&url).map_err(|_| "invalid callback URL".to_string())?;
     let host = parsed.host_str().ok_or("callback URL has no host")?;
-    if is_private_host(host) {
+
+    let is_local = matches!(host, "localhost" | "127.0.0.1");
+    if parsed.scheme() != "https" && !(parsed.scheme() == "http" && is_local) {
+        return Err("callback URL must use HTTPS (or http://localhost / http://127.0.0.1 for local dev)".into());
+    }
+    if !is_local && is_private_host(host) {
         return Err("callback URL must not target a private or loopback address".into());
     }
 
@@ -97,6 +104,8 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
         .body(body)
         .send()
         .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
         .map_err(|e| e.to_string())?;
 
     Ok(())
