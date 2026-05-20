@@ -119,7 +119,31 @@ function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
   const active = selected !== null ? sponsors[selected] : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-5)" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
+      {/* Selected sponsor label — fixed height so grid doesn't shift */}
+      <div style={{ minHeight: 36, textAlign: "center" }}>
+        {active ? (
+          <motion.div
+            key={selected}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}
+          >
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+              {active.name}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+              {formatQu(active.amount)} QU
+            </span>
+          </motion.div>
+        ) : (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            TAP A BLOCK
+          </span>
+        )}
+      </div>
+
       <div
         style={{
           display: "flex",
@@ -162,28 +186,6 @@ function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
         })}
       </div>
 
-      <div style={{ minHeight: 36, textAlign: "center" }}>
-        {active ? (
-          <motion.div
-            key={selected}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}
-          >
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-              {active.name}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              {formatQu(active.amount)} QU
-            </span>
-          </motion.div>
-        ) : (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            TAP A BLOCK
-          </span>
-        )}
-      </div>
     </div>
   );
 }
