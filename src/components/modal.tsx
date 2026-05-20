@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 export interface ModalProps {
@@ -6,18 +6,62 @@ export interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   style?: CSSProperties;
+  title?: string;
 }
 
 const EASE_OUT = [0, 0, 0.2, 1] as const;
 
-export function Modal({ open, onClose, children, style }: ModalProps) {
+const FOCUSABLE = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+export function Modal({ open, onClose, children, style, title }: ModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<Element | null>(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+
+    returnFocusRef.current = document.activeElement;
+
+    // Move focus into modal on next frame (after animation starts)
+    const frame = requestAnimationFrame(() => {
+      const first = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      first?.focus();
+    });
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopImmediatePropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const focusable = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+      if (focusable.length === 0) { e.preventDefault(); return; }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKey);
+      (returnFocusRef.current as HTMLElement | null)?.focus();
+    };
   }, [open, onClose]);
 
   return (
@@ -40,6 +84,10 @@ export function Modal({ open, onClose, children, style }: ModalProps) {
           }}
         >
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
             initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 16, opacity: 0 }}
