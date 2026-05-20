@@ -20,7 +20,6 @@
     "store:allow-delete",
     "store:allow-keys",
     "store:allow-entries",
-    "store:allow-clear",
     "deep-link:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",

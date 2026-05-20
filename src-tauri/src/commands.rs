@@ -27,7 +27,8 @@ pub fn get_seconds_until_lock(state: State<'_, AutoLockState>) -> Option<u64> {
 }
 
 #[tauri::command]
-pub fn force_lock(app: AppHandle) {
+pub fn force_lock(app: AppHandle, state: State<'_, AutoLockState>) {
+    state.reset();
     app.emit("sigil:lock", ()).ok();
 }
 

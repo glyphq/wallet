@@ -249,16 +249,16 @@ export const usePersistedStore = create<PersistedState>()(
         })),
 
       revokeDappPermission: (origin, permission) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            approvedDapps: s.settings.approvedDapps.map((d) =>
+        set((s) => {
+          const approvedDapps = s.settings.approvedDapps
+            .map((d) =>
               d.origin === origin
                 ? { ...d, permissions: d.permissions.filter((p) => p !== permission) }
                 : d
-            ),
-          },
-        })),
+            )
+            .filter((d) => d.permissions.length > 0);
+          return { settings: { ...s.settings, approvedDapps } };
+        }),
     }),
     {
       name: "sigil-persisted",
