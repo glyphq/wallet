@@ -8,6 +8,7 @@ import { Divider } from "@/components/divider";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useAutoLock } from "@/hooks/use-auto-lock";
+import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
@@ -23,6 +24,8 @@ export default function BurnScreen() {
   const wallets = useSessionStore((s) => s.wallets);
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
+  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const balance = balanceData?.balance ?? null;
 
   const [step, setStep] = useState<Step>("input");
   const [amountStr, setAmountStr] = useState("");
@@ -31,9 +34,13 @@ export default function BurnScreen() {
   const [txError, setTxError] = useState("");
 
   function goConfirm() {
-    const amount = Number(amountStr.trim());
-    if (!amountStr.trim() || isNaN(amount) || amount <= 0) {
+    const trimmed = amountStr.trim();
+    if (!trimmed || !/^\d+$/.test(trimmed) || BigInt(trimmed) <= 0n) {
       setAmountError("INVALID AMOUNT");
+      return;
+    }
+    if (balance !== null && BigInt(trimmed) > balance) {
+      setAmountError("INSUFFICIENT BALANCE");
       return;
     }
     setAmountError("");
