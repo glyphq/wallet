@@ -37,6 +37,7 @@ function strengthOf(pw: string) {
 export default function ImportVaultScreen() {
   const navigate = useNavigate();
   const addVault = usePersistedStore((s) => s.addVault);
+  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
   const unlock = useSessionStore((s) => s.unlock);
 
   const [step, setStep] = useState<Step>(1);
@@ -83,6 +84,7 @@ export default function ImportVaultScreen() {
         encryptedData,
       };
       addVault(vault);
+      setActiveVault(vault.id);
       unlock(vault.id, [seed], [createWallet(seed)]);
       navigate("/dashboard", { replace: true });
     } catch {
