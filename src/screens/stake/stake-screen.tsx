@@ -22,6 +22,7 @@ import {
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
 } from "@/lib/contracts";
+import { qk } from "@/lib/query-keys";
 
 type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
@@ -65,7 +66,7 @@ export default function StakeScreen() {
 
   // Lock tab: current epoch info
   const { data: epochInfoResult } = useQuery({
-    queryKey: ["qearn-epoch-info", currentEpoch],
+    queryKey: qk.qearnEpochInfo(currentEpoch),
     queryFn: () => qearnGetLockInfoPerEpoch(getRpcClient().live, { Epoch: currentEpoch! }),
     enabled: !!currentEpoch,
     staleTime: 60_000,
@@ -74,7 +75,7 @@ export default function StakeScreen() {
 
   // Unlock tab: user's locked positions across last 52 epochs
   const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useQuery({
-    queryKey: ["qearn-positions", identity, currentEpoch],
+    queryKey: qk.qearnPositions(identity, currentEpoch),
     queryFn: async () => {
       if (!identity || !currentEpoch) return [];
       const live = getRpcClient().live;

@@ -18,6 +18,7 @@ import { isValidIdentity } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { truncateId } from "@/lib/format";
+import { qk } from "@/lib/query-keys";
 
 const MAX_RECIPIENTS = 25;
 
@@ -47,7 +48,7 @@ export default function SendManyScreen() {
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
   const { data: feeData } = useQuery({
-    queryKey: ["qutil-send-many-fee"],
+    queryKey: qk.qutilSendManyFee(),
     queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
     staleTime: 60_000,
   });

@@ -8,6 +8,7 @@ import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { notify } from "@/lib/notifications";
 import { truncateId } from "@/lib/format";
+import { qk } from "@/lib/query-keys";
 
 export function useNotificationTriggers() {
   const wallets = useSessionStore((s) => s.wallets);
@@ -81,7 +82,7 @@ export function useNotificationTriggers() {
   useEffect(() => {
     if (!lastProcessedTick || !identity) return;
     const hasReady = pendingTxs.some((p) => lastProcessedTick >= p.targetTick);
-    if (hasReady) queryClient.invalidateQueries({ queryKey: ["tx-history", identity] });
+    if (hasReady) queryClient.invalidateQueries({ queryKey: qk.txHistory(identity) });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
 
   // Confirmed: tx appeared in history — always remove; notify if enabled.

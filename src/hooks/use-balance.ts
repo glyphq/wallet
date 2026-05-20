@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
+import { qk } from "@/lib/query-keys";
 
 export function useBalance(identity: string | null | undefined) {
   return useQuery({
-    queryKey: ["balance", identity],
+    queryKey: qk.balance(identity ?? null),
     queryFn: async () => {
       const result = await getRpcClient().live.getBalance(identity!);
       if (!result.ok) throw result.error;
