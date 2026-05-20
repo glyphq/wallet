@@ -46,7 +46,7 @@ export function AnimatedLayout() {
 
   if (cur === "/request") {
     // Request sheet arrives from below
-    initial = { opacity: 0, y: 28 };
+    initial = { opacity: 0, y: 64 };
   } else if (prev === "/request") {
     // Returning from request: fade in only (request slides out below)
     initial = { opacity: 0 };
@@ -70,7 +70,7 @@ export function AnimatedLayout() {
         initial={initial}
         animate={{ opacity: 1, x: 0, y: 0 }}
         exit={{ opacity: 0, transition: { duration: 0.1, ease: "easeOut" } }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={{ duration: cur === "/request" ? 0.22 : 0.15, ease: "easeOut" }}
         style={{ height: "100%", position: "absolute", inset: 0 }}
       >
         {element}

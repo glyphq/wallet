@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { RequestHeader } from "@/components/request/request-header";
@@ -198,7 +198,7 @@ export default function RequestScreen() {
     const tagLabel = success.kind === "tx" ? "SENT" : success.kind === "message" ? "SIGNED" : "CONNECTED";
 
     return (
-      <AppShell
+      <SheetLayout
         statusBar={
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -206,7 +206,6 @@ export default function RequestScreen() {
             </span>
           </div>
         }
-        contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
       >
         <div style={{ textAlign: "center" }}>
           <Tag variant="success">{tagLabel}</Tag>
@@ -251,7 +250,7 @@ export default function RequestScreen() {
         </div>
 
         <Button onClick={() => navigate("/dashboard")}>Return to app</Button>
-      </AppShell>
+      </SheetLayout>
     );
   }
 
@@ -264,7 +263,7 @@ export default function RequestScreen() {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
       <button
         onClick={reject}
-        aria-label="Reject request"
+        aria-label="Reject and close"
         style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
       >
         ← BACK
@@ -277,7 +276,7 @@ export default function RequestScreen() {
   );
 
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+    <SheetLayout statusBar={statusBar}>
       <RequestHeader dapp={request.dapp} approvedDapps={approvedDapps} />
       <Divider />
 
@@ -308,6 +307,82 @@ export default function RequestScreen() {
           onReject={reject}
         />
       ) : null}
-    </AppShell>
+    </SheetLayout>
+  );
+}
+
+function SheetLayout({ statusBar, children }: { statusBar: ReactNode; children: ReactNode }) {
+  const countdown = useLockCountdown();
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* Black spacer — window bg shows through, acts as backdrop */}
+      <div style={{ height: 32, flexShrink: 0 }} />
+
+      {/* Sheet panel */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--color-bg-base)",
+          borderRadius: "12px 12px 0 0",
+          borderTop: "1px solid var(--color-border-strong)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Handle bar */}
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 0", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
+        </div>
+
+        {/* Status bar */}
+        <header
+          style={{
+            flexShrink: 0,
+            height: 44,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 var(--space-4)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+          }}
+        >
+          {statusBar}
+        </header>
+
+        {/* Lock countdown */}
+        {countdown !== null && (
+          <div
+            aria-live="polite"
+            style={{
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "var(--space-1) var(--space-4)",
+              background: "var(--color-bg-elevated)",
+              borderBottom: "1px solid var(--color-border-subtle)",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+              [LOCKING IN {countdown}s]
+            </span>
+          </div>
+        )}
+
+        {/* Content */}
+        <main
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "var(--space-6)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-6)",
+          }}
+        >
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
