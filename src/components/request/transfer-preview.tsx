@@ -6,6 +6,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getRpcClient } from "@/lib/rpc";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
+import { truncateId, formatQu } from "@/lib/format";
 
 export interface TransferRequest {
   to: string;
@@ -25,19 +26,6 @@ interface TransferPreviewProps {
   request: TransferRequest;
   onApprove: (result: ApproveResult) => void;
   onReject: () => void;
-}
-
-function formatAmount(n: number | string | bigint): string {
-  try {
-    return BigInt(n).toLocaleString();
-  } catch {
-    return String(n);
-  }
-}
-
-function truncate(id: string): string {
-  if (!id || id.length <= 20) return id;
-  return `${id.slice(0, 10)}...${id.slice(-10)}`;
 }
 
 export function TransferPreview({ request, onApprove, onReject }: TransferPreviewProps) {
@@ -105,7 +93,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
       {/* Amount — primary element */}
       <div style={{ textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-          {formatAmount(request.amount)}
+          {formatQu(request.amount)}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>QU</div>
       </div>
@@ -147,10 +135,10 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
 
       {/* Detail rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {!fromError && <Row label="From" value={`${accountName} · ${truncate(identity)}`} />}
+        {!fromError && <Row label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
         <Row
           label="To"
-          value={toContact ? `${toContact.name} · ${truncate(request.to)}` : truncate(request.to)}
+          value={toContact ? `${toContact.name} · ${truncateId(request.to, 10, 10)}` : truncateId(request.to, 10, 10)}
         />
         <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
         <Row label="Fee" value="None" />

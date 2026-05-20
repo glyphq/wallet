@@ -18,6 +18,7 @@ export {
 } from "@qubic.org/crypto";
 
 import { identityToPublicKey as _identityToPublicKey } from "@qubic.org/crypto";
+import { truncateId } from "@/lib/format";
 
 /** Full identity validation: checks format AND the 4-char checksum embedded in positions 56–59. */
 export function isValidIdentity(s: string): boolean {
@@ -30,6 +31,5 @@ export function isValidIdentity(s: string): boolean {
 }
 
 export function truncateIdentity(identity: string): string {
-  if (identity.length <= 20) return identity;
-  return `${identity.slice(0, 10)}...${identity.slice(-10)}`;
+  return truncateId(identity, 10, 10);
 }

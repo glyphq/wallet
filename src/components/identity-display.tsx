@@ -2,15 +2,11 @@ import { useState, type CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
+import { truncateId } from "@/lib/format";
 
 export interface IdentityDisplayProps {
   identity: string;
   style?: CSSProperties;
-}
-
-function truncate(id: string): string {
-  if (id.length <= 20) return id;
-  return `${id.slice(0, 10)}...${id.slice(-10)}`;
 }
 
 export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
@@ -59,7 +55,7 @@ export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
         animate={{ opacity: flash ? 0.6 : 1 }}
         transition={{ duration: 0.1, ease: [0, 0, 0.2, 1] }}
         onClick={toggle}
-        aria-label={expanded ? `Address: ${identity} — click to copy and collapse` : `Copy address ${truncate(identity)}`}
+        aria-label={expanded ? `Address: ${identity} — click to copy and collapse` : `Copy address ${truncateId(identity, 10, 10)}`}
         style={{
           background: "none",
           border: "none",
@@ -73,7 +69,7 @@ export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
           wordBreak: "break-all",
         }}
       >
-        {expanded ? identity : truncate(identity)}
+        {expanded ? identity : truncateId(identity, 10, 10)}
       </motion.button>
       {countdown !== null && (
         <div

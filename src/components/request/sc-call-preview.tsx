@@ -17,6 +17,7 @@ import {
 } from "@/lib/contracts";
 import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
 import type { ApproveResult } from "./transfer-preview";
+import { truncateId, formatQu } from "@/lib/format";
 
 export interface ScCallRequest {
   contract_index: number;
@@ -34,14 +35,6 @@ interface ScCallPreviewProps {
   onReject: () => void;
 }
 
-
-function formatAmount(n: number | string | bigint): string {
-  try {
-    return BigInt(n).toLocaleString();
-  } catch {
-    return String(n);
-  }
-}
 
 function base64ToHex(b64: string): string {
   try {
@@ -193,7 +186,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         </div>
         {hasAmount && (
           <div style={{ marginTop: "var(--space-3)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>
-            {formatAmount(requestAmount)} QU
+            {formatQu(requestAmount)} QU
           </div>
         )}
       </div>
@@ -208,10 +201,10 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
             {decodedSendToMany.map((r) => (
               <div key={r.identity} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.03em" }}>
-                  {truncate(r.identity)}
+                  {truncateId(r.identity, 10, 10)}
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
-                  {formatAmount(r.amount)} QU
+                  {formatQu(r.amount)} QU
                 </span>
               </div>
             ))}
@@ -222,14 +215,14 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       {/* ── Decoded: Qearn Lock ── */}
       {isQearnLock && hasAmount && (
         <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          LOCK {formatAmount(requestAmount)} QU FOR STAKING
+          LOCK {formatQu(requestAmount)} QU FOR STAKING
         </div>
       )}
 
       {/* ── Decoded: Qearn Unlock ── */}
       {decodedQearnUnlock && (
         <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          UNLOCK {formatAmount(decodedQearnUnlock.amount)} QU FROM EPOCH {decodedQearnUnlock.epoch}
+          UNLOCK {formatQu(decodedQearnUnlock.amount)} QU FROM EPOCH {decodedQearnUnlock.epoch}
         </div>
       )}
 
@@ -270,9 +263,9 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
 
       {/* Detail rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {!fromError && <Row label="From" value={`${accountName} · ${truncate(identity)}`} />}
-        <Row label="To" value={truncate(destination as string)} />
-        {hasAmount && <Row label="Amount" value={`${formatAmount(requestAmount)} QU`} />}
+        {!fromError && <Row label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
+        <Row label="To" value={truncateId(destination as string, 10, 10)} />
+        {hasAmount && <Row label="Amount" value={`${formatQu(requestAmount)} QU`} />}
         <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
       </div>
 
@@ -319,11 +312,6 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       </Button>
     </div>
   );
-}
-
-function truncate(id: string): string {
-  if (!id || id.length <= 20) return id;
-  return `${id.slice(0, 10)}...${id.slice(-10)}`;
 }
 
 function Row({ label, value }: { label: string; value: string }) {

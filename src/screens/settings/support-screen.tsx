@@ -9,6 +9,7 @@ import { useAutoLock } from "@/hooks/use-auto-lock";
 import { DONATION_IDENTITY, type Sponsor } from "@/data/sponsors";
 import { useSponsors, useInvalidateSponsors } from "@/hooks/use-sponsors";
 import { usePersistedStore } from "@/store/persisted";
+import { formatQu } from "@/lib/format";
 
 const GITHUB_URL = "https://github.com/sigil-oss/sigil.app";
 
@@ -18,10 +19,6 @@ const MAX_PX = 88;
 function blockSize(amount: number, max: number): number {
   if (max === 0) return MIN_PX;
   return Math.round(MIN_PX + (MAX_PX - MIN_PX) * Math.sqrt(amount / max));
-}
-
-function formatQu(n: number): string {
-  return n.toLocaleString("en-US");
 }
 
 // ── Identicon (GitHub / Raycast style, FNV-1a) ───────────────────────────────

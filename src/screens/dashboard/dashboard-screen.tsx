@@ -16,6 +16,7 @@ import { useNetworkHealth } from "@/hooks/use-network-health";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { Divider } from "@/components/divider";
+import { truncateId, formatQu } from "@/lib/format";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -31,10 +32,6 @@ const HEALTH_COLOR: Record<string, string> = {
   degraded: "var(--color-status-warning)",
   offline: "var(--color-status-error)",
 };
-
-function formatQu(amount: number): string {
-  return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
 
 function AnimatedBalance({ value }: { value: bigint }) {
   const spanRef = useRef<HTMLSpanElement>(null);
@@ -280,16 +277,6 @@ export default function DashboardScreen() {
   );
 }
 
-function truncate(id: string): string {
-  if (!id || id.length <= 16) return id;
-  return `${id.slice(0, 8)}...${id.slice(-8)}`;
-}
-
-function formatAmount(amount: string | undefined): string {
-  if (!amount) return "—";
-  return BigInt(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 interface RecentTxsProps {
   identity: string | null;
   activeIdentity: string | null;
@@ -366,11 +353,11 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                  {truncate(isIn ? p.source : p.destination)}
+                  {truncateId(isIn ? p.source : p.destination)}
                 </span>
               </div>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: expired ? "var(--color-text-disabled)" : "var(--color-status-warning)" }}>
-                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatAmount(p.amount)}`}
+                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(p.amount ?? "0")}`}
               </span>
             </div>
           </div>
@@ -393,11 +380,11 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <Tag variant={statusVariant}>{statusLabel}</Tag>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                  {truncate(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"))}
+                  {truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"))}
                 </span>
               </div>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>
-                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatAmount(tx.amount)}`}
+                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(tx.amount ?? "0")}`}
               </span>
             </div>
           </div>

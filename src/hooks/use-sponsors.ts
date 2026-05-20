@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { DONATION_IDENTITY, SPONSOR_NAMES_URL, type Sponsor } from "@/data/sponsors";
+import { truncateId } from "@/lib/format";
 
 export const SPONSORS_QUERY_KEY = ["sponsors"] as const;
 
@@ -51,13 +52,9 @@ async function fetchSponsors(): Promise<Sponsor[]> {
   return [...totals.entries()]
     .sort(([, a], [, b]) => b - a)
     .map(([identity, amount]) => ({
-      name: nameOverrides[identity] ?? truncate(identity),
+      name: nameOverrides[identity] ?? truncateId(identity),
       amount,
     }));
-}
-
-function truncate(id: string): string {
-  return `${id.slice(0, 8)}…${id.slice(-8)}`;
 }
 
 export function useSponsors() {

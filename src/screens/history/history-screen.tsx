@@ -11,6 +11,7 @@ import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { truncateId, formatQu } from "@/lib/format";
 
 type TxFilter = "all" | "received" | "sent";
 
@@ -21,17 +22,6 @@ interface FetchedTx {
   amount?: string;
   tickNumber?: number;
   moneyFlew?: boolean;
-}
-
-function formatAmount(amount: string | undefined): string {
-  if (!amount) return "—";
-  const n = BigInt(amount);
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function truncate(id: string): string {
-  if (!id || id.length <= 16) return id;
-  return `${id.slice(0, 8)}...${id.slice(-8)}`;
 }
 
 export default function HistoryScreen() {
@@ -167,7 +157,7 @@ export default function HistoryScreen() {
                 <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {isScCall ? p.contractName : (isIncoming ? truncate(p.source) : truncate(p.destination))}
+                {isScCall ? p.contractName : (isIncoming ? truncateId(p.source) : truncateId(p.destination))}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
                 {expired ? `EXPIRED AT TICK ${p.targetTick}` : `TARGET TICK ${p.targetTick}`}
@@ -175,7 +165,7 @@ export default function HistoryScreen() {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: expired ? "var(--color-text-disabled)" : "var(--color-status-warning)" }}>
-                {hideBalances ? "••••••" : `−${formatAmount(p.amount)}`}
+                {hideBalances ? "••••••" : `−${formatQu(p.amount)}`}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
             </div>
@@ -189,7 +179,7 @@ export default function HistoryScreen() {
       const isIncoming = tx.destination === identity;
       const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
       const isScCall = !!contractName;
-      const amount = formatAmount(tx.amount);
+      const amount = formatQu(tx.amount ?? "0");
       const moneyFlew = tx.moneyFlew ?? true;
       const statusVariant = !moneyFlew ? "error" : isScCall ? "neutral" : (isIncoming ? "success" : "neutral");
       const statusLabel = !moneyFlew ? "FAILED" : isScCall ? "SC CALL" : (isIncoming ? "RECEIVED" : "SENT");
@@ -206,7 +196,7 @@ export default function HistoryScreen() {
                 <Tag variant={statusVariant}>{statusLabel}</Tag>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {isScCall ? contractName : (isIncoming ? truncate(tx.source ?? "—") : truncate(tx.destination ?? "—"))}
+                {isScCall ? contractName : (isIncoming ? truncateId(tx.source ?? "—") : truncateId(tx.destination ?? "—"))}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
                 TICK {tx.tickNumber}
@@ -275,7 +265,7 @@ export default function HistoryScreen() {
 
             <DetailRow label="Amount">
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
-                {hideBalances ? "••••••" : `${formatAmount(detail.amount)} QU`}
+                {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
               </span>
             </DetailRow>
 

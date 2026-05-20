@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/button";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
+import { truncateId } from "@/lib/format";
 
 export interface VerifyMessageRequest {
   message: string;
@@ -28,11 +29,6 @@ function base64ToBytes(b64: string): Uint8Array {
   } catch {
     return new Uint8Array(0);
   }
-}
-
-function truncate(s: string, max = 20): string {
-  if (s.length <= max) return s;
-  return `${s.slice(0, 10)}...${s.slice(-10)}`;
 }
 
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
@@ -100,10 +96,10 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <Row
           label="Claimed signer"
-          value={invalidKey ? "[INVALID PUBLIC KEY]" : truncate(claimedIdentity!, 60)}
+          value={invalidKey ? "[INVALID PUBLIC KEY]" : truncateId(claimedIdentity!, 10, 10)}
           valueColor={invalidKey ? "var(--color-status-error)" : undefined}
         />
-        <Row label="Signature" value={truncate(request.signature)} />
+        <Row label="Signature" value={truncateId(request.signature, 10, 10)} />
       </div>
 
       {invalidKey && (

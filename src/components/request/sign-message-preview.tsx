@@ -4,6 +4,7 @@ import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { k12, sign } from "@qubic.org/crypto";
+import { truncateId } from "@/lib/format";
 
 export interface SignMessageRequest {
   message: string;
@@ -70,11 +71,6 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
       setError(e instanceof Error ? e.message : "Signing failed.");
       setProcessing(false);
     }
-  }
-
-  function truncate(id: string): string {
-    if (!id || id.length <= 20) return id;
-    return `${id.slice(0, 10)}...${id.slice(-10)}`;
   }
 
   return (
@@ -144,7 +140,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
             From
           </span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>
-            {accountName} · {truncate(wallet?.identity ?? "")}
+            {accountName} · {truncateId(wallet?.identity ?? "", 10, 10)}
           </span>
         </div>
       )}

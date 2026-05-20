@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/button";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
+import { truncateId } from "@/lib/format";
 
 export interface ConnectRequest {
   permissions?: ("transfer" | "sc_call" | "sign_message")[];
@@ -26,11 +27,6 @@ const PERMISSION_LABELS: Record<string, string> = {
   sc_call: "Contract calls",
   sign_message: "Sign messages",
 };
-
-function truncate(id: string): string {
-  if (!id || id.length <= 20) return id;
-  return `${id.slice(0, 10)}...${id.slice(-10)}`;
-}
 
 export function ConnectPreview({ dappName, dappOrigin, request, onApprove, onReject }: ConnectPreviewProps) {
   const wallets = useSessionStore((s) => s.wallets);
@@ -94,7 +90,7 @@ export function ConnectPreview({ dappName, dappOrigin, request, onApprove, onRej
                   {account.name}
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                  {truncate(w.identity)}
+                  {truncateId(w.identity, 10, 10)}
                 </span>
               </button>
             );

@@ -7,10 +7,7 @@ import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { notify } from "@/lib/notifications";
-
-function truncateId(id: string): string {
-  return `${id.slice(0, 8)}…${id.slice(-4)}`;
-}
+import { truncateId } from "@/lib/format";
 
 export function useNotificationTriggers() {
   const wallets = useSessionStore((s) => s.wallets);
@@ -37,7 +34,7 @@ export function useNotificationTriggers() {
     const current = balanceData?.balance ?? null;
     if (current !== null && prevBalanceRef.current !== null && current > prevBalanceRef.current) {
       const diff = current - prevBalanceRef.current;
-      notify("QU Received", `+${diff.toLocaleString()} QU${identity ? ` → ${truncateId(identity)}` : ""}`);
+      notify("QU Received", `+${diff.toLocaleString()} QU${identity ? ` → ${truncateId(identity, 8, 4)}` : ""}`);
     }
     if (current !== null) prevBalanceRef.current = current;
   }, [balanceData?.balance]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -55,7 +52,7 @@ export function useNotificationTriggers() {
           if (tx.contractName) {
             notify(tx.contractName, "Transaction broadcast");
           } else {
-            notify("QU Sent", `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination)}`);
+            notify("QU Sent", `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination, 8, 4)}`);
           }
         }
       }

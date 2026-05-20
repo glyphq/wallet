@@ -17,6 +17,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { isValidIdentity } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
+import { truncateId } from "@/lib/format";
 
 const MAX_RECIPIENTS = 25;
 
@@ -29,10 +30,6 @@ interface Recipient {
 }
 
 type Step = "input" | "review" | "sending" | "done" | "error";
-
-function truncate(id: string) {
-  return id.length <= 16 ? id : `${id.slice(0, 8)}...${id.slice(-8)}`;
-}
 
 function emptyRecipient(): Recipient {
   return { id: globalThis.crypto.randomUUID(), identity: "", amount: "", identityError: "", amountError: "" };
@@ -277,7 +274,7 @@ export default function SendManyScreen() {
                 <div key={r.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em" }}>
-                      {contact ? `${contact.name} · ${truncate(id)}` : truncate(id)}
+                      {contact ? `${contact.name} · ${truncateId(id)}` : truncateId(id)}
                     </span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", flexShrink: 0 }}>
                       {Number(r.amount).toLocaleString()} QU

@@ -8,11 +8,7 @@ import { Divider } from "@/components/divider";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { isValidIdentity } from "@/lib/crypto";
-
-function truncate(id: string): string {
-  if (id.length <= 16) return id;
-  return `${id.slice(0, 8)}...${id.slice(-8)}`;
-}
+import { truncateId } from "@/lib/format";
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
@@ -113,7 +109,7 @@ export default function ContactsScreen() {
                 {contact.name}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {truncate(contact.identity)}
+                {truncateId(contact.identity)}
               </div>
               {contact.note && (
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>

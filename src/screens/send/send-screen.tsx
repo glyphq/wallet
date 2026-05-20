@@ -14,13 +14,9 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { truncateId } from "@/lib/format";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
-
-function truncate(id: string): string {
-  if (id.length <= 20) return id;
-  return `${id.slice(0, 10)}...${id.slice(-10)}`;
-}
 
 export default function SendScreen() {
   const navigate = useNavigate();
@@ -217,7 +213,7 @@ export default function SendScreen() {
           <BalanceBar balance={balance} amountStr={amountStr} />
 
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            FROM: {accountName} · {truncate(identity)}
+            FROM: {accountName} · {truncateId(identity)}
           </div>
 
           <Button onClick={goReview}>Review</Button>
@@ -246,8 +242,8 @@ export default function SendScreen() {
           <Divider />
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            <ReviewRow label="From" value={`${accountName} · ${truncate(identity)}`} />
-            <ReviewRow label="To" value={matchedContact ? `${matchedContact.name} · ${truncate(destUpper)}` : truncate(destUpper)} />
+            <ReviewRow label="From" value={`${accountName} · ${truncateId(identity)}`} />
+            <ReviewRow label="To" value={matchedContact ? `${matchedContact.name} · ${truncateId(destUpper)}` : truncateId(destUpper)} />
             <ReviewRow label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
             <ReviewRow label="Fee" value="None" />
           </div>
@@ -298,7 +294,7 @@ export default function SendScreen() {
           {!destIsKnownContact && !saved && (
             <div style={{ borderTop: "1px solid var(--color-border-strong)", paddingTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                SAVE {truncate(destUpper)} TO CONTACTS?
+                SAVE {truncateId(destUpper)} TO CONTACTS?
               </div>
               <div style={{ display: "flex", gap: "var(--space-2)" }}>
                 <input
