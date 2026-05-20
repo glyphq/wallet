@@ -1,0 +1,7 @@
+[install]
+# lightningcss ships separate gnu and musl binaries for linux-x64 with no libc
+# qualifier in their package.json, so bun tries to install both. The musl
+# tarball fails to extract on glibc runners (GitHub Actions ubuntu-*). We only
+# need the gnu variant on glibc systems; lightningcss uses detect-libc at
+# runtime to pick the right binary.
+ignoredDependencies = ["lightningcss-linux-x64-musl", "lightningcss-linux-arm64-musl"]
