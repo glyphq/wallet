@@ -1,5 +1,18 @@
 # sigil
 
+## 0.4.3
+
+### Patch Changes
+
+- a03daa2: Fix request BACK button sending spurious rejection, active-vault session leak on delete, send-many fee null guard, BalanceBar BigInt precision, seed phrase auto-hide after 30s, seed clipboard auto-clear after 60s
+- 0980540: Fix async unlisten race in useAutoLock and TitleBar where a fast unmount before the listen() promise resolved would leave a dangling event listener; expand shorthand 3-char hex (#abc) correctly in custom color scheme math
+- d4a1c4d: Validate dApp origin and callback URL as https://, sanitize backup account data, block send-many while tx pending, reset history filter on account switch, sort contacts alphabetically, fix partial identity search across all pickers
+- 490b25d: Fix Rust mutex poison killing auto-lock and clipboard watcher threads permanently; replace seen_nonces HashSet clear with timestamp-based eviction to prevent nonce replay; cap deep-link payload at 8 KB; enforce exp field present and ≤1 hour in the future
+- 0980540: Remove unused store:allow-clear capability to prevent full store wipe via XSS; force_lock now resets Rust activity timer so countdown starts fresh after manual lock; revokeDappPermission automatically removes the ApprovedDapp entry when all permissions are revoked; vault file import now rejects blank names
+- a6bd984: Fix persisted store merge crash on corrupted data; mount useAutoLock once at layout level instead of per-screen; remove duplicate pending-tx cleanup from history screen; fix account removal keeping stale activeAccountIndex; guard concurrent add account on Enter; fix Button missing type="button" default; fix Input autoComplete order blocking callers; remove Tag role="status" misuse; fix IdentityDisplay interval leak on unmount; fix request-screen permission re-check on every approvedDapps change
+- 0980540: Add autocomplete=current-password/new-password to all vault password inputs so password managers work correctly; add wheel and touchmove to auto-lock activity reset events; guard vaults-screen Enter key from concurrent vault unlock/import/delete
+- 0980540: Enforce exp field in deep-link parseEnvelope to reject stale requests on the frontend; decouple addVault from activeVaultId so setup screens explicitly control which vault becomes active
+
 ## 0.4.2
 
 ### Patch Changes
