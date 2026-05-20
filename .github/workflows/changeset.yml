@@ -8,6 +8,9 @@ concurrency:
   group: changeset-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   version-or-publish:
     name: Version or tag release
@@ -120,7 +123,7 @@ jobs:
         with:
           workspaces: src-tauri
           cache-targets: "false"
-          save-always: "true"
+          cache-on-failure: "true"
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -179,7 +182,7 @@ jobs:
         with:
           workspaces: src-tauri
           cache-targets: "false"
-          save-always: "true"
+          cache-on-failure: "true"
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -236,7 +239,7 @@ jobs:
         with:
           workspaces: src-tauri
           cache-targets: "false"
-          save-always: "true"
+          cache-on-failure: "true"
 
       - uses: oven-sh/setup-bun@v2
         with:
