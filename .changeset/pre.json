@@ -9,6 +9,7 @@
     "feat-phase6-polish",
     "feat-updater-biometric-ux",
     "fix-biometric-a11y-autocomplete",
+    "fix-ci-caching-build-errors",
     "fix-ipc-hydration-notifications-skeleton",
     "fix-loading-binary-conflict"
   ]
