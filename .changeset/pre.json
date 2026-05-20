@@ -6,6 +6,7 @@
   },
   "changesets": [
     "feat-custom-titlebar",
+    "feat-deeplink-verify-sign-improvements",
     "feat-phase6-polish",
     "feat-updater-biometric-ux",
     "fix-biometric-a11y-autocomplete",
