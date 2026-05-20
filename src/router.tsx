@@ -50,6 +50,7 @@ const NetworkScreen = lazy(() => import("@/screens/settings/network-screen"));
 const AppearanceScreen = lazy(() => import("@/screens/settings/appearance-screen"));
 const SettingsContactsScreen = lazy(() => import("@/screens/settings/contacts-screen"));
 const NotificationsScreen = lazy(() => import("@/screens/settings/notifications-screen"));
+const SupportScreen = lazy(() => import("@/screens/settings/support-screen"));
 
 export const router = createHashRouter([
   {
@@ -78,6 +79,7 @@ export const router = createHashRouter([
       { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
       { path: "/settings/contacts", element: <Screen component={SettingsContactsScreen} /> },
       { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
+      { path: "/settings/support", element: <Screen component={SupportScreen} /> },
     ],
   },
 ]);
