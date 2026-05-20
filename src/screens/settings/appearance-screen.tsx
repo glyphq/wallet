@@ -225,57 +225,64 @@ export default function AppearanceScreen() {
   );
 
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 
       {/* ── Theme ── */}
-      <SectionHeader title="Theme" subtitle="Base color palette" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-        {THEMES.filter((t) => t.id !== "system").map((def) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <SectionHeader title="Theme" subtitle="Base color palette" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+          {THEMES.filter((t) => t.id !== "system").map((def) => (
+            <ThemeCard key={def.id} def={def} selected={theme === def.id && !customEnabled} onSelect={() => { updateSettings({ theme: def.id, customScheme: null }); }} />
+          ))}
+        </div>
+        {THEMES.filter((t) => t.id === "system").map((def) => (
           <ThemeCard key={def.id} def={def} selected={theme === def.id && !customEnabled} onSelect={() => { updateSettings({ theme: def.id, customScheme: null }); }} />
         ))}
       </div>
-      {THEMES.filter((t) => t.id === "system").map((def) => (
-        <ThemeCard key={def.id} def={def} selected={theme === def.id && !customEnabled} onSelect={() => { updateSettings({ theme: def.id, customScheme: null }); }} />
-      ))}
 
       {/* ── Font ── */}
-      <SectionHeader title="Font" subtitle="Applies to all text" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-        {FONT_PAIRS.map((pair) => (
-          <FontCard
-            key={pair.id}
-            pair={pair}
-            selected={fontPair === pair.id}
-            onSelect={() => updateSettings({ fontPair: pair.id as FontPairId })}
-          />
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <SectionHeader title="Font" subtitle="Applies to all text" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+          {FONT_PAIRS.map((pair) => (
+            <FontCard
+              key={pair.id}
+              pair={pair}
+              selected={fontPair === pair.id}
+              onSelect={() => updateSettings({ fontPair: pair.id as FontPairId })}
+            />
+          ))}
+        </div>
       </div>
 
       {/* ── Accent ── */}
-      <SectionHeader title="Accent" subtitle="Balances, confirmations, success states" />
-      <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-        {ACCENT_COLORS.map((ac) => (
-          <button
-            key={ac.id}
-            onClick={() => updateSettings({ accentColor: ac.id as AccentColorId })}
-            title={ac.name}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: "50%",
-              background: ac.hex,
-              border: accentColor === ac.id ? "2px solid var(--color-text-display)" : "2px solid transparent",
-              outline: accentColor === ac.id ? `2px solid ${ac.hex}` : "none",
-              outlineOffset: 2,
-              cursor: "pointer",
-              padding: 0,
-              flexShrink: 0,
-            }}
-          />
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <SectionHeader title="Accent" subtitle="Balances, confirmations, success states" />
+        <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+          {ACCENT_COLORS.map((ac) => (
+            <button
+              key={ac.id}
+              onClick={() => updateSettings({ accentColor: ac.id as AccentColorId })}
+              title={ac.name}
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                background: ac.hex,
+                border: accentColor === ac.id ? "2px solid var(--color-text-display)" : "2px solid transparent",
+                outline: accentColor === ac.id ? `2px solid ${ac.hex}` : "none",
+                outlineOffset: 2,
+                cursor: "pointer",
+                padding: 0,
+                flexShrink: 0,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* ── Custom colors ── */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <SectionHeader title="Custom colors" subtitle="Override theme with your own bg and text" />
         <button
@@ -385,6 +392,7 @@ export default function AppearanceScreen() {
             APPLY CUSTOM COLORS
           </button>
         )}
+      </div>
       </div>
 
     </AppShell>
