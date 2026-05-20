@@ -299,6 +299,7 @@ export default function CreateVaultScreen() {
                   </span>
                   <input
                     ref={(el) => { checkRefs.current[i] = el; }}
+                    autoComplete="off"
                     value={checkInputs[i]}
                     onChange={(e) => handleCheckInput(i, e.target.value)}
                     onKeyDown={(e) => handleCheckKey(i, e)}

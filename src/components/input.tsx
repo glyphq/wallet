@@ -28,6 +28,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
         </label>
       )}
       <input
+        autoComplete="off"
         {...props}
         id={inputId}
         className="sigil-input"

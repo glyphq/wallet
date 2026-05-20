@@ -302,6 +302,7 @@ export default function SendScreen() {
               </div>
               <div style={{ display: "flex", gap: "var(--space-2)" }}>
                 <input
+                  autoComplete="off"
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && doSaveContact()}
@@ -402,6 +403,7 @@ export default function SendScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <input
             autoFocus
+            autoComplete="off"
             value={pickerSearch}
             onChange={(e) => setPickerSearch(e.target.value)}
             placeholder="Search contacts..."

@@ -364,6 +364,7 @@ export default function SendManyScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <input
             autoFocus
+            autoComplete="off"
             value={pickerSearch}
             onChange={(e) => setPickerSearch(e.target.value)}
             placeholder="Search contacts..."
