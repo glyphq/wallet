@@ -17,6 +17,7 @@ import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { Divider } from "@/components/divider";
 import { truncateId, formatQu } from "@/lib/format";
+import { qk } from "@/lib/query-keys";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -301,7 +302,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
     const hasReady = pendingTxs.some(
       (p) => (p.source === identity || p.destination === identity) && lastProcessedTick >= p.targetTick,
     );
-    if (hasReady) queryClient.invalidateQueries({ queryKey: ["tx-history", identity] });
+    if (hasReady) queryClient.invalidateQueries({ queryKey: qk.txHistory(identity) });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
 
   // Cleanup: confirmed txs remove immediately; expired remove once tick is processed

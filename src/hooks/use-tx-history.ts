@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
+import { qk } from "@/lib/query-keys";
 
 export function useTxHistory(identity: string | null | undefined) {
   return useQuery({
-    queryKey: ["tx-history", identity],
+    queryKey: qk.txHistory(identity ?? null),
     queryFn: async () => {
       const result = await getRpcClient().archive.getTransactionsForIdentity({
         identity: identity!,

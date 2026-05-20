@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
+import { qk } from "@/lib/query-keys";
 
 export function useTickInfo() {
   return useQuery({
-    queryKey: ["tick-info"],
+    queryKey: qk.tickInfo(),
     queryFn: async () => {
       const result = await getRpcClient().live.getTickInfo();
       if (!result.ok) throw result.error;
