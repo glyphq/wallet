@@ -11,6 +11,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
+import { formatQu } from "@/lib/format";
 
 type Step = "input" | "confirm" | "sending" | "done" | "error";
 
@@ -127,7 +128,7 @@ export default function BurnScreen() {
         <>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-status-error)", letterSpacing: "-0.02em" }}>
-              {Number(amountStr).toLocaleString()}
+              {formatQu(amountStr)}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-status-error)" }}>QU</div>
           </div>
