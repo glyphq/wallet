@@ -43,6 +43,8 @@ export function useAutoLock() {
     window.addEventListener("mousemove", resetTimer, { passive: true });
     window.addEventListener("keydown", resetTimer, { passive: true });
     window.addEventListener("click", resetTimer, { passive: true });
+    window.addEventListener("wheel", resetTimer, { passive: true });
+    window.addEventListener("touchmove", resetTimer, { passive: true });
 
     return () => {
       active = false;
@@ -50,6 +52,8 @@ export function useAutoLock() {
       window.removeEventListener("mousemove", resetTimer);
       window.removeEventListener("keydown", resetTimer);
       window.removeEventListener("click", resetTimer);
+      window.removeEventListener("wheel", resetTimer);
+      window.removeEventListener("touchmove", resetTimer);
     };
   }, [lock, navigate]);
 
