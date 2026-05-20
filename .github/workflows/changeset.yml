@@ -50,7 +50,7 @@ jobs:
         id: get-tag
         run: |
           TAG="v$(node -p "require('./package.json').version")"
-          if git tag --list "${TAG}" | grep -q "${TAG}"; then
+          if [[ -f ".tag-created" ]]; then
             echo "published=true" >> $GITHUB_OUTPUT
           else
             echo "published=false" >> $GITHUB_OUTPUT
