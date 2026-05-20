@@ -1,5 +1,33 @@
 # sigil
 
+## 0.4.1
+
+### Patch Changes
+
+- 39ed559: Correctness, accessibility, and performance improvements.
+
+  - Stake lock amount now uses BigInt directly — no more precision loss for large QU values
+  - Request previews accept amount as a string, preventing silent truncation of amounts above 2^53 QU
+  - Modal now traps focus and sets role="dialog" for keyboard and screen reader accessibility
+  - Toast messages now use aria-live so screen readers announce inline feedback
+  - All screen components are now lazy-loaded, reducing initial parse time on startup
+
+- b0cc1b0: Reliability, security, and correctness fixes.
+
+  - TitleBar window handle is now created inside the component, preventing stale handles on hot reload
+  - Notification history state resets on account switch, preventing false "Confirmed" alerts
+  - Notification amounts use BigInt formatting, eliminating precision loss for large QU values
+  - Seed phrase input is masked during vault import
+  - Custom RPC URLs are validated before connecting; switching networks flushes the query cache
+
+- 8cfa031: Security hardening and stability fixes.
+
+  - Disabled `withGlobalTauri`, `devtools`, and set a Content Security Policy in production builds
+  - Pending requests are now cleared on the Rust side after every approve, reject, or auto-reject — prevents stale requests from replaying after a crash
+  - Auto-lock now clears any pending deep-link request, preventing stale requests from re-appearing after unlock
+  - Disk write failures in the persisted store are now logged and retried instead of being silently swallowed
+  - Burn screen now checks balance before allowing the confirmation step
+
 ## 0.4.0
 
 ### Minor Changes
