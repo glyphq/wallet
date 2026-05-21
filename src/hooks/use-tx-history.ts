@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { qk } from "@/lib/query-keys";
 
@@ -11,32 +11,29 @@ export type TxHistoryItem = {
   moneyFlew: boolean;
 };
 
-/** Fetches tx history for `identity`, polling every 10 s.
- *  Primary: getTransactionsForIdentity (full history).
- *  Supplement: getEventLogs QuTransfer events (last ~2 weeks) for SC-initiated payouts
- *  (e.g. QUTIL distributions) that don't appear in the transaction index.
+const PAGE_SIZE = 50;
+
+/** Infinite-paginated tx history for `identity`.
+ *  Primary: getTransactionsForIdentity (full history, 50/page).
+ *  Supplement (page 0 only): getEventLogs QuTransfer events for SC-initiated payouts
+ *  (e.g. QUTIL distributions) absent from the transaction index.
  */
 export function useTxHistory(identity: string | null | undefined) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: qk.txHistory(identity ?? null),
-    queryFn: async () => {
-      const [txResult, evtResult] = await Promise.allSettled([
-        getRpcClient().archive.getTransactionsForIdentity({
-          identity: identity!,
-          pagination: { size: 50, offset: 0 },
-        }),
-        getRpcClient().archive.getEventLogs({
-          should: [{ terms: { source: identity!, destination: identity! } }],
-          pagination: { size: 50, offset: 0 },
-        }),
-      ]);
+    queryFn: async ({ pageParam }) => {
+      const offset = pageParam;
 
-      if (txResult.status === "rejected") throw txResult.reason;
-      if (!txResult.value.ok) throw txResult.value.error;
+      const txResult = await getRpcClient().archive.getTransactionsForIdentity({
+        identity: identity!,
+        pagination: { size: PAGE_SIZE, offset },
+      });
+
+      if (!txResult.ok) throw txResult.error;
 
       const items = new Map<string, TxHistoryItem>();
 
-      for (const tx of txResult.value.value.transactions ?? []) {
+      for (const tx of txResult.value.transactions ?? []) {
         if (!tx.hash) continue;
         items.set(tx.hash, {
           hash: tx.hash,
@@ -48,26 +45,35 @@ export function useTxHistory(identity: string | null | undefined) {
         });
       }
 
-      // Add event-log entries not already covered by transactions (SC payouts)
-      if (evtResult.status === "fulfilled" && evtResult.value.ok) {
-        for (const evt of evtResult.value.value.eventLogs ?? []) {
-          if (!evt.transactionHash || !evt.quTransfer) continue;
-          if (items.has(evt.transactionHash)) continue;
-          items.set(evt.transactionHash, {
-            hash: evt.transactionHash,
-            source: evt.quTransfer.source ?? null,
-            destination: evt.quTransfer.destination ?? null,
-            amount: evt.quTransfer.amount ?? "0",
-            tickNumber: evt.tickNumber ?? 0,
-            moneyFlew: true,
+      // Event log supplement on first page only (logs only cover ~2 weeks)
+      if (offset === 0) {
+        try {
+          const evtResult = await getRpcClient().archive.getEventLogs({
+            should: [{ terms: { source: identity!, destination: identity! } }],
+            pagination: { size: PAGE_SIZE, offset: 0 },
           });
-        }
+          if (evtResult.ok) {
+            for (const evt of evtResult.value.eventLogs ?? []) {
+              if (!evt.transactionHash || !evt.quTransfer) continue;
+              if (items.has(evt.transactionHash)) continue;
+              items.set(evt.transactionHash, {
+                hash: evt.transactionHash,
+                source: evt.quTransfer.source ?? null,
+                destination: evt.quTransfer.destination ?? null,
+                amount: evt.quTransfer.amount ?? "0",
+                tickNumber: evt.tickNumber ?? 0,
+                moneyFlew: true,
+              });
+            }
+          }
+        } catch { /* non-fatal */ }
       }
 
-      return Array.from(items.values())
-        .sort((a, b) => b.tickNumber - a.tickNumber)
-        .slice(0, 50);
+      return Array.from(items.values()).sort((a, b) => b.tickNumber - a.tickNumber);
     },
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length >= PAGE_SIZE ? lastPageParam + PAGE_SIZE : undefined,
+    initialPageParam: 0,
     enabled: !!identity,
     staleTime: 5_000,
     refetchInterval: 10_000,
