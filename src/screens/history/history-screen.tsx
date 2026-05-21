@@ -10,10 +10,17 @@ import { Input } from "@/components/input";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { useTxHistory, type TxHistoryItem, type TxQueryFilters, DEFAULT_QUERY_FILTERS } from "@/hooks/use-tx-history";
+import {
+  useTxHistory,
+  type TxHistoryItem,
+  type TxQueryFilters,
+  DEFAULT_QUERY_FILTERS,
+} from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { truncateId, formatQu } from "@/lib/format";
+
+// ── Filter types ──────────────────────────────────────────────────────────────
 
 type FilterStatus = "all" | "confirmed" | "failed";
 
@@ -21,9 +28,32 @@ type TxFilters = TxQueryFilters & { status: FilterStatus };
 
 const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS, status: "all" };
 
-function isDefault(f: TxFilters) {
-  return f.direction === "all" && f.type === "all" && f.status === "all" && f.minAmount === "" && f.period === "all";
+// Draft state for text inputs — committed on APPLY
+type DraftInputs = {
+  minAmount: string;
+  maxAmount: string;
+  epoch: string;
+  tickFrom: string;
+  tickTo: string;
+};
+
+function toDraft(f: TxFilters): DraftInputs {
+  return { minAmount: f.minAmount, maxAmount: f.maxAmount, epoch: f.epoch, tickFrom: f.tickFrom, tickTo: f.tickTo };
 }
+
+function sanitize(s: string): string {
+  const n = s.trim();
+  return n && /^\d+$/.test(n) && Number(n) > 0 ? n : "";
+}
+
+function isDefault(f: TxFilters): boolean {
+  return (
+    f.direction === "all" && f.type === "all" && f.status === "all" &&
+    f.period === "all" && !f.minAmount && !f.maxAmount && !f.epoch && !f.tickFrom && !f.tickTo
+  );
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function HistoryScreen() {
   const navigate = useNavigate();
@@ -34,17 +64,19 @@ export default function HistoryScreen() {
 
   const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [minAmountInput, setMinAmountInput] = useState("");
+  const [draft, setDraft] = useState<DraftInputs>(toDraft(DEFAULT_FILTERS));
   const [detail, setDetail] = useState<TxHistoryItem | PendingTx | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useTxHistory(identity, filters);
-
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
 
-  useEffect(() => { setFilters(DEFAULT_FILTERS); setMinAmountInput(""); }, [identity]);
+  useEffect(() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }, [identity]);
+
+  // Sync draft when sheet opens so edits start from current values
+  useEffect(() => { if (filterOpen) setDraft(toDraft(filters)); }, [filterOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Infinite scroll sentinel
   useEffect(() => {
@@ -57,6 +89,18 @@ export default function HistoryScreen() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  function applyAndClose() {
+    setFilters((f) => ({
+      ...f,
+      minAmount: sanitize(draft.minAmount),
+      maxAmount: sanitize(draft.maxAmount),
+      epoch: sanitize(draft.epoch),
+      tickFrom: sanitize(draft.tickFrom),
+      tickTo: sanitize(draft.tickTo),
+    }));
+    setFilterOpen(false);
+  }
 
   const allTxs = data?.pages.flat() ?? [];
   const fetchedHashes = new Set(allTxs.map((t) => t.hash));
@@ -78,66 +122,61 @@ export default function HistoryScreen() {
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
 
-  function applyMinAmount() {
-    const n = minAmountInput.trim();
-    if (!n || isNaN(Number(n)) || Number(n) < 0) return;
-    setFilters((f) => ({ ...f, minAmount: n === "0" ? "" : n }));
+  // ── Active filter chips ───────────────────────────────────────────────────
+  const chips: { label: string; clear: () => void }[] = [];
+  if (filters.direction !== "all") chips.push({ label: filters.direction.toUpperCase(), clear: () => setFilters((f) => ({ ...f, direction: "all" })) });
+  if (filters.type !== "all") chips.push({ label: filters.type === "sc" ? "SC CALL" : "TRANSFER", clear: () => setFilters((f) => ({ ...f, type: "all" })) });
+  if (filters.status !== "all") chips.push({ label: filters.status.toUpperCase(), clear: () => setFilters((f) => ({ ...f, status: "all" })) });
+  if (filters.period !== "all") chips.push({ label: filters.period.toUpperCase(), clear: () => setFilters((f) => ({ ...f, period: "all" })) });
+  if (filters.minAmount || filters.maxAmount) {
+    const label = filters.minAmount && filters.maxAmount
+      ? `${formatQu(filters.minAmount)}–${formatQu(filters.maxAmount)} QU`
+      : filters.minAmount ? `≥ ${formatQu(filters.minAmount)} QU` : `≤ ${formatQu(filters.maxAmount)} QU`;
+    chips.push({ label, clear: () => { setFilters((f) => ({ ...f, minAmount: "", maxAmount: "" })); setDraft((d) => ({ ...d, minAmount: "", maxAmount: "" })); } });
   }
-
-  const headerActions = (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-      <button
-        type="button"
-        onClick={() => setFilterOpen(true)}
-        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, display: "flex", alignItems: "center", gap: 4, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}
-      >
-        FILTER{hasActive && <span style={{ color: "var(--color-status-success)", fontSize: 8, lineHeight: 1 }}>●</span>}
-      </button>
-      <button
-        type="button"
-        onClick={() => refetch()}
-        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
-      >
-        ↻
-      </button>
-    </div>
-  );
+  if (filters.epoch) chips.push({ label: `EPOCH ${filters.epoch}`, clear: () => { setFilters((f) => ({ ...f, epoch: "" })); setDraft((d) => ({ ...d, epoch: "" })); } });
+  if (filters.tickFrom || filters.tickTo) {
+    const label = filters.tickFrom && filters.tickTo
+      ? `TICK ${filters.tickFrom}–${filters.tickTo}`
+      : filters.tickFrom ? `TICK ≥${filters.tickFrom}` : `TICK ≤${filters.tickTo}`;
+    chips.push({ label, clear: () => { setFilters((f) => ({ ...f, tickFrom: "", tickTo: "" })); setDraft((d) => ({ ...d, tickFrom: "", tickTo: "" })); } });
+  }
 
   return (
     <AppShell
-      statusBar={<ScreenHeader title="Transactions" onBack={() => navigate("/dashboard")} action={headerActions} />}
+      statusBar={
+        <ScreenHeader
+          title="Transactions"
+          onBack={() => navigate("/dashboard")}
+          action={
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+              <button type="button" onClick={() => setFilterOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, display: "flex", alignItems: "center", gap: 4, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
+                FILTER{hasActive && <span style={{ color: "var(--color-status-success)", fontSize: 8, lineHeight: 1 }}>●</span>}
+              </button>
+              <button type="button" onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>↻</button>
+            </div>
+          }
+        />
+      }
       contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column" }}
     >
       {/* Active filter chips */}
-      {hasActive && (
+      {chips.length > 0 && (
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
-          {filters.direction !== "all" && (
-            <ActiveChip label={filters.direction.toUpperCase()} onRemove={() => setFilters((f) => ({ ...f, direction: "all" }))} />
-          )}
-          {filters.type !== "all" && (
-            <ActiveChip label={filters.type === "sc" ? "SC CALL" : "TRANSFER"} onRemove={() => setFilters((f) => ({ ...f, type: "all" }))} />
-          )}
-          {filters.status !== "all" && (
-            <ActiveChip label={filters.status.toUpperCase()} onRemove={() => setFilters((f) => ({ ...f, status: "all" }))} />
-          )}
-          {filters.period !== "all" && (
-            <ActiveChip label={filters.period.toUpperCase()} onRemove={() => setFilters((f) => ({ ...f, period: "all" }))} />
-          )}
-          {filters.minAmount !== "" && (
-            <ActiveChip label={`≥ ${formatQu(filters.minAmount)} QU`} onRemove={() => { setFilters((f) => ({ ...f, minAmount: "" })); setMinAmountInput(""); }} />
-          )}
+          {chips.map((c) => <ActiveChip key={c.label} label={c.label} onRemove={c.clear} />)}
         </div>
       )}
 
-      {isLoading && <Mono style={{ textAlign: "center", padding: "var(--space-12) 0", color: "var(--color-text-disabled)" }}>[LOADING...]</Mono>}
-      {isError && <Mono style={{ textAlign: "center", padding: "var(--space-12) 0", color: "var(--color-status-error)" }}>[NETWORK ERROR]</Mono>}
-
+      {/* States */}
+      {isLoading && <StatusText color="var(--color-text-disabled)">[LOADING...]</StatusText>}
+      {isError && <StatusText color="var(--color-status-error)">[NETWORK ERROR]</StatusText>}
       {!isLoading && !isError && filteredPending.length === 0 && filteredTxs.length === 0 && (
-        <Mono style={{ textAlign: "center", padding: "var(--space-12) 0", color: "var(--color-text-disabled)" }}>
+        <StatusText color="var(--color-text-disabled)">
           {allTxs.length === 0 && visiblePending.length === 0 ? "[NO TRANSACTIONS YET]" : "[NO RESULTS]"}
-        </Mono>
+        </StatusText>
       )}
 
+      {/* Transaction rows */}
       {!isLoading && !isError && (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {filteredPending.map((p, i) => {
@@ -189,17 +228,14 @@ export default function HistoryScreen() {
         </div>
       )}
 
-      {/* Infinite scroll sentinel + loading indicator */}
+      {/* Infinite scroll */}
       <div ref={sentinelRef} style={{ height: 1 }} />
-      {isFetchingNextPage && (
-        <Mono style={{ textAlign: "center", padding: "var(--space-4) 0", color: "var(--color-text-disabled)" }}>[LOADING...]</Mono>
-      )}
-      {!hasNextPage && allTxs.length > 0 && (
-        <Mono style={{ textAlign: "center", padding: "var(--space-4) 0", color: "var(--color-text-disabled)" }}>── END ──</Mono>
-      )}
+      {isFetchingNextPage && <StatusText color="var(--color-text-disabled)">[LOADING...]</StatusText>}
+      {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">── END ──</StatusText>}
 
-      {/* Filter sheet */}
-      <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filter">
+      {/* ── Filter sheet ────────────────────────────────────────────────────── */}
+      <Sheet open={filterOpen} onClose={applyAndClose} title="Filter">
+
         <FilterSection label="Direction">
           {(["all", "in", "out"] as const).map((v) => (
             <Pill key={v} label={v === "all" ? "ALL" : v.toUpperCase()} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
@@ -224,35 +260,44 @@ export default function HistoryScreen() {
           ))}
         </FilterSection>
 
-        <FilterSection label="Min amount (QU)">
-          <div style={{ display: "flex", gap: "var(--space-2)", width: "100%" }}>
-            <Input
-              value={minAmountInput}
-              onChange={(e) => setMinAmountInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { applyMinAmount(); setFilterOpen(false); } }}
-              placeholder="0"
-              inputMode="numeric"
-              style={{ fontSize: "var(--text-mono-sm)", padding: "8px 12px" }}
-            />
-            <button
-              type="button"
-              onClick={() => { applyMinAmount(); setFilterOpen(false); }}
-              style={{ background: "var(--color-text-primary)", border: "none", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-bg-base)", letterSpacing: "0.05em", padding: "0 var(--space-3)", whiteSpace: "nowrap" }}
-            >
-              APPLY
-            </button>
-          </div>
+        <FilterSection label="Amount (QU)">
+          <RangeInputs
+            fromValue={draft.minAmount} fromPlaceholder="Min"
+            toValue={draft.maxAmount} toPlaceholder="Max"
+            onFromChange={(v) => setDraft((d) => ({ ...d, minAmount: v }))}
+            onToChange={(v) => setDraft((d) => ({ ...d, maxAmount: v }))}
+          />
         </FilterSection>
 
-        {hasActive && (
-          <button
-            type="button"
-            onClick={() => { setFilters(DEFAULT_FILTERS); setMinAmountInput(""); setFilterOpen(false); }}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, marginTop: "var(--space-2)" }}
-          >
-            RESET ALL
-          </button>
-        )}
+        <FilterSection label="Epoch">
+          <Input
+            value={draft.epoch}
+            onChange={(e) => setDraft((d) => ({ ...d, epoch: e.target.value }))}
+            placeholder="e.g. 214"
+            inputMode="numeric"
+            style={INPUT_SM}
+          />
+          <SectionNote>Applies to event log results only — tx index has no epoch filter.</SectionNote>
+        </FilterSection>
+
+        <FilterSection label="Tick range">
+          <RangeInputs
+            fromValue={draft.tickFrom} fromPlaceholder="From"
+            toValue={draft.tickTo} toPlaceholder="To"
+            onFromChange={(v) => setDraft((d) => ({ ...d, tickFrom: v }))}
+            onToChange={(v) => setDraft((d) => ({ ...d, tickTo: v }))}
+          />
+        </FilterSection>
+
+        {/* Sheet actions */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
+          {hasActive ? (
+            <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); setFilterOpen(false); }} style={GHOST_BTN}>
+              RESET ALL
+            </button>
+          ) : <span />}
+          <button type="button" onClick={applyAndClose} style={APPLY_BTN}>APPLY</button>
+        </div>
       </Sheet>
 
       {/* Detail modal */}
@@ -263,14 +308,30 @@ export default function HistoryScreen() {
   );
 }
 
-// ── Shared style ──────────────────────────────────────────────────────────────
+// ── Shared styles ─────────────────────────────────────────────────────────────
 
 const ROW_BTN: React.CSSProperties = {
   width: "100%", background: "none", border: "none", cursor: "pointer",
   padding: "var(--space-3) 0", textAlign: "left",
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "8px 12px" };
+
+const GHOST_BTN: React.CSSProperties = {
+  background: "none", border: "none", cursor: "pointer",
+  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+  color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0,
+};
+
+const APPLY_BTN: React.CSSProperties = {
+  background: "var(--color-text-primary)", border: "none",
+  borderRadius: "var(--radius-sharp)", cursor: "pointer",
+  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+  color: "var(--color-bg-base)", letterSpacing: "0.05em",
+  padding: "var(--space-2) var(--space-4)",
+};
+
+// ── UI sub-components ─────────────────────────────────────────────────────────
 
 function TxRow({ tag, sub, sub2, amount, amountColor }: {
   tag: ReactNode; sub: string; sub2: string; amount: string; amountColor: string;
@@ -301,23 +362,29 @@ function FilterSection({ label, children }: { label: string; children: ReactNode
   );
 }
 
+function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, onFromChange, onToChange }: {
+  fromValue: string; toValue: string; fromPlaceholder: string; toPlaceholder: string;
+  onFromChange: (v: string) => void; onToChange: (v: string) => void;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
+      <Input value={fromValue} onChange={(e) => onFromChange(e.target.value)} placeholder={fromPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
+      <Input value={toValue} onChange={(e) => onToChange(e.target.value)} placeholder={toPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
+    </div>
+  );
+}
+
 function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        background: active ? "var(--color-text-primary)" : "none",
-        border: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-        borderRadius: "var(--radius-sharp)",
-        cursor: "pointer",
-        fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-        color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-        letterSpacing: "0.05em",
-        padding: "var(--space-1) var(--space-3)",
-        textTransform: "uppercase",
-      }}
-    >
+    <button type="button" onClick={onClick} style={{
+      background: active ? "var(--color-text-primary)" : "none",
+      border: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
+      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+      fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+      color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+      letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)", textTransform: "uppercase",
+    }}>
       {label}
     </button>
   );
@@ -325,35 +392,40 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
 
 function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onRemove}
-      style={{
-        background: "none",
-        border: "1px solid var(--color-text-primary)",
-        borderRadius: "var(--radius-sharp)",
-        cursor: "pointer",
-        fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-        color: "var(--color-text-primary)",
-        letterSpacing: "0.05em",
-        padding: "var(--space-1) var(--space-2)",
-        display: "flex", alignItems: "center", gap: "var(--space-1)",
-      }}
-    >
+    <button type="button" onClick={onRemove} style={{
+      background: "none", border: "1px solid var(--color-text-primary)",
+      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+      fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+      color: "var(--color-text-primary)", letterSpacing: "0.05em",
+      padding: "var(--space-1) var(--space-2)",
+      display: "flex", alignItems: "center", gap: "var(--space-1)",
+    }}>
       {label} ✕
     </button>
   );
 }
 
-function Mono({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
+function SectionNote({ children }: { children: string }) {
   return (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", display: "block", ...style }}>
+    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", marginTop: "var(--space-2)", width: "100%" }}>
       {children}
-    </span>
+    </div>
   );
 }
 
-function TxDetail({ detail, identity, currentTick }: { detail: TxHistoryItem | PendingTx; identity: string | null; currentTick: number }) {
+function StatusText({ children, color }: { children: ReactNode; color: string }) {
+  return (
+    <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color, letterSpacing: "0.05em" }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Detail modal ──────────────────────────────────────────────────────────────
+
+function TxDetail({ detail, identity, currentTick }: {
+  detail: TxHistoryItem | PendingTx; identity: string | null; currentTick: number;
+}) {
   const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
   const isPending = (d: TxHistoryItem | PendingTx): d is PendingTx => "broadcastAt" in d;
 
@@ -369,10 +441,10 @@ function TxDetail({ detail, identity, currentTick }: { detail: TxHistoryItem | P
           <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
           {detail.contractName && <Tag variant="neutral">{detail.contractName}</Tag>}
         </div>
-        <DetailRow label="Amount"><AmountDisplay amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
+        <DetailRow label="Amount"><AmountVal amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
         <DetailRow label="From">{detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}</DetailRow>
         <DetailRow label="To">{detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}</DetailRow>
-        <DetailRow label="Target tick"><MonoValue>{detail.targetTick}</MonoValue></DetailRow>
+        <DetailRow label="Target tick"><MonoVal>{detail.targetTick}</MonoVal></DetailRow>
         {detail.hash && <DetailRow label="Hash"><IdentityDisplay identity={detail.hash} /></DetailRow>}
       </div>
     );
@@ -389,10 +461,10 @@ function TxDetail({ detail, identity, currentTick }: { detail: TxHistoryItem | P
         <Tag variant={variant}>{label}</Tag>
         {isSc && <Tag variant="neutral">{contractName ?? fromContract ?? ""}</Tag>}
       </div>
-      <DetailRow label="Amount"><AmountDisplay amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
+      <DetailRow label="Amount"><AmountVal amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
       <DetailRow label="From">{detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}</DetailRow>
       <DetailRow label="To">{detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}</DetailRow>
-      <DetailRow label="Tick"><MonoValue>{detail.tickNumber ?? "—"}</MonoValue></DetailRow>
+      <DetailRow label="Tick"><MonoVal>{detail.tickNumber ?? "—"}</MonoVal></DetailRow>
       {detail.hash && <DetailRow label="Hash"><IdentityDisplay identity={detail.hash} /></DetailRow>}
     </div>
   );
@@ -401,23 +473,17 @@ function TxDetail({ detail, identity, currentTick }: { detail: TxHistoryItem | P
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        {label}
-      </span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
       {children}
     </div>
   );
 }
 
-function AmountDisplay({ amount, hide }: { amount: string; hide: boolean }) {
-  return (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
-      {hide ? "••••••" : `${formatQu(amount)} QU`}
-    </span>
-  );
+function AmountVal({ amount, hide }: { amount: string; hide: boolean }) {
+  return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>{hide ? "••••••" : `${formatQu(amount)} QU`}</span>;
 }
 
-function MonoValue({ children }: { children: ReactNode }) {
+function MonoVal({ children }: { children: ReactNode }) {
   return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)" }}>{children}</span>;
 }
 

@@ -13,38 +13,44 @@ export type TxHistoryItem = {
 };
 
 export type TxQueryFilters = {
-  direction: "all" | "in" | "out";
-  type: "all" | "transfer" | "sc";
-  minAmount: string;
-  period: "all" | "7d" | "30d";
+  // Server-side — getTransactionsForIdentity + getEventLogs
+  direction: "all" | "in" | "out";         // filters.source / destination
+  type: "all" | "transfer" | "sc";          // filters/ranges.inputType
+  minAmount: string;                         // ranges.amount.gte
+  maxAmount: string;                         // ranges.amount.lte
+  period: "all" | "7d" | "30d";             // ranges.timestamp.gte (preset)
+  tickFrom: string;                          // ranges.tickNumber.gte
+  tickTo: string;                            // ranges.tickNumber.lte
+  // Event-log only
+  epoch: string;                             // filters.epoch (event logs; txs have no epoch filter)
 };
 
 export const DEFAULT_QUERY_FILTERS: TxQueryFilters = {
-  direction: "all",
-  type: "all",
-  minAmount: "",
+  direction: "all", type: "all",
+  minAmount: "", maxAmount: "",
   period: "all",
+  tickFrom: "", tickTo: "",
+  epoch: "",
 };
 
 const PAGE_SIZE = 50;
 
 /** Infinite-paginated tx history for `identity`.
- *  Direction, type, amount, and period filters are applied server-side.
- *  Primary: getTransactionsForIdentity (full history).
- *  Supplement (page 0 only): getEventLogs QuTransfer events for SC-initiated payouts.
+ *  All non-status filters are pushed server-side. Status (moneyFlew) stays client-side.
+ *  Supplement (page 0 only): getEventLogs for SC-initiated payouts absent from the tx index.
  */
 export function useTxHistory(
   identity: string | null | undefined,
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
-  const { direction, type, minAmount, period } = queryFilters;
+  const { direction, type, minAmount, maxAmount, period, tickFrom, tickTo, epoch } = queryFilters;
 
   return useInfiniteQuery({
-    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, period],
+    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, maxAmount, period, tickFrom, tickTo, epoch],
     queryFn: async ({ pageParam }) => {
       const offset = pageParam;
 
-      // Build server-side filter params for getTransactionsForIdentity
+      // ── getTransactionsForIdentity params ────────────────────────────────
       const txFilters: Record<string, string> = {};
       const txRanges: Record<string, { gte?: string; lte?: string }> = {};
 
@@ -54,10 +60,18 @@ export function useTxHistory(
       if (type === "transfer") txFilters.inputType = "0";
       else if (type === "sc") txRanges.inputType = { gte: "1" };
 
-      if (minAmount) txRanges.amount = { gte: minAmount };
+      const amountRange: { gte?: string; lte?: string } = {};
+      if (minAmount) amountRange.gte = minAmount;
+      if (maxAmount) amountRange.lte = maxAmount;
+      if (Object.keys(amountRange).length) txRanges.amount = amountRange;
 
       const periodMs = period === "7d" ? 7 * 86_400_000 : period === "30d" ? 30 * 86_400_000 : 0;
       if (periodMs) txRanges.timestamp = { gte: String(Date.now() - periodMs) };
+
+      const tickRange: { gte?: string; lte?: string } = {};
+      if (tickFrom) tickRange.gte = tickFrom;
+      if (tickTo) tickRange.lte = tickTo;
+      if (Object.keys(tickRange).length) txRanges.tickNumber = tickRange;
 
       const txResult = await getRpcClient().archive.getTransactionsForIdentity({
         identity: identity!,
@@ -82,24 +96,34 @@ export function useTxHistory(
         });
       }
 
-      // Event log supplement on first page only (logs cover ~2 weeks)
+      // ── getEventLogs supplement (first page only, ~2 week window) ────────
       if (offset === 0) {
         try {
-          // Build event log params respecting direction + period + amount filters
           const evtFilters: Record<string, string> = {};
           const evtRanges: Record<string, { gte?: string; lte?: string }> = {};
 
+          // Direction for event logs
           if (direction === "in") evtFilters.destination = identity!;
           else if (direction === "out") evtFilters.source = identity!;
 
-          if (minAmount) evtRanges.amount = { gte: minAmount };
+          // Epoch filter (event logs support this; tx endpoint does not)
+          if (epoch) evtFilters.epoch = epoch;
+
+          // Amount range
+          if (Object.keys(amountRange).length) evtRanges.amount = amountRange;
+
+          // Timestamp period
           if (periodMs) evtRanges.timestamp = { gte: String(Date.now() - periodMs) };
 
+          // Tick range
+          if (Object.keys(tickRange).length) evtRanges.tickNumber = tickRange;
+
           const evtResult = await getRpcClient().archive.getEventLogs({
-            // direction="all" needs should (OR); in/out use filters directly
             ...(direction === "all"
               ? { should: [{ terms: { source: identity!, destination: identity! } }] }
               : { filters: evtFilters }),
+            // When direction="all", epoch goes in filters alongside should (different property, allowed)
+            ...(direction === "all" && epoch && { filters: { epoch } }),
             ...(Object.keys(evtRanges).length && { ranges: evtRanges }),
             pagination: { size: PAGE_SIZE, offset: 0 },
           });
@@ -109,10 +133,6 @@ export function useTxHistory(
               if (!evt.transactionHash || !evt.quTransfer) continue;
               if (items.has(evt.transactionHash)) continue;
 
-              // Apply type filter to event log entries client-side
-              // (SC payouts: source is a contract, which won't have inputType)
-              // type="transfer": skip entries from contracts
-              // type="sc": only entries from contracts
               const sourceIsContract = evt.quTransfer.source ? isKnownContract(evt.quTransfer.source) : false;
               if (type === "transfer" && sourceIsContract) continue;
               if (type === "sc" && !sourceIsContract) continue;
