@@ -83,7 +83,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
               </div>
             )}
 
-            <div style={{ overflowY: "auto", flex: 1 }}>
+            <div style={{ overflowY: "auto", flex: 1, padding: "0 var(--space-1) var(--space-4)" }}>
               {children}
             </div>
 
