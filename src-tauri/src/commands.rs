@@ -73,6 +73,14 @@ pub fn clear_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
     clip_state.cancel_clear();
 }
 
+#[tauri::command]
+pub fn lock_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
+    if clip_state.has_pending_clear() {
+        app.clipboard().write_text("").ok();
+        clip_state.cancel_clear();
+    }
+}
+
 pub fn is_private_host(host: &str) -> bool {
     // Strip IPv6 brackets so [fd00::1] → fd00::1
     let h = host.trim_matches(|c| c == '[' || c == ']').to_ascii_lowercase();
