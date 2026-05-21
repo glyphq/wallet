@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-
-function Skel({ w, h, r }: { w: string | number; h: number; r?: number }) {
-  return (
-    <div
-      className="skeleton"
-      style={{ width: w, height: h, borderRadius: r ?? "var(--radius-sharp)", flexShrink: 0 }}
-    />
-  );
-}
+import { Skeleton } from "@/components/skeleton";
 
 function LoadingSkeleton() {
   return (
@@ -27,11 +19,11 @@ function LoadingSkeleton() {
           flexShrink: 0,
         }}
       >
-        <Skel w={28} h={9} />
+        <Skeleton w={28} h={9} />
         <div style={{ flex: 1 }} />
-        <Skel w={72} h={9} />
+        <Skeleton w={72} h={9} />
         <div style={{ flex: 1 }} />
-        <Skel w={28} h={9} />
+        <Skeleton w={28} h={9} />
       </div>
 
       {/* main content */}
@@ -45,16 +37,16 @@ function LoadingSkeleton() {
           gap: "var(--space-4)",
         }}
       >
-        <Skel w={56} h={56} r={8} />
+        <Skeleton w={56} h={56} r={8} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>
-          <Skel w={140} h={11} />
-          <Skel w={100} h={9} />
+          <Skeleton w={140} h={11} />
+          <Skeleton w={100} h={9} />
         </div>
       </div>
 
       {/* bottom action */}
       <div style={{ padding: "var(--space-4) var(--space-6)", paddingBottom: "var(--space-6)" }}>
-        <Skel w="100%" h={44} />
+        <Skeleton w="100%" h={44} />
       </div>
     </div>
   );
