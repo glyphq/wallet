@@ -50,7 +50,7 @@ export default function SecurityScreen() {
   }, []);
 
   useEffect(() => {
-    if (enabling) setTimeout(() => pwRef.current?.focus(), 50);
+    if (enabling) requestAnimationFrame(() => pwRef.current?.focus());
   }, [enabling]);
 
   async function handleEnable() {

@@ -1,5 +1,18 @@
+use std::sync::OnceLock;
+
 use reqwest;
 use tauri::{AppHandle, Emitter, State};
+
+static HTTP_CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+
+fn http_client() -> &'static reqwest::Client {
+    HTTP_CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .expect("failed to build HTTP client")
+    })
+}
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::auto_lock::AutoLockState;
@@ -94,12 +107,7 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
         return Err("callback URL must not target a private or loopback address".into());
     }
 
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    client
+    http_client()
         .post(parsed)
         .header("Content-Type", "application/json")
         .body(body)
