@@ -21,8 +21,10 @@ export const useSessionStore = create<SessionState>()((set) => ({
   pendingRequest: null,
   isLocked: true,
 
-  unlock: (vaultId, seeds, wallets) =>
-    set({ unlockedVaultId: vaultId, seeds, wallets, isLocked: false }),
+  unlock: (vaultId, seeds, wallets) => {
+    if (seeds.length !== wallets.length) throw new Error("seeds/wallets length mismatch");
+    set({ unlockedVaultId: vaultId, seeds, wallets, isLocked: false });
+  },
 
   lock: () =>
     set({ unlockedVaultId: null, seeds: [], wallets: [], isLocked: true, pendingRequest: null }),

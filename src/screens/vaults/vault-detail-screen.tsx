@@ -57,7 +57,7 @@ export default function VaultDetailScreen() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sigil-${vault!.name.toLowerCase().replace(/\s+/g, "-")}.json`;
+    a.download = `sigil-${vault!.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setShowExport(false);
