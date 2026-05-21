@@ -1,12 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
+import type { Identity } from "@qubic.org/types";
 import { getRpcClient } from "@/lib/rpc";
+import { getBobRpcClient } from "@/lib/bob-client";
+import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
 
 /** Polls the active account balance every 5 s. Disabled when `identity` is nullish. */
 export function useBalance(identity: string | null | undefined) {
+  const useBobNode = usePersistedStore((s) => s.settings.network.useBobNode);
+  const bobRestUrl = usePersistedStore((s) => s.settings.network.bobRestUrl);
+
   return useQuery({
-    queryKey: qk.balance(identity ?? null),
+    queryKey: [...qk.balance(identity ?? null), useBobNode ? "bob" : "rpc"],
     queryFn: async () => {
+      if (useBobNode && bobRestUrl) {
+        const bob = getBobRpcClient(bobRestUrl);
+        const [balResult, tickResult] = await Promise.all([
+          bob.getBalance(identity! as Identity),
+          bob.getTickNumber(),
+        ]);
+        if (!balResult.ok) throw balResult.error;
+        return {
+          id: identity!,
+          balance: balResult.value,
+          validForTick: tickResult.ok ? tickResult.value : 0,
+          latestIncomingTransferTick: 0,
+          latestOutgoingTransferTick: 0,
+          incomingAmount: 0n,
+          outgoingAmount: 0n,
+          numberOfIncomingTransfers: 0,
+          numberOfOutgoingTransfers: 0,
+        };
+      }
       const result = await getRpcClient().live.getBalance(identity!);
       if (!result.ok) throw result.error;
       return result.value;

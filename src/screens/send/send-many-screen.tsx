@@ -16,6 +16,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { broadcastTx } from "@/lib/broadcast";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
@@ -134,8 +135,7 @@ export default function SendManyScreen() {
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       // Update lastUsedAt for any matched contacts
       recipients.forEach((r) => {

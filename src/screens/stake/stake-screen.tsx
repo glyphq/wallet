@@ -14,6 +14,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { identityToPublicKey } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { broadcastTx } from "@/lib/broadcast";
 import {
   QEARN_ADDRESS,
   QEARN_LOCK_INPUT_TYPE,
@@ -137,8 +138,7 @@ export default function StakeScreen() {
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       addPendingTx({
         hash,
@@ -177,8 +177,7 @@ export default function StakeScreen() {
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       addPendingTx({
         hash,

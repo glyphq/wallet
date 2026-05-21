@@ -10,7 +10,8 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
+import { broadcastTx } from "@/lib/broadcast";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { formatQu, extractMessage } from "@/lib/format";
 import { TxSending, TxError } from "@/components/tx-status";
@@ -67,8 +68,7 @@ export default function BurnScreen() {
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       addPendingTx({
         hash,
