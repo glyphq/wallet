@@ -7,6 +7,7 @@ import { toSeed, InvalidSeedError } from "@/lib/crypto";
 import { createVault, createWallet } from "@/lib/vault";
 import { usePersistedStore, type VaultColor } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
+import { truncateId } from "@/lib/format";
 import type { Seed } from "@/lib/crypto";
 
 type Step = 1 | 2 | 3;
@@ -43,6 +44,7 @@ export default function ImportVaultScreen() {
   const [step, setStep] = useState<Step>(1);
   const [seedInput, setSeedInput] = useState("");
   const [seed, setSeed] = useState<Seed | null>(null);
+  const [derivedIdentity, setDerivedIdentity] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState<VaultColor>("slate");
   const [password, setPassword] = useState("");
@@ -56,6 +58,7 @@ export default function ImportVaultScreen() {
     try {
       const s = toSeed(seedInput.trim().toLowerCase());
       setSeed(s);
+      setDerivedIdentity(createWallet(s).identity);
       setSeedError("");
       setStep(2);
     } catch (e) {
@@ -146,6 +149,16 @@ export default function ImportVaultScreen() {
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-2)" }}>
                 Name your vault.
               </div>
+              {derivedIdentity && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                    DERIVED ADDRESS
+                  </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
+                    {truncateId(derivedIdentity, 12, 12)}
+                  </div>
+                </div>
+              )}
             </div>
 
             <Input
