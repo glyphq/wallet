@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, useEffect, useLayoutEffect, type CSSProperties, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 
 export interface AppShellProps {
@@ -10,6 +11,19 @@ export interface AppShellProps {
 
 export function AppShell({ children, statusBar, bottomNav, contentStyle }: AppShellProps) {
   const countdown = useLockCountdown();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const saved = sessionStorage.getItem(`scroll:${location.key}`);
+    if (mainRef.current && saved) mainRef.current.scrollTop = Number(saved);
+  }, [location.key]);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    const key = location.key;
+    return () => { if (el) sessionStorage.setItem(`scroll:${key}`, String(el.scrollTop)); };
+  }, [location.key]);
 
   return (
     <div
@@ -56,6 +70,7 @@ export function AppShell({ children, statusBar, bottomNav, contentStyle }: AppSh
       )}
 
       <main
+        ref={mainRef}
         style={{
           flex: 1,
           overflowY: "auto",
