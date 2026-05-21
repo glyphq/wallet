@@ -20,8 +20,10 @@ export default function BurnScreen() {
 
   const settings = usePersistedStore((s) => s.settings);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
+  const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
   const wallet = wallets[settings.activeAccountIndex] ?? null;
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === (wallet?.identity ?? ""));
   const { data: tickInfo } = useTickInfo();
   const { data: balanceData } = useBalance(wallet?.identity ?? null);
   const balance = balanceData?.balance ?? null;
@@ -117,7 +119,7 @@ export default function BurnScreen() {
             placeholder="0"
             style={{ textAlign: "right", fontSize: "var(--text-display)", fontWeight: 300, fontFamily: "var(--font-sans)" }}
           />
-          <Button variant="danger" shape="sharp" onClick={goConfirm} disabled={!amountStr.trim()}>
+          <Button variant="danger" shape="sharp" onClick={goConfirm} disabled={!amountStr.trim() || !wallet || !tickInfo}>
             Continue
           </Button>
         </>
@@ -143,7 +145,7 @@ export default function BurnScreen() {
 
           <Divider />
 
-          <Button variant="danger" shape="sharp" onClick={send}>Burn {Number(amountStr).toLocaleString()} QU</Button>
+          <Button variant="danger" shape="sharp" onClick={send} disabled={!wallet || !tickInfo || hasPendingTx}>Burn {Number(amountStr).toLocaleString()} QU</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setStep("input")}>Cancel</Button>
         </>
       )}
