@@ -67,7 +67,7 @@ export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
         animate={{ opacity: flash ? 0.6 : 1 }}
         transition={{ duration: 0.1, ease: [0, 0, 0.2, 1] }}
         onClick={toggle}
-        aria-label={expanded ? `Address: ${identity} — click to copy and collapse` : `Copy address ${truncateId(identity, 10, 10)}`}
+        aria-label={expanded ? `Address: ${identity} — click to collapse` : `Copy address ${truncateId(identity, 10, 10)}`}
         style={{
           background: "none",
           border: "none",
