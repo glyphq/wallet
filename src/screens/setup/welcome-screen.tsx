@@ -8,6 +8,7 @@ import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/pe
 import { useSessionStore } from "@/store/session";
 import { AlertTriangle } from "lucide-react";
 import { unlockVault, createWallet, type VaultData } from "@/lib/vault";
+import { newId } from "@/lib/crypto";
 
 interface ImportFileData {
   name: string;
@@ -60,7 +61,7 @@ export default function WelcomeScreen() {
     setImportError("");
     try {
       const seeds = await unlockVault(importData.vault, importPw);
-      const newVaultId = globalThis.crypto.randomUUID();
+      const newVaultId = newId();
       const wallets = seeds.map(createWallet);
       addVault({
         id: newVaultId,

@@ -12,7 +12,7 @@ import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
-import { isValidIdentity } from "@/lib/crypto";
+import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { truncateId, formatQu } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
@@ -146,7 +146,7 @@ export default function SendScreen() {
   function doSaveContact() {
     if (!saveName.trim()) return;
     addContact({
-      id: globalThis.crypto.randomUUID(),
+      id: newId(),
       name: saveName.trim(),
       identity: destUpper,
       note: "",

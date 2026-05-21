@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { toSeed, InvalidSeedError } from "@/lib/crypto";
+import { toSeed, InvalidSeedError, newId } from "@/lib/crypto";
 import { createVault, createWallet } from "@/lib/vault";
 import { usePersistedStore, type VaultColor } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -78,7 +78,7 @@ export default function ImportVaultScreen() {
     try {
       const encryptedData = await createVault(password, [seed]);
       const vault = {
-        id: globalThis.crypto.randomUUID(),
+        id: newId(),
         name: name.trim(),
         color,
         createdAt: Date.now(),

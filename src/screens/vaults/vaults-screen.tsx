@@ -10,6 +10,7 @@ import { Divider } from "@/components/divider";
 import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVault, createWallet, type VaultData } from "@/lib/vault";
+import { newId } from "@/lib/crypto";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -161,7 +162,7 @@ export default function VaultsScreen() {
     try {
       await unlockVault(importData.vault, importPassword);
       const newVault: VaultMeta = {
-        id: globalThis.crypto.randomUUID(),
+        id: newId(),
         name: importData.name,
         color: importData.color,
         createdAt: Date.now(),

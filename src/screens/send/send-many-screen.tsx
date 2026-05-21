@@ -14,7 +14,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { isValidIdentity } from "@/lib/crypto";
+import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { truncateId, formatQu } from "@/lib/format";
@@ -34,7 +34,7 @@ interface Recipient {
 type Step = "input" | "review" | "sending" | "done" | "error";
 
 function emptyRecipient(): Recipient {
-  return { id: globalThis.crypto.randomUUID(), identity: "", amount: "", identityError: "", amountError: "" };
+  return { id: newId(), identity: "", amount: "", identityError: "", amountError: "" };
 }
 
 export default function SendManyScreen() {

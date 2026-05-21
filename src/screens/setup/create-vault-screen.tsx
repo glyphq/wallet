@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { generateRandomSeed } from "@/lib/crypto";
+import { generateRandomSeed, newId } from "@/lib/crypto";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { createVault, createWallet } from "@/lib/vault";
 import { usePersistedStore, type VaultColor } from "@/store/persisted";
@@ -115,7 +115,7 @@ export default function CreateVaultScreen() {
     try {
       const encryptedData = await createVault(password, [seed]);
       const vault = {
-        id: globalThis.crypto.randomUUID(),
+        id: newId(),
         name: name.trim(),
         color,
         createdAt: Date.now(),

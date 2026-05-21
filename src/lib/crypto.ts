@@ -34,3 +34,8 @@ export function isValidIdentity(s: string): boolean {
 export function truncateIdentity(identity: string): string {
   return truncateId(identity, 10, 10);
 }
+
+/** Returns a new random UUID v4 string. */
+export function newId(): string {
+  return globalThis.crypto.randomUUID();
+}

@@ -7,7 +7,7 @@ import { Input } from "@/components/input";
 import { Modal } from "@/components/modal";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type Contact } from "@/store/persisted";
-import { isValidIdentity } from "@/lib/crypto";
+import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 
 export default function ContactsScreen() {
@@ -47,7 +47,7 @@ export default function ContactsScreen() {
   function doAdd() {
     if (!formName.trim() || !validateIdentity(formIdentity.trim())) return;
     addContact({
-      id: globalThis.crypto.randomUUID(),
+      id: newId(),
       name: formName.trim(),
       identity: formIdentity.trim(),
       note: formNote.trim(),
