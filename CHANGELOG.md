@@ -1,5 +1,13 @@
 # sigil
 
+## 0.4.4
+
+### Patch Changes
+
+- 06564e0: Allow selective permission grant on dApp connect, fix contact ID collisions on import, make contact replace atomic, sort contacts alphabetically in settings, fix partial identity search in settings contacts filter
+- 7120e1a: Persist biometric failure count across lock-screen remounts, show pending transaction ETA in history, merge store subscriptions in App.tsx, cap sign-message display length, connect send confirmation watcher to notification preference, enforce password complexity on vault creation, zero password before biometric enrollment
+- ae7afff: Guard burn and stake sends against pending transactions and missing wallet/tick state, fix strict SendToMany payload size validation, deduplicate contacts by identity on file import, clamp custom accent color lightness for legibility
+
 ## 0.4.3
 
 ### Patch Changes
