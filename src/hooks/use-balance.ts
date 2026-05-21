@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Identity } from "@qubic.org/types";
 import { getRpcClient } from "@/lib/rpc";
-import { getBobRpcClient } from "@/lib/bob-client";
+import { getBobRestClient } from "@/lib/bob-client";
 import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
 
@@ -14,16 +13,13 @@ export function useBalance(identity: string | null | undefined) {
     queryKey: [...qk.balance(identity ?? null), useBobNode ? "bob" : "rpc"],
     queryFn: async () => {
       if (useBobNode && bobRestUrl) {
-        const bob = getBobRpcClient(bobRestUrl);
-        const [balResult, tickResult] = await Promise.all([
-          bob.getBalance(identity! as Identity),
-          bob.getTickNumber(),
-        ]);
-        if (!balResult.ok) throw balResult.error;
+        const result = await getBobRestClient(bobRestUrl).getBalance(identity!);
+        if (!result.ok) throw result.error;
+        const b = result.value as Record<string, unknown>;
         return {
           id: identity!,
-          balance: balResult.value,
-          validForTick: tickResult.ok ? tickResult.value : 0,
+          balance: BigInt(String(b.balance ?? 0)),
+          validForTick: (b.currentTick as number | undefined) ?? 0,
           latestIncomingTransferTick: 0,
           latestOutgoingTransferTick: 0,
           incomingAmount: 0n,

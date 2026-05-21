@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { getRpcClient } from "@/lib/rpc";
-import { getBobRpcClient } from "@/lib/bob-client";
+import { getBobRestClient } from "@/lib/bob-client";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -27,19 +27,26 @@ export function useBobSync(): void {
 
     async function check() {
       try {
-        const bob = getBobRpcClient(bobRestUrl!);
-        const [rpcResult, epochResult] = await Promise.all([
+        const bob = getBobRestClient(bobRestUrl!);
+        const [rpcResult, statusResult] = await Promise.all([
           getRpcClient().live.getTickInfo(),
-          bob.getCurrentEpoch(),
+          bob.getStatus(),
         ]);
-        if (!rpcResult.ok || !epochResult.ok) return;
+        if (!rpcResult.ok || !statusResult.ok) return;
 
-        const epochInfoResult = await bob.getEpochInfo(epochResult.value);
+        const s = statusResult.value as Record<string, unknown>;
+        const currentEpoch = (s.currentProcessingEpoch ?? s.currentEpoch ?? s.epoch) as number | undefined;
+        if (!currentEpoch) return;
+
+        const epochInfoResult = await bob.getEpochInfo(currentEpoch);
         if (!epochInfoResult.ok) return;
 
+        const info = epochInfoResult.value as Record<string, unknown>;
+        const lastIndexedTick = info.lastIndexedTick as number | undefined;
+        if (lastIndexedTick === undefined) return;
+
         const rpcTick = rpcResult.value.tick ?? 0;
-        const lag = rpcTick - epochInfoResult.value.lastIndexedTick;
-        setBobSyncLag(lag);
+        setBobSyncLag(rpcTick - lastIndexedTick);
       } catch {
         // non-critical
       }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
-import { getBobRpcClient } from "@/lib/bob-client";
+import { getBobRestClient } from "@/lib/bob-client";
 import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
 
@@ -13,15 +13,12 @@ export function useTickInfo() {
     queryKey: [...qk.tickInfo(), useBobNode ? "bob" : "rpc"],
     queryFn: async () => {
       if (useBobNode && bobRestUrl) {
-        const bob = getBobRpcClient(bobRestUrl);
-        const [tickResult, epochResult] = await Promise.all([
-          bob.getTickNumber(),
-          bob.getCurrentEpoch(),
-        ]);
-        if (!tickResult.ok) throw tickResult.error;
+        const result = await getBobRestClient(bobRestUrl).getStatus();
+        if (!result.ok) throw result.error;
+        const s = result.value as Record<string, unknown>;
         return {
-          tick: tickResult.value,
-          epoch: epochResult.ok ? epochResult.value : 0,
+          tick: ((s.currentFetchingTick ?? s.currentTick ?? s.tick) as number | undefined) ?? 0,
+          epoch: ((s.currentProcessingEpoch ?? s.currentEpoch ?? s.epoch) as number | undefined) ?? 0,
           duration: 0,
           initialTick: 0,
         };
