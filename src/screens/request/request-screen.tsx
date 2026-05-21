@@ -30,18 +30,24 @@ interface SigilEnvelope {
   callback: string | null;
 }
 
-function parseEnvelope(raw: string | null): SigilEnvelope | null {
-  if (!raw) return null;
+type ParseResult = { envelope: SigilEnvelope; error: null } | { envelope: null; error: string };
+
+function parseEnvelope(raw: string | null): ParseResult {
+  if (!raw) return { envelope: null, error: "No pending request" };
   try {
     const env = JSON.parse(raw) as { request: Record<string, unknown>; callback: unknown };
-    if (!env.request?.type || typeof (env.request.dapp as { origin?: unknown })?.origin !== "string") return null;
+    if (!env.request?.type) return { envelope: null, error: "Missing request type" };
+    if (typeof (env.request.dapp as { origin?: unknown })?.origin !== "string")
+      return { envelope: null, error: "Missing dApp origin" };
     const origin = (env.request.dapp as { origin: string }).origin;
-    if (!origin.startsWith("https://")) return null;
-    if (typeof env.callback === "string" && !env.callback.startsWith("https://")) return null;
-    if (env.request.exp && Date.now() / 1000 > (env.request.exp as number)) return null;
-    return env as unknown as SigilEnvelope;
+    if (!origin.startsWith("https://")) return { envelope: null, error: "dApp origin must be HTTPS" };
+    if (typeof env.callback === "string" && !env.callback.startsWith("https://"))
+      return { envelope: null, error: "Callback URL must be HTTPS" };
+    if (env.request.exp && Date.now() / 1000 > (env.request.exp as number))
+      return { envelope: null, error: "Request expired" };
+    return { envelope: env as unknown as SigilEnvelope, error: null };
   } catch {
-    return null;
+    return { envelope: null, error: "Invalid request format" };
   }
 }
 
@@ -74,12 +80,14 @@ export default function RequestScreen() {
   const pendingRequest = useSessionStore((s) => s.pendingRequest);
   const setPendingRequest = useSessionStore((s) => s.setPendingRequest);
 
-  const envelope = parseEnvelope(pendingRequest);
+  const parseResult = parseEnvelope(pendingRequest);
+  const envelope = parseResult.envelope;
+  const parseError = parseResult.error;
   const [success, setSuccess] = useState<SuccessState | null>(null);
 
   useEffect(() => {
-    if (!envelope && !success) navigate("/dashboard", { replace: true });
-  }, [envelope, success, navigate]);
+    if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
+  }, [pendingRequest, success, navigate]);
 
   // Auto-dismiss when the request's exp timestamp passes so the approval
   // buttons don't remain active after expiry.
@@ -89,16 +97,14 @@ export default function RequestScreen() {
     if (msUntilExp <= 0) {
       invoke("clear_pending_request").catch(() => {});
       setPendingRequest(null);
-      navigate("/dashboard", { replace: true });
       return;
     }
     const t = setTimeout(() => {
       invoke("clear_pending_request").catch(() => {});
       setPendingRequest(null);
-      navigate("/dashboard", { replace: true });
     }, msUntilExp);
     return () => clearTimeout(t);
-  }, [envelope?.request.exp, success, navigate, setPendingRequest]);
+  }, [envelope?.request.exp, success, setPendingRequest]);
 
   // Enforce dApp permissions: if origin is already approved but lacks the
   // required permission for this request type, auto-reject immediately.
@@ -126,16 +132,14 @@ export default function RequestScreen() {
         invoke("post_callback", { url: envelope.callback, body }).catch(() => {});
       }
       setPendingRequest(null);
-      navigate("/dashboard", { replace: true });
     }
-  }, [envelope, success, navigate, setPendingRequest]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [envelope, success, setPendingRequest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dismiss without notifying the dApp — used by the BACK button so navigating
   // away doesn't send a spurious rejection to the dApp.
   function dismiss() {
     invoke("clear_pending_request").catch(() => {});
     setPendingRequest(null);
-    navigate("/dashboard", { replace: true });
   }
 
   function reject() {
@@ -150,7 +154,6 @@ export default function RequestScreen() {
       invoke("post_callback", { url: envelope.callback, body }).catch(() => {});
     }
     setPendingRequest(null);
-    navigate("/dashboard", { replace: true });
   }
 
   async function postCallback(callbackBody: string) {
@@ -338,7 +341,19 @@ export default function RequestScreen() {
     );
   }
 
-  if (!envelope) return null;
+  if (!envelope) {
+    return (
+      <SheetLayout statusBar={<ScreenHeader title="Request" onBack={() => navigate("/dashboard")} />}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Tag variant="error">INVALID REQUEST</Tag>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+            [{parseError}]
+          </div>
+          <Button variant="secondary" shape="sharp" onClick={() => navigate("/dashboard")}>Back to app</Button>
+        </div>
+      </SheetLayout>
+    );
+  }
 
   const { request } = envelope;
   const typeLabel = TYPE_LABEL[request.type] ?? request.type;
