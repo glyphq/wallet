@@ -18,7 +18,8 @@ export type TxQueryFilters = {
   type: "all" | "transfer" | "sc";          // filters/ranges.inputType
   minAmount: string;                         // ranges.amount.gte
   maxAmount: string;                         // ranges.amount.lte
-  period: "all" | "7d" | "30d";             // ranges.timestamp.gte (preset)
+  dateFrom: string;                          // ranges.timestamp.gte (ISO date "YYYY-MM-DD")
+  dateTo: string;                            // ranges.timestamp.lte (ISO date "YYYY-MM-DD")
   tickFrom: string;                          // ranges.tickNumber.gte
   tickTo: string;                            // ranges.tickNumber.lte
   // Event-log only
@@ -28,7 +29,7 @@ export type TxQueryFilters = {
 export const DEFAULT_QUERY_FILTERS: TxQueryFilters = {
   direction: "all", type: "all",
   minAmount: "", maxAmount: "",
-  period: "all",
+  dateFrom: "", dateTo: "",
   tickFrom: "", tickTo: "",
   epoch: "",
 };
@@ -43,10 +44,10 @@ export function useTxHistory(
   identity: string | null | undefined,
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
-  const { direction, type, minAmount, maxAmount, period, tickFrom, tickTo, epoch } = queryFilters;
+  const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo, epoch } = queryFilters;
 
   return useInfiniteQuery({
-    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, maxAmount, period, tickFrom, tickTo, epoch],
+    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo, epoch],
     queryFn: async ({ pageParam }) => {
       const offset = pageParam;
 
@@ -65,8 +66,10 @@ export function useTxHistory(
       if (maxAmount) amountRange.lte = maxAmount;
       if (Object.keys(amountRange).length) txRanges.amount = amountRange;
 
-      const periodMs = period === "7d" ? 7 * 86_400_000 : period === "30d" ? 30 * 86_400_000 : 0;
-      if (periodMs) txRanges.timestamp = { gte: String(Date.now() - periodMs) };
+      const timestampRange: { gte?: string; lte?: string } = {};
+      if (dateFrom) timestampRange.gte = String(new Date(dateFrom + "T00:00:00").getTime());
+      if (dateTo) timestampRange.lte = String(new Date(dateTo + "T23:59:59.999").getTime());
+      if (Object.keys(timestampRange).length) txRanges.timestamp = timestampRange;
 
       const tickRange: { gte?: string; lte?: string } = {};
       if (tickFrom) tickRange.gte = tickFrom;
@@ -112,8 +115,8 @@ export function useTxHistory(
           // Amount range
           if (Object.keys(amountRange).length) evtRanges.amount = amountRange;
 
-          // Timestamp period
-          if (periodMs) evtRanges.timestamp = { gte: String(Date.now() - periodMs) };
+          // Timestamp range
+          if (Object.keys(timestampRange).length) evtRanges.timestamp = timestampRange;
 
           // Tick range
           if (Object.keys(tickRange).length) evtRanges.tickNumber = tickRange;

@@ -22,23 +22,23 @@ import { truncateId, formatQu } from "@/lib/format";
 
 // ── Filter types ──────────────────────────────────────────────────────────────
 
-type FilterStatus = "all" | "confirmed" | "failed";
+type TxFilters = TxQueryFilters;
 
-type TxFilters = TxQueryFilters & { status: FilterStatus };
-
-const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS, status: "all" };
+const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS };
 
 // Draft state for text inputs — committed on APPLY
 type DraftInputs = {
   minAmount: string;
   maxAmount: string;
+  dateFrom: string;
+  dateTo: string;
   epoch: string;
   tickFrom: string;
   tickTo: string;
 };
 
 function toDraft(f: TxFilters): DraftInputs {
-  return { minAmount: f.minAmount, maxAmount: f.maxAmount, epoch: f.epoch, tickFrom: f.tickFrom, tickTo: f.tickTo };
+  return { minAmount: f.minAmount, maxAmount: f.maxAmount, dateFrom: f.dateFrom, dateTo: f.dateTo, epoch: f.epoch, tickFrom: f.tickFrom, tickTo: f.tickTo };
 }
 
 function sanitize(s: string): string {
@@ -48,8 +48,8 @@ function sanitize(s: string): string {
 
 function isDefault(f: TxFilters): boolean {
   return (
-    f.direction === "all" && f.type === "all" && f.status === "all" &&
-    f.period === "all" && !f.minAmount && !f.maxAmount && !f.epoch && !f.tickFrom && !f.tickTo
+    f.direction === "all" && f.type === "all" &&
+    !f.minAmount && !f.maxAmount && !f.dateFrom && !f.dateTo && !f.epoch && !f.tickFrom && !f.tickTo
   );
 }
 
@@ -95,6 +95,8 @@ export default function HistoryScreen() {
       ...f,
       minAmount: sanitize(draft.minAmount),
       maxAmount: sanitize(draft.maxAmount),
+      dateFrom: draft.dateFrom,
+      dateTo: draft.dateTo,
       epoch: sanitize(draft.epoch),
       tickFrom: sanitize(draft.tickFrom),
       tickTo: sanitize(draft.tickTo),
@@ -113,11 +115,7 @@ export default function HistoryScreen() {
     return true;
   });
 
-  const filteredTxs = allTxs.filter((tx) => {
-    if (filters.status === "confirmed" && !tx.moneyFlew) return false;
-    if (filters.status === "failed" && tx.moneyFlew) return false;
-    return true;
-  });
+  const filteredTxs = allTxs;
 
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
@@ -126,13 +124,17 @@ export default function HistoryScreen() {
   const chips: { label: string; clear: () => void }[] = [];
   if (filters.direction !== "all") chips.push({ label: filters.direction.toUpperCase(), clear: () => setFilters((f) => ({ ...f, direction: "all" })) });
   if (filters.type !== "all") chips.push({ label: filters.type === "sc" ? "SC CALL" : "TRANSFER", clear: () => setFilters((f) => ({ ...f, type: "all" })) });
-  if (filters.status !== "all") chips.push({ label: filters.status.toUpperCase(), clear: () => setFilters((f) => ({ ...f, status: "all" })) });
-  if (filters.period !== "all") chips.push({ label: filters.period.toUpperCase(), clear: () => setFilters((f) => ({ ...f, period: "all" })) });
   if (filters.minAmount || filters.maxAmount) {
     const label = filters.minAmount && filters.maxAmount
       ? `${formatQu(filters.minAmount)}–${formatQu(filters.maxAmount)} QU`
       : filters.minAmount ? `≥ ${formatQu(filters.minAmount)} QU` : `≤ ${formatQu(filters.maxAmount)} QU`;
     chips.push({ label, clear: () => { setFilters((f) => ({ ...f, minAmount: "", maxAmount: "" })); setDraft((d) => ({ ...d, minAmount: "", maxAmount: "" })); } });
+  }
+  if (filters.dateFrom || filters.dateTo) {
+    const label = filters.dateFrom && filters.dateTo
+      ? `${filters.dateFrom} – ${filters.dateTo}`
+      : filters.dateFrom ? `FROM ${filters.dateFrom}` : `TO ${filters.dateTo}`;
+    chips.push({ label, clear: () => { setFilters((f) => ({ ...f, dateFrom: "", dateTo: "" })); setDraft((d) => ({ ...d, dateFrom: "", dateTo: "" })); } });
   }
   if (filters.epoch) chips.push({ label: `EPOCH ${filters.epoch}`, clear: () => { setFilters((f) => ({ ...f, epoch: "" })); setDraft((d) => ({ ...d, epoch: "" })); } });
   if (filters.tickFrom || filters.tickTo) {
@@ -248,16 +250,12 @@ export default function HistoryScreen() {
           ))}
         </FilterSection>
 
-        <FilterSection label="Status">
-          {(["all", "confirmed", "failed"] as const).map((v) => (
-            <Pill key={v} label={v.toUpperCase()} active={filters.status === v} onClick={() => setFilters((f) => ({ ...f, status: v }))} />
-          ))}
-        </FilterSection>
-
-        <FilterSection label="Period">
-          {(["all", "7d", "30d"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "ALL" : v.toUpperCase()} active={filters.period === v} onClick={() => setFilters((f) => ({ ...f, period: v }))} />
-          ))}
+        <FilterSection label="Date range">
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
+            <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
+            <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
+          </div>
         </FilterSection>
 
         <FilterSection label="Amount (QU)">
