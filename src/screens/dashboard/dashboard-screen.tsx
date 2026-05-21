@@ -17,7 +17,7 @@ import { useNetworkHealth } from "@/hooks/use-network-health";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { Divider } from "@/components/divider";
-import { truncateId, formatQu } from "@/lib/format";
+import { truncateId, formatQu, formatQuCompact } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
@@ -400,7 +400,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
                 </span>
               </div>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: expired ? "var(--color-text-disabled)" : "var(--color-status-warning)" }}>
-                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(p.amount ?? "0")}`}
+                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(p.amount ?? "0")}`}
               </span>
             </div>
           </div>
@@ -427,7 +427,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
                 </span>
               </div>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>
-                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(tx.amount ?? "0")}`}
+                {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount ?? "0")}`}
               </span>
             </div>
           </div>

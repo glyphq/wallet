@@ -18,3 +18,25 @@ export function formatQu(amount: bigint | string | number): string {
     return n.toLocaleString();
   } catch { return "—"; }
 }
+
+/** Compact QU format for list rows — 1K / 1.2M / 3.4B. Full precision below 1 000. */
+export function formatQuCompact(amount: bigint | string | number): string {
+  try {
+    const n = Number(BigInt(typeof amount === "number" ? Math.round(amount) : amount));
+    if (n >= 1_000_000_000) return `${+(n / 1_000_000_000).toFixed(2).replace(/\.?0+$/, "")}B`;
+    if (n >= 1_000_000)     return `${+(n / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
+    if (n >= 1_000)         return `${+(n / 1_000).toFixed(1).replace(/\.?0+$/, "")}K`;
+    return n.toLocaleString();
+  } catch { return "—"; }
+}
+
+/** Format a Unix-ms timestamp as locale date+time, e.g. "May 21, 14:32". */
+export function formatDate(timestampMs: number | null | undefined): string {
+  if (!timestampMs) return "";
+  try {
+    return new Date(timestampMs).toLocaleString(undefined, {
+      month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+  } catch { return ""; }
+}

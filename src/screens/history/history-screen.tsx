@@ -18,7 +18,7 @@ import {
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { truncateId, formatQu } from "@/lib/format";
+import { truncateId, formatQu, formatQuCompact, formatDate } from "@/lib/format";
 
 // ── Filter types ──────────────────────────────────────────────────────────────
 
@@ -124,8 +124,8 @@ export default function HistoryScreen() {
   if (filters.type !== "all") chips.push({ label: filters.type === "sc" ? "SC CALL" : "TRANSFER", clear: () => setFilters((f) => ({ ...f, type: "all" })) });
   if (filters.minAmount || filters.maxAmount) {
     const label = filters.minAmount && filters.maxAmount
-      ? `${formatQu(filters.minAmount)}–${formatQu(filters.maxAmount)} QU`
-      : filters.minAmount ? `≥ ${formatQu(filters.minAmount)} QU` : `≤ ${formatQu(filters.maxAmount)} QU`;
+      ? `${formatQuCompact(filters.minAmount)}–${formatQuCompact(filters.maxAmount)} QU`
+      : filters.minAmount ? `≥ ${formatQuCompact(filters.minAmount)} QU` : `≤ ${formatQuCompact(filters.maxAmount)} QU`;
     chips.push({ label, clear: () => { setFilters((f) => ({ ...f, minAmount: "", maxAmount: "" })); setDraft((d) => ({ ...d, minAmount: "", maxAmount: "" })); } });
   }
   if (filters.dateFrom || filters.dateTo) {
@@ -189,7 +189,7 @@ export default function HistoryScreen() {
                     tag={<Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>}
                     sub={p.contractName ?? (isIn ? truncateId(p.source) : truncateId(p.destination))}
                     sub2={expired ? `EXPIRED AT TICK ${p.targetTick}` : currentTick > 0 ? `ETA ~${Math.max(1, p.targetTick - currentTick)}s` : `TARGET ${p.targetTick}`}
-                    amount={settings.hideBalances ? "••••••" : `−${formatQu(p.amount)}`}
+                    amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
                     amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
                   />
                 </button>
@@ -216,8 +216,8 @@ export default function HistoryScreen() {
                   <TxRow
                     tag={<Tag variant={variant}>{label}</Tag>}
                     sub={counterparty}
-                    sub2={`TICK ${tx.tickNumber}`}
-                    amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(tx.amount)}`}
+                    sub2={formatDate(tx.timestamp) || `TICK ${tx.tickNumber}`}
+                    amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
                     amountColor={flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                   />
                 </button>
