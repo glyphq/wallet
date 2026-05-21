@@ -49,6 +49,7 @@ pub fn run() {
             commands::clear_pending_request,
             commands::copy_to_clipboard,
             commands::clear_clipboard,
+            commands::lock_clipboard,
             commands::post_callback,
             biometric::check_biometric_available,
             biometric::enable_biometric,

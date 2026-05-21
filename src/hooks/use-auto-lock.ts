@@ -29,7 +29,7 @@ export function useAutoLock() {
     let active = true;
 
     listen("sigil:lock", () => {
-      invoke("clear_clipboard").catch(() => {});
+      invoke("lock_clipboard").catch(() => {});
       lock();
       navigate("/lock", { replace: true });
     }).then((fn) => {
