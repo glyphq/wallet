@@ -10,7 +10,7 @@ import { Input } from "@/components/input";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { Download } from "lucide-react";
+import { Download, SlidersHorizontal, RotateCw } from "lucide-react";
 import {
   useTxHistory,
   type TxHistoryItem,
@@ -167,14 +167,17 @@ export default function HistoryScreen() {
           action={
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
               {hasMemos && (
-                <button type="button" onClick={exportMemos} aria-label="Export memos" style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
-                  <Download size={14} />
+                <button type="button" onClick={exportMemos} aria-label="Export memos" style={ICON_BTN}>
+                  <Download size={15} />
                 </button>
               )}
-              <button type="button" onClick={() => setFilterOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, display: "flex", alignItems: "center", gap: 4, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
-                FILTER{hasActive && <span style={{ color: "var(--color-status-success)", fontSize: 8, lineHeight: 1 }}>●</span>}
+              <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
+                <SlidersHorizontal size={15} />
+                {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
               </button>
-              <button type="button" onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>↻</button>
+              <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
+                <RotateCw size={15} />
+              </button>
             </div>
           }
         />
@@ -320,6 +323,11 @@ export default function HistoryScreen() {
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
+
+const ICON_BTN: React.CSSProperties = {
+  background: "none", border: "none", cursor: "pointer", padding: 0,
+  display: "flex", alignItems: "center", color: "var(--color-text-secondary)",
+};
 
 const ROW_BTN: React.CSSProperties = {
   width: "100%", background: "none", border: "none", cursor: "pointer",
