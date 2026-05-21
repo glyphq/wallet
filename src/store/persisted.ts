@@ -8,13 +8,16 @@ export type VaultColor = "slate" | "red" | "amber" | "emerald" | "sky" | "violet
 export type FontPairId = "default" | "inter" | "ibm" | "roboto" | "fira";
 export type AccentColorId = "green" | "amber" | "sky" | "violet" | "rose" | "mono";
 
+/** Persisted display metadata for a single account within a vault. Index mirrors position in the seed array. */
 export interface AccountMeta {
   index: number;
   name: string;
   addedAt: number;
+  /** When true the account is hidden from the account switcher but remains in the seed array. */
   hidden: boolean;
 }
 
+/** Persisted metadata for a vault — does not contain seeds; those live in `encryptedData`. */
 export interface VaultMeta {
   id: string;
   name: string;
@@ -31,6 +34,7 @@ export interface NetworkConfig {
   name: "mainnet" | "testnet" | "custom";
 }
 
+/** A dApp origin that the user has explicitly approved, along with its granted permission set. */
 export interface ApprovedDapp {
   origin: string;
   name: string;
@@ -50,6 +54,7 @@ export interface AppSettings {
   hideBalances: boolean;
   approvedDapps: ApprovedDapp[];
   currency: "USD" | "EUR" | "BTC";
+  /** Ticks added to the current tick when estimating targetTick for new transactions. Default 10. */
   tickOffset: number;
   debugMode: boolean;
   biometricVaultIds: string[];
@@ -71,6 +76,7 @@ export interface Contact {
   lastUsedAt: number;
 }
 
+/** A broadcast transaction awaiting confirmation or expiry tracking. */
 export interface PendingTx {
   hash: string;
   source: string;
@@ -78,7 +84,8 @@ export interface PendingTx {
   amount: string;
   targetTick: number;
   broadcastAt: number;
-  contractName?: string; // present for SC calls, e.g. "QUtil · Send to Many"
+  /** Present for SC calls — used as the notification label instead of the raw amount. */
+  contractName?: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
