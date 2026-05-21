@@ -316,6 +316,11 @@ export default function VaultsScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
               Delete {deletingVault?.name}?
             </div>
+            {(deletingVault?.accounts.length ?? 0) > 1 && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", marginBottom: "var(--space-1)" }}>
+                [WARNING] This vault contains {deletingVault!.accounts.length} accounts. All seeds will be permanently lost.
+              </div>
+            )}
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>
               This cannot be undone.
             </div>
