@@ -96,6 +96,7 @@ export default function DashboardScreen() {
   const dismissTxAlert = useSessionStore((s) => s.dismissTxAlert);
   const bobTick = useSessionStore((s) => s.bobTick);
   const bobConnected = useSessionStore((s) => s.bobConnected);
+  const bobSyncLag = useSessionStore((s) => s.bobSyncLag);
 
   const [showNetworkOverlay, setShowNetworkOverlay] = useState(false);
 
@@ -304,6 +305,13 @@ export default function DashboardScreen() {
               value={bobConnected ? `LIVE #${padTick(bobTick ?? undefined)}` : "connecting..."}
             />
           )}
+          {settings.network.useBobNode && bobSyncLag !== null && (
+            <NetworkRow
+              label="Bob sync lag"
+              value={`${bobSyncLag} tick${bobSyncLag === 1 ? "" : "s"}`}
+              warn={bobSyncLag > 10}
+            />
+          )}
         </div>
       </Modal>
     </AppShell>
@@ -435,13 +443,13 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   );
 }
 
-function NetworkRow({ label, value }: { label: string; value: string }) {
+function NetworkRow({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
         {label}
       </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: warn ? "var(--color-status-warning)" : "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
         {value}
       </span>
     </div>

@@ -9,6 +9,7 @@ import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } fro
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useUpdater } from "@/hooks/use-updater";
 import { useBobTick } from "@/hooks/use-bob-tick";
+import { useBobSync } from "@/hooks/use-bob-sync";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { TitleBar } from "@/components/title-bar";
@@ -115,6 +116,7 @@ function AppHooks() {
   useNotificationTriggers();
   useNotificationInit();
   useBobTick();
+  useBobSync();
   useUpdater();
   return null;
 }
