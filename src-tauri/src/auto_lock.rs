@@ -5,7 +5,6 @@ use tauri::{AppHandle, Emitter, Manager};
 pub struct AutoLockState {
     last_activity: Arc<Mutex<Instant>>,
     timeout_minutes: Arc<Mutex<u64>>,
-    enabled: Arc<Mutex<bool>>,
     lock_on_sleep: Arc<Mutex<bool>>,
     last_poll_wall: Arc<Mutex<SystemTime>>,
 }
@@ -15,7 +14,6 @@ impl Default for AutoLockState {
         Self {
             last_activity: Arc::new(Mutex::new(Instant::now())),
             timeout_minutes: Arc::new(Mutex::new(15)),
-            enabled: Arc::new(Mutex::new(true)),
             lock_on_sleep: Arc::new(Mutex::new(true)),
             last_poll_wall: Arc::new(Mutex::new(SystemTime::now())),
         }
@@ -33,7 +31,6 @@ impl AutoLockState {
 
     pub fn set_timeout(&self, minutes: u64) {
         *Self::lock_recover(&self.timeout_minutes) = minutes;
-        *Self::lock_recover(&self.enabled) = minutes > 0;
     }
 
     pub fn set_lock_on_sleep(&self, enabled: bool) {
@@ -41,11 +38,11 @@ impl AutoLockState {
     }
 
     pub fn seconds_until_lock(&self) -> Option<u64> {
-        let enabled = *Self::lock_recover(&self.enabled);
-        if !enabled {
+        let minutes = *Self::lock_recover(&self.timeout_minutes);
+        if minutes == 0 {
             return None;
         }
-        let timeout = Duration::from_secs(*Self::lock_recover(&self.timeout_minutes) * 60);
+        let timeout = Duration::from_secs(minutes * 60);
         let elapsed = Self::lock_recover(&self.last_activity).elapsed();
         timeout.checked_sub(elapsed).map(|r| r.as_secs())
     }
@@ -55,7 +52,6 @@ pub fn spawn_lock_watcher(app: AppHandle) {
     let state = app.state::<AutoLockState>();
     let last_activity = Arc::clone(&state.last_activity);
     let timeout_minutes = Arc::clone(&state.timeout_minutes);
-    let enabled = Arc::clone(&state.enabled);
     let lock_on_sleep = Arc::clone(&state.lock_on_sleep);
     let last_poll_wall = Arc::clone(&state.last_poll_wall);
 
@@ -80,12 +76,12 @@ pub fn spawn_lock_watcher(app: AppHandle) {
         }
 
         // Idle timeout check
-        let is_enabled = *enabled.lock().unwrap_or_else(|e| e.into_inner());
-        if !is_enabled {
+        let minutes = *timeout_minutes.lock().unwrap_or_else(|e| e.into_inner());
+        if minutes == 0 {
             continue;
         }
 
-        let timeout = Duration::from_secs(*timeout_minutes.lock().unwrap_or_else(|e| e.into_inner()) * 60);
+        let timeout = Duration::from_secs(minutes * 60);
         let elapsed = last_activity.lock().unwrap_or_else(|e| e.into_inner()).elapsed();
 
         if elapsed >= timeout {
