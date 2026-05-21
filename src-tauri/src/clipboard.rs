@@ -35,6 +35,10 @@ impl ClipboardState {
     pub fn should_clear(&self) -> bool {
         Self::lock_recover(&self.clear_at).map_or(false, |at| Instant::now() >= at)
     }
+
+    pub fn has_pending_clear(&self) -> bool {
+        Self::lock_recover(&self.clear_at).is_some()
+    }
 }
 
 pub fn spawn_clipboard_watcher(app: AppHandle) {
