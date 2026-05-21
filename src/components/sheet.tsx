@@ -53,14 +53,16 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
               background: "var(--color-bg-elevated)",
               borderTop: "1px solid var(--color-border-strong)",
               borderRadius: "var(--radius-card) var(--radius-card) 0 0",
-              padding: "var(--space-5) var(--space-6) var(--space-8)",
+              padding: "var(--space-4) var(--space-4) var(--space-8)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-5)" }}>
+            {/* Drag handle */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-4)" }}>
               <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
             </div>
+
             {title && (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-5)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
                 <span style={{
                   fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
                   color: "var(--color-text-secondary)", letterSpacing: "0.08em", textTransform: "uppercase",
@@ -68,6 +70,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
                   {title}
                 </span>
                 <button
+                  type="button"
                   onClick={onClose}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: 0, lineHeight: 1, fontSize: 14 }}
                 >
@@ -75,6 +78,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
                 </button>
               </div>
             )}
+
             {children}
           </motion.div>
         </motion.div>
