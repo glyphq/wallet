@@ -4,7 +4,8 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick, getRpcClient } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
+import { broadcastTx } from "@/lib/broadcast";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
 import {
@@ -154,8 +155,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       addPendingTx({
         hash,

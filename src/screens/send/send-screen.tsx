@@ -14,7 +14,8 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
+import { broadcastTx } from "@/lib/broadcast";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
 import { TxSending, TxError } from "@/components/tx-status";
@@ -122,8 +123,7 @@ export default function SendScreen() {
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       addPendingTx({
         hash,

@@ -3,7 +3,8 @@ import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick, getRpcClient } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
+import { broadcastTx } from "@/lib/broadcast";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
 import { truncateId, formatQu } from "@/lib/format";
@@ -69,8 +70,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         currentTick: tickInfo.tick,
       });
 
-      const result = await getRpcClient().live.broadcastTransaction(encoded);
-      if (!result.ok) throw result.error;
+      await broadcastTx(encoded);
 
       addPendingTx({
         hash,
