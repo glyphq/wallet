@@ -7,7 +7,7 @@ import { Input } from "@/components/input";
 import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc } from "@/lib/rpc";
-import { createBobRestClient } from "@qubic.org/bob";
+import { createBobRpcClient } from "@qubic.org/bob";
 
 function isHttpUrl(s: string): boolean {
   try { return ["http:", "https:"].includes(new URL(s).protocol); } catch { return false; }
@@ -65,10 +65,10 @@ export default function NetworkScreen() {
     setBobTestStatus("testing");
     setBobTestEpoch(null);
     try {
-      const client = createBobRestClient({ baseUrl: rest });
-      const result = await client.getEpochInfo(0);
+      const client = createBobRpcClient({ endpoint: rest });
+      const result = await client.getCurrentEpoch();
       if (!result.ok) throw new Error("bad response");
-      setBobTestEpoch((result.value as { epoch?: number }).epoch ?? null);
+      setBobTestEpoch(result.value);
       setBobTestStatus("ok");
       updateSettings({ network: { ...settings.network, bobRestUrl: rest, bobWsUrl: bobWsUrl.trim() || undefined } });
     } catch {
