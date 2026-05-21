@@ -20,7 +20,14 @@ export const FONT_PAIRS: FontPair[] = [
     name: "Space",
     sans: "'Space Grotesk', system-ui, sans-serif",
     mono: "'Space Mono', monospace",
-    googleUrl: null,
+    googleUrl: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Space+Mono:wght@400;700&display=swap",
+  },
+  {
+    id: "geist",
+    name: "Geist",
+    sans: "'Geist', system-ui, sans-serif",
+    mono: "'Geist Mono', monospace",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Geist+Mono:ital,wght@0,100..900;1,100..900&family=Geist:ital,wght@0,100..900;1,100..900&display=swap",
   },
   {
     id: "inter",
