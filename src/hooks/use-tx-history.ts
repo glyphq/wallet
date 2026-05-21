@@ -11,6 +11,7 @@ export type TxHistoryItem = {
   tickNumber: number;
   moneyFlew: boolean;
   timestamp: number | null;
+  inputType: number | null;
 };
 
 export type TxQueryFilters = {
@@ -95,6 +96,7 @@ export function useTxHistory(
           tickNumber: tx.tickNumber ?? 0,
           moneyFlew: tx.moneyFlew ?? true,
           timestamp: tx.timestamp ? Number(tx.timestamp) : null,
+          inputType: tx.inputType ?? null,
         });
       }
 
@@ -142,6 +144,7 @@ export function useTxHistory(
                 tickNumber: evt.tickNumber ?? 0,
                 moneyFlew: true,
                 timestamp: evt.timestamp ? Number(evt.timestamp) : null,
+                inputType: null,
               });
             }
           }
