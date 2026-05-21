@@ -196,32 +196,15 @@ export default function SendScreen() {
             </div>
           </div>
 
-          <Input
-            label="Amount (QU)"
+          <AmountInput
             value={amountStr}
-            onChange={(e) => { setAmountStr(e.target.value.replace(/[^0-9]/g, "")); setAmountError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && goReview()}
+            onChange={(qu) => { setAmountStr(qu); setAmountError(""); }}
+            onEnter={goReview}
             error={amountError}
-            placeholder="0"
-            style={{ textAlign: "right", fontSize: "var(--text-display)", fontWeight: 300, fontFamily: "var(--font-sans)" }}
+            price={stats?.price}
           />
 
-          {stats?.price && amountStr && Number(amountStr) > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "calc(var(--space-1) * -1)" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                ≈ ${(Number(amountStr) * stats.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USD
-              </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                ${(stats.price * 1e9).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU
-              </span>
-            </div>
-          )}
-
           <BalanceBar balance={balance} amountStr={amountStr} />
-
-          {stats?.price && (
-            <UsdInput price={stats.price} onQu={(qu) => { setAmountStr(qu); setAmountError(""); }} />
-          )}
 
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
             FROM: {accountName} · {truncateId(identity)}
@@ -397,41 +380,156 @@ export default function SendScreen() {
   );
 }
 
-function UsdInput({ price, onQu }: { price: number; onQu: (qu: string) => void }) {
-  const [usd, setUsd] = useState("");
+function AmountInput({
+  value,
+  onChange,
+  onEnter,
+  error,
+  price,
+}: {
+  value: string;
+  onChange: (qu: string) => void;
+  onEnter?: () => void;
+  error?: string;
+  price?: number;
+}) {
+  const [mode, setMode] = useState<"QU" | "USD">("QU");
+  const [usdStr, setUsdStr] = useState("");
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value.replace(/[^0-9.]/g, "");
-    setUsd(v);
-    const n = parseFloat(v);
-    if (!isNaN(n) && n > 0 && price > 0) {
-      onQu(String(Math.floor(n / price)));
+  function switchMode(next: "QU" | "USD") {
+    if (next === mode) return;
+    if (next === "USD" && price) {
+      const n = Number(value);
+      setUsdStr(n > 0 ? (n * price).toFixed(4) : "");
+    }
+    if (next === "QU" && price && usdStr) {
+      const n = parseFloat(usdStr);
+      if (!isNaN(n) && n > 0) onChange(String(Math.floor(n / price)));
+    }
+    setMode(next);
+  }
+
+  function handleQu(raw: string) {
+    const qu = raw.replace(/[^0-9]/g, "");
+    onChange(qu);
+    if (price && qu) {
+      const n = Number(qu);
+      if (n > 0) setUsdStr((n * price).toFixed(4));
     }
   }
 
+  function handleUsd(raw: string) {
+    const v = raw.replace(/[^0-9.]/g, "");
+    setUsdStr(v);
+    if (price) {
+      const n = parseFloat(v);
+      onChange(!isNaN(n) && n > 0 ? String(Math.floor(n / price)) : "");
+    }
+  }
+
+  const hasPrice = !!price;
+  const quNum = Number(value);
+  const usdEquiv = hasPrice && quNum > 0 ? quNum * price : null;
+  const quEquiv = hasPrice && usdStr ? Math.floor(parseFloat(usdStr) / price) : null;
+  const pricePerBq = hasPrice ? price * 1e9 : null;
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-        OR ENTER USD:
-      </span>
-      <input
-        autoComplete="off"
-        value={usd}
-        onChange={handleChange}
-        placeholder="0.00"
-        className="sigil-input"
-        style={{
-          flex: 1,
-          background: "var(--color-bg-subtle)",
-          borderRadius: "var(--radius-sharp)",
-          padding: "var(--space-2) var(--space-3)",
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      {/* Label row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Amount
+        </span>
+        {hasPrice && (
+          <div style={{ display: "flex", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", overflow: "hidden" }}>
+            {(["QU", "USD"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => switchMode(m)}
+                style={{
+                  padding: "2px var(--space-3)",
+                  background: mode === m ? "var(--color-text-display)" : "none",
+                  border: "none",
+                  borderLeft: m === "USD" ? "1px solid var(--color-border-strong)" : "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-sm)",
+                  letterSpacing: "0.05em",
+                  color: mode === m ? "var(--color-bg-base)" : "var(--color-text-disabled)",
+                  transition: "background 0.1s, color 0.1s",
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Main input */}
+      <div style={{ position: "relative" }}>
+        <input
+          autoComplete="off"
+          inputMode={mode === "USD" ? "decimal" : "numeric"}
+          value={mode === "QU" ? value : usdStr}
+          onChange={(e) => mode === "QU" ? handleQu(e.target.value) : handleUsd(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
+          placeholder="0"
+          className="sigil-input"
+          style={{
+            width: "100%",
+            background: "var(--color-bg-surface)",
+            border: `1px solid ${error ? "var(--color-status-error)" : "var(--color-border-strong)"}`,
+            borderRadius: "var(--radius-sharp)",
+            padding: "var(--space-3) var(--space-3)",
+            paddingRight: `calc(var(--space-3) + ${mode === "QU" ? "2.5ch" : "3.5ch"})`,
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-display)",
+            fontWeight: 300,
+            color: "var(--color-text-display)",
+            textAlign: "right",
+            letterSpacing: "-0.01em",
+          }}
+        />
+        <span style={{
+          position: "absolute",
+          right: "var(--space-3)",
+          top: "50%",
+          transform: "translateY(-50%)",
           fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          color: "var(--color-text-display)",
+          fontSize: "var(--text-mono-lg)",
+          color: "var(--color-text-disabled)",
           letterSpacing: "0.05em",
-          textAlign: "right",
-        }}
-      />
+          pointerEvents: "none",
+        }}>
+          {mode === "QU" ? "QU" : "USD"}
+        </span>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          {error}
+        </span>
+      )}
+
+      {/* Equivalent + rate */}
+      {hasPrice && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            {mode === "QU" && usdEquiv !== null
+              ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USD`
+              : mode === "USD" && quEquiv !== null && quEquiv > 0
+              ? `≈ ${quEquiv.toLocaleString()} QU`
+              : null}
+          </span>
+          {pricePerBq !== null && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", opacity: 0.6 }}>
+              ${pricePerBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
