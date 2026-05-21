@@ -57,7 +57,7 @@ export default function SendScreen() {
   const [saveName, setSaveName] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? "Account";
+  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const identity = wallet?.identity ?? "";
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
 
