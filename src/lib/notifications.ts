@@ -6,7 +6,13 @@ import {
 
 export async function notify(title: string, body: string): Promise<void> {
   try {
-    if (!(await isPermissionGranted())) return;
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      // Permission may not persist across sessions on some platforms — re-request silently.
+      const res = await requestPermission();
+      granted = res === "granted";
+    }
+    if (!granted) return;
     tauriSend({ title, body });
   } catch {
     // non-critical

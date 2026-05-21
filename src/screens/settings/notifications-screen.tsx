@@ -109,6 +109,7 @@ export default function NotificationsScreen() {
   const onReceived = usePersistedStore((s) => s.settings.notifyOnReceived);
   const onSent = usePersistedStore((s) => s.settings.notifyOnSent);
   const onConfirmed = usePersistedStore((s) => s.settings.notifyOnConfirmed);
+  const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const [permDenied, setPermDenied] = useState(false);
@@ -141,6 +142,14 @@ export default function NotificationsScreen() {
         gap: "var(--space-3)",
       }}
     >
+      {/* Tray */}
+      <SettingRow
+        label="Hide to tray on close"
+        description="Keep Sigil running in the system tray when the window is closed"
+        value={hideToTray}
+        onChange={(v) => updateSettings({ hideToTray: v })}
+      />
+
       {/* Master toggle */}
       <SettingRow
         label="Desktop notifications"

@@ -73,6 +73,7 @@ export interface AppSettings {
   notifyOnReceived: boolean;
   notifyOnSent: boolean;
   notifyOnConfirmed: boolean;
+  hideToTray: boolean;
 }
 
 export interface Contact {
@@ -122,6 +123,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   notifyOnReceived: true,
   notifyOnSent: true,
   notifyOnConfirmed: true,
+  hideToTray: false,
 };
 
 const _disk = new LazyStore("sigil.json");

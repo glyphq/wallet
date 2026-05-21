@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
@@ -13,6 +13,7 @@ import { useBobSync } from "@/hooks/use-bob-sync";
 import { useBobRealtime } from "@/hooks/use-bob-realtime";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
+import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -88,10 +89,23 @@ function useRpcSync() {
 
 function useNotificationInit() {
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
+  // Use a ref so we only request once per session, not on every re-render.
+  // The dependency on notificationsEnabled ensures we catch the async store hydration
+  // (store loads from disk after mount, flipping false → true).
+  const didInit = useRef(false);
   useEffect(() => {
-    if (notificationsEnabled) requestNotificationPermission().catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (notificationsEnabled && !didInit.current) {
+      didInit.current = true;
+      requestNotificationPermission().catch(() => {});
+    }
+  }, [notificationsEnabled]);
+}
+
+function useHideToTray() {
+  const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
+  useEffect(() => {
+    invoke("set_hide_to_tray", { enabled: hideToTray }).catch(() => {});
+  }, [hideToTray]);
 }
 
 function AppHooks() {
@@ -100,6 +114,7 @@ function AppHooks() {
   useDeepLink();
   useNotificationTriggers();
   useNotificationInit();
+  useHideToTray();
   useBobTick();
   useBobSync();
   useBobRealtime();

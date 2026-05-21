@@ -1,7 +1,21 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use reqwest;
 use tauri::{AppHandle, Emitter, State};
+
+pub struct HideToTrayState(pub AtomicBool);
+
+impl Default for HideToTrayState {
+    fn default() -> Self {
+        HideToTrayState(AtomicBool::new(false))
+    }
+}
+
+#[tauri::command]
+pub fn set_hide_to_tray(state: State<'_, HideToTrayState>, enabled: bool) {
+    state.0.store(enabled, Ordering::Relaxed);
+}
 
 static HTTP_CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
 
