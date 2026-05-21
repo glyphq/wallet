@@ -6,34 +6,39 @@ import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { RequestHeader } from "@/components/request/request-header";
-import { TransferPreview, type ApproveResult } from "@/components/request/transfer-preview";
-import { ScCallPreview } from "@/components/request/sc-call-preview";
-import { SignMessagePreview, type SignMessageApproveResult } from "@/components/request/sign-message-preview";
-import { ConnectPreview, type ConnectApproveResult } from "@/components/request/connect-preview";
-import { VerifyMessagePreview, type VerifyMessageResult } from "@/components/request/verify-message-preview";
+import { TransferPreview, type ApproveResult, type TransferRequest } from "@/components/request/transfer-preview";
+import { ScCallPreview, type ScCallRequest } from "@/components/request/sc-call-preview";
+import { SignMessagePreview, type SignMessageApproveResult, type SignMessageRequest } from "@/components/request/sign-message-preview";
+import { ConnectPreview, type ConnectApproveResult, type ConnectRequest } from "@/components/request/connect-preview";
+import { VerifyMessagePreview, type VerifyMessageResult, type VerifyMessageRequest } from "@/components/request/verify-message-preview";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
+type DappMeta = { name: string; origin: string; icon?: string };
+type BaseRequest = { dapp: DappMeta; nonce: string; exp?: number };
+
+type SigilRequest =
+  | (TransferRequest & { type: "transfer" } & BaseRequest)
+  | (ScCallRequest & { type: "sc_call" } & BaseRequest)
+  | (SignMessageRequest & { type: "sign_message" } & BaseRequest)
+  | (VerifyMessageRequest & { type: "verify_message" } & BaseRequest)
+  | (ConnectRequest & { type: "connect" } & BaseRequest);
+
 interface SigilEnvelope {
-  request: {
-    type: "transfer" | "sc_call" | "sign_message" | "verify_message" | "connect";
-    dapp: { name: string; origin: string; icon?: string };
-    nonce: string;
-    exp?: number;
-    [key: string]: unknown;
-  };
+  request: SigilRequest;
   callback: string | null;
 }
 
 function parseEnvelope(raw: string | null): SigilEnvelope | null {
   if (!raw) return null;
   try {
-    const env = JSON.parse(raw) as SigilEnvelope;
-    if (!env.request?.type || !env.request?.dapp?.origin) return null;
-    if (!env.request.dapp.origin.startsWith("https://")) return null;
-    if (env.callback && !env.callback.startsWith("https://")) return null;
-    if (env.request.exp && Date.now() / 1000 > env.request.exp) return null;
-    return env;
+    const env = JSON.parse(raw) as { request: Record<string, unknown>; callback: unknown };
+    if (!env.request?.type || typeof (env.request.dapp as { origin?: unknown })?.origin !== "string") return null;
+    const origin = (env.request.dapp as { origin: string }).origin;
+    if (!origin.startsWith("https://")) return null;
+    if (typeof env.callback === "string" && !env.callback.startsWith("https://")) return null;
+    if (env.request.exp && Date.now() / 1000 > (env.request.exp as number)) return null;
+    return env as unknown as SigilEnvelope;
   } catch {
     return null;
   }
@@ -360,25 +365,25 @@ export default function RequestScreen() {
 
       {request.type === "transfer" ? (
         <TransferPreview
-          request={request as unknown as Parameters<typeof TransferPreview>[0]["request"]}
+          request={request}
           onApprove={handleApprove}
           onReject={reject}
         />
       ) : request.type === "sc_call" ? (
         <ScCallPreview
-          request={request as unknown as Parameters<typeof ScCallPreview>[0]["request"]}
+          request={request}
           onApprove={handleApprove}
           onReject={reject}
         />
       ) : request.type === "sign_message" ? (
         <SignMessagePreview
-          request={request as unknown as Parameters<typeof SignMessagePreview>[0]["request"]}
+          request={request}
           onApprove={handleApproveMessage}
           onReject={reject}
         />
       ) : request.type === "verify_message" ? (
         <VerifyMessagePreview
-          request={request as unknown as Parameters<typeof VerifyMessagePreview>[0]["request"]}
+          request={request}
           onApprove={handleApproveVerify}
           onReject={reject}
         />
@@ -386,7 +391,7 @@ export default function RequestScreen() {
         <ConnectPreview
           dappName={request.dapp.name}
           dappOrigin={request.dapp.origin}
-          request={request as unknown as Parameters<typeof ConnectPreview>[0]["request"]}
+          request={request}
           onApprove={handleApproveConnect}
           onReject={reject}
         />
