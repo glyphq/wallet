@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { Home, ArrowUp, ArrowDown, Clock, Settings, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { BottomNav } from "@/components/bottom-nav";
 import { AppShell } from "@/layouts/app-shell";
 import { Modal } from "@/components/modal";
 import { Tag } from "@/components/tag";
@@ -135,36 +136,8 @@ export default function DashboardScreen() {
     </div>
   );
 
-  const bottomNav = (
-    <>
-      {[
-        { icon: Home, label: "HOME", active: true, action: () => {} },
-        { icon: ArrowUp, label: "SEND", active: false, action: () => navigate("/send") },
-        { icon: ArrowDown, label: "RECEIVE", active: false, action: () => navigate("/receive") },
-        { icon: Clock, label: "HISTORY", active: false, action: () => navigate("/history") },
-        { icon: Settings, label: "SETTINGS", active: false, action: () => navigate("/settings") },
-      ].map(({ icon: Icon, label, active, action }) => (
-        <button
-          key={label}
-          onClick={action}
-          aria-current={active ? "page" : undefined}
-          style={{
-            flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
-            background: "none", border: "none", cursor: "pointer", padding: 0,
-            color: active ? "var(--color-text-display)" : "var(--color-text-disabled)",
-          }}
-        >
-          <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em" }}>
-            {label}
-          </span>
-        </button>
-      ))}
-    </>
-  );
-
   return (
-    <AppShell statusBar={statusBar} bottomNav={bottomNav} contentStyle={{ padding: "var(--space-6)" }}>
+    <AppShell statusBar={statusBar} bottomNav={<BottomNav active="home" />} contentStyle={{ padding: "var(--space-6)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 
         {/* Identity + account name */}
