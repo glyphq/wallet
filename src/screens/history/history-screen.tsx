@@ -18,7 +18,7 @@ import {
   DEFAULT_QUERY_FILTERS,
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 import { truncateId, formatQu, formatQuCompact, formatDate } from "@/lib/format";
 
 // ── Filter types ──────────────────────────────────────────────────────────────
@@ -230,8 +230,20 @@ export default function HistoryScreen() {
             const flew = tx.moneyFlew;
             const variant = !flew ? "error" : isSc ? "neutral" : isIn ? "success" : "neutral";
             const label = !flew ? "FAILED" : isSc ? "SC CALL" : isIn ? "RECEIVED" : "SENT";
+
+            // Resolve contract index from known address to look up procedure name
+            const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
+            const contractIndex = scAddress
+              ? Object.entries(CONTRACT_NAMES).find(([, name]) => (contractName ?? fromContract) === name)?.[0]
+              : null;
+            const procedureName = contractIndex !== undefined && contractIndex !== null && tx.inputType !== null
+              ? CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${tx.inputType}`]
+              : undefined;
+
             const counterparty = isSc
-              ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
+              ? procedureName
+                ? `${contractName ?? fromContract} · ${procedureName}`
+                : (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
               : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
             const offset = filteredPending.length + i;
             return (
