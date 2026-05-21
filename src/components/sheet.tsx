@@ -1,0 +1,85 @@
+import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "motion/react";
+
+export interface SheetProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: ReactNode;
+}
+
+const EASE_OUT = [0, 0, 0.2, 1] as const;
+
+export function Sheet({ open, onClose, title, children }: SheetProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.12, ease: EASE_OUT }}
+          onClick={onClose}
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.72)",
+            display: "flex", flexDirection: "column", justifyContent: "flex-end",
+            zIndex: 50,
+          }}
+        >
+          <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.2, ease: EASE_OUT }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--color-bg-elevated)",
+              borderTop: "1px solid var(--color-border-strong)",
+              borderRadius: "var(--radius-card) var(--radius-card) 0 0",
+              padding: "var(--space-5) var(--space-6) var(--space-8)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-5)" }}>
+              <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
+            </div>
+            {title && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-5)" }}>
+                <span style={{
+                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+                  color: "var(--color-text-secondary)", letterSpacing: "0.08em", textTransform: "uppercase",
+                }}>
+                  {title}
+                </span>
+                <button
+                  onClick={onClose}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: 0, lineHeight: 1, fontSize: 14 }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}

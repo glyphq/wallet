@@ -64,7 +64,8 @@ export default function SendScreen() {
   const identity = wallet?.identity ?? "";
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
 
-  const { data: recentTxs } = useTxHistory(identity || null);
+  const { data: recentTxsData } = useTxHistory(identity || null);
+  const recentTxs = recentTxsData?.pages[0];
 
   const destUpper = destination.trim().toUpperCase();
   const matchedContact = contacts.find((c) => c.identity === destUpper);

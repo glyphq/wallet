@@ -326,7 +326,8 @@ interface RecentTxsProps {
 }
 
 function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: RecentTxsProps) {
-  const { data: txs, isLoading } = useTxHistory(identity);
+  const { data, isLoading } = useTxHistory(identity);
+  const txs = data?.pages[0];
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const removePendingTx = usePersistedStore((s) => s.removePendingTx);
   const { data: lastProcessedTickData } = useLastProcessedTick();
@@ -350,7 +351,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   // expired txs stay visible as "FAILED" until that hook removes them with a proper alert.
   useEffect(() => {
     if (!txs || !lastProcessedTick) return;
-    const fetchedHashes = new Set(txs.map((t) => t.hash).filter(Boolean));
+    const fetchedHashes = new Set(txs.map((t) => t.hash));
     pendingTxs.forEach((p) => {
       if (fetchedHashes.has(p.hash)) removePendingTx(p.hash);
     });
@@ -416,7 +417,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
           : "var(--color-text-disabled)";
         const offset = myPending.length + i;
         return (
-          <div key={tx.hash ?? i}>
+          <div key={tx.hash}>
             {offset > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>

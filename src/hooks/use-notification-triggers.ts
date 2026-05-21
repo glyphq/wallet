@@ -69,7 +69,8 @@ export function useNotificationTriggers() {
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
   // Always fetch history when there are pending txs — cleanup must run regardless of notification prefs.
-  const { data: txHistory } = useTxHistory(pendingTxs.length > 0 ? identity : null);
+  const { data: txHistoryData } = useTxHistory(pendingTxs.length > 0 ? identity : null);
+  const txHistory = txHistoryData?.pages.flat();
   const confirmedHashesRef = useRef<Set<string>>(new Set());
   const historyInitializedRef = useRef(false);
 
