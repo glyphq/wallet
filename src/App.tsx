@@ -8,6 +8,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useUpdater } from "@/hooks/use-updater";
+import { useBobTick } from "@/hooks/use-bob-tick";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { TitleBar } from "@/components/title-bar";
@@ -113,6 +114,7 @@ function AppHooks() {
   useDeepLink();
   useNotificationTriggers();
   useNotificationInit();
+  useBobTick();
   useUpdater();
   return null;
 }

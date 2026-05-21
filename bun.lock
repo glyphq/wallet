@@ -5,8 +5,10 @@
     "": {
       "name": "sigil",
       "dependencies": {
+        "@qubic.org/bob": "^0.2.7",
         "@qubic.org/contracts": "^0.2.7",
         "@qubic.org/crypto": "^0.2.7",
+        "@qubic.org/events": "^0.2.7",
         "@qubic.org/rpc": "^0.2.7",
         "@qubic.org/tx": "^0.2.7",
         "@qubic.org/types": "^0.2.7",
@@ -192,9 +194,13 @@
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
+    "@qubic.org/bob": ["@qubic.org/bob@0.2.7", "", { "dependencies": { "@qubic.org/types": "^0.2.1", "openapi-fetch": "^0.17.0" } }, "sha512-qvl1/iguDN+HXpfR9nt39F3/n7L43Kgi9mVk5AZG0W7gGt3XaWru30waE1O8EVIJPLoPHpXv/1YLoO58UPpX0g=="],
+
     "@qubic.org/contracts": ["@qubic.org/contracts@0.2.7", "", { "dependencies": { "@qubic.org/crypto": "^0.2.1", "@qubic.org/registry": "^0.2.1", "@qubic.org/rpc": "^0.2.1", "@qubic.org/types": "^0.2.1" } }, "sha512-wyA98aDTK4l+AtW7cbE8NdJlQPTlO3RCr7g7hdtI5Om0PC6JtacXofvATg+yj+VHZMqaxXsTBWL1oaxMY832Tg=="],
 
     "@qubic.org/crypto": ["@qubic.org/crypto@0.2.7", "", { "dependencies": { "@noble/hashes": "^2.2.0", "@qubic.org/types": "^0.2.1" } }, "sha512-LZp9E/fijnfAbZ8ZjBxpGOyNxk/P2bJtB1pGpZ3995YEfKPSO0F71Q/9TQNSkMIYC8ILDshsCexrc7n/Y+QQrw=="],
+
+    "@qubic.org/events": ["@qubic.org/events@0.2.7", "", { "dependencies": { "@qubic.org/bob": "^0.2.1", "@qubic.org/crypto": "^0.2.1", "@qubic.org/types": "^0.2.1" } }, "sha512-Uq1QPTBYxotx3fTBeDnUEeFSl8kOeCoXuPAnxTLgbn5HPQ9F+CR00gMWiY+dHyWSEzSw4mk7daEVjsdTMU6lMA=="],
 
     "@qubic.org/registry": ["@qubic.org/registry@0.2.7", "", { "dependencies": { "@qubic.org/crypto": "^0.2.1", "@qubic.org/types": "^0.2.1", "tree-sitter-cpp": "^0.23.4", "web-tree-sitter": "^0.26.8" } }, "sha512-jh33EBW+BrurdHr28skTCqTKrQjJxutO0DU4a0ONijav2ur4BClpIzchA4E3KEcbKUftyYRR1Xu3hLxMXMZe0Q=="],
 
