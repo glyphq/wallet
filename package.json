@@ -13,6 +13,9 @@
     "tag-release": "node scripts/tag-release.mjs"
   },
   "dependencies": {
+    "@fontsource/doto": "^5.2.10",
+    "@fontsource/space-grotesk": "^5.2.10",
+    "@fontsource/space-mono": "^5.2.9",
     "@qubic.org/bob": "^0.2.7",
     "@qubic.org/contracts": "^0.2.7",
     "@qubic.org/crypto": "^0.2.7",
