@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Pencil } from "lucide-react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { Sheet } from "@/components/sheet";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { ContactPicker } from "@/components/contact-picker";
@@ -396,16 +398,40 @@ function AmountInput({
 }) {
   const [mode, setMode] = useState<"QU" | "USD">("QU");
   const [usdStr, setUsdStr] = useState("");
+  const [customPriceBq, setCustomPriceBq] = useState<number | null>(null);
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [draftBq, setDraftBq] = useState("");
+
+  const marketPriceBq = price !== undefined ? price * 1e9 : undefined;
+  const effectivePriceBq = customPriceBq ?? marketPriceBq;
+  const effectivePrice = effectivePriceBq !== undefined ? effectivePriceBq / 1e9 : undefined;
+  const isOverridden = customPriceBq !== null;
+
+  function openPriceSheet() {
+    setDraftBq(effectivePriceBq !== undefined ? effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "");
+    setPriceOpen(true);
+  }
+
+  function applyPrice() {
+    const n = parseFloat(draftBq.replace(/,/g, ""));
+    if (!isNaN(n) && n > 0) setCustomPriceBq(n);
+    setPriceOpen(false);
+  }
+
+  function resetPrice() {
+    setCustomPriceBq(null);
+    setPriceOpen(false);
+  }
 
   function switchMode(next: "QU" | "USD") {
     if (next === mode) return;
-    if (next === "USD" && price) {
+    if (next === "USD" && effectivePrice) {
       const n = Number(value);
-      setUsdStr(n > 0 ? (n * price).toFixed(4) : "");
+      setUsdStr(n > 0 ? (n * effectivePrice).toFixed(4) : "");
     }
-    if (next === "QU" && price && usdStr) {
+    if (next === "QU" && effectivePrice && usdStr) {
       const n = parseFloat(usdStr);
-      if (!isNaN(n) && n > 0) onChange(String(Math.floor(n / price)));
+      if (!isNaN(n) && n > 0) onChange(String(Math.floor(n / effectivePrice)));
     }
     setMode(next);
   }
@@ -413,26 +439,25 @@ function AmountInput({
   function handleQu(raw: string) {
     const qu = raw.replace(/[^0-9]/g, "");
     onChange(qu);
-    if (price && qu) {
+    if (effectivePrice && qu) {
       const n = Number(qu);
-      if (n > 0) setUsdStr((n * price).toFixed(4));
+      if (n > 0) setUsdStr((n * effectivePrice).toFixed(4));
     }
   }
 
   function handleUsd(raw: string) {
     const v = raw.replace(/[^0-9.]/g, "");
     setUsdStr(v);
-    if (price) {
+    if (effectivePrice) {
       const n = parseFloat(v);
-      onChange(!isNaN(n) && n > 0 ? String(Math.floor(n / price)) : "");
+      onChange(!isNaN(n) && n > 0 ? String(Math.floor(n / effectivePrice)) : "");
     }
   }
 
-  const hasPrice = !!price;
+  const hasPrice = effectivePrice !== undefined;
   const quNum = Number(value);
-  const usdEquiv = hasPrice && quNum > 0 ? quNum * price : null;
-  const quEquiv = hasPrice && usdStr ? Math.floor(parseFloat(usdStr) / price) : null;
-  const pricePerBq = hasPrice ? price * 1e9 : null;
+  const usdEquiv = hasPrice && quNum > 0 ? quNum * effectivePrice! : null;
+  const quEquiv = hasPrice && usdStr ? Math.floor(parseFloat(usdStr) / effectivePrice!) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -524,16 +549,68 @@ function AmountInput({
               ? `≈ ${quEquiv.toLocaleString()} QU`
               : null}
           </span>
-          {pricePerBq !== null && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", opacity: 0.6 }}>
-              ${pricePerBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU
-            </span>
+          {effectivePriceBq !== undefined && (
+            <button
+              type="button"
+              onClick={openPriceSheet}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            >
+              <Pencil size={10} color={isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)"} strokeWidth={2} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", color: isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)", opacity: isOverridden ? 1 : 0.6 }}>
+                ${effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU{isOverridden ? " *" : ""}
+              </span>
+            </button>
           )}
         </div>
       )}
+
+      <Sheet
+        open={priceOpen}
+        onClose={applyPrice}
+        title="Price per billion QU"
+        footer={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {isOverridden
+              ? <button type="button" onClick={resetPrice} style={PRICE_GHOST_BTN}>RESET TO MARKET</button>
+              : <span />}
+            <button type="button" onClick={applyPrice} style={PRICE_APPLY_BTN}>APPLY</button>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input
+            label="$ / bQU"
+            value={draftBq}
+            onChange={(e) => setDraftBq(e.target.value.replace(/[^0-9.,]/g, ""))}
+            onKeyDown={(e) => e.key === "Enter" && applyPrice()}
+            placeholder={marketPriceBq?.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) ?? ""}
+            inputMode="decimal"
+            autoFocus
+          />
+          {marketPriceBq !== undefined && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+              MARKET PRICE: ${marketPriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU
+            </span>
+          )}
+        </div>
+      </Sheet>
     </div>
   );
 }
+
+const PRICE_GHOST_BTN: React.CSSProperties = {
+  background: "none", border: "none", cursor: "pointer",
+  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+  color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0,
+};
+
+const PRICE_APPLY_BTN: React.CSSProperties = {
+  background: "var(--color-text-primary)", border: "none",
+  borderRadius: "var(--radius-sharp)", cursor: "pointer",
+  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+  color: "var(--color-bg-base)", letterSpacing: "0.05em",
+  padding: "var(--space-2) var(--space-4)",
+};
 
 function BalanceBar({ balance, amountStr }: { balance: bigint | null; amountStr: string }) {
   if (balance === null) return null;
