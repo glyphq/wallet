@@ -1,8 +1,8 @@
 [package]
 name = "sigil-wallet"
 version = "0.4.4"
-description = "A Tauri App"
-authors = ["you"]
+description = "Self-custodial Qubic wallet with dApp deep linking"
+authors = ["alez04"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

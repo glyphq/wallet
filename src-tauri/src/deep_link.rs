@@ -132,9 +132,14 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     // Validate callback URL if present
     if let Some(cb) = &cb_param {
         let cb_url = Url::parse(cb).map_err(|_| "invalid callback URL".to_string())?;
-        let is_local = matches!(cb_url.host_str(), Some("localhost") | Some("127.0.0.1"));
+        let host = cb_url.host_str().unwrap_or("");
+        // Allow http only to localhost/127.0.0.1; block all other non-HTTPS and all loopback/private addresses.
+        let is_local = matches!(host, "localhost" | "127.0.0.1");
         if cb_url.scheme() != "https" && !(cb_url.scheme() == "http" && is_local) {
             return Err("callback URL must use HTTPS (or http://localhost / http://127.0.0.1 for local dev)".into());
+        }
+        if !is_local && crate::commands::is_private_host(host) {
+            return Err("callback URL must not target a private or loopback address".into());
         }
     }
 

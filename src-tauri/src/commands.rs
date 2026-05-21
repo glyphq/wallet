@@ -60,7 +60,7 @@ pub fn clear_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
     clip_state.cancel_clear();
 }
 
-fn is_private_host(host: &str) -> bool {
+pub fn is_private_host(host: &str) -> bool {
     // Strip IPv6 brackets so [fd00::1] → fd00::1
     let h = host.trim_matches(|c| c == '[' || c == ']').to_ascii_lowercase();
     if matches!(h.as_str(), "localhost" | "::1") { return true; }
