@@ -5,15 +5,19 @@ import { useSessionStore } from "@/store/session";
 
 /**
  * Subscribes to real-time tick updates from a Bob indexer WebSocket.
- * Writes to session store. Only active when `useBobNode` is enabled and `bobWsUrl` is set.
+ * Only active when Bob is enabled, healthy (sync lag within tickOffset), and wsUrl is set.
  */
 export function useBobTick(): void {
   const network = usePersistedStore((s) => s.settings.network);
+  const tickOffset = usePersistedStore((s) => s.settings.tickOffset);
   const setBobTick = useSessionStore((s) => s.setBobTick);
+  const bobSyncLag = useSessionStore((s) => s.bobSyncLag);
   const abortRef = useRef<AbortController | null>(null);
 
+  const bobIsHealthy = bobSyncLag === null || bobSyncLag <= tickOffset;
+
   useEffect(() => {
-    if (!network.useBobNode || !network.bobWsUrl?.trim()) {
+    if (!network.useBobNode || !network.bobWsUrl?.trim() || !bobIsHealthy) {
       setBobTick(null, false);
       return;
     }
@@ -43,5 +47,5 @@ export function useBobTick(): void {
       abortRef.current = null;
       setBobTick(null, false);
     };
-  }, [network.useBobNode, network.bobWsUrl, setBobTick]);
+  }, [network.useBobNode, network.bobWsUrl, bobIsHealthy, setBobTick]);
 }

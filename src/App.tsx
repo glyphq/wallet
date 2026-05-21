@@ -10,6 +10,7 @@ import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useUpdater } from "@/hooks/use-updater";
 import { useBobTick } from "@/hooks/use-bob-tick";
 import { useBobSync } from "@/hooks/use-bob-sync";
+import { useBobRealtime } from "@/hooks/use-bob-realtime";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { TitleBar } from "@/components/title-bar";
@@ -117,6 +118,7 @@ function AppHooks() {
   useNotificationInit();
   useBobTick();
   useBobSync();
+  useBobRealtime();
   useUpdater();
   return null;
 }
