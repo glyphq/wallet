@@ -5,6 +5,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { unlockVault } from "@/lib/vault";
+import { extractMessage } from "@/lib/format";
 
 const TIMEOUT_OPTIONS: { label: string; value: number }[] = [
   { label: "1 minute", value: 1 },
@@ -70,7 +71,7 @@ export default function SecurityScreen() {
       updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
       setEnabling(false);
     } catch (e) {
-      setEnableError(`SECURE STORAGE FAILED: ${e}`);
+      setEnableError(`SECURE STORAGE FAILED: ${extractMessage(e)}`);
     } finally {
       setEnableLoading(false);
     }

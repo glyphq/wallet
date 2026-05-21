@@ -17,7 +17,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
-import { truncateId, formatQu } from "@/lib/format";
+import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { TxSending, TxError } from "@/components/tx-status";
 
@@ -157,7 +157,7 @@ export default function SendManyScreen() {
       setTxHash(hash);
       setStep("done");
     } catch (e) {
-      setTxError(e instanceof Error ? e.message : "Broadcast failed.");
+      setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
     }
   }
