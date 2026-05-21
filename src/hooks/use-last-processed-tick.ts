@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
-import { getBobRpcClient } from "@/lib/bob-client";
+import { getBobRestClient } from "@/lib/bob-client";
 import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
 
@@ -13,9 +13,12 @@ export function useLastProcessedTick() {
     queryKey: [...qk.lastProcessedTick(), useBobNode ? "bob" : "rpc"],
     queryFn: async () => {
       if (useBobNode && bobRestUrl) {
-        const result = await getBobRpcClient(bobRestUrl).getTickNumber();
+        const result = await getBobRestClient(bobRestUrl).getStatus();
         if (!result.ok) throw result.error;
-        return { tickNumber: result.value };
+        const s = result.value as Record<string, unknown>;
+        // currentIndexingTick = last fully indexed tick (most conservative for pending tx confirmation)
+        const tick = ((s.currentIndexingTick ?? s.currentFetchingTick ?? s.tick) as number | undefined) ?? 0;
+        return { tickNumber: tick };
       }
       const result = await getRpcClient().archive.getLastProcessedTick();
       if (!result.ok) throw result.error;

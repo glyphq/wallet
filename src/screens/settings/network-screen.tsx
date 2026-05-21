@@ -7,7 +7,7 @@ import { Input } from "@/components/input";
 import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc } from "@/lib/rpc";
-import { createBobRpcClient } from "@qubic.org/bob";
+import { createBobRestClient } from "@qubic.org/bob";
 
 function isHttpUrl(s: string): boolean {
   try { return ["http:", "https:"].includes(new URL(s).protocol); } catch { return false; }
@@ -32,7 +32,7 @@ export default function NetworkScreen() {
   const [testTick, setTestTick] = useState<number | null>(null);
 
   const [bobRestUrl, setBobRestUrl] = useState(settings.network.bobRestUrl ?? "http://localhost:40420");
-  const [bobWsUrl, setBobWsUrl] = useState(settings.network.bobWsUrl ?? "ws://localhost:40420/ws");
+  const [bobWsUrl, setBobWsUrl] = useState(settings.network.bobWsUrl ?? "ws://localhost:40420/ws/qubic");
   const [bobTestStatus, setBobTestStatus] = useState<BobTestStatus>("idle");
   const [bobTestEpoch, setBobTestEpoch] = useState<number | null>(null);
 
@@ -65,10 +65,12 @@ export default function NetworkScreen() {
     setBobTestStatus("testing");
     setBobTestEpoch(null);
     try {
-      const client = createBobRpcClient({ endpoint: rest });
-      const result = await client.getCurrentEpoch();
+      const client = createBobRestClient({ baseUrl: rest });
+      const result = await client.getStatus();
       if (!result.ok) throw new Error("bad response");
-      setBobTestEpoch(result.value);
+      const s = result.value as Record<string, unknown>;
+      const epoch = (s.currentProcessingEpoch ?? s.currentEpoch ?? s.epoch) as number | undefined;
+      setBobTestEpoch(epoch ?? null);
       setBobTestStatus("ok");
       updateSettings({ network: { ...settings.network, bobRestUrl: rest, bobWsUrl: bobWsUrl.trim() || undefined } });
     } catch {
@@ -243,7 +245,7 @@ export default function NetworkScreen() {
           label="Bob WebSocket URL"
           value={bobWsUrl}
           onChange={(e) => { setBobWsUrl(e.target.value); setBobTestStatus("idle"); }}
-          placeholder="ws://localhost:40420/ws"
+          placeholder="ws://localhost:40420/ws/qubic"
           style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}
         />
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
