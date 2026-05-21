@@ -1,5 +1,15 @@
 # sigil
 
+## 0.7.0
+
+### Minor Changes
+
+- a00b796: Replace per-account balance polling with a single `QUtil.getBalances16` SC query that fetches all vault account balances in one call every 5 s. Vault accounts are now capped at 16 — the "+ Add" button in vault detail is replaced with a "16 MAX" label once the limit is reached.
+
+### Patch Changes
+
+- a00b796: Fix SC call procedure names in transaction history incorrectly showing read-only query function names (e.g. "Asset Ask Orders", "Quote Exact Asset Input") for QX and Qswap contracts. Procedure lookup now uses `build*Input` method presence to distinguish callable write procedures from query functions, which share the same numeric `inputType` values but in separate call paths. Qearn lock is covered by a manual override since the package exports no `buildLockInput` helper.
+
 ## 0.6.0
 
 ### Minor Changes
