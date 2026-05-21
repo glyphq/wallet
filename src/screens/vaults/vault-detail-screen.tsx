@@ -8,8 +8,9 @@ import { Modal } from "@/components/modal";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { generateRandomSeed, truncateIdentity } from "@/lib/crypto";
+import { generateRandomSeed } from "@/lib/crypto";
 import { unlockVault, createVault, createWallet, exportVault } from "@/lib/vault";
+import { IdentityDisplay } from "@/components/identity-display";
 
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -265,8 +266,8 @@ function AccountRow({ account, identity, dimmed, onRename, onHide, onRemove }: A
         {account.name}
       </div>
       {identity && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
-          {truncateIdentity(identity)}
+        <div style={{ marginBottom: "var(--space-3)" }}>
+          <IdentityDisplay identity={identity} />
         </div>
       )}
       <div style={{ display: "flex", gap: "var(--space-2)", marginTop: identity ? 0 : "var(--space-3)" }}>

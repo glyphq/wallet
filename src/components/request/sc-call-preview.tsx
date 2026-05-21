@@ -209,6 +209,11 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
               </div>
             ))}
           </div>
+          {decodedSendToMany.length > 4 && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", textAlign: "right" }}>
+              scroll ↑↓ to see all {decodedSendToMany.length}
+            </div>
+          )}
         </div>
       )}
 
