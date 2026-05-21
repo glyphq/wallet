@@ -7,12 +7,13 @@ import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { notify } from "@/lib/notifications";
-import { truncateId } from "@/lib/format";
+import { truncateId, formatQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 
 /** Fires desktop notifications on balance increases, tx broadcast, confirmation, and expiry. Also removes resolved pending txs. */
 export function useNotificationTriggers() {
   const wallets = useSessionStore((s) => s.wallets);
+  const addTxAlert = useSessionStore((s) => s.addTxAlert);
   const activeIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const removePendingTx = usePersistedStore((s) => s.removePendingTx);
@@ -115,13 +116,12 @@ export function useNotificationTriggers() {
       if (!histTx) continue;
       confirmedHashesRef.current.add(pending.hash);
       removePendingTx(pending.hash);
-      if (enabled && onConfirmed) {
-        const label = pending.contractName ?? `${BigInt(pending.amount).toLocaleString()} QU`;
-        if (histTx.moneyFlew) {
-          notify("Confirmed", `${label} — confirmed on chain`);
-        } else {
-          notify("Transaction Failed", `${label} — money did not fly`);
-        }
+      const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
+      if (histTx.moneyFlew) {
+        if (enabled && onConfirmed) notify("Confirmed", `${label} — confirmed on chain`);
+      } else {
+        addTxAlert({ id: pending.hash, label, reason: "failed" });
+        if (enabled && onConfirmed) notify("Transaction Failed", `${label} — money did not fly`);
       }
     }
   }, [txHistory]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -135,10 +135,9 @@ export function useNotificationTriggers() {
       if (currentTick > pending.targetTick + 30) {
         confirmedHashesRef.current.add(pending.hash);
         removePendingTx(pending.hash);
-        if (enabled && onConfirmed) {
-          const label = pending.contractName ?? `${BigInt(pending.amount).toLocaleString()} QU`;
-          notify("Tick Missed", `${label} — target tick expired`);
-        }
+        const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
+        addTxAlert({ id: pending.hash, label, reason: "expired" });
+        if (enabled && onConfirmed) notify("Tick Missed", `${label} — target tick expired`);
       }
     }
   }, [currentTick, pendingTxs]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -15,6 +15,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useNetworkHealth } from "@/hooks/use-network-health";
 import { useTxHistory } from "@/hooks/use-tx-history";
+import { useLatestStats } from "@/hooks/use-latest-stats";
 import { Divider } from "@/components/divider";
 import { truncateId, formatQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
@@ -90,6 +91,9 @@ export default function DashboardScreen() {
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
   const { data: tickInfo, dataUpdatedAt } = useTickInfo();
   const health = useNetworkHealth();
+  const { data: stats } = useLatestStats();
+  const txAlerts = useSessionStore((s) => s.txAlerts);
+  const dismissTxAlert = useSessionStore((s) => s.dismissTxAlert);
 
   const [showNetworkOverlay, setShowNetworkOverlay] = useState(false);
 
@@ -140,6 +144,40 @@ export default function DashboardScreen() {
     <AppShell statusBar={statusBar} bottomNav={<BottomNav active="home" />} contentStyle={{ padding: "var(--space-6)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 
+        {/* Failed/expired tx alerts */}
+        {txAlerts.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            {txAlerts.map((alert) => (
+              <div
+                key={alert.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "var(--space-3)",
+                  padding: "var(--space-3) var(--space-4)",
+                  background: "var(--color-bg-surface)",
+                  border: "1px solid var(--color-status-error)",
+                  borderRadius: "var(--radius-sharp)",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+                    [{alert.reason === "expired" ? "TICK MISSED" : "TX FAILED"}] {alert.label}
+                  </span>
+                </div>
+                <button
+                  onClick={() => dismissTxAlert(alert.id)}
+                  aria-label="Dismiss"
+                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Identity + account name */}
         {identity ? (
           <div>
@@ -182,6 +220,11 @@ export default function DashboardScreen() {
           {balance && !balanceLoading && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", marginTop: "var(--space-2)", letterSpacing: "0.05em" }}>
               AS OF TICK {balance.validForTick}
+            </div>
+          )}
+          {balance && !balanceLoading && !settings.hideBalances && stats?.price && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", letterSpacing: "0.05em" }}>
+              ≈ ${(Number(balance.balance) * stats.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
             </div>
           )}
         </div>
@@ -279,13 +322,14 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
     if (hasReady) queryClient.invalidateQueries({ queryKey: qk.txHistory(identity) });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
 
-  // Cleanup: confirmed txs remove immediately; expired remove once tick is processed
+  // Cleanup confirmed-only: txs that appeared in history are done regardless of notifications.
+  // Expiry cleanup is handled solely by useNotificationTriggers (after +30 live ticks) so
+  // expired txs stay visible as "FAILED" until that hook removes them with a proper alert.
   useEffect(() => {
     if (!txs || !lastProcessedTick) return;
     const fetchedHashes = new Set(txs.map((t) => t.hash).filter(Boolean));
     pendingTxs.forEach((p) => {
       if (fetchedHashes.has(p.hash)) removePendingTx(p.hash);
-      else if (lastProcessedTick >= p.targetTick) removePendingTx(p.hash);
     });
   }, [txs, pendingTxs, removePendingTx, lastProcessedTick]);
 
