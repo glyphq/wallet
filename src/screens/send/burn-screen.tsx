@@ -12,7 +12,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
-import { formatQu } from "@/lib/format";
+import { formatQu, extractMessage } from "@/lib/format";
 import { TxSending, TxError } from "@/components/tx-status";
 
 type Step = "input" | "confirm" | "sending" | "done" | "error";
@@ -83,7 +83,7 @@ export default function BurnScreen() {
       setTxHash(hash);
       setStep("done");
     } catch (e) {
-      setTxError(e instanceof Error ? e.message : "Broadcast failed.");
+      setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
     }
   }

@@ -14,7 +14,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
-import { truncateId, formatQu } from "@/lib/format";
+import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
 import { TxSending, TxError } from "@/components/tx-status";
 
@@ -138,7 +138,7 @@ export default function SendScreen() {
       setTxHash(hash);
       setStep("done");
     } catch (e) {
-      setTxError(e instanceof Error ? e.message : "Broadcast failed.");
+      setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
     }
   }

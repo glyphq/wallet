@@ -23,7 +23,7 @@ import {
   qearnGetLockInfoPerEpoch,
 } from "@/lib/contracts";
 import { qk } from "@/lib/query-keys";
-import { formatQu } from "@/lib/format";
+import { formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
 import { TxSending, TxError } from "@/components/tx-status";
 
@@ -153,7 +153,7 @@ export default function StakeScreen() {
       setTxHash(hash);
       setStep("done");
     } catch (e) {
-      setTxError(e instanceof Error ? e.message : "Broadcast failed.");
+      setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
     }
   }
@@ -193,7 +193,7 @@ export default function StakeScreen() {
       setTxHash(hash);
       setStep("done");
     } catch (e) {
-      setTxError(e instanceof Error ? e.message : "Broadcast failed.");
+      setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
     }
   }

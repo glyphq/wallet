@@ -4,6 +4,13 @@ export function truncateId(id: string, head = 8, tail = 8): string {
   return `${id.slice(0, head)}…${id.slice(-tail)}`;
 }
 
+/** Extracts a human-readable message from an unknown thrown value. */
+export function extractMessage(e: unknown, fallback = "An error occurred."): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  return fallback;
+}
+
 /** Format a QU amount (bigint, string, or number) with locale-aware thousand separators. */
 export function formatQu(amount: bigint | string | number): string {
   try {

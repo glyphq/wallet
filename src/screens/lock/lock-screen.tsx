@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVault, createWallet } from "@/lib/vault";
+import { extractMessage } from "@/lib/format";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -81,7 +82,7 @@ export default function LockScreen() {
       if (next >= 3) {
         setError("TOO MANY FAILURES — USE PASSWORD");
       } else {
-        setError(`BIOMETRIC FAILED: ${e}`);
+        setError(`BIOMETRIC FAILED: ${extractMessage(e)}`);
       }
     } finally {
       setLoading(false);
