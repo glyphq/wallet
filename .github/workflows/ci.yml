@@ -36,3 +36,37 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+  security-audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Audit JS dependencies
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm audit --audit-level=high
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo-audit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: cargo-audit-${{ runner.os }}
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked 2>/dev/null || true
+
+      - name: Audit Rust dependencies
+        run: cargo audit
+        working-directory: src-tauri
