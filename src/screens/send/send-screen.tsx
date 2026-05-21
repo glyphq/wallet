@@ -21,6 +21,7 @@ import { broadcastTx } from "@/lib/broadcast";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
 import { TxSending, TxError } from "@/components/tx-status";
+import { TxMemoField } from "@/components/tx-memo-field";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
 
@@ -362,6 +363,7 @@ export default function SendScreen() {
             </div>
           )}
 
+          <TxMemoField hash={txHash} />
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => navigate("/history")}>
             View history

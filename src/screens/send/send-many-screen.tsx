@@ -24,6 +24,7 @@ import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1F
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { TxSending, TxError } from "@/components/tx-status";
+import { TxMemoField } from "@/components/tx-memo-field";
 
 const MAX_RECIPIENTS = 25;
 
@@ -407,6 +408,7 @@ export default function SendManyScreen() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
             {recipients.length} RECIPIENTS · {totalAmount.toLocaleString()} QU TOTAL
           </div>
+          <TxMemoField hash={txHash} />
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
         </div>
       )}
