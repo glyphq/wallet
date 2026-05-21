@@ -482,7 +482,7 @@ function AmountInput({
             border: `1px solid ${error ? "var(--color-status-error)" : "var(--color-border-strong)"}`,
             borderRadius: "var(--radius-sharp)",
             padding: "var(--space-3) var(--space-3)",
-            paddingRight: `calc(var(--space-3) + ${mode === "QU" ? "2.5ch" : "3.5ch"})`,
+            paddingRight: `calc(var(--space-3) + ${mode === "QU" ? "1.5rem" : "2rem"})`,
             fontFamily: "var(--font-sans)",
             fontSize: "var(--text-display)",
             fontWeight: 300,
