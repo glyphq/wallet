@@ -7,11 +7,12 @@ export interface SheetProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  footer?: ReactNode;
 }
 
 const EASE_OUT = [0, 0, 0.2, 1] as const;
 
-export function Sheet({ open, onClose, title, children }: SheetProps) {
+export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,9 +83,20 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
               </div>
             )}
 
-            <div style={{ overflowY: "auto", flex: 1, paddingBottom: "var(--space-8)" }}>
+            <div style={{ overflowY: "auto", flex: 1 }}>
               {children}
             </div>
+
+            {footer && (
+              <div style={{
+                flexShrink: 0,
+                borderTop: "1px solid var(--color-border-subtle)",
+                paddingTop: "var(--space-4)",
+                paddingBottom: "var(--space-8)",
+              }}>
+                {footer}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

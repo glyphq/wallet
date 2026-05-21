@@ -22,8 +22,6 @@ export type TxQueryFilters = {
   dateTo: string;                            // ranges.timestamp.lte (ISO date "YYYY-MM-DD")
   tickFrom: string;                          // ranges.tickNumber.gte
   tickTo: string;                            // ranges.tickNumber.lte
-  // Event-log only
-  epoch: string;                             // filters.epoch (event logs; txs have no epoch filter)
 };
 
 export const DEFAULT_QUERY_FILTERS: TxQueryFilters = {
@@ -31,7 +29,6 @@ export const DEFAULT_QUERY_FILTERS: TxQueryFilters = {
   minAmount: "", maxAmount: "",
   dateFrom: "", dateTo: "",
   tickFrom: "", tickTo: "",
-  epoch: "",
 };
 
 const PAGE_SIZE = 50;
@@ -44,10 +41,10 @@ export function useTxHistory(
   identity: string | null | undefined,
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
-  const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo, epoch } = queryFilters;
+  const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo } = queryFilters;
 
   return useInfiniteQuery({
-    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo, epoch],
+    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo],
     queryFn: async ({ pageParam }) => {
       const offset = pageParam;
 
@@ -109,9 +106,6 @@ export function useTxHistory(
           if (direction === "in") evtFilters.destination = identity!;
           else if (direction === "out") evtFilters.source = identity!;
 
-          // Epoch filter (event logs support this; tx endpoint does not)
-          if (epoch) evtFilters.epoch = epoch;
-
           // Amount range
           if (Object.keys(amountRange).length) evtRanges.amount = amountRange;
 
@@ -125,8 +119,6 @@ export function useTxHistory(
             ...(direction === "all"
               ? { should: [{ terms: { source: identity!, destination: identity! } }] }
               : { filters: evtFilters }),
-            // When direction="all", epoch goes in filters alongside should (different property, allowed)
-            ...(direction === "all" && epoch && { filters: { epoch } }),
             ...(Object.keys(evtRanges).length && { ranges: evtRanges }),
             pagination: { size: PAGE_SIZE, offset: 0 },
           });

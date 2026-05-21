@@ -32,13 +32,12 @@ type DraftInputs = {
   maxAmount: string;
   dateFrom: string;
   dateTo: string;
-  epoch: string;
   tickFrom: string;
   tickTo: string;
 };
 
 function toDraft(f: TxFilters): DraftInputs {
-  return { minAmount: f.minAmount, maxAmount: f.maxAmount, dateFrom: f.dateFrom, dateTo: f.dateTo, epoch: f.epoch, tickFrom: f.tickFrom, tickTo: f.tickTo };
+  return { minAmount: f.minAmount, maxAmount: f.maxAmount, dateFrom: f.dateFrom, dateTo: f.dateTo, tickFrom: f.tickFrom, tickTo: f.tickTo };
 }
 
 function sanitize(s: string): string {
@@ -49,7 +48,7 @@ function sanitize(s: string): string {
 function isDefault(f: TxFilters): boolean {
   return (
     f.direction === "all" && f.type === "all" &&
-    !f.minAmount && !f.maxAmount && !f.dateFrom && !f.dateTo && !f.epoch && !f.tickFrom && !f.tickTo
+    !f.minAmount && !f.maxAmount && !f.dateFrom && !f.dateTo && !f.tickFrom && !f.tickTo
   );
 }
 
@@ -97,7 +96,6 @@ export default function HistoryScreen() {
       maxAmount: sanitize(draft.maxAmount),
       dateFrom: draft.dateFrom,
       dateTo: draft.dateTo,
-      epoch: sanitize(draft.epoch),
       tickFrom: sanitize(draft.tickFrom),
       tickTo: sanitize(draft.tickTo),
     }));
@@ -136,7 +134,6 @@ export default function HistoryScreen() {
       : filters.dateFrom ? `FROM ${filters.dateFrom}` : `TO ${filters.dateTo}`;
     chips.push({ label, clear: () => { setFilters((f) => ({ ...f, dateFrom: "", dateTo: "" })); setDraft((d) => ({ ...d, dateFrom: "", dateTo: "" })); } });
   }
-  if (filters.epoch) chips.push({ label: `EPOCH ${filters.epoch}`, clear: () => { setFilters((f) => ({ ...f, epoch: "" })); setDraft((d) => ({ ...d, epoch: "" })); } });
   if (filters.tickFrom || filters.tickTo) {
     const label = filters.tickFrom && filters.tickTo
       ? `TICK ${filters.tickFrom}–${filters.tickTo}`
@@ -236,7 +233,21 @@ export default function HistoryScreen() {
       {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">── END ──</StatusText>}
 
       {/* ── Filter sheet ────────────────────────────────────────────────────── */}
-      <Sheet open={filterOpen} onClose={applyAndClose} title="Filter">
+      <Sheet
+        open={filterOpen}
+        onClose={applyAndClose}
+        title="Filter"
+        footer={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {hasActive ? (
+              <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); setFilterOpen(false); }} style={GHOST_BTN}>
+                RESET ALL
+              </button>
+            ) : <span />}
+            <button type="button" onClick={applyAndClose} style={APPLY_BTN}>APPLY</button>
+          </div>
+        }
+      >
 
         <FilterSection label="Direction">
           {(["all", "in", "out"] as const).map((v) => (
@@ -267,17 +278,6 @@ export default function HistoryScreen() {
           />
         </FilterSection>
 
-        <FilterSection label="Epoch">
-          <Input
-            value={draft.epoch}
-            onChange={(e) => setDraft((d) => ({ ...d, epoch: e.target.value }))}
-            placeholder="e.g. 214"
-            inputMode="numeric"
-            style={INPUT_SM}
-          />
-          <SectionNote>Applies to event log results only — tx index has no epoch filter.</SectionNote>
-        </FilterSection>
-
         <FilterSection label="Tick range">
           <RangeInputs
             fromValue={draft.tickFrom} fromPlaceholder="From"
@@ -287,15 +287,6 @@ export default function HistoryScreen() {
           />
         </FilterSection>
 
-        {/* Sheet actions */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
-          {hasActive ? (
-            <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); setFilterOpen(false); }} style={GHOST_BTN}>
-              RESET ALL
-            </button>
-          ) : <span />}
-          <button type="button" onClick={applyAndClose} style={APPLY_BTN}>APPLY</button>
-        </div>
       </Sheet>
 
       {/* Detail modal */}
@@ -400,14 +391,6 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
     }}>
       {label} ✕
     </button>
-  );
-}
-
-function SectionNote({ children }: { children: string }) {
-  return (
-    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", marginTop: "var(--space-2)", width: "100%" }}>
-      {children}
-    </div>
   );
 }
 
