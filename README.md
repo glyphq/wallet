@@ -1,98 +1,76 @@
-[demo.webm](https://github.com/user-attachments/assets/cc8601bc-fa6a-47dc-83c4-4ff5ec957e3b)
-
-
 # Sigil
 
 Self-custodial Qubic wallet with native dApp deep linking. Desktop-first — Windows, macOS, Linux.
 
 ---
 
-## What it is
+## Features
 
-Sigil is a desktop wallet for Qubic that keeps your keys on your machine and lets dApps request signatures through a native deep link protocol. Any web app or CLI tool can open a `sigil://` URI — Sigil focuses, shows a review screen, and POSTs the signed result back to a callback URL.
-
-Beyond deep linking, it's a full-featured Qubic wallet:
-
+**Wallet**
 - Multiple encrypted vaults, each with a password and multiple accounts
-- Send, receive, full transaction history
-- Send to up to 25 recipients in a single transaction (QUtil)
+- Send, receive, and full transaction history with filters
+- Send to up to 25 recipients in one transaction (QUtil)
 - Burn QU permanently (QUtil)
 - Qearn staking — lock and unlock positions directly from the wallet
 - Address book with one-click send
-- Auto-lock on idle, OS sleep, or window blur
-- Biometric unlock — Windows Hello / Touch ID / macOS biometrics via OS secure storage
+- Transaction memos — attach private notes to any transaction, exportable as JSON
 - Privacy mode — hides all balances across every screen
-- Auto-updates — Settings footer shows available releases; user-triggered download and install with live progress
+- USD value estimates using live market price, with an optional per-session price override
 
-**Seeds never leave your device. No server ever sees your seed or password.** Everything is encrypted locally with AES-256-GCM + PBKDF2 (600,000 iterations).
+**Security**
+- Seeds and keys never leave your device — no telemetry, no server, no cloud
+- AES-256-GCM encryption with PBKDF2 (600,000 iterations)
+- Biometric unlock — Windows Hello / Touch ID / macOS Secure Enclave via OS credential store
+- Auto-lock on idle, OS sleep, or window blur (Rust-side timer, not renderer)
+- Auto-updates enforced on launch — signed packages only, unsigned or tampered releases are rejected
+
+**dApp integration**
+- Native deep link protocol (`sigil://`) for web apps and CLI tools to request signatures
+- Supports `transfer`, `sc_call`, `sign_message`, and `connect` request types
+- Per-dApp permission management with revocation
+
+**Desktop**
+- System tray — hide to tray on close, restore with a click, Quit from the tray menu
+- Desktop notifications for incoming, outgoing, and confirmed transactions
+- Single-instance — opening a second instance focuses the existing window
+
+---
+
+## Security model
+
+Seeds and derived wallets live only in JS memory (Zustand session store). On lock, the session store is cleared. The disk store holds only the AES-256-GCM encrypted blob — the password never persists anywhere. Auto-lock fires from a Rust timer so a frozen renderer cannot bypass it.
+
+Updates are signed with a Tauri signing key. The public key is embedded in the bundle — Sigil verifies the signature before installing anything.
+
+---
+
+## dApp deep linking
+
+Any web app or CLI tool opens a `sigil://v1/request?d=<payload>&cb=<callback>` URI. Sigil:
+
+1. Parses and validates the payload in Rust before the renderer sees it
+2. Focuses the existing window (or launches if not running)
+3. Shows a review screen — dApp name, origin, what will be signed, which account signs
+4. On approval: builds and broadcasts the transaction, POSTs the signed result to the callback URL
+5. On rejection: POSTs `{ status: "rejected" }` to the callback URL
 
 ---
 
 ## Build locally
 
-### Requirements
+**Requirements**
 
-- [Rust](https://rustup.rs/) (stable toolchain)
+- [Rust](https://rustup.rs/) stable toolchain
 - [Bun](https://bun.sh/) or Node.js ≥ 20
-- [Tauri CLI v2](https://v2.tauri.app/start/prerequisites/)
-- Platform prerequisites per [Tauri's guide](https://v2.tauri.app/start/prerequisites/) (WebView2 on Windows, webkit2gtk on Linux)
-
-### Steps
+- Platform prerequisites from [Tauri's guide](https://v2.tauri.app/start/prerequisites/) — WebView2 on Windows, webkit2gtk on Linux
 
 ```sh
-git clone https://github.com/alez04/sigil.app
+git clone https://github.com/sigil-oss/sigil.app
 cd sigil.app
 bun install
-bun tauri dev       # hot-reload dev mode
-bun tauri build     # production installer
+bun tauri dev       # hot-reload dev build
+bun tauri build     # production installer → src-tauri/target/release/bundle/
 ```
-
-The installer ends up in `src-tauri/target/release/bundle/`.
-
----
-
-## User flows
-
-### First run
-
-1. Launch → Welcome screen
-2. **Create vault**: name → generate seed (write it down) → spot-check backup (4 random positions to confirm) → set password → dashboard
-3. **Import vault**: paste existing 55-char seed → name → password → dashboard
-
-### Send QU
-
-Dashboard → **Send** → enter recipient identity or pick from contacts → enter amount → Review (shows from/to/tick, fee: none) → Sign and send.
-
-From the send screen, two secondary options are always visible:
-- **Send to Many** — batch up to 25 recipients in one SC transaction
-- **Burn QU** — permanently destroy QU (danger-styled, two confirmation steps)
-
-### Send to Many
-
-Send to Many → add recipients (identity + amount per row, contact picker available for each) → running total shown → Review (lists all recipients + QUtil fee + total) → Sign and send.
-
-### Qearn staking
-
-Dashboard → **QEARN →** → two tabs:
-
-- **Lock**: enter amount → review (shows lock epoch and maturity epoch, which is lock + 52) → sign
-- **Unlock**: lists all active locked positions queried from chain. Positions not yet matured show an `[EARLY]` badge and a danger-styled button with a warning that rewards may be forfeited. Matured positions show a standard unlock button.
-
-### dApp signing request
-
-A dApp opens `sigil://v1/request?d=<payload>&cb=<callback>`. Sigil:
-
-1. Parses and validates the URI in Rust before the renderer sees anything
-2. Focuses the existing window (or launches if closed)
-3. Shows a review screen: dApp name, origin, what's being signed, which account will sign
-4. On approval: builds and broadcasts the transaction, POSTs the result to the callback URL
-5. On rejection: POSTs `{ status: "rejected" }` to the callback URL
-
-Supported request types: `transfer`, `sc_call`, `sign_message`, `connect`.
-
-### Contacts
-
-Contacts → add by name + identity. Clicking a contact row navigates to Send with the identity pre-filled. The send screen also has a contact picker modal ("FROM CONTACTS ↓"). Last-used timestamp updates automatically when a send to that identity completes.
 
 ---
 
@@ -100,34 +78,28 @@ Contacts → add by name + identity. Clicking a contact row navigates to Send wi
 
 | Layer | Choice |
 |---|---|
-| App framework | Tauri v2 (Rust backend, WebView frontend) |
-| Frontend | React 19 + TypeScript strict |
+| App framework | Tauri v2 (Rust + WebView) |
+| Frontend | React 19 + TypeScript (strict) |
 | Routing | React Router v7 |
-| State | Zustand (persisted to disk via tauri-plugin-store, session in-memory) |
+| State | Zustand — persisted to disk via `tauri-plugin-store`, session in-memory |
 | Server state | TanStack Query v5 |
-| Qubic SDK | `@qubic.org/types`, `@qubic.org/crypto`, `@qubic.org/tx`, `@qubic.org/wallet`, `@qubic.org/rpc`, `@qubic.org/contracts` |
-| Design system | Nothing Design — OLED black, Space Grotesk + Space Mono, mechanical UI |
-
-### Biometric unlock
-
-Settings → Security → enable biometric. Sigil prompts for your vault password once to verify it, then stores it in the OS secure store (Windows Credential Manager / macOS Keychain / libsecret on Linux). On subsequent unlocks, the OS biometric prompt retrieves the password — Sigil never stores it on disk itself.
-
-### Auto-updates
-
-When Sigil starts, it checks for a new release after an 8-second delay (to avoid slowing startup). If one is available, Settings shows `[UPDATE AVAILABLE vX.Y.Z]`. Click it to download and install; progress is shown live. The app relaunches automatically when the install completes.
-
-Updates are signed with a Tauri signing key. The public key is embedded in the app bundle — unsigned or tampered packages are rejected.
+| Qubic SDK | `@qubic.org/{types,crypto,tx,wallet,rpc,contracts}` |
+| Design | Nothing Design aesthetic — OLED black, Space Grotesk + Space Mono |
 
 ---
 
-## Important notes
+## Implementation notes
 
-**Security model:** Seeds and derived wallets live only in JS memory (Zustand session store). On lock, the session store is zeroed. The disk store holds only the AES-256-GCM encrypted blob — password never persists. Auto-lock fires in Rust, not the renderer, so a frozen UI doesn't bypass it.
+**Biometric unlock** — Settings → Security → enable biometric. Sigil verifies your vault password once, then stores it in the OS credential store (Windows Credential Manager / macOS Keychain / libsecret). Subsequent unlocks retrieve it via the OS biometric prompt. The password is never stored on disk by Sigil itself.
 
-**SC call destinations:** Qubic contract addresses are derived with `contractIndexToIdentity(index)` from `@qubic.org/crypto`. The default `SC_DESTINATION` constant in the wallet SDK (`'A'.repeat(60)`) has an invalid checksum and must not be used — all SC calls in Sigil pass an explicit destination.
+**Auto-updates** — On every launch a splash screen checks for a new release. If one is found, it downloads and installs silently in the foreground (progress bar shown) then relaunches. There is no way to skip an update. Packages are verified against an embedded public key before install.
 
-**QUtil fee:** SendToManyV1 charges a per-invocation fee queried from the contract before signing. The UI blocks the Sign button until the fee resolves and adds it to the transaction amount automatically.
+**QUtil fee** — SendToManyV1 charges a per-invocation fee queried from the contract before signing. The UI blocks the Sign button until the fee resolves and adds it to the transaction amount automatically.
 
-**Qearn positions:** The unlock tab scans the last 52 epochs using `getUserLockStatus` (bitmask check) followed by parallel `getUserLockedInfo` calls for each epoch. Results are cached for 30 seconds via TanStack Query.
+**Transaction history** — SC calls are identified by destination address and shown as `SC CALL` with the contract name (QUtil / Qearn). Pending SC calls carry a `contractName` set at broadcast time. History supports infinite scroll, direction/type/date range/amount/tick filters, and compact amount formatting (1K / 1M / 1B).
 
-**Transaction history:** SC calls are identified by destination address and shown as `[SC CALL]` with the contract name (QUtil / Qearn), rather than `[SENT]`. Pending SC calls carry a `contractName` field (e.g. `"QUtil · Send to Many"`) set at broadcast time.
+**Qearn positions** — The unlock tab scans the last 52 epochs using `getUserLockStatus` (bitmask) followed by parallel `getUserLockedInfo` calls. Positions not yet matured show an `[EARLY]` badge with a warning that rewards may be forfeited.
+
+**SC call destinations** — Contract addresses are derived via `contractIndexToIdentity(index)`. All SC calls pass an explicit destination — the default `SC_DESTINATION` (`'A'.repeat(60)`) from the wallet SDK has an invalid checksum and is never used.
+
+**Bob node (experimental)** — An optional Bob indexer can be configured in Network settings for real-time tick/balance/transfer data via WebSocket. Due to the production CSP, the Bob node must run on `localhost`.
