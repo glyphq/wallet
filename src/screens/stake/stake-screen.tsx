@@ -46,9 +46,11 @@ export default function StakeScreen() {
 
   const settings = usePersistedStore((s) => s.settings);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
+  const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const identity = wallet?.identity ?? null;
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === (identity ?? ""));
 
   const { data: tickInfo } = useTickInfo();
   const { data: balanceData } = useBalance(identity);
@@ -294,12 +296,12 @@ export default function StakeScreen() {
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>AVAILABLE</span>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", color: balanceOver ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
-                    {Number(remaining).toLocaleString()} QU
+                    {formatQu(remaining)} QU
                   </span>
                 </div>
               )}
 
-              <Button onClick={goLockConfirm} disabled={!amountStr.trim()}>Continue</Button>
+              <Button onClick={goLockConfirm} disabled={!amountStr.trim() || !wallet || !tickInfo || hasPendingTx}>Continue</Button>
             </>
           )}
         </>
@@ -340,6 +342,7 @@ export default function StakeScreen() {
                       shape="sharp"
                       size="md"
                       style={{ width: "auto" }}
+                      disabled={!wallet || !tickInfo || hasPendingTx}
                       onClick={() => { setUnlockTarget(pos); setStep("confirm"); }}
                     >
                       {isEarly ? "Early Unlock" : "Unlock"}
@@ -369,7 +372,7 @@ export default function StakeScreen() {
             <ReviewRow label="Unlocks at epoch" value={String((currentEpoch ?? 0) + 52)} />
           </div>
           <Divider />
-          <Button onClick={sendLock}>Sign and send</Button>
+          <Button onClick={sendLock} disabled={!wallet || !tickInfo || hasPendingTx}>Sign and send</Button>
           <Button variant="secondary" shape="sharp" onClick={() => setStep("main")}>Cancel</Button>
         </>
       )}
@@ -395,7 +398,7 @@ export default function StakeScreen() {
             )}
           </div>
           <Divider />
-          <Button onClick={sendUnlock}>Sign and send</Button>
+          <Button onClick={sendUnlock} disabled={!wallet || !tickInfo || hasPendingTx}>Sign and send</Button>
           <Button variant="secondary" shape="sharp" onClick={() => { setStep("main"); setUnlockTarget(null); }}>Cancel</Button>
         </>
       )}
