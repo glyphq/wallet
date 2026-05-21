@@ -1,10 +1,11 @@
-import { useState, useEffect, type ReactElement } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { Modal } from "@/components/modal";
+import { Sheet } from "@/components/sheet";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -13,7 +14,19 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { truncateId, formatQu } from "@/lib/format";
 
-type TxFilter = "all" | "received" | "sent";
+type FilterDirection = "all" | "in" | "out";
+type FilterStatus = "all" | "confirmed" | "failed" | "sc";
+
+type TxFilters = {
+  direction: FilterDirection;
+  status: FilterStatus;
+};
+
+const DEFAULT_FILTERS: TxFilters = { direction: "all", status: "all" };
+
+function isDefaultFilters(f: TxFilters) {
+  return f.direction === "all" && f.status === "all";
+}
 
 export default function HistoryScreen() {
   const navigate = useNavigate();
@@ -24,266 +37,384 @@ export default function HistoryScreen() {
   const wallets = useSessionStore((s) => s.wallets);
   const identity = wallets[settings.activeAccountIndex]?.identity ?? null;
 
-  const { data: txs, isLoading, isError, refetch } = useTxHistory(identity);
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useTxHistory(identity);
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
 
-  const [filter, setFilter] = useState<TxFilter>("all");
+  const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [detail, setDetail] = useState<TxHistoryItem | PendingTx | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setFilter("all"); }, [identity]);
+  useEffect(() => { setFilters(DEFAULT_FILTERS); }, [identity]);
+
+  // Infinite scroll: fetch next page when sentinel enters view
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
 
-  // Pending txs belonging to this identity
   const myPending = pendingTxs.filter(
     (p) => p.source === identity || p.destination === identity,
   );
-  // Filter out pending txs already in fetched results
-  const fetchedHashes = new Set((txs ?? []).map((t) => t.hash).filter(Boolean));
+  const fetchedHashes = new Set((data?.pages.flat() ?? []).map((t) => t.hash));
   const visiblePending = myPending.filter((p) => !fetchedHashes.has(p.hash));
 
+  const allTxs = data?.pages.flat() ?? [];
+
   const filteredPending = visiblePending.filter((p) => {
-    if (filter === "received") return p.destination === identity;
-    if (filter === "sent") return p.source === identity;
+    if (filters.direction === "in") return p.destination === identity;
+    if (filters.direction === "out") return p.source === identity;
     return true;
   });
 
-  const filteredTxs = (txs ?? []).filter((tx) => {
-    if (filter === "received") return tx.destination === identity;
-    if (filter === "sent") return tx.source === identity;
+  const filteredTxs = allTxs.filter((tx) => {
+    const isIn = tx.destination === identity;
+    const isSc = !!(
+      (tx.destination && KNOWN_CONTRACT_ADDRESSES[tx.destination]) ||
+      (tx.source && KNOWN_CONTRACT_ADDRESSES[tx.source])
+    );
+    if (filters.direction === "in" && !isIn) return false;
+    if (filters.direction === "out" && tx.source !== identity) return false;
+    if (filters.status === "confirmed" && !tx.moneyFlew) return false;
+    if (filters.status === "failed" && tx.moneyFlew) return false;
+    if (filters.status === "sc" && !isSc) return false;
     return true;
   });
 
-  const statusBar = (
-    <ScreenHeader
-      title="Transactions"
-      onBack={() => navigate("/dashboard")}
-      action={<button type="button" onClick={() => refetch()} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>↻</button>}
-    />
-  );
+  const hasActive = !isDefaultFilters(filters);
 
-  const filterTabs = (
-    <div style={{ display: "flex", gap: "var(--space-2)", paddingBottom: "var(--space-2)" }}>
-      {(["all", "received", "sent"] as TxFilter[]).map((f) => (
-        <button
-          key={f}
-          onClick={() => setFilter(f)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            padding: "var(--space-1) 0",
-            color: filter === f ? "var(--color-text-display)" : "var(--color-text-disabled)",
-            borderBottom: filter === f ? "1px solid var(--color-text-display)" : "1px solid transparent",
-          }}
-        >
-          {f}
-        </button>
-      ))}
+  const headerActions = (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+      <button
+        type="button"
+        onClick={() => setFilterOpen(true)}
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+          color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+          letterSpacing: "0.05em", padding: 0, display: "flex", alignItems: "center", gap: 4,
+        }}
+      >
+        FILTER{hasActive && <span style={{ color: "var(--color-status-success)", fontSize: 8, lineHeight: 1 }}>●</span>}
+      </button>
+      <button
+        type="button"
+        onClick={() => refetch()}
+        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
+      >
+        ↻
+      </button>
     </div>
   );
 
-  const body = () => {
-    if (isLoading) return (
-      <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-        [LOADING...]
-      </div>
-    );
-    if (isError) return (
-      <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-        [NETWORK ERROR]
-      </div>
-    );
-    if (filteredPending.length === 0 && filteredTxs.length === 0) return (
-      <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-        {(txs?.length ?? 0) === 0 && visiblePending.length === 0 ? "[NO TRANSACTIONS YET]" : "[NO RESULTS]"}
-      </div>
-    );
+  const statusBar = (
+    <ScreenHeader title="Transactions" onBack={() => navigate("/dashboard")} action={headerActions} />
+  );
 
-    const rows: ReactElement[] = [];
-
-    // Pending rows (includes expired ones shown as FAILED until cleaned up)
-    filteredPending.forEach((p, i) => {
-      const isIncoming = p.destination === identity;
-      const expired = isExpired(p);
-      const isScCall = !!p.contractName;
-      if (i > 0 || rows.length > 0) rows.push(<Divider key={`div-p-${i}`} style={{ margin: "var(--space-3) 0" }} />);
-      rows.push(
-        <button
-          key={`pending-${p.hash}`}
-          onClick={() => setDetail(p)}
-          style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-1)" }}>
-                <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {isScCall ? p.contractName : (isIncoming ? truncateId(p.source) : truncateId(p.destination))}
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
-                {expired
-                  ? `EXPIRED AT TICK ${p.targetTick}`
-                  : currentTick > 0
-                    ? `ETA ~${Math.max(1, p.targetTick - currentTick)}s`
-                    : `TARGET TICK ${p.targetTick}`}
-              </div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: expired ? "var(--color-text-disabled)" : "var(--color-status-warning)" }}>
-                {hideBalances ? "••••••" : `−${formatQu(p.amount)}`}
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
-            </div>
-          </div>
-        </button>
-      );
-    });
-
-    // Fetched rows
-    filteredTxs.forEach((tx, i) => {
-      const isIncoming = tx.destination === identity;
-      const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
-      const isScCall = !!contractName;
-      const amount = formatQu(tx.amount ?? "0");
-      const moneyFlew = tx.moneyFlew ?? true;
-      const statusVariant = !moneyFlew ? "error" : isScCall ? "neutral" : (isIncoming ? "success" : "neutral");
-      const statusLabel = !moneyFlew ? "FAILED" : isScCall ? "SC CALL" : (isIncoming ? "RECEIVED" : "SENT");
-      if (i > 0 || rows.length > 0) rows.push(<Divider key={`div-${i}`} style={{ margin: "var(--space-3) 0" }} />);
-      rows.push(
-        <button
-          key={tx.hash ?? i}
-          onClick={() => setDetail(tx)}
-          style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-1)" }}>
-                <Tag variant={statusVariant}>{statusLabel}</Tag>
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {isScCall ? contractName : (isIncoming ? truncateId(tx.source ?? "—") : truncateId(tx.destination ?? "—"))}
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
-                TICK {tx.tickNumber}
-              </div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-lg)",
-                color: moneyFlew
-                  ? (isIncoming ? "var(--color-status-success)" : "var(--color-text-primary)")
-                  : "var(--color-text-disabled)",
-              }}>
-                {hideBalances ? "••••••" : `${isIncoming ? "+" : "−"}${amount}`}
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
-            </div>
-          </div>
-        </button>
-      );
-    });
-
-    return rows;
-  };
-
-  // Determine if detail is a PendingTx
-  const isPending = (d: typeof detail): d is PendingTx => !!d && "broadcastAt" in d;
+  const isEmpty = filteredPending.length === 0 && filteredTxs.length === 0;
 
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      {filterTabs}
-      {body()}
+    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
+
+      {/* Active filter summary strip */}
+      {hasActive && (
+        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
+          {filters.direction !== "all" && (
+            <ActiveFilterChip label={filters.direction.toUpperCase()} onRemove={() => setFilters((f) => ({ ...f, direction: "all" }))} />
+          )}
+          {filters.status !== "all" && (
+            <ActiveFilterChip label={filters.status === "sc" ? "SC CALL" : filters.status.toUpperCase()} onRemove={() => setFilters((f) => ({ ...f, status: "all" }))} />
+          )}
+        </div>
+      )}
+
+      {isLoading && (
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+          [LOADING...]
+        </div>
+      )}
+
+      {isError && (
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          [NETWORK ERROR]
+        </div>
+      )}
+
+      {!isLoading && !isError && isEmpty && (
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+          {allTxs.length === 0 && visiblePending.length === 0 ? "[NO TRANSACTIONS YET]" : "[NO RESULTS]"}
+        </div>
+      )}
+
+      {/* Transaction rows */}
+      {!isLoading && !isError && !isEmpty && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {filteredPending.map((p, i) => {
+            const isIncoming = p.destination === identity;
+            const expired = isExpired(p);
+            return (
+              <div key={`pending-${p.hash}`}>
+                {i > 0 && <Divider style={{ margin: "var(--space-3) 0" }} />}
+                <button
+                  type="button"
+                  onClick={() => setDetail(p)}
+                  style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left" }}
+                >
+                  <TxRow
+                    tag={<Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>}
+                    sub={p.contractName ?? (isIncoming ? truncateId(p.source) : truncateId(p.destination))}
+                    sub2={expired ? `EXPIRED AT TICK ${p.targetTick}` : currentTick > 0 ? `ETA ~${Math.max(1, p.targetTick - currentTick)}s` : `TARGET ${p.targetTick}`}
+                    amount={hideBalances ? "••••••" : `−${formatQu(p.amount)}`}
+                    amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
+                  />
+                </button>
+              </div>
+            );
+          })}
+
+          {filteredTxs.map((tx, i) => {
+            const isIncoming = tx.destination === identity;
+            const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
+            const fromContractName = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
+            const isSc = !!(contractName || fromContractName);
+            const flew = tx.moneyFlew;
+            const statusVariant = !flew ? "error" : isSc ? "neutral" : isIncoming ? "success" : "neutral";
+            const statusLabel = !flew ? "FAILED" : isSc ? "SC CALL" : isIncoming ? "RECEIVED" : "SENT";
+            const counterparty = isSc
+              ? (contractName ?? fromContractName ?? truncateId(isIncoming ? (tx.source ?? "—") : (tx.destination ?? "—")))
+              : truncateId(isIncoming ? (tx.source ?? "—") : (tx.destination ?? "—"));
+            const offset = filteredPending.length + i;
+            return (
+              <div key={tx.hash}>
+                {offset > 0 && <Divider style={{ margin: "var(--space-3) 0" }} />}
+                <button
+                  type="button"
+                  onClick={() => setDetail(tx)}
+                  style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left" }}
+                >
+                  <TxRow
+                    tag={<Tag variant={statusVariant}>{statusLabel}</Tag>}
+                    sub={counterparty}
+                    sub2={`TICK ${tx.tickNumber}`}
+                    amount={hideBalances ? "••••••" : `${isIncoming ? "+" : "−"}${formatQu(tx.amount ?? "0")}`}
+                    amountColor={flew ? (isIncoming ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+                  />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+
+      {isFetchingNextPage && (
+        <div style={{ textAlign: "center", padding: "var(--space-4) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+          [LOADING...]
+        </div>
+      )}
+
+      {!hasNextPage && allTxs.length > 0 && (
+        <div style={{ textAlign: "center", padding: "var(--space-4) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+          ── END ──
+        </div>
+      )}
+
+      {/* Filter sheet */}
+      <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filter">
+        <FilterSection label="Direction">
+          {(["all", "in", "out"] as FilterDirection[]).map((v) => (
+            <FilterPill key={v} label={v === "all" ? "ALL" : v === "in" ? "IN" : "OUT"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
+          ))}
+        </FilterSection>
+        <FilterSection label="Status">
+          {(["all", "confirmed", "failed", "sc"] as FilterStatus[]).map((v) => (
+            <FilterPill key={v} label={v === "all" ? "ALL" : v === "sc" ? "SC CALL" : v.toUpperCase()} active={filters.status === v} onClick={() => setFilters((f) => ({ ...f, status: v }))} />
+          ))}
+        </FilterSection>
+        {hasActive && (
+          <button
+            type="button"
+            onClick={() => { setFilters(DEFAULT_FILTERS); setFilterOpen(false); }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, marginTop: "var(--space-2)" }}
+          >
+            RESET FILTERS
+          </button>
+        )}
+      </Sheet>
 
       {/* Detail modal */}
       <Modal open={!!detail} onClose={() => setDetail(null)}>
-        {detail && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            {(() => {
-              const contractName = isPending(detail)
-                ? detail.contractName
-                : (detail.destination ? KNOWN_CONTRACT_ADDRESSES[detail.destination] : undefined);
-              const isScCall = !!contractName;
-              return (
-                <>
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                    {isPending(detail) ? (
-                      <Tag variant={isExpired(detail) ? "error" : "warning"}>
-                        {isExpired(detail) ? "FAILED" : "PENDING"}
-                      </Tag>
-                    ) : (
-                      <Tag variant={!(detail.moneyFlew ?? true) ? "error" : isScCall ? "neutral" : (detail.destination === identity ? "success" : "neutral")}>
-                        {!(detail.moneyFlew ?? true) ? "FAILED" : isScCall ? "SC CALL" : (detail.destination === identity ? "RECEIVED" : "SENT")}
-                      </Tag>
-                    )}
-                  </div>
-                  {isScCall && (
-                    <DetailRow label="Contract">
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em" }}>
-                        {contractName}
-                      </span>
-                    </DetailRow>
-                  )}
-                </>
-              );
-            })()}
-
-            <DetailRow label="Amount">
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
-                {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
-              </span>
-            </DetailRow>
-
-            <DetailRow label="From">
-              {detail.source ? (
-                <IdentityDisplay identity={detail.source} />
-              ) : (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>
-              )}
-            </DetailRow>
-
-            <DetailRow label="To">
-              {detail.destination ? (
-                <IdentityDisplay identity={detail.destination} />
-              ) : (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>
-              )}
-            </DetailRow>
-
-            {isPending(detail) ? (
-              <DetailRow label="Target tick">
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)" }}>
-                  {detail.targetTick}
-                </span>
-              </DetailRow>
-            ) : (
-              <DetailRow label="Tick">
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)" }}>
-                  {detail.tickNumber ?? "—"}
-                </span>
-              </DetailRow>
-            )}
-
-            {detail.hash && (
-              <DetailRow label="Hash">
-                <IdentityDisplay identity={detail.hash} />
-              </DetailRow>
-            )}
-          </div>
-        )}
+        {detail && <TxDetail detail={detail} identity={identity} />}
       </Modal>
     </AppShell>
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function TxRow({ tag, sub, sub2, amount, amountColor }: {
+  tag: ReactNode; sub: string; sub2: string; amount: string; amountColor: string;
+}) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div>
+        <div style={{ marginBottom: "var(--space-1)" }}>{tag}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>{sub}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>{sub2}</div>
+      </div>
+      <div style={{ textAlign: "right" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>{amount}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
+      </div>
+    </div>
+  );
+}
+
+function FilterSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div style={{ marginBottom: "var(--space-5)" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "var(--space-3)" }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: active ? "var(--color-text-primary)" : "none",
+        border: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
+        borderRadius: "var(--radius-sharp)",
+        cursor: "pointer",
+        fontFamily: "var(--font-mono)",
+        fontSize: "var(--text-mono-sm)",
+        color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+        letterSpacing: "0.05em",
+        padding: "var(--space-1) var(--space-3)",
+        textTransform: "uppercase",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ActiveFilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      style={{
+        background: "none",
+        border: "1px solid var(--color-text-primary)",
+        borderRadius: "var(--radius-sharp)",
+        cursor: "pointer",
+        fontFamily: "var(--font-mono)",
+        fontSize: "var(--text-mono-sm)",
+        color: "var(--color-text-primary)",
+        letterSpacing: "0.05em",
+        padding: "var(--space-1) var(--space-2)",
+        display: "flex", alignItems: "center", gap: "var(--space-1)",
+      }}
+    >
+      {label} ✕
+    </button>
+  );
+}
+
+function TxDetail({ detail, identity }: { detail: TxHistoryItem | PendingTx; identity: string | null }) {
+  const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
+  const { data: tickInfo } = useTickInfo();
+  const currentTick = tickInfo?.tick ?? 0;
+
+  const isPending = (d: TxHistoryItem | PendingTx): d is PendingTx => "broadcastAt" in d;
+
+  const contractName = detail.destination ? KNOWN_CONTRACT_ADDRESSES[detail.destination] : undefined;
+  const fromContractName = detail.source ? KNOWN_CONTRACT_ADDRESSES[detail.source] : undefined;
+  const isSc = !!(contractName || fromContractName);
+
+  if (isPending(detail)) {
+    const expired = currentTick > 0 && currentTick > detail.targetTick;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+          <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
+          {detail.contractName && <Tag variant="neutral">{detail.contractName}</Tag>}
+        </div>
+        <DetailRow label="Amount">
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
+            {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
+          </span>
+        </DetailRow>
+        <DetailRow label="From">
+          {detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}
+        </DetailRow>
+        <DetailRow label="To">
+          {detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}
+        </DetailRow>
+        <DetailRow label="Target tick">
+          <Mono>{detail.targetTick}</Mono>
+        </DetailRow>
+        {detail.hash && (
+          <DetailRow label="Hash"><IdentityDisplay identity={detail.hash} /></DetailRow>
+        )}
+      </div>
+    );
+  }
+
+  const isIncoming = detail.destination === identity;
+  const flew = detail.moneyFlew;
+  const statusVariant = !flew ? "error" : isSc ? "neutral" : isIncoming ? "success" : "neutral";
+  const statusLabel = !flew ? "FAILED" : isSc ? "SC CALL" : isIncoming ? "RECEIVED" : "SENT";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        <Tag variant={statusVariant}>{statusLabel}</Tag>
+        {isSc && <Tag variant="neutral">{contractName ?? fromContractName ?? ""}</Tag>}
+      </div>
+      <DetailRow label="Amount">
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
+          {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
+        </span>
+      </DetailRow>
+      <DetailRow label="From">
+        {detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}
+      </DetailRow>
+      <DetailRow label="To">
+        {detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}
+      </DetailRow>
+      <DetailRow label="Tick">
+        <Mono>{detail.tickNumber ?? "—"}</Mono>
+      </DetailRow>
+      {detail.hash && (
+        <DetailRow label="Hash"><IdentityDisplay identity={detail.hash} /></DetailRow>
+      )}
+    </div>
+  );
+}
+
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -292,4 +423,16 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
       {children}
     </div>
   );
+}
+
+function Mono({ children }: { children: ReactNode }) {
+  return (
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)" }}>
+      {children}
+    </span>
+  );
+}
+
+function Dash() {
+  return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>;
 }
