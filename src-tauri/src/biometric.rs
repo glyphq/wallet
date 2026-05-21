@@ -58,12 +58,12 @@ mod cred_store {
                 cred.CredentialBlob,
                 cred.CredentialBlobSize as usize,
             );
-            let password = std::str::from_utf8(blob)
-                .map_err(|e| format!("utf8: {e}"))?
-                .to_string();
+            let result = std::str::from_utf8(blob)
+                .map(|s| s.to_string())
+                .map_err(|e| format!("utf8: {e}"));
 
             CredFree(pcred as *const _);
-            Ok(password)
+            result
         }
     }
 
@@ -234,9 +234,13 @@ pub async fn check_biometric_available() -> bool {
 
 #[command]
 pub async fn enable_biometric(vault_id: String, password: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || cred_store::store(&vault_id, &password))
-        .await
-        .map_err(|e| e.to_string())?
+    tokio::task::spawn_blocking(move || {
+        // Confirm biometric before storing the password to prevent silent enrollment
+        platform::authenticate("Enable biometric unlock for Sigil")?;
+        cred_store::store(&vault_id, &password)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[command]
