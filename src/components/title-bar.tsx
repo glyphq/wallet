@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getVersion } from "@tauri-apps/api/app";
 
 function WinBtn({
   onClick,
@@ -47,6 +48,9 @@ export function TitleBar() {
   const win = useMemo(() => getCurrentWindow(), []);
   const [maximized, setMaximized] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [version, setVersion] = useState("");
+
+  useEffect(() => { getVersion().then(setVersion).catch(() => {}); }, []);
 
   useEffect(() => {
     win.isMaximized().then(setMaximized);
@@ -93,7 +97,7 @@ export function TitleBar() {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <polygon
             points="6,1 11,6 6,11 1,6"
-            stroke="var(--color-text-disabled)"
+            stroke="var(--color-status-success)"
             strokeWidth="1.2"
           />
         </svg>
@@ -102,11 +106,16 @@ export function TitleBar() {
             fontFamily: "var(--font-mono)",
             fontSize: "0.5625rem",
             letterSpacing: "0.2em",
-            color: "var(--color-text-disabled)",
+            color: "var(--color-text-secondary)",
           }}
         >
           SIGIL
         </span>
+        {version && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", color: "var(--color-text-disabled)" }}>
+            v{version}
+          </span>
+        )}
       </div>
 
       {/* Window controls */}

@@ -12,6 +12,7 @@ import { useSessionStore } from "@/store/session";
 import { generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { unlockVault, createVault, createWallet, exportVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
+import { Identicon } from "@/components/identicon";
 
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -339,19 +340,22 @@ interface AccountRowProps {
 
 function AccountRow({ account, identity, dimmed, onRename, onHide, onRemove }: AccountRowProps) {
   return (
-    <div style={{ opacity: dimmed ? 0.5 : 1 }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
-        {account.name}
-      </div>
-      {identity && (
-        <div style={{ marginBottom: "var(--space-3)" }}>
-          <IdentityDisplay identity={identity} />
+    <div style={{ opacity: dimmed ? 0.5 : 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+      <Identicon seed={identity ?? account.name} size={36} radius={5} style={{ marginTop: 2 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
+          {account.name}
         </div>
-      )}
-      <div style={{ display: "flex", gap: "var(--space-2)", marginTop: identity ? 0 : "var(--space-3)" }}>
-        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRename}>Rename</Button>
-        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onHide}>{account.hidden ? "Unhide" : "Hide"}</Button>
-        <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRemove}>Remove</Button>
+        {identity && (
+          <div style={{ marginBottom: "var(--space-3)" }}>
+            <IdentityDisplay identity={identity} />
+          </div>
+        )}
+        <div style={{ display: "flex", gap: "var(--space-2)", marginTop: identity ? 0 : "var(--space-2)" }}>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRename}>Rename</Button>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onHide}>{account.hidden ? "Unhide" : "Hide"}</Button>
+          <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRemove}>Remove</Button>
+        </div>
       </div>
     </div>
   );

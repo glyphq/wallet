@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
+import { Identicon } from "@/components/identicon";
 
 export interface IdentityDisplayProps {
   identity: string;
@@ -63,26 +64,29 @@ export function IdentityDisplay({ identity, style }: IdentityDisplayProps) {
 
   return (
     <div style={style}>
-      <motion.button
-        animate={{ opacity: flash ? 0.6 : 1 }}
-        transition={{ duration: 0.1, ease: [0, 0, 0.2, 1] }}
-        onClick={toggle}
-        aria-label={expanded ? `Address: ${identity} — click to collapse` : `Copy address ${truncateId(identity, 10, 10)}`}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-lg)",
-          color: "var(--color-text-primary)",
-          letterSpacing: "0.05em",
-          padding: 0,
-          textAlign: "left",
-          wordBreak: "break-all",
-        }}
-      >
-        {expanded ? identity : truncateId(identity, 10, 10)}
-      </motion.button>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        {!expanded && <Identicon seed={identity} size={18} radius={3} style={{ flexShrink: 0 }} />}
+        <motion.button
+          animate={{ opacity: flash ? 0.6 : 1 }}
+          transition={{ duration: 0.1, ease: [0, 0, 0.2, 1] }}
+          onClick={toggle}
+          aria-label={expanded ? `Address: ${identity} — click to collapse` : `Copy address ${truncateId(identity, 10, 10)}`}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-mono-lg)",
+            color: "var(--color-text-primary)",
+            letterSpacing: "0.05em",
+            padding: 0,
+            textAlign: "left",
+            wordBreak: "break-all",
+          }}
+        >
+          {expanded ? identity : truncateId(identity, 10, 10)}
+        </motion.button>
+      </div>
       {countdown !== null && (
         <div
           aria-live="polite"

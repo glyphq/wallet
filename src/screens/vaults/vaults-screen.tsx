@@ -6,7 +6,7 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Modal } from "@/components/modal";
 import { Tag } from "@/components/tag";
-import { Divider } from "@/components/divider";
+import { Identicon } from "@/components/identicon";
 import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVault, createWallet, type VaultData } from "@/lib/vault";
@@ -60,6 +60,11 @@ export default function VaultsScreen() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  function toggleExpand(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
 
   function openSwitch(vault: VaultMeta) {
     setSwitchingVault(vault);
@@ -68,11 +73,13 @@ export default function VaultsScreen() {
   }
 
   function openRename(vault: VaultMeta) {
+    setExpandedId(null);
     setRenamingVault(vault);
     setRenameValue(vault.name);
   }
 
   function openDelete(vault: VaultMeta) {
+    setExpandedId(null);
     setDeletingVault(vault);
     setDeletePassword("");
     setDeleteError("");
@@ -149,7 +156,7 @@ export default function VaultsScreen() {
         setImportPassword("");
         setImportError("");
       } catch {
-        // silently ignore malformed files — user can try again
+        // silently ignore malformed files
       }
     };
     input.click();
@@ -161,7 +168,7 @@ export default function VaultsScreen() {
     setImportError("");
     try {
       await unlockVault(importData.vault, importPassword);
-      const newVault: VaultMeta = {
+      addVault({
         id: newId(),
         name: importData.name,
         color: importData.color,
@@ -169,8 +176,7 @@ export default function VaultsScreen() {
         lastUnlockedAt: 0,
         accounts: importData.accounts,
         encryptedData: importData.vault,
-      };
-      addVault(newVault);
+      });
       setImportData(null);
     } catch {
       setImportError("WRONG PASSWORD");
@@ -194,57 +200,92 @@ export default function VaultsScreen() {
 
   return (
     <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      {vaults.map((vault, i) => {
-        const isActive = vault.id === settings.activeVaultId;
-        const visibleAccounts = vault.accounts.filter((a) => !a.hidden).length;
-        return (
-          <div key={vault.id}>
-            {i > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {/* Vault header */}
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-secondary)", flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+      {vaults
+        .slice()
+        .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0))
+        .map((vault) => {
+          const isActive = vault.id === settings.activeVaultId;
+          const isExpanded = expandedId === vault.id;
+          const visibleAccounts = vault.accounts.filter((a) => !a.hidden).length;
+          const accentColor = VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-secondary)";
+
+          return (
+            <div
+              key={vault.id}
+              style={{
+                background: "var(--color-bg-surface)",
+                border: "1px solid var(--color-border-strong)",
+                borderLeft: `3px solid ${accentColor}`,
+                borderRadius: "var(--radius-sharp)",
+                overflow: "hidden",
+              }}
+            >
+              {/* Card header — clickable to unlock or manage */}
+              <button
+                type="button"
+                onClick={() => isActive ? navigate(`/vaults/${vault.id}`) : openSwitch(vault)}
+                style={{
+                  width: "100%", background: "none", border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "var(--space-3)",
+                  padding: "var(--space-3) var(--space-3)",
+                  textAlign: "left",
+                }}
+              >
+                <Identicon seed={`${vault.id}:${vault.color}`} size={40} radius={6} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: 2 }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {vault.name}
                     </span>
                     {isActive && <Tag variant="neutral">ACTIVE</Tag>}
                   </div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
-                    {visibleAccounts} {visibleAccounts === 1 ? "ACCOUNT" : "ACCOUNTS"} · UNLOCKED {timeAgo(vault.lastUnlockedAt).toUpperCase()}
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                    {visibleAccounts} {visibleAccounts === 1 ? "ACCOUNT" : "ACCOUNTS"} · {timeAgo(vault.lastUnlockedAt).toUpperCase()}
                   </div>
                 </div>
-              </div>
+                <button
+                  type="button"
+                  aria-label="Vault options"
+                  onClick={(e) => { e.stopPropagation(); toggleExpand(vault.id); }}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: isExpanded ? "var(--color-text-primary)" : "var(--color-text-disabled)",
+                    fontFamily: "var(--font-mono)", fontSize: "1rem",
+                    padding: "var(--space-2)", flexShrink: 0, lineHeight: 1,
+                  }}
+                >
+                  ⋮
+                </button>
+              </button>
 
-              {/* Actions */}
-              <div style={{ display: "flex", gap: "var(--space-2)", paddingLeft: 22 }}>
-                {isActive ? (
-                  <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => navigate(`/vaults/${vault.id}`)}>
-                    Manage accounts
-                  </Button>
-                ) : (
-                  <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openSwitch(vault)}>
-                    Unlock
-                  </Button>
-                )}
-                <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openRename(vault)}>
-                  Rename
-                </Button>
-                <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openDelete(vault)}>
-                  Delete
-                </Button>
-              </div>
+              {/* Inline action panel */}
+              {isExpanded && (
+                <div style={{
+                  borderTop: "1px solid var(--color-border-subtle)",
+                  padding: "var(--space-2) var(--space-3) var(--space-3)",
+                  display: "flex", flexDirection: "column", gap: "var(--space-1)",
+                }}>
+                  {isActive && (
+                    <ActionItem onClick={() => { setExpandedId(null); navigate(`/vaults/${vault.id}`); }}>
+                      Manage accounts
+                    </ActionItem>
+                  )}
+                  <ActionItem onClick={() => openRename(vault)}>Rename</ActionItem>
+                  <ActionItem danger onClick={() => openDelete(vault)}>Delete vault</ActionItem>
+                </div>
+              )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
 
       {/* Switch vault modal */}
       <Modal open={!!switchingVault} onClose={() => setSwitchingVault(null)}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Unlock {switchingVault?.name}
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            {switchingVault && <Identicon seed={`${switchingVault.id}:${switchingVault.color}`} size={36} />}
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+              Unlock {switchingVault?.name}
+            </div>
           </div>
           <Input
             type="password"
@@ -343,5 +384,23 @@ export default function VaultsScreen() {
         </div>
       </Modal>
     </AppShell>
+  );
+}
+
+function ActionItem({ children, onClick, danger }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: "none", border: "none", cursor: "pointer", textAlign: "left",
+        padding: "var(--space-2) var(--space-1)",
+        fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
+        color: danger ? "var(--color-status-error)" : "var(--color-text-secondary)",
+        borderRadius: "var(--radius-sharp)",
+      }}
+    >
+      {children}
+    </button>
   );
 }
