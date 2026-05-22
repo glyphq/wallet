@@ -9,6 +9,7 @@ import { Divider } from "@/components/divider";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
+import { Identicon } from "@/components/identicon";
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
@@ -96,19 +97,22 @@ export default function ContactsScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
             <button
               onClick={() => navigate(`/send?to=${contact.identity}`)}
-              style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
+              style={{ flex: 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
             >
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
-                {contact.name}
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {truncateId(contact.identity)}
-              </div>
-              {contact.note && (
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
-                  {contact.note}
+              <Identicon seed={contact.identity} size={32} radius={5} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
+                  {contact.name}
                 </div>
-              )}
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                  {truncateId(contact.identity)}
+                </div>
+                {contact.note && (
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
+                    {contact.note}
+                  </div>
+                )}
+              </div>
             </button>
             <div style={{ display: "flex", gap: "var(--space-2)", flexShrink: 0 }}>
               <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openEdit(contact)}>Edit</Button>

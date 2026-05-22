@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal } from "@/components/modal";
 import { Button } from "@/components/button";
+import { Identicon } from "@/components/identicon";
 import type { Contact } from "@/store/persisted";
 
 export interface ContactPickerProps {
@@ -47,11 +48,14 @@ export function ContactPicker({ open, onClose, onSelect, contacts }: ContactPick
             <button
               key={c.id}
               onClick={() => handleSelect(c.identity)}
-              style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-sharp)" }}
+              style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-sharp)" }}
             >
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{c.name}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {c.identity.slice(0, 8)}...{c.identity.slice(-8)}
+              <Identicon seed={c.identity} size={28} radius={4} style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{c.name}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                  {c.identity.slice(0, 8)}...{c.identity.slice(-8)}
+                </div>
               </div>
             </button>
           ))}
