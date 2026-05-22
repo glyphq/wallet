@@ -73,6 +73,7 @@ export interface AppSettings {
   notifyOnReceived: boolean;
   notifyOnSent: boolean;
   notifyOnConfirmed: boolean;
+  notifyWhenLocked: boolean;
   hideToTray: boolean;
 }
 
@@ -123,6 +124,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   notifyOnReceived: true,
   notifyOnSent: true,
   notifyOnConfirmed: true,
+  notifyWhenLocked: false,
   hideToTray: false,
 };
 
