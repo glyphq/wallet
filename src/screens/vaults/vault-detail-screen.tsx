@@ -348,7 +348,7 @@ function AccountRow({ account, identity, dimmed, onRename, onHide, onRemove }: A
         </div>
         {identity && (
           <div style={{ marginBottom: "var(--space-3)" }}>
-            <IdentityDisplay identity={identity} />
+            <IdentityDisplay identity={identity} showIdenticon={false} />
           </div>
         )}
         <div style={{ display: "flex", gap: "var(--space-2)", marginTop: identity ? 0 : "var(--space-2)" }}>
