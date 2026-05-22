@@ -1,0 +1,8 @@
+[advisories]
+ignore = [
+  # glib VariantStrIter unsoundness (RUSTSEC-2024-0429).
+  # Fixed in glib >=0.20.0, but libappindicator pins glib ^0.18 and has no
+  # newer release. VariantStrIter is not exercised by any code path in this
+  # app; upgrade when libappindicator supports glib 0.20+.
+  "RUSTSEC-2024-0429",
+]
