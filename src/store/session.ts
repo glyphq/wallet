@@ -12,6 +12,8 @@ interface SessionState {
   unlockedVaultId: string | null;
   seeds: Seed[];
   wallets: Wallet[];
+  /** Last set of vault identities from the most recent unlock — used for balance polling while locked. */
+  cachedIdentities: string[];
   pendingRequest: string | null;
   isLocked: boolean;
   txAlerts: TxAlert[];
@@ -32,6 +34,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   unlockedVaultId: null,
   seeds: [],
   wallets: [],
+  cachedIdentities: [],
   pendingRequest: null,
   isLocked: true,
   txAlerts: [],
@@ -41,7 +44,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
 
   unlock: (vaultId, seeds, wallets) => {
     if (seeds.length !== wallets.length) throw new Error("seeds/wallets length mismatch");
-    set({ unlockedVaultId: vaultId, seeds, wallets, isLocked: false });
+    set({ unlockedVaultId: vaultId, seeds, wallets, isLocked: false, cachedIdentities: wallets.map((w) => w.identity) });
   },
 
   lock: () =>

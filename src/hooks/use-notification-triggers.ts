@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { useBalance } from "@/hooks/use-balance";
+import { useVaultBalances } from "@/hooks/use-vault-balances";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
@@ -25,22 +25,21 @@ export function useNotificationTriggers() {
   const identity = wallets[activeIndex]?.identity ?? null;
   const queryClient = useQueryClient();
 
-  // ── Received: watch balance for increases ─────────────────────────────
-  const { data: balanceData } = useBalance(enabled && onReceived ? identity : null);
-  const prevBalanceRef = useRef<bigint | null>(null);
+  // ── Received: watch all vault balances for increases ──────────────────
+  const { data: allBalances } = useVaultBalances();
+  const prevBalancesRef = useRef<Record<string, bigint>>({});
 
   useEffect(() => {
-    prevBalanceRef.current = null;
-  }, [identity]);
-
-  useEffect(() => {
-    const current = balanceData?.balance ?? null;
-    if (current !== null && prevBalanceRef.current !== null && current > prevBalanceRef.current) {
-      const diff = current - prevBalanceRef.current;
-      notify("QU Received", `+${diff.toLocaleString()} QU${identity ? ` → ${truncateId(identity, 8, 4)}` : ""}`);
+    if (!enabled || !onReceived || !allBalances) return;
+    for (const [id, current] of Object.entries(allBalances)) {
+      const prev = prevBalancesRef.current[id];
+      if (prev !== undefined && current > prev) {
+        const diff = current - prev;
+        notify("QU Received", `+${diff.toLocaleString()} QU → ${truncateId(id, 8, 4)}`);
+      }
     }
-    if (current !== null) prevBalanceRef.current = current;
-  }, [balanceData?.balance]); // eslint-disable-line react-hooks/exhaustive-deps
+    prevBalancesRef.current = { ...allBalances };
+  }, [allBalances]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Sent: watch pendingTxs for additions ──────────────────────────────
   const prevPendingHashesRef = useRef<Set<string>>(

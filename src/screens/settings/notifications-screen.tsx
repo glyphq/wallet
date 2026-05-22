@@ -109,6 +109,7 @@ export default function NotificationsScreen() {
   const onReceived = usePersistedStore((s) => s.settings.notifyOnReceived);
   const onSent = usePersistedStore((s) => s.settings.notifyOnSent);
   const onConfirmed = usePersistedStore((s) => s.settings.notifyOnConfirmed);
+  const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
@@ -194,10 +195,17 @@ export default function NotificationsScreen() {
 
         <SettingRow
           label="QU received"
-          description="Balance increases detected from polling"
+          description="Balance increases on any account in the active vault"
           value={onReceived}
           onChange={(v) => updateSettings({ notifyOnReceived: v })}
           disabled={!enabled}
+        />
+        <SettingRow
+          label="Notify when locked"
+          description="Keep polling balances and fire received notifications even when the vault is locked"
+          value={notifyWhenLocked}
+          onChange={(v) => updateSettings({ notifyWhenLocked: v })}
+          disabled={!enabled || !onReceived}
         />
         <SettingRow
           label="Transaction sent"
@@ -246,8 +254,9 @@ export default function NotificationsScreen() {
           lineHeight: 1.5,
         }}
       >
-        Received detection relies on balance polling (every 5s). Notifications
-        only fire while Sigil is running — background monitoring is not supported.
+        Received detection polls all vault accounts every 5 s via QUtil. Notifications
+        only fire while Sigil is running — enable "Notify when locked" to keep polling
+        after locking the vault.
       </div>
     </AppShell>
   );
