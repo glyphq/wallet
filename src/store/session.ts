@@ -14,7 +14,7 @@ interface SessionState {
   wallets: Wallet[];
   /** Last set of vault identities from the most recent unlock — used for balance polling while locked. */
   cachedIdentities: string[];
-  pendingRequest: string | null;
+  pendingRequests: string[];
   isLocked: boolean;
   txAlerts: TxAlert[];
   bobTick: number | null;
@@ -23,7 +23,8 @@ interface SessionState {
 
   unlock: (vaultId: string, seeds: Seed[], wallets: Wallet[]) => void;
   lock: () => void;
-  setPendingRequest: (raw: string | null) => void;
+  enqueuePendingRequest: (raw: string) => void;
+  shiftPendingRequest: () => void;
   addTxAlert: (alert: TxAlert) => void;
   dismissTxAlert: (id: string) => void;
   setBobTick: (tick: number | null, connected: boolean) => void;
@@ -35,7 +36,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   seeds: [],
   wallets: [],
   cachedIdentities: [],
-  pendingRequest: null,
+  pendingRequests: [],
   isLocked: true,
   txAlerts: [],
   bobTick: null,
@@ -48,9 +49,13 @@ export const useSessionStore = create<SessionState>()((set) => ({
   },
 
   lock: () =>
-    set({ unlockedVaultId: null, seeds: [], wallets: [], isLocked: true, pendingRequest: null }),
+    set({ unlockedVaultId: null, seeds: [], wallets: [], isLocked: true, pendingRequests: [] }),
 
-  setPendingRequest: (raw) => set({ pendingRequest: raw }),
+  enqueuePendingRequest: (raw) =>
+    set((s) => ({ pendingRequests: [...s.pendingRequests, raw] })),
+
+  shiftPendingRequest: () =>
+    set((s) => ({ pendingRequests: s.pendingRequests.slice(1) })),
 
   addTxAlert: (alert) =>
     set((s) => ({ txAlerts: s.txAlerts.some((a) => a.id === alert.id) ? s.txAlerts : [...s.txAlerts, alert] })),

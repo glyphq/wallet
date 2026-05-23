@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
   const addVault = usePersistedStore((s) => s.addVault);
   const setActiveVault = usePersistedStore((s) => s.setActiveVault);
   const unlock = useSessionStore((s) => s.unlock);
-  const pendingRequest = useSessionStore((s) => s.pendingRequest);
+  const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
   const [importData, setImportData] = useState<ImportFileData | null>(null);
   const [importPw, setImportPw] = useState("");
@@ -118,7 +118,7 @@ export default function WelcomeScreen() {
   return (
     <FullPage>
       <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-        {pendingRequest && (
+        {hasPendingRequest && (
           <div
             role="status"
             style={{
