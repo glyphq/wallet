@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/button";
-import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
-import { k12, sign } from "@qubic.org/crypto";
+import { signMessageFromSession } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
 
 export interface SignMessageRequest {
@@ -42,30 +41,24 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
-  const seeds = useSessionStore((s) => s.seeds);
   const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
   const vault = usePersistedStore((s) =>
     s.vaults.find((v) => v.id === s.settings.activeVaultId)
   );
-
-  const seed = seeds[selectedIndex] ?? null;
-
   async function approve() {
-    if (!seed || !wallet) return;
+    if (!wallet) return;
     setProcessing(true);
     setError("");
     try {
       const messageBytes = request.data
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);
-      // SchnorrQ signs a 32-byte digest; k12 matches the hashing Qubic uses elsewhere
-      const digest = k12(messageBytes, 32);
-      const signatureBytes = await sign(digest, seed);
+      const { signature, publicKey, identity } = await signMessageFromSession(selectedIndex, messageBytes);
       onApprove({
-        signature: bytesToBase64(signatureBytes),
-        publicKey: bytesToBase64(wallet.publicKey),
-        identity: wallet.identity,
+        signature: bytesToBase64(signature),
+        publicKey: bytesToBase64(publicKey),
+        identity,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Signing failed.");
@@ -153,7 +146,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!seed || !wallet || !!fromError}>
+      <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError}>
         Sign message
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>

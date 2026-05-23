@@ -6,7 +6,8 @@ import { Fingerprint } from "lucide-react";
 import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { unlockVault, createWallet, toSeed } from "@/lib/vault";
+import { unlockSecureSession } from "@/lib/secure-session";
+import { unlockVault, toSeed } from "@/lib/vault";
 import { extractMessage } from "@/lib/format";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
@@ -49,8 +50,8 @@ export default function LockScreen() {
 
   async function finishUnlock(seeds: Seed[]) {
     if (!vault) return;
-    const wallets = seeds.map(createWallet);
-    unlock(vault.id, seeds, wallets);
+    const wallets = unlockSecureSession(seeds);
+    unlock(vault.id, wallets);
     touchVaultUnlocked(vault.id);
     _bioFailures = 0;
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });

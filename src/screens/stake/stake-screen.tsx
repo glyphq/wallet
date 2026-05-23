@@ -15,6 +15,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { identityToPublicKey } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { buildScTransactionFromSession } from "@/lib/secure-session";
 import {
   QEARN_ADDRESS,
   QEARN_LOCK_INPUT_TYPE,
@@ -129,7 +130,8 @@ export default function StakeScreen() {
       const amount = BigInt(amountStr.trim());
       const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
-      const { encoded, hash } = await wallet.buildScTransaction({
+      const { encoded, hash } = await buildScTransactionFromSession({
+        accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
         inputType: QEARN_LOCK_INPUT_TYPE,
         payload: new Uint8Array(0),
@@ -168,7 +170,8 @@ export default function StakeScreen() {
       });
       const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
-      const { encoded, hash } = await wallet.buildScTransaction({
+      const { encoded, hash } = await buildScTransactionFromSession({
+        accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
         inputType,
         payload,
@@ -428,4 +431,3 @@ export default function StakeScreen() {
     </AppShell>
   );
 }
-

@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { toSeed, InvalidSeedError, newId } from "@/lib/crypto";
-import { createVault, createWallet } from "@/lib/vault";
+import { deriveIdentityFromSeed, toSeed, InvalidSeedError, newId } from "@/lib/crypto";
+import { unlockSecureSession } from "@/lib/secure-session";
+import { createVault } from "@/lib/vault";
 import { usePersistedStore, type VaultColor } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { truncateId } from "@/lib/format";
@@ -58,7 +59,7 @@ export default function ImportVaultScreen() {
     try {
       const s = toSeed(seedInput.trim().toLowerCase());
       setSeed(s);
-      setDerivedIdentity(createWallet(s).identity);
+      setDerivedIdentity(deriveIdentityFromSeed(s));
       setSeedError("");
       setStep(2);
     } catch (e) {
@@ -88,7 +89,7 @@ export default function ImportVaultScreen() {
       };
       addVault(vault);
       setActiveVault(vault.id);
-      unlock(vault.id, [seed], [createWallet(seed)]);
+      unlock(vault.id, unlockSecureSession([seed]));
       navigate("/dashboard", { replace: true });
     } catch {
       setLoading(false);

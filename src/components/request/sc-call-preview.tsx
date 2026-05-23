@@ -6,6 +6,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
 import {
@@ -147,7 +148,8 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
 
-      const { encoded, hash } = await wallet.buildScTransaction({
+      const { encoded, hash } = await buildScTransactionFromSession({
+        accountIndex: selectedIndex,
         destination,
         inputType: request.input_type,
         payload: payloadBytes,
