@@ -123,9 +123,18 @@ mod secret_store {
 #[cfg(not(target_os = "windows"))]
 mod secret_store {
     use keyring::Entry;
+    use keyring::Error;
 
     fn entry(target_name: &str) -> Result<Entry, String> {
         Entry::new("sigil-store", target_name).map_err(|e| e.to_string())
+    }
+
+    pub fn load_optional(target_name: &str) -> Result<Option<String>, String> {
+        match entry(target_name)?.get_password() {
+            Ok(value) => Ok(Some(value)),
+            Err(Error::NoEntry) => Ok(None),
+            Err(err) => Err(err.to_string()),
+        }
     }
 
     pub fn store(target_name: &str, secret: &str) -> Result<(), String> {
@@ -133,16 +142,25 @@ mod secret_store {
             .set_password(secret)
             .map_err(|e| e.to_string())
     }
-
-    pub fn load(target_name: &str) -> Result<String, String> {
-        entry(target_name)?
-            .get_password()
-            .map_err(|e| e.to_string())
-    }
 }
 
 fn get_or_create_store_key() -> Result<[u8; 32], String> {
+    #[cfg(target_os = "windows")]
     if let Ok(encoded) = secret_store::load(STORE_KEY_TARGET) {
+        #[cfg(debug_assertions)]
+        let _ = store_dev_fallback_key(&encoded);
+        let decoded = URL_SAFE_NO_PAD
+            .decode(encoded)
+            .map_err(|e| format!("invalid stored metadata key: {e}"))?;
+        return decoded
+            .try_into()
+            .map_err(|_| "invalid stored metadata key length".to_string());
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    if let Some(encoded) = secret_store::load_optional(STORE_KEY_TARGET)? {
+        #[cfg(debug_assertions)]
+        let _ = store_dev_fallback_key(&encoded);
         let decoded = URL_SAFE_NO_PAD
             .decode(encoded)
             .map_err(|e| format!("invalid stored metadata key: {e}"))?;
