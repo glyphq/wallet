@@ -85,6 +85,10 @@ mod cred_store {
         Entry::new("sigil-bio", vault_id).map_err(|e| e.to_string())
     }
 
+    pub fn available() -> bool {
+        entry("__sigil_probe__").is_ok()
+    }
+
     pub fn store(vault_id: &str, password: &str) -> Result<(), String> {
         let e = entry(vault_id)?;
         e.set_password(password).map_err(|e| e.to_string())?;
@@ -213,16 +217,16 @@ mod platform {
     }
 }
 
-// ── Linux / other: unsupported ─────────────────────────────────────────────
+// ── Linux / other: secure storage only ─────────────────────────────────────
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod platform {
     pub fn available() -> bool {
-        false
+        true
     }
 
     pub fn authenticate(_reason: &str) -> Result<(), String> {
-        Err("Biometric authentication is not supported on this platform".to_string())
+        Ok(())
     }
 }
 
@@ -230,7 +234,22 @@ mod platform {
 
 #[command]
 pub async fn check_biometric_available() -> bool {
-    tokio::task::spawn_blocking(platform::available)
+    tokio::task::spawn_blocking(|| {
+        #[cfg(target_os = "windows")]
+        {
+            platform::available()
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            platform::available()
+        }
+
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        {
+            platform::available() && cred_store::available()
+        }
+    })
         .await
         .unwrap_or(false)
 }

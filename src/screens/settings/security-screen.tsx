@@ -25,6 +25,7 @@ const CLIPBOARD_OPTIONS: { label: string; value: number }[] = [
 
 export default function SecurityScreen() {
   const navigate = useNavigate();
+  const isLinux = navigator.userAgent.toLowerCase().includes("linux");
 
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
   const lockOnWindowBlur = usePersistedStore((s) => s.settings.lockOnWindowBlur);
@@ -260,12 +261,20 @@ export default function SecurityScreen() {
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Biometric unlock
+            {isLinux ? "Quick unlock" : "Biometric unlock"}
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Use Touch ID or Windows Hello to unlock vaults
+            {isLinux
+              ? "Use Linux secure storage to unlock vaults without retyping the password"
+              : "Use Touch ID or Windows Hello to unlock vaults"}
           </div>
         </div>
+
+        {isLinux && bioAvailable === true && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            [LINUX USES SECRET SERVICE STORAGE — NO OS BIOMETRIC PROMPT]
+          </span>
+        )}
 
         {bioAvailable === null && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
@@ -312,7 +321,7 @@ export default function SecurityScreen() {
         {enabling && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-              Confirm your vault password to enable biometric unlock
+              Confirm your vault password to enable {isLinux ? "quick unlock" : "biometric unlock"}
             </div>
             <input
               ref={pwRef}
