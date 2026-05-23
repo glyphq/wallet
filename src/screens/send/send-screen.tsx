@@ -409,6 +409,11 @@ function AmountInput({
   const effectivePrice = effectivePriceBq !== undefined ? effectivePriceBq / 1e9 : undefined;
   const isOverridden = customPriceBq !== null;
 
+  function formatWholeQu(n: number): string {
+    if (!Number.isFinite(n) || n <= 0) return "";
+    return Math.floor(n).toLocaleString("fullwide", { useGrouping: false, maximumFractionDigits: 0 });
+  }
+
   function openPriceSheet() {
     setDraftBq(effectivePriceBq !== undefined ? effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "");
     setPriceOpen(true);
@@ -433,7 +438,7 @@ function AmountInput({
     }
     if (next === "QU" && effectivePrice && usdStr) {
       const n = parseFloat(usdStr);
-      if (!isNaN(n) && n > 0) onChange(String(Math.floor(n / effectivePrice)));
+      if (!isNaN(n) && n > 0) onChange(formatWholeQu(n / effectivePrice));
     }
     setMode(next);
   }
@@ -452,14 +457,14 @@ function AmountInput({
     setUsdStr(v);
     if (effectivePrice) {
       const n = parseFloat(v);
-      onChange(!isNaN(n) && n > 0 ? String(Math.floor(n / effectivePrice)) : "");
+      onChange(!isNaN(n) && n > 0 ? formatWholeQu(n / effectivePrice) : "");
     }
   }
 
   const hasPrice = effectivePrice !== undefined;
   const quNum = Number(value);
   const usdEquiv = hasPrice && quNum > 0 ? quNum * effectivePrice! : null;
-  const quEquiv = hasPrice && usdStr ? Math.floor(parseFloat(usdStr) / effectivePrice!) : null;
+  const quEquiv = hasPrice && usdStr ? Number(formatWholeQu(parseFloat(usdStr) / effectivePrice!)) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
