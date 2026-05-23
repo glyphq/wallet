@@ -12,6 +12,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { formatQu, extractMessage } from "@/lib/format";
 import { TxSending, TxError } from "@/components/tx-status";
@@ -60,7 +61,8 @@ export default function BurnScreen() {
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
 
       const { inputType, payload } = buildQUtilBurnQubicInput({ amount });
-      const { encoded, hash } = await wallet.buildScTransaction({
+      const { encoded, hash } = await buildScTransactionFromSession({
+        accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,
         inputType,
         payload,

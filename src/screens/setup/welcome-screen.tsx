@@ -7,7 +7,8 @@ import { Modal } from "@/components/modal";
 import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { AlertTriangle } from "lucide-react";
-import { unlockVault, createVault, createWallet, type VaultData } from "@/lib/vault";
+import { unlockSecureSession } from "@/lib/secure-session";
+import { unlockVault, createVault, type VaultData } from "@/lib/vault";
 import { newId } from "@/lib/crypto";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 
@@ -106,7 +107,7 @@ export default function WelcomeScreen() {
         encryptedData: finalEncryptedData,
       });
       setActiveVault(newVaultId);
-      unlock(newVaultId, finalSeeds, finalSeeds.map(createWallet));
+      unlock(newVaultId, unlockSecureSession(finalSeeds));
       navigate("/dashboard", { replace: true });
     } catch {
       setImportError("WRONG PASSWORD");

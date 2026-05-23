@@ -19,6 +19,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
@@ -168,7 +169,8 @@ export default function SendManyScreen() {
       const payload = buildPayload(fields);
       const total = recipients.reduce((s, r) => s + BigInt(r.amount.trim()), 0n) + (fee ?? 0n);
 
-      const { encoded, hash } = await wallet.buildScTransaction({
+      const { encoded, hash } = await buildScTransactionFromSession({
+        accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,
         inputType: Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
         payload,

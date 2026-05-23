@@ -7,7 +7,8 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { generateRandomSeed, newId } from "@/lib/crypto";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
-import { createVault, createWallet } from "@/lib/vault";
+import { unlockSecureSession } from "@/lib/secure-session";
+import { createVault } from "@/lib/vault";
 import { usePersistedStore, type VaultColor } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { Seed } from "@/lib/crypto";
@@ -125,7 +126,7 @@ export default function CreateVaultScreen() {
       };
       addVault(vault);
       setActiveVault(vault.id);
-      unlock(vault.id, [seed], [createWallet(seed)]);
+      unlock(vault.id, unlockSecureSession([seed]));
       navigate("/dashboard", { replace: true });
     } catch {
       setLoading(false);

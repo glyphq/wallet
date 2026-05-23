@@ -11,7 +11,8 @@ import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
 import { generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
-import { unlockVault, createVault, createWallet, exportVault } from "@/lib/vault";
+import { unlockSecureSession } from "@/lib/secure-session";
+import { unlockVault, createVault, exportVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
@@ -125,7 +126,7 @@ export default function VaultDetailScreen() {
         accounts: [...vault!.accounts, newAccount],
       });
       if (isActive) {
-        sessionUnlock(vault!.id, [...existingSeeds, newSeed], [...existingSeeds, newSeed].map(createWallet));
+        sessionUnlock(vault!.id, unlockSecureSession([...existingSeeds, newSeed]));
       }
       setAddingAccount(false);
     } catch {
@@ -180,7 +181,7 @@ export default function VaultDetailScreen() {
         .map((a) => ({ ...a, index: a.index > removingAccount.index ? a.index - 1 : a.index }));
       updateVault(vault!.id, { encryptedData: newEncrypted, accounts: updatedAccounts });
       if (isActive) {
-        sessionUnlock(vault!.id, remaining, remaining.map(createWallet));
+        sessionUnlock(vault!.id, unlockSecureSession(remaining));
         const activeIdx = settings.activeAccountIndex;
         if (removingAccount.index === activeIdx) {
           setActiveAccountIndex(0);
