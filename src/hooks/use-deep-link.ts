@@ -78,7 +78,7 @@ export function useDeepLink() {
 
     listen<string>("sigil:request", (event) => {
       applyPayload(event.payload);
-    }).then((fn) => { unlisten = fn; });
+    }).then((fn) => { unlisten = fn; }).catch(() => {});
 
     // Cold start: wait for the persisted store to hydrate before reading the Rust-side stored
     // request. Without this, vaults.length = 0 at first render (pre-hydration), which would
@@ -86,7 +86,7 @@ export function useDeepLink() {
     function checkPending() {
       invoke<string | null>("get_pending_request").then((payload) => {
         if (payload) applyPayload(payload);
-      });
+      }).catch(() => {});
     }
 
     if (usePersistedStore.persist.hasHydrated()) {

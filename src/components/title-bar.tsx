@@ -54,17 +54,19 @@ export function TitleBar() {
   useEffect(() => { getVersion().then(setVersion).catch(() => {}); }, []);
 
   useEffect(() => {
-    win.isMaximized().then(setMaximized);
-    win.isFullscreen().then(setFullscreen);
+    win.isMaximized().then(setMaximized).catch(() => {});
+    win.isFullscreen().then(setFullscreen).catch(() => {});
     let unlisten: (() => void) | undefined;
     let active = true;
     win.listen("tauri://resize", async () => {
-      setMaximized(await win.isMaximized());
-      setFullscreen(await win.isFullscreen());
+      try {
+        setMaximized(await win.isMaximized());
+        setFullscreen(await win.isFullscreen());
+      } catch {}
     }).then((u) => {
       if (!active) u();
       else unlisten = u;
-    });
+    }).catch(() => {});
     return () => { active = false; unlisten?.(); };
   }, [win]);
 
