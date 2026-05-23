@@ -50,6 +50,14 @@
         "installMode": "currentUser",
         "displayLanguageSelector": false
       }
+    },
+    "linux": {
+      "deb": {
+        "desktopTemplate": "linux/sigil.desktop.hbs"
+      },
+      "rpm": {
+        "desktopTemplate": "linux/sigil.desktop.hbs"
+      }
     }
   },
   "plugins": {
