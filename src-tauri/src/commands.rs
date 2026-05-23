@@ -1,4 +1,4 @@
-use std::net::{IpAddr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv6Addr, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
@@ -98,17 +98,22 @@ pub fn lock_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
 }
 
 pub fn is_private_host(host: &str) -> bool {
-    // Strip IPv6 brackets so [fd00::1] → fd00::1
     let h = host.trim_matches(|c| c == '[' || c == ']').to_ascii_lowercase();
-    if matches!(h.as_str(), "localhost" | "::1") { return true; }
-    if h.starts_with("127.") || h.starts_with("10.") || h.starts_with("169.254.") || h.starts_with("192.168.") { return true; }
-    if let Some(rest) = h.strip_prefix("172.") {
-        // unwrap_or(0) is safe: a non-numeric second octet is not a valid 172.16-31 address
-        let octet: u8 = rest.split('.').next().and_then(|s| s.parse().ok()).unwrap_or(0);
-        if (16..=31).contains(&octet) { return true; }
+    if h == "localhost" {
+        return true;
     }
-    // IPv6 unique-local (fc00::/7) and link-local (fe80::/10)
-    if h.starts_with("fc") || h.starts_with("fd") || h.starts_with("fe80") { return true; }
+
+    if let Ok(ip) = h.parse::<IpAddr>() {
+        return is_private_ip(ip);
+    }
+
+    if let Ok(ip) = h.parse::<Ipv6Addr>() {
+        if let Some(mapped) = ip.to_ipv4_mapped() {
+            return is_private_ip(IpAddr::V4(mapped));
+        }
+        return is_private_ip(IpAddr::V6(ip));
+    }
+
     false
 }
 
