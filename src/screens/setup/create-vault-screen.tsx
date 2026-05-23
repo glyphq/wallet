@@ -237,16 +237,22 @@ export default function CreateVaultScreen() {
                 }}
                 aria-hidden={!seedRevealed}
               >
-                {seed.split("").map((char, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03, duration: 0.06, ease: "easeOut" }}
-                  >
-                    {char}{(i + 1) % 5 === 0 && i < seed.length - 1 ? " " : ""}
-                  </motion.span>
-                ))}
+                {seedRevealed
+                  ? seed.split("").map((char, i) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.03, duration: 0.06, ease: "easeOut" }}
+                      >
+                        {char}{(i + 1) % 5 === 0 && i < seed.length - 1 ? " " : ""}
+                      </motion.span>
+                    ))
+                  : (
+                      <span style={{ color: "var(--color-text-disabled)" }}>
+                        {"•".repeat(Math.max(seed.length + Math.floor(seed.length / 5), 12))}
+                      </span>
+                    )}
               </div>
               {!seedRevealed && (
                 <button
