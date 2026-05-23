@@ -14,6 +14,7 @@ use deep_link::DeepLinkState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -91,6 +92,20 @@ pub fn run() {
                 if hide {
                     api.prevent_close();
                     let _ = window.hide();
+                } else {
+                    let app = window.app_handle();
+                    let clipboard = app.state::<ClipboardState>();
+                    if clipboard.has_pending_clear() {
+                        let _ = app.clipboard().write_text("");
+                        clipboard.cancel_clear();
+                    }
+                }
+            } else if let tauri::WindowEvent::Destroyed = event {
+                let app = window.app_handle();
+                let clipboard = app.state::<ClipboardState>();
+                if clipboard.has_pending_clear() {
+                    let _ = app.clipboard().write_text("");
+                    clipboard.cancel_clear();
                 }
             }
         })
