@@ -5,6 +5,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { buildTransferFromSession } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
 import { truncateId, formatQu } from "@/lib/format";
@@ -59,13 +60,13 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
     setProcessing(true);
     setTxError("");
     try {
-      const dest = request.to as Parameters<typeof wallet.buildTransfer>[0]["destination"];
       const amount = requestAmount;
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
 
-      const { encoded, hash } = await wallet.buildTransfer({
-        destination: dest,
+      const { encoded, hash } = await buildTransferFromSession({
+        accountIndex: selectedIndex,
+        destination: request.to,
         amount,
         targetTick: tick,
         currentTick,

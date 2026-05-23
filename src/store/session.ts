@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { Seed } from "@qubic.org/types";
-import type { Wallet } from "@qubic.org/wallet";
+import { clearSecureSession } from "@/lib/secure-session";
+import type { SessionWallet } from "@/lib/session-wallet";
 
 export interface TxAlert {
   id: string;
@@ -10,15 +10,14 @@ export interface TxAlert {
 
 interface SessionState {
   unlockedVaultId: string | null;
-  seeds: Seed[];
-  wallets: Wallet[];
+  wallets: SessionWallet[];
   /** Last set of vault identities from the most recent unlock — used for balance polling while locked. */
   cachedIdentities: string[];
   pendingRequests: string[];
   isLocked: boolean;
   txAlerts: TxAlert[];
 
-  unlock: (vaultId: string, seeds: Seed[], wallets: Wallet[]) => void;
+  unlock: (vaultId: string, wallets: SessionWallet[]) => void;
   lock: () => void;
   enqueuePendingRequest: (raw: string) => void;
   shiftPendingRequest: () => void;
@@ -28,20 +27,20 @@ interface SessionState {
 
 export const useSessionStore = create<SessionState>()((set) => ({
   unlockedVaultId: null,
-  seeds: [],
   wallets: [],
   cachedIdentities: [],
   pendingRequests: [],
   isLocked: true,
   txAlerts: [],
 
-  unlock: (vaultId, seeds, wallets) => {
-    if (seeds.length !== wallets.length) throw new Error("seeds/wallets length mismatch");
-    set({ unlockedVaultId: vaultId, seeds, wallets, isLocked: false, cachedIdentities: wallets.map((w) => w.identity) });
+  unlock: (vaultId, wallets) => {
+    set({ unlockedVaultId: vaultId, wallets, isLocked: false, cachedIdentities: wallets.map((w) => w.identity) });
   },
 
-  lock: () =>
-    set({ unlockedVaultId: null, seeds: [], wallets: [], isLocked: true, pendingRequests: [] }),
+  lock: () => {
+    clearSecureSession();
+    set({ unlockedVaultId: null, wallets: [], isLocked: true, pendingRequests: [] });
+  },
 
   enqueuePendingRequest: (raw) =>
     set((s) => ({ pendingRequests: [...s.pendingRequests, raw] })),

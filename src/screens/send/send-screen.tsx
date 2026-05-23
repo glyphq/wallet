@@ -18,6 +18,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { buildTransferFromSession } from "@/lib/secure-session";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
 import { TxSending, TxError } from "@/components/tx-status";
@@ -116,13 +117,13 @@ export default function SendScreen() {
     if (!wallet) return;
     setStep("sending");
     try {
-      const dest = destUpper as Parameters<typeof wallet.buildTransfer>[0]["destination"];
       const amount = BigInt(amountStr.trim());
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
 
-      const { encoded, hash } = await wallet.buildTransfer({
-        destination: dest,
+      const { encoded, hash } = await buildTransferFromSession({
+        accountIndex: settings.activeAccountIndex,
+        destination: destUpper,
         amount,
         targetTick,
         currentTick,
@@ -133,7 +134,7 @@ export default function SendScreen() {
       addPendingTx({
         hash,
         source: identity,
-        destination: dest,
+        destination: destUpper,
         amount: amount.toString(),
         targetTick,
         broadcastAt: Date.now(),

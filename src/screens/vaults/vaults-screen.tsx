@@ -7,9 +7,10 @@ import { Input } from "@/components/input";
 import { Modal } from "@/components/modal";
 import { Tag } from "@/components/tag";
 import { Identicon } from "@/components/identicon";
+import { unlockSecureSession } from "@/lib/secure-session";
 import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { unlockVault, createWallet, type VaultData } from "@/lib/vault";
+import { unlockVault, type VaultData } from "@/lib/vault";
 import { newId } from "@/lib/crypto";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
@@ -91,8 +92,8 @@ export default function VaultsScreen() {
     setSwitchError("");
     try {
       const seeds = await unlockVault(switchingVault.encryptedData, switchPassword);
-      const wallets = seeds.map(createWallet);
-      unlock(switchingVault.id, seeds, wallets);
+      const wallets = unlockSecureSession(seeds);
+      unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
       touchVaultUnlocked(switchingVault.id);
       setSwitchingVault(null);

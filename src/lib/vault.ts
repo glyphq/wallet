@@ -5,20 +5,13 @@ import {
   validateSeed,
   exportVault,
   importVault,
-  createWallet,
   SC_DESTINATION,
   WalletError,
   VaultDecryptionError,
   InvalidVaultError,
 } from "@qubic.org/wallet";
 import type { Seed } from "@qubic.org/types";
-import type {
-  VaultData,
-  Wallet,
-  SignedTransaction,
-  TransferParams,
-  ScTransactionParams,
-} from "@qubic.org/wallet";
+import type { VaultData } from "@qubic.org/wallet";
 
 export {
   generateSeed,
@@ -26,7 +19,6 @@ export {
   validateSeed,
   exportVault,
   importVault,
-  createWallet,
   SC_DESTINATION,
   WalletError,
   VaultDecryptionError,
@@ -35,10 +27,6 @@ export {
 
 export type {
   VaultData,
-  Wallet,
-  SignedTransaction,
-  TransferParams,
-  ScTransactionParams,
 };
 
 export async function createVault(password: string, seeds: Seed[]): Promise<VaultData> {
