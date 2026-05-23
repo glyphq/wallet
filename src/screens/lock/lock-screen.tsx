@@ -31,6 +31,7 @@ let _bioFailures = 0;
 
 export default function LockScreen() {
   const navigate = useNavigate();
+  const isLinux = navigator.userAgent.toLowerCase().includes("linux");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [bioFailures, setBioFailures] = useState(_bioFailures);
@@ -91,7 +92,7 @@ export default function LockScreen() {
       if (next >= 3) {
         setError("TOO MANY FAILURES — USE PASSWORD");
       } else {
-        setError(`BIOMETRIC FAILED: ${extractMessage(e)}`);
+        setError(`${isLinux ? "QUICK UNLOCK" : "BIOMETRIC"} FAILED: ${extractMessage(e)}`);
       }
     } finally {
       setLoading(false);
@@ -176,7 +177,7 @@ export default function LockScreen() {
           <button
             onClick={onBiometric}
             disabled={loading}
-            aria-label="Unlock with biometrics"
+            aria-label={isLinux ? "Unlock with secure storage" : "Unlock with biometrics"}
             style={{
               display: "flex",
               alignItems: "center",
@@ -190,19 +191,19 @@ export default function LockScreen() {
               opacity: loading ? 0.4 : 1,
               padding: "var(--space-2)",
             }}
-          >
-            <Fingerprint size={18} color="var(--color-text-secondary)" strokeWidth={1.5} />
-            <span
+            >
+              <Fingerprint size={18} color="var(--color-text-secondary)" strokeWidth={1.5} />
+              <span
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "var(--text-mono-sm)",
                 color: "var(--color-text-secondary)",
                 letterSpacing: "0.05em",
               }}
-            >
-              USE BIOMETRIC
-            </span>
-          </button>
+              >
+                {isLinux ? "USE QUICK UNLOCK" : "USE BIOMETRIC"}
+              </span>
+            </button>
         )}
       </motion.div>
     </FullPage>
