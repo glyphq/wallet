@@ -10,7 +10,7 @@ const PAGE_SIZE = 100;
 async function fetchNameOverrides(): Promise<Record<string, string>> {
   try {
     const res = await fetch(SPONSOR_NAMES_URL);
-    return res.ok ? res.json() : {};
+    return res.ok ? await res.json() : {};
   } catch {
     return {};
   }
