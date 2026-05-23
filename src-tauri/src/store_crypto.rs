@@ -145,6 +145,16 @@ mod secret_store {
 }
 
 fn get_or_create_store_key() -> Result<[u8; 32], String> {
+    #[cfg(all(debug_assertions, not(target_os = "windows")))]
+    if let Some(encoded) = load_dev_fallback_key()? {
+        let decoded = URL_SAFE_NO_PAD
+            .decode(encoded)
+            .map_err(|e| format!("invalid dev metadata key: {e}"))?;
+        return decoded
+            .try_into()
+            .map_err(|_| "invalid dev metadata key length".to_string());
+    }
+
     #[cfg(target_os = "windows")]
     if let Ok(encoded) = secret_store::load(STORE_KEY_TARGET) {
         #[cfg(debug_assertions)]
@@ -158,25 +168,32 @@ fn get_or_create_store_key() -> Result<[u8; 32], String> {
     }
 
     #[cfg(not(target_os = "windows"))]
-    if let Some(encoded) = secret_store::load_optional(STORE_KEY_TARGET)? {
-        #[cfg(debug_assertions)]
-        let _ = store_dev_fallback_key(&encoded);
-        let decoded = URL_SAFE_NO_PAD
-            .decode(encoded)
-            .map_err(|e| format!("invalid stored metadata key: {e}"))?;
-        return decoded
-            .try_into()
-            .map_err(|_| "invalid stored metadata key length".to_string());
-    }
-
-    #[cfg(debug_assertions)]
-    if let Some(encoded) = load_dev_fallback_key()? {
-        let decoded = URL_SAFE_NO_PAD
-            .decode(encoded)
-            .map_err(|e| format!("invalid dev metadata key: {e}"))?;
-        return decoded
-            .try_into()
-            .map_err(|_| "invalid dev metadata key length".to_string());
+    match secret_store::load_optional(STORE_KEY_TARGET) {
+        Ok(Some(encoded)) => {
+            #[cfg(debug_assertions)]
+            let _ = store_dev_fallback_key(&encoded);
+            let decoded = URL_SAFE_NO_PAD
+                .decode(encoded)
+                .map_err(|e| format!("invalid stored metadata key: {e}"))?;
+            return decoded
+                .try_into()
+                .map_err(|_| "invalid stored metadata key length".to_string());
+        }
+        Ok(None) => {}
+        Err(err) => {
+            #[cfg(debug_assertions)]
+            {
+                if let Some(encoded) = load_dev_fallback_key()? {
+                    let decoded = URL_SAFE_NO_PAD
+                        .decode(encoded)
+                        .map_err(|e| format!("invalid dev metadata key: {e}"))?;
+                    return decoded
+                        .try_into()
+                        .map_err(|_| "invalid dev metadata key length".to_string());
+                }
+            }
+            return Err(err);
+        }
     }
 
     let mut key = [0u8; 32];
