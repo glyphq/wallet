@@ -211,6 +211,12 @@ fn get_or_create_store_key() -> Result<[u8; 32], String> {
             return Err(_err);
         }
     }
+
+    #[cfg(all(debug_assertions, not(target_os = "windows")))]
+    {
+        store_dev_fallback_key(&encoded)?;
+    }
+
     Ok(key)
 }
 
