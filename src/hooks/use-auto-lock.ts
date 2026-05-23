@@ -36,7 +36,7 @@ export function useAutoLock() {
     }).then((fn) => {
       if (!active) fn();
       else unlisten = fn;
-    });
+    }).catch(() => {});
 
     const resetTimer = () => {
       invoke("reset_activity_timer").catch(() => {});
