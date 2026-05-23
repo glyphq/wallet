@@ -15,8 +15,6 @@ export interface ConnectApproveResult {
 }
 
 interface ConnectPreviewProps {
-  dappName: string;
-  dappOrigin: string;
   request: ConnectRequest;
   onApprove: (result: ConnectApproveResult) => void;
   onReject: () => void;
@@ -28,7 +26,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   sign_message: "Sign messages",
 };
 
-export function ConnectPreview({ dappName, dappOrigin, request, onApprove, onReject }: ConnectPreviewProps) {
+export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
   const wallets = useSessionStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
@@ -61,7 +59,7 @@ export function ConnectPreview({ dappName, dappOrigin, request, onApprove, onRej
       </div>
 
       <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-        [{dappName || dappOrigin} IS UNVERIFIED. SIGIL DOES NOT PERSIST TRUST FOR DEEP-LINK ORIGINS.]
+        [THIS REQUEST IS UNVERIFIED. SIGIL DOES NOT PERSIST TRUST FOR DEEP-LINK SENDERS.]
       </div>
 
       {/* Account picker */}

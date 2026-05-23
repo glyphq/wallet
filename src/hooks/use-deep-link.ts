@@ -9,12 +9,11 @@ import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
 import { truncateIdentity } from "@/lib/crypto";
 
 function buildNotification(req: Record<string, unknown>): { title: string; body: string } | null {
-  const dappName = (req.dapp as { name?: string } | undefined)?.name ?? "A dApp";
   switch (req.type) {
     case "transfer": {
       const amount = Number(req.amount).toLocaleString();
       const to = truncateIdentity(String(req.to ?? ""));
-      return { title: "Transfer Request", body: `${amount} QU → ${to}` };
+      return { title: "Deep Link Request", body: `${amount} QU → ${to}` };
     }
     case "sc_call": {
       const idx = req.contract_index as number;
@@ -23,18 +22,18 @@ function buildNotification(req: Record<string, unknown>): { title: string; body:
       const label = procName ? `${contractName} · ${procName}` : contractName;
       const hasAmount = (req.amount as number | undefined ?? 0) > 0;
       return {
-        title: label,
+        title: "Deep Link Request",
         body: hasAmount
-          ? `${Number(req.amount).toLocaleString()} QU — from ${dappName}`
-          : `From ${dappName}`,
+          ? `${label} · ${Number(req.amount).toLocaleString()} QU`
+          : label,
       };
     }
     case "sign_message":
-      return { title: "Sign Message", body: `From ${dappName}` };
+      return { title: "Deep Link Request", body: "Sign message" };
     case "verify_message":
-      return { title: "Verify Message", body: `From ${dappName}` };
+      return { title: "Deep Link Request", body: "Verify message" };
     case "connect":
-      return { title: "Connect Request", body: `${dappName} wants to connect` };
+      return { title: "Deep Link Request", body: "Connection request" };
     default:
       return null;
   }
