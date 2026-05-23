@@ -93,6 +93,7 @@ export default function SendManyScreen() {
   const [recipients, setRecipients] = useState<Recipient[]>([emptyRecipient()]);
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
+  const [formError, setFormError] = useState("");
 
   // Contact picker state
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
@@ -111,6 +112,7 @@ export default function SendManyScreen() {
 
   function validateAll(): boolean {
     let ok = true;
+    let nextFormError = "";
     const updated = recipients.map((r) => {
       const identityError = isValidIdentity(r.identity.trim().toUpperCase()) ? "" : "INVALID IDENTITY";
       const amount = Number(r.amount.trim());
@@ -118,11 +120,22 @@ export default function SendManyScreen() {
       if (identityError || amountError) ok = false;
       return { ...r, identityError, amountError };
     });
+
+    if (ok && balance !== null && fee !== null) {
+      const deducted = recipients.reduce((s, r) => s + BigInt(r.amount.trim()), 0n) + fee;
+      if (deducted > balance) {
+        ok = false;
+        nextFormError = "INSUFFICIENT BALANCE";
+      }
+    }
+
     setRecipients(updated);
+    setFormError(nextFormError);
     return ok;
   }
 
   function goReview() {
+    setFormError("");
     if (validateAll()) setStep("review");
   }
 
@@ -329,6 +342,9 @@ export default function SendManyScreen() {
           </Sheet>
 
           <Button onClick={goReview} disabled={recipients.length === 0}>Review</Button>
+          {formError && (
+            <Tag variant="error">{formError}</Tag>
+          )}
         </>
       )}
 
