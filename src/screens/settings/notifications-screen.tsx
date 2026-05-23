@@ -104,6 +104,7 @@ function SettingRow({
 
 export default function NotificationsScreen() {
   const navigate = useNavigate();
+  const isLinux = navigator.userAgent.toLowerCase().includes("linux");
 
   const enabled = usePersistedStore((s) => s.settings.notificationsEnabled);
   const onReceived = usePersistedStore((s) => s.settings.notifyOnReceived);
@@ -169,6 +170,21 @@ export default function NotificationsScreen() {
           }}
         >
           [PERMISSION DENIED — allow notifications in your OS settings]
+        </div>
+      )}
+
+      {isLinux && (
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-caption)",
+            color: "var(--color-text-disabled)",
+            lineHeight: 1.5,
+          }}
+        >
+          Linux desktop toasts require Sigil to be installed with its desktop entry. Bundled
+          packages register this automatically; when running an unpackaged dev build, install the
+          generated `.desktop` file first or notifications may be suppressed by the desktop shell.
         </div>
       )}
 
