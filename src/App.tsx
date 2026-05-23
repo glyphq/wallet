@@ -8,9 +8,6 @@ import { usePersistedStore } from "@/store/persisted";
 import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useUpdater } from "@/hooks/use-updater";
-import { useBobTick } from "@/hooks/use-bob-tick";
-import { useBobSync } from "@/hooks/use-bob-sync";
-import { useBobRealtime } from "@/hooks/use-bob-realtime";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { invoke } from "@tauri-apps/api/core";
@@ -115,9 +112,6 @@ function AppHooks() {
   useNotificationTriggers();
   useNotificationInit();
   useHideToTray();
-  useBobTick();
-  useBobSync();
-  useBobRealtime();
   useUpdater();
   return null;
 }

@@ -86,9 +86,6 @@ export default function DashboardScreen() {
   const { data: stats } = useLatestStats();
   const txAlerts = useSessionStore((s) => s.txAlerts);
   const dismissTxAlert = useSessionStore((s) => s.dismissTxAlert);
-  const bobTick = useSessionStore((s) => s.bobTick);
-  const bobConnected = useSessionStore((s) => s.bobConnected);
-  const bobSyncLag = useSessionStore((s) => s.bobSyncLag);
 
   const [showNetworkOverlay, setShowNetworkOverlay] = useState(false);
 
@@ -122,14 +119,7 @@ export default function DashboardScreen() {
         style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
       >
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          {bobConnected && bobTick ? (
-            <span>
-              <span style={{ color: "var(--color-status-warning)" }}>◆ </span>
-              {padTick(bobTick)}
-            </span>
-          ) : (
-            `TICK #${padTick(tickInfo?.tick)}`
-          )}
+          {`TICK #${padTick(tickInfo?.tick)}`}
         </span>
         <div
           style={{
@@ -290,19 +280,6 @@ export default function DashboardScreen() {
             label="Updated"
             value={dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—"}
           />
-          {settings.network.useBobNode && (
-            <NetworkRow
-              label="Bob node"
-              value={bobConnected ? `LIVE #${padTick(bobTick ?? undefined)}` : "connecting..."}
-            />
-          )}
-          {settings.network.useBobNode && bobSyncLag !== null && (
-            <NetworkRow
-              label="Bob sync lag"
-              value={`${bobSyncLag} tick${bobSyncLag === 1 ? "" : "s"}`}
-              warn={bobSyncLag > 10}
-            />
-          )}
         </div>
       </Modal>
     </AppShell>

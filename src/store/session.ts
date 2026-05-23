@@ -17,9 +17,6 @@ interface SessionState {
   pendingRequests: string[];
   isLocked: boolean;
   txAlerts: TxAlert[];
-  bobTick: number | null;
-  bobConnected: boolean;
-  bobSyncLag: number | null;
 
   unlock: (vaultId: string, seeds: Seed[], wallets: Wallet[]) => void;
   lock: () => void;
@@ -27,8 +24,6 @@ interface SessionState {
   shiftPendingRequest: () => void;
   addTxAlert: (alert: TxAlert) => void;
   dismissTxAlert: (id: string) => void;
-  setBobTick: (tick: number | null, connected: boolean) => void;
-  setBobSyncLag: (lag: number | null) => void;
 }
 
 export const useSessionStore = create<SessionState>()((set) => ({
@@ -39,9 +34,6 @@ export const useSessionStore = create<SessionState>()((set) => ({
   pendingRequests: [],
   isLocked: true,
   txAlerts: [],
-  bobTick: null,
-  bobConnected: false,
-  bobSyncLag: null,
 
   unlock: (vaultId, seeds, wallets) => {
     if (seeds.length !== wallets.length) throw new Error("seeds/wallets length mismatch");
@@ -62,7 +54,4 @@ export const useSessionStore = create<SessionState>()((set) => ({
 
   dismissTxAlert: (id) =>
     set((s) => ({ txAlerts: s.txAlerts.filter((a) => a.id !== id) })),
-
-  setBobTick: (tick, connected) => set({ bobTick: tick, bobConnected: connected }),
-  setBobSyncLag: (lag) => set({ bobSyncLag: lag }),
 }));
