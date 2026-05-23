@@ -21,7 +21,6 @@
     "store:allow-keys",
     "store:allow-entries",
     "deep-link:default",
-    "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "notification:default",
     "updater:allow-check",
