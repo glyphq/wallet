@@ -99,6 +99,8 @@ export interface PendingTx {
   contractName?: string;
 }
 
+const MAX_PENDING_TXS = 50;
+
 const DEFAULT_SETTINGS: AppSettings = {
   autoLockMinutes: 15,
   lockOnSleep: true,
@@ -256,7 +258,7 @@ export const usePersistedStore = create<PersistedState>()(
         set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id) })),
 
       addPendingTx: (tx) =>
-        set((s) => ({ pendingTxs: [tx, ...s.pendingTxs] })),
+        set((s) => ({ pendingTxs: [tx, ...s.pendingTxs].slice(0, MAX_PENDING_TXS) })),
 
       removePendingTx: (hash) =>
         set((s) => ({ pendingTxs: s.pendingTxs.filter((t) => t.hash !== hash) })),
