@@ -5,7 +5,12 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
+use tauri_plugin_store::StoreExt;
 use url::Url;
+
+const NONCE_STORE_PATH: &str = "sigil-security.json";
+const NONCE_STORE_KEY: &str = "seen_nonces";
+const MAX_NONCE_AGE_SECS: u64 = 3600;
 
 pub struct DeepLinkState {
     pending_request: Arc<Mutex<Option<String>>>,
@@ -35,16 +40,50 @@ impl DeepLinkState {
         self.pending_request.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
+    fn prune_seen_nonces(seen: &mut HashMap<String, u64>, now: u64) {
+        seen.retain(|_, &mut inserted_at| now.saturating_sub(inserted_at) < MAX_NONCE_AGE_SECS);
+    }
+
+    pub fn load_seen_nonces(&self, app: &AppHandle) {
+        let Ok(store) = app.store(NONCE_STORE_PATH) else {
+            return;
+        };
+        let Some(value) = store.get(NONCE_STORE_KEY) else {
+            return;
+        };
+        let Ok(mut seen) = serde_json::from_value::<HashMap<String, u64>>(value) else {
+            return;
+        };
+        Self::prune_seen_nonces(&mut seen, now_secs());
+        *self.seen_nonces.lock().unwrap_or_else(|e| e.into_inner()) = seen;
+    }
+
+    fn persist_seen_nonces(&self, app: &AppHandle) {
+        let Ok(store) = app.store(NONCE_STORE_PATH) else {
+            return;
+        };
+        let seen = self
+            .seen_nonces
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+        if let Ok(value) = serde_json::to_value(seen) {
+            store.set(NONCE_STORE_KEY, value);
+            let _ = store.save();
+        }
+    }
+
     /// Returns false if the nonce was already seen within the last hour (replay), true if fresh.
-    pub fn record_nonce(&self, nonce: &str) -> bool {
+    pub fn record_nonce(&self, app: &AppHandle, nonce: &str) -> bool {
         let mut seen = self.seen_nonces.lock().unwrap_or_else(|e| e.into_inner());
         let now = now_secs();
-        // Evict entries older than the maximum valid expiry window (1 hour).
-        seen.retain(|_, &mut inserted_at| now.saturating_sub(inserted_at) < 3600);
+        Self::prune_seen_nonces(&mut seen, now);
         if seen.contains_key(nonce) {
             return false;
         }
         seen.insert(nonce.to_string(), now);
+        drop(seen);
+        self.persist_seen_nonces(app);
         true
     }
 }
@@ -119,13 +158,12 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
 
     // Expiry check: missing exp defaults to 5 minutes from receipt; exp too far in
     // the future is clamped so dApps cannot create permanent requests.
-    const MAX_EXPIRY_SECS: u64 = 3600;
     let now = now_secs();
     let exp = value["exp"].as_u64().unwrap_or_else(|| now + 300);
     if exp <= now {
         return Err("request has expired".into());
     }
-    if exp > now + MAX_EXPIRY_SECS {
+    if exp > now + MAX_NONCE_AGE_SECS {
         return Err("request expiry too far in the future (max 1 hour)".into());
     }
 
@@ -214,7 +252,7 @@ pub fn process_url(app: &AppHandle, raw: &str) {
     match validate(raw) {
         Ok(parsed) => {
             let state = app.state::<DeepLinkState>();
-            if !state.record_nonce(&parsed.nonce) {
+            if !state.record_nonce(app, &parsed.nonce) {
                 eprintln!("[sigil] deep link rejected: duplicate nonce '{}'", parsed.nonce);
                 return;
             }
@@ -233,6 +271,7 @@ pub fn process_url(app: &AppHandle, raw: &str) {
 }
 
 pub fn register_handler(app: &AppHandle) {
+    app.state::<DeepLinkState>().load_seen_nonces(app);
     let handle = app.clone();
     app.deep_link().on_open_url(move |event| {
         for url in event.urls() {
