@@ -1,3 +1,4 @@
+use std::net::{IpAddr, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
@@ -111,6 +112,44 @@ pub fn is_private_host(host: &str) -> bool {
     false
 }
 
+fn is_private_ip(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(ip) => {
+            ip.is_loopback() || ip.is_private() || ip.is_link_local() || ip.is_broadcast()
+        }
+        IpAddr::V6(ip) => {
+            ip.is_loopback()
+                || ip.is_unspecified()
+                || ip.is_unique_local()
+                || ip.is_unicast_link_local()
+        }
+    }
+}
+
+async fn resolve_public_host(host: String, port: u16) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let addrs = (host.as_str(), port)
+            .to_socket_addrs()
+            .map_err(|e| format!("failed to resolve callback host: {e}"))?;
+
+        let mut saw_any = false;
+        for addr in addrs {
+            saw_any = true;
+            if is_private_ip(addr.ip()) {
+                return Err("callback URL must not resolve to a private or loopback address".into());
+            }
+        }
+
+        if !saw_any {
+            return Err("callback URL host did not resolve to any addresses".into());
+        }
+
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 const MAX_CALLBACK_BODY: usize = 4 * 1024; // 4 KB
 
 #[tauri::command]
@@ -128,6 +167,10 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
     }
     if !is_local && is_private_host(host) {
         return Err("callback URL must not target a private or loopback address".into());
+    }
+    if !is_local {
+        let port = parsed.port_or_known_default().ok_or("callback URL has no usable port")?;
+        resolve_public_host(host.to_string(), port).await?;
     }
 
     http_client()
