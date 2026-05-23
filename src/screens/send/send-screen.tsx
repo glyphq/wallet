@@ -16,7 +16,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
@@ -113,18 +113,19 @@ export default function SendScreen() {
   }
 
   async function send() {
-    if (!wallet || !tickInfo) return;
+    if (!wallet) return;
     setStep("sending");
     try {
       const dest = destUpper as Parameters<typeof wallet.buildTransfer>[0]["destination"];
       const amount = BigInt(amountStr.trim());
-      const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
+      const currentTick = await getLatestTick();
+      const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
 
       const { encoded, hash } = await wallet.buildTransfer({
         destination: dest,
         amount,
         targetTick,
-        currentTick: tickInfo.tick,
+        currentTick,
       });
 
       await broadcastTx(encoded);
