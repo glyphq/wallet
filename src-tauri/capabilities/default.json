@@ -25,6 +25,9 @@
     "clipboard-manager:allow-write-text",
     "notification:default",
     "updater:allow-check",
-    "updater:allow-download-and-install"
+    "updater:allow-download-and-install",
+    "dialog:allow-save",
+    "fs:allow-write-text-file",
+    "fs:allow-exists"
   ]
 }

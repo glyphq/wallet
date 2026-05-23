@@ -10,6 +10,7 @@ import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
+import { saveFileDialog } from "@/lib/save-file";
 
 interface ImportPreview {
   toAdd: Contact[];
@@ -76,17 +77,11 @@ export default function SettingsContactsScreen() {
   }
 
   // ── Export ──────────────────────────────────────────────────────────────
-  function doExport() {
+  async function doExport() {
     const exportable = contacts.map(({ id, name, identity, note, addedAt, lastUsedAt }) => ({
       id, name, identity, note, addedAt, lastUsedAt,
     }));
-    const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "sigil-contacts.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    await saveFileDialog("sigil-contacts.json", JSON.stringify(exportable, null, 2));
   }
 
   // ── Import ──────────────────────────────────────────────────────────────

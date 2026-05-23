@@ -13,6 +13,7 @@ import { generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/c
 import { unlockVault, createVault, createWallet, exportVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
+import { saveFileDialog } from "@/lib/save-file";
 
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -51,7 +52,7 @@ export default function VaultDetailScreen() {
 
   if (!vault) return null;
 
-  function doExport() {
+  async function doExport() {
     const data = JSON.stringify({
       sigil: 1,
       name: vault!.name,
@@ -60,14 +61,9 @@ export default function VaultDetailScreen() {
       exported_at: Date.now(),
       vault: JSON.parse(exportVault(vault!.encryptedData)),
     }, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sigil-${vault!.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setShowExport(false);
+    const defaultName = `sigil-${vault!.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
+    const saved = await saveFileDialog(defaultName, data);
+    if (saved) setShowExport(false);
   }
 
   const visible = vault.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index);
