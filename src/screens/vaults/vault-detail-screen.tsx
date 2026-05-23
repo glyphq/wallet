@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { invoke } from "@tauri-apps/api/core";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
@@ -14,6 +15,7 @@ import { unlockVault, createVault, createWallet, exportVault } from "@/lib/vault
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
+import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -49,8 +51,25 @@ export default function VaultDetailScreen() {
   const [showHidden, setShowHidden] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [hidingAccount, setHidingAccount] = useState<AccountMeta | null>(null);
+  const [revealingAccount, setRevealingAccount] = useState<AccountMeta | null>(null);
+  const [revealPassword, setRevealPassword] = useState("");
+  const [revealError, setRevealError] = useState("");
+  const [revealLoading, setRevealLoading] = useState(false);
+  const [revealedSeed, setRevealedSeed] = useState("");
+  const [seedCopied, setSeedCopied] = useState(false);
 
   if (!vault) return null;
+
+  useEffect(() => {
+    if (!revealedSeed) return;
+    const timer = setTimeout(() => {
+      setRevealedSeed("");
+      setSeedCopied(false);
+      setRevealingAccount(null);
+      setRevealPassword("");
+    }, SEED_CLIPBOARD_CLEAR_SECS * 1000);
+    return () => clearTimeout(timer);
+  }, [revealedSeed]);
 
   async function doExport() {
     const data = JSON.stringify({
@@ -177,6 +196,43 @@ export default function VaultDetailScreen() {
     }
   }
 
+  function openReveal(account: AccountMeta) {
+    setRevealingAccount(account);
+    setRevealPassword("");
+    setRevealError("");
+    setRevealLoading(false);
+    setRevealedSeed("");
+    setSeedCopied(false);
+  }
+
+  async function doRevealSeed() {
+    if (!revealingAccount) return;
+    setRevealLoading(true);
+    setRevealError("");
+    try {
+      const seeds = await unlockVault(vault!.encryptedData, revealPassword);
+      const seed = seeds[revealingAccount.index];
+      if (!seed) throw new Error("Missing seed");
+      setRevealedSeed(seed);
+      setRevealPassword("");
+    } catch {
+      setRevealError("WRONG PASSWORD");
+    } finally {
+      setRevealLoading(false);
+    }
+  }
+
+  async function copyRevealedSeed() {
+    if (!revealedSeed) return;
+    try {
+      await invoke("copy_to_clipboard", { text: revealedSeed, clearAfterSecs: SEED_CLIPBOARD_CLEAR_SECS });
+      setSeedCopied(true);
+    } catch {
+      await navigator.clipboard.writeText(revealedSeed).catch(() => {});
+      setSeedCopied(true);
+    }
+  }
+
   const statusBar = (
     <ScreenHeader
       title={vault.name}
@@ -198,6 +254,7 @@ export default function VaultDetailScreen() {
             account={account}
             identity={isActive ? (sessionWallets[account.index]?.identity ?? null) : null}
             onRename={() => { setRenamingAccount(account); setRenameValue(account.name); }}
+            onReveal={() => openReveal(account)}
             onHide={() => toggleHide(account)}
             onRemove={() => { setRemovingAccount(account); setRemovePassword(""); setRemoveError(""); }}
           />
@@ -220,6 +277,7 @@ export default function VaultDetailScreen() {
           identity={null}
           dimmed
           onRename={() => { setRenamingAccount(account); setRenameValue(account.name); }}
+          onReveal={() => openReveal(account)}
           onHide={() => toggleHide(account)}
           onRemove={() => { setRemovingAccount(account); setRemovePassword(""); setRemoveError(""); }}
         />
@@ -321,6 +379,64 @@ export default function VaultDetailScreen() {
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRemovingAccount(null)}>Cancel</Button>
         </div>
       </Modal>
+
+      {/* Reveal seed modal */}
+      <Modal open={!!revealingAccount} onClose={() => setRevealingAccount(null)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+            Reveal seed for {revealingAccount?.name}
+          </div>
+          {!revealedSeed ? (
+            <>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
+                Enter the vault password to decrypt this account seed.
+              </div>
+              <Input
+                type="password"
+                label="Vault password"
+                value={revealPassword}
+                onChange={(e) => { setRevealPassword(e.target.value); setRevealError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && !revealLoading && doRevealSeed()}
+                error={revealError}
+                placeholder="••••••••••"
+                autoComplete="current-password"
+                autoFocus
+              />
+              <Button onClick={doRevealSeed} loading={revealLoading} disabled={!revealPassword}>
+                Reveal seed
+              </Button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+                [SEED VISIBLE FOR 60 SECONDS]
+              </div>
+              <div
+                style={{
+                  background: "var(--color-bg-surface)",
+                  border: "1px solid var(--color-border-strong)",
+                  borderRadius: "var(--radius-sharp)",
+                  padding: "var(--space-4)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-lg)",
+                  color: "var(--color-text-display)",
+                  letterSpacing: "0.08em",
+                  lineHeight: 1.8,
+                  wordBreak: "break-all",
+                }}
+              >
+                {revealedSeed}
+              </div>
+              <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
+                {seedCopied ? "[COPIED]" : "Copy"}
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRevealingAccount(null)}>
+            Close
+          </Button>
+        </div>
+      </Modal>
     </AppShell>
   );
 }
@@ -330,11 +446,12 @@ interface AccountRowProps {
   identity: string | null;
   dimmed?: boolean;
   onRename: () => void;
+  onReveal: () => void;
   onHide: () => void;
   onRemove: () => void;
 }
 
-function AccountRow({ account, identity, dimmed, onRename, onHide, onRemove }: AccountRowProps) {
+function AccountRow({ account, identity, dimmed, onRename, onReveal, onHide, onRemove }: AccountRowProps) {
   return (
     <div style={{ opacity: dimmed ? 0.5 : 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
       <Identicon seed={identity ?? account.name} size={36} radius={5} style={{ marginTop: 2 }} />
@@ -349,6 +466,7 @@ function AccountRow({ account, identity, dimmed, onRename, onHide, onRemove }: A
         )}
         <div style={{ display: "flex", gap: "var(--space-2)", marginTop: identity ? 0 : "var(--space-2)" }}>
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRename}>Rename</Button>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onReveal}>Reveal seed</Button>
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onHide}>{account.hidden ? "Unhide" : "Hide"}</Button>
           <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRemove}>Remove</Button>
         </div>
