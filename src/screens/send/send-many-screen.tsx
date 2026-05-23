@@ -15,10 +15,9 @@ import { Sheet } from "@/components/sheet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
-import { useTickInfo } from "@/hooks/use-tick-info";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
@@ -52,7 +51,6 @@ export default function SendManyScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const wallets = useSessionStore((s) => s.wallets);
   const wallet = wallets[settings.activeAccountIndex] ?? null;
-  const { data: tickInfo } = useTickInfo();
   const { data: feeData } = useQuery({
     queryKey: qk.qutilSendManyFee(),
     queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
@@ -145,10 +143,11 @@ export default function SendManyScreen() {
   }, 0);
 
   async function send() {
-    if (!wallet || !tickInfo || fee === null) return;
+    if (!wallet || fee === null) return;
     setStep("sending");
     try {
-      const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
+      const currentTick = await getLatestTick();
+      const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
 
       // Build QUtil SendToManyV1 payload: 25 identities then 25 amounts (zero-padded)
       const fields: PayloadField[] = [];
@@ -175,7 +174,7 @@ export default function SendManyScreen() {
         payload,
         amount: total,
         targetTick,
-        currentTick: tickInfo.tick,
+        currentTick,
       });
 
       await broadcastTx(encoded);

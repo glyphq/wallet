@@ -3,7 +3,7 @@ import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
@@ -55,19 +55,20 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
 
   async function approve() {
-    if (!wallet || !tickInfo || requestAmount === null) return;
+    if (!wallet || requestAmount === null) return;
     setProcessing(true);
     setTxError("");
     try {
       const dest = request.to as Parameters<typeof wallet.buildTransfer>[0]["destination"];
       const amount = requestAmount;
-      const tick = estimateTargetTick(tickInfo.tick ?? 0, tickOffset);
+      const currentTick = await getLatestTick();
+      const tick = estimateTargetTick(currentTick, tickOffset);
 
       const { encoded, hash } = await wallet.buildTransfer({
         destination: dest,
         amount,
         targetTick: tick,
-        currentTick: tickInfo.tick,
+        currentTick,
       });
 
       await broadcastTx(encoded);
@@ -170,7 +171,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx}>
+      <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx}>
         Sign and send
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>
