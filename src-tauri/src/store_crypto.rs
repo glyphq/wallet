@@ -6,6 +6,57 @@ use tauri::command;
 const STORE_KEY_TARGET: &str = "sigil-store-key";
 const STORE_VALUE_PREFIX: &str = "enc-v1:";
 
+#[cfg(debug_assertions)]
+fn dev_fallback_key_path() -> Result<std::path::PathBuf, String> {
+    use std::path::PathBuf;
+
+    #[cfg(target_os = "windows")]
+    {
+        let base = std::env::var_os("APPDATA")
+            .map(PathBuf::from)
+            .ok_or_else(|| "APPDATA is not set".to_string())?;
+        return Ok(base.join("Sigil").join("dev-store-key"));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let base = std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share")))
+            .ok_or_else(|| "HOME is not set".to_string())?;
+        Ok(base.join("sigil").join("dev-store-key"))
+    }
+}
+
+#[cfg(debug_assertions)]
+fn load_dev_fallback_key() -> Result<Option<String>, String> {
+    let path = dev_fallback_key_path()?;
+    match std::fs::read_to_string(path) {
+        Ok(value) => Ok(Some(value.trim().to_string())),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(err.to_string()),
+    }
+}
+
+#[cfg(debug_assertions)]
+fn store_dev_fallback_key(secret: &str) -> Result<(), String> {
+    let path = dev_fallback_key_path()?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| "invalid dev fallback key path".to_string())?;
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    std::fs::write(&path, secret).map_err(|e| e.to_string())?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let perms = std::fs::Permissions::from_mode(0o600);
+        let _ = std::fs::set_permissions(&path, perms);
+    }
+
+    Ok(())
+}
+
 #[cfg(target_os = "windows")]
 mod secret_store {
     use windows::Win32::Foundation::FILETIME;
@@ -100,9 +151,31 @@ fn get_or_create_store_key() -> Result<[u8; 32], String> {
             .map_err(|_| "invalid stored metadata key length".to_string());
     }
 
+    #[cfg(debug_assertions)]
+    if let Some(encoded) = load_dev_fallback_key()? {
+        let decoded = URL_SAFE_NO_PAD
+            .decode(encoded)
+            .map_err(|e| format!("invalid dev metadata key: {e}"))?;
+        return decoded
+            .try_into()
+            .map_err(|_| "invalid dev metadata key length".to_string());
+    }
+
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
-    secret_store::store(STORE_KEY_TARGET, &URL_SAFE_NO_PAD.encode(key))?;
+    let encoded = URL_SAFE_NO_PAD.encode(key);
+    if let Err(_err) = secret_store::store(STORE_KEY_TARGET, &encoded) {
+        #[cfg(debug_assertions)]
+        {
+            store_dev_fallback_key(&encoded)?;
+            return Ok(key);
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            return Err(_err);
+        }
+    }
     Ok(key)
 }
 
