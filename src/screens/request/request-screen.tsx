@@ -63,7 +63,6 @@ type CallbackStatus = "pending" | "ok" | "failed";
 interface SuccessState {
   kind: "tx" | "message" | "verify" | "connect";
   detail: string; // tx hash, base64 signature, "VALID"/"INVALID", or identity
-  dappName: string;
   hasCallback: boolean;
   callbackStatus: CallbackStatus;
   callbackBody: string;
@@ -148,7 +147,6 @@ export default function RequestScreen() {
     const state: SuccessState = {
       kind: "tx",
       detail: txHash,
-      dappName: envelope.request.dapp.name,
       hasCallback: !!envelope.callback,
       callbackStatus: "pending",
       callbackBody,
@@ -173,7 +171,6 @@ export default function RequestScreen() {
     const state: SuccessState = {
       kind: "message",
       detail: signature,
-      dappName: envelope.request.dapp.name,
       hasCallback: !!envelope.callback,
       callbackStatus: "pending",
       callbackBody,
@@ -197,7 +194,6 @@ export default function RequestScreen() {
     const state: SuccessState = {
       kind: "verify",
       detail: valid ? "VALID" : "INVALID",
-      dappName: envelope.request.dapp.name,
       hasCallback: !!envelope.callback,
       callbackStatus: "pending",
       callbackBody,
@@ -221,7 +217,6 @@ export default function RequestScreen() {
     const state: SuccessState = {
       kind: "connect",
       detail: identity,
-      dappName: envelope.request.dapp.name,
       hasCallback: !!envelope.callback,
       callbackStatus: "pending",
       callbackBody,
@@ -240,7 +235,7 @@ export default function RequestScreen() {
         statusBar={
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {success.dappName}
+              Request Complete
             </span>
           </div>
         }
@@ -355,8 +350,6 @@ export default function RequestScreen() {
         />
       ) : request.type === "connect" ? (
         <ConnectPreview
-          dappName={request.dapp.name}
-          dappOrigin={request.dapp.origin}
           request={request}
           onApprove={handleApproveConnect}
           onReject={reject}

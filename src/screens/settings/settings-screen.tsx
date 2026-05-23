@@ -12,7 +12,6 @@ interface SettingsRow {
 }
 
 const ROWS: SettingsRow[] = [
-  { label: "Approved dApps", description: "Manage dApp permissions and access", route: "/settings/dapps", available: true },
   { label: "Security", description: "Auto-lock, biometric unlock", route: "/settings/security", available: true },
   { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", available: true },
   { label: "Appearance", description: "Theme, fonts, accent color, custom scheme", route: "/settings/appearance", available: true },
