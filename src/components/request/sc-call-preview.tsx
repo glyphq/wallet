@@ -4,7 +4,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
@@ -139,12 +139,13 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const isQearnLock = request.contract_index === QEARN_CONTRACT_INDEX && request.input_type === QEARN_LOCK_INPUT_TYPE;
 
   async function approve() {
-    if (!wallet || !tickInfo) return;
+    if (!wallet) return;
     setProcessing(true);
     setTxError("");
     try {
       const amount = requestAmount;
-      const tick = estimateTargetTick(tickInfo.tick ?? 0, tickOffset);
+      const currentTick = await getLatestTick();
+      const tick = estimateTargetTick(currentTick, tickOffset);
 
       const { encoded, hash } = await wallet.buildScTransaction({
         destination,
@@ -152,7 +153,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         payload: payloadBytes,
         amount,
         targetTick: tick,
-        currentTick: tickInfo.tick,
+        currentTick,
       });
 
       await broadcastTx(encoded);

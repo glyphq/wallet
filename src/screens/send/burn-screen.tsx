@@ -10,7 +10,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { formatQu, extractMessage } from "@/lib/format";
@@ -52,11 +52,12 @@ export default function BurnScreen() {
   }
 
   async function send() {
-    if (!wallet || !tickInfo) return;
+    if (!wallet) return;
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
-      const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
+      const currentTick = await getLatestTick();
+      const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
 
       const { inputType, payload } = buildQUtilBurnQubicInput({ amount });
       const { encoded, hash } = await wallet.buildScTransaction({
@@ -65,7 +66,7 @@ export default function BurnScreen() {
         payload,
         amount,
         targetTick,
-        currentTick: tickInfo.tick,
+        currentTick,
       });
 
       await broadcastTx(encoded);

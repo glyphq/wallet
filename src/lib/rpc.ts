@@ -31,6 +31,14 @@ export function getRpcClient() {
   return _client;
 }
 
+export async function getLatestTick(): Promise<number> {
+  const result = await _client.live.getTickInfo();
+  if (!result.ok || result.value.tick === undefined || result.value.tick === null) {
+    throw new Error("Failed to fetch current tick");
+  }
+  return result.value.tick;
+}
+
 /** Replaces the singleton RPC client with new endpoint URLs — call when the user changes the network in settings. */
 export function configureRpc(liveBaseUrl: string, archiveBaseUrl: string) {
   _client = createQubicClient({
