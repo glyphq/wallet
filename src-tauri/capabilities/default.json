@@ -28,6 +28,13 @@
     "updater:allow-download-and-install",
     "dialog:allow-save",
     "fs:allow-write-text-file",
-    "fs:allow-exists"
+    "fs:allow-exists",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$DOWNLOAD/**/*",
+        "$DOCUMENT/**/*"
+      ]
+    }
   ]
 }
