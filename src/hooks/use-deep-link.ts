@@ -42,15 +42,15 @@ function buildNotification(req: Record<string, unknown>): { title: string; body:
 
 /** Listens for `sigil:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
-  const setPendingRequest = useSessionStore((s) => s.setPendingRequest);
+  const enqueuePendingRequest = useSessionStore((s) => s.enqueuePendingRequest);
   const isLocked = useSessionStore((s) => s.isLocked);
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
 
   // Refs keep the single effect's callbacks up-to-date without re-subscribing.
   const isLockedRef = useRef(isLocked);
   isLockedRef.current = isLocked;
-  const setPendingRequestRef = useRef(setPendingRequest);
-  setPendingRequestRef.current = setPendingRequest;
+  const enqueuePendingRequestRef = useRef(enqueuePendingRequest);
+  enqueuePendingRequestRef.current = enqueuePendingRequest;
   const notificationsEnabledRef = useRef(notificationsEnabled);
   notificationsEnabledRef.current = notificationsEnabled;
 
@@ -61,7 +61,7 @@ export function useDeepLink() {
       try {
         const envelope = JSON.parse(payload) as { request?: Record<string, unknown> };
         if (!envelope.request?.type) return;
-        setPendingRequestRef.current(payload);
+        enqueuePendingRequestRef.current(payload);
         invoke("clear_pending_request").catch(() => {});
         if (notificationsEnabledRef.current) {
           const n = buildNotification(envelope.request);
@@ -70,7 +70,7 @@ export function useDeepLink() {
         if (!isLockedRef.current) {
           router.navigate("/request");
         }
-        // If locked, lock screen reads pendingRequest and navigates to /request after unlock.
+        // If locked, lock screen reads pendingRequests and navigates to /request after unlock.
       } catch {
         // malformed — Rust should have rejected it already
       }

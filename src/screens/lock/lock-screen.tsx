@@ -38,7 +38,7 @@ export default function LockScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
   const unlock = useSessionStore((s) => s.unlock);
-  const pendingRequest = useSessionStore((s) => s.pendingRequest);
+  const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
   const bioEnabled = vault ? (settings.biometricVaultIds ?? []).includes(vault.id) : false;
@@ -52,7 +52,7 @@ export default function LockScreen() {
     unlock(vault.id, seeds, wallets);
     touchVaultUnlocked(vault.id);
     _bioFailures = 0;
-    navigate(pendingRequest ? "/request" : "/dashboard", { replace: true });
+    navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
 
   async function onSubmit({ password }: FormValues) {

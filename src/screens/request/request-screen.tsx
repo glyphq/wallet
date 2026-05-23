@@ -72,8 +72,9 @@ interface SuccessState {
 export default function RequestScreen() {
   const navigate = useNavigate();
 
-  const pendingRequest = useSessionStore((s) => s.pendingRequest);
-  const setPendingRequest = useSessionStore((s) => s.setPendingRequest);
+  const pendingRequest = useSessionStore((s) => s.pendingRequests[0] ?? null);
+  const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
+  const shiftPendingRequest = useSessionStore((s) => s.shiftPendingRequest);
 
   const parseResult = parseEnvelope(pendingRequest);
   const envelope = parseResult.envelope;
@@ -90,26 +91,22 @@ export default function RequestScreen() {
     if (!envelope?.request.exp || success) return;
     const msUntilExp = envelope.request.exp * 1000 - Date.now();
     if (msUntilExp <= 0) {
-      invoke("clear_pending_request").catch(() => {});
-      setPendingRequest(null);
+      shiftPendingRequest();
       return;
     }
     const t = setTimeout(() => {
-      invoke("clear_pending_request").catch(() => {});
-      setPendingRequest(null);
+      shiftPendingRequest();
     }, msUntilExp);
     return () => clearTimeout(t);
-  }, [envelope?.request.exp, success, setPendingRequest]);
+  }, [envelope?.request.exp, success, shiftPendingRequest]);
 
   // Dismiss without notifying the dApp — used by the BACK button so navigating
   // away doesn't send a spurious rejection to the dApp.
   function dismiss() {
-    invoke("clear_pending_request").catch(() => {});
-    setPendingRequest(null);
+    shiftPendingRequest();
   }
 
   function reject() {
-    invoke("clear_pending_request").catch(() => {});
     if (envelope?.callback) {
       const body = JSON.stringify({
         status: "rejected",
@@ -119,7 +116,7 @@ export default function RequestScreen() {
       });
       invoke("post_callback", { url: envelope.callback, body }).catch(() => {});
     }
-    setPendingRequest(null);
+    shiftPendingRequest();
   }
 
   async function postCallback(callbackBody: string) {
@@ -147,8 +144,7 @@ export default function RequestScreen() {
       target_tick: targetTick,
     });
 
-    invoke("clear_pending_request").catch(() => {});
-    setPendingRequest(null);
+    shiftPendingRequest();
     const state: SuccessState = {
       kind: "tx",
       detail: txHash,
@@ -173,8 +169,7 @@ export default function RequestScreen() {
       public_key: publicKey,
     });
 
-    invoke("clear_pending_request").catch(() => {});
-    setPendingRequest(null);
+    shiftPendingRequest();
     const state: SuccessState = {
       kind: "message",
       detail: signature,
@@ -198,8 +193,7 @@ export default function RequestScreen() {
       identity,
     });
 
-    invoke("clear_pending_request").catch(() => {});
-    setPendingRequest(null);
+    shiftPendingRequest();
     const state: SuccessState = {
       kind: "verify",
       detail: valid ? "VALID" : "INVALID",
@@ -223,8 +217,7 @@ export default function RequestScreen() {
       permissions,
     });
 
-    invoke("clear_pending_request").catch(() => {});
-    setPendingRequest(null);
+    shiftPendingRequest();
     const state: SuccessState = {
       kind: "connect",
       detail: identity,
@@ -315,7 +308,7 @@ export default function RequestScreen() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
             [{parseError}]
           </div>
-          <Button variant="secondary" shape="sharp" onClick={() => navigate("/dashboard")}>Back to app</Button>
+          <Button variant="secondary" shape="sharp" onClick={() => { shiftPendingRequest(); navigate("/dashboard"); }}>Back to app</Button>
         </div>
       </SheetLayout>
     );
@@ -329,6 +322,11 @@ export default function RequestScreen() {
   return (
     <SheetLayout statusBar={statusBar}>
       <RequestHeader dapp={request.dapp} />
+      {pendingRequestCount > 1 && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+          [{pendingRequestCount - 1} MORE REQUEST{pendingRequestCount > 2 ? "S" : ""} QUEUED]
+        </div>
+      )}
       <Divider />
 
       {request.type === "transfer" ? (
