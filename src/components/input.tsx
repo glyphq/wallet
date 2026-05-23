@@ -9,6 +9,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export function Input({ label, error, style, id, containerStyle, ...props }: InputProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
   const errorId = inputId ? `${inputId}-error` : undefined;
+  const maxLength = props.maxLength ?? (props.type === "password" ? 128 : undefined);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
@@ -29,6 +30,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
       )}
       <input
         {...props}
+        maxLength={maxLength}
         autoComplete={props.autoComplete ?? "off"}
         id={inputId}
         className="sigil-input"
