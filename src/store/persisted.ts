@@ -33,12 +33,6 @@ export interface NetworkConfig {
   liveApiUrl: string;
   queryApiUrl: string;
   name: "mainnet" | "testnet" | "custom";
-  /** Experimental: Bob indexer REST base URL (e.g. http://localhost:40420) */
-  bobRestUrl?: string;
-  /** Experimental: Bob indexer WebSocket URL (e.g. ws://localhost:40420/ws) */
-  bobWsUrl?: string;
-  /** Experimental: use Bob node for real-time tick + balance data */
-  useBobNode?: boolean;
 }
 
 /** A dApp origin that the user has explicitly approved, along with its granted permission set. */

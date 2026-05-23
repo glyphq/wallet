@@ -7,14 +7,12 @@ import { Input } from "@/components/input";
 import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc } from "@/lib/rpc";
-import { createBobRestClient } from "@qubic.org/bob";
 
 function isHttpUrl(s: string): boolean {
   try { return ["http:", "https:"].includes(new URL(s).protocol); } catch { return false; }
 }
 
 type TestStatus = "idle" | "testing" | "ok" | "error";
-type BobTestStatus = "idle" | "testing" | "ok" | "error";
 
 const CURRENCIES = ["USD", "EUR", "BTC"] as const;
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
@@ -30,11 +28,6 @@ export default function NetworkScreen() {
   const [queryUrl, setQueryUrl] = useState(settings.network.queryApiUrl);
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testTick, setTestTick] = useState<number | null>(null);
-
-  const [bobRestUrl, setBobRestUrl] = useState(settings.network.bobRestUrl ?? "http://localhost:40420");
-  const [bobWsUrl, setBobWsUrl] = useState(settings.network.bobWsUrl ?? "ws://localhost:40420/ws/qubic");
-  const [bobTestStatus, setBobTestStatus] = useState<BobTestStatus>("idle");
-  const [bobTestEpoch, setBobTestEpoch] = useState<number | null>(null);
 
   async function testAndSave() {
     const live = liveUrl.trim();
@@ -56,25 +49,6 @@ export default function NetworkScreen() {
       queryClient.invalidateQueries();
     } catch {
       setTestStatus("error");
-    }
-  }
-
-  async function testBobAndSave() {
-    const rest = bobRestUrl.trim();
-    if (!isHttpUrl(rest)) { setBobTestStatus("error"); return; }
-    setBobTestStatus("testing");
-    setBobTestEpoch(null);
-    try {
-      const client = createBobRestClient({ baseUrl: rest });
-      const result = await client.getStatus();
-      if (!result.ok) throw new Error("bad response");
-      const s = result.value as Record<string, unknown>;
-      const epoch = (s.currentProcessingEpoch ?? s.currentEpoch ?? s.epoch) as number | undefined;
-      setBobTestEpoch(epoch ?? null);
-      setBobTestStatus("ok");
-      updateSettings({ network: { ...settings.network, bobRestUrl: rest, bobWsUrl: bobWsUrl.trim() || undefined } });
-    } catch {
-      setBobTestStatus("error");
     }
   }
 
@@ -220,82 +194,6 @@ export default function NetworkScreen() {
           })}
         </div>
       </div>
-
-      {/* Bob node (experimental) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Bob node
-            </div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>[EXPERIMENTAL]</span>
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Use a Bob indexer for real-time tick + WebSocket data. Requires a running Bob node.
-          </div>
-        </div>
-        <Input
-          label="Bob REST URL"
-          value={bobRestUrl}
-          onChange={(e) => { setBobRestUrl(e.target.value); setBobTestStatus("idle"); }}
-          placeholder="http://localhost:40420"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}
-        />
-        <Input
-          label="Bob WebSocket URL"
-          value={bobWsUrl}
-          onChange={(e) => { setBobWsUrl(e.target.value); setBobTestStatus("idle"); }}
-          placeholder="ws://localhost:40420/ws/qubic"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <Button
-            variant="secondary"
-            shape="sharp"
-            size="sm"
-            style={{ width: "auto" }}
-            onClick={testBobAndSave}
-            loading={bobTestStatus === "testing"}
-            disabled={!bobRestUrl.trim()}
-          >
-            Test &amp; save
-          </Button>
-          {bobTestStatus === "ok" && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-              {bobTestEpoch !== null ? `[EPOCH ${bobTestEpoch}]` : "[CONNECTED]"}
-            </span>
-          )}
-          {bobTestStatus === "error" && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-              [UNREACHABLE]
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => updateSettings({ network: { ...settings.network, useBobNode: !settings.network.useBobNode } })}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-3) var(--space-4)",
-            background: "none",
-            border: `1px solid ${settings.network.useBobNode ? "var(--color-status-warning)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-            Enable Bob node
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: settings.network.useBobNode ? "var(--color-status-warning)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-            {settings.network.useBobNode ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-      </div>
-
       {/* Debug mode */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <button
