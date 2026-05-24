@@ -31,6 +31,17 @@ interface SigilEnvelope {
 
 type ParseResult = { envelope: SigilEnvelope; error: null } | { envelope: null; error: string };
 
+function isAllowedCallbackUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+    return url.protocol === "https:" || (url.protocol === "http:" && isLocal);
+  } catch {
+    return false;
+  }
+}
+
 function parseEnvelope(raw: string | null): ParseResult {
   if (!raw) return { envelope: null, error: "No pending request" };
   try {
@@ -40,8 +51,8 @@ function parseEnvelope(raw: string | null): ParseResult {
       return { envelope: null, error: "Missing dApp origin" };
     const origin = (env.request.dapp as { origin: string }).origin;
     if (!origin.startsWith("https://")) return { envelope: null, error: "dApp origin must be HTTPS" };
-    if (typeof env.callback === "string" && !env.callback.startsWith("https://"))
-      return { envelope: null, error: "Callback URL must be HTTPS" };
+    if (typeof env.callback === "string" && !isAllowedCallbackUrl(env.callback))
+      return { envelope: null, error: "Callback URL must use HTTPS or localhost HTTP" };
     if (env.request.exp && Date.now() / 1000 > (env.request.exp as number))
       return { envelope: null, error: "Request expired" };
     return { envelope: env as unknown as SigilEnvelope, error: null };
