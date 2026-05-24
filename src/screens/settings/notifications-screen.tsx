@@ -129,7 +129,7 @@ export default function NotificationsScreen() {
   }
 
   async function sendTest() {
-    await notify("Sigil · Test", "Desktop notifications are working");
+    await notify("Sigil Notifications Enabled", "Desktop notifications are working and ready for wallet events.");
   }
 
   const statusBar = <ScreenHeader title="Notifications" onBack={() => navigate("/settings")} />;
