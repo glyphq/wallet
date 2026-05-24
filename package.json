@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit --pretty false",
+    "test": "bun test",
+    "check": "bun run lint && bun run test",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
