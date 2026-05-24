@@ -6,6 +6,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
+import { getVaultAccountIdentity } from "@/lib/accounts";
 
 export default function ReceiveScreen() {
   const navigate = useNavigate();
@@ -15,8 +16,7 @@ export default function ReceiveScreen() {
   const wallets = useSessionStore((s) => s.wallets);
 
   const activeIndex = settings.activeAccountIndex;
-  const wallet = wallets[activeIndex] ?? null;
-  const identity = wallet?.identity ?? null;
+  const identity = getVaultAccountIdentity(vault ?? null, activeIndex, wallets);
   const accountName = vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`;
   const hideBalances = settings.hideBalances;
   const [qrRevealed, setQrRevealed] = useState(false);

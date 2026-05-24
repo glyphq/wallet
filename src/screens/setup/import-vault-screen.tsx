@@ -82,9 +82,18 @@ export default function ImportVaultScreen() {
         id: newId(),
         name: name.trim(),
         color,
+        kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
-        accounts: [{ index: 0, name: "Account 1", addedAt: Date.now(), hidden: false }],
+        accounts: [{
+          index: 0,
+          name: "Account 1",
+          addedAt: Date.now(),
+          hidden: false,
+          identity: derivedIdentity ?? undefined,
+          note: "",
+          tags: [],
+        }],
         encryptedData,
       };
       addVault(vault);

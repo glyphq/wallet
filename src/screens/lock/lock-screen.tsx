@@ -13,6 +13,7 @@ import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import type { Seed } from "@/lib/crypto";
+import { isWatchOnlyVault } from "@/lib/accounts";
 
 interface FormValues {
   password: string;
@@ -44,6 +45,7 @@ export default function LockScreen() {
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
+  const watchOnly = isWatchOnlyVault(vault);
   const bioEnabled = vault ? (settings.biometricVaultIds ?? []).includes(vault.id) : false;
 
   const { register, handleSubmit } = useForm<FormValues>();
@@ -59,8 +61,15 @@ export default function LockScreen() {
 
   async function doUnlock(password: string) {
     if (!vault) return;
-    const seeds = await unlockVault(vault.encryptedData, password);
+    const seeds = await unlockVault(vault.encryptedData!, password);
     await finishUnlock(seeds);
+  }
+
+  async function openWatchOnlyVault() {
+    if (!vault) return;
+    unlock(vault.id, [], vault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity));
+    touchVaultUnlocked(vault.id);
+    navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
 
   async function onSubmit({ password }: FormValues) {
@@ -83,7 +92,7 @@ export default function LockScreen() {
     try {
       const seeds = await invoke<string[]>("biometric_unlock", {
         vaultId: vault.id,
-        vaultData: vault.encryptedData,
+        vaultData: vault.encryptedData!,
       });
       await finishUnlock(seeds.map(toSeed));
     } catch (e) {
@@ -158,23 +167,34 @@ export default function LockScreen() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Input
-            {...register("password")}
-            type="password"
-            label="Password"
-            placeholder="••••••••••"
-            autoComplete="current-password"
-            error={error}
-            autoFocus
-            containerStyle={{ marginBottom: "var(--space-6)" }}
-          />
-          <Button type="submit" loading={loading}>
-            Unlock
-          </Button>
-        </form>
+        {watchOnly ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+            <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+              WATCH-ONLY VAULT
+            </div>
+            <Button onClick={openWatchOnlyVault}>
+              Open vault
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Input
+              {...register("password")}
+              type="password"
+              label="Password"
+              placeholder="••••••••••"
+              autoComplete="current-password"
+              error={error}
+              autoFocus
+              containerStyle={{ marginBottom: "var(--space-6)" }}
+            />
+            <Button type="submit" loading={loading}>
+              Unlock
+            </Button>
+          </form>
+        )}
 
-        {bioEnabled && bioFailures < 3 && (
+        {!watchOnly && bioEnabled && bioFailures < 3 && (
           <button
             onClick={onBiometric}
             disabled={loading}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Search } from "lucide-react";
 import { BottomNav } from "@/components/bottom-nav";
 import { AppShell } from "@/layouts/app-shell";
 import { Modal } from "@/components/modal";
@@ -20,6 +20,7 @@ import { Divider } from "@/components/divider";
 import { truncateId, formatQu, formatQuCompact, formatUsdFromQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { Identicon } from "@/components/identicon";
+import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "var(--color-status-success)",
@@ -83,8 +84,8 @@ export default function DashboardScreen() {
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
   const activeIndex = settings.activeAccountIndex;
-  const wallet = wallets[activeIndex] ?? null;
-  const identity = wallet?.identity ?? null;
+  const identity = getVaultAccountIdentity(vault, activeIndex, wallets);
+  const watchOnly = isWatchOnlyVault(vault);
 
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
   const { data: tickInfo, dataUpdatedAt } = useTickInfo();
@@ -119,21 +120,30 @@ export default function DashboardScreen() {
         </span>
       </button>
 
-      <button
-        onClick={() => setShowNetworkOverlay(true)}
-        aria-label="Network status"
-        style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-      >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          {`TICK #${padTick(tickInfo?.tick)}`}
-        </span>
-        <div
-          style={{
-            width: 6, height: 6, borderRadius: "50%",
-            background: HEALTH_COLOR[health],
-          }}
-        />
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+        <button
+          onClick={() => navigate("/search")}
+          aria-label="Search"
+          style={{ display: "flex", alignItems: "center", background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--color-text-disabled)" }}
+        >
+          <Search size={14} strokeWidth={1.5} />
+        </button>
+        <button
+          onClick={() => setShowNetworkOverlay(true)}
+          aria-label="Network status"
+          style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            {`TICK #${padTick(tickInfo?.tick)}`}
+          </span>
+          <div
+            style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: HEALTH_COLOR[health],
+            }}
+          />
+        </button>
+      </div>
     </div>
   );
 
@@ -181,6 +191,11 @@ export default function DashboardScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
               {vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`}
             </div>
+            {watchOnly && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+                WATCH-ONLY
+              </div>
+            )}
             <IdentityDisplay identity={identity} />
           </div>
         ) : (

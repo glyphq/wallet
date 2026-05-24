@@ -7,9 +7,10 @@ import { Modal } from "@/components/modal";
 import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { AlertTriangle } from "lucide-react";
+import { isValidIdentity, newId } from "@/lib/crypto";
+import { parseAccountTags } from "@/lib/accounts";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, createVault, type VaultData } from "@/lib/vault";
-import { newId } from "@/lib/crypto";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 
 interface ImportFileData {
@@ -31,6 +32,31 @@ export default function WelcomeScreen() {
   const [importError, setImportError] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [watchOpen, setWatchOpen] = useState(false);
+  const [watchName, setWatchName] = useState("");
+  const [watchInput, setWatchInput] = useState("");
+  const [watchError, setWatchError] = useState("");
+
+  function parseWatchOnlyAccounts(raw: string): AccountMeta[] {
+    return raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const [identityPart, ...labelParts] = line.split(",");
+        const identity = identityPart?.trim().toUpperCase() ?? "";
+        const label = labelParts.join(",").trim();
+        return {
+          index,
+          name: label || `Account ${index + 1}`,
+          addedAt: Date.now(),
+          hidden: false,
+          identity,
+          note: "",
+          tags: parseAccountTags("watch-only"),
+        };
+      });
+  }
 
   function openFilePicker() {
     const input = document.createElement("input");
@@ -101,6 +127,7 @@ export default function WelcomeScreen() {
         id: newVaultId,
         name: importData.name,
         color: importData.color,
+        kind: "seeded",
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
         accounts: finalAccounts,
@@ -114,6 +141,38 @@ export default function WelcomeScreen() {
     } finally {
       setImportLoading(false);
     }
+  }
+
+  function createWatchOnlyVault() {
+    const name = watchName.trim();
+    if (!name) {
+      setWatchError("NAME REQUIRED");
+      return;
+    }
+    const accounts = parseWatchOnlyAccounts(watchInput);
+    if (accounts.length === 0) {
+      setWatchError("ADD AT LEAST ONE IDENTITY");
+      return;
+    }
+    if (accounts.some((account) => !account.identity || !isValidIdentity(account.identity))) {
+      setWatchError("INVALID IDENTITY IN LIST");
+      return;
+    }
+
+    const newVaultId = newId();
+    addVault({
+      id: newVaultId,
+      name,
+      color: "slate",
+      kind: "watch_only",
+      createdAt: Date.now(),
+      lastUnlockedAt: Date.now(),
+      accounts,
+      encryptedData: null,
+    });
+    setActiveVault(newVaultId);
+    unlock(newVaultId, [], accounts.map((account) => account.identity!).filter(Boolean));
+    navigate("/dashboard", { replace: true });
   }
 
   return (
@@ -168,6 +227,9 @@ export default function WelcomeScreen() {
           </Button>
           <Button variant="secondary" shape="sharp" onClick={() => navigate("/setup/import")}>
             Import seed
+          </Button>
+          <Button variant="ghost" shape="sharp" onClick={() => setWatchOpen(true)}>
+            Import watch-only
           </Button>
           <Button variant="ghost" shape="sharp" onClick={openFilePicker}>
             Import vault file
@@ -237,6 +299,58 @@ export default function WelcomeScreen() {
             Import vault
           </Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setImportData(null)}>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal open={watchOpen} onClose={() => setWatchOpen(false)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
+              Create watch-only vault
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              One identity per line. Optional label after a comma.
+            </div>
+          </div>
+          <Input
+            label="Vault name"
+            value={watchName}
+            onChange={(e) => { setWatchName(e.target.value); setWatchError(""); }}
+            placeholder="e.g. Treasury, Validators"
+            autoFocus
+          />
+          <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Identities
+            </span>
+            <textarea
+              value={watchInput}
+              onChange={(e) => { setWatchInput(e.target.value); setWatchError(""); }}
+              placeholder={"IDENTITYONE..., Main\nIDENTITYTWO..., Cold staking"}
+              rows={6}
+              style={{
+                width: "100%",
+                resize: "vertical",
+                background: "var(--color-bg-surface)",
+                color: "var(--color-text-primary)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-3)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+                letterSpacing: "0.03em",
+              }}
+            />
+          </label>
+          {watchError && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+              {watchError}
+            </div>
+          )}
+          <Button onClick={createWatchOnlyVault}>Create watch-only vault</Button>
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setWatchOpen(false)}>
             Cancel
           </Button>
         </div>

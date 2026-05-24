@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { generateRandomSeed, newId } from "@/lib/crypto";
+import { deriveIdentityFromSeed, generateRandomSeed, newId } from "@/lib/crypto";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -115,9 +115,18 @@ export default function CreateVaultScreen() {
         id: newId(),
         name: name.trim(),
         color,
+        kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
-        accounts: [{ index: 0, name: "Account 1", addedAt: Date.now(), hidden: false }],
+        accounts: [{
+          index: 0,
+          name: "Account 1",
+          addedAt: Date.now(),
+          hidden: false,
+          identity: deriveIdentityFromSeed(seed),
+          note: "",
+          tags: [],
+        }],
         encryptedData,
       };
       addVault(vault);

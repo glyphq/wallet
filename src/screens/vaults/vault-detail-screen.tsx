@@ -9,7 +9,7 @@ import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
-import { generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
+import { deriveIdentityFromSeed, generateRandomSeed, isValidIdentity, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, createVault, exportVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
@@ -17,6 +17,7 @@ import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
+import { getAccountIdentity, isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -44,6 +45,7 @@ export default function VaultDetailScreen() {
   const [addingAccount, setAddingAccount] = useState(false);
   const [addMode, setAddMode] = useState<"new" | "import">("new");
   const [addName, setAddName] = useState("");
+  const [addIdentity, setAddIdentity] = useState("");
   const [addSeed, setAddSeed] = useState("");
   const [addSeedError, setAddSeedError] = useState("");
   const [addPassword, setAddPassword] = useState("");
@@ -52,6 +54,9 @@ export default function VaultDetailScreen() {
 
   const [renamingAccount, setRenamingAccount] = useState<AccountMeta | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [editingMeta, setEditingMeta] = useState<AccountMeta | null>(null);
+  const [metaNote, setMetaNote] = useState("");
+  const [metaTags, setMetaTags] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<AccountMeta | null>(null);
 
   const [removingAccount, setRemovingAccount] = useState<AccountMeta | null>(null);
@@ -69,8 +74,6 @@ export default function VaultDetailScreen() {
   const [revealedSeed, setRevealedSeed] = useState("");
   const [seedCopied, setSeedCopied] = useState(false);
 
-  if (!vault) return null;
-
   useEffect(() => {
     if (!revealedSeed) return;
     const timer = setTimeout(() => {
@@ -82,23 +85,28 @@ export default function VaultDetailScreen() {
     return () => clearTimeout(timer);
   }, [revealedSeed]);
 
+  if (!vault) return null;
+  const currentVault = vault;
+  const watchOnly = isWatchOnlyVault(currentVault);
+
   async function doExport() {
+    if (!currentVault.encryptedData) return;
     const data = JSON.stringify({
       sigil: 1,
-      name: vault!.name,
-      color: vault!.color,
-      accounts: vault!.accounts,
+      name: currentVault.name,
+      color: currentVault.color,
+      accounts: currentVault.accounts,
       exported_at: Date.now(),
-      vault: JSON.parse(exportVault(vault!.encryptedData)),
+      vault: JSON.parse(exportVault(currentVault.encryptedData)),
     }, null, 2);
-    const defaultName = `sigil-${vault!.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
+    const defaultName = `sigil-${currentVault.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
     const saved = await saveFileDialog(defaultName, data);
     if (saved) setShowExport(false);
   }
 
-  const visible = vault.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index);
-  const hidden = vault.accounts.filter((a) => a.hidden).sort((a, b) => a.index - b.index);
-  const accentColor = VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-secondary)";
+  const visible = currentVault.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index);
+  const hidden = currentVault.accounts.filter((a) => a.hidden).sort((a, b) => a.index - b.index);
+  const accentColor = VAULT_COLOR_CSS[currentVault.color] ?? "var(--color-text-secondary)";
 
   function openAccountMenu(account: AccountMeta) {
     setSelectedAccount(account);
@@ -109,8 +117,9 @@ export default function VaultDetailScreen() {
   }
 
   function openAdd() {
-    setAddMode("new");
+    setAddMode(watchOnly ? "import" : "new");
     setAddName("");
+    setAddIdentity("");
     setAddSeed("");
     setAddSeedError("");
     setAddPassword("");
@@ -122,6 +131,26 @@ export default function VaultDetailScreen() {
     if (!addName.trim()) return;
     setAddSeedError("");
     setAddError("");
+
+    if (watchOnly) {
+      const identity = addIdentity.trim().toUpperCase();
+      if (!isValidIdentity(identity)) {
+        setAddError("INVALID IDENTITY");
+        return;
+      }
+        const newAccount: AccountMeta = {
+        index: currentVault.accounts.length,
+        name: addName.trim(),
+        addedAt: Date.now(),
+        hidden: false,
+        identity,
+        note: "",
+        tags: parseAccountTags("watch-only"),
+      };
+      updateVault(currentVault.id, { accounts: [...currentVault.accounts, newAccount] });
+      setAddingAccount(false);
+      return;
+    }
 
     let seedToAdd: Seed | null = null;
     if (addMode === "import") {
@@ -135,17 +164,25 @@ export default function VaultDetailScreen() {
 
     setAddLoading(true);
     try {
-      const existingSeeds = await unlockVault(vault!.encryptedData, addPassword);
+      const existingSeeds = await unlockVault(currentVault.encryptedData!, addPassword);
       const newSeed = seedToAdd ?? generateRandomSeed();
       const newEncrypted = await createVault(addPassword, [...existingSeeds, newSeed]);
       const newIndex = existingSeeds.length;
-      const newAccount: AccountMeta = { index: newIndex, name: addName.trim(), addedAt: Date.now(), hidden: false };
-      updateVault(vault!.id, {
+      const newAccount: AccountMeta = {
+        index: newIndex,
+        name: addName.trim(),
+        addedAt: Date.now(),
+        hidden: false,
+        identity: deriveIdentityFromSeed(newSeed),
+        note: "",
+        tags: [],
+      };
+      updateVault(currentVault.id, {
         encryptedData: newEncrypted,
-        accounts: [...vault!.accounts, newAccount],
+        accounts: [...currentVault.accounts, newAccount],
       });
       if (isActive) {
-        sessionUnlock(vault!.id, unlockSecureSession([...existingSeeds, newSeed]));
+        sessionUnlock(currentVault.id, unlockSecureSession([...existingSeeds, newSeed]));
       }
       setAddingAccount(false);
     } catch {
@@ -157,12 +194,24 @@ export default function VaultDetailScreen() {
 
   function doRename() {
     if (!renamingAccount || !renameValue.trim()) return;
-    updateVault(vault!.id, {
-      accounts: vault!.accounts.map((a) =>
+    updateVault(currentVault.id, {
+      accounts: currentVault.accounts.map((a) =>
         a.index === renamingAccount.index ? { ...a, name: renameValue.trim() } : a,
       ),
     });
     setRenamingAccount(null);
+  }
+
+  function saveAccountMeta() {
+    if (!editingMeta) return;
+    updateVault(currentVault.id, {
+      accounts: currentVault.accounts.map((account) =>
+        account.index === editingMeta.index
+          ? { ...account, note: metaNote.trim(), tags: parseAccountTags(metaTags) }
+          : account,
+      ),
+    });
+    setEditingMeta(null);
   }
 
   function toggleHide(account: AccountMeta) {
@@ -170,8 +219,8 @@ export default function VaultDetailScreen() {
       setHidingAccount(account);
       return;
     }
-    updateVault(vault!.id, {
-      accounts: vault!.accounts.map((a) =>
+    updateVault(currentVault.id, {
+      accounts: currentVault.accounts.map((a) =>
         a.index === account.index ? { ...a, hidden: false } : a,
       ),
     });
@@ -179,8 +228,8 @@ export default function VaultDetailScreen() {
 
   function confirmHide() {
     if (!hidingAccount) return;
-    updateVault(vault!.id, {
-      accounts: vault!.accounts.map((a) =>
+    updateVault(currentVault.id, {
+      accounts: currentVault.accounts.map((a) =>
         a.index === hidingAccount.index ? { ...a, hidden: true } : a,
       ),
     });
@@ -192,15 +241,31 @@ export default function VaultDetailScreen() {
     setRemoveLoading(true);
     setRemoveError("");
     try {
-      const allSeeds = await unlockVault(vault!.encryptedData, removePassword);
+      if (watchOnly) {
+        const updatedAccounts = currentVault.accounts
+          .filter((a) => a.index !== removingAccount.index)
+          .map((a) => ({ ...a, index: a.index > removingAccount.index ? a.index - 1 : a.index }));
+        updateVault(currentVault.id, { accounts: updatedAccounts });
+        if (isActive) {
+          const activeIdx = settings.activeAccountIndex;
+          if (removingAccount.index === activeIdx) {
+            setActiveAccountIndex(0);
+          } else if (removingAccount.index < activeIdx) {
+            setActiveAccountIndex(activeIdx - 1);
+          }
+        }
+        setRemovingAccount(null);
+        return;
+      }
+      const allSeeds = await unlockVault(currentVault.encryptedData!, removePassword);
       const remaining = allSeeds.filter((_, i) => i !== removingAccount.index);
       const newEncrypted = await createVault(removePassword, remaining);
-      const updatedAccounts = vault!.accounts
+      const updatedAccounts = currentVault.accounts
         .filter((a) => a.index !== removingAccount.index)
         .map((a) => ({ ...a, index: a.index > removingAccount.index ? a.index - 1 : a.index }));
-      updateVault(vault!.id, { encryptedData: newEncrypted, accounts: updatedAccounts });
+      updateVault(currentVault.id, { encryptedData: newEncrypted, accounts: updatedAccounts });
       if (isActive) {
-        sessionUnlock(vault!.id, unlockSecureSession(remaining));
+        sessionUnlock(currentVault.id, unlockSecureSession(remaining));
         const activeIdx = settings.activeAccountIndex;
         if (removingAccount.index === activeIdx) {
           setActiveAccountIndex(0);
@@ -227,10 +292,11 @@ export default function VaultDetailScreen() {
 
   async function doRevealSeed() {
     if (!revealingAccount) return;
+    if (watchOnly) return;
     setRevealLoading(true);
     setRevealError("");
     try {
-      const seeds = await unlockVault(vault!.encryptedData, revealPassword);
+      const seeds = await unlockVault(currentVault.encryptedData!, revealPassword);
       const seed = seeds[revealingAccount.index];
       if (!seed) throw new Error("Missing seed");
       setRevealedSeed(seed);
@@ -250,10 +316,10 @@ export default function VaultDetailScreen() {
 
   const statusBar = (
     <ScreenHeader
-      title={vault.name}
+      title={currentVault.name}
       onBack={() => navigate("/vaults")}
       action={
-        vault.accounts.length < MAX_VAULT_ACCOUNTS
+        currentVault.accounts.length < MAX_VAULT_ACCOUNTS
           ? <button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>+ ADD</button>
           : <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>16 MAX</span>
       }
@@ -267,7 +333,7 @@ export default function VaultDetailScreen() {
           key={account.index}
           account={account}
           accentColor={accentColor}
-          identity={isActive ? (sessionWallets[account.index]?.identity ?? null) : null}
+          identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           isCurrent={isActive && settings.activeAccountIndex === account.index}
           onManage={() => openAccountMenu(account)}
         />
@@ -298,25 +364,26 @@ export default function VaultDetailScreen() {
           key={account.index}
           account={account}
           accentColor={accentColor}
-          identity={null}
+          identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           dimmed
           isCurrent={false}
           onManage={() => openAccountMenu(account)}
         />
       ))}
 
-      {/* Export vault */}
-      <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
-        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setShowExport(true)}>
-          Export vault
-        </Button>
-      </div>
+      {!watchOnly && (
+        <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setShowExport(true)}>
+            Export vault
+          </Button>
+        </div>
+      )}
 
       {/* Export modal */}
       <Modal open={showExport} onClose={() => setShowExport(false)}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Export {vault.name}
+            Export {currentVault.name}
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
             [WARNING] This file contains your encrypted seed. Keep it safe. Anyone with this file and your password can access your funds.
@@ -330,25 +397,36 @@ export default function VaultDetailScreen() {
       <Modal open={addingAccount} onClose={() => setAddingAccount(false)}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Add account
+            {watchOnly ? "Add watch-only account" : "Add account"}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            {(["new", "import"] as const).map((mode, i) => (
-              <>
-                {i > 0 && <span key="sep" style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>/</span>}
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => { setAddMode(mode); setAddSeed(""); setAddSeedError(""); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, color: addMode === mode ? "var(--color-text-display)" : "var(--color-text-disabled)" }}
-                >
-                  {mode === "new" ? "NEW SEED" : "IMPORT SEED"}
-                </button>
-              </>
-            ))}
-          </div>
+          {!watchOnly && (
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              {(["new", "import"] as const).map((mode, i) => (
+                <div key={mode} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                  {i > 0 && <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>/</span>}
+                  <button
+                    type="button"
+                    onClick={() => { setAddMode(mode); setAddSeed(""); setAddSeedError(""); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, color: addMode === mode ? "var(--color-text-display)" : "var(--color-text-disabled)" }}
+                  >
+                    {mode === "new" ? "NEW SEED" : "IMPORT SEED"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <Input label="Account name" value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. DeFi, Staking" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
-          {addMode === "import" && (
+          {watchOnly && (
+            <Input
+              label="Identity"
+              value={addIdentity}
+              onChange={(e) => { setAddIdentity(e.target.value); setAddError(""); }}
+              error={addError}
+              placeholder="Qubic identity"
+              autoComplete="off"
+            />
+          )}
+          {!watchOnly && addMode === "import" && (
             <Input
               label="Seed (55 lowercase letters)"
               type="password"
@@ -359,8 +437,10 @@ export default function VaultDetailScreen() {
               autoComplete="off"
             />
           )}
-          <Input type="password" label="Vault password" value={addPassword} onChange={(e) => { setAddPassword(e.target.value); setAddError(""); }} onKeyDown={(e) => e.key === "Enter" && !addLoading && doAdd()} error={addError} placeholder="••••••••••" autoComplete="current-password" />
-          <Button onClick={doAdd} loading={addLoading} disabled={!addName.trim() || !addPassword || (addMode === "import" && !addSeed.trim())}>Add account</Button>
+          {!watchOnly && (
+            <Input type="password" label="Vault password" value={addPassword} onChange={(e) => { setAddPassword(e.target.value); setAddError(""); }} onKeyDown={(e) => e.key === "Enter" && !addLoading && doAdd()} error={addError} placeholder="••••••••••" autoComplete="current-password" />
+          )}
+          <Button onClick={doAdd} loading={addLoading} disabled={!addName.trim() || (!watchOnly && !addPassword) || (!watchOnly && addMode === "import" && !addSeed.trim()) || (watchOnly && !addIdentity.trim())}>Add account</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setAddingAccount(false)}>Cancel</Button>
         </div>
       </Modal>
@@ -372,6 +452,42 @@ export default function VaultDetailScreen() {
           <Input label="Name" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doRename()} autoFocus style={{ fontFamily: "var(--font-sans)" }} />
           <Button onClick={doRename} disabled={!renameValue.trim()}>Save</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRenamingAccount(null)}>Cancel</Button>
+        </div>
+      </Modal>
+
+      <Modal open={!!editingMeta} onClose={() => setEditingMeta(null)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Notes and tags</div>
+          <Input
+            label="Tags"
+            value={metaTags}
+            onChange={(e) => setMetaTags(e.target.value)}
+            placeholder="staking, cold, treasury"
+          />
+          <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Note
+            </span>
+            <textarea
+              value={metaNote}
+              onChange={(e) => setMetaNote(e.target.value)}
+              rows={4}
+              placeholder="Optional note for this account"
+              style={{
+                width: "100%",
+                resize: "vertical",
+                background: "var(--color-bg-surface)",
+                color: "var(--color-text-primary)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-3)",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-body)",
+              }}
+            />
+          </label>
+          <Button onClick={saveAccountMeta}>Save</Button>
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setEditingMeta(null)}>Cancel</Button>
         </div>
       </Modal>
 
@@ -396,8 +512,10 @@ export default function VaultDetailScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>Remove {removingAccount?.name}?</div>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>This cannot be undone.</div>
           </div>
-          <Input type="password" label="Vault password" value={removePassword} onChange={(e) => { setRemovePassword(e.target.value); setRemoveError(""); }} onKeyDown={(e) => e.key === "Enter" && doRemove()} error={removeError} placeholder="••••••••••" autoComplete="current-password" autoFocus />
-          <Button variant="danger" shape="sharp" onClick={doRemove} loading={removeLoading} disabled={!removePassword}>Remove account</Button>
+          {!watchOnly && (
+            <Input type="password" label="Vault password" value={removePassword} onChange={(e) => { setRemovePassword(e.target.value); setRemoveError(""); }} onKeyDown={(e) => e.key === "Enter" && doRemove()} error={removeError} placeholder="••••••••••" autoComplete="current-password" autoFocus />
+          )}
+          <Button variant="danger" shape="sharp" onClick={doRemove} loading={removeLoading} disabled={!watchOnly && !removePassword}>Remove account</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRemovingAccount(null)}>Cancel</Button>
         </div>
       </Modal>
@@ -483,7 +601,7 @@ export default function VaultDetailScreen() {
                 borderRadius: "var(--radius-sharp)",
               }}
             >
-              <Identicon seed={sessionWallets[selectedAccount.index]?.identity ?? selectedAccount.name} size={40} radius={6} style={{ flexShrink: 0 }} />
+              <Identicon seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} size={40} radius={6} style={{ flexShrink: 0 }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                   {selectedAccount.name}
@@ -506,13 +624,25 @@ export default function VaultDetailScreen() {
               }}
             />
             <ActionCard
-              title="Reveal seed"
-              description="Decrypt and display this account seed for a limited time."
+              title="Notes and tags"
+              description="Add labels like staking, cold, or trading and keep a short note."
               onClick={() => {
-                openReveal(selectedAccount);
+                setEditingMeta(selectedAccount);
+                setMetaNote(selectedAccount.note ?? "");
+                setMetaTags((selectedAccount.tags ?? []).join(", "));
                 closeAccountMenu();
               }}
             />
+            {!watchOnly && (
+              <ActionCard
+                title="Reveal seed"
+                description="Decrypt and display this account seed for a limited time."
+                onClick={() => {
+                  openReveal(selectedAccount);
+                  closeAccountMenu();
+                }}
+              />
+            )}
             <ActionCard
               title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
               description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove this account from the switcher without deleting it."}
@@ -549,6 +679,9 @@ interface AccountRowProps {
 }
 
 function AccountRow({ account, accentColor, identity, isCurrent, dimmed, onManage }: AccountRowProps) {
+  const tags = account.tags ?? [];
+  const note = account.note?.trim() ?? "";
+
   return (
     <div
       style={{
@@ -604,7 +737,17 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, onManag
               [HIDDEN]
             </span>
           )}
+          {tags.map((tag) => (
+            <span key={tag} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+              #{tag}
+            </span>
+          ))}
         </div>
+        {note && (
+          <div style={{ marginTop: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+            {note}
+          </div>
+        )}
         {identity && (
           <div style={{ marginTop: "var(--space-3)" }}>
             <IdentityDisplay identity={identity} showIdenticon={false} />

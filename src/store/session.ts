@@ -17,7 +17,7 @@ interface SessionState {
   isLocked: boolean;
   txAlerts: TxAlert[];
 
-  unlock: (vaultId: string, wallets: SessionWallet[]) => void;
+  unlock: (vaultId: string, wallets: SessionWallet[], identities?: string[]) => void;
   lock: () => void;
   enqueuePendingRequest: (raw: string) => void;
   shiftPendingRequest: () => void;
@@ -33,8 +33,14 @@ export const useSessionStore = create<SessionState>()((set) => ({
   isLocked: true,
   txAlerts: [],
 
-  unlock: (vaultId, wallets) => {
-    set({ unlockedVaultId: vaultId, wallets, isLocked: false, cachedIdentities: wallets.map((w) => w.identity) });
+  unlock: (vaultId, wallets, identities) => {
+    if (wallets.length === 0) clearSecureSession();
+    set({
+      unlockedVaultId: vaultId,
+      wallets,
+      isLocked: false,
+      cachedIdentities: identities ?? wallets.map((w) => w.identity),
+    });
   },
 
   lock: () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Tag } from "@/components/tag";
@@ -20,6 +20,7 @@ import {
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 import { truncateId, formatQu, formatQuCompact, formatDate } from "@/lib/format";
+import { getVaultAccountIdentity } from "@/lib/accounts";
 
 // ── Filter types ──────────────────────────────────────────────────────────────
 
@@ -57,10 +58,12 @@ function isDefault(f: TxFilters): boolean {
 
 export default function HistoryScreen() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const settings = usePersistedStore((s) => s.settings);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
-  const identity = wallets[settings.activeAccountIndex]?.identity ?? null;
+  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
+  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets);
 
   const txMemos = usePersistedStore((s) => s.txMemos);
 
@@ -131,9 +134,32 @@ export default function HistoryScreen() {
   });
 
   const filteredTxs = allTxs;
+  const focusHash = searchParams.get("focus");
 
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
+
+  useEffect(() => {
+    if (!focusHash) return;
+    const pending = filteredPending.find((tx) => tx.hash === focusHash);
+    if (pending) {
+      setDetail(pending);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("focus");
+        return next;
+      }, { replace: true });
+      return;
+    }
+    const match = filteredTxs.find((tx) => tx.hash === focusHash);
+    if (!match) return;
+    setDetail(match);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("focus");
+      return next;
+    }, { replace: true });
+  }, [filteredPending, filteredTxs, focusHash, setSearchParams]);
 
   // ── Active filter chips ───────────────────────────────────────────────────
   const chips: { label: string; clear: () => void }[] = [];

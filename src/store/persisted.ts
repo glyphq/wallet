@@ -16,6 +16,10 @@ export interface AccountMeta {
   addedAt: number;
   /** When true the account is hidden from the account switcher but remains in the seed array. */
   hidden: boolean;
+  /** Persisted identity for watch-only accounts and seeded-account metadata hydration. */
+  identity?: string;
+  note?: string;
+  tags?: string[];
 }
 
 /** Persisted metadata for a vault — does not contain seeds; those live in `encryptedData`. */
@@ -23,10 +27,11 @@ export interface VaultMeta {
   id: string;
   name: string;
   color: VaultColor;
+  kind?: "seeded" | "watch_only";
   createdAt: number;
   lastUnlockedAt: number;
   accounts: AccountMeta[];
-  encryptedData: VaultData;
+  encryptedData: VaultData | null;
 }
 
 export interface NetworkConfig {
@@ -383,7 +388,27 @@ export const usePersistedStore = create<PersistedState>()(
       // Validate array fields so corrupted JSON cannot replace typed arrays with scalars.
       merge: (persistedState: unknown, currentState: PersistedState): PersistedState => {
         const ps = persistedState as Partial<PersistedState>;
-        const vaults = Array.isArray(ps.vaults) ? ps.vaults : currentState.vaults;
+        const vaults = Array.isArray(ps.vaults)
+          ? ps.vaults
+            .filter((vault): vault is VaultMeta => !!vault && typeof vault === "object")
+            .map((vault): VaultMeta => ({
+              ...vault,
+              kind: vault.kind === "watch_only" ? "watch_only" : "seeded",
+              encryptedData: vault.kind === "watch_only" ? null : (vault.encryptedData ?? null),
+              accounts: Array.isArray(vault.accounts)
+                ? vault.accounts
+                  .filter((account): account is AccountMeta => !!account && typeof account === "object")
+                  .map((account) => ({
+                    ...account,
+                    note: typeof account.note === "string" ? account.note : "",
+                    tags: Array.isArray(account.tags)
+                      ? account.tags.filter((tag): tag is string => typeof tag === "string")
+                      : [],
+                    identity: typeof account.identity === "string" ? account.identity : undefined,
+                  }))
+                : [],
+            }))
+          : currentState.vaults;
         const contacts = Array.isArray(ps.contacts) ? ps.contacts : currentState.contacts;
         const pendingTxs = Array.isArray(ps.pendingTxs) ? ps.pendingTxs : currentState.pendingTxs;
         const txMemos =

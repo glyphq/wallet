@@ -6,6 +6,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { unlockVault } from "@/lib/vault";
 import { extractMessage } from "@/lib/format";
+import { isWatchOnlyVault } from "@/lib/accounts";
 
 const TIMEOUT_OPTIONS: { label: string; value: number }[] = [
   { label: "1 minute", value: 1 },
@@ -38,6 +39,7 @@ export default function SecurityScreen() {
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
+  const watchOnly = isWatchOnlyVault(vault);
   const bioEnabled = vault ? biometricVaultIds.includes(vault.id) : false;
 
   const [bioAvailable, setBioAvailable] = useState<boolean | null>(null);
@@ -60,7 +62,7 @@ export default function SecurityScreen() {
     setEnableLoading(true);
     setEnableError("");
     try {
-      await unlockVault(vault.encryptedData, enablePw);
+      await unlockVault(vault.encryptedData!, enablePw);
     } catch {
       setEnableError("WRONG PASSWORD");
       setEnableLoading(false);
@@ -300,7 +302,13 @@ export default function SecurityScreen() {
           </span>
         )}
 
-        {bioAvailable === true && vault && !bioEnabled && !enabling && (
+        {bioAvailable === true && vault && watchOnly && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            [WATCH-ONLY VAULTS DO NOT NEED BIOMETRIC UNLOCK]
+          </span>
+        )}
+
+        {bioAvailable === true && vault && !watchOnly && !bioEnabled && !enabling && (
           <button
             onClick={() => setEnabling(true)}
             style={{
@@ -324,7 +332,7 @@ export default function SecurityScreen() {
           </button>
         )}
 
-        {enabling && (
+        {enabling && !watchOnly && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
               Confirm your vault password to enable {isLinux ? "quick unlock" : "biometric unlock"}
@@ -394,7 +402,7 @@ export default function SecurityScreen() {
           </div>
         )}
 
-        {bioAvailable === true && vault && bioEnabled && (
+        {bioAvailable === true && vault && !watchOnly && bioEnabled && (
           <button
             onClick={handleDisable}
             style={{

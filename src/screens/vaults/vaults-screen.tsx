@@ -11,7 +11,8 @@ import { unlockSecureSession } from "@/lib/secure-session";
 import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVault, type VaultData } from "@/lib/vault";
-import { newId } from "@/lib/crypto";
+import { isValidIdentity, newId } from "@/lib/crypto";
+import { isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -62,6 +63,30 @@ export default function VaultsScreen() {
   const [deleteError, setDeleteError] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [watchOpen, setWatchOpen] = useState(false);
+  const [watchName, setWatchName] = useState("");
+  const [watchInput, setWatchInput] = useState("");
+  const [watchError, setWatchError] = useState("");
+
+  function parseWatchOnlyAccounts(raw: string): AccountMeta[] {
+    return raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const [identityPart, ...labelParts] = line.split(",");
+        const identity = identityPart?.trim().toUpperCase() ?? "";
+        return {
+          index,
+          name: labelParts.join(",").trim() || `Account ${index + 1}`,
+          addedAt: Date.now(),
+          hidden: false,
+          identity,
+          note: "",
+          tags: parseAccountTags("watch-only"),
+        };
+      });
+  }
 
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -91,7 +116,19 @@ export default function VaultsScreen() {
     setSwitchLoading(true);
     setSwitchError("");
     try {
-      const seeds = await unlockVault(switchingVault.encryptedData, switchPassword);
+      if (isWatchOnlyVault(switchingVault)) {
+        unlock(
+          switchingVault.id,
+          [],
+          switchingVault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
+        );
+        setActiveVault(switchingVault.id);
+        touchVaultUnlocked(switchingVault.id);
+        setSwitchingVault(null);
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+      const seeds = await unlockVault(switchingVault.encryptedData!, switchPassword);
       const wallets = unlockSecureSession(seeds);
       unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
@@ -116,7 +153,9 @@ export default function VaultsScreen() {
     setDeleteLoading(true);
     setDeleteError("");
     try {
-      await unlockVault(deletingVault.encryptedData, deletePassword);
+      if (!isWatchOnlyVault(deletingVault)) {
+        await unlockVault(deletingVault.encryptedData!, deletePassword);
+      }
       const wasActive = deletingVault.id === settings.activeVaultId;
       removeVault(deletingVault.id);
       if (wasActive) sessionLock();
@@ -173,6 +212,7 @@ export default function VaultsScreen() {
         id: newId(),
         name: importData.name,
         color: importData.color,
+        kind: "seeded",
         createdAt: Date.now(),
         lastUnlockedAt: 0,
         accounts: importData.accounts,
@@ -186,6 +226,38 @@ export default function VaultsScreen() {
     }
   }
 
+  function createWatchOnlyVault() {
+    const name = watchName.trim();
+    if (!name) {
+      setWatchError("NAME REQUIRED");
+      return;
+    }
+    const accounts = parseWatchOnlyAccounts(watchInput);
+    if (accounts.length === 0) {
+      setWatchError("ADD AT LEAST ONE IDENTITY");
+      return;
+    }
+    if (accounts.some((account) => !account.identity || !isValidIdentity(account.identity))) {
+      setWatchError("INVALID IDENTITY IN LIST");
+      return;
+    }
+
+    addVault({
+      id: newId(),
+      name,
+      color: "slate",
+      kind: "watch_only",
+      createdAt: Date.now(),
+      lastUnlockedAt: Date.now(),
+      accounts,
+      encryptedData: null,
+    });
+    setWatchOpen(false);
+    setWatchName("");
+    setWatchInput("");
+    setWatchError("");
+  }
+
   const statusBar = (
     <ScreenHeader
       title="Vaults"
@@ -193,6 +265,7 @@ export default function VaultsScreen() {
       action={
         <div style={{ display: "flex", gap: "var(--space-3)" }}>
           <button type="button" onClick={openImportPicker} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>IMPORT</button>
+          <button type="button" onClick={() => setWatchOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>WATCH</button>
           <button type="button" onClick={() => navigate("/setup/create")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>+ NEW</button>
         </div>
       }
@@ -209,6 +282,7 @@ export default function VaultsScreen() {
           const isExpanded = expandedId === vault.id;
           const visibleAccounts = vault.accounts.filter((a) => !a.hidden).length;
           const accentColor = VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-secondary)";
+          const watchOnly = isWatchOnlyVault(vault);
 
           return (
             <div
@@ -239,9 +313,10 @@ export default function VaultsScreen() {
                       {vault.name}
                     </span>
                     {isActive && <Tag variant="neutral">ACTIVE</Tag>}
+                    {watchOnly && <Tag variant="warning">WATCH</Tag>}
                   </div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                    {visibleAccounts} {visibleAccounts === 1 ? "ACCOUNT" : "ACCOUNTS"} · {timeAgo(vault.lastUnlockedAt).toUpperCase()}
+                    {visibleAccounts} {visibleAccounts === 1 ? "ACCOUNT" : "ACCOUNTS"} · {watchOnly ? "WATCH ONLY" : timeAgo(vault.lastUnlockedAt).toUpperCase()}
                   </div>
                 </div>
                 <button
@@ -285,21 +360,27 @@ export default function VaultsScreen() {
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             {switchingVault && <Identicon seed={`${switchingVault.id}:${switchingVault.color}`} size={36} />}
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-              Unlock {switchingVault?.name}
+              {isWatchOnlyVault(switchingVault) ? `Open ${switchingVault?.name}` : `Unlock ${switchingVault?.name}`}
             </div>
           </div>
-          <Input
-            type="password"
-            label="Password"
-            value={switchPassword}
-            onChange={(e) => { setSwitchPassword(e.target.value); setSwitchError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && !switchLoading && doSwitch()}
-            error={switchError}
-            placeholder="••••••••••"
-            autoComplete="current-password"
-            autoFocus
-          />
-          <Button onClick={doSwitch} loading={switchLoading}>Unlock</Button>
+          {isWatchOnlyVault(switchingVault) ? (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+              WATCH-ONLY VAULTS OPEN WITHOUT A PASSWORD.
+            </div>
+          ) : (
+            <Input
+              type="password"
+              label="Password"
+              value={switchPassword}
+              onChange={(e) => { setSwitchPassword(e.target.value); setSwitchError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && !switchLoading && doSwitch()}
+              error={switchError}
+              placeholder="••••••••••"
+              autoComplete="current-password"
+              autoFocus
+            />
+          )}
+          <Button onClick={doSwitch} loading={switchLoading}>{isWatchOnlyVault(switchingVault) ? "Open vault" : "Unlock"}</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setSwitchingVault(null)}>Cancel</Button>
         </div>
       </Modal>
@@ -321,6 +402,55 @@ export default function VaultsScreen() {
           />
           <Button onClick={doRename} disabled={!renameValue.trim()}>Save</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRenamingVault(null)}>Cancel</Button>
+        </div>
+      </Modal>
+
+      <Modal open={watchOpen} onClose={() => setWatchOpen(false)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
+              Create watch-only vault
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              One identity per line. Optional label after a comma.
+            </div>
+          </div>
+          <Input
+            label="Vault name"
+            value={watchName}
+            onChange={(e) => { setWatchName(e.target.value); setWatchError(""); }}
+            placeholder="e.g. Treasury, Validators"
+            autoFocus
+          />
+          <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Identities
+            </span>
+            <textarea
+              value={watchInput}
+              onChange={(e) => { setWatchInput(e.target.value); setWatchError(""); }}
+              rows={6}
+              placeholder={"IDENTITYONE..., Main\nIDENTITYTWO..., Cold staking"}
+              style={{
+                width: "100%",
+                resize: "vertical",
+                background: "var(--color-bg-surface)",
+                color: "var(--color-text-primary)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-3)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+              }}
+            />
+          </label>
+          {watchError && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+              {watchError}
+            </div>
+          )}
+          <Button onClick={createWatchOnlyVault}>Create watch-only vault</Button>
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setWatchOpen(false)}>Cancel</Button>
         </div>
       </Modal>
 
@@ -358,7 +488,7 @@ export default function VaultsScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
               Delete {deletingVault?.name}?
             </div>
-            {(deletingVault?.accounts.length ?? 0) > 1 && (
+            {!isWatchOnlyVault(deletingVault) && (deletingVault?.accounts.length ?? 0) > 1 && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", marginBottom: "var(--space-1)" }}>
                 [WARNING] This vault contains {deletingVault!.accounts.length} accounts. All seeds will be permanently lost.
               </div>
@@ -367,18 +497,24 @@ export default function VaultsScreen() {
               This cannot be undone.
             </div>
           </div>
-          <Input
-            type="password"
-            label="Enter password to confirm"
-            value={deletePassword}
-            onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && !deleteLoading && doDelete()}
-            error={deleteError}
-            placeholder="••••••••••"
-            autoComplete="current-password"
-            autoFocus
-          />
-          <Button variant="danger" shape="sharp" onClick={doDelete} loading={deleteLoading} disabled={!deletePassword}>
+          {isWatchOnlyVault(deletingVault) ? (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+              WATCH-ONLY VAULTS DO NOT CONTAIN SEEDS. DELETION REMOVES LOCAL TRACKING ONLY.
+            </div>
+          ) : (
+            <Input
+              type="password"
+              label="Enter password to confirm"
+              value={deletePassword}
+              onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && !deleteLoading && doDelete()}
+              error={deleteError}
+              placeholder="••••••••••"
+              autoComplete="current-password"
+              autoFocus
+            />
+          )}
+          <Button variant="danger" shape="sharp" onClick={doDelete} loading={deleteLoading} disabled={!isWatchOnlyVault(deletingVault) && !deletePassword}>
             Delete this vault
           </Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setDeletingVault(null)}>Cancel</Button>
