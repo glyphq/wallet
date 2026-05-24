@@ -33,6 +33,7 @@ type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
 
 const QEARN_MIN_LOCK = 10_000_000;
+const Q_EARN_POSITION_BATCH_SIZE = 8;
 
 interface Position {
   epoch: number;
@@ -90,14 +91,25 @@ export default function StakeScreen() {
       if (!statusResult.ok || statusResult.value.status === 0n) return [];
 
       const epochRange = Array.from({ length: 52 }, (_, i) => currentEpoch - i).filter((e) => e > 0);
-      const infos = await Promise.all(
-        epochRange.map((epoch) => qearnGetUserLockedInfo(live, { user: identity, epoch }, SC_OPTS)),
-      );
+      const infos = new Map<number, bigint>();
+
+      for (let i = 0; i < epochRange.length; i += Q_EARN_POSITION_BATCH_SIZE) {
+        const batch = epochRange.slice(i, i + Q_EARN_POSITION_BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map((epoch) => qearnGetUserLockedInfo(live, { user: identity, epoch }, SC_OPTS)),
+        );
+
+        batch.forEach((epoch, batchIndex) => {
+          const result = batchResults[batchIndex];
+          if (result?.ok) {
+            infos.set(epoch, result.value.lockedAmount);
+          }
+        });
+      }
 
       return epochRange
-        .map((epoch, i) => {
-          const r = infos[i];
-          return { epoch, lockedAmount: r?.ok ? r.value.lockedAmount : 0n };
+        .map((epoch) => {
+          return { epoch, lockedAmount: infos.get(epoch) ?? 0n };
         })
         .filter((p) => p.lockedAmount > 0n);
     },
