@@ -11,6 +11,7 @@ use url::Url;
 const NONCE_STORE_PATH: &str = "sigil-security.json";
 const NONCE_STORE_KEY: &str = "seen_nonces";
 const MAX_NONCE_AGE_SECS: u64 = 3600;
+const MAX_SIGN_MESSAGE_LEN: usize = 2048;
 
 pub struct DeepLinkState {
     pending_request: Arc<Mutex<Option<String>>>,
@@ -222,6 +223,9 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
                 .ok_or("sign_message: missing 'message'")?;
             if msg.is_empty() {
                 return Err("sign_message: 'message' must not be empty".into());
+            }
+            if msg.chars().count() > MAX_SIGN_MESSAGE_LEN {
+                return Err("sign_message: 'message' exceeds 2048 characters".into());
             }
         }
         "verify_message" => {
