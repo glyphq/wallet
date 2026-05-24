@@ -38,7 +38,10 @@ export function useNotificationTriggers() {
         if (current !== prev) changedIds.add(id);
         if (enabled && onReceived && current > prev) {
           const diff = current - prev;
-          notify("QU Received", `+${diff.toLocaleString()} QU → ${truncateId(id, 8, 4)}`);
+          notify(
+            "Incoming QU",
+            `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
+          );
         }
       }
     }
@@ -68,9 +71,15 @@ export function useNotificationTriggers() {
       for (const tx of pendingTxs) {
         if (!prevPendingHashesRef.current.has(tx.hash)) {
           if (tx.contractName) {
-            notify(tx.contractName, "Transaction broadcast");
+            notify(
+              "Contract Transaction Sent",
+              `${tx.contractName} was broadcast and is awaiting confirmation.`,
+            );
           } else {
-            notify("QU Sent", `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination, 8, 4)}`);
+            notify(
+              "Transaction Sent",
+              `Sent ${BigInt(tx.amount).toLocaleString()} QU to ${truncateId(tx.destination, 8, 4)}. Awaiting confirmation.`,
+            );
           }
         }
       }
@@ -134,10 +143,20 @@ export function useNotificationTriggers() {
       removePendingTx(pending.hash);
       const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
       if (histTx.moneyFlew) {
-        if (enabled && onConfirmed) notify("Confirmed", `${label} — confirmed on chain`);
+        if (enabled && onConfirmed) {
+          notify(
+            "Transaction Confirmed",
+            `${label} was confirmed on chain.`,
+          );
+        }
       } else {
         addTxAlert({ id: pending.hash, label, reason: "failed" });
-        if (enabled && onConfirmed) notify("Transaction Failed", `${label} — money did not fly`);
+        if (enabled && onConfirmed) {
+          notify(
+            "Transaction Failed",
+            `${label} reached the chain, but the transfer did not complete successfully.`,
+          );
+        }
       }
     }
   }, [txHistory]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -153,7 +172,12 @@ export function useNotificationTriggers() {
         removePendingTx(pending.hash);
         const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
         addTxAlert({ id: pending.hash, label, reason: "expired" });
-        if (enabled && onConfirmed) notify("Tick Missed", `${label} — target tick expired`);
+        if (enabled && onConfirmed) {
+          notify(
+            "Transaction Expired",
+            `${label} missed its target tick and was removed from pending.`,
+          );
+        }
       }
     }
   }, [currentTick, pendingTxs]); // eslint-disable-line react-hooks/exhaustive-deps
