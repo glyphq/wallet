@@ -1,7 +1,8 @@
 /** Shorten a Qubic identity or hash for display. head + tail chars, separated by "…". */
 export function truncateId(id: string, head = 8, tail = 8): string {
-  if (!id || id.length <= head + tail) return id;
-  return `${id.slice(0, head)}…${id.slice(-tail)}`;
+  const chars = Array.from(id);
+  if (!id || chars.length <= head + tail) return id;
+  return `${chars.slice(0, head).join("")}…${chars.slice(-tail).join("")}`;
 }
 
 function sanitizeText(value: string): string {
