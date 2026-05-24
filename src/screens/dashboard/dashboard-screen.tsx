@@ -303,7 +303,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   const { data, isLoading } = useTxHistory(identity);
   const txs = data?.pages[0];
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const removePendingTx = usePersistedStore((s) => s.removePendingTx);
   const { data: lastProcessedTickData } = useLastProcessedTick();
   const queryClient = useQueryClient();
   const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
@@ -319,17 +318,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
     );
     if (hasReady) queryClient.invalidateQueries({ queryKey: qk.txHistory(identity) });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
-
-  // Cleanup confirmed-only: txs that appeared in history are done regardless of notifications.
-  // Expiry cleanup is handled solely by useNotificationTriggers (after +30 live ticks) so
-  // expired txs stay visible as "FAILED" until that hook removes them with a proper alert.
-  useEffect(() => {
-    if (!txs || !lastProcessedTick) return;
-    const fetchedHashes = new Set(txs.map((t) => t.hash));
-    pendingTxs.forEach((p) => {
-      if (fetchedHashes.has(p.hash)) removePendingTx(p.hash);
-    });
-  }, [txs, pendingTxs, removePendingTx, lastProcessedTick]);
 
   const myPending = pendingTxs
     .filter((p) => p.source === activeIdentity || p.destination === activeIdentity)

@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { check } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -18,16 +16,11 @@ const FACTS = [
   "There is a fixed supply of 1 quadrillion QUBIC — no inflation, ever.",
 ];
 
-type Phase = "checking" | "downloading" | "installing" | "up-to-date" | "error";
-
 export default function SplashScreen() {
   const navigate = useNavigate();
   const [hydrated, setHydrated] = useState(() => usePersistedStore.persist.hasHydrated());
   const vaults = usePersistedStore((s) => s.vaults);
   const isLocked = useSessionStore((s) => s.isLocked);
-
-  const [phase, setPhase] = useState<Phase>("checking");
-  const [progress, setProgress] = useState(0);
   const [factIdx, setFactIdx] = useState(0);
 
   // Hydration
@@ -44,68 +37,16 @@ export default function SplashScreen() {
     return () => clearInterval(id);
   }, []);
 
-  // Update check — runs immediately on mount
   useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      try {
-        const update = await check();
-        if (cancelled) return;
-
-        if (!update) {
-          setPhase("up-to-date");
-          return;
-        }
-
-        setPhase("downloading");
-        let downloaded = 0;
-        let total = 0;
-
-        await update.downloadAndInstall((event) => {
-          if (event.event === "Started") {
-            total = event.data.contentLength ?? 0;
-          } else if (event.event === "Progress") {
-            downloaded += event.data.chunkLength;
-            setProgress(total > 0 ? Math.round((downloaded / total) * 100) : 0);
-          } else if (event.event === "Finished") {
-            setProgress(100);
-          }
-        });
-
-        setPhase("installing");
-        await relaunch();
-      } catch {
-        if (!cancelled) setPhase("error");
-      }
-    }
-
-    run();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Navigate once hydrated and the update check is settled
-  const canNavigate = phase === "up-to-date" || phase === "error";
-  useEffect(() => {
-    if (!hydrated || !canNavigate) return;
-    const delay = phase === "up-to-date" ? 600 : 0;
+    if (!hydrated) return;
+    const delay = 600;
     const timer = setTimeout(() => {
       if (vaults.length === 0) navigate("/setup", { replace: true });
       else if (isLocked) navigate("/lock", { replace: true });
       else navigate("/dashboard", { replace: true });
     }, delay);
     return () => clearTimeout(timer);
-  }, [hydrated, canNavigate, phase, vaults.length, isLocked, navigate]);
-
-  const statusLabel: Record<Phase, string> = {
-    checking: "CHECKING FOR UPDATES...",
-    downloading: progress > 0 ? `DOWNLOADING UPDATE... ${progress}%` : "DOWNLOADING UPDATE...",
-    installing: "INSTALLING...",
-    "up-to-date": "UP TO DATE",
-    error: "CONTINUING...",
-  };
-
-  const isBlocking = phase === "downloading" || phase === "installing";
+  }, [hydrated, vaults.length, isLocked, navigate]);
 
   return (
     <div
@@ -151,24 +92,9 @@ export default function SplashScreen() {
           {FACTS[factIdx]}
         </p>
 
-        {/* Progress bar — only during download */}
-        {isBlocking && (
-          <div style={{ width: "100%", height: 2, background: "var(--color-border-subtle)", borderRadius: 1 }}>
-            <div
-              style={{
-                height: "100%",
-                width: `${progress}%`,
-                background: "var(--color-accent)",
-                borderRadius: 1,
-                transition: "width 0.3s ease",
-              }}
-            />
-          </div>
-        )}
-
         {/* Status */}
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.08em", textAlign: "center" }}>
-          {statusLabel[phase]}
+          {hydrated ? "OPENING WALLET..." : "LOADING VAULTS..."}
         </div>
       </div>
 
