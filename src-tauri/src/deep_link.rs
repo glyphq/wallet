@@ -148,8 +148,14 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     }
 
     let nonce = value["nonce"].as_str().ok_or("missing 'nonce' field")?;
-    if nonce.len() < 8 || nonce.len() > 128 {
-        return Err("nonce must be 8–128 characters".into());
+    if nonce.len() < 16 || nonce.len() > 128 {
+        return Err("nonce must be 16–128 characters".into());
+    }
+    if !nonce
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'=' | b'+'))
+    {
+        return Err("nonce must use a base64url-safe or alphanumeric charset".into());
     }
 
     let dapp_origin = value["dapp"]["origin"]
