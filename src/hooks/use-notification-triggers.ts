@@ -30,16 +30,32 @@ export function useNotificationTriggers() {
   const prevBalancesRef = useRef<Record<string, bigint>>({});
 
   useEffect(() => {
-    if (!enabled || !onReceived || !allBalances) return;
+    if (!allBalances) return;
+    const changedIds = new Set<string>();
     for (const [id, current] of Object.entries(allBalances)) {
       const prev = prevBalancesRef.current[id];
-      if (prev !== undefined && current > prev) {
-        const diff = current - prev;
-        notify("QU Received", `+${diff.toLocaleString()} QU → ${truncateId(id, 8, 4)}`);
+      if (prev !== undefined) {
+        if (current !== prev) changedIds.add(id);
+        if (enabled && onReceived && current > prev) {
+          const diff = current - prev;
+          notify("QU Received", `+${diff.toLocaleString()} QU → ${truncateId(id, 8, 4)}`);
+        }
       }
     }
+
+    if (changedIds.size > 0 && pendingTxs.length > 0) {
+      const affected = new Set<string>();
+      for (const pending of pendingTxs) {
+        if (changedIds.has(pending.source)) affected.add(pending.source);
+        if (changedIds.has(pending.destination)) affected.add(pending.destination);
+      }
+      for (const affectedIdentity of affected) {
+        queryClient.invalidateQueries({ queryKey: qk.txHistory(affectedIdentity) });
+      }
+    }
+
     prevBalancesRef.current = { ...allBalances };
-  }, [allBalances]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allBalances, enabled, onReceived, pendingTxs, queryClient]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Sent: watch pendingTxs for additions ──────────────────────────────
   const prevPendingHashesRef = useRef<Set<string>>(
