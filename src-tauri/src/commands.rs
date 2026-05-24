@@ -35,6 +35,8 @@ use crate::auto_lock::{AutoLockState, MAX_LOCK_TIMEOUT_MINUTES};
 use crate::clipboard::ClipboardState;
 use crate::deep_link::DeepLinkState;
 
+const MAX_CLIPBOARD_CLEAR_SECS: u64 = 300;
+
 #[tauri::command]
 pub fn reset_activity_timer(state: State<'_, AutoLockState>) {
     state.reset();
@@ -79,7 +81,7 @@ pub fn copy_to_clipboard(
     clip_state: State<'_, ClipboardState>,
 ) -> Result<(), String> {
     app.clipboard().write_text(&text).map_err(|e| e.to_string())?;
-    clip_state.schedule_clear(clear_after_secs);
+    clip_state.schedule_clear(clear_after_secs.min(MAX_CLIPBOARD_CLEAR_SECS));
     Ok(())
 }
 
