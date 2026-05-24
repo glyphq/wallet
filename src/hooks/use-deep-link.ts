@@ -13,7 +13,10 @@ function buildNotification(req: Record<string, unknown>): { title: string; body:
     case "transfer": {
       const amount = Number(req.amount).toLocaleString();
       const to = truncateIdentity(String(req.to ?? ""));
-      return { title: "Deep Link Request", body: `${amount} QU → ${to}` };
+      return {
+        title: "Request Waiting For Review",
+        body: `Transfer ${amount} QU to ${to}.`,
+      };
     }
     case "sc_call": {
       const idx = req.contract_index as number;
@@ -22,18 +25,27 @@ function buildNotification(req: Record<string, unknown>): { title: string; body:
       const label = procName ? `${contractName} · ${procName}` : contractName;
       const hasAmount = (req.amount as number | undefined ?? 0) > 0;
       return {
-        title: "Deep Link Request",
+        title: "Request Waiting For Review",
         body: hasAmount
-          ? `${label} · ${Number(req.amount).toLocaleString()} QU`
-          : label,
+          ? `Contract call: ${label} for ${Number(req.amount).toLocaleString()} QU.`
+          : `Contract call: ${label}.`,
       };
     }
     case "sign_message":
-      return { title: "Deep Link Request", body: "Sign message" };
+      return {
+        title: "Request Waiting For Review",
+        body: "Message signing request received.",
+      };
     case "verify_message":
-      return { title: "Deep Link Request", body: "Verify message" };
+      return {
+        title: "Request Waiting For Review",
+        body: "Signature verification request received.",
+      };
     case "connect":
-      return { title: "Deep Link Request", body: "Connection request" };
+      return {
+        title: "Request Waiting For Review",
+        body: "Connection request received.",
+      };
     default:
       return null;
   }
