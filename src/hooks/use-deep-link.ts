@@ -7,15 +7,31 @@ import { router } from "@/router";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
 import { truncateIdentity } from "@/lib/crypto";
+import { formatQu } from "@/lib/format";
+
+function parseQuAmount(value: unknown): bigint | null {
+  try {
+    if (typeof value === "bigint") return value;
+    if (typeof value === "number" && Number.isFinite(value) && Number.isInteger(value)) {
+      return BigInt(value);
+    }
+    if (typeof value === "string" && /^\d+$/.test(value)) {
+      return BigInt(value);
+    }
+  } catch {}
+  return null;
+}
 
 function buildNotification(req: Record<string, unknown>): { title: string; body: string } | null {
   switch (req.type) {
     case "transfer": {
-      const amount = Number(req.amount).toLocaleString();
+      const amount = parseQuAmount(req.amount);
       const to = truncateIdentity(String(req.to ?? ""));
       return {
         title: "Request Waiting For Review",
-        body: `Transfer ${amount} QU to ${to}.`,
+        body: amount !== null
+          ? `Transfer ${formatQu(amount)} QU to ${to}.`
+          : `Transfer QU to ${to}.`,
       };
     }
     case "sc_call": {
@@ -23,11 +39,11 @@ function buildNotification(req: Record<string, unknown>): { title: string; body:
       const contractName = CONTRACT_NAMES[idx] ?? `Contract #${idx}`;
       const procName = CONTRACT_PROCEDURE_NAMES[`${idx}:${req.input_type}`] ?? null;
       const label = procName ? `${contractName} · ${procName}` : contractName;
-      const hasAmount = (req.amount as number | undefined ?? 0) > 0;
+      const amount = parseQuAmount(req.amount);
       return {
         title: "Request Waiting For Review",
-        body: hasAmount
-          ? `Contract call: ${label} for ${Number(req.amount).toLocaleString()} QU.`
+        body: amount !== null && amount > 0n
+          ? `Contract call: ${label} for ${formatQu(amount)} QU.`
           : `Contract call: ${label}.`,
       };
     }

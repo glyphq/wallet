@@ -17,7 +17,7 @@ import { useNetworkHealth } from "@/hooks/use-network-health";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { Divider } from "@/components/divider";
-import { truncateId, formatQu, formatQuCompact } from "@/lib/format";
+import { truncateId, formatQu, formatQuCompact, formatUsdFromQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { Identicon } from "@/components/identicon";
 
@@ -29,17 +29,23 @@ const HEALTH_COLOR: Record<string, string> = {
 
 function AnimatedBalance({ value }: { value: bigint }) {
   const spanRef = useRef<HTMLSpanElement>(null);
-  const prevRef = useRef<number | null>(null);
+  const prevRef = useRef<bigint | null>(null);
+  const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
   const num = Number(value);
 
   useEffect(() => {
     if (prevRef.current === null) {
-      prevRef.current = num;
+      prevRef.current = value;
+      if (spanRef.current) spanRef.current.textContent = formatQu(value);
       return;
     }
     const from = prevRef.current;
-    prevRef.current = num;
-    const controls = animate(from, num, {
+    prevRef.current = value;
+    if (from > maxSafe || value > maxSafe) {
+      if (spanRef.current) spanRef.current.textContent = formatQu(value);
+      return;
+    }
+    const controls = animate(Number(from), num, {
       duration: 0.5,
       ease: "easeOut",
       onUpdate: (v) => {
@@ -50,7 +56,7 @@ function AnimatedBalance({ value }: { value: bigint }) {
       },
     });
     return () => controls.stop();
-  }, [num]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [num, value, maxSafe]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <span ref={spanRef} aria-live="polite" aria-atomic="true">
@@ -215,7 +221,7 @@ export default function DashboardScreen() {
           )}
           {balance && !balanceLoading && !settings.hideBalances && stats?.price && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", letterSpacing: "0.05em" }}>
-              ≈ ${(Number(balance.balance) * stats.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+              ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
             </div>
           )}
         </div>

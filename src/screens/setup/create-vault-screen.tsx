@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
@@ -6,6 +5,7 @@ import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { generateRandomSeed, newId } from "@/lib/crypto";
+import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault } from "@/lib/vault";
@@ -85,14 +85,7 @@ export default function CreateVaultScreen() {
   }
 
   async function copySeed() {
-    try {
-      await invoke("copy_to_clipboard", { text: seed, clearAfterSecs: SEED_CLIPBOARD_CLEAR_SECS });
-    } catch {
-      await navigator.clipboard.writeText(seed).catch(() => {});
-      window.setTimeout(() => {
-        navigator.clipboard.writeText("").catch(() => {});
-      }, SEED_CLIPBOARD_CLEAR_SECS * 1000);
-    }
+    await copyToClipboard(seed, SEED_CLIPBOARD_CLEAR_SECS);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

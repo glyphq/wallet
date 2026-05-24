@@ -16,9 +16,10 @@ const GITHUB_URL = "https://github.com/sigil-oss/sigil.app";
 const MIN_PX = 36;
 const MAX_PX = 88;
 
-function blockSize(amount: number, max: number): number {
-  if (max === 0) return MIN_PX;
-  return Math.round(MIN_PX + (MAX_PX - MIN_PX) * Math.sqrt(amount / max));
+function blockSize(amount: bigint, max: bigint): number {
+  if (max <= 0n) return MIN_PX;
+  const ratio = Number((amount * 10_000n) / max) / 10_000;
+  return Math.round(MIN_PX + (MAX_PX - MIN_PX) * Math.sqrt(Math.max(0, ratio)));
 }
 
 // ── Identicon (GitHub / Raycast style, FNV-1a) ───────────────────────────────
@@ -150,7 +151,7 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
 
 function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
   const [selected, setSelected] = useState<Sponsor | null>(null);
-  const max = Math.max(...sponsors.map((s) => s.amount), 1);
+  const max = sponsors.reduce((current, sponsor) => (sponsor.amount > current ? sponsor.amount : current), 1n);
 
   if (sponsors.length === 0) {
     return (

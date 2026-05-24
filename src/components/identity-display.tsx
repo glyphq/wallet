@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
+import { clearClipboard, copyToClipboard } from "@/lib/clipboard";
 import { Identicon } from "@/components/identicon";
 
 export interface IdentityDisplayProps {
@@ -25,11 +25,7 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
   }, []);
 
   async function copy() {
-    try {
-      await invoke("copy_to_clipboard", { text: identity, clearAfterSecs: clearSecs });
-    } catch {
-      await navigator.clipboard.writeText(identity).catch(() => {});
-    }
+    await copyToClipboard(identity, clearSecs);
     setFlash(true);
     setTimeout(() => setFlash(false), 200);
 
@@ -50,11 +46,7 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
   }
 
   async function clearNow() {
-    try {
-      await invoke("clear_clipboard");
-    } catch {
-      await navigator.clipboard.writeText("").catch(() => {});
-    }
+    await clearClipboard();
     setCountdown(null);
   }
 

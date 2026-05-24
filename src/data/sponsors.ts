@@ -3,7 +3,7 @@ import sponsorNames from "../../sponsor-names.json";
 
 export interface Sponsor {
   name: string;
-  amount: number; // QU contributed
+  amount: bigint; // QU contributed
 }
 
 /** Qubic identity that receives donation QU for Sigil development. */

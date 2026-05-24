@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
@@ -16,6 +15,7 @@ import { unlockVault, createVault, exportVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
+import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
@@ -244,13 +244,8 @@ export default function VaultDetailScreen() {
 
   async function copyRevealedSeed() {
     if (!revealedSeed) return;
-    try {
-      await invoke("copy_to_clipboard", { text: revealedSeed, clearAfterSecs: SEED_CLIPBOARD_CLEAR_SECS });
-      setSeedCopied(true);
-    } catch {
-      await navigator.clipboard.writeText(revealedSeed).catch(() => {});
-      setSeedCopied(true);
-    }
+    await copyToClipboard(revealedSeed, SEED_CLIPBOARD_CLEAR_SECS);
+    setSeedCopied(true);
   }
 
   const statusBar = (

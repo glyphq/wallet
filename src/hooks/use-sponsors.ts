@@ -48,16 +48,16 @@ async function fetchSponsors(): Promise<Sponsor[]> {
   ]);
 
   // Accumulate all confirmed incoming transfers per sender — multiple donations add up.
-  const totals = new Map<string, number>();
+  const totals = new Map<string, bigint>();
   for (const tx of txs) {
     if (tx.destination !== DONATION_IDENTITY) continue;
     if (!tx.moneyFlew) continue;
     if (!tx.source || !tx.amount) continue;
-    totals.set(tx.source, (totals.get(tx.source) ?? 0) + Number(tx.amount));
+    totals.set(tx.source, (totals.get(tx.source) ?? 0n) + BigInt(tx.amount));
   }
 
   return [...totals.entries()]
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (a === b ? 0 : a > b ? -1 : 1))
     .map(([identity, amount]) => ({
       name: nameOverrides[identity] ?? truncateId(identity),
       amount,
