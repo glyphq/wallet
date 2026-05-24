@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
@@ -14,7 +14,7 @@ const MAX_NONCE_AGE_SECS: u64 = 3600;
 const MAX_SIGN_MESSAGE_LEN: usize = 2048;
 
 pub struct DeepLinkState {
-    pending_request: Arc<Mutex<Option<String>>>,
+    pending_requests: Arc<Mutex<VecDeque<String>>>,
     /// Maps nonce → unix timestamp of first receipt for time-bounded replay protection.
     seen_nonces: Arc<Mutex<HashMap<String, u64>>>,
 }
@@ -22,7 +22,7 @@ pub struct DeepLinkState {
 impl Default for DeepLinkState {
     fn default() -> Self {
         Self {
-            pending_request: Arc::new(Mutex::new(None)),
+            pending_requests: Arc::new(Mutex::new(VecDeque::new())),
             seen_nonces: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -30,15 +30,25 @@ impl Default for DeepLinkState {
 
 impl DeepLinkState {
     pub fn store(&self, payload: String) {
-        *self.pending_request.lock().unwrap_or_else(|e| e.into_inner()) = Some(payload);
+        self.pending_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push_back(payload);
     }
 
     pub fn take(&self) -> Option<String> {
-        self.pending_request.lock().unwrap_or_else(|e| e.into_inner()).take()
+        self.pending_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .pop_front()
     }
 
     pub fn peek(&self) -> Option<String> {
-        self.pending_request.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        self.pending_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .front()
+            .cloned()
     }
 
     fn prune_seen_nonces(seen: &mut HashMap<String, u64>, now: u64) {

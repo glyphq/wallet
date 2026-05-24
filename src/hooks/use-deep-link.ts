@@ -100,17 +100,24 @@ export function useDeepLink() {
     // Cold start: wait for the persisted store to hydrate before reading the Rust-side stored
     // request. Without this, vaults.length = 0 at first render (pre-hydration), which would
     // cause applyPayload to clear the pending request before routing is settled.
-    function checkPending() {
-      invoke<string | null>("get_pending_request").then((payload) => {
-        if (payload) applyPayload(payload);
-      }).catch(() => {});
+    async function checkPending() {
+      try {
+        while (true) {
+          const payload = await invoke<string | null>("get_pending_request");
+          if (!payload) break;
+          applyPayload(payload);
+          await invoke("clear_pending_request");
+        }
+      } catch {
+        // non-fatal
+      }
     }
 
     if (usePersistedStore.persist.hasHydrated()) {
-      checkPending();
+      void checkPending();
     } else {
       const unsub = usePersistedStore.persist.onFinishHydration(() => {
-        checkPending();
+        void checkPending();
         unsub();
       });
     }
