@@ -7,6 +7,7 @@ import { useDeepLink } from "@/hooks/use-deep-link";
 import { usePersistedStore } from "@/store/persisted";
 import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
+import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
@@ -110,6 +111,7 @@ function AppHooks() {
   useRpcSync();
   useDeepLink();
   useNotificationTriggers();
+  useNotificationReconcile();
   useNotificationInit();
   useHideToTray();
   useUpdater();
