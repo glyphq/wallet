@@ -1,6 +1,23 @@
 use tauri::command;
 use crate::vault_crypto::{decrypt_vault_data, VaultData};
 
+fn validate_vault_id(vault_id: &str) -> Result<(), String> {
+    let is_uuid = vault_id.len() == 36
+        && vault_id
+            .chars()
+            .enumerate()
+            .all(|(idx, ch)| match idx {
+                8 | 13 | 18 | 23 => ch == '-',
+                _ => ch.is_ascii_hexdigit(),
+            });
+
+    if is_uuid {
+        Ok(())
+    } else {
+        Err("invalid vault id".into())
+    }
+}
+
 // ── Credential storage ─────────────────────────────────────────────────────
 //
 // On Windows the `keyring` crate writes to a session-scoped store that doesn't
@@ -257,6 +274,7 @@ pub async fn check_biometric_available() -> bool {
 #[command]
 pub async fn enable_biometric(vault_id: String, password: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
+        validate_vault_id(&vault_id)?;
         // Confirm biometric before storing the password to prevent silent enrollment
         platform::authenticate("Enable biometric unlock for Sigil")?;
         cred_store::store(&vault_id, &password)
@@ -268,6 +286,7 @@ pub async fn enable_biometric(vault_id: String, password: String) -> Result<(), 
 #[command]
 pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result<Vec<String>, String> {
     tokio::task::spawn_blocking(move || {
+        validate_vault_id(&vault_id)?;
         platform::authenticate("Unlock Sigil vault")?;
         let password = cred_store::load(&vault_id)?;
         decrypt_vault_data(&vault_data, &password)
@@ -278,7 +297,10 @@ pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result
 
 #[command]
 pub async fn disable_biometric(vault_id: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || cred_store::delete(&vault_id))
+    tokio::task::spawn_blocking(move || {
+        validate_vault_id(&vault_id)?;
+        cred_store::delete(&vault_id)
+    })
         .await
         .map_err(|e| e.to_string())?
 }
