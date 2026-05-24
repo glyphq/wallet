@@ -95,6 +95,27 @@ export interface PendingTx {
 
 const MAX_PENDING_TXS = 50;
 const MAX_TX_MEMOS = 500;
+const MAX_NOTIFICATION_EVENTS = 200;
+
+export type NotificationEventKind =
+  | "received"
+  | "sent"
+  | "confirmed"
+  | "failed"
+  | "expired"
+  | "deep_link";
+
+export interface NotificationEvent {
+  id: string;
+  kind: NotificationEventKind;
+  title: string;
+  body: string;
+  createdAt: number;
+  readAt: number | null;
+  identity?: string;
+  txHash?: string;
+  dedupeKey?: string;
+}
 
 const DEFAULT_SETTINGS: AppSettings = {
   autoLockMinutes: 15,
@@ -171,6 +192,14 @@ function clampTxMemos(txMemos: Record<string, string>): Record<string, string> {
   return Object.fromEntries(entries.slice(entries.length - MAX_TX_MEMOS));
 }
 
+function clampNotificationEvents(events: NotificationEvent[]): NotificationEvent[] {
+  if (events.length <= MAX_NOTIFICATION_EVENTS) return events;
+  return events
+    .slice()
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, MAX_NOTIFICATION_EVENTS);
+}
+
 interface PersistedState {
   vaults: VaultMeta[];
   settings: AppSettings;
@@ -178,6 +207,8 @@ interface PersistedState {
   pendingTxs: PendingTx[];
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
+  notificationEvents: NotificationEvent[];
+  lastNotificationScanAt: number;
   addVault: (vault: VaultMeta) => void;
   updateVault: (id: string, updates: Partial<Omit<VaultMeta, "id">>) => void;
   /** Removes the vault; if it was active, falls back to the first remaining vault (or null). */
@@ -200,6 +231,11 @@ interface PersistedState {
   revokeDappPermission: (origin: string, permission: ApprovedDapp["permissions"][number]) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;
+  addNotificationEvent: (event: NotificationEvent) => void;
+  markNotificationEventRead: (id: string) => void;
+  markAllNotificationEventsRead: () => void;
+  clearNotificationEvents: () => void;
+  setLastNotificationScanAt: (timestamp: number) => void;
 }
 
 /** Zustand store backed by Tauri LazyStore (`sigil.json` on disk). Survives app restarts. */
@@ -211,6 +247,8 @@ export const usePersistedStore = create<PersistedState>()(
       contacts: [],
       pendingTxs: [],
       txMemos: {},
+      notificationEvents: [],
+      lastNotificationScanAt: 0,
 
       addVault: (vault) =>
         set((s) => ({ vaults: [...s.vaults, vault] })),
@@ -307,6 +345,36 @@ export const usePersistedStore = create<PersistedState>()(
           delete next[hash];
           return { txMemos: next };
         }),
+
+      addNotificationEvent: (event) =>
+        set((s) => {
+          if (event.dedupeKey && s.notificationEvents.some((existing) => existing.dedupeKey === event.dedupeKey)) {
+            return s;
+          }
+          return {
+            notificationEvents: clampNotificationEvents([event, ...s.notificationEvents]),
+          };
+        }),
+
+      markNotificationEventRead: (id) =>
+        set((s) => ({
+          notificationEvents: s.notificationEvents.map((event) =>
+            event.id === id && event.readAt === null
+              ? { ...event, readAt: Date.now() }
+              : event,
+          ),
+        })),
+
+      markAllNotificationEventsRead: () =>
+        set((s) => ({
+          notificationEvents: s.notificationEvents.map((event) =>
+            event.readAt === null ? { ...event, readAt: Date.now() } : event,
+          ),
+        })),
+
+      clearNotificationEvents: () => set({ notificationEvents: [] }),
+
+      setLastNotificationScanAt: (timestamp) => set({ lastNotificationScanAt: timestamp }),
     }),
     {
       name: "sigil-persisted",
@@ -322,12 +390,38 @@ export const usePersistedStore = create<PersistedState>()(
           ps.txMemos && typeof ps.txMemos === "object" && !Array.isArray(ps.txMemos)
             ? clampTxMemos(ps.txMemos as Record<string, string>)
             : currentState.txMemos;
+        const notificationEvents = Array.isArray(ps.notificationEvents)
+          ? clampNotificationEvents(
+              ps.notificationEvents.filter((event): event is NotificationEvent =>
+                !!event &&
+                typeof event === "object" &&
+                typeof event.id === "string" &&
+                typeof event.title === "string" &&
+                typeof event.body === "string" &&
+                typeof event.kind === "string" &&
+                typeof event.createdAt === "number",
+              ),
+            )
+          : currentState.notificationEvents;
+        const lastNotificationScanAt =
+          typeof ps.lastNotificationScanAt === "number"
+            ? ps.lastNotificationScanAt
+            : currentState.lastNotificationScanAt;
         const settingsBase =
           ps.settings && typeof ps.settings === "object" && !Array.isArray(ps.settings)
             ? { ...currentState.settings, ...ps.settings }
             : currentState.settings;
         const settings = { ...settingsBase, approvedDapps: [] };
-        return { ...currentState, vaults, contacts, pendingTxs, txMemos, settings };
+        return {
+          ...currentState,
+          vaults,
+          contacts,
+          pendingTxs,
+          txMemos,
+          notificationEvents,
+          lastNotificationScanAt,
+          settings,
+        };
       },
     },
   ),

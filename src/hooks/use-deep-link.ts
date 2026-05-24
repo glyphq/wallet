@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { router } from "@/router";
-import { notify } from "@/lib/notifications";
+import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
 import { truncateIdentity } from "@/lib/crypto";
 
@@ -76,7 +76,13 @@ export function useDeepLink() {
         invoke("clear_pending_request").catch(() => {});
         if (notificationsEnabledRef.current) {
           const n = buildNotification(envelope.request);
-          if (n) notify(n.title, n.body);
+          if (n) {
+            publishNotificationEvent(createNotificationEvent({
+              kind: "deep_link",
+              title: n.title,
+              body: n.body,
+            })).catch(() => {});
+          }
         }
         if (!isLockedRef.current) {
           router.navigate("/request");

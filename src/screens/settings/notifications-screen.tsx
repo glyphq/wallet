@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
+import { Tag } from "@/components/tag";
 import { usePersistedStore } from "@/store/persisted";
-import { notify, requestNotificationPermission } from "@/lib/notifications";
+import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { requestNotificationPermission } from "@/lib/notifications";
+import { formatDate } from "@/lib/format";
 
 function Toggle({
   value,
@@ -112,6 +115,10 @@ export default function NotificationsScreen() {
   const onConfirmed = usePersistedStore((s) => s.settings.notifyOnConfirmed);
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
+  const notificationEvents = usePersistedStore((s) => s.notificationEvents);
+  const markNotificationEventRead = usePersistedStore((s) => s.markNotificationEventRead);
+  const markAllNotificationEventsRead = usePersistedStore((s) => s.markAllNotificationEventsRead);
+  const clearNotificationEvents = usePersistedStore((s) => s.clearNotificationEvents);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const [permDenied, setPermDenied] = useState(false);
@@ -129,7 +136,11 @@ export default function NotificationsScreen() {
   }
 
   async function sendTest() {
-    await notify("Sigil Notifications Enabled", "Desktop notifications are working and ready for wallet events.");
+    await publishNotificationEvent(createNotificationEvent({
+      kind: "deep_link",
+      title: "Sigil Notifications Enabled",
+      body: "Desktop notifications are working and ready for wallet events.",
+    }));
   }
 
   const statusBar = <ScreenHeader title="Notifications" onBack={() => navigate("/settings")} />;
@@ -274,6 +285,120 @@ export default function NotificationsScreen() {
         only fire while Sigil is running — enable "Notify when locked" to keep polling
         after locking the vault.
       </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
+        <div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            INBOX
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+            Recent wallet and request events, including anything you may have missed.
+          </div>
+        </div>
+        {notificationEvents.some((event) => event.readAt === null) && (
+          <Tag variant="warning">{`${notificationEvents.filter((event) => event.readAt === null).length} UNREAD`}</Tag>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+        <button
+          onClick={markAllNotificationEventsRead}
+          disabled={notificationEvents.length === 0}
+          style={ACTION_BUTTON_STYLE(notificationEvents.length > 0)}
+        >
+          MARK ALL READ
+        </button>
+        <button
+          onClick={clearNotificationEvents}
+          disabled={notificationEvents.length === 0}
+          style={ACTION_BUTTON_STYLE(notificationEvents.length > 0)}
+        >
+          CLEAR HISTORY
+        </button>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-6)" }}>
+        {notificationEvents.length === 0 ? (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-4)", textAlign: "center", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
+            [NO NOTIFICATION HISTORY YET]
+          </div>
+        ) : (
+          notificationEvents.map((event) => (
+            <button
+              key={event.id}
+              type="button"
+              onClick={() => markNotificationEventRead(event.id)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-2)",
+                width: "100%",
+                textAlign: "left",
+                background: event.readAt === null ? "var(--color-bg-surface)" : "var(--color-bg-base)",
+                border: `1px solid ${event.readAt === null ? "var(--color-border-strong)" : "var(--color-border-subtle)"}`,
+                borderRadius: "var(--radius-sharp)",
+                padding: "var(--space-4)",
+                cursor: "pointer",
+                opacity: event.readAt === null ? 1 : 0.75,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+                <Tag variant={tagVariantForEvent(event.kind)}>{labelForEvent(event.kind)}</Tag>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                  {formatDate(event.createdAt)}
+                </span>
+              </div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                {event.title}
+              </div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+                {event.body}
+              </div>
+            </button>
+          ))
+        )}
+      </div>
     </AppShell>
   );
+}
+
+function tagVariantForEvent(kind: ReturnType<typeof labelForEvent> extends string ? Parameters<typeof labelForEvent>[0] : never) {
+  switch (kind) {
+    case "received":
+    case "confirmed":
+      return "success" as const;
+    case "failed":
+    case "expired":
+      return "error" as const;
+    case "deep_link":
+      return "neutral" as const;
+    default:
+      return "warning" as const;
+  }
+}
+
+function labelForEvent(kind: "received" | "sent" | "confirmed" | "failed" | "expired" | "deep_link") {
+  switch (kind) {
+    case "received": return "RECEIVED";
+    case "sent": return "SENT";
+    case "confirmed": return "CONFIRMED";
+    case "failed": return "FAILED";
+    case "expired": return "EXPIRED";
+    case "deep_link": return "REQUEST";
+  }
+}
+
+function ACTION_BUTTON_STYLE(enabled: boolean) {
+  return {
+    background: "none",
+    border: "1px solid var(--color-border-strong)",
+    borderRadius: "var(--radius-sharp)",
+    padding: "var(--space-2) var(--space-3)",
+    cursor: enabled ? "pointer" : "default",
+    opacity: enabled ? 1 : 0.4,
+    fontFamily: "var(--font-mono)",
+    fontSize: "var(--text-mono-sm)",
+    color: "var(--color-text-secondary)",
+    letterSpacing: "0.05em",
+  } as const;
 }

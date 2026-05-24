@@ -6,7 +6,7 @@ import { useVaultBalances } from "@/hooks/use-vault-balances";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { notify } from "@/lib/notifications";
+import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { truncateId, formatQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 
@@ -38,10 +38,12 @@ export function useNotificationTriggers() {
         if (current !== prev) changedIds.add(id);
         if (enabled && onReceived && current > prev) {
           const diff = current - prev;
-          notify(
-            "Incoming QU",
-            `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
-          );
+          publishNotificationEvent(createNotificationEvent({
+            kind: "received",
+            title: "Incoming QU",
+            body: `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
+            identity: id,
+          })).catch(() => {});
         }
       }
     }
@@ -71,15 +73,23 @@ export function useNotificationTriggers() {
       for (const tx of pendingTxs) {
         if (!prevPendingHashesRef.current.has(tx.hash)) {
           if (tx.contractName) {
-            notify(
-              "Contract Transaction Sent",
-              `${tx.contractName} was broadcast and is awaiting confirmation.`,
-            );
+            publishNotificationEvent(createNotificationEvent({
+              kind: "sent",
+              title: "Contract Transaction Sent",
+              body: `${tx.contractName} was broadcast and is awaiting confirmation.`,
+              identity: tx.source,
+              txHash: tx.hash,
+              dedupeKey: `sent:${tx.hash}`,
+            })).catch(() => {});
           } else {
-            notify(
-              "Transaction Sent",
-              `Sent ${BigInt(tx.amount).toLocaleString()} QU to ${truncateId(tx.destination, 8, 4)}. Awaiting confirmation.`,
-            );
+            publishNotificationEvent(createNotificationEvent({
+              kind: "sent",
+              title: "Transaction Sent",
+              body: `Sent ${BigInt(tx.amount).toLocaleString()} QU to ${truncateId(tx.destination, 8, 4)}. Awaiting confirmation.`,
+              identity: tx.source,
+              txHash: tx.hash,
+              dedupeKey: `sent:${tx.hash}`,
+            })).catch(() => {});
           }
         }
       }
@@ -144,18 +154,26 @@ export function useNotificationTriggers() {
       const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
       if (histTx.moneyFlew) {
         if (enabled && onConfirmed) {
-          notify(
-            "Transaction Confirmed",
-            `${label} was confirmed on chain.`,
-          );
+          publishNotificationEvent(createNotificationEvent({
+            kind: "confirmed",
+            title: "Transaction Confirmed",
+            body: `${label} was confirmed on chain.`,
+            identity: pending.source,
+            txHash: pending.hash,
+            dedupeKey: `resolved:${pending.hash}:confirmed`,
+          })).catch(() => {});
         }
       } else {
         addTxAlert({ id: pending.hash, label, reason: "failed" });
         if (enabled && onConfirmed) {
-          notify(
-            "Transaction Failed",
-            `${label} reached the chain, but the transfer did not complete successfully.`,
-          );
+          publishNotificationEvent(createNotificationEvent({
+            kind: "failed",
+            title: "Transaction Failed",
+            body: `${label} reached the chain, but the transfer did not complete successfully.`,
+            identity: pending.source,
+            txHash: pending.hash,
+            dedupeKey: `resolved:${pending.hash}:failed`,
+          })).catch(() => {});
         }
       }
     }
@@ -173,10 +191,14 @@ export function useNotificationTriggers() {
         const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
         addTxAlert({ id: pending.hash, label, reason: "expired" });
         if (enabled && onConfirmed) {
-          notify(
-            "Transaction Expired",
-            `${label} missed its target tick and was removed from pending.`,
-          );
+          publishNotificationEvent(createNotificationEvent({
+            kind: "expired",
+            title: "Transaction Expired",
+            body: `${label} missed its target tick and was removed from pending.`,
+            identity: pending.source,
+            txHash: pending.hash,
+            dedupeKey: `resolved:${pending.hash}:expired`,
+          })).catch(() => {});
         }
       }
     }
