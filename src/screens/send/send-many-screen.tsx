@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Pencil } from "lucide-react";
@@ -9,13 +9,16 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { ContactPicker } from "@/components/contact-picker";
+import { AddressSuggestions } from "@/components/address-suggestions";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { Sheet } from "@/components/sheet";
+import { Modal } from "@/components/modal";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
@@ -25,6 +28,9 @@ import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { TxSending, TxError } from "@/components/tx-status";
 import { TxMemoField } from "@/components/tx-memo-field";
+import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
+import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
+import { parseRecipientImport } from "@/lib/recipient-import";
 
 const MAX_RECIPIENTS = 25;
 
@@ -53,16 +59,20 @@ export default function SendManyScreen() {
   const wallets = useSessionStore((s) => s.wallets);
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
   const wallet = wallets[settings.activeAccountIndex] ?? null;
+  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
+  const watchOnly = isWatchOnlyVault(vault);
   const { data: feeData } = useQuery({
     queryKey: qk.qutilSendManyFee(),
     queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
     staleTime: 60_000,
   });
   const fee = feeData?.ok ? feeData.value.fee : null;
-  const hasPendingTx = pendingTxs.some((tx) => tx.source === (wallet?.identity ?? ""));
-  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
+  const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
+  const { data: recentTxsData } = useTxHistory(identity || null);
+  const recentTxs = recentTxsData?.pages[0];
 
   const [customPriceBq, setCustomPriceBq] = useState<number | null>(null);
   const [priceOpen, setPriceOpen] = useState(false);
@@ -94,6 +104,9 @@ export default function SendManyScreen() {
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
   const [formError, setFormError] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState("");
 
   // Contact picker state
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
@@ -101,14 +114,31 @@ export default function SendManyScreen() {
     .filter((account) => !account.hidden)
     .map((account) => ({
       name: account.name,
-      identity: wallets[account.index]?.identity ?? "",
+      identity: account.identity ?? wallets[account.index]?.identity ?? "",
+      note: account.note,
+      tags: account.tags,
     }))
-    .filter((account) => account.identity && account.identity !== (wallet?.identity ?? ""));
+    .filter((account) => account.identity && account.identity !== identity);
   const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
+  const recentRecipientIdentities = useMemo(
+    () => getRecentRecipientIdentities(identity || null, recentTxs),
+    [identity, recentTxs],
+  );
 
   function setField(index: number, field: Partial<Recipient>) {
     setRecipients((prev) => prev.map((r, i) => (i === index ? { ...r, ...field } : r)));
   }
+
+  const suggestionsByIndex = useMemo(
+    () => recipients.map((recipient) => buildAddressSuggestions({
+      query: recipient.identity,
+      contacts,
+      accounts: vaultAccountTargets,
+      currentIdentity: identity,
+      recentIdentities: recentRecipientIdentities,
+    })),
+    [contacts, identity, recentRecipientIdentities, recipients, vaultAccountTargets],
+  );
 
   function addRecipient() {
     if (recipients.length < MAX_RECIPIENTS) setRecipients((prev) => [...prev, emptyRecipient()]);
@@ -121,6 +151,10 @@ export default function SendManyScreen() {
   function validateAll(): boolean {
     let ok = true;
     let nextFormError = "";
+    if (!wallet) {
+      setFormError(watchOnly ? "WATCH-ONLY ACCOUNT" : "ACCOUNT LOCKED");
+      return false;
+    }
     const updated = recipients.map((r) => {
       const identityError = isValidIdentity(r.identity.trim().toUpperCase()) ? "" : "INVALID IDENTITY";
       const amount = Number(r.amount.trim());
@@ -145,6 +179,39 @@ export default function SendManyScreen() {
   function goReview() {
     setFormError("");
     if (validateAll()) setStep("review");
+  }
+
+  function applyImportedRecipients(nextRecipients: ReturnType<typeof parseRecipientImport>) {
+    if (nextRecipients.length === 0) {
+      setImportError("NO VALID RECIPIENTS FOUND");
+      return;
+    }
+    setRecipients(nextRecipients.slice(0, MAX_RECIPIENTS).map((recipient) => ({
+      id: newId(),
+      identity: recipient.identity,
+      amount: recipient.amount,
+      identityError: "",
+      amountError: "",
+    })));
+    setImportOpen(false);
+    setImportText("");
+    setImportError("");
+  }
+
+  function importFromText() {
+    applyImportedRecipients(parseRecipientImport(importText));
+  }
+
+  function openImportFile() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv,.json,text/csv,application/json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      applyImportedRecipients(parseRecipientImport(await file.text()));
+    };
+    input.click();
   }
 
   const totalAmount = recipients.reduce((sum, r) => {
@@ -229,6 +296,14 @@ export default function SendManyScreen() {
       {step === "input" && (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)" }}>
+              <button onClick={() => setImportOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
+                PASTE LIST ↓
+              </button>
+              <button onClick={openImportFile} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
+                IMPORT CSV/JSON ↓
+              </button>
+            </div>
             {recipients.map((r, i) => (
               <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", padding: "var(--space-3)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -260,6 +335,12 @@ export default function SendManyScreen() {
                   error={r.identityError}
                   placeholder="60-character identity"
                 />
+                {r.identity.trim() && (
+                  <AddressSuggestions
+                    suggestions={suggestionsByIndex[i].filter((suggestion) => suggestion.identity !== r.identity.trim().toUpperCase())}
+                    onSelect={(nextIdentity) => setField(i, { identity: nextIdentity, identityError: "" })}
+                  />
+                )}
                 <Input
                   value={r.amount}
                   onChange={(e) => setField(i, { amount: e.target.value.replace(/[^0-9]/g, ""), amountError: "" })}
@@ -278,6 +359,12 @@ export default function SendManyScreen() {
             >
               + ADD RECIPIENT ({recipients.length}/{MAX_RECIPIENTS})
             </button>
+          )}
+
+          {watchOnly && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+              [WATCH-ONLY ACCOUNT — SEND TO MANY IS DISABLED]
+            </div>
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
@@ -351,7 +438,7 @@ export default function SendManyScreen() {
             </div>
           </Sheet>
 
-          <Button onClick={goReview} disabled={recipients.length === 0}>Review</Button>
+          <Button onClick={goReview} disabled={recipients.length === 0 || !wallet}>Review</Button>
           {formError && (
             <Tag variant="error">{formError}</Tag>
           )}
@@ -409,7 +496,7 @@ export default function SendManyScreen() {
               [TRANSFER PENDING — WAIT FOR CONFIRMATION]
             </div>
           )}
-          <Button onClick={send} disabled={fee === null || hasPendingTx}>Sign and send</Button>
+          <Button onClick={send} disabled={!wallet || fee === null || hasPendingTx}>Sign and send</Button>
           <Button variant="secondary" shape="sharp" onClick={() => setStep("input")}>Edit</Button>
         </>
       )}
@@ -454,6 +541,43 @@ export default function SendManyScreen() {
         contacts={contacts}
         accounts={vaultAccountTargets}
       />
+
+      <Modal open={importOpen} onClose={() => setImportOpen(false)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
+              Paste recipients
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              CSV columns: identity, amount, label. JSON arrays with identity and amount also work.
+            </div>
+          </div>
+          <textarea
+            value={importText}
+            onChange={(e) => { setImportText(e.target.value); setImportError(""); }}
+            rows={8}
+            placeholder={"identity,amount,label\nABC...,1000,Treasury payout"}
+            style={{
+              width: "100%",
+              resize: "vertical",
+              background: "var(--color-bg-surface)",
+              color: "var(--color-text-primary)",
+              border: "1px solid var(--color-border-strong)",
+              borderRadius: "var(--radius-sharp)",
+              padding: "var(--space-3)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-mono-sm)",
+            }}
+          />
+          {importError && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+              {importError}
+            </div>
+          )}
+          <Button onClick={importFromText}>Import recipients</Button>
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setImportOpen(false)}>Cancel</Button>
+        </div>
+      </Modal>
 
     </AppShell>
   );

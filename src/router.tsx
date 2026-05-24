@@ -17,6 +17,7 @@ import StakeScreen from "@/screens/stake/stake-screen";
 import ReceiveScreen from "@/screens/receive/receive-screen";
 import HistoryScreen from "@/screens/history/history-screen";
 import ContactsScreen from "@/screens/contacts/contacts-screen";
+import SearchScreen from "@/screens/search/search-screen";
 import RequestScreen from "@/screens/request/request-screen";
 import SettingsScreen from "@/screens/settings/settings-screen";
 import DappsScreen from "@/screens/settings/dapps-screen";
@@ -54,6 +55,7 @@ export const router = createHashRouter([
       { path: "/receive", element: <Screen component={ReceiveScreen} /> },
       { path: "/history", element: <Screen component={HistoryScreen} /> },
       { path: "/contacts", element: <Screen component={ContactsScreen} /> },
+      { path: "/search", element: <Screen component={SearchScreen} /> },
       { path: "/request", element: <Screen component={RequestScreen} /> },
       { path: "/settings", element: <Screen component={SettingsScreen} /> },
       { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },

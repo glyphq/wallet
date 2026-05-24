@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Pencil } from "lucide-react";
 import { AppShell } from "@/layouts/app-shell";
@@ -9,6 +9,7 @@ import { Sheet } from "@/components/sheet";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { ContactPicker } from "@/components/contact-picker";
+import { AddressSuggestions } from "@/components/address-suggestions";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -23,6 +24,8 @@ import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { ReviewRow } from "@/components/review-row";
 import { TxSending, TxError } from "@/components/tx-status";
 import { TxMemoField } from "@/components/tx-memo-field";
+import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
+import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
 
@@ -40,8 +43,10 @@ export default function SendScreen() {
   const wallets = useSessionStore((s) => s.wallets);
 
   const wallet = wallets[settings.activeAccountIndex] ?? null;
+  const watchOnly = isWatchOnlyVault(vault);
   const { data: tickInfo } = useTickInfo();
-  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
+  const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
 
@@ -65,13 +70,14 @@ export default function SendScreen() {
   const [saved, setSaved] = useState(false);
 
   const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
-  const identity = wallet?.identity ?? "";
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const vaultAccountTargets = (vault?.accounts ?? [])
     .filter((account) => !account.hidden)
     .map((account) => ({
       name: account.name,
-      identity: wallets[account.index]?.identity ?? "",
+      identity: account.identity ?? wallets[account.index]?.identity ?? "",
+      note: account.note,
+      tags: account.tags,
     }))
     .filter((account) => account.identity && account.identity !== identity);
   const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
@@ -82,6 +88,20 @@ export default function SendScreen() {
   const destUpper = destination.trim().toUpperCase();
   const matchedContact = contacts.find((c) => c.identity === destUpper);
   const destIsKnownContact = !!matchedContact;
+  const recentRecipientIdentities = useMemo(
+    () => getRecentRecipientIdentities(identity || null, recentTxs),
+    [identity, recentTxs],
+  );
+  const suggestions = useMemo(
+    () => buildAddressSuggestions({
+      query: destination,
+      contacts,
+      accounts: vaultAccountTargets,
+      currentIdentity: identity,
+      recentIdentities: recentRecipientIdentities,
+    }),
+    [contacts, destination, identity, recentRecipientIdentities, vaultAccountTargets],
+  );
 
   // Poll for confirmation when user opts in
   useEffect(() => {
@@ -98,6 +118,10 @@ export default function SendScreen() {
 
   function validateInputs(): boolean {
     let ok = true;
+    if (!wallet) {
+      setDestError(watchOnly ? "WATCH-ONLY ACCOUNT" : "ACCOUNT LOCKED");
+      return false;
+    }
     if (!isValidIdentity(destUpper)) {
       setDestError("INVALID IDENTITY");
       ok = false;
@@ -193,6 +217,12 @@ export default function SendScreen() {
               error={destError}
               placeholder="60-character identity"
             />
+            {destination.trim() && (
+              <AddressSuggestions
+                suggestions={suggestions.filter((suggestion) => suggestion.identity !== destUpper)}
+                onSelect={(nextIdentity) => { setDestination(nextIdentity); setDestError(""); }}
+              />
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-1)" }}>
               {matchedContact && !destError ? (
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
@@ -220,11 +250,17 @@ export default function SendScreen() {
 
           <BalanceBar balance={balance} amountStr={amountStr} />
 
+          {watchOnly && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+              [WATCH-ONLY ACCOUNT — SENDING IS DISABLED]
+            </div>
+          )}
+
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
             FROM: {accountName} · {truncateId(identity)}
           </div>
 
-          <Button onClick={goReview}>Review</Button>
+          <Button onClick={goReview} disabled={!wallet}>Review</Button>
 
           <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-6)", paddingTop: "var(--space-2)" }}>
             <button onClick={() => navigate("/send-many")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
