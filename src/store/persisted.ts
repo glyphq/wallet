@@ -411,7 +411,17 @@ export const usePersistedStore = create<PersistedState>()(
           ps.settings && typeof ps.settings === "object" && !Array.isArray(ps.settings)
             ? { ...currentState.settings, ...ps.settings }
             : currentState.settings;
-        const settings = { ...settingsBase, approvedDapps: [] };
+        const approvedDapps = Array.isArray(settingsBase.approvedDapps)
+          ? settingsBase.approvedDapps.filter((dapp): dapp is ApprovedDapp =>
+              !!dapp &&
+              typeof dapp === "object" &&
+              typeof dapp.origin === "string" &&
+              typeof dapp.name === "string" &&
+              typeof dapp.approvedAt === "number" &&
+              Array.isArray(dapp.permissions),
+            )
+          : currentState.settings.approvedDapps;
+        const settings = { ...settingsBase, approvedDapps };
         return {
           ...currentState,
           vaults,
