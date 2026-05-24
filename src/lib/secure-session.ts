@@ -8,8 +8,6 @@ import {
 import { buildTransaction, computeTransactionHash, encodeTransaction, signTransaction } from "@qubic.org/tx";
 import type { Identity, Seed } from "@/lib/crypto";
 import type { SessionWallet } from "@/lib/session-wallet";
-
-const SC_DESTINATION = "A".repeat(60);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -107,12 +105,10 @@ export function buildTransferFromSession(params: Omit<BuildTxParams, "inputType"
 }
 
 export function buildScTransactionFromSession({
-  destination = SC_DESTINATION,
   ...params
-}: Omit<BuildTxParams, "destination"> & { destination?: string }) {
+}: BuildTxParams) {
   return buildSignedTransaction({
     ...params,
-    destination,
   });
 }
 
