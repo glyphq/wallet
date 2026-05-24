@@ -7,10 +7,23 @@ export const SPONSORS_QUERY_KEY = ["sponsors"] as const;
 
 const PAGE_SIZE = 100;
 
+function parseNameOverrides(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  const parsed: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") {
+      parsed[key] = entry;
+    }
+  }
+  return parsed;
+}
+
 async function fetchNameOverrides(): Promise<Record<string, string>> {
   try {
     const res = await fetch(SPONSOR_NAMES_URL);
-    return res.ok ? await res.json() : {};
+    if (!res.ok) return {};
+    return parseNameOverrides(await res.json());
   } catch {
     return {};
   }
