@@ -6,7 +6,6 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Modal } from "@/components/modal";
-import { Divider } from "@/components/divider";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
@@ -17,6 +16,15 @@ import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
 import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
+
+const VAULT_COLOR_CSS: Record<string, string> = {
+  slate: "var(--color-vault-slate)",
+  red: "var(--color-vault-red)",
+  amber: "var(--color-vault-amber)",
+  emerald: "var(--color-vault-emerald)",
+  sky: "var(--color-vault-sky)",
+  violet: "var(--color-vault-violet)",
+};
 
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -88,6 +96,7 @@ export default function VaultDetailScreen() {
 
   const visible = vault.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index);
   const hidden = vault.accounts.filter((a) => a.hidden).sort((a, b) => a.index - b.index);
+  const accentColor = VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-secondary)";
 
   function openAdd() {
     setAddMode("new");
@@ -248,24 +257,34 @@ export default function VaultDetailScreen() {
 
   return (
     <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      {visible.map((account, i) => (
-        <div key={account.index}>
-          {i > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
-          <AccountRow
-            account={account}
-            identity={isActive ? (sessionWallets[account.index]?.identity ?? null) : null}
-            onRename={() => { setRenamingAccount(account); setRenameValue(account.name); }}
-            onReveal={() => openReveal(account)}
-            onHide={() => toggleHide(account)}
-            onRemove={() => { setRemovingAccount(account); setRemovePassword(""); setRemoveError(""); }}
-          />
-        </div>
+      {visible.map((account) => (
+        <AccountRow
+          key={account.index}
+          account={account}
+          accentColor={accentColor}
+          identity={isActive ? (sessionWallets[account.index]?.identity ?? null) : null}
+          onRename={() => { setRenamingAccount(account); setRenameValue(account.name); }}
+          onReveal={() => openReveal(account)}
+          onHide={() => toggleHide(account)}
+          onRemove={() => { setRemovingAccount(account); setRemovePassword(""); setRemoveError(""); }}
+        />
       ))}
 
       {hidden.length > 0 && (
         <button
           onClick={() => setShowHidden((v) => !v)}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-3) 0", textAlign: "left" }}
+          style={{
+            background: "var(--color-bg-surface)",
+            border: "1px solid var(--color-border-strong)",
+            borderRadius: "var(--radius-sharp)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-mono-sm)",
+            color: "var(--color-text-disabled)",
+            letterSpacing: "0.05em",
+            padding: "var(--space-3) var(--space-4)",
+            textAlign: "left",
+          }}
         >
           {showHidden ? "▾" : "▸"} {hidden.length} HIDDEN {hidden.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
         </button>
@@ -275,6 +294,7 @@ export default function VaultDetailScreen() {
         <AccountRow
           key={account.index}
           account={account}
+          accentColor={accentColor}
           identity={null}
           dimmed
           onRename={() => { setRenamingAccount(account); setRenameValue(account.name); }}
@@ -444,6 +464,7 @@ export default function VaultDetailScreen() {
 
 interface AccountRowProps {
   account: AccountMeta;
+  accentColor: string;
   identity: string | null;
   dimmed?: boolean;
   onRename: () => void;
@@ -452,20 +473,53 @@ interface AccountRowProps {
   onRemove: () => void;
 }
 
-function AccountRow({ account, identity, dimmed, onRename, onReveal, onHide, onRemove }: AccountRowProps) {
+function AccountRow({ account, accentColor, identity, dimmed, onRename, onReveal, onHide, onRemove }: AccountRowProps) {
   return (
-    <div style={{ opacity: dimmed ? 0.5 : 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-      <Identicon seed={identity ?? account.name} size={36} radius={5} style={{ marginTop: 2 }} />
+    <div
+      style={{
+        opacity: dimmed ? 0.55 : 1,
+        background: "var(--color-bg-surface)",
+        border: "1px solid var(--color-border-strong)",
+        borderLeft: `3px solid ${accentColor}`,
+        borderRadius: "var(--radius-sharp)",
+        padding: "var(--space-3)",
+        display: "flex",
+        gap: "var(--space-3)",
+        alignItems: "flex-start",
+      }}
+    >
+      <Identicon seed={identity ?? account.name} size={40} radius={6} style={{ marginTop: 2, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
-          {account.name}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
+              {account.name}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+              ACCOUNT {account.index + 1}
+            </div>
+          </div>
+          {account.hidden && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
+              [HIDDEN]
+            </span>
+          )}
         </div>
         {identity && (
-          <div style={{ marginBottom: "var(--space-3)" }}>
+          <div style={{ marginTop: "var(--space-3)" }}>
             <IdentityDisplay identity={identity} showIdenticon={false} />
           </div>
         )}
-        <div style={{ display: "flex", gap: "var(--space-2)", marginTop: identity ? 0 : "var(--space-2)" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "var(--space-2)",
+            marginTop: "var(--space-3)",
+            paddingTop: "var(--space-3)",
+            borderTop: "1px solid var(--color-border-subtle)",
+          }}
+        >
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onRename}>Rename</Button>
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onReveal}>Reveal seed</Button>
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={onHide}>{account.hidden ? "Unhide" : "Hide"}</Button>
