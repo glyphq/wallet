@@ -1,220 +1,206 @@
 # Sigil
 
-Self-custodial Qubic wallet with native dApp deep linking. Desktop-first — Windows, macOS, Linux.
+Self-custodial Qubic wallet for desktop. Native deep-link signing, encrypted local storage, and a desktop-first workflow for Windows, macOS, and Linux.
 
 ---
 
-## Features
+## What Sigil Is
 
-**Wallet**
-- Multiple encrypted vaults, each with a password and multiple accounts
-- Send, receive, and full transaction history with filters
-- Send to up to 25 recipients in one transaction (QUtil)
-- Burn QU permanently (QUtil)
-- Qearn staking — lock and unlock positions directly from the wallet
-- Address book with one-click send
-- Transaction memos — attach private notes to any transaction, exportable as JSON
-- Privacy mode — hides all balances across every screen
-- USD value estimates using live market price, with an optional per-session price override
+Sigil is a local wallet for Qubic users who want:
 
-**Security**
-- Seeds and keys never leave your device — no telemetry, no server, no cloud
-- AES-256-GCM encryption with PBKDF2 (600,000 iterations)
-- Biometric unlock — Windows Hello / Touch ID / macOS Secure Enclave via OS credential store
-- Auto-lock on idle, OS sleep, or window blur (Rust-side timer, not renderer)
-- Auto-updates enforced on launch — signed packages only, unsigned or tampered releases are rejected
+- self-custody without a browser extension
+- native desktop request review for dApps and tools
+- multiple vaults and multiple accounts per vault
+- strong local lock, unlock, and clipboard safety defaults
 
-**dApp integration**
-- Native deep link protocol (`sigil://`) for web apps and CLI tools to request signatures
-- Supports `transfer`, `sc_call`, `sign_message`, and `connect` request types
-- Per-dApp permission management with revocation
-
-**Desktop**
-- System tray — hide to tray on close, restore with a click, Quit from the tray menu
-- Desktop notifications for incoming, outgoing, and confirmed transactions
-- Single-instance — opening a second instance focuses the existing window
+Sigil is built with Tauri, React, TypeScript, and Rust.
 
 ---
 
-## Security model
+## Current Highlights
 
-Seeds and derived wallets live only in JS memory (Zustand session store). On lock, the session store is cleared. The disk store holds only the AES-256-GCM encrypted blob — the password never persists anywhere. Auto-lock fires from a Rust timer so a frozen renderer cannot bypass it.
+### Wallet
 
-Updates are signed with a Tauri signing key. The public key is embedded in the bundle — Sigil verifies the signature before installing anything.
+- Multiple encrypted vaults, each with multiple accounts
+- Send, receive, and full transaction history
+- Send to many recipients in one transaction
+- Burn QU directly from the wallet
+- Qearn lock and unlock flows
+- Private transaction memos
+- Contacts with import and export
+- Native save dialogs for vault and contact exports
+
+### Security
+
+- Vault data encrypted with AES-256-GCM and PBKDF2
+- Persisted app metadata encrypted locally
+- Unlocked signing material kept only in a volatile in-memory session and cleared on lock
+- Auto-lock on idle, sleep, and optional window blur
+- Clipboard auto-clear for sensitive copies
+- Signed app updates
+
+### Desktop UX
+
+- System tray support
+- Desktop notifications
+- Multiple appearance presets and custom schemes
+- Privacy mode for hiding balances
+- Native quick unlock on Linux secure storage, and biometric unlock on supported platforms
+
+### Deep-Link Requests
+
+- Native `sigil://` protocol support
+- Request review for `transfer`, `sc_call`, `sign_message`, `verify_message`, and `connect`
+- Callback posting from Rust instead of the webview
+- Queueing for incoming requests instead of replacing the active review
 
 ---
 
-## dApp deep linking
+## Security Model
 
-Any web app or CLI tool can request a signature from Sigil by opening a `sigil://` URI. Sigil validates the request in Rust, focuses its window, shows a review screen, and POSTs the result back to the caller.
+Sigil is designed so that your encrypted vault stays on disk, while unlocked signing material stays out of persisted app state.
 
-### URI format
+- Vault contents are encrypted before they are written to disk.
+- Persisted wallet metadata is stored separately from the vault and is also encrypted locally.
+- Unlocked session material is held only in a volatile runtime session and is wiped when the wallet locks.
+- Sensitive operations such as callback posting, lock timers, clipboard clearing, and deep-link validation are enforced in Rust.
+- Update packages are verified against an embedded signing key before install.
 
-```
+Sigil does not depend on a Sigil backend to hold your keys or sign for you.
+
+---
+
+## Deep-Link Overview
+
+Sigil accepts request URIs in this format:
+
+```text
 sigil://v1/request?d=<base64url-payload>&cb=<callback-url>
 ```
 
-- `d` — required. Base64url-encoded (no padding) UTF-8 JSON, max 8 192 bytes.
-- `cb` — optional. HTTPS URL that receives the result. `http://localhost` and `http://127.0.0.1` are allowed for local dev. Private/loopback addresses other than localhost are rejected.
+- `d` is required and contains the request JSON as base64url
+- `cb` is optional
+- callback URLs must use `https://`, except `http://localhost` or `http://127.0.0.1` for local development
 
-### Request payload
+Supported request types:
 
-Every request shares these top-level fields:
+- `transfer`
+- `sc_call`
+- `sign_message`
+- `verify_message`
+- `connect`
 
-```jsonc
+Shared request fields:
+
+```json
 {
-  "type": "transfer" | "sc_call" | "sign_message" | "verify_message" | "connect",
-  "nonce": "<8–128 char unique string>",   // replay protection
-  "exp": 1234567890,                        // unix timestamp, max 1 hour from now; defaults to +5 min
+  "type": "transfer | sc_call | sign_message | verify_message | connect",
+  "nonce": "unique-request-id",
+  "exp": 1735689600,
   "dapp": {
-    "name": "My App",
-    "origin": "https://myapp.example.com"  // must be HTTPS
-  },
-  // ...type-specific fields
+    "name": "Example App",
+    "origin": "https://example.app"
+  }
 }
 ```
 
-**Nonces** are tracked for one hour. Reusing a nonce within that window silently drops the request.
+Current validation behavior includes:
 
-**Expiry** auto-dismisses the review screen when the timestamp passes — approval buttons become inactive so a stale request cannot be signed after the fact.
+- HTTPS-only `dapp.origin`
+- nonce replay protection
+- request expiry checks
+- callback host validation
+- bounded request size
+- bounded message-signing payload size
 
-#### `transfer` — send QU
-
-```jsonc
-{
-  "type": "transfer",
-  "to": "ABCDEF...60CHARS",  // 60 uppercase A-Z
-  "amount": 1000000          // positive integer, QU
-}
-```
-
-#### `sc_call` — smart contract call
-
-```jsonc
-{
-  "type": "sc_call",
-  "contract_index": 1,   // 0–63
-  "input_type": 2,       // non-negative integer
-  "amount": 0,           // QU attached to the call
-  "payload": "..."       // optional base64url-encoded extra bytes
-}
-```
-
-#### `sign_message` — off-chain signature
-
-```jsonc
-{
-  "type": "sign_message",
-  "message": "Hello from my dApp"  // non-empty string
-}
-```
-
-#### `verify_message` — verify an existing signature
-
-```jsonc
-{
-  "type": "verify_message",
-  "message": "Hello from my dApp",
-  "signature": "<base64-encoded signature>",
-  "public_key": "<hex or base64 public key>"
-}
-```
-
-#### `connect` — request permissions
-
-```jsonc
-{
-  "type": "connect"
-  // No extra fields required. User selects which permissions to grant.
-}
-```
-
-### Callback responses
-
-Sigil POSTs JSON to the `cb` URL from native Rust (not the webview). All responses include `nonce` and `type` echoed from the request.
-
-**Approved transfer or SC call:**
-```jsonc
-{ "status": "signed", "nonce": "...", "type": "transfer", "identity": "...", "tx_hash": "...", "target_tick": 12345678 }
-```
-
-**Approved sign_message:**
-```jsonc
-{ "status": "signed", "nonce": "...", "type": "sign_message", "identity": "...", "signature": "...", "public_key": "..." }
-```
-
-**Approved verify_message:**
-```jsonc
-{ "status": "verified", "nonce": "...", "type": "verify_message", "valid": true, "identity": "..." }
-```
-
-**Approved connect:**
-```jsonc
-{ "status": "connected", "nonce": "...", "type": "connect", "identity": "...", "permissions": ["transfer", "sc_call"] }
-```
-
-**Rejected by user:**
-```jsonc
-{ "status": "rejected", "nonce": "...", "type": "...", "reason": "user_rejected" }
-```
-
-**Permission denied** (origin approved but lacks the required permission):
-```jsonc
-{ "status": "rejected", "nonce": "...", "type": "...", "reason": "permission_denied" }
-```
-
-If no callback URL is provided, the result JSON is shown in the UI with a Copy button.
-
-### Permission system
-
-`connect` grants named permissions (`transfer`, `sc_call`, `sign_message`) to an origin. Subsequent requests from the same origin that require a permission not in the approved set are auto-rejected without showing the review screen. The user can revoke individual permissions or the entire dApp approval from Settings → dApps.
+If a callback URL is provided, Sigil posts the result back from native Rust after approval or rejection. If no callback is provided, the result stays visible in the app for copy/paste.
 
 ---
 
-## Build locally
+## Main Screens and Flows
 
-**Requirements**
+### Vaults
 
-- [Rust](https://rustup.rs/) stable toolchain
-- [Bun](https://bun.sh/) or Node.js ≥ 20
-- Platform prerequisites from [Tauri's guide](https://v2.tauri.app/start/prerequisites/) — WebView2 on Windows, webkit2gtk on Linux
+- Create or import multiple vaults
+- Add, hide, unhide, rename, and remove accounts inside each vault
+- Export encrypted vault backups
+- Reveal a single account seed with password confirmation
+
+### Transactions
+
+- Standard send flow
+- Send-to-many flow
+- Burn flow
+- Transaction history with filters and memos
+
+### Staking
+
+- Lock QU into Qearn
+- Inspect unlockable positions
+- Unlock existing positions
+
+### Settings
+
+- Security and lock behavior
+- Network endpoint configuration
+- Notifications
+- Appearance customization
+- Contacts import/export
+- Support and sponsor view
+
+---
+
+## Build Locally
+
+### Requirements
+
+- [Rust stable](https://rustup.rs/)
+- [Bun](https://bun.sh/)
+- Platform prerequisites from the [Tauri v2 guide](https://v2.tauri.app/start/prerequisites/)
+
+### Commands
 
 ```sh
 git clone https://github.com/sigil-oss/sigil.app
 cd sigil.app
 bun install
-bun tauri dev       # hot-reload dev build
-bun tauri build     # production installer → src-tauri/target/release/bundle/
+bun tauri dev
+bun tauri build
 ```
+
+Production bundles are created under `src-tauri/target/release/bundle/`.
 
 ---
 
-## Tech stack
+## Tech Stack
 
 | Layer | Choice |
 |---|---|
-| App framework | Tauri v2 (Rust + WebView) |
-| Frontend | React 19 + TypeScript (strict) |
-| Routing | React Router v7 |
-| State | Zustand — persisted to disk via `tauri-plugin-store`, session in-memory |
-| Server state | TanStack Query v5 |
-| Qubic SDK | `@qubic.org/{types,crypto,tx,wallet,rpc,contracts}` |
-| Design | Nothing Design aesthetic — OLED black, Space Grotesk + Space Mono |
+| Desktop shell | Tauri v2 |
+| Frontend | React 19 + TypeScript |
+| Local state | Zustand |
+| Async/server state | TanStack Query |
+| Qubic SDK | `@qubic.org/{crypto,tx,wallet,rpc,contracts,types}` |
+| Native layer | Rust |
 
 ---
 
-## Implementation notes
+## Project Notes
 
-**Biometric unlock** — Settings → Security → enable biometric. Sigil verifies your vault password once, then stores it in the OS credential store (Windows Credential Manager / macOS Keychain / libsecret). Subsequent unlocks retrieve it via the OS biometric prompt. The password is never stored on disk by Sigil itself.
+- Sigil is desktop-first and intentionally does not behave like a browser extension wallet.
+- Request approval is explicit and in-app.
+- Contract destinations are derived explicitly; the wallet does not rely on a hardcoded smart-contract placeholder address.
+- Sponsor-name metadata is bundled locally instead of fetched from a broad external CDN at runtime.
 
-**Auto-updates** — On every launch a splash screen checks for a new release. If one is found, it downloads and installs silently in the foreground (progress bar shown) then relaunches. There is no way to skip an update. Packages are verified against an embedded public key before install.
+---
 
-**QUtil fee** — SendToManyV1 charges a per-invocation fee queried from the contract before signing. The UI blocks the Sign button until the fee resolves and adds it to the transaction amount automatically.
+## Community
 
-**Transaction history** — SC calls are identified by destination address and shown as `SC CALL` with the contract name (QUtil / Qearn). Pending SC calls carry a `contractName` set at broadcast time. History supports infinite scroll, direction/type/date range/amount/tick filters, and compact amount formatting (1K / 1M / 1B).
+- GitHub: https://github.com/sigil-oss/sigil.app
+- Discord: https://discord.gg/s5qNRNGu96
 
-**Qearn positions** — The unlock tab scans the last 52 epochs using `getUserLockStatus` (bitmask) followed by parallel `getUserLockedInfo` calls. Positions not yet matured show an `[EARLY]` badge with a warning that rewards may be forfeited.
+---
 
-**SC call destinations** — Contract addresses are derived via `contractIndexToIdentity(index)`. All SC calls pass an explicit destination — the default `SC_DESTINATION` (`'A'.repeat(60)`) from the wallet SDK has an invalid checksum and is never used.
+## License
 
-**Bob node (experimental)** — An optional Bob indexer can be configured in Network settings for real-time tick/balance/transfer data via WebSocket. Due to the production CSP, the Bob node must run on `localhost`.
+See the repository license and source history for the current terms.
