@@ -1,4 +1,5 @@
 import { isValidIdentity } from "@/lib/crypto";
+import sponsorNames from "../../sponsor-names.json";
 
 export interface Sponsor {
   name: string;
@@ -13,6 +14,4 @@ if (!isValidIdentity(DONATION_IDENTITY)) {
   throw new Error(`[sigil] DONATION_IDENTITY is not a valid Qubic address: ${DONATION_IDENTITY}`);
 }
 
-/** JSON map of identity → display name for known donors. Fetched at runtime so merged PRs reflect without a rebuild. */
-export const SPONSOR_NAMES_URL =
-  "https://raw.githubusercontent.com/sigil-oss/sigil.app/main/sponsor-names.json";
+export const SPONSOR_NAMES = sponsorNames as Record<string, string>;

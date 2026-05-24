@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
-import { DONATION_IDENTITY, SPONSOR_NAMES_URL, type Sponsor } from "@/data/sponsors";
+import { DONATION_IDENTITY, SPONSOR_NAMES, type Sponsor } from "@/data/sponsors";
 import { truncateId } from "@/lib/format";
 
 export const SPONSORS_QUERY_KEY = ["sponsors"] as const;
@@ -19,14 +19,8 @@ function parseNameOverrides(value: unknown): Record<string, string> {
   return parsed;
 }
 
-async function fetchNameOverrides(): Promise<Record<string, string>> {
-  try {
-    const res = await fetch(SPONSOR_NAMES_URL);
-    if (!res.ok) return {};
-    return parseNameOverrides(await res.json());
-  } catch {
-    return {};
-  }
+function getNameOverrides(): Record<string, string> {
+  return parseNameOverrides(SPONSOR_NAMES);
 }
 
 async function fetchAllTransactions() {
@@ -50,7 +44,7 @@ async function fetchAllTransactions() {
 async function fetchSponsors(): Promise<Sponsor[]> {
   const [txs, nameOverrides] = await Promise.all([
     fetchAllTransactions(),
-    fetchNameOverrides(),
+    Promise.resolve(getNameOverrides()),
   ]);
 
   // Accumulate all confirmed incoming transfers per sender — multiple donations add up.
