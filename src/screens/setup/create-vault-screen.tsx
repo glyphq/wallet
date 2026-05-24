@@ -89,6 +89,9 @@ export default function CreateVaultScreen() {
       await invoke("copy_to_clipboard", { text: seed, clearAfterSecs: SEED_CLIPBOARD_CLEAR_SECS });
     } catch {
       await navigator.clipboard.writeText(seed).catch(() => {});
+      window.setTimeout(() => {
+        navigator.clipboard.writeText("").catch(() => {});
+      }, SEED_CLIPBOARD_CLEAR_SECS * 1000);
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
