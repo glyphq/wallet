@@ -14,6 +14,21 @@ export default defineConfig(async () => ({
       "@": resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
+          if (id.includes("@tanstack/react-query") || id.includes("zustand")) return "state-vendor";
+          if (id.includes("@tauri-apps")) return "tauri-vendor";
+          if (id.includes("@qubic.org")) return "qubic-vendor";
+          if (id.includes("motion") || id.includes("lucide-react") || id.includes("qrcode.react")) return "ui-vendor";
+          return "vendor";
+        },
+      },
+    },
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
