@@ -11,7 +11,6 @@ const PAGE_SIZE = 50;
 export function useNotificationReconcile() {
   const wallets = useSessionStore((s) => s.wallets);
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
-  const lastNotificationScanAt = usePersistedStore((s) => s.lastNotificationScanAt);
   const setLastNotificationScanAt = usePersistedStore((s) => s.setLastNotificationScanAt);
 
   const identities = useMemo(() => {
@@ -25,15 +24,14 @@ export function useNotificationReconcile() {
   useEffect(() => {
     if (!usePersistedStore.persist.hasHydrated()) return;
     if (identities.length === 0) return;
-
-    const runKey = `${identitiesKey}::${lastNotificationScanAt}`;
-    if (runKeyRef.current === runKey) return;
-    runKeyRef.current = runKey;
+    if (runKeyRef.current === identitiesKey) return;
+    runKeyRef.current = identitiesKey;
 
     let cancelled = false;
 
     async function reconcile() {
       const startedAt = Date.now();
+      const lastNotificationScanAt = usePersistedStore.getState().lastNotificationScanAt;
 
       if (!cancelled && lastNotificationScanAt > 0) {
         await Promise.all(
@@ -72,5 +70,5 @@ export function useNotificationReconcile() {
     return () => {
       cancelled = true;
     };
-  }, [identities, identitiesKey, lastNotificationScanAt, setLastNotificationScanAt]);
+  }, [identities, identitiesKey, setLastNotificationScanAt]);
 }
