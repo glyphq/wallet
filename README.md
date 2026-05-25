@@ -1,88 +1,107 @@
 # Sigil
 
-Self-custodial Qubic wallet for desktop. Native deep-link signing, encrypted local storage, and a desktop-first workflow for Windows, macOS, and Linux.
+Premium self-custodial Qubic wallet for desktop.
+
+Sigil gives Qubic users a native place to hold keys, review requests, approve transactions, and manage multiple vaults without moving their signing flow into a browser extension.
+
+Built with Tauri, React, TypeScript, and Rust.
 
 ---
 
-## What Sigil Is
+## Why Sigil
 
-Sigil is a local wallet for Qubic users who want:
+Most wallet UX on desktop still feels adapted from the browser.
+Sigil is built the other way around:
 
-- self-custody without a browser extension
-- native desktop request review for dApps and tools
-- multiple vaults and multiple accounts per vault
-- strong local lock, unlock, and clipboard safety defaults
+- local-first key custody
+- native request review for dApps and tools
+- strong lock, clipboard, and callback controls
+- desktop-grade flows for history, notifications, exports, and recovery
 
-Sigil is built with Tauri, React, TypeScript, and Rust.
+The result is a wallet that feels closer to a serious desktop app than a thin wrapper around web flows.
 
 ---
 
-## Current Highlights
+## Current Product Surface
 
-### Wallet
+### Vaults and Accounts
 
-- Multiple encrypted vaults, each with multiple accounts
-- Send, receive, and full transaction history
-- Send to many recipients in one transaction
-- Burn QU directly from the wallet
-- Qearn lock and unlock flows
-- Private transaction memos
-- Contacts with import and export
-- Native save dialogs for vault and contact exports
+- Encrypted seeded vaults
+- Watch-only vaults for tracking without seeds
+- Multiple accounts per vault
+- Per-account notes and tags
+- Vault import and export
+- Seed reveal with additional security controls
 
-### Security
+### Wallet Operations
 
-- Vault data encrypted with AES-256-GCM and PBKDF2
-- Persisted app metadata encrypted locally
-- Unlocked signing material kept only in a volatile in-memory session and cleared on lock
-- Auto-lock on idle, sleep, and optional window blur
-- Clipboard auto-clear for sensitive copies
-- Signed app updates
+- Send, receive, burn, and send-to-many
+- CSV / JSON recipient import for batch sends
+- Full transaction history with memos
+- Fiat-at-time price snapshots in history
+- Vault analytics for flow, counterparties, contract usage, and monthly summaries
+- Global search across accounts, contacts, tx hashes, memos, and known contracts
 
-### Desktop UX
-
-- System tray support
-- Desktop notifications
-- Multiple appearance presets and custom schemes
-- Privacy mode for hiding balances
-- Native quick unlock on Linux secure storage, and biometric unlock on supported platforms
-
-### Deep-Link Requests
+### dApp and Request Flow
 
 - Native `sigil://` protocol support
 - Request review for `transfer`, `sc_call`, `sign_message`, `verify_message`, and `connect`
-- Callback posting from Rust instead of the webview
-- Queueing for incoming requests instead of replacing the active review
+- Shared request schema and validation path across native intake and renderer
+- Decoded previews for common Qubic contract calls
+- Request history with callback status
+- Callback recovery with retry, save-as-file, and copy-JSON options
+- Signed request trust verification with local trusted issuer registry
+
+### Security and Trust
+
+- AES-256-GCM encrypted vault data
+- Encrypted persisted app metadata
+- Unlocked signing material kept in volatile runtime session only
+- Auto-lock on idle, sleep, and optional blur
+- Clipboard auto-clear for sensitive values
+- Optional password re-check for burn
+- Optional biometric gate for seed reveal
+- High-value send confirmation threshold
+- Local audit log for unlocks, exports, seed reveals, and request approvals
+- Signed export format with verification and version handling
+
+### Desktop Experience
+
+- Tray support
+- Desktop notifications with inbox history and filters
+- Granular polling profiles for active, background, tray-hidden, and locked modes
+- Contacts, address suggestions, and recent recipient assistance
+- Diagnostics screen and redacted debug bundle export
+- Multiple visual themes, font pairs, accents, and custom schemes
 
 ---
 
 ## Security Model
 
-Sigil is designed so that your encrypted vault stays on disk, while unlocked signing material stays out of persisted app state.
+Sigil is designed so encrypted data stays on disk, while active signing material stays out of persisted state.
 
 - Vault contents are encrypted before they are written to disk.
-- Persisted wallet metadata is stored separately from the vault and is also encrypted locally.
-- Unlocked session material is held only in a volatile runtime session and is wiped when the wallet locks.
-- Sensitive operations such as callback posting, lock timers, clipboard clearing, and deep-link validation are enforced in Rust.
-- Update packages are verified against an embedded signing key before install.
+- Persisted wallet metadata is stored separately and encrypted locally.
+- Unlocked session material is held only in volatile runtime memory and cleared on lock.
+- Sensitive operations such as callback posting, deep-link validation, replay protection, lock timers, and clipboard clearing are enforced in Rust.
+- Update payloads are verified against the embedded updater signing key before install.
 
-Sigil does not depend on a Sigil backend to hold your keys or sign for you.
+Sigil does not rely on a Sigil backend to custody keys or sign on your behalf.
 
 ---
 
-## Deep-Link Overview
+## Deep-Link Model
 
-Sigil accepts request URIs in this format:
+Sigil accepts `sigil://` request URLs and processes them through a native queue plus a shared frontend parser.
 
-```text
-sigil://v1/request?d=<base64url-payload>&cb=<callback-url>
-```
+At a high level:
 
-- `d` is required and contains the request JSON as base64url
-- `cb` is optional
-- callback URLs must use `https://`, except `http://localhost` or `http://127.0.0.1` for local development
+1. A dApp creates a request envelope.
+2. The envelope is encoded into a `sigil://` deep link.
+3. Native Rust receives the URL, validates it, applies nonce replay checks, and queues it.
+4. The renderer drains the queue, parses the same payload through the shared schema, and shows the request for approval.
 
-Supported request types:
+### Current Request Types
 
 - `transfer`
 - `sc_call`
@@ -90,63 +109,53 @@ Supported request types:
 - `verify_message`
 - `connect`
 
-Shared request fields:
+### Validation and Trust
 
-```json
-{
-  "type": "transfer | sc_call | sign_message | verify_message | connect",
-  "nonce": "unique-request-id",
-  "exp": 1735689600,
-  "dapp": {
-    "name": "Example App",
-    "origin": "https://example.app"
-  }
-}
-```
+Current validation includes:
 
-Current validation behavior includes:
+- HTTPS-only dApp origins
+- localhost-only HTTP callback exceptions for local development
+- callback host validation and private-address rejection
+- bounded request and callback sizes
+- replay protection via request nonce tracking
+- signed envelope verification when a trusted issuer is configured
 
-- HTTPS-only `dapp.origin`
-- nonce replay protection
-- request expiry checks
-- callback host validation
-- bounded request size
-- bounded message-signing payload size
+Unsigned requests can still be reviewed, but Sigil treats dApp metadata as unverified unless the request signature matches a trusted issuer in the local registry.
 
-If a callback URL is provided, Sigil posts the result back from native Rust after approval or rejection. If no callback is provided, the result stays visible in the app for copy/paste.
+### Callback Handling
+
+If a callback URL is present, Sigil posts the result from native Rust after approval or rejection.
+If callback delivery fails, the result stays recoverable in request history for retry, export, or copy.
 
 ---
 
-## Main Screens and Flows
+## Updater Notes
 
-### Vaults
+Sigil ships signed desktop updates, but platform behavior matters:
 
-- Create or import multiple vaults
-- Add, hide, unhide, rename, and remove accounts inside each vault
-- Export encrypted vault backups
-- Reveal a single account seed with password confirmation
+- Windows uses the built-in updater flow.
+- macOS uses the built-in updater flow.
+- Linux auto-update currently targets the AppImage install path.
+- `deb` and `rpm` installs should be updated through the package the user installed from until Linux package updater support is expanded.
 
-### Transactions
+---
 
-- Standard send flow
-- Send-to-many flow
-- Burn flow
-- Transaction history with filters and memos
+## Main Screens
 
-### Staking
-
-- Lock QU into Qearn
-- Inspect unlockable positions
-- Unlock existing positions
-
-### Settings
-
-- Security and lock behavior
-- Network endpoint configuration
+- Vaults
+- Dashboard
+- Send / Send to Many
+- History
+- Stake
+- Request Review
 - Notifications
-- Appearance customization
-- Contacts import/export
-- Support and sponsor view
+- Security
+- Trust
+- Network
+- Appearance
+- Contacts
+- Diagnostics
+- Support
 
 ---
 
@@ -156,7 +165,7 @@ If a callback URL is provided, Sigil posts the result back from native Rust afte
 
 - [Rust stable](https://rustup.rs/)
 - [Bun](https://bun.sh/)
-- Platform prerequisites from the [Tauri v2 guide](https://v2.tauri.app/start/prerequisites/)
+- platform prerequisites from the [Tauri v2 guide](https://v2.tauri.app/start/prerequisites/)
 
 ### Commands
 
@@ -168,29 +177,20 @@ bun tauri dev
 bun tauri build
 ```
 
-Production bundles are created under `src-tauri/target/release/bundle/`.
+Production bundles are emitted under `src-tauri/target/release/bundle/`.
 
 ---
 
 ## Tech Stack
 
 | Layer | Choice |
-|---|---|
+| --- | --- |
 | Desktop shell | Tauri v2 |
 | Frontend | React 19 + TypeScript |
 | Local state | Zustand |
-| Async/server state | TanStack Query |
-| Qubic SDK | `@qubic.org/{crypto,tx,wallet,rpc,contracts,types}` |
+| Async state | TanStack Query |
 | Native layer | Rust |
-
----
-
-## Project Notes
-
-- Sigil is desktop-first and intentionally does not behave like a browser extension wallet.
-- Request approval is explicit and in-app.
-- Contract destinations are derived explicitly; the wallet does not rely on a hardcoded smart-contract placeholder address.
-- Sponsor-name metadata is bundled locally instead of fetched from a broad external CDN at runtime.
+| Qubic SDK | `@qubic.org/{crypto,tx,wallet,rpc,contracts,types}` |
 
 ---
 
@@ -203,4 +203,4 @@ Production bundles are created under `src-tauri/target/release/bundle/`.
 
 ## License
 
-See the repository license and source history for the current terms.
+See the repository license and source history for current terms.
