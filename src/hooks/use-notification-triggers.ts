@@ -6,6 +6,7 @@ import { useVaultBalances } from "@/hooks/use-vault-balances";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
+import { useLatestStats } from "@/hooks/use-latest-stats";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { truncateId, formatQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
@@ -21,9 +22,24 @@ export function useNotificationTriggers() {
   const onReceived = usePersistedStore((s) => s.settings.notifyOnReceived);
   const onSent = usePersistedStore((s) => s.settings.notifyOnSent);
   const onConfirmed = usePersistedStore((s) => s.settings.notifyOnConfirmed);
+  const onMissedConfirmations = usePersistedStore((s) => s.settings.notifyOnMissedConfirmations);
+  const onLargeIncoming = usePersistedStore((s) => s.settings.notifyOnLargeIncoming);
+  const largeIncomingThreshold = usePersistedStore((s) => s.settings.largeIncomingThreshold);
+  const onPriceAlerts = usePersistedStore((s) => s.settings.notifyOnPriceAlerts);
+  const priceAlertAbove = usePersistedStore((s) => s.settings.priceAlertAbove);
+  const priceAlertBelow = usePersistedStore((s) => s.settings.priceAlertBelow);
 
   const identity = wallets[activeIndex]?.identity ?? null;
   const queryClient = useQueryClient();
+  const largeIncomingThresholdValue = (() => {
+    try {
+      return largeIncomingThreshold ? BigInt(largeIncomingThreshold) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const priceAlertAboveValue = priceAlertAbove ? Number(priceAlertAbove) : NaN;
+  const priceAlertBelowValue = priceAlertBelow ? Number(priceAlertBelow) : NaN;
 
   // ── Received: watch all vault balances for increases ──────────────────
   const { data: allBalances } = useVaultBalances();
@@ -44,6 +60,14 @@ export function useNotificationTriggers() {
             body: `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
             identity: id,
           })).catch(() => {});
+          if (onLargeIncoming && largeIncomingThresholdValue !== null && diff >= largeIncomingThresholdValue) {
+            publishNotificationEvent(createNotificationEvent({
+              kind: "received",
+              title: "Large Incoming QU",
+              body: `${diff.toLocaleString()} QU landed on ${truncateId(id, 8, 4)}.`,
+              identity: id,
+            })).catch(() => {});
+          }
         }
       }
     }
@@ -165,7 +189,7 @@ export function useNotificationTriggers() {
         }
       } else {
         addTxAlert({ id: pending.hash, label, reason: "failed" });
-        if (enabled && onConfirmed) {
+        if (enabled && onMissedConfirmations) {
           publishNotificationEvent(createNotificationEvent({
             kind: "failed",
             title: "Transaction Failed",
@@ -190,7 +214,7 @@ export function useNotificationTriggers() {
         removePendingTx(pending.hash);
         const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
         addTxAlert({ id: pending.hash, label, reason: "expired" });
-        if (enabled && onConfirmed) {
+        if (enabled && onMissedConfirmations) {
           publishNotificationEvent(createNotificationEvent({
             kind: "expired",
             title: "Transaction Expired",
@@ -203,4 +227,48 @@ export function useNotificationTriggers() {
       }
     }
   }, [currentTick, pendingTxs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { data: latestStats } = useLatestStats();
+  const previousPriceRef = useRef<number | null>(null);
+  const aboveTriggeredRef = useRef(false);
+  const belowTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    const price = latestStats?.price ?? null;
+    if (!enabled || !onPriceAlerts || price === null || !Number.isFinite(price)) return;
+    if (previousPriceRef.current === null) {
+      previousPriceRef.current = price;
+      aboveTriggeredRef.current = Number.isFinite(priceAlertAboveValue) && price >= priceAlertAboveValue;
+      belowTriggeredRef.current = Number.isFinite(priceAlertBelowValue) && price <= priceAlertBelowValue;
+      return;
+    }
+
+    if (Number.isFinite(priceAlertAboveValue)) {
+      if (!aboveTriggeredRef.current && previousPriceRef.current < priceAlertAboveValue && price >= priceAlertAboveValue) {
+        aboveTriggeredRef.current = true;
+        publishNotificationEvent(createNotificationEvent({
+          kind: "price_alert",
+          title: "QU Price Alert",
+          body: `QU moved above $${priceAlertAboveValue.toFixed(4)} and is now trading near $${price.toFixed(4)}.`,
+          dedupeKey: `price:above:${priceAlertAboveValue}:${Math.floor(Date.now() / 60_000)}`,
+        })).catch(() => {});
+      }
+      if (price < priceAlertAboveValue) aboveTriggeredRef.current = false;
+    }
+
+    if (Number.isFinite(priceAlertBelowValue)) {
+      if (!belowTriggeredRef.current && previousPriceRef.current > priceAlertBelowValue && price <= priceAlertBelowValue) {
+        belowTriggeredRef.current = true;
+        publishNotificationEvent(createNotificationEvent({
+          kind: "price_alert",
+          title: "QU Price Alert",
+          body: `QU moved below $${priceAlertBelowValue.toFixed(4)} and is now trading near $${price.toFixed(4)}.`,
+          dedupeKey: `price:below:${priceAlertBelowValue}:${Math.floor(Date.now() / 60_000)}`,
+        })).catch(() => {});
+      }
+      if (price > priceAlertBelowValue) belowTriggeredRef.current = false;
+    }
+
+    previousPriceRef.current = price;
+  }, [enabled, latestStats?.price, onPriceAlerts, priceAlertAboveValue, priceAlertBelowValue]);
 }
