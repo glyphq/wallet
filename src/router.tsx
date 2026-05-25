@@ -30,6 +30,7 @@ import SettingsContactsScreen from "@/screens/settings/contacts-screen";
 import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
 import TrustScreen from "@/screens/settings/trust-screen";
+import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
 
 function Screen({ component: C }: { component: React.ComponentType }) {
   return (
@@ -71,6 +72,7 @@ export const router = createHashRouter([
       { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
       { path: "/settings/trust", element: <Screen component={TrustScreen} /> },
+      { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
     ],
   },
 ]);
