@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
@@ -18,9 +18,11 @@ import {
   DEFAULT_QUERY_FILTERS,
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
+import { useVaultAnalytics } from "@/hooks/use-vault-analytics";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
-import { truncateId, formatQu, formatQuCompact, formatDate } from "@/lib/format";
+import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
+import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 
 // ── Filter types ──────────────────────────────────────────────────────────────
 
@@ -66,6 +68,8 @@ export default function HistoryScreen() {
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets);
 
   const txMemos = usePersistedStore((s) => s.txMemos);
+  const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
+  const { data: analytics } = useVaultAnalytics();
 
   const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -135,6 +139,10 @@ export default function HistoryScreen() {
 
   const filteredTxs = allTxs;
   const focusHash = searchParams.get("focus");
+  const visibleAnalytics = useMemo(
+    () => analytics,
+    [analytics],
+  );
 
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
@@ -217,6 +225,54 @@ export default function HistoryScreen() {
         </div>
       )}
 
+      {visibleAnalytics && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", marginBottom: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "center" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+              VAULT ANALYTICS
+            </span>
+            <Tag variant={visibleAnalytics.netFlow >= 0n ? "success" : "warning"}>
+              {visibleAnalytics.netFlow >= 0n ? "NET IN" : "NET OUT"}
+            </Tag>
+          </div>
+          <div style={{ display: "grid", gap: "var(--space-3)", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+            <AnalyticsStat label="Net flow" value={`${visibleAnalytics.netFlow >= 0n ? "+" : "−"}${formatQu(visibleAnalytics.netFlow >= 0n ? visibleAnalytics.netFlow : -visibleAnalytics.netFlow)} QU`} />
+            <AnalyticsStat label="Incoming" value={`${formatQu(visibleAnalytics.totalIncoming)} QU`} />
+            <AnalyticsStat label="Outgoing" value={`${formatQu(visibleAnalytics.totalOutgoing)} QU`} />
+          </div>
+          {visibleAnalytics.biggestCounterparties.length > 0 && (
+            <AnalyticsList
+              label="Biggest counterparties"
+              rows={visibleAnalytics.biggestCounterparties.map((item) => ({
+                primary: KNOWN_CONTRACT_ADDRESSES[item.identity] ?? truncateId(item.identity, 10, 8),
+                secondary: `${item.count} tx`,
+                value: `${formatQuCompact(item.volume)} QU`,
+              }))}
+            />
+          )}
+          {visibleAnalytics.contractUsage.length > 0 && (
+            <AnalyticsList
+              label="Contract usage"
+              rows={visibleAnalytics.contractUsage.map((item) => ({
+                primary: item.contract,
+                secondary: `${item.count} calls`,
+                value: `${formatQuCompact(item.volume)} QU`,
+              }))}
+            />
+          )}
+          {visibleAnalytics.monthlySummaries.length > 0 && (
+            <AnalyticsList
+              label="Monthly summary"
+              rows={visibleAnalytics.monthlySummaries.map((item) => ({
+                primary: item.month,
+                secondary: `+${formatQuCompact(item.incoming)} / -${formatQuCompact(item.outgoing)}`,
+                value: `${item.count} tx`,
+              }))}
+            />
+          )}
+        </div>
+      )}
+
       {/* States */}
       {isLoading && <StatusText color="var(--color-text-disabled)">[LOADING...]</StatusText>}
       {isError && <StatusText color="var(--color-status-error)">[NETWORK ERROR]</StatusText>}
@@ -232,6 +288,7 @@ export default function HistoryScreen() {
           {filteredPending.map((p, i) => {
             const isIn = p.destination === identity;
             const expired = isExpired(p);
+            const pendingSnapshot = findClosestPriceSnapshot(p.broadcastAt, priceSnapshots);
             return (
               <div key={`p-${p.hash}`}>
                 {i > 0 && <Divider style={{ margin: "var(--space-3) 0" }} />}
@@ -241,6 +298,7 @@ export default function HistoryScreen() {
                     sub={p.contractName ?? (isIn ? truncateId(p.source) : truncateId(p.destination))}
                     sub2={expired ? `EXPIRED AT TICK ${p.targetTick}` : currentTick > 0 ? `ETA ~${Math.max(1, p.targetTick - currentTick)}s` : `TARGET ${p.targetTick}`}
                     amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
+                    amountSecondary={settings.hideBalances || !pendingSnapshot ? "" : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
                     amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
                   />
                 </button>
@@ -256,6 +314,7 @@ export default function HistoryScreen() {
             const flew = tx.moneyFlew;
             const variant = !flew ? "error" : isSc ? "neutral" : isIn ? "success" : "neutral";
             const label = !flew ? "FAILED" : isSc ? "SC CALL" : isIn ? "RECEIVED" : "SENT";
+            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
 
             // Resolve contract index from known address to look up procedure name
             const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
@@ -281,6 +340,7 @@ export default function HistoryScreen() {
                     sub={counterparty}
                     sub2={formatDate(tx.timestamp) || `TICK ${tx.tickNumber}`}
                     amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
+                    amountSecondary={settings.hideBalances || !snapshot ? "" : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
                     amountColor={flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                   />
                 </button>
@@ -404,8 +464,8 @@ const APPLY_BTN_DETAIL: React.CSSProperties = {
 
 // ── UI sub-components ─────────────────────────────────────────────────────────
 
-function TxRow({ tag, sub, sub2, amount, amountColor }: {
-  tag: ReactNode; sub: string; sub2: string; amount: string; amountColor: string;
+function TxRow({ tag, sub, sub2, amount, amountSecondary, amountColor }: {
+  tag: ReactNode; sub: string; sub2: string; amount: string; amountSecondary?: string; amountColor: string;
 }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -417,6 +477,11 @@ function TxRow({ tag, sub, sub2, amount, amountColor }: {
       <div style={{ textAlign: "right", flexShrink: 0, paddingLeft: "var(--space-3)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>{amount}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
+        {amountSecondary && (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
+            {amountSecondary}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -491,6 +556,7 @@ function TxDetail({ detail, identity, currentTick, txMemos }: {
   txMemos: Record<string, string>;
 }) {
   const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
+  const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
   const deleteTxMemo = usePersistedStore((s) => s.deleteTxMemo);
   const isPending = (d: TxHistoryItem | PendingTx): d is PendingTx => "broadcastAt" in d;
@@ -509,6 +575,7 @@ function TxDetail({ detail, identity, currentTick, txMemos }: {
   const contractName = detail.destination ? KNOWN_CONTRACT_ADDRESSES[detail.destination] : undefined;
   const fromContract = detail.source ? KNOWN_CONTRACT_ADDRESSES[detail.source] : undefined;
   const isSc = !!(contractName || fromContract);
+  const snapshot = findClosestPriceSnapshot(isPending(detail) ? detail.broadcastAt : detail.timestamp, priceSnapshots);
 
   if (isPending(detail)) {
     const expired = currentTick > 0 && currentTick > detail.targetTick;
@@ -519,6 +586,7 @@ function TxDetail({ detail, identity, currentTick, txMemos }: {
           {detail.contractName && <Tag variant="neutral">{detail.contractName}</Tag>}
         </div>
         <DetailRow label="Amount"><AmountVal amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
+        {snapshot && !hideBalances && <DetailRow label="Approx. fiat"><MonoVal>${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}</MonoVal></DetailRow>}
         <DetailRow label="From">{detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}</DetailRow>
         <DetailRow label="To">{detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}</DetailRow>
         <DetailRow label="Target tick"><MonoVal>{detail.targetTick}</MonoVal></DetailRow>
@@ -539,6 +607,7 @@ function TxDetail({ detail, identity, currentTick, txMemos }: {
         {isSc && <Tag variant="neutral">{contractName ?? fromContract ?? ""}</Tag>}
       </div>
       <DetailRow label="Amount"><AmountVal amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
+      {snapshot && !hideBalances && <DetailRow label="Approx. fiat"><MonoVal>${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}</MonoVal></DetailRow>}
       <DetailRow label="From">{detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}</DetailRow>
       <DetailRow label="To">{detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}</DetailRow>
       <DetailRow label="Tick"><MonoVal>{detail.tickNumber ?? "—"}</MonoVal></DetailRow>
@@ -610,4 +679,42 @@ function MonoVal({ children }: { children: ReactNode }) {
 
 function Dash() {
   return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>;
+}
+
+function AnalyticsStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        {label}
+      </span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function AnalyticsList({ label, rows }: { label: string; rows: Array<{ primary: string; secondary: string; value: string }> }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        {label}
+      </span>
+      {rows.map((row) => (
+        <div key={`${label}-${row.primary}-${row.value}`} style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
+              {row.primary}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+              {row.secondary}
+            </span>
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+            {row.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
