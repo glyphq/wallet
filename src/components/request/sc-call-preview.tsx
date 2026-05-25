@@ -20,6 +20,7 @@ import {
 import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
 import type { ApproveResult } from "./transfer-preview";
 import { truncateId, formatQu } from "@/lib/format";
+import { exceedsHighValueThreshold } from "@/lib/session-policies";
 
 export interface ScCallRequest {
   contract_index: number;
@@ -93,6 +94,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
   const [showPayload, setShowPayload] = useState(false);
+  const [highValueConfirmed, setHighValueConfirmed] = useState(false);
 
   const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
@@ -112,6 +114,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const insufficientBalance = hasAmount && balance !== null && requestAmount > balance;
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
+  const needsHighValueConfirmation = requestAmount > 0n && exceedsHighValueThreshold(requestAmount, settings.highValueSendThreshold);
   const contractName = CONTRACT_NAMES[request.contract_index] ?? `Contract #${request.contract_index}`;
   const inputTypeLabel = CONTRACT_PROCEDURE_NAMES[`${request.contract_index}:${request.input_type}`] ?? `Procedure ${request.input_type}`;
   const destination: Identity = contractIndexToIdentity(request.contract_index);
@@ -312,7 +315,31 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx}>
+      {needsHighValueConfirmation && (
+        <div
+          role="checkbox"
+          aria-checked={highValueConfirmed}
+          tabIndex={0}
+          onClick={() => setHighValueConfirmed((value) => !value)}
+          onKeyDown={(e) => e.key === " " && setHighValueConfirmed((value) => !value)}
+          style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
+        >
+          <div style={{
+            width: 14, height: 14, flexShrink: 0,
+            border: `1px solid ${highValueConfirmed ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+            borderRadius: 2,
+            background: highValueConfirmed ? "var(--color-text-display)" : "none",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+            HIGH-VALUE CALL CONFIRMED
+          </span>
+        </div>
+      )}
+
+      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>
         Sign and send
       </Button>
       <Button variant="danger" shape="sharp" onClick={onReject}>

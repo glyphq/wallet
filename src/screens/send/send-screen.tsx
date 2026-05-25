@@ -26,6 +26,7 @@ import { TxSending, TxError } from "@/components/tx-status";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
+import { exceedsHighValueThreshold } from "@/lib/session-policies";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
 
@@ -62,6 +63,7 @@ export default function SendScreen() {
     !!(settings.notificationsEnabled && settings.notifyOnConfirmed)
   );
   const [watchResult, setWatchResult] = useState<"pending" | "confirmed" | "failed">("pending");
+  const [highValueConfirmed, setHighValueConfirmed] = useState(false);
 
   const [showPicker, setShowPicker] = useState(false);
 
@@ -88,6 +90,8 @@ export default function SendScreen() {
   const destUpper = destination.trim().toUpperCase();
   const matchedContact = contacts.find((c) => c.identity === destUpper);
   const destIsKnownContact = !!matchedContact;
+  const amountValue = (() => { try { return BigInt(amountStr.trim() || "0"); } catch { return 0n; } })();
+  const needsHighValueConfirmation = exceedsHighValueThreshold(amountValue, settings.highValueSendThreshold);
   const recentRecipientIdentities = useMemo(
     () => getRecentRecipientIdentities(identity || null, recentTxs),
     [identity, recentTxs],
@@ -142,7 +146,10 @@ export default function SendScreen() {
   }
 
   function goReview() {
-    if (validateInputs()) setStep("review");
+    if (validateInputs()) {
+      setHighValueConfirmed(false);
+      setStep("review");
+    }
   }
 
   async function send() {
@@ -300,7 +307,31 @@ export default function SendScreen() {
             </div>
           )}
 
-          <Button onClick={send} disabled={!wallet || !tickInfo || hasPendingTx}>Sign and send</Button>
+          {needsHighValueConfirmation && (
+            <div
+              role="checkbox"
+              aria-checked={highValueConfirmed}
+              tabIndex={0}
+              onClick={() => setHighValueConfirmed((value) => !value)}
+              onKeyDown={(e) => e.key === " " && setHighValueConfirmed((value) => !value)}
+              style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
+            >
+              <div style={{
+                width: 14, height: 14, flexShrink: 0,
+                border: `1px solid ${highValueConfirmed ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+                borderRadius: 2,
+                background: highValueConfirmed ? "var(--color-text-display)" : "none",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
+              </div>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+                HIGH-VALUE TRANSFER CONFIRMED
+              </span>
+            </div>
+          )}
+
+          <Button onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>Sign and send</Button>
           <Button variant="secondary" shape="sharp" onClick={() => setStep("input")}>Edit</Button>
         </>
       )}
