@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { qk } from "@/lib/query-keys";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
 
 export type TxHistoryItem = {
   hash: string;
@@ -43,6 +44,7 @@ export function useTxHistory(
   identity: string | null | undefined,
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
+  const pollingIntervalMs = usePollingIntervalMs();
   const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo } = queryFilters;
 
   return useInfiniteQuery({
@@ -157,8 +159,9 @@ export function useTxHistory(
       lastPage.length >= PAGE_SIZE ? lastPageParam + PAGE_SIZE : undefined,
     initialPageParam: 0,
     enabled: !!identity,
-    staleTime: 5_000,
-    refetchInterval: 10_000,
+    staleTime: Math.min(5_000, pollingIntervalMs),
+    refetchInterval: Math.max(10_000, pollingIntervalMs),
+    refetchIntervalInBackground: true,
   });
 }
 

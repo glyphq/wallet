@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
+import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
 
 interface LatestStats {
   price: number;
@@ -24,10 +25,13 @@ async function fetchLatestStats(liveApiUrl: string): Promise<LatestStats> {
 
 export function useLatestStats() {
   const liveApiUrl = usePersistedStore((s) => s.settings.network.liveApiUrl);
+  const pollingIntervalMs = usePollingIntervalMs();
   return useQuery({
     queryKey: ["latest-stats", liveApiUrl],
     queryFn: () => fetchLatestStats(liveApiUrl),
     staleTime: 60_000,
     retry: 1,
+    refetchInterval: Math.max(15_000, pollingIntervalMs),
+    refetchIntervalInBackground: true,
   });
 }
