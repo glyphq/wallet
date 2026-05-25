@@ -12,12 +12,16 @@ import { parseAccountTags } from "@/lib/accounts";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, createVault, type VaultData } from "@/lib/vault";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
+import { parseSignedExportEnvelope } from "@/lib/export-format";
 
 interface ImportFileData {
   name: string;
   color: VaultColor;
   accounts: AccountMeta[];
   vault: VaultData;
+  formatVersion: number;
+  signatureVerified: boolean;
+  legacy: boolean;
 }
 
 export default function WelcomeScreen() {
@@ -67,14 +71,24 @@ export default function WelcomeScreen() {
       if (!file) return;
       try {
         const text = await file.text();
-        const parsed = JSON.parse(text);
-        if (parsed.sigil !== 1 || !parsed.vault || !parsed.name?.trim()) throw new Error("bad format");
-        const accounts: AccountMeta[] = parsed.accounts ?? [];
+        const parsed = await parseSignedExportEnvelope<{
+          sigil: number;
+          name: string;
+          color: VaultColor;
+          accounts: AccountMeta[];
+          vault: VaultData;
+        }>(text, "vault");
+        const envelopePayload = parsed.payload;
+        if (envelopePayload.sigil !== 1 || !envelopePayload.vault || !envelopePayload.name?.trim()) throw new Error("bad format");
+        const accounts: AccountMeta[] = envelopePayload.accounts ?? [];
         setImportData({
-          name: parsed.name,
-          color: parsed.color ?? "slate",
+          name: envelopePayload.name,
+          color: envelopePayload.color ?? "slate",
           accounts,
-          vault: parsed.vault as VaultData,
+          vault: envelopePayload.vault as VaultData,
+          formatVersion: parsed.version,
+          signatureVerified: parsed.verified,
+          legacy: parsed.legacy,
         });
         if (accounts.length > MAX_VAULT_ACCOUNTS) {
           const sorted = [...accounts].sort((a, b) => a.index - b.index);
@@ -247,6 +261,9 @@ export default function WelcomeScreen() {
               {importData && importData.accounts.length > MAX_VAULT_ACCOUNTS
                 ? `${selectedIndices.size} / ${MAX_VAULT_ACCOUNTS} SELECTED`
                 : `${importData?.accounts.length ?? 0} ${(importData?.accounts.length ?? 0) === 1 ? "ACCOUNT" : "ACCOUNTS"}`}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: importData?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)", letterSpacing: "0.05em", marginTop: "var(--space-1)" }}>
+              {importData?.legacy ? "[LEGACY FORMAT V1 — IMPORT WITH CARE]" : importData?.signatureVerified ? "[SIGNED EXPORT V2 VERIFIED]" : "[SIGNED EXPORT V2 — SIGNATURE NOT VERIFIED ON THIS DEVICE]"}
             </div>
           </div>
 

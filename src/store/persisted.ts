@@ -75,6 +75,11 @@ export interface AppSettings {
   notifyOnConfirmed: boolean;
   notifyWhenLocked: boolean;
   hideToTray: boolean;
+  requirePasswordForBurn: boolean;
+  requireBiometricForSeedReveal: boolean;
+  highValueSendThreshold: string;
+  exportSigningPrivateJwk: JsonWebKey | null;
+  exportSigningPublicJwk: JsonWebKey | null;
 }
 
 export interface Contact {
@@ -101,6 +106,7 @@ export interface PendingTx {
 const MAX_PENDING_TXS = 50;
 const MAX_TX_MEMOS = 500;
 const MAX_NOTIFICATION_EVENTS = 200;
+const MAX_AUDIT_EVENTS = 500;
 
 export type NotificationEventKind =
   | "received"
@@ -120,6 +126,28 @@ export interface NotificationEvent {
   identity?: string;
   txHash?: string;
   dedupeKey?: string;
+}
+
+export type AuditEventKind =
+  | "unlock_succeeded"
+  | "unlock_failed"
+  | "seed_revealed"
+  | "vault_exported"
+  | "contacts_exported"
+  | "request_received"
+  | "request_approved"
+  | "request_rejected"
+  | "request_callback_failed";
+
+export interface AuditEvent {
+  id: string;
+  kind: AuditEventKind;
+  createdAt: number;
+  status: "success" | "failure" | "info";
+  title: string;
+  detail: string;
+  vaultId?: string;
+  accountIndex?: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -150,6 +178,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   notifyOnConfirmed: true,
   notifyWhenLocked: false,
   hideToTray: false,
+  requirePasswordForBurn: false,
+  requireBiometricForSeedReveal: false,
+  highValueSendThreshold: "",
+  exportSigningPrivateJwk: null,
+  exportSigningPublicJwk: null,
 };
 
 const _disk = new LazyStore("sigil.json");
@@ -205,6 +238,14 @@ function clampNotificationEvents(events: NotificationEvent[]): NotificationEvent
     .slice(0, MAX_NOTIFICATION_EVENTS);
 }
 
+function clampAuditEvents(events: AuditEvent[]): AuditEvent[] {
+  if (events.length <= MAX_AUDIT_EVENTS) return events;
+  return events
+    .slice()
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, MAX_AUDIT_EVENTS);
+}
+
 interface PersistedState {
   vaults: VaultMeta[];
   settings: AppSettings;
@@ -213,6 +254,7 @@ interface PersistedState {
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
   notificationEvents: NotificationEvent[];
+  auditEvents: AuditEvent[];
   lastNotificationScanAt: number;
   addVault: (vault: VaultMeta) => void;
   updateVault: (id: string, updates: Partial<Omit<VaultMeta, "id">>) => void;
@@ -241,6 +283,8 @@ interface PersistedState {
   markAllNotificationEventsRead: () => void;
   clearNotificationEvents: () => void;
   setLastNotificationScanAt: (timestamp: number) => void;
+  addAuditEvent: (event: AuditEvent) => void;
+  clearAuditEvents: () => void;
 }
 
 /** Zustand store backed by Tauri LazyStore (`sigil.json` on disk). Survives app restarts. */
@@ -253,6 +297,7 @@ export const usePersistedStore = create<PersistedState>()(
       pendingTxs: [],
       txMemos: {},
       notificationEvents: [],
+      auditEvents: [],
       lastNotificationScanAt: 0,
 
       addVault: (vault) =>
@@ -380,6 +425,11 @@ export const usePersistedStore = create<PersistedState>()(
       clearNotificationEvents: () => set({ notificationEvents: [] }),
 
       setLastNotificationScanAt: (timestamp) => set({ lastNotificationScanAt: timestamp }),
+
+      addAuditEvent: (event) =>
+        set((s) => ({ auditEvents: clampAuditEvents([event, ...s.auditEvents]) })),
+
+      clearAuditEvents: () => set({ auditEvents: [] }),
     }),
     {
       name: "sigil-persisted",
@@ -428,6 +478,19 @@ export const usePersistedStore = create<PersistedState>()(
               ),
             )
           : currentState.notificationEvents;
+        const auditEvents = Array.isArray(ps.auditEvents)
+          ? clampAuditEvents(
+              ps.auditEvents.filter((event): event is AuditEvent =>
+                !!event &&
+                typeof event === "object" &&
+                typeof event.id === "string" &&
+                typeof event.kind === "string" &&
+                typeof event.title === "string" &&
+                typeof event.detail === "string" &&
+                typeof event.createdAt === "number",
+              ),
+            )
+          : currentState.auditEvents;
         const lastNotificationScanAt =
           typeof ps.lastNotificationScanAt === "number"
             ? ps.lastNotificationScanAt
@@ -446,7 +509,13 @@ export const usePersistedStore = create<PersistedState>()(
               Array.isArray(dapp.permissions),
             )
           : currentState.settings.approvedDapps;
-        const settings = { ...settingsBase, approvedDapps };
+        const settings = {
+          ...settingsBase,
+          approvedDapps,
+          highValueSendThreshold: typeof settingsBase.highValueSendThreshold === "string"
+            ? settingsBase.highValueSendThreshold.replace(/[^\d]/g, "")
+            : currentState.settings.highValueSendThreshold,
+        };
         return {
           ...currentState,
           vaults,
@@ -454,6 +523,7 @@ export const usePersistedStore = create<PersistedState>()(
           pendingTxs,
           txMemos,
           notificationEvents,
+          auditEvents,
           lastNotificationScanAt,
           settings,
         };

@@ -13,6 +13,8 @@ import { useSessionStore } from "@/store/session";
 import { unlockVault, type VaultData } from "@/lib/vault";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
+import { parseSignedExportEnvelope } from "@/lib/export-format";
+import { recordAuditEvent } from "@/lib/audit-log";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -46,7 +48,15 @@ export default function VaultsScreen() {
   const sessionLock = useSessionStore((s) => s.lock);
 
   // Import state
-  interface ImportData { name: string; color: VaultColor; accounts: AccountMeta[]; vault: VaultData; }
+  interface ImportData {
+    name: string;
+    color: VaultColor;
+    accounts: AccountMeta[];
+    vault: VaultData;
+    formatVersion: number;
+    signatureVerified: boolean;
+    legacy: boolean;
+  }
   const [importData, setImportData] = useState<ImportData | null>(null);
   const [importPassword, setImportPassword] = useState("");
   const [importError, setImportError] = useState("");
@@ -133,9 +143,23 @@ export default function VaultsScreen() {
       unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
       touchVaultUnlocked(switchingVault.id);
+      recordAuditEvent({
+        kind: "unlock_succeeded",
+        status: "success",
+        title: "Vault switched",
+        detail: switchingVault.name,
+        vaultId: switchingVault.id,
+      });
       setSwitchingVault(null);
       navigate("/dashboard", { replace: true });
     } catch {
+      recordAuditEvent({
+        kind: "unlock_failed",
+        status: "failure",
+        title: "Vault switch failed",
+        detail: switchingVault.name,
+        vaultId: switchingVault.id,
+      });
       setSwitchError("WRONG PASSWORD");
     } finally {
       setSwitchLoading(false);
@@ -181,9 +205,15 @@ export default function VaultsScreen() {
       if (!file) return;
       try {
         const text = await file.text();
-        const parsed = JSON.parse(text);
-        if (parsed.sigil !== 1 || !parsed.vault || !parsed.name?.trim()) throw new Error();
-        const rawAccounts: unknown[] = Array.isArray(parsed.accounts) ? parsed.accounts : [];
+        const parsed = await parseSignedExportEnvelope<{
+          sigil: number;
+          name: string;
+          color: VaultColor;
+          accounts: unknown[];
+          vault: VaultData;
+        }>(text, "vault");
+        if (parsed.payload.sigil !== 1 || !parsed.payload.vault || !parsed.payload.name?.trim()) throw new Error();
+        const rawAccounts: unknown[] = Array.isArray(parsed.payload.accounts) ? parsed.payload.accounts : [];
         const sanitizedAccounts: AccountMeta[] = rawAccounts
           .filter((a): a is Record<string, unknown> => a !== null && typeof a === "object" && !Array.isArray(a))
           .map((a, i) => ({
@@ -192,7 +222,15 @@ export default function VaultsScreen() {
             addedAt: typeof a.addedAt === "number" && a.addedAt > 0 ? a.addedAt : Date.now(),
             hidden: a.hidden === true,
           }));
-        setImportData({ name: parsed.name, color: parsed.color ?? "slate", accounts: sanitizedAccounts, vault: parsed.vault as VaultData });
+        setImportData({
+          name: parsed.payload.name,
+          color: parsed.payload.color ?? "slate",
+          accounts: sanitizedAccounts,
+          vault: parsed.payload.vault as VaultData,
+          formatVersion: parsed.version,
+          signatureVerified: parsed.verified,
+          legacy: parsed.legacy,
+        });
         setImportPassword("");
         setImportError("");
       } catch {
@@ -463,6 +501,9 @@ export default function VaultsScreen() {
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               {importData?.accounts.length ?? 0} {(importData?.accounts.length ?? 0) === 1 ? "ACCOUNT" : "ACCOUNTS"}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: importData?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)", letterSpacing: "0.05em", marginTop: "var(--space-1)" }}>
+              {importData?.legacy ? "[LEGACY FORMAT V1 — IMPORT WITH CARE]" : importData?.signatureVerified ? "[SIGNED EXPORT V2 VERIFIED]" : "[SIGNED EXPORT V2 — SIGNATURE NOT VERIFIED ON THIS DEVICE]"}
             </div>
           </div>
           <Input

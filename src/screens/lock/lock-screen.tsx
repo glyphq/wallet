@@ -14,6 +14,7 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import type { Seed } from "@/lib/crypto";
 import { isWatchOnlyVault } from "@/lib/accounts";
+import { recordAuditEvent } from "@/lib/audit-log";
 
 interface FormValues {
   password: string;
@@ -55,6 +56,13 @@ export default function LockScreen() {
     const wallets = unlockSecureSession(seeds);
     unlock(vault.id, wallets);
     touchVaultUnlocked(vault.id);
+    recordAuditEvent({
+      kind: "unlock_succeeded",
+      status: "success",
+      title: "Vault unlocked",
+      detail: vault.name,
+      vaultId: vault.id,
+    });
     _bioFailures = 0;
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
@@ -69,6 +77,13 @@ export default function LockScreen() {
     if (!vault) return;
     unlock(vault.id, [], vault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity));
     touchVaultUnlocked(vault.id);
+    recordAuditEvent({
+      kind: "unlock_succeeded",
+      status: "success",
+      title: "Watch-only vault opened",
+      detail: vault.name,
+      vaultId: vault.id,
+    });
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
 
@@ -79,6 +94,13 @@ export default function LockScreen() {
     try {
       await doUnlock(password);
     } catch {
+      recordAuditEvent({
+        kind: "unlock_failed",
+        status: "failure",
+        title: "Unlock failed",
+        detail: vault.name,
+        vaultId: vault.id,
+      });
       setError("WRONG PASSWORD");
     } finally {
       setLoading(false);
@@ -96,6 +118,13 @@ export default function LockScreen() {
       });
       await finishUnlock(seeds.map(toSeed));
     } catch (e) {
+      recordAuditEvent({
+        kind: "unlock_failed",
+        status: "failure",
+        title: "Biometric unlock failed",
+        detail: vault.name,
+        vaultId: vault.id,
+      });
       const next = bioFailures + 1;
       _bioFailures = next;
       setBioFailures(next);

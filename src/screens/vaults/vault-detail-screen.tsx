@@ -18,6 +18,8 @@ import { saveFileDialog } from "@/lib/save-file";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { getAccountIdentity, isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
+import { createSignedExportEnvelope } from "@/lib/export-format";
+import { recordAuditEvent } from "@/lib/audit-log";
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -73,6 +75,8 @@ export default function VaultDetailScreen() {
   const [revealLoading, setRevealLoading] = useState(false);
   const [revealedSeed, setRevealedSeed] = useState("");
   const [seedCopied, setSeedCopied] = useState(false);
+  const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
+  const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
 
   useEffect(() => {
     if (!revealedSeed) return;
@@ -91,17 +95,27 @@ export default function VaultDetailScreen() {
 
   async function doExport() {
     if (!currentVault.encryptedData) return;
-    const data = JSON.stringify({
+    const envelope = await createSignedExportEnvelope("vault", {
       sigil: 1,
       name: currentVault.name,
       color: currentVault.color,
       accounts: currentVault.accounts,
       exported_at: Date.now(),
       vault: JSON.parse(exportVault(currentVault.encryptedData)),
-    }, null, 2);
+    });
+    const data = JSON.stringify(envelope, null, 2);
     const defaultName = `sigil-${currentVault.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
     const saved = await saveFileDialog(defaultName, data);
-    if (saved) setShowExport(false);
+    if (saved) {
+      recordAuditEvent({
+        kind: "vault_exported",
+        status: "success",
+        title: "Vault exported",
+        detail: `${currentVault.name} saved as signed export v2`,
+        vaultId: currentVault.id,
+      });
+      setShowExport(false);
+    }
   }
 
   const visible = currentVault.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index);
@@ -296,11 +310,34 @@ export default function VaultDetailScreen() {
     setRevealLoading(true);
     setRevealError("");
     try {
-      const seeds = await unlockVault(currentVault.encryptedData!, revealPassword);
+      let seeds;
+      if (requireBiometricForSeedReveal) {
+        const bioEnabled = biometricVaultIds.includes(currentVault.id);
+        if (!bioEnabled) {
+          setRevealError("ENABLE BIOMETRIC FOR THIS VAULT FIRST");
+          setRevealLoading(false);
+          return;
+        }
+        const { invoke } = await import("@tauri-apps/api/core");
+        seeds = (await invoke<string[]>("biometric_unlock", {
+          vaultId: currentVault.id,
+          vaultData: currentVault.encryptedData!,
+        })).map(toSeed);
+      } else {
+        seeds = await unlockVault(currentVault.encryptedData!, revealPassword);
+      }
       const seed = seeds[revealingAccount.index];
       if (!seed) throw new Error("Missing seed");
       setRevealedSeed(seed);
       setRevealPassword("");
+      recordAuditEvent({
+        kind: "seed_revealed",
+        status: "success",
+        title: "Seed revealed",
+        detail: `${revealingAccount.name} in ${currentVault.name}`,
+        vaultId: currentVault.id,
+        accountIndex: revealingAccount.index,
+      });
     } catch {
       setRevealError("WRONG PASSWORD");
     } finally {
@@ -529,21 +566,30 @@ export default function VaultDetailScreen() {
           {!revealedSeed ? (
             <>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-                Enter the vault password to decrypt this account seed.
+                {requireBiometricForSeedReveal
+                  ? "Use biometric unlock to reveal this account seed."
+                  : "Enter the vault password to decrypt this account seed."}
               </div>
-              <Input
-                type="password"
-                label="Vault password"
-                value={revealPassword}
-                onChange={(e) => { setRevealPassword(e.target.value); setRevealError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && !revealLoading && doRevealSeed()}
-                error={revealError}
-                placeholder="••••••••••"
-                autoComplete="current-password"
-                autoFocus
-              />
-              <Button onClick={doRevealSeed} loading={revealLoading} disabled={!revealPassword}>
-                Reveal seed
+              {!requireBiometricForSeedReveal && (
+                <Input
+                  type="password"
+                  label="Vault password"
+                  value={revealPassword}
+                  onChange={(e) => { setRevealPassword(e.target.value); setRevealError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && !revealLoading && doRevealSeed()}
+                  error={revealError}
+                  placeholder="••••••••••"
+                  autoComplete="current-password"
+                  autoFocus
+                />
+              )}
+              {requireBiometricForSeedReveal && revealError && (
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+                  [{revealError}]
+                </div>
+              )}
+              <Button onClick={doRevealSeed} loading={revealLoading} disabled={!requireBiometricForSeedReveal && !revealPassword}>
+                {requireBiometricForSeedReveal ? "Use biometric" : "Reveal seed"}
               </Button>
             </>
           ) : (
