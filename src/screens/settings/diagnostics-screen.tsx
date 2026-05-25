@@ -57,6 +57,10 @@ export default function DiagnosticsScreen() {
     exportedAt: new Date().toISOString(),
     appVersion: updater.appVersion,
     updater: {
+      platform: updater.context?.platform ?? null,
+      packageKind: updater.context?.packageKind ?? null,
+      supported: updater.context?.supportsAutoUpdate ?? null,
+      reason: updater.context?.reason ?? null,
       checking: updater.checking,
       upToDate: updater.upToDate,
       updateVersion: updater.update?.version ?? null,
@@ -160,15 +164,24 @@ export default function DiagnosticsScreen() {
 
       <Section title="Updater">
         <InfoRow label="App version" value={updater.appVersion || "—"} />
+        <InfoRow label="Platform" value={updater.context?.platform ?? "—"} />
+        <InfoRow label="Package" value={updater.context?.packageKind ?? "—"} />
+        <InfoRow label="Auto-update" value={updater.context ? (updater.context.supportsAutoUpdate ? "Supported" : "Unsupported") : "—"} />
         <InfoRow label="Status" value={
           updater.checking ? "Checking"
             : updater.installing ? `Installing (${updater.progress}%)`
+            : updater.context && !updater.context.supportsAutoUpdate ? "Unavailable for this install"
             : updater.update ? `Update available: ${updater.update.version}`
             : updater.upToDate ? "Up to date"
             : updater.checkError ? "Check failed"
             : "Idle"
         } />
         <InfoRow label="Last checked" value={formatDate(updater.lastCheckedAt) || "—"} />
+        {updater.context?.reason && (
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+            {updater.context.reason}
+          </div>
+        )}
         {updater.lastError && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
             [{updater.lastError.toUpperCase()}]

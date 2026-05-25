@@ -26,7 +26,8 @@ const ROWS: SettingsRow[] = [
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
-  const { appVersion, update, checking, upToDate, checkError, installing, progress, install } = useUpdater();
+  const { appVersion, context, update, checking, upToDate, checkError, installing, progress, lastError, install } = useUpdater();
+  const updaterSupported = context?.supportsAutoUpdate ?? true;
 
   const statusBar = <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} />;
 
@@ -68,7 +69,7 @@ export default function SettingsScreen() {
 
       {/* Version + update footer */}
       <div style={{ marginTop: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        {update && (
+        {update && updaterSupported && (
           <button
             onClick={install}
             disabled={installing}
@@ -101,8 +102,19 @@ export default function SettingsScreen() {
           {appVersion ? `v${appVersion}` : ""}
           {checking ? " [CHECKING...]" : ""}
           {upToDate ? " [UP TO DATE]" : ""}
+          {!checking && !updaterSupported ? " [AUTO-UPDATE NOT AVAILABLE FOR THIS INSTALL]" : ""}
           {checkError ? " [UPDATE CHECK FAILED]" : ""}
         </span>
+        {!checking && !updaterSupported && context?.reason && (
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+            {context.reason}
+          </span>
+        )}
+        {lastError && (checkError || !updaterSupported) && (
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: checkError ? "var(--color-status-error)" : "var(--color-text-secondary)", lineHeight: 1.5 }}>
+            {lastError}
+          </span>
+        )}
       </div>
     </AppShell>
   );

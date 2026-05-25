@@ -127,6 +127,7 @@ pub fn run() {
             commands::lock_clipboard,
             commands::post_callback,
             commands::set_hide_to_tray,
+            commands::get_updater_context,
             store_crypto::encrypt_store_value,
             store_crypto::decrypt_store_value,
             vault_crypto::encrypt_vault,
