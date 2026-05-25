@@ -1,19 +1,17 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { qk } from "@/lib/query-keys";
-import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+import {
+  dedupeTxRecords,
+  isKnownContract,
+  normalizeArchiveTransaction,
+  normalizeEventTransfer,
+  sortTxRecords,
+  type TxRecord,
+} from "@/lib/tx-domain";
 
-export type TxHistoryItem = {
-  hash: string;
-  source: string | null;
-  destination: string | null;
-  amount: string;
-  tickNumber: number;
-  moneyFlew: boolean;
-  timestamp: number | null;
-  inputType: number | null;
-};
+export type TxHistoryItem = TxRecord;
 
 export type TxQueryFilters = {
   // Server-side — getTransactionsForIdentity + getEventLogs
@@ -86,20 +84,11 @@ export function useTxHistory(
 
       if (!txResult.ok) throw txResult.error;
 
-      const items = new Map<string, TxHistoryItem>();
+      const items: TxHistoryItem[] = [];
 
       for (const tx of txResult.value.transactions ?? []) {
-        if (!tx.hash) continue;
-        items.set(tx.hash, {
-          hash: tx.hash,
-          source: tx.source ?? null,
-          destination: tx.destination ?? null,
-          amount: tx.amount ?? "0",
-          tickNumber: tx.tickNumber ?? 0,
-          moneyFlew: tx.moneyFlew ?? true,
-          timestamp: tx.timestamp ? Number(tx.timestamp) : null,
-          inputType: tx.inputType ?? null,
-        });
+        const normalized = normalizeArchiveTransaction(tx);
+        if (normalized) items.push(normalized);
       }
 
       // ── getEventLogs supplement (first page only, ~2 week window) ────────
@@ -131,29 +120,21 @@ export function useTxHistory(
 
           if (evtResult.ok) {
             for (const evt of evtResult.value.eventLogs ?? []) {
-              if (!evt.transactionHash || !evt.quTransfer) continue;
-              if (items.has(evt.transactionHash)) continue;
+              const normalized = normalizeEventTransfer(evt);
+              if (!normalized) continue;
+              if (items.some((item) => item.hash === normalized.hash)) continue;
 
-              const sourceIsContract = evt.quTransfer.source ? isKnownContract(evt.quTransfer.source) : false;
+              const sourceIsContract = isKnownContract(normalized.source);
               if (type === "transfer" && sourceIsContract) continue;
               if (type === "sc" && !sourceIsContract) continue;
 
-              items.set(evt.transactionHash, {
-                hash: evt.transactionHash,
-                source: evt.quTransfer.source ?? null,
-                destination: evt.quTransfer.destination ?? null,
-                amount: evt.quTransfer.amount ?? "0",
-                tickNumber: evt.tickNumber ?? 0,
-                moneyFlew: true,
-                timestamp: evt.timestamp ? Number(evt.timestamp) : null,
-                inputType: null,
-              });
+              items.push(normalized);
             }
           }
         } catch { /* non-fatal */ }
       }
 
-      return Array.from(items.values()).sort((a, b) => b.tickNumber - a.tickNumber);
+      return sortTxRecords(dedupeTxRecords(items));
     },
     getNextPageParam: (lastPage, _pages, lastPageParam) =>
       lastPage.length >= PAGE_SIZE ? lastPageParam + PAGE_SIZE : undefined,
@@ -163,8 +144,4 @@ export function useTxHistory(
     refetchInterval: Math.max(10_000, pollingIntervalMs),
     refetchIntervalInBackground: true,
   });
-}
-
-function isKnownContract(address: string): boolean {
-  return !!KNOWN_CONTRACT_ADDRESSES[address];
 }

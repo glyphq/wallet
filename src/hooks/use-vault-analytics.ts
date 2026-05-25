@@ -4,6 +4,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { buildVaultAnalytics, type AnalyticsTxLike } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
+import { dedupeTxRecords, normalizeArchiveTransaction } from "@/lib/tx-domain";
 
 const PAGE_SIZE = 100;
 
@@ -19,18 +20,18 @@ async function fetchAllTransactionsForIdentity(identity: string): Promise<Analyt
     });
     if (!result.ok) break;
     const page = result.value.transactions ?? [];
-    transactions.push(
-      ...page
-        .filter((tx) => !!tx.hash)
-        .map((tx) => ({
-          hash: tx.hash ?? "",
-          source: tx.source ?? null,
-          destination: tx.destination ?? null,
-          amount: tx.amount ?? "0",
-          timestamp: tx.timestamp ? Number(tx.timestamp) : null,
-          moneyFlew: tx.moneyFlew ?? true,
-        })),
-    );
+    const normalized = page
+      .map(normalizeArchiveTransaction)
+      .filter((tx): tx is NonNullable<typeof tx> => !!tx)
+      .map((tx) => ({
+        hash: tx.hash,
+        source: tx.source,
+        destination: tx.destination,
+        amount: tx.amount,
+        timestamp: tx.timestamp,
+        moneyFlew: tx.moneyFlew,
+      }));
+    transactions.push(...normalized);
     if (page.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
@@ -52,11 +53,7 @@ export function useVaultAnalytics() {
     queryKey: ["vault-analytics", settings.activeVaultId, identities],
     queryFn: async () => {
       const all = await Promise.all(identities.map((identity) => fetchAllTransactionsForIdentity(identity)));
-      const byHash = new Map<string, AnalyticsTxLike>();
-      for (const tx of all.flat()) {
-        if (!byHash.has(tx.hash)) byHash.set(tx.hash, tx);
-      }
-      return buildVaultAnalytics(new Set(identities), [...byHash.values()]);
+      return buildVaultAnalytics(new Set(identities), dedupeTxRecords(all.flat()));
     },
     enabled: identities.length > 0,
     staleTime: 60_000,

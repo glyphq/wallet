@@ -12,6 +12,7 @@ import { getRpcClient } from "@/lib/rpc";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { truncateId } from "@/lib/format";
 import { getAccountIdentity } from "@/lib/accounts";
+import { getKnownContractLabel, normalizeArchiveTransaction, pendingTxToRecord } from "@/lib/tx-domain";
 
 type SearchSection = "accounts" | "contacts" | "transactions" | "contracts";
 
@@ -64,16 +65,16 @@ export default function SearchScreen() {
           pagination: { size: 25, offset: 0 },
         });
         if (!result.ok) return [];
-        return (result.value.transactions ?? []).map((tx) => ({
-          hash: tx.hash ?? "",
-          source: tx.source ?? null,
-          destination: tx.destination ?? null,
-          amount: tx.amount ?? "0",
-          accountIndex: account.accountIndex,
-          vaultId: account.vaultId,
-          vaultName: account.vaultName,
-          identity: account.identity,
-        }));
+        return (result.value.transactions ?? [])
+          .map(normalizeArchiveTransaction)
+          .filter((tx): tx is NonNullable<typeof tx> => !!tx)
+          .map((tx) => ({
+            ...tx,
+            accountIndex: account.accountIndex,
+            vaultId: account.vaultId,
+            vaultName: account.vaultName,
+            identity: account.identity,
+          }));
       },
     })),
   });
@@ -120,10 +121,7 @@ export default function SearchScreen() {
     const transactionResults: SearchResult[] = txItems
       .filter((tx) => {
         const memo = txMemos[tx.hash] ?? "";
-        const contractLabel =
-          (tx.destination && KNOWN_CONTRACT_ADDRESSES[tx.destination]) ||
-          (tx.source && KNOWN_CONTRACT_ADDRESSES[tx.source]) ||
-          "";
+        const contractLabel = getKnownContractLabel(tx.destination) || getKnownContractLabel(tx.source);
         return [tx.hash, memo, contractLabel, tx.source ?? "", tx.destination ?? ""].some((part) => part.toLowerCase().includes(normalizedQuery));
       })
       .slice(0, 20)
@@ -140,16 +138,17 @@ export default function SearchScreen() {
       }));
 
     const pendingResults: SearchResult[] = pendingTxs
-      .filter((tx) => {
-        const memo = txMemos[tx.hash] ?? "";
-        return [tx.hash, memo, tx.source, tx.destination, tx.contractName ?? ""].some((part) => part.toLowerCase().includes(normalizedQuery));
+      .map((tx) => ({ persisted: tx, record: pendingTxToRecord(tx) }))
+      .filter(({ persisted, record }) => {
+        const memo = txMemos[persisted.hash] ?? "";
+        return [record.hash, memo, record.source ?? "", record.destination ?? "", record.contractName ?? ""].some((part) => part.toLowerCase().includes(normalizedQuery));
       })
-      .map((tx) => ({
-        key: `pending:${tx.hash}`,
+      .map(({ persisted, record }) => ({
+        key: `pending:${record.hash}`,
         section: "transactions",
-        title: txMemos[tx.hash]?.trim() || truncateId(tx.hash, 12, 12),
-        subtitle: `${tx.contractName ?? "Pending"} · ${tx.amount ?? "0"} QU`,
-        onSelect: () => navigate(`/history?focus=${tx.hash}`),
+        title: txMemos[persisted.hash]?.trim() || truncateId(record.hash, 12, 12),
+        subtitle: `${record.contractName ?? "Pending"} · ${record.amount} QU`,
+        onSelect: () => navigate(`/history?focus=${record.hash}`),
       }));
 
     const contractResults: SearchResult[] = Object.entries(KNOWN_CONTRACT_ADDRESSES)
