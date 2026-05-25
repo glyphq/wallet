@@ -57,6 +57,13 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
   const needsHighValueConfirmation = requestAmount !== null && exceedsHighValueThreshold(requestAmount, settings.highValueSendThreshold);
+  const projectedBalance = balance !== null && requestAmount !== null ? balance - requestAmount : null;
+  const likelyFailures = [
+    requestAmount === null ? "Malformed amount in the request body." : null,
+    invalidDestination ? "Destination identity checksum is invalid." : null,
+    insufficientBalance ? "Current account balance does not cover the requested transfer." : null,
+    hasPendingTx ? "This account already has a pending transfer and cannot queue another one yet." : null,
+  ].filter((item): item is string => !!item);
 
   async function approve() {
     if (!wallet || requestAmount === null) return;
@@ -147,6 +154,15 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         />
         <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
         <Row label="Fee" value="None" />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Preflight
+        </div>
+        <Row label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
+        <Row label="Balance after" value={projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—"} />
+        <Row label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
       </div>
 
       {requestAmount === null && (

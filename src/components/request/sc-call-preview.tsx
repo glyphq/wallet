@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
+import { estimateTargetTick, getLatestTick, getRpcClient } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
@@ -12,8 +13,14 @@ import type { Identity } from "@qubic.org/types";
 import {
   Q_UTIL_CONTRACT_INDEX,
   Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
+  Q_UTIL_BURN_QUBIC_INPUT_TYPE,
+  qUtilGetSendToManyV1Fee,
   QEARN_CONTRACT_INDEX,
   QEARN_LOCK_INPUT_TYPE,
+  MS_VAULT_CONTRACT_INDEX,
+  MS_VAULT_DEPOSIT_INPUT_TYPE,
+  MS_VAULT_RELEASE_TO_INPUT_TYPE,
+  MS_VAULT_RESET_RELEASE_INPUT_TYPE,
   CONTRACT_NAMES,
   CONTRACT_PROCEDURE_NAMES,
 } from "@/lib/contracts";
@@ -21,6 +28,7 @@ import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
 import type { ApproveResult } from "./transfer-preview";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import { qk } from "@/lib/query-keys";
 
 export interface ScCallRequest {
   contract_index: number;
@@ -57,6 +65,16 @@ function base64ToBytes(b64: string): Uint8Array {
   }
 }
 
+function readU32(view: DataView, offset: number): number {
+  return view.getUint32(offset, true);
+}
+
+function readU64(view: DataView, offset: number): bigint {
+  const lo = view.getUint32(offset, true);
+  const hi = view.getUint32(offset + 4, true);
+  return (BigInt(hi) << 32n) | BigInt(lo);
+}
+
 // Decode QUtil SendToManyV1 payload: 25×32-byte pubkeys + 25×8-byte uint64 amounts (LE)
 function decodeQUtilSendToMany(bytes: Uint8Array): { identity: string; amount: bigint }[] | null {
   if (bytes.length !== 800 + 200) return null;
@@ -65,9 +83,7 @@ function decodeQUtilSendToMany(bytes: Uint8Array): { identity: string; amount: b
   for (let i = 0; i < 25; i++) {
     const pubKey = bytes.slice(i * 32, (i + 1) * 32);
     const amountOffset = 800 + i * 8;
-    const lo = view.getUint32(amountOffset, true);
-    const hi = view.getUint32(amountOffset + 4, true);
-    const amount = (BigInt(hi) << 32n) | BigInt(lo);
+    const amount = readU64(view, amountOffset);
     if (amount === 0n) continue;
     try {
       const identity = publicKeyToIdentity(pubKey) as string;
@@ -83,11 +99,33 @@ function decodeQUtilSendToMany(bytes: Uint8Array): { identity: string; amount: b
 function decodeQearnUnlock(bytes: Uint8Array): { amount: bigint; epoch: number } | null {
   if (bytes.length < 12) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const lo = view.getUint32(0, true);
-  const hi = view.getUint32(4, true);
-  const amount = (BigInt(hi) << 32n) | BigInt(lo);
-  const epoch = view.getUint32(8, true);
+  const amount = readU64(view, 0);
+  const epoch = readU32(view, 8);
   return { amount, epoch };
+}
+
+function decodeMultiSignVaultDeposit(bytes: Uint8Array): { vaultId: bigint } | null {
+  if (bytes.length < 8) return null;
+  return { vaultId: readU64(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), 0) };
+}
+
+function decodeMultiSignVaultResetRelease(bytes: Uint8Array): { vaultId: bigint } | null {
+  if (bytes.length < 8) return null;
+  return { vaultId: readU64(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), 0) };
+}
+
+function decodeMultiSignVaultRelease(bytes: Uint8Array): { vaultId: bigint; amount: bigint; destination: string } | null {
+  if (bytes.length < 48) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  try {
+    return {
+      vaultId: readU64(view, 0),
+      amount: readU64(view, 8),
+      destination: publicKeyToIdentity(bytes.slice(16, 48)) as string,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewProps) {
@@ -105,13 +143,19 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const { data: tickInfo } = useTickInfo();
   const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const { data: sendToManyFeeData } = useQuery({
+    queryKey: qk.qutilSendManyFee(),
+    queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
+    staleTime: 60_000,
+    enabled: request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
+  });
 
   const identity = wallet?.identity ?? "";
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const requestAmount = (() => { try { return request.amount != null ? BigInt(request.amount) : 0n; } catch { return 0n; } })();
   const hasAmount = requestAmount > 0n;
-  const insufficientBalance = hasAmount && balance !== null && requestAmount > balance;
+  const sendToManyFee = sendToManyFeeData?.ok ? sendToManyFeeData.value.fee : null;
   const tickOffset = request.tick_offset ?? 10;
   const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
   const needsHighValueConfirmation = requestAmount > 0n && exceedsHighValueThreshold(requestAmount, settings.highValueSendThreshold);
@@ -124,6 +168,24 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   );
   const payloadHex = request.payload ? base64ToHex(request.payload) : null;
   const payloadByteCount = payloadBytes.length;
+  const decodedMultiSigDeposit = useMemo(() => {
+    if (request.contract_index === MS_VAULT_CONTRACT_INDEX && request.input_type === MS_VAULT_DEPOSIT_INPUT_TYPE && payloadBytes.length > 0) {
+      return decodeMultiSignVaultDeposit(payloadBytes);
+    }
+    return null;
+  }, [request.contract_index, request.input_type, payloadBytes]);
+  const decodedMultiSigRelease = useMemo(() => {
+    if (request.contract_index === MS_VAULT_CONTRACT_INDEX && request.input_type === MS_VAULT_RELEASE_TO_INPUT_TYPE && payloadBytes.length > 0) {
+      return decodeMultiSignVaultRelease(payloadBytes);
+    }
+    return null;
+  }, [request.contract_index, request.input_type, payloadBytes]);
+  const decodedMultiSigResetRelease = useMemo(() => {
+    if (request.contract_index === MS_VAULT_CONTRACT_INDEX && request.input_type === MS_VAULT_RESET_RELEASE_INPUT_TYPE && payloadBytes.length > 0) {
+      return decodeMultiSignVaultResetRelease(payloadBytes);
+    }
+    return null;
+  }, [request.contract_index, request.input_type, payloadBytes]);
 
   // Decoded views for known call types
   const decodedSendToMany = useMemo(() => {
@@ -141,6 +203,24 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   }, [request.contract_index, request.input_type, payloadBytes]);
 
   const isQearnLock = request.contract_index === QEARN_CONTRACT_INDEX && request.input_type === QEARN_LOCK_INPUT_TYPE;
+  const isQUtilBurn = request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_BURN_QUBIC_INPUT_TYPE;
+  const recipientsTotal = decodedSendToMany?.reduce((sum, recipient) => sum + recipient.amount, 0n) ?? 0n;
+  const contractFee = decodedSendToMany ? sendToManyFee : null;
+  const projectedBalance = balance !== null ? balance - requestAmount : null;
+  const estimatedContractFeeComponent = decodedSendToMany
+    ? contractFee
+    : null;
+  const likelyFailures = [
+    fromError || null,
+    balance !== null && requestAmount > balance ? "Current account balance does not cover the attached QU amount." : null,
+    decodedSendToMany && contractFee !== null && balance !== null && requestAmount > 0n && requestAmount !== recipientsTotal + contractFee
+      ? "Attached amount does not match recipient total plus the current QUtil fee."
+      : null,
+    decodedSendToMany && contractFee === null ? "Could not fetch the current QUtil fee estimate." : null,
+    hasPendingTx ? "This account already has a pending transaction and cannot queue another one yet." : null,
+  ].filter((item): item is string => !!item);
+  const insufficientBalance = balance !== null && requestAmount > balance;
+  const balanceAfterDisplay = projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—";
 
   async function approve() {
     if (!wallet) return;
@@ -230,10 +310,34 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         </div>
       )}
 
+      {isQUtilBurn && hasAmount && (
+        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+          BURN {formatQu(requestAmount)} QU PERMANENTLY
+        </div>
+      )}
+
       {/* ── Decoded: Qearn Unlock ── */}
       {decodedQearnUnlock && (
         <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
           UNLOCK {formatQu(decodedQearnUnlock.amount)} QU FROM EPOCH {decodedQearnUnlock.epoch}
+        </div>
+      )}
+
+      {decodedMultiSigDeposit && (
+        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+          DEPOSIT INTO MS VAULT #{decodedMultiSigDeposit.vaultId.toString()}
+        </div>
+      )}
+
+      {decodedMultiSigRelease && (
+        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+          RELEASE {formatQu(decodedMultiSigRelease.amount)} QU FROM MS VAULT #{decodedMultiSigRelease.vaultId.toString()} TO {truncateId(decodedMultiSigRelease.destination, 10, 10)}
+        </div>
+      )}
+
+      {decodedMultiSigResetRelease && (
+        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+          RESET PENDING RELEASE FOR MS VAULT #{decodedMultiSigResetRelease.vaultId.toString()}
         </div>
       )}
 
@@ -278,6 +382,21 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         <Row label="To" value={truncateId(destination as string, 10, 10)} />
         {hasAmount && <Row label="Amount" value={`${formatQu(requestAmount)} QU`} />}
         <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Preflight
+        </div>
+        <Row label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
+        <Row label="Balance after" value={balanceAfterDisplay} />
+        {decodedSendToMany && (
+          <>
+            <Row label="Recipient total" value={`${formatQu(recipientsTotal)} QU`} />
+            <Row label="Contract fee" value={estimatedContractFeeComponent !== null ? `${formatQu(estimatedContractFeeComponent)} QU` : "Unavailable"} />
+          </>
+        )}
+        <Row label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
       </div>
 
       {/* Payload — collapsible raw hex (always available for verification) */}
