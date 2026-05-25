@@ -31,6 +31,7 @@ import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
 import { parseRecipientImport } from "@/lib/recipient-import";
+import { exceedsHighValueThreshold } from "@/lib/session-policies";
 
 const MAX_RECIPIENTS = 25;
 
@@ -104,6 +105,7 @@ export default function SendManyScreen() {
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
   const [formError, setFormError] = useState("");
+  const [highValueConfirmed, setHighValueConfirmed] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
@@ -178,7 +180,10 @@ export default function SendManyScreen() {
 
   function goReview() {
     setFormError("");
-    if (validateAll()) setStep("review");
+    if (validateAll()) {
+      setHighValueConfirmed(false);
+      setStep("review");
+    }
   }
 
   function applyImportedRecipients(nextRecipients: ReturnType<typeof parseRecipientImport>) {
@@ -218,6 +223,8 @@ export default function SendManyScreen() {
     const n = Number(r.amount.trim());
     return sum + (isNaN(n) ? 0 : n);
   }, 0);
+  const totalAmountBigInt = recipients.reduce((sum, r) => sum + (r.amount.trim() ? BigInt(r.amount.trim()) : 0n), 0n);
+  const needsHighValueConfirmation = exceedsHighValueThreshold(totalAmountBigInt, settings.highValueSendThreshold);
 
   async function send() {
     if (!wallet || fee === null) return;
@@ -496,7 +503,30 @@ export default function SendManyScreen() {
               [TRANSFER PENDING — WAIT FOR CONFIRMATION]
             </div>
           )}
-          <Button onClick={send} disabled={!wallet || fee === null || hasPendingTx}>Sign and send</Button>
+          {needsHighValueConfirmation && (
+            <div
+              role="checkbox"
+              aria-checked={highValueConfirmed}
+              tabIndex={0}
+              onClick={() => setHighValueConfirmed((value) => !value)}
+              onKeyDown={(e) => e.key === " " && setHighValueConfirmed((value) => !value)}
+              style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
+            >
+              <div style={{
+                width: 14, height: 14, flexShrink: 0,
+                border: `1px solid ${highValueConfirmed ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+                borderRadius: 2,
+                background: highValueConfirmed ? "var(--color-text-display)" : "none",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
+              </div>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+                HIGH-VALUE SEND CONFIRMED
+              </span>
+            </div>
+          )}
+          <Button onClick={send} disabled={!wallet || fee === null || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>Sign and send</Button>
           <Button variant="secondary" shape="sharp" onClick={() => setStep("input")}>Edit</Button>
         </>
       )}
