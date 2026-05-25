@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { qk } from "@/lib/query-keys";
+import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
 
 /** Polls current tick and epoch info every 5 s. Used as the network heartbeat. */
 export function useTickInfo() {
+  const pollingIntervalMs = usePollingIntervalMs();
   return useQuery({
     queryKey: qk.tickInfo(),
     queryFn: async () => {
@@ -11,7 +13,7 @@ export function useTickInfo() {
       if (!result.ok) throw result.error;
       return result.value;
     },
-    refetchInterval: 5_000,
-    refetchIntervalInBackground: false,
+    refetchInterval: pollingIntervalMs,
+    refetchIntervalInBackground: true,
   });
 }

@@ -73,7 +73,17 @@ export interface AppSettings {
   notifyOnReceived: boolean;
   notifyOnSent: boolean;
   notifyOnConfirmed: boolean;
+  notifyOnMissedConfirmations: boolean;
+  notifyOnLargeIncoming: boolean;
+  notifyOnPriceAlerts: boolean;
   notifyWhenLocked: boolean;
+  largeIncomingThreshold: string;
+  priceAlertAbove: string;
+  priceAlertBelow: string;
+  pollingIntervalActiveMs: number;
+  pollingIntervalBackgroundMs: number;
+  pollingIntervalTrayMs: number;
+  pollingIntervalLockedMs: number;
   hideToTray: boolean;
   requirePasswordForBurn: boolean;
   requireBiometricForSeedReveal: boolean;
@@ -115,7 +125,8 @@ export type NotificationEventKind =
   | "confirmed"
   | "failed"
   | "expired"
-  | "deep_link";
+  | "deep_link"
+  | "price_alert";
 
 export interface NotificationEvent {
   id: string;
@@ -197,7 +208,17 @@ const DEFAULT_SETTINGS: AppSettings = {
   notifyOnReceived: true,
   notifyOnSent: true,
   notifyOnConfirmed: true,
+  notifyOnMissedConfirmations: true,
+  notifyOnLargeIncoming: false,
+  notifyOnPriceAlerts: false,
   notifyWhenLocked: false,
+  largeIncomingThreshold: "",
+  priceAlertAbove: "",
+  priceAlertBelow: "",
+  pollingIntervalActiveMs: 5_000,
+  pollingIntervalBackgroundMs: 10_000,
+  pollingIntervalTrayMs: 15_000,
+  pollingIntervalLockedMs: 20_000,
   hideToTray: false,
   requirePasswordForBurn: false,
   requireBiometricForSeedReveal: false,
@@ -273,6 +294,12 @@ function clampRequestHistory(events: RequestHistoryItem[]): RequestHistoryItem[]
     .slice()
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, MAX_REQUEST_HISTORY);
+}
+
+function sanitizePollingInterval(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(60_000, Math.max(2_000, Math.round(value)))
+    : fallback;
 }
 
 interface PersistedState {
@@ -576,6 +603,31 @@ export const usePersistedStore = create<PersistedState>()(
           highValueSendThreshold: typeof settingsBase.highValueSendThreshold === "string"
             ? settingsBase.highValueSendThreshold.replace(/[^\d]/g, "")
             : currentState.settings.highValueSendThreshold,
+          largeIncomingThreshold: typeof settingsBase.largeIncomingThreshold === "string"
+            ? settingsBase.largeIncomingThreshold.replace(/[^\d]/g, "")
+            : currentState.settings.largeIncomingThreshold,
+          priceAlertAbove: typeof settingsBase.priceAlertAbove === "string"
+            ? settingsBase.priceAlertAbove.replace(/[^\d.]/g, "")
+            : currentState.settings.priceAlertAbove,
+          priceAlertBelow: typeof settingsBase.priceAlertBelow === "string"
+            ? settingsBase.priceAlertBelow.replace(/[^\d.]/g, "")
+            : currentState.settings.priceAlertBelow,
+          pollingIntervalActiveMs: sanitizePollingInterval(
+            settingsBase.pollingIntervalActiveMs,
+            currentState.settings.pollingIntervalActiveMs,
+          ),
+          pollingIntervalBackgroundMs: sanitizePollingInterval(
+            settingsBase.pollingIntervalBackgroundMs,
+            currentState.settings.pollingIntervalBackgroundMs,
+          ),
+          pollingIntervalTrayMs: sanitizePollingInterval(
+            settingsBase.pollingIntervalTrayMs,
+            currentState.settings.pollingIntervalTrayMs,
+          ),
+          pollingIntervalLockedMs: sanitizePollingInterval(
+            settingsBase.pollingIntervalLockedMs,
+            currentState.settings.pollingIntervalLockedMs,
+          ),
         };
         return {
           ...currentState,
