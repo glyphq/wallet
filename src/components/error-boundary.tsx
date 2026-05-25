@@ -8,17 +8,19 @@ interface Props {
 
 interface State {
   error: Error | null;
+  componentStack: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, componentStack: "" };
 
   static getDerivedStateFromError(error: Error): State {
-    return { error };
+    return { error, componentStack: "" };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[sigil] uncaught render error:", error, info.componentStack);
+    this.setState({ componentStack: info.componentStack ?? "" });
     recordRuntimeIssue({
       source: "renderer",
       title: "React render error",
@@ -66,8 +68,37 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             {this.state.error?.message || "Unknown render failure"}
           </span>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              maxHeight: "40vh",
+              overflow: "auto",
+              padding: "var(--space-4)",
+              border: "1px solid var(--color-border-strong)",
+              borderRadius: "var(--radius-sharp)",
+              background: "var(--color-bg-surface)",
+            }}
+          >
+            <pre
+              style={{
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+                color: "var(--color-text-secondary)",
+                lineHeight: 1.5,
+              }}
+            >
+              {this.state.componentStack
+                ? `[COMPONENT STACK]\n${this.state.componentStack.trim()}`
+                : "[COMPONENT STACK UNAVAILABLE]"}
+              {this.state.error?.stack ? `\n\n[JS STACK]\n${this.state.error.stack}` : ""}
+            </pre>
+          </div>
           <button
-            onClick={() => this.setState({ error: null })}
+            onClick={() => this.setState({ error: null, componentStack: "" })}
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "var(--text-mono-sm)",
