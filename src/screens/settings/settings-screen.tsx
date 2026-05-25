@@ -21,6 +21,7 @@ const ROWS: SettingsRow[] = [
   { label: "Contacts", description: "Add, edit, import and export contacts", route: "/settings/contacts", available: true },
   { label: "Notifications", description: "Desktop alerts for received, sent, confirmed", route: "/settings/notifications", available: true },
   { label: "Support", description: "Sponsors, donate QU, GitHub", route: "/settings/support", available: true },
+  { label: "Diagnostics", description: "Runtime state, debug bundle, and native issue log", route: "/settings/diagnostics", available: true },
 ];
 
 export default function SettingsScreen() {
