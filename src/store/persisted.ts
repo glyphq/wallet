@@ -103,6 +103,18 @@ export interface Contact {
   lastUsedAt: number;
 }
 
+export interface TrustedDappIssuer {
+  id: string;
+  issuer: string;
+  name: string;
+  origins: string[];
+  publicJwk: JsonWebKey;
+  keyId?: string;
+  status: "active" | "revoked";
+  addedAt: number;
+  note?: string;
+}
+
 /** A broadcast transaction awaiting confirmation or expiry tracking. */
 export interface PendingTx {
   hash: string;
@@ -349,6 +361,7 @@ interface PersistedState {
   runtimeIssues: RuntimeIssue[];
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];
+  trustedDappIssuers: TrustedDappIssuer[];
   lastNotificationScanAt: number;
   addVault: (vault: VaultMeta) => void;
   updateVault: (id: string, updates: Partial<Omit<VaultMeta, "id">>) => void;
@@ -385,6 +398,9 @@ interface PersistedState {
   addRequestHistoryItem: (event: RequestHistoryItem) => void;
   updateRequestHistoryItem: (id: string, updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt">>) => void;
   clearRequestHistory: () => void;
+  addTrustedDappIssuer: (issuer: TrustedDappIssuer) => void;
+  updateTrustedDappIssuer: (id: string, updates: Partial<Omit<TrustedDappIssuer, "id" | "addedAt">>) => void;
+  removeTrustedDappIssuer: (id: string) => void;
 }
 
 /** Zustand store backed by Tauri LazyStore (`sigil.json` on disk). Survives app restarts. */
@@ -401,6 +417,7 @@ export const usePersistedStore = create<PersistedState>()(
       runtimeIssues: [],
       auditEvents: [],
       requestHistory: [],
+      trustedDappIssuers: [],
       lastNotificationScanAt: 0,
 
       addVault: (vault) =>
@@ -563,6 +580,26 @@ export const usePersistedStore = create<PersistedState>()(
         })),
 
       clearRequestHistory: () => set({ requestHistory: [] }),
+
+      addTrustedDappIssuer: (issuer) =>
+        set((s) => ({
+          trustedDappIssuers: [
+            issuer,
+            ...s.trustedDappIssuers.filter((existing) => existing.id !== issuer.id),
+          ],
+        })),
+
+      updateTrustedDappIssuer: (id, updates) =>
+        set((s) => ({
+          trustedDappIssuers: s.trustedDappIssuers.map((issuer) =>
+            issuer.id === id ? { ...issuer, ...updates } : issuer
+          ),
+        })),
+
+      removeTrustedDappIssuer: (id) =>
+        set((s) => ({
+          trustedDappIssuers: s.trustedDappIssuers.filter((issuer) => issuer.id !== id),
+        })),
     }),
     {
       name: "sigil-persisted",
@@ -663,6 +700,21 @@ export const usePersistedStore = create<PersistedState>()(
               ),
             )
           : currentState.requestHistory;
+        const trustedDappIssuers = Array.isArray(ps.trustedDappIssuers)
+          ? ps.trustedDappIssuers.filter((issuer): issuer is TrustedDappIssuer =>
+              !!issuer &&
+              typeof issuer === "object" &&
+              typeof issuer.id === "string" &&
+              typeof issuer.issuer === "string" &&
+              typeof issuer.name === "string" &&
+              Array.isArray(issuer.origins) &&
+              issuer.origins.every((origin): origin is string => typeof origin === "string") &&
+              !!issuer.publicJwk &&
+              typeof issuer.publicJwk === "object" &&
+              typeof issuer.status === "string" &&
+              typeof issuer.addedAt === "number",
+            )
+          : currentState.trustedDappIssuers;
         const lastNotificationScanAt =
           typeof ps.lastNotificationScanAt === "number"
             ? ps.lastNotificationScanAt
@@ -729,6 +781,7 @@ export const usePersistedStore = create<PersistedState>()(
           runtimeIssues,
           auditEvents,
           requestHistory,
+          trustedDappIssuers,
           lastNotificationScanAt,
           settings,
         };
