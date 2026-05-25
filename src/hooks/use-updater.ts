@@ -2,6 +2,7 @@ import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState } from "react";
+import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
 export interface UpdaterState {
   appVersion: string;
@@ -11,6 +12,8 @@ export interface UpdaterState {
   checkError: boolean;
   installing: boolean;
   progress: number;
+  lastCheckedAt: number | null;
+  lastError: string;
   install: () => Promise<void>;
 }
 
@@ -22,19 +25,30 @@ export function useUpdater(): UpdaterState {
   const [checkError, setCheckError] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
+  const [lastError, setLastError] = useState("");
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => {});
 
     check()
       .then((u) => {
+        setLastCheckedAt(Date.now());
         if (u) {
           setUpdate(u);
         } else {
           setUpToDate(true);
         }
       })
-      .catch(() => setCheckError(true))
+      .catch((error) => {
+        setCheckError(true);
+        setLastError("Update check failed.");
+        recordRuntimeIssue({
+          source: "updater",
+          title: "Updater check failed",
+          detail: error instanceof Error ? error.message : "Unknown updater check error",
+        });
+      })
       .finally(() => setChecking(false));
 
   }, []);
@@ -53,10 +67,16 @@ export function useUpdater(): UpdaterState {
         }
       });
       await relaunch();
-    } catch {
+    } catch (error) {
+      setLastError("Update install failed.");
+      recordRuntimeIssue({
+        source: "updater",
+        title: "Updater install failed",
+        detail: error instanceof Error ? error.message : "Unknown updater install error",
+      });
       setInstalling(false);
     }
   }
 
-  return { appVersion, update, checking, upToDate, checkError, installing, progress, install };
+  return { appVersion, update, checking, upToDate, checkError, installing, progress, lastCheckedAt, lastError, install };
 }

@@ -38,7 +38,7 @@ export default function SecurityScreen() {
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
-  const debugMode = settings.debugMode;
+  const allowBlurLockBypass = settings.allowBlurLockBypass;
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
@@ -343,9 +343,9 @@ export default function SecurityScreen() {
             [PARANOID MODE — app locks every time you switch windows]
           </div>
         )}
-        {lockOnWindowBlur && debugMode && (
+        {lockOnWindowBlur && allowBlurLockBypass && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-            [DEVELOPER MODE BYPASSES WINDOW-BLUR LOCK. TURN IT OFF IN NETWORK SETTINGS.]
+            [BLUR-LOCK BYPASS IS ENABLED. TURN IT OFF IN NETWORK SETTINGS.]
           </div>
         )}
       </div>

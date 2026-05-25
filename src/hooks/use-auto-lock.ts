@@ -13,7 +13,7 @@ export function useAutoLock() {
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
   const lockOnWindowBlur = usePersistedStore((s) => s.settings.lockOnWindowBlur);
   const lockOnSleep = usePersistedStore((s) => s.settings.lockOnSleep);
-  const devMode = usePersistedStore((s) => s.settings.debugMode);
+  const allowBlurLockBypass = usePersistedStore((s) => s.settings.allowBlurLockBypass);
 
   // Keep Rust timer in sync with persisted settings
   useEffect(() => {
@@ -64,12 +64,12 @@ export function useAutoLock() {
     if (!lockOnWindowBlur) return;
 
     function onBlur() {
-      if (!isLocked && !import.meta.env.DEV && !devMode) {
+      if (!isLocked && !import.meta.env.DEV && !allowBlurLockBypass) {
         invoke("force_lock").catch(() => {});
       }
     }
 
     window.addEventListener("blur", onBlur);
     return () => window.removeEventListener("blur", onBlur);
-  }, [lockOnWindowBlur, isLocked, devMode]);
+  }, [lockOnWindowBlur, isLocked, allowBlurLockBypass]);
 }
