@@ -10,14 +10,9 @@ import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import type { TransferRequest } from "@/lib/request-schema";
 
-export interface TransferRequest {
-  to: string;
-  amount: number | string;
-  from?: string;
-  tick_offset?: number;
-  [key: string]: unknown;
-}
+export type { TransferRequest } from "@/lib/request-schema";
 
 export interface ApproveResult {
   txHash: string;
