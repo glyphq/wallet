@@ -25,10 +25,19 @@ export default function SplashScreen() {
 
   // Hydration
   useEffect(() => {
-    const unsub = usePersistedStore.persist.onFinishHydration(() => setHydrated(true));
-    setHydrated(usePersistedStore.persist.hasHydrated());
-    const timer = setTimeout(() => setHydrated(true), 3000);
-    return () => { unsub(); clearTimeout(timer); };
+    const unsub = usePersistedStore.persist.onFinishHydration(() => {
+      setHydrated((prev) => (prev ? prev : true));
+    });
+    if (usePersistedStore.persist.hasHydrated()) {
+      setHydrated(true);
+    }
+    const timer = setTimeout(() => {
+      setHydrated((prev) => (prev ? prev : true));
+    }, 3000);
+    return () => {
+      unsub();
+      clearTimeout(timer);
+    };
   }, []);
 
   // Cycle fun facts

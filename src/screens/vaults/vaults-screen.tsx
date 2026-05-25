@@ -130,7 +130,10 @@ export default function VaultsScreen() {
         unlock(
           switchingVault.id,
           [],
-          switchingVault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
+          {
+            watchOnly: true,
+            identities: switchingVault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
+          },
         );
         setActiveVault(switchingVault.id);
         touchVaultUnlocked(switchingVault.id);

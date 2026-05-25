@@ -185,7 +185,10 @@ export default function WelcomeScreen() {
       encryptedData: null,
     });
     setActiveVault(newVaultId);
-    unlock(newVaultId, [], accounts.map((account) => account.identity!).filter(Boolean));
+    unlock(newVaultId, [], {
+      watchOnly: true,
+      identities: accounts.map((account) => account.identity!).filter(Boolean),
+    });
     navigate("/dashboard", { replace: true });
   }
 

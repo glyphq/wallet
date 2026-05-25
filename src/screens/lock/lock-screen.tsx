@@ -75,7 +75,10 @@ export default function LockScreen() {
 
   async function openWatchOnlyVault() {
     if (!vault) return;
-    unlock(vault.id, [], vault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity));
+    unlock(vault.id, [], {
+      watchOnly: true,
+      identities: vault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
+    });
     touchVaultUnlocked(vault.id);
     recordAuditEvent({
       kind: "unlock_succeeded",

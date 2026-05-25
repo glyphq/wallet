@@ -107,7 +107,7 @@ export default function CreateVaultScreen() {
   }
 
   async function finish() {
-    if (strength.level < 1) return;
+    if (password.length < 10 || strength.level < 1) return;
     setLoading(true);
     try {
       const encryptedData = await createVault(password, [seed]);
