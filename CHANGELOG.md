@@ -1,5 +1,11 @@
 # sigil
 
+## 0.9.1
+
+### Patch Changes
+
+- 56f59cf: Improve updater reliability by centralizing update state, surfacing unsupported Linux package installs, switching Windows installs to quiet mode, and generating complete updater metadata in tag-based releases.
+
 ## 0.9.0
 
 ### Minor Changes
