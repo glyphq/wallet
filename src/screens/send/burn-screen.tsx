@@ -4,6 +4,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { Modal } from "@/components/modal";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { usePersistedStore } from "@/store/persisted";
@@ -16,6 +17,7 @@ import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { formatQu, extractMessage } from "@/lib/format";
 import { TxSending, TxError } from "@/components/tx-status";
+import { unlockVault } from "@/lib/vault";
 
 type Step = "input" | "confirm" | "sending" | "done" | "error";
 
@@ -23,6 +25,7 @@ export default function BurnScreen() {
   const navigate = useNavigate();
 
   const settings = usePersistedStore((s) => s.settings);
+  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
@@ -37,6 +40,9 @@ export default function BurnScreen() {
   const [amountError, setAmountError] = useState("");
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
+  const [burnPassword, setBurnPassword] = useState("");
+  const [burnPasswordError, setBurnPasswordError] = useState("");
 
   function goConfirm() {
     const trimmed = amountStr.trim();
@@ -53,6 +59,15 @@ export default function BurnScreen() {
   }
 
   async function send() {
+    if (!wallet) return;
+    if (settings.requirePasswordForBurn && vault?.encryptedData) {
+      setPasswordConfirmOpen(true);
+      return;
+    }
+    await finalizeSend();
+  }
+
+  async function finalizeSend() {
     if (!wallet) return;
     setStep("sending");
     try {
@@ -88,6 +103,19 @@ export default function BurnScreen() {
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
+    }
+  }
+
+  async function confirmBurnPassword() {
+    if (!vault?.encryptedData) return;
+    try {
+      await unlockVault(vault.encryptedData, burnPassword);
+      setPasswordConfirmOpen(false);
+      setBurnPassword("");
+      setBurnPasswordError("");
+      await finalizeSend();
+    } catch {
+      setBurnPasswordError("WRONG PASSWORD");
     }
   }
 
@@ -173,6 +201,31 @@ export default function BurnScreen() {
 
       {/* ── Error ── */}
       {step === "error" && <TxError message={txError} onRetry={() => setStep("confirm")} onCancel={() => navigate("/send")} />}
+
+      <Modal open={passwordConfirmOpen} onClose={() => setPasswordConfirmOpen(false)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+            Confirm burn password
+          </div>
+          <Input
+            type="password"
+            label="Vault password"
+            value={burnPassword}
+            onChange={(e) => { setBurnPassword(e.target.value); setBurnPasswordError(""); }}
+            onKeyDown={(e) => e.key === "Enter" && confirmBurnPassword()}
+            error={burnPasswordError}
+            placeholder="••••••••••"
+            autoComplete="current-password"
+            autoFocus
+          />
+          <Button variant="danger" shape="sharp" onClick={confirmBurnPassword} disabled={!burnPassword}>
+            Confirm burn
+          </Button>
+          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setPasswordConfirmOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
 
     </AppShell>
   );

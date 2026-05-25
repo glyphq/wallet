@@ -32,6 +32,9 @@ export default function SecurityScreen() {
   const lockOnWindowBlur = usePersistedStore((s) => s.settings.lockOnWindowBlur);
   const lockOnSleep = usePersistedStore((s) => s.settings.lockOnSleep);
   const clipboardClearSeconds = usePersistedStore((s) => s.settings.clipboardClearSeconds);
+  const requirePasswordForBurn = usePersistedStore((s) => s.settings.requirePasswordForBurn);
+  const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
+  const highValueSendThreshold = usePersistedStore((s) => s.settings.highValueSendThreshold);
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
@@ -146,6 +149,131 @@ export default function SecurityScreen() {
             );
           })}
         </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+            Approval policies
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+            Extra checks for destructive or sensitive actions
+          </div>
+        </div>
+
+        <button
+          onClick={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-4)",
+            padding: "var(--space-4)",
+            background: "none",
+            border: `1px solid ${requirePasswordForBurn ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+            borderRadius: "var(--radius-sharp)",
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Require password for burn
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              Ask for the vault password again before broadcasting burns
+            </div>
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: requirePasswordForBurn ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            {requirePasswordForBurn ? "[ON]" : "[OFF]"}
+          </span>
+        </button>
+
+        <button
+          onClick={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-4)",
+            padding: "var(--space-4)",
+            background: "none",
+            border: `1px solid ${requireBiometricForSeedReveal ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+            borderRadius: "var(--radius-sharp)",
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Require biometric for seed reveal
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              Uses the vault biometric path instead of password-only reveal when available
+            </div>
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: requireBiometricForSeedReveal ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            {requireBiometricForSeedReveal ? "[ON]" : "[OFF]"}
+          </span>
+        </button>
+
+        <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              High-value send threshold
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              Amount in QU that triggers an extra confirmation step for sends and dApp transfers
+            </div>
+          </div>
+          <input
+            value={highValueSendThreshold}
+            onChange={(e) => updateSettings({ highValueSendThreshold: e.target.value.replace(/[^0-9]/g, "") })}
+            placeholder="Disabled when empty"
+            className="sigil-input"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-mono-sm)",
+              color: "var(--color-text-primary)",
+              background: "var(--color-bg-elevated)",
+              borderRadius: "var(--radius-sharp)",
+              padding: "var(--space-3) var(--space-4)",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <button
+          onClick={() => navigate("/settings/security/audit-log")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-4)",
+            padding: "var(--space-4)",
+            background: "none",
+            border: "1px solid var(--color-border-strong)",
+            borderRadius: "var(--radius-sharp)",
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Audit log
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              View local unlock, export, reveal, and request-approval events
+            </div>
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            OPEN →
+          </span>
+        </button>
       </div>
 
       {/* Lock on sleep */}
