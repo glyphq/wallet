@@ -22,11 +22,13 @@ import RequestScreen from "@/screens/request/request-screen";
 import SettingsScreen from "@/screens/settings/settings-screen";
 import DappsScreen from "@/screens/settings/dapps-screen";
 import SecurityScreen from "@/screens/settings/security-screen";
+import AuditLogScreen from "@/screens/settings/audit-log-screen";
 import NetworkScreen from "@/screens/settings/network-screen";
 import AppearanceScreen from "@/screens/settings/appearance-screen";
 import SettingsContactsScreen from "@/screens/settings/contacts-screen";
 import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
+import TrustScreen from "@/screens/settings/trust-screen";
 
 function Screen({ component: C }: { component: React.ComponentType }) {
   return (
@@ -60,11 +62,13 @@ export const router = createHashRouter([
       { path: "/settings", element: <Screen component={SettingsScreen} /> },
       { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
       { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
+      { path: "/settings/security/audit-log", element: <Screen component={AuditLogScreen} /> },
       { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
       { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
       { path: "/settings/contacts", element: <Screen component={SettingsContactsScreen} /> },
       { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
+      { path: "/settings/trust", element: <Screen component={TrustScreen} /> },
     ],
   },
 ]);
