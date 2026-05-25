@@ -237,14 +237,42 @@ export default function NetworkScreen() {
         >
           <div>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Developer mode
+              Diagnostic UI
             </div>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Show raw tx bytes, RPC payloads, and skip auto-lock blur guard
+              Enable developer-oriented diagnostics and advanced inspection surfaces
             </div>
           </div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: settings.debugMode ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
             {settings.debugMode ? "[ON]" : "[OFF]"}
+          </span>
+        </button>
+        <button
+          onClick={() => updateSettings({ allowBlurLockBypass: !settings.allowBlurLockBypass })}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-4)",
+            padding: "var(--space-4)",
+            background: "none",
+            border: `1px solid ${settings.allowBlurLockBypass ? "var(--color-status-error)" : "var(--color-border-strong)"}`,
+            borderRadius: "var(--radius-sharp)",
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Blur-lock bypass
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              Developer-only bypass for lock-on-blur without disabling diagnostics
+            </div>
+          </div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: settings.allowBlurLockBypass ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
+            {settings.allowBlurLockBypass ? "[ON]" : "[OFF]"}
           </span>
         </button>
       </div>

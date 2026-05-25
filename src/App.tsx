@@ -11,6 +11,7 @@ import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
+import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -106,6 +107,54 @@ function useHideToTray() {
   }, [hideToTray]);
 }
 
+function useRuntimeDiagnostics() {
+  useEffect(() => {
+    function handleDiskReadError() {
+      recordRuntimeIssue({
+        source: "storage",
+        title: "Encrypted store read failed",
+        detail: "The persisted store could not be decrypted or loaded from disk.",
+      });
+    }
+
+    function handleDiskWriteError() {
+      recordRuntimeIssue({
+        source: "storage",
+        title: "Encrypted store write failed",
+        detail: "The persisted store could not be written to disk.",
+      });
+    }
+
+    function handleError(event: ErrorEvent) {
+      recordRuntimeIssue({
+        source: "renderer",
+        title: "Unhandled renderer error",
+        detail: event.message || "Unknown renderer error",
+      });
+    }
+
+    function handleRejection(event: PromiseRejectionEvent) {
+      const reason = event.reason instanceof Error ? event.reason.message : String(event.reason ?? "Unknown rejection");
+      recordRuntimeIssue({
+        source: "renderer",
+        title: "Unhandled promise rejection",
+        detail: reason,
+      });
+    }
+
+    window.addEventListener("sigil:disk-read-error", handleDiskReadError as EventListener);
+    window.addEventListener("sigil:disk-write-error", handleDiskWriteError as EventListener);
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => {
+      window.removeEventListener("sigil:disk-read-error", handleDiskReadError as EventListener);
+      window.removeEventListener("sigil:disk-write-error", handleDiskWriteError as EventListener);
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
+    };
+  }, []);
+}
+
 function AppHooks() {
   useAppearance();
   useRpcSync();
@@ -114,6 +163,7 @@ function AppHooks() {
   useNotificationReconcile();
   useNotificationInit();
   useHideToTray();
+  useRuntimeDiagnostics();
   useUpdater();
   return null;
 }

@@ -86,6 +86,7 @@ export interface AppSettings {
   pollingIntervalLockedMs: number;
   hideToTray: boolean;
   sponsorAttribution: "anonymous" | "identity" | "custom";
+  allowBlurLockBypass: boolean;
   requirePasswordForBurn: boolean;
   requireBiometricForSeedReveal: boolean;
   highValueSendThreshold: string;
@@ -120,6 +121,7 @@ const MAX_NOTIFICATION_EVENTS = 200;
 const MAX_AUDIT_EVENTS = 500;
 const MAX_REQUEST_HISTORY = 200;
 const MAX_PRICE_SNAPSHOTS = 2_000;
+const MAX_RUNTIME_ISSUES = 100;
 
 export type NotificationEventKind =
   | "received"
@@ -145,6 +147,14 @@ export interface NotificationEvent {
 export interface PriceSnapshot {
   timestamp: number;
   priceUsd: number;
+}
+
+export interface RuntimeIssue {
+  id: string;
+  source: "native" | "renderer" | "updater" | "storage";
+  title: string;
+  detail: string;
+  createdAt: number;
 }
 
 export type AuditEventKind =
@@ -228,6 +238,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   pollingIntervalLockedMs: 20_000,
   hideToTray: false,
   sponsorAttribution: "anonymous",
+  allowBlurLockBypass: false,
   requirePasswordForBurn: false,
   requireBiometricForSeedReveal: false,
   highValueSendThreshold: "",
@@ -312,6 +323,14 @@ function clampPriceSnapshots(snapshots: PriceSnapshot[]): PriceSnapshot[] {
     .slice(0, MAX_PRICE_SNAPSHOTS);
 }
 
+function clampRuntimeIssues(issues: RuntimeIssue[]): RuntimeIssue[] {
+  if (issues.length <= MAX_RUNTIME_ISSUES) return issues;
+  return issues
+    .slice()
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, MAX_RUNTIME_ISSUES);
+}
+
 function sanitizePollingInterval(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value)
     ? Math.min(60_000, Math.max(2_000, Math.round(value)))
@@ -327,6 +346,7 @@ interface PersistedState {
   txMemos: Record<string, string>;
   notificationEvents: NotificationEvent[];
   priceSnapshots: PriceSnapshot[];
+  runtimeIssues: RuntimeIssue[];
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];
   lastNotificationScanAt: number;
@@ -360,6 +380,8 @@ interface PersistedState {
   addAuditEvent: (event: AuditEvent) => void;
   clearAuditEvents: () => void;
   addPriceSnapshot: (snapshot: PriceSnapshot) => void;
+  addRuntimeIssue: (issue: RuntimeIssue) => void;
+  clearRuntimeIssues: () => void;
   addRequestHistoryItem: (event: RequestHistoryItem) => void;
   updateRequestHistoryItem: (id: string, updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt">>) => void;
   clearRequestHistory: () => void;
@@ -376,6 +398,7 @@ export const usePersistedStore = create<PersistedState>()(
       txMemos: {},
       notificationEvents: [],
       priceSnapshots: [],
+      runtimeIssues: [],
       auditEvents: [],
       requestHistory: [],
       lastNotificationScanAt: 0,
@@ -524,6 +547,11 @@ export const usePersistedStore = create<PersistedState>()(
           return { priceSnapshots: clampPriceSnapshots([snapshot, ...s.priceSnapshots]) };
         }),
 
+      addRuntimeIssue: (issue) =>
+        set((s) => ({ runtimeIssues: clampRuntimeIssues([issue, ...s.runtimeIssues]) })),
+
+      clearRuntimeIssues: () => set({ runtimeIssues: [] }),
+
       addRequestHistoryItem: (event) =>
         set((s) => ({ requestHistory: clampRequestHistory([event, ...s.requestHistory]) })),
 
@@ -594,6 +622,19 @@ export const usePersistedStore = create<PersistedState>()(
               ),
             )
           : currentState.priceSnapshots;
+        const runtimeIssues = Array.isArray(ps.runtimeIssues)
+          ? clampRuntimeIssues(
+              ps.runtimeIssues.filter((issue): issue is RuntimeIssue =>
+                !!issue &&
+                typeof issue === "object" &&
+                typeof issue.id === "string" &&
+                typeof issue.source === "string" &&
+                typeof issue.title === "string" &&
+                typeof issue.detail === "string" &&
+                typeof issue.createdAt === "number",
+              ),
+            )
+          : currentState.runtimeIssues;
         const auditEvents = Array.isArray(ps.auditEvents)
           ? clampAuditEvents(
               ps.auditEvents.filter((event): event is AuditEvent =>
@@ -675,6 +716,7 @@ export const usePersistedStore = create<PersistedState>()(
             settingsBase.sponsorAttribution === "identity" || settingsBase.sponsorAttribution === "custom"
               ? settingsBase.sponsorAttribution
               : currentState.settings.sponsorAttribution,
+          allowBlurLockBypass: !!settingsBase.allowBlurLockBypass,
         };
         return {
           ...currentState,
@@ -684,6 +726,7 @@ export const usePersistedStore = create<PersistedState>()(
           txMemos,
           notificationEvents,
           priceSnapshots,
+          runtimeIssues,
           auditEvents,
           requestHistory,
           lastNotificationScanAt,
