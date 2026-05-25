@@ -3,15 +3,13 @@ import { Button } from "@/components/button";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
+import type { ConnectRequest, SigilPermission } from "@/lib/request-schema";
 
-export interface ConnectRequest {
-  permissions?: ("transfer" | "sc_call" | "sign_message")[];
-  [key: string]: unknown;
-}
+export type { ConnectRequest } from "@/lib/request-schema";
 
 export interface ConnectApproveResult {
   identity: string;
-  permissions: ("transfer" | "sc_call" | "sign_message")[];
+  permissions: SigilPermission[];
 }
 
 interface ConnectPreviewProps {
@@ -48,7 +46,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   function approve() {
     if (!selectedWallet) return;
-    const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as ("transfer" | "sc_call" | "sign_message")[];
+    const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as SigilPermission[];
     onApprove({ identity: selectedWallet.identity, permissions });
   }
 

@@ -29,16 +29,9 @@ import type { ApproveResult } from "./transfer-preview";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { qk } from "@/lib/query-keys";
+import type { ScCallRequest } from "@/lib/request-schema";
 
-export interface ScCallRequest {
-  contract_index: number;
-  input_type: number;
-  from?: string;
-  amount?: number | string;
-  payload?: string; // base64-encoded binary
-  tick_offset?: number;
-  [key: string]: unknown;
-}
+export type { ScCallRequest } from "@/lib/request-schema";
 
 interface ScCallPreviewProps {
   request: ScCallRequest;
