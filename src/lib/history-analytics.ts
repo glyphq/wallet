@@ -25,6 +25,7 @@ export interface ContractUsageStat {
 
 export interface MonthlySummaryStat {
   month: string;
+  sortKey: number;
   incoming: bigint;
   outgoing: bigint;
   count: number;
@@ -58,7 +59,7 @@ export function buildVaultAnalytics(identitySet: Set<string>, txs: AnalyticsTxLi
   let totalOutgoing = 0n;
   const counterparties = new Map<string, CounterpartyStat>();
   const contractUsage = new Map<string, ContractUsageStat>();
-  const monthly = new Map<string, MonthlySummaryStat>();
+  const monthly = new Map<number, MonthlySummaryStat>();
 
   for (const tx of txs) {
     if (!tx.moneyFlew) continue;
@@ -67,10 +68,18 @@ export function buildVaultAnalytics(identitySet: Set<string>, txs: AnalyticsTxLi
     const destinationMine = !!tx.destination && identitySet.has(tx.destination);
     if (!sourceMine && !destinationMine) continue;
 
-    const monthKey = tx.timestamp
-      ? new Date(tx.timestamp).toLocaleDateString(undefined, { year: "numeric", month: "short" })
+    const monthDate = tx.timestamp ? new Date(tx.timestamp) : null;
+    const monthSortKey = monthDate ? monthDate.getFullYear() * 100 + (monthDate.getMonth() + 1) : -1;
+    const monthLabel = monthDate
+      ? monthDate.toLocaleDateString(undefined, { year: "numeric", month: "short" })
       : "Unknown";
-    const month = monthly.get(monthKey) ?? { month: monthKey, incoming: 0n, outgoing: 0n, count: 0 };
+    const month = monthly.get(monthSortKey) ?? {
+      month: monthLabel,
+      sortKey: monthSortKey,
+      incoming: 0n,
+      outgoing: 0n,
+      count: 0,
+    };
     month.count += 1;
 
     if (destinationMine && !sourceMine) {
@@ -108,7 +117,7 @@ export function buildVaultAnalytics(identitySet: Set<string>, txs: AnalyticsTxLi
       contractUsage.set(label, existing);
     }
 
-    monthly.set(monthKey, month);
+    monthly.set(monthSortKey, month);
   }
 
   return {
@@ -122,7 +131,7 @@ export function buildVaultAnalytics(identitySet: Set<string>, txs: AnalyticsTxLi
       .sort((a, b) => (a.count === b.count ? (a.volume > b.volume ? -1 : 1) : b.count - a.count))
       .slice(0, 5),
     monthlySummaries: [...monthly.values()]
-      .sort((a, b) => b.month.localeCompare(a.month))
+      .sort((a, b) => b.sortKey - a.sortKey)
       .slice(0, 6),
   };
 }
