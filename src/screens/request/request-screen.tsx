@@ -13,6 +13,7 @@ import { ConnectPreview, type ConnectApproveResult, type ConnectRequest } from "
 import { VerifyMessagePreview, type VerifyMessageResult, type VerifyMessageRequest } from "@/components/request/verify-message-preview";
 import { useSessionStore } from "@/store/session";
 import { ScreenHeader } from "@/components/screen-header";
+import { recordAuditEvent } from "@/lib/audit-log";
 
 type DappMeta = { name: string; origin: string; icon?: string };
 type BaseRequest = { dapp: DappMeta; nonce: string; exp?: number };
@@ -117,6 +118,14 @@ export default function RequestScreen() {
   }
 
   function reject() {
+    if (envelope) {
+      recordAuditEvent({
+        kind: "request_rejected",
+        status: "info",
+        title: "Request rejected",
+        detail: `${envelope.request.type} from ${envelope.request.dapp.origin}`,
+      });
+    }
     if (envelope?.callback) {
       const body = JSON.stringify({
         status: "rejected",
@@ -135,6 +144,12 @@ export default function RequestScreen() {
         await invoke("post_callback", { url: envelope.callback, body: callbackBody });
         setSuccess((s) => s ? { ...s, callbackStatus: "ok" } : s);
       } catch {
+        recordAuditEvent({
+          kind: "request_callback_failed",
+          status: "failure",
+          title: "Callback failed",
+          detail: envelope.callback,
+        });
         setSuccess((s) => s ? { ...s, callbackStatus: "failed" } : s);
       }
     } else {
@@ -155,6 +170,12 @@ export default function RequestScreen() {
     });
 
     shiftPendingRequest();
+    recordAuditEvent({
+      kind: "request_approved",
+      status: "success",
+      title: "Request approved",
+      detail: `${envelope.request.type} from ${envelope.request.dapp.origin}`,
+    });
     const state: SuccessState = {
       kind: "tx",
       detail: txHash,
@@ -179,6 +200,12 @@ export default function RequestScreen() {
     });
 
     shiftPendingRequest();
+    recordAuditEvent({
+      kind: "request_approved",
+      status: "success",
+      title: "Message signed",
+      detail: envelope.request.dapp.origin,
+    });
     const state: SuccessState = {
       kind: "message",
       detail: signature,
@@ -202,6 +229,12 @@ export default function RequestScreen() {
     });
 
     shiftPendingRequest();
+    recordAuditEvent({
+      kind: "request_approved",
+      status: "success",
+      title: "Signature verified",
+      detail: envelope.request.dapp.origin,
+    });
     const state: SuccessState = {
       kind: "verify",
       detail: valid ? "VALID" : "INVALID",
@@ -225,6 +258,12 @@ export default function RequestScreen() {
     });
 
     shiftPendingRequest();
+    recordAuditEvent({
+      kind: "request_approved",
+      status: "success",
+      title: "Connection approved",
+      detail: envelope.request.dapp.origin,
+    });
     const state: SuccessState = {
       kind: "connect",
       detail: identity,

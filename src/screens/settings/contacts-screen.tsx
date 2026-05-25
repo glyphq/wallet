@@ -11,11 +11,16 @@ import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
+import { createSignedExportEnvelope, parseSignedExportEnvelope } from "@/lib/export-format";
+import { recordAuditEvent } from "@/lib/audit-log";
 
 interface ImportPreview {
   toAdd: Contact[];
   duplicates: number;
   replacing: boolean;
+  formatVersion: number;
+  signatureVerified: boolean;
+  legacy: boolean;
 }
 
 export default function SettingsContactsScreen() {
@@ -81,7 +86,16 @@ export default function SettingsContactsScreen() {
     const exportable = contacts.map(({ id, name, identity, note, addedAt, lastUsedAt }) => ({
       id, name, identity, note, addedAt, lastUsedAt,
     }));
-    await saveFileDialog("sigil-contacts.json", JSON.stringify(exportable, null, 2));
+    const envelope = await createSignedExportEnvelope("contacts", exportable);
+    const saved = await saveFileDialog("sigil-contacts.json", JSON.stringify(envelope, null, 2));
+    if (saved) {
+      recordAuditEvent({
+        kind: "contacts_exported",
+        status: "success",
+        title: "Contacts exported",
+        detail: `${contacts.length} contacts saved as signed export v2`,
+      });
+    }
   }
 
   // ── Import ──────────────────────────────────────────────────────────────
@@ -91,21 +105,21 @@ export default function SettingsContactsScreen() {
     if (!file) return;
 
     setImportError("");
-    let parsed: unknown;
+    let parsed: ReturnType<typeof parseSignedExportEnvelope<Contact[]>> extends Promise<infer T> ? T : never;
     try {
-      parsed = JSON.parse(await file.text());
+      parsed = await parseSignedExportEnvelope<Contact[]>(await file.text(), "contacts");
     } catch {
       setImportError("Could not parse file — must be valid JSON");
       return;
     }
 
-    if (!Array.isArray(parsed)) {
+    if (!Array.isArray(parsed.payload)) {
       setImportError("Invalid format — expected a JSON array");
       return;
     }
 
     const valid: Contact[] = [];
-    for (const item of parsed) {
+    for (const item of parsed.payload) {
       if (
         item && typeof item === "object" &&
         typeof item.name === "string" && item.name.trim() &&
@@ -137,7 +151,14 @@ export default function SettingsContactsScreen() {
     const duplicates = deduped.length - toAdd.length;
 
     setImportAll(deduped);
-    setImportPreview({ toAdd, duplicates, replacing: false });
+    setImportPreview({
+      toAdd,
+      duplicates,
+      replacing: false,
+      formatVersion: parsed.version,
+      signatureVerified: parsed.verified,
+      legacy: parsed.legacy,
+    });
   }
 
   function doImportMerge() {
@@ -321,6 +342,9 @@ export default function SettingsContactsScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
             Import contacts
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: importPreview?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+            {importPreview?.legacy ? "[LEGACY FORMAT V1]" : importPreview?.signatureVerified ? "[SIGNED EXPORT V2 VERIFIED]" : "[SIGNED EXPORT V2 — SIGNATURE NOT VERIFIED ON THIS DEVICE]"}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>

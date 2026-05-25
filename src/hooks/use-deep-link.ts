@@ -8,6 +8,7 @@ import { createNotificationEvent, publishNotificationEvent } from "@/lib/notific
 import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
 import { truncateIdentity } from "@/lib/crypto";
 import { formatQu } from "@/lib/format";
+import { recordAuditEvent } from "@/lib/audit-log";
 
 function parseQuAmount(value: unknown): bigint | null {
   try {
@@ -90,6 +91,12 @@ export function useDeepLink() {
         if (!envelope.request?.type) return;
         enqueuePendingRequestRef.current(payload);
         invoke("clear_pending_request").catch(() => {});
+        recordAuditEvent({
+          kind: "request_received",
+          status: "info",
+          title: "Request received",
+          detail: `${String(envelope.request.type).replace(/_/g, " ")} from ${String((envelope.request.dapp as { origin?: unknown })?.origin ?? "unknown origin")}`,
+        });
         if (notificationsEnabledRef.current) {
           const n = buildNotification(envelope.request);
           if (n) {
