@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
 interface Props {
   children: ReactNode;
@@ -18,6 +19,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[sigil] uncaught render error:", error, info.componentStack);
+    recordRuntimeIssue({
+      source: "renderer",
+      title: "React render error",
+      detail: `${error.message}${info.componentStack ? ` ${info.componentStack}` : ""}`,
+    });
   }
 
   render() {
@@ -45,6 +51,20 @@ export class ErrorBoundary extends Component<Props, State> {
             }}
           >
             [RENDER ERROR]
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-mono-sm)",
+              color: "var(--color-text-secondary)",
+              letterSpacing: "0.04em",
+              textAlign: "center",
+              lineHeight: 1.6,
+              wordBreak: "break-word",
+              maxWidth: 320,
+            }}
+          >
+            {this.state.error?.message || "Unknown render failure"}
           </span>
           <button
             onClick={() => this.setState({ error: null })}

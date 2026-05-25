@@ -9,6 +9,7 @@ import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } fro
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
+import { useLatestStats } from "@/hooks/use-latest-stats";
 import { configureRpc } from "@/lib/rpc";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
@@ -155,6 +156,16 @@ function useRuntimeDiagnostics() {
   }, []);
 }
 
+function usePriceSnapshotRecorder() {
+  const { data: latestStats } = useLatestStats();
+  const addPriceSnapshot = usePersistedStore((s) => s.addPriceSnapshot);
+
+  useEffect(() => {
+    if (!latestStats || !Number.isFinite(latestStats.price)) return;
+    addPriceSnapshot({ timestamp: Date.now(), priceUsd: latestStats.price });
+  }, [addPriceSnapshot, latestStats?.price]);
+}
+
 function AppHooks() {
   useAppearance();
   useRpcSync();
@@ -164,6 +175,7 @@ function AppHooks() {
   useNotificationInit();
   useHideToTray();
   useRuntimeDiagnostics();
+  usePriceSnapshotRecorder();
   useUpdater();
   return null;
 }
