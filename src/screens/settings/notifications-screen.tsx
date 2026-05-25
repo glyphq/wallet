@@ -135,6 +135,8 @@ export default function NotificationsScreen() {
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const [permDenied, setPermDenied] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusTone, setStatusTone] = useState<"error" | "success" | "neutral">("neutral");
   const [typeFilter, setTypeFilter] = useState<"all" | "received" | "sent" | "confirmed" | "failed" | "expired" | "deep_link" | "price_alert">("all");
   const [accountFilter, setAccountFilter] = useState("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -155,22 +157,42 @@ export default function NotificationsScreen() {
 
   async function handleToggleEnabled(v: boolean) {
     if (v) {
-      const granted = await requestNotificationPermission();
-      if (!granted) {
+      const permission = await requestNotificationPermission();
+      if (!permission.granted) {
         setPermDenied(true);
+        setStatusTone("error");
+        setStatusMessage(permission.message);
         return;
       }
       setPermDenied(false);
+      setStatusTone("success");
+      setStatusMessage("Desktop notifications are enabled for this device.");
+    } else {
+      setPermDenied(false);
+      setStatusTone("neutral");
+      setStatusMessage("Desktop notifications are disabled.");
     }
     updateSettings({ notificationsEnabled: v });
   }
 
   async function sendTest() {
-    await publishNotificationEvent(createNotificationEvent({
+    const result = await publishNotificationEvent(createNotificationEvent({
       kind: "deep_link",
       title: "Sigil Notifications Enabled",
       body: "Desktop notifications are working and ready for wallet events.",
     }));
+    if (!result) {
+      setStatusTone("neutral");
+      setStatusMessage("Notification recorded in Sigil. Desktop delivery is disabled in settings.");
+      return;
+    }
+    if (result.ok) {
+      setStatusTone("success");
+      setStatusMessage("Test notification handed off to the OS notification service.");
+      return;
+    }
+    setStatusTone(result.state === "locked" ? "neutral" : "error");
+    setStatusMessage(result.message);
   }
 
   function setPollingInterval(setting: "pollingIntervalActiveMs" | "pollingIntervalBackgroundMs" | "pollingIntervalTrayMs" | "pollingIntervalLockedMs", value: string) {
@@ -220,16 +242,21 @@ export default function NotificationsScreen() {
         onChange={handleToggleEnabled}
       />
 
-      {permDenied && (
+      {(permDenied || statusMessage) && (
         <div
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "var(--text-mono-sm)",
-            color: "var(--color-status-error)",
+            color:
+              statusTone === "error"
+                ? "var(--color-status-error)"
+                : statusTone === "success"
+                  ? "var(--color-status-success)"
+                  : "var(--color-text-secondary)",
             letterSpacing: "0.05em",
           }}
         >
-          [PERMISSION DENIED — allow notifications in your OS settings]
+          [{(statusMessage ?? "Permission denied").toUpperCase()}]
         </div>
       )}
 
@@ -278,10 +305,10 @@ export default function NotificationsScreen() {
         />
         <SettingRow
           label="Notify when locked"
-          description="Keep polling balances and fire received notifications even when the vault is locked"
+          description="Allow desktop notifications to appear while the vault is locked"
           value={notifyWhenLocked}
           onChange={(v) => updateSettings({ notifyWhenLocked: v })}
-          disabled={!enabled || !onReceived}
+          disabled={!enabled}
         />
         <SettingRow
           label="Transaction sent"
@@ -397,6 +424,8 @@ export default function NotificationsScreen() {
       >
         Vault balances, ticks, tx history, and price checks follow the profile above. Sigil
         keeps polling in background, tray-hidden, and locked modes using the configured cadence.
+        When locked notifications are off, desktop alerts stay in Sigil's inbox and do not reach
+        the OS notification surface.
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>

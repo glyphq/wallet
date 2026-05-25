@@ -1,4 +1,6 @@
-import { notify } from "@/lib/notifications";
+import { notify, type NotificationDeliveryResult } from "@/lib/notifications";
+import { useSessionStore } from "@/store/session";
+import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
 
 function makeEventId(): string {
@@ -33,9 +35,26 @@ export function createNotificationEvent(input: {
 export async function publishNotificationEvent(
   event: NotificationEvent,
   options?: { desktop?: boolean },
-): Promise<void> {
+): Promise<NotificationDeliveryResult | null> {
   usePersistedStore.getState().addNotificationEvent(event);
-  if (options?.desktop !== false) {
-    await notify(event.title, event.body);
+  if (options?.desktop === false) {
+    return null;
   }
+  const { notificationsEnabled, notifyWhenLocked } = usePersistedStore.getState().settings;
+  const isLocked = useSessionStore.getState().isLocked;
+  if (!notificationsEnabled) {
+    return null;
+  }
+  if (isLocked && !notifyWhenLocked) {
+    return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the vault is locked." };
+  }
+  const result = await notify(event.title, event.body);
+  if (!result.ok) {
+    recordRuntimeIssue({
+      source: "native",
+      title: "Notification delivery failed",
+      detail: result.message,
+    });
+  }
+  return result;
 }

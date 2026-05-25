@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
@@ -11,7 +11,6 @@ import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { configureRpc } from "@/lib/rpc";
-import { requestNotificationPermission } from "@/lib/notifications";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
@@ -87,20 +86,6 @@ function useRpcSync() {
   }, [liveApiUrl, queryApiUrl]);
 }
 
-function useNotificationInit() {
-  const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
-  // Use a ref so we only request once per session, not on every re-render.
-  // The dependency on notificationsEnabled ensures we catch the async store hydration
-  // (store loads from disk after mount, flipping false → true).
-  const didInit = useRef(false);
-  useEffect(() => {
-    if (notificationsEnabled && !didInit.current) {
-      didInit.current = true;
-      requestNotificationPermission().catch(() => {});
-    }
-  }, [notificationsEnabled]);
-}
-
 function useHideToTray() {
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   useEffect(() => {
@@ -172,7 +157,6 @@ function AppHooks() {
   useDeepLink();
   useNotificationTriggers();
   useNotificationReconcile();
-  useNotificationInit();
   useHideToTray();
   useRuntimeDiagnostics();
   usePriceSnapshotRecorder();

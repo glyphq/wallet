@@ -4,6 +4,59 @@ import {
   sendNotification as tauriSend,
 } from "@tauri-apps/plugin-notification";
 
+export type NotificationPermissionResult =
+  | { granted: true; state: "granted" }
+  | { granted: false; state: "denied" | "unavailable" | "error"; message: string };
+
+export type NotificationDeliveryResult =
+  | { ok: true; state: "sent" }
+  | { ok: false; state: "locked" | "denied" | "error"; message: string };
+
+function notificationPlatform(): "macos" | "linux" | "other" {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("mac")) return "macos";
+  if (ua.includes("linux")) return "linux";
+  return "other";
+}
+
+function permissionDeniedMessage(): string {
+  switch (notificationPlatform()) {
+    case "macos":
+      return "Notifications are blocked for Sigil in macOS system settings.";
+    case "linux":
+      return "Desktop notifications are unavailable. On Linux this is often caused by an unpackaged app without a registered desktop entry.";
+    default:
+      return "Notifications are blocked in the OS settings.";
+  }
+}
+
+function permissionErrorMessage(): string {
+  switch (notificationPlatform()) {
+    case "macos":
+      return "Sigil could not verify macOS notification authorization.";
+    case "linux":
+      return "Sigil could not reach the Linux desktop notification service.";
+    default:
+      return "Sigil could not verify notification availability.";
+  }
+}
+
+function deliveryErrorMessage(error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error ?? "");
+  switch (notificationPlatform()) {
+    case "macos":
+      return detail
+        ? `macOS rejected the notification delivery: ${detail}`
+        : "macOS rejected the notification delivery.";
+    case "linux":
+      return detail
+        ? `Linux notification delivery failed: ${detail}`
+        : "Linux notification delivery failed. The desktop shell may be suppressing unpackaged apps.";
+    default:
+      return detail ? `Notification delivery failed: ${detail}` : "Notification delivery failed.";
+  }
+}
+
 export function stripNotificationMarkup(value: string): string {
   return value
     .normalize("NFKC")
@@ -13,30 +66,28 @@ export function stripNotificationMarkup(value: string): string {
     .trim();
 }
 
-export async function notify(title: string, body: string): Promise<void> {
+export async function notify(title: string, body: string): Promise<NotificationDeliveryResult> {
   try {
-    let granted = await isPermissionGranted();
-    if (!granted) {
-      // Permission may not persist across sessions on some platforms — re-request silently.
-      const res = await requestPermission();
-      granted = res === "granted";
+    if (!(await isPermissionGranted())) {
+      return { ok: false, state: "denied", message: permissionDeniedMessage() };
     }
-    if (!granted) return;
     tauriSend({
       title: stripNotificationMarkup(title),
       body: stripNotificationMarkup(body),
     });
-  } catch {
-    // non-critical
+    return { ok: true, state: "sent" };
+  } catch (error) {
+    return { ok: false, state: "error", message: deliveryErrorMessage(error) };
   }
 }
 
-export async function requestNotificationPermission(): Promise<boolean> {
+export async function requestNotificationPermission(): Promise<NotificationPermissionResult> {
   try {
-    if (await isPermissionGranted()) return true;
+    if (await isPermissionGranted()) return { granted: true, state: "granted" };
     const res = await requestPermission();
-    return res === "granted";
+    if (res === "granted") return { granted: true, state: "granted" };
+    return { granted: false, state: "denied", message: permissionDeniedMessage() };
   } catch {
-    return false;
+    return { granted: false, state: "error", message: permissionErrorMessage() };
   }
 }
