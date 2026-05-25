@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 planning/
+.codegraph
 
 # Editor directories and files
 .vscode/*
