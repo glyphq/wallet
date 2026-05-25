@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
@@ -26,7 +27,8 @@ async function fetchLatestStats(liveApiUrl: string): Promise<LatestStats> {
 export function useLatestStats() {
   const liveApiUrl = usePersistedStore((s) => s.settings.network.liveApiUrl);
   const pollingIntervalMs = usePollingIntervalMs();
-  return useQuery({
+  const addPriceSnapshot = usePersistedStore((s) => s.addPriceSnapshot);
+  const query = useQuery({
     queryKey: ["latest-stats", liveApiUrl],
     queryFn: () => fetchLatestStats(liveApiUrl),
     staleTime: 60_000,
@@ -34,4 +36,11 @@ export function useLatestStats() {
     refetchInterval: Math.max(15_000, pollingIntervalMs),
     refetchIntervalInBackground: true,
   });
+
+  useEffect(() => {
+    if (!query.data || !Number.isFinite(query.data.price)) return;
+    addPriceSnapshot({ timestamp: Date.now(), priceUsd: query.data.price });
+  }, [addPriceSnapshot, query.data]);
+
+  return query;
 }
