@@ -4,13 +4,9 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { signMessageFromSession } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
+import type { SignMessageRequest } from "@/lib/request-schema";
 
-export interface SignMessageRequest {
-  message: string;
-  from?: string;
-  data?: string; // base64-encoded raw bytes to sign; if absent, signs message UTF-8 bytes
-  [key: string]: unknown;
-}
+export type { SignMessageRequest } from "@/lib/request-schema";
 
 export interface SignMessageApproveResult {
   signature: string; // base64-encoded 64-byte SchnorrQ signature

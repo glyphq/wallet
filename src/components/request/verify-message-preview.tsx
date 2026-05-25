@@ -3,14 +3,9 @@ import { Button } from "@/components/button";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
 import { truncateId } from "@/lib/format";
 import { useSessionStore } from "@/store/session";
+import type { VerifyMessageRequest } from "@/lib/request-schema";
 
-export interface VerifyMessageRequest {
-  message: string;
-  data?: string; // base64-encoded raw bytes; if absent, hashes message UTF-8 bytes
-  signature: string; // base64-encoded 64-byte SchnorrQ signature
-  public_key: string; // base64-encoded 32-byte public key
-  [key: string]: unknown;
-}
+export type { VerifyMessageRequest } from "@/lib/request-schema";
 
 export interface VerifyMessageResult {
   valid: boolean;

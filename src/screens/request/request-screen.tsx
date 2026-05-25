@@ -6,71 +6,17 @@ import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { RequestHeader } from "@/components/request/request-header";
-import { TransferPreview, type ApproveResult, type TransferRequest } from "@/components/request/transfer-preview";
-import { ScCallPreview, type ScCallRequest } from "@/components/request/sc-call-preview";
-import { SignMessagePreview, type SignMessageApproveResult, type SignMessageRequest } from "@/components/request/sign-message-preview";
-import { ConnectPreview, type ConnectApproveResult, type ConnectRequest } from "@/components/request/connect-preview";
-import { VerifyMessagePreview, type VerifyMessageResult, type VerifyMessageRequest } from "@/components/request/verify-message-preview";
+import { TransferPreview, type ApproveResult } from "@/components/request/transfer-preview";
+import { ScCallPreview } from "@/components/request/sc-call-preview";
+import { SignMessagePreview, type SignMessageApproveResult } from "@/components/request/sign-message-preview";
+import { ConnectPreview, type ConnectApproveResult } from "@/components/request/connect-preview";
+import { VerifyMessagePreview, type VerifyMessageResult } from "@/components/request/verify-message-preview";
 import { saveFileDialog } from "@/lib/save-file";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { ScreenHeader } from "@/components/screen-header";
 import { recordAuditEvent } from "@/lib/audit-log";
-
-type DappMeta = { name: string; origin: string; icon?: string };
-type BaseRequest = { dapp: DappMeta; nonce: string; exp?: number };
-
-type SigilRequest =
-  | (TransferRequest & { type: "transfer" } & BaseRequest)
-  | (ScCallRequest & { type: "sc_call" } & BaseRequest)
-  | (SignMessageRequest & { type: "sign_message" } & BaseRequest)
-  | (VerifyMessageRequest & { type: "verify_message" } & BaseRequest)
-  | (ConnectRequest & { type: "connect" } & BaseRequest);
-
-interface SigilEnvelope {
-  request: SigilRequest;
-  callback: string | null;
-}
-
-type ParseResult = { envelope: SigilEnvelope; error: null } | { envelope: null; error: string };
-
-function isAllowedCallbackUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    const host = url.hostname.toLowerCase();
-    const isLocal = host === "localhost" || host === "127.0.0.1";
-    return url.protocol === "https:" || (url.protocol === "http:" && isLocal);
-  } catch {
-    return false;
-  }
-}
-
-function parseEnvelope(raw: string | null): ParseResult {
-  if (!raw) return { envelope: null, error: "No pending request" };
-  try {
-    const env = JSON.parse(raw) as { request: Record<string, unknown>; callback: unknown };
-    if (!env.request?.type) return { envelope: null, error: "Missing request type" };
-    if (typeof (env.request.dapp as { origin?: unknown })?.origin !== "string")
-      return { envelope: null, error: "Missing dApp origin" };
-    const origin = (env.request.dapp as { origin: string }).origin;
-    if (!origin.startsWith("https://")) return { envelope: null, error: "dApp origin must be HTTPS" };
-    if (typeof env.callback === "string" && !isAllowedCallbackUrl(env.callback))
-      return { envelope: null, error: "Callback URL must use HTTPS or localhost HTTP" };
-    if (env.request.exp && Date.now() / 1000 > (env.request.exp as number))
-      return { envelope: null, error: "Request expired" };
-    return { envelope: env as unknown as SigilEnvelope, error: null };
-  } catch {
-    return { envelope: null, error: "Invalid request format" };
-  }
-}
-
-const TYPE_LABEL: Record<string, string> = {
-  transfer: "Send QU",
-  sc_call: "Contract call",
-  sign_message: "Sign message",
-  verify_message: "Verify signature",
-  connect: "Connect",
-};
+import { parseSigilEnvelope, REQUEST_TYPE_LABEL } from "@/lib/request-schema";
 
 type CallbackStatus = "pending" | "ok" | "failed";
 
@@ -106,7 +52,7 @@ export default function RequestScreen() {
   const addRequestHistoryItem = usePersistedStore((s) => s.addRequestHistoryItem);
   const updateRequestHistoryItem = usePersistedStore((s) => s.updateRequestHistoryItem);
 
-  const parseResult = parseEnvelope(pendingRequest);
+  const parseResult = parseSigilEnvelope(pendingRequest);
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<SuccessState | null>(null);
@@ -515,7 +461,7 @@ export default function RequestScreen() {
   }
 
   const { request } = envelope;
-  const typeLabel = TYPE_LABEL[request.type] ?? request.type;
+  const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
 
   const statusBar = <ScreenHeader title={typeLabel} onBack={dismiss} backAriaLabel="Close without rejecting" />;
 
