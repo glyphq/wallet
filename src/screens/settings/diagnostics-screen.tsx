@@ -157,7 +157,7 @@ export default function DiagnosticsScreen() {
 
       <Section title="Security">
         <InfoRow label="CSP mode" value={cspModeLabel()} />
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5, overflowWrap: "break-word" }}>
           {cspModeDetail()}
         </div>
       </Section>
@@ -178,12 +178,12 @@ export default function DiagnosticsScreen() {
         } />
         <InfoRow label="Last checked" value={formatDate(updater.lastCheckedAt) || "—"} />
         {updater.context?.reason && (
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5, overflowWrap: "break-word" }}>
             {updater.context.reason}
           </div>
         )}
         {updater.lastError && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em", overflowWrap: "break-word" }}>
             [{updater.lastError.toUpperCase()}]
           </div>
         )}
@@ -221,8 +221,8 @@ export default function DiagnosticsScreen() {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", overflow: "hidden" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
         {title.toUpperCase()}
       </span>
       {children}
@@ -232,11 +232,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "flex-start" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "baseline", minWidth: 0 }}>
       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
         {label}
       </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", flex: 1, minWidth: 0, overflowWrap: "break-word", wordBreak: "break-all" }}>
         {value}
       </span>
     </div>
