@@ -1,5 +1,29 @@
 # sigil
 
+## 0.10.1
+
+### Patch Changes
+
+- df5f23f: Add typed callback response interfaces and export verifyEnvelopeSignature
+
+  - Added `SigilCallbackResponse` union type and its five constituent interfaces (`SigilSignedTransferCallback`, `SigilSignedMessageCallback`, `SigilConnectedCallback`, `SigilVerifiedCallback`, `SigilRejectedCallback`) to `request-schema.ts`
+  - Exported `verifyEnvelopeSignature` from `request-trust.ts` as a standalone helper for verifying ES256 signed envelopes without the full registry trust evaluation
+  - Updated `request-screen.tsx` to construct typed callback response objects instead of plain `JSON.stringify` calls, providing compile-time shape guarantees
+
+- 8788706: Fix deep-link requests never reaching the request screen
+
+  - `proof: null` from unsigned requests failed zod's `.optional()` check,
+    causing `parseSigilEnvelope` to reject every envelope silently — changed
+    to `.nullish()` so absent proof is accepted as `null` or `undefined`
+  - `lock()` was clearing `pendingRequests`, destroying any queued deep-link
+    request if auto-lock fired before the user could review it — pending
+    requests now survive lock/unlock so the lock screen routes correctly to
+    `/request` after unlock
+
+- e9bb1d2: Fix updater context fields being undefined in TypeScript
+
+  The Rust `UpdaterContext` struct used `#[serde(rename_all = "snake_case")]`, which serialized `packageKind` as `package_kind` and `supportsAutoUpdate` as `supports_auto_update`. The TypeScript interface expected camelCase, so both fields read as `undefined`. This caused the updater to exit early without checking for updates, and diagnostics to show `—` for package kind and auto-update support. Changed to `#[serde(rename_all = "camelCase")]`.
+
 ## 0.10.0
 
 ### Minor Changes
