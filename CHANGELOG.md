@@ -1,5 +1,22 @@
 # sigil
 
+## 0.10.2
+
+### Patch Changes
+
+- cfaf430: Fix overflow in diagnostics and support screens
+
+  - Diagnostics: InfoRow value spans now have `flex: 1; min-width: 0; overflow-wrap: break-word` so long RPC URLs and error messages wrap correctly inside their cards
+  - Diagnostics: Section cards use `overflow: hidden` as a containment guard
+  - Support: Attribution note text (long uppercase monospace) gets `overflow-wrap: break-word`
+  - Support: SponsorSheet and DiscordSheet bottom sheets now have `max-height: 85dvh; overflow-y: auto` so they cannot exceed the viewport on short windows
+
+- 84783c5: Fix wallet freezing during Sign & Send by moving signing to a Web Worker
+
+  The FourQ SchnorrQ signing implementation in `@qubic.org/crypto` uses synchronous pure-JS BigInt scalar multiplication (`scalarBaseMult`) which was called three times per signing operation on the main thread. This blocked the Tauri WebView renderer, making the wallet appear unresponsive or crashed.
+
+  Signing is now dispatched to a dedicated Web Worker (`crypto.worker.ts`), keeping the main thread free during the elliptic curve computation. This covers transfer, smart contract call, and sign-message flows.
+
 ## 0.10.1
 
 ### Patch Changes
