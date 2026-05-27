@@ -111,18 +111,6 @@ button, label, nav {
   user-select: none;
 }
 
-/* ── Skeleton shimmer ────────────────────────────────────────────── */
-@keyframes skeleton-shimmer {
-  0%, 100% { opacity: 0.35; }
-  50%       { opacity: 0.65; }
-}
-
-.skeleton {
-  background: var(--color-bg-elevated);
-  border-radius: var(--radius-sharp);
-  animation: skeleton-shimmer 1.6s ease-in-out infinite;
-}
-
 /* ── Button active animation ─────────────────────────────────────── */
 .sigil-btn {
   transition: opacity var(--duration-fast) var(--ease-out),

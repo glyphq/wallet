@@ -17,12 +17,11 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
         <label
           htmlFor={inputId}
           style={{
-            fontFamily: "var(--font-sans)",
+            fontFamily: "var(--font-mono)",
             fontSize: "var(--text-label)",
-            fontWeight: 500,
             color: "var(--color-text-secondary)",
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.08em",
           }}
         >
           {label}
@@ -39,7 +38,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
         aria-describedby={error && errorId ? errorId : undefined}
         style={{
           background: "var(--color-bg-subtle)",
-          borderRadius: "var(--radius-sharp)",
+          borderRadius: "var(--radius-card)",
           padding: "12px 14px",
           fontFamily: "var(--font-mono)",
           fontSize: "var(--text-mono-lg)",

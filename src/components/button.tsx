@@ -36,9 +36,9 @@ const VARIANT: Record<Variant, CSSProperties> = {
 };
 
 const SIZE: Record<Size, CSSProperties> = {
-  lg: { height: 48, padding: "0 24px", fontSize: "var(--text-body)", width: "100%" },
-  md: { height: 40, padding: "0 16px", fontSize: "var(--text-label)" },
-  sm: { height: 32, padding: "0 12px", fontSize: "var(--text-caption)" },
+  lg: { height: 48, padding: "0 24px", fontSize: "13px", width: "100%" },
+  md: { height: 40, padding: "0 16px", fontSize: "13px" },
+  sm: { height: 32, padding: "0 12px", fontSize: "11px" },
 };
 
 const SHAPE: Record<Shape, CSSProperties> = {
@@ -67,8 +67,10 @@ export function Button({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "var(--font-sans)",
-        fontWeight: 500,
+        fontFamily: "var(--font-mono)",
+        fontWeight: 400,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
         border: "1px solid",
         cursor: disabled || loading ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
