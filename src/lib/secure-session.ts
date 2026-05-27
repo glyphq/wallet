@@ -1,19 +1,13 @@
-import {
-  deriveIdentityFromSeed,
-  identityToPublicKey,
-  k12,
-  publicKeyFromSeed,
-  sign,
-} from "@/lib/crypto";
-import { buildTransaction, computeTransactionHash, encodeTransaction, signTransaction } from "@qubic.org/tx";
-import type { Identity, Seed } from "@/lib/crypto";
+import { deriveIdentityFromSeed, publicKeyFromSeed } from "@/lib/crypto";
+import type { Seed } from "@/lib/crypto";
 import type { SessionWallet } from "@/lib/session-wallet";
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 type SecretSeed = Uint8Array;
 
-interface BuildTxParams {
+export interface BuildTxParams {
   accountIndex: number;
   destination: string;
   amount: bigint;
@@ -23,13 +17,50 @@ interface BuildTxParams {
   payload: Uint8Array;
 }
 
-interface SignedTxResult {
+export interface SignedTxResult {
   encoded: string;
   hash: string;
-  bytes: Uint8Array;
 }
 
 let activeSeeds: SecretSeed[] = [];
+
+// ── Worker management ──────────────────────────────────────────────────────────
+
+let _worker: Worker | null = null;
+let _nextId = 0;
+const _pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+
+function getSigningWorker(): Worker {
+  if (!_worker) {
+    _worker = new Worker(
+      new URL("../workers/crypto.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    _worker.onmessage = ({ data }: MessageEvent) => {
+      const cb = _pending.get(data.id as number);
+      if (!cb) return;
+      _pending.delete(data.id as number);
+      if (data.ok) cb.resolve(data);
+      else cb.reject(new Error((data.error as string | undefined) ?? "Worker signing failed"));
+    };
+    _worker.onerror = (e) => {
+      for (const [, cb] of _pending) cb.reject(new Error(e.message ?? "Worker error"));
+      _pending.clear();
+      _worker = null;
+    };
+  }
+  return _worker;
+}
+
+function workerRequest<T>(message: Record<string, unknown>): Promise<T> {
+  const id = _nextId++;
+  return new Promise<T>((resolve, reject) => {
+    _pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
+    getSigningWorker().postMessage({ id, ...message });
+  });
+}
+
+// ── Seed management ────────────────────────────────────────────────────────────
 
 function seedToBytes(seed: Seed): SecretSeed {
   return encoder.encode(seed);
@@ -56,16 +87,15 @@ export function clearSecureSession() {
 
 export function unlockSecureSession(seeds: Seed[]): SessionWallet[] {
   clearSecureSession();
-
-  const wallets = seeds.map((seed) => {
+  return seeds.map((seed) => {
     const publicKey = publicKeyFromSeed(seed);
     const identity = deriveIdentityFromSeed(seed);
     activeSeeds.push(seedToBytes(seed));
     return { identity, publicKey };
   });
-
-  return wallets;
 }
+
+// ── Signing — dispatched to the worker thread ──────────────────────────────────
 
 async function buildSignedTransaction({
   accountIndex,
@@ -77,47 +107,36 @@ async function buildSignedTransaction({
   payload,
 }: BuildTxParams): Promise<SignedTxResult> {
   const seed = seedBytesToString(requireSeed(accountIndex));
-  const sourcePublicKey = publicKeyFromSeed(seed);
-  const txBytes = buildTransaction({
-    sourcePublicKey,
-    destinationPublicKey: identityToPublicKey(destination as Identity),
-    amount,
+  return workerRequest<SignedTxResult>({
+    type: "sign_tx",
+    seed,
+    destination,
+    amount: amount.toString(),
     targetTick,
+    currentTick,
     inputType,
-    ...(payload.byteLength > 0 ? { payload } : {}),
-    ...(currentTick !== undefined ? { currentTick } : {}),
+    payload,
   });
-  const signed = await signTransaction(txBytes, seed);
-
-  return {
-    encoded: encodeTransaction(signed),
-    hash: computeTransactionHash(signed),
-    bytes: signed,
-  };
 }
 
 export function buildTransferFromSession(params: Omit<BuildTxParams, "inputType" | "payload">) {
-  return buildSignedTransaction({
-    ...params,
-    inputType: 0,
-    payload: new Uint8Array(0),
-  });
+  return buildSignedTransaction({ ...params, inputType: 0, payload: new Uint8Array(0) });
 }
 
-export function buildScTransactionFromSession({
-  ...params
-}: BuildTxParams) {
-  return buildSignedTransaction({
-    ...params,
-  });
+export function buildScTransactionFromSession(params: BuildTxParams) {
+  return buildSignedTransaction(params);
 }
 
 export async function signMessageFromSession(accountIndex: number, messageBytes: Uint8Array) {
   const seed = seedBytesToString(requireSeed(accountIndex));
-  const digest = k12(messageBytes, 32);
-  const signature = await sign(digest, seed);
-  const publicKey = publicKeyFromSeed(seed);
-  const identity = deriveIdentityFromSeed(seed);
-
-  return { signature, publicKey, identity };
+  const result = await workerRequest<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>({
+    type: "sign_message",
+    seed,
+    messageBytes,
+  });
+  return {
+    signature: new Uint8Array(result.signature),
+    publicKey: new Uint8Array(result.publicKey),
+    identity: result.identity,
+  };
 }
