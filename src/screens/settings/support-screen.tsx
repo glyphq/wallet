@@ -90,6 +90,8 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
           bottom: 0,
           left: 0,
           right: 0,
+          maxHeight: "85dvh",
+          overflowY: "auto",
           background: "var(--color-bg-base)",
           borderRadius: "12px 12px 0 0",
           borderTop: "1px solid var(--color-border-strong)",
@@ -102,7 +104,7 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
         }}
       >
         {/* Handle */}
-        <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
+        <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2, flexShrink: 0 }} />
 
         {/* Identicon */}
         <div style={{
@@ -115,12 +117,13 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
         </div>
 
         {/* Info */}
-        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-2)", width: "100%", overflowWrap: "break-word" }}>
           <span style={{
             fontFamily: "var(--font-display)",
             fontSize: "var(--text-headline)",
             color: "var(--color-text-display)",
             letterSpacing: "0.1em",
+            wordBreak: "break-word",
           }}>
             {sponsor.name.toUpperCase()}
           </span>
@@ -244,6 +247,8 @@ function DiscordSheet({ onClose }: { onClose: () => void }) {
           bottom: 0,
           left: 0,
           right: 0,
+          maxHeight: "85dvh",
+          overflowY: "auto",
           background: "var(--color-bg-base)",
           borderRadius: "12px 12px 0 0",
           borderTop: "1px solid var(--color-border-strong)",
@@ -255,7 +260,7 @@ function DiscordSheet({ onClose }: { onClose: () => void }) {
           gap: "var(--space-5)",
         }}
       >
-        <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
+        <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2, flexShrink: 0 }} />
 
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <span style={{
@@ -420,7 +425,7 @@ export default function SupportScreen() {
             </button>
           ))}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", overflowWrap: "break-word", wordBreak: "break-word" }}>
           {sponsorAttribution === "custom"
             ? "[CUSTOM NAME REQUIRES A MANUAL DISCORD CONFIRMATION.]"
             : sponsorAttribution === "identity"
