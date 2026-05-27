@@ -214,12 +214,12 @@ export default function DashboardScreen() {
             {settings.hideBalances ? <EyeOff size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}
           </button>
           {settings.hideBalances ? (
-            <span style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-disabled)" }}>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", color: "var(--color-text-disabled)" }}>
               ••••••
             </span>
           ) : (
             <div style={{ display: "inline-flex", alignItems: "baseline", gap: "var(--space-2)" }}>
-              <span style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
                 {balanceLoading ? "[LOADING...]" : balance ? <AnimatedBalance value={balance.balance} /> : "—"}
               </span>
               {!balanceLoading && balance && (
@@ -424,7 +424,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
 function NetworkRow({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {label}
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: warn ? "var(--color-status-warning)" : "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
