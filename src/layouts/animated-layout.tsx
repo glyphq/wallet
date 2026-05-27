@@ -19,6 +19,7 @@ const ROUTE_DEPTH: Record<string, number> = {
   "/stake": 2,
   "/receive": 2,
   "/history": 2,
+  "/analytics": 3,
   "/contacts": 2,
   "/vaults": 2,
   "/settings": 2,

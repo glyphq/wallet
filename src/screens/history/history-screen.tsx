@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
@@ -10,7 +10,7 @@ import { Input } from "@/components/input";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { Download, SlidersHorizontal, RotateCw } from "lucide-react";
+import { Download, SlidersHorizontal, RotateCw, BarChart2 } from "lucide-react";
 import {
   useTxHistory,
   type TxHistoryItem,
@@ -18,7 +18,6 @@ import {
   DEFAULT_QUERY_FILTERS,
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useVaultAnalytics } from "@/hooks/use-vault-analytics";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
@@ -69,7 +68,6 @@ export default function HistoryScreen() {
 
   const txMemos = usePersistedStore((s) => s.txMemos);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
-  const { data: analytics } = useVaultAnalytics();
 
   const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -139,10 +137,6 @@ export default function HistoryScreen() {
 
   const filteredTxs = allTxs;
   const focusHash = searchParams.get("focus");
-  const visibleAnalytics = useMemo(
-    () => analytics,
-    [analytics],
-  );
 
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
@@ -205,6 +199,9 @@ export default function HistoryScreen() {
                   <Download size={15} />
                 </button>
               )}
+              <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
+                <BarChart2 size={15} strokeWidth={1.5} />
+              </button>
               <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
                 <SlidersHorizontal size={15} />
                 {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
@@ -222,54 +219,6 @@ export default function HistoryScreen() {
       {chips.length > 0 && (
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
           {chips.map((c) => <ActiveChip key={c.label} label={c.label} onRemove={c.clear} />)}
-        </div>
-      )}
-
-      {visibleAnalytics && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", marginBottom: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              VAULT ANALYTICS
-            </span>
-            <Tag variant={visibleAnalytics.netFlow >= 0n ? "success" : "warning"}>
-              {visibleAnalytics.netFlow >= 0n ? "NET IN" : "NET OUT"}
-            </Tag>
-          </div>
-          <div style={{ display: "grid", gap: "var(--space-3)", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
-            <AnalyticsStat label="Net flow" value={`${visibleAnalytics.netFlow >= 0n ? "+" : "−"}${formatQu(visibleAnalytics.netFlow >= 0n ? visibleAnalytics.netFlow : -visibleAnalytics.netFlow)} QU`} />
-            <AnalyticsStat label="Incoming" value={`${formatQu(visibleAnalytics.totalIncoming)} QU`} />
-            <AnalyticsStat label="Outgoing" value={`${formatQu(visibleAnalytics.totalOutgoing)} QU`} />
-          </div>
-          {visibleAnalytics.biggestCounterparties.length > 0 && (
-            <AnalyticsList
-              label="Biggest counterparties"
-              rows={visibleAnalytics.biggestCounterparties.map((item) => ({
-                primary: KNOWN_CONTRACT_ADDRESSES[item.identity] ?? truncateId(item.identity, 10, 8),
-                secondary: `${item.count} tx`,
-                value: `${formatQuCompact(item.volume)} QU`,
-              }))}
-            />
-          )}
-          {visibleAnalytics.contractUsage.length > 0 && (
-            <AnalyticsList
-              label="Contract usage"
-              rows={visibleAnalytics.contractUsage.map((item) => ({
-                primary: item.contract,
-                secondary: `${item.count} calls`,
-                value: `${formatQuCompact(item.volume)} QU`,
-              }))}
-            />
-          )}
-          {visibleAnalytics.monthlySummaries.length > 0 && (
-            <AnalyticsList
-              label="Monthly summary"
-              rows={visibleAnalytics.monthlySummaries.map((item) => ({
-                primary: item.month,
-                secondary: `+${formatQuCompact(item.incoming)} / -${formatQuCompact(item.outgoing)}`,
-                value: `${item.count} tx`,
-              }))}
-            />
-          )}
         </div>
       )}
 
@@ -681,40 +630,3 @@ function Dash() {
   return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>;
 }
 
-function AnalyticsStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function AnalyticsList({ label, rows }: { label: string; rows: Array<{ primary: string; secondary: string; value: string }> }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        {label}
-      </span>
-      {rows.map((row) => (
-        <div key={`${label}-${row.primary}-${row.value}`} style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "flex-start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
-              {row.primary}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
-              {row.secondary}
-            </span>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
-            {row.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
