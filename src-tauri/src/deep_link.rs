@@ -105,7 +105,6 @@ struct ParsedRequest {
     nonce: String,
     callback: Option<String>,
     redirect_uri: Option<String>,
-    proof: Option<Value>,
 }
 
 fn now_secs() -> u64 {
@@ -203,14 +202,13 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let value: Value =
         serde_json::from_str(&json_str).map_err(|e| format!("JSON parse failed: {e}"))?;
 
-    let (request_value, callback_from_payload, redirect_uri_from_payload, proof) = match value.get("request") {
+    let (request_value, callback_from_payload, redirect_uri_from_payload) = match value.get("request") {
         Some(request) if request.is_object() => (
             request.clone(),
             value.get("callback").and_then(|v| v.as_str()).map(|s| s.to_string()),
             value.get("redirect_uri").and_then(|v| v.as_str()).map(|s| s.to_string()),
-            value.get("proof").cloned(),
         ),
-        _ => (value.clone(), None, None, None),
+        _ => (value.clone(), None, None),
     };
 
     // Required fields
@@ -355,7 +353,6 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
         request: request_value,
         callback,
         redirect_uri,
-        proof,
     })
 }
 
@@ -377,7 +374,6 @@ pub fn process_url(app: &AppHandle, raw: &str) {
                 "request": parsed.request,
                 "callback": parsed.callback,
                 "redirect_uri": parsed.redirect_uri,
-                "proof": parsed.proof,
             });
             let payload = envelope.to_string();
             state.store(payload.clone());
