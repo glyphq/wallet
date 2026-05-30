@@ -137,6 +137,8 @@ export default function DashboardScreen() {
             {`TICK #${padTick(tickInfo?.tick)}`}
           </span>
           <div
+            title={health === "healthy" ? "Network healthy" : health === "degraded" ? "Network degraded" : "Network offline"}
+            aria-label={health === "healthy" ? "Network healthy" : health === "degraded" ? "Network degraded" : "Network offline"}
             style={{
               width: 6, height: 6, borderRadius: "50%",
               background: HEALTH_COLOR[health],
@@ -301,6 +303,16 @@ export default function DashboardScreen() {
             label="Updated"
             value={dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—"}
           />
+          <div style={{ display: "flex", gap: "var(--space-4)", paddingTop: "var(--space-2)", borderTop: "1px solid var(--color-border-subtle)" }}>
+            {(["healthy", "degraded", "offline"] as const).map((s) => (
+              <div key={s} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: HEALTH_COLOR[s], flexShrink: 0 }} />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                  {s.toUpperCase()}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </Modal>
     </AppShell>

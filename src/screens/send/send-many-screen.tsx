@@ -78,6 +78,7 @@ export default function SendManyScreen() {
   const [customPriceBq, setCustomPriceBq] = useState<number | null>(null);
   const [priceOpen, setPriceOpen] = useState(false);
   const [draftBq, setDraftBq] = useState("");
+  const [priceError, setPriceError] = useState("");
 
   const marketPriceBq = stats?.price !== undefined ? stats.price * 1e9 : undefined;
   const effectivePriceBq = customPriceBq ?? marketPriceBq;
@@ -91,12 +92,18 @@ export default function SendManyScreen() {
 
   function applyPrice() {
     const n = parseFloat(draftBq.replace(/,/g, ""));
-    if (!isNaN(n) && n > 0) setCustomPriceBq(n);
+    if (isNaN(n) || n <= 0) {
+      setPriceError("ENTER A POSITIVE PRICE");
+      return;
+    }
+    setCustomPriceBq(n);
+    setPriceError("");
     setPriceOpen(false);
   }
 
   function resetPrice() {
     setCustomPriceBq(null);
+    setPriceError("");
     setPriceOpen(false);
   }
 
@@ -416,7 +423,7 @@ export default function SendManyScreen() {
 
           <Sheet
             open={priceOpen}
-            onClose={applyPrice}
+            onClose={() => { setPriceError(""); setPriceOpen(false); }}
             title="Price per billion QU"
             footer={
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -431,10 +438,11 @@ export default function SendManyScreen() {
               <Input
                 label="$ / bQU"
                 value={draftBq}
-                onChange={(e) => setDraftBq(e.target.value.replace(/[^0-9.,]/g, ""))}
+                onChange={(e) => { setDraftBq(e.target.value.replace(/[^0-9.,]/g, "")); setPriceError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && applyPrice()}
                 placeholder={marketPriceBq?.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) ?? ""}
                 inputMode="decimal"
+                error={priceError}
                 autoFocus
               />
               {marketPriceBq !== undefined && (
