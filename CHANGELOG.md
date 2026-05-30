@@ -1,5 +1,11 @@
 # sigil
 
+## 0.11.0
+
+### Minor Changes
+
+- 8ead492: Remove proof/trust system, add redirect_uri delivery mode for deep-link requests.
+
 ## 0.10.4
 
 ### Patch Changes
