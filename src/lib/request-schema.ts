@@ -4,7 +4,6 @@ import { truncateIdentity } from "@/lib/crypto";
 import { formatQu } from "@/lib/format";
 
 const permissionSchema = z.enum(["transfer", "sc_call", "sign_message"]);
-const jsonWebKeySchema = z.record(z.string(), z.unknown());
 
 const dappMetaSchema = z.object({
   name: z.string().optional().default(""),
