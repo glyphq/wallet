@@ -165,7 +165,7 @@ jobs:
           rm -rf squashfs-root
           APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
 
-          # Remove bundled GTK3/GLib2/Pango/Cairo so rolling-release distros use system libs
+          # Remove bundled GTK3/GLib2/Pango/Cairo/util-linux so rolling-release distros use system libs
           rm -f squashfs-root/usr/lib/libgtk-3.so*
           rm -f squashfs-root/usr/lib/libgdk-3.so*
           rm -f squashfs-root/usr/lib/libgio-2.0.so*
@@ -181,6 +181,8 @@ jobs:
           rm -f squashfs-root/usr/lib/libcairo-gobject.so*
           rm -f squashfs-root/usr/lib/libatk-1.0.so*
           rm -f squashfs-root/usr/lib/libharfbuzz.so*
+          rm -f squashfs-root/usr/lib/libmount.so*
+          rm -f squashfs-root/usr/lib/libblkid.so*
 
           # go-appimage requires exactly one arg (AppDir); output filename is auto-generated
           # in CWD as {Name}-{version}-x86_64.AppImage
