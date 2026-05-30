@@ -69,6 +69,7 @@ export const sigilRequestSchema = z.discriminatedUnion("type", [
 export const sigilEnvelopeSchema = z.object({
   request: sigilRequestSchema,
   callback: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
+  redirect_uri: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
   proof: z.object({
     version: z.literal(1),
     algorithm: z.literal("ES256"),
@@ -92,6 +93,14 @@ export const sigilEnvelopeSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "Callback URL must use HTTPS or localhost HTTP",
       path: ["callback"],
+    });
+  }
+
+  if (envelope.redirect_uri && !isAllowedCallbackUrl(envelope.redirect_uri)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "redirect_uri must use HTTPS or localhost HTTP",
+      path: ["redirect_uri"],
     });
   }
 
