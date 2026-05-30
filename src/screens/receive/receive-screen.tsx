@@ -36,10 +36,10 @@ export default function ReceiveScreen() {
             tabIndex={hideBalances ? 0 : undefined}
             aria-label={hideBalances ? (qrRevealed ? "Hide QR code" : "Reveal QR code") : undefined}
             style={{
-              background: "var(--color-bg-elevated)",
+              background: "#FFFFFF",
               border: "1px solid var(--color-border-strong)",
               borderRadius: "var(--radius-sharp)",
-              padding: "var(--space-4)",
+              padding: "var(--space-3)",
               position: "relative",
               cursor: hideBalances && !qrRevealed ? "pointer" : "default",
             }}
@@ -60,8 +60,8 @@ export default function ReceiveScreen() {
               style={{ display: "block", filter: hideBalances && !qrRevealed ? "blur(12px)" : "none", transition: "filter 0.15s ease" }}
             />
             {hideBalances && !qrRevealed && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", borderRadius: "var(--radius-sharp)" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "#333333", letterSpacing: "0.05em" }}>
                   TAP OR HOVER TO REVEAL
                 </span>
               </div>
