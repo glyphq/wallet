@@ -31,6 +31,7 @@ Sensitive operations run in the Rust native layer, not the renderer:
 | Deep-link URL validation | Rust |
 | Nonce replay protection | Rust (persisted nonce store) |
 | Callback HTTP posting | Rust (`reqwest`) |
+| Redirect URI browser launch | Rust (`tauri-plugin-opener`) |
 | Auto-lock timer | Rust (background thread) |
 | Clipboard clear | Rust |
 | Update payload verification | Rust (built-in Tauri updater key) |
@@ -42,7 +43,7 @@ The renderer never touches raw seeds or signing keys directly. It sends a signin
 - **Encrypted at rest.** Vault files are opaque ciphertext without the password.
 - **No cloud custody.** Sigil never transmits keys or seeds to any server.
 - **Replay protection.** Each `sigil://` deep-link carries a nonce; Sigil stores seen nonces and rejects replays for up to one hour.
-- **Callback host validation.** Rust rejects callback URLs targeting private or loopback addresses except `localhost`/`127.0.0.1` for local development.
+- **Delivery URL validation.** Rust rejects `callback` and `redirect_uri` URLs targeting private or loopback addresses except `localhost`/`127.0.0.1` for local development.
 - **Signed update payloads.** Desktop updates are verified against the embedded updater signing key before installation.
 
 ---
@@ -69,11 +70,16 @@ sequenceDiagram
     React->>Rust: invoke get_pending_request (on hydration)
     Rust->>React: return stored payload
     React->>React: parseSigilEnvelope (zod schema)
-    React->>React: evaluateRequestTrust
     React->>User: request review UI
     User->>React: Approve or Reject
-    React->>Rust: invoke post_callback(url, body)
-    Rust->>dApp: HTTP POST callback result
+    alt callback set
+        React->>Rust: invoke post_callback(url, body)
+        Rust->>dApp: HTTP POST result JSON
+    end
+    alt redirect_uri set
+        React->>Rust: openUrl(redirect_uri?result=<base64url>)
+        Rust->>dApp: browser opens redirect_uri with result param
+    end
 ```
 
 If the app is locked when a request arrives, the request is held in the session queue. After unlock, the lock screen routes directly to the request review screen.
@@ -88,26 +94,16 @@ If the app is locked when a request arrives, the request is held in the session 
 | `verify_message` | Verify an existing signature bundle |
 | `connect` | Request a wallet session with declared permissions |
 
-### Trust validation
+### Result delivery
 
-Requests can be unsigned (legacy) or carry an ES256 proof signed by a registered dApp issuer.
+Two delivery modes are available. Both can be set on the same request and fire independently.
 
-```mermaid
-flowchart TD
-    req([Incoming request]) --> hasproof{Proof present?}
-    hasproof -- No --> unverified[legacy_unverified\nmetadata is self-reported]
-    hasproof -- Yes --> registry{Issuer in local\ntrusted registry?}
-    registry -- No --> untrusted[signed_unknown_issuer\nshown to user]
-    registry -- Yes --> verify[Verify ES256 signature\nagainst registered public key]
-    verify -- Valid --> trusted[verified ✓\norigin confirmed]
-    verify -- Invalid or\norigin mismatch --> blocked[BLOCKED\napproval disabled]
-```
+| Field | How it works |
+|---|---|
+| `callback` | Sigil POSTs the result as JSON from the Rust layer after the user acts |
+| `redirect_uri` | Sigil opens `redirect_uri?result=<base64url JSON>` in the default browser after the user acts |
 
-Unsigned requests can still be reviewed and approved. The UI surfaces the trust level clearly so users can decide.
-
-### Callback handling
-
-After approval or rejection, Sigil posts a signed JSON result to the callback URL from the Rust layer. If delivery fails, the result stays recoverable in request history for retry, export as JSON, or clipboard copy.
+`callback` is the right choice for dApps with a server — it keeps the result off the browser URL bar. `redirect_uri` works for static sites and SPAs with no backend; the result is read from `location.search` client-side. Both approve and reject outcomes are delivered to whichever modes are set.
 
 ---
 
@@ -151,21 +147,13 @@ The envelope shape:
 
 ```ts
 interface SigilEnvelope {
-  request: SigilRequest;  // discriminated union on "type"
-  callback?: string | null;
-  proof?: {
-    version: 1;
-    algorithm: "ES256";
-    issuer: string;
-    key_id?: string;
-    payload_hash: string;
-    signature: string;
-    public_jwk?: JsonWebKey;
-  };
+  request: SigilRequest;      // discriminated union on "type"
+  callback?: string | null;   // server POST delivery
+  redirect_uri?: string | null; // client redirect delivery
 }
 ```
 
-Use [`@sigil-oss/connect`](https://github.com/sigil-oss/sigil.connect) to build envelopes, sign them, and parse callback responses.
+Use [`@sigil-oss/connect`](https://github.com/sigil-oss/sigil.connect) to build envelopes and handle result delivery — including the `sigilRequest()` async API that wraps the full round-trip in a single `await`.
 
 ---
 
@@ -241,8 +229,8 @@ cargo check --manifest-path src-tauri/Cargo.toml
 - Request queue (multiple requests from the same dApp can stack)
 - Decoded previews for common Qubic contract procedures (Qearn lock/unlock, etc.)
 - Request history with per-entry callback status
+- Result delivery via server POST (`callback`) or browser redirect (`redirect_uri`) — both modes supported simultaneously
 - Callback retry, save-as-JSON, and clipboard copy on delivery failure
-- Signed request trust verification against local trusted issuer registry
 
 ### Security controls
 
