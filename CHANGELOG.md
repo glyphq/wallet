@@ -1,5 +1,12 @@
 # sigil
 
+## 0.10.3
+
+### Patch Changes
+
+- e86c0ab: Linux releases now include an RPM package for Fedora, RHEL, and openSUSE.
+- 54333e0: The AppImage no longer bundles GTK3/GLib2, fixing crashes on Arch Linux, Manjaro, and other rolling-release distros.
+
 ## 0.10.2
 
 ### Patch Changes
