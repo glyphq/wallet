@@ -144,14 +144,20 @@ jobs:
 
       - name: Patch AppImage for rolling-release distros
         run: |
-          # go-appimage uses versioned filenames (e.g. appimagetool-940-x86_64.AppImage);
-          # use gh to resolve the current name and rename for a stable local reference.
+          # go-appimage uses versioned filenames; use gh to resolve the current name.
           gh release download continuous \
             --repo probonopd/go-appimage \
             --pattern "appimagetool-*-x86_64.AppImage" \
             --dir .
-          mv appimagetool-*-x86_64.AppImage appimagetool.AppImage
-          chmod +x appimagetool.AppImage
+          mv appimagetool-*-x86_64.AppImage go-appimagetool.AppImage
+          chmod +x go-appimagetool.AppImage
+
+          # --appimage-extract works without FUSE (handled at the ELF runtime level).
+          # Extract the go-appimage tool to get the static Go binary directly,
+          # bypassing the AppImage runtime that drops args when APPIMAGE_EXTRACT_AND_RUN=1.
+          ./go-appimagetool.AppImage --appimage-extract
+          APPTOOL=$(find squashfs-root -name "appimagetool" -type f | head -1)
+          mv squashfs-root go-appimagetool-extracted
 
           APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" ! -name "*.sig" | head -1)
 
@@ -175,8 +181,7 @@ jobs:
           rm -f squashfs-root/usr/lib/libatk-1.0.so*
           rm -f squashfs-root/usr/lib/libharfbuzz.so*
 
-          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage \
-            squashfs-root "$APPIMAGE"
+          ARCH=x86_64 "$APPTOOL" squashfs-root "$APPIMAGE"
 
           # Resign — patching changes the checksum so the original .sig is invalid
           bun tauri signer sign \
