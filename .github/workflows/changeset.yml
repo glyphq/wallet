@@ -145,10 +145,8 @@ jobs:
       - name: Patch AppImage for rolling-release distros
         run: |
           wget -q -O appimagetool.AppImage \
-            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-          wget -q -O runtime-x86_64 \
-            "https://github.com/probonopd/go-appimage/releases/download/continuous/runtime-x86_64"
-          chmod +x appimagetool.AppImage runtime-x86_64
+            "https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool.AppImage
 
           APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" ! -name "*.sig" | head -1)
 
@@ -173,7 +171,6 @@ jobs:
           rm -f squashfs-root/usr/lib/libharfbuzz.so*
 
           ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage \
-            --runtime-file runtime-x86_64 \
             squashfs-root "$APPIMAGE"
 
           # Resign — patching changes the checksum so the original .sig is invalid
