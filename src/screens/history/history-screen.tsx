@@ -105,7 +105,7 @@ export default function HistoryScreen() {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
-      { rootMargin: "200px" },
+      { rootMargin: "100px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
