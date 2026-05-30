@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
@@ -10,6 +10,14 @@ import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
+
+function timeAgo(ms: number): string {
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
@@ -64,9 +72,17 @@ export default function ContactsScreen() {
     setEditing(null);
   }
 
-  const filtered = contacts
-    .filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.identity.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const filtered = useMemo(() =>
+    contacts
+      .filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.identity.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => {
+        if (a.lastUsedAt && b.lastUsedAt) return b.lastUsedAt - a.lastUsedAt;
+        if (a.lastUsedAt) return -1;
+        if (b.lastUsedAt) return 1;
+        return a.name.localeCompare(b.name);
+      }),
+    [contacts, search],
+  );
 
   const statusBar = (
     <ScreenHeader
@@ -104,8 +120,15 @@ export default function ContactsScreen() {
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
                   {contact.name}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                  {truncateId(contact.identity)}
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                    {truncateId(contact.identity)}
+                  </span>
+                  {contact.lastUsedAt ? (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                      {timeAgo(contact.lastUsedAt)}
+                    </span>
+                  ) : null}
                 </div>
                 {contact.note && (
                   <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
