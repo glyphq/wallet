@@ -1,5 +1,13 @@
 # sigil
 
+## 0.11.9
+
+### Patch Changes
+
+- 45a0776: Fix AppImage failing to launch on systems without FUSE.
+
+  - **Linux:** The AppImage now runs without FUSE by using the go-appimage toolchain, which embeds a FUSE-free runtime.
+
 ## 0.11.8
 
 ### Patch Changes
