@@ -1,5 +1,11 @@
 # sigil
 
+## 0.11.1
+
+### Patch Changes
+
+- ec00aa0: Remove unused `jsonWebKeySchema` variable left over from proof removal.
+
 ## 0.11.0
 
 ### Minor Changes
