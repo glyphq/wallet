@@ -146,13 +146,16 @@ jobs:
         run: |
           wget -q -O appimagetool.AppImage \
             "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-          chmod +x appimagetool.AppImage
+          wget -q -O runtime-x86_64 \
+            "https://github.com/probonopd/go-appimage/releases/download/continuous/runtime-x86_64"
+          chmod +x appimagetool.AppImage runtime-x86_64
 
           APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" ! -name "*.sig" | head -1)
 
+          rm -rf squashfs-root
           APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
 
-          # Remove bundled GTK3/GLib2 so rolling-release distros (Arch, Manjaro) use system libs
+          # Remove bundled GTK3/GLib2/Pango/Cairo so rolling-release distros use system libs
           rm -f squashfs-root/usr/lib/libgtk-3.so*
           rm -f squashfs-root/usr/lib/libgdk-3.so*
           rm -f squashfs-root/usr/lib/libgio-2.0.so*
@@ -160,8 +163,18 @@ jobs:
           rm -f squashfs-root/usr/lib/libgobject-2.0.so*
           rm -f squashfs-root/usr/lib/libgmodule-2.0.so*
           rm -f squashfs-root/usr/lib/libgthread-2.0.so*
+          rm -f squashfs-root/usr/lib/libgdk_pixbuf-2.0.so*
+          rm -f squashfs-root/usr/lib/libpango-1.0.so*
+          rm -f squashfs-root/usr/lib/libpangocairo-1.0.so*
+          rm -f squashfs-root/usr/lib/libpangoft2-1.0.so*
+          rm -f squashfs-root/usr/lib/libcairo.so*
+          rm -f squashfs-root/usr/lib/libcairo-gobject.so*
+          rm -f squashfs-root/usr/lib/libatk-1.0.so*
+          rm -f squashfs-root/usr/lib/libharfbuzz.so*
 
-          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage squashfs-root "$APPIMAGE"
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage \
+            --runtime-file runtime-x86_64 \
+            squashfs-root "$APPIMAGE"
 
           # Resign — patching changes the checksum so the original .sig is invalid
           bun tauri signer sign \
