@@ -79,7 +79,7 @@ jobs:
 
           APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
 
-          # Remove bundled GTK3/GLib2 so rolling-release distros (Arch, Manjaro) use system libs
+          # Remove bundled GTK3/GLib2/Pango/Cairo so rolling-release distros (Arch, Manjaro) use system libs
           rm -f squashfs-root/usr/lib/libgtk-3.so*
           rm -f squashfs-root/usr/lib/libgdk-3.so*
           rm -f squashfs-root/usr/lib/libgio-2.0.so*
@@ -87,6 +87,14 @@ jobs:
           rm -f squashfs-root/usr/lib/libgobject-2.0.so*
           rm -f squashfs-root/usr/lib/libgmodule-2.0.so*
           rm -f squashfs-root/usr/lib/libgthread-2.0.so*
+          rm -f squashfs-root/usr/lib/libgdk_pixbuf-2.0.so*
+          rm -f squashfs-root/usr/lib/libpango-1.0.so*
+          rm -f squashfs-root/usr/lib/libpangocairo-1.0.so*
+          rm -f squashfs-root/usr/lib/libpangoft2-1.0.so*
+          rm -f squashfs-root/usr/lib/libcairo.so*
+          rm -f squashfs-root/usr/lib/libcairo-gobject.so*
+          rm -f squashfs-root/usr/lib/libatk-1.0.so*
+          rm -f squashfs-root/usr/lib/libharfbuzz.so*
 
           ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage squashfs-root "$APPIMAGE"
 
