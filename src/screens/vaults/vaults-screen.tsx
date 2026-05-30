@@ -62,6 +62,7 @@ export default function VaultsScreen() {
   const [importPassword, setImportPassword] = useState("");
   const [importError, setImportError] = useState("");
   const [importLoading, setImportLoading] = useState(false);
+  const [importFileError, setImportFileError] = useState("");
 
   const [switchingVault, setSwitchingVault] = useState<VaultMeta | null>(null);
   const [renamingVault, setRenamingVault] = useState<VaultMeta | null>(null);
@@ -186,10 +187,16 @@ export default function VaultsScreen() {
       }
       const wasActive = deletingVault.id === settings.activeVaultId;
       removeVault(deletingVault.id);
-      if (wasActive) sessionLock();
       const remaining = usePersistedStore.getState().vaults;
       if (remaining.length === 0) {
         navigate("/setup", { replace: true });
+        return;
+      }
+      if (wasActive) {
+        const next = remaining.slice().sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0))[0];
+        setActiveVault(next.id);
+        sessionLock();
+        navigate("/lock", { replace: true });
         return;
       }
       setDeletingVault(null);
@@ -237,8 +244,9 @@ export default function VaultsScreen() {
         });
         setImportPassword("");
         setImportError("");
+        setImportFileError("");
       } catch {
-        // silently ignore malformed files
+        setImportFileError("INVALID OR UNSUPPORTED VAULT FILE");
       }
     };
     input.click();
@@ -529,6 +537,22 @@ export default function VaultsScreen() {
           />
           <Button onClick={doImport} loading={importLoading} disabled={!importPassword}>Import vault</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setImportData(null)}>Cancel</Button>
+        </div>
+      </Modal>
+
+      {/* Import file error modal */}
+      <Modal open={!!importFileError} onClose={() => setImportFileError("")}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+            Import failed
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+            [{importFileError}]
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
+            Make sure you are importing a Sigil vault export file (.json).
+          </div>
+          <Button onClick={() => setImportFileError("")}>OK</Button>
         </div>
       </Modal>
 
