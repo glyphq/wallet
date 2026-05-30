@@ -142,6 +142,36 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
+      - name: Patch AppImage for rolling-release distros
+        run: |
+          wget -q -O appimagetool.AppImage \
+            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool.AppImage
+
+          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" ! -name "*.sig" | head -1)
+
+          APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
+
+          # Remove bundled GTK3/GLib2 so rolling-release distros (Arch, Manjaro) use system libs
+          rm -f squashfs-root/usr/lib/libgtk-3.so*
+          rm -f squashfs-root/usr/lib/libgdk-3.so*
+          rm -f squashfs-root/usr/lib/libgio-2.0.so*
+          rm -f squashfs-root/usr/lib/libglib-2.0.so*
+          rm -f squashfs-root/usr/lib/libgobject-2.0.so*
+          rm -f squashfs-root/usr/lib/libgmodule-2.0.so*
+          rm -f squashfs-root/usr/lib/libgthread-2.0.so*
+
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage squashfs-root "$APPIMAGE"
+
+          # Resign — patching changes the checksum so the original .sig is invalid
+          bun tauri signer sign \
+            --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
+            --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
+            "$APPIMAGE"
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
       - name: List bundle artifacts
         run: find src-tauri/target/release/bundle -type f | sort
 
