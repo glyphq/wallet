@@ -157,7 +157,8 @@ jobs:
           # bypassing the AppImage runtime that drops args when APPIMAGE_EXTRACT_AND_RUN=1.
           ./go-appimagetool.AppImage --appimage-extract
           mv squashfs-root go-appimagetool-extracted
-          APPTOOL=$(find go-appimagetool-extracted -name "appimagetool" -type f | head -1)
+          APPTOOL_APPRUN="$(pwd)/go-appimagetool-extracted/AppRun"
+          APPTOOL_APPDIR="$(pwd)/go-appimagetool-extracted"
 
           APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" ! -name "*.sig" | head -1)
 
@@ -181,7 +182,7 @@ jobs:
           rm -f squashfs-root/usr/lib/libatk-1.0.so*
           rm -f squashfs-root/usr/lib/libharfbuzz.so*
 
-          ARCH=x86_64 "$APPTOOL" squashfs-root "$APPIMAGE"
+          APPDIR="$APPTOOL_APPDIR" ARCH=x86_64 "$APPTOOL_APPRUN" squashfs-root "$APPIMAGE"
 
           # Resign — patching changes the checksum so the original .sig is invalid
           bun tauri signer sign \
