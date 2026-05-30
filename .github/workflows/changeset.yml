@@ -183,6 +183,14 @@ jobs:
           rm -f squashfs-root/usr/lib/libharfbuzz.so*
           rm -f squashfs-root/usr/lib/libmount.so*
           rm -f squashfs-root/usr/lib/libblkid.so*
+          rm -f squashfs-root/usr/lib/libEGL.so*
+          rm -f squashfs-root/usr/lib/libEGL_mesa.so*
+          rm -f squashfs-root/usr/lib/libGL.so*
+          rm -f squashfs-root/usr/lib/libGLdispatch.so*
+          rm -f squashfs-root/usr/lib/libGLX.so*
+          rm -f squashfs-root/usr/lib/libGLX_mesa.so*
+          rm -f squashfs-root/usr/lib/libgbm.so*
+          rm -f squashfs-root/usr/lib/libdrm.so*
 
           # go-appimage requires exactly one arg (AppDir); output filename is auto-generated
           # in CWD as {Name}-{version}-x86_64.AppImage
