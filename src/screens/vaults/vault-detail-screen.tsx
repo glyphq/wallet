@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
@@ -75,18 +75,27 @@ export default function VaultDetailScreen() {
   const [revealLoading, setRevealLoading] = useState(false);
   const [revealedSeed, setRevealedSeed] = useState("");
   const [seedCopied, setSeedCopied] = useState(false);
+  const [seedSecsLeft, setSeedSecsLeft] = useState(0);
+  const seedCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
 
   useEffect(() => {
     if (!revealedSeed) return;
-    const timer = setTimeout(() => {
+    setSeedSecsLeft(SEED_CLIPBOARD_CLEAR_SECS);
+    const dismiss = setTimeout(() => {
       setRevealedSeed("");
       setSeedCopied(false);
       setRevealingAccount(null);
       setRevealPassword("");
     }, SEED_CLIPBOARD_CLEAR_SECS * 1000);
-    return () => clearTimeout(timer);
+    seedCountdownRef.current = setInterval(() => {
+      setSeedSecsLeft((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => {
+      clearTimeout(dismiss);
+      if (seedCountdownRef.current) clearInterval(seedCountdownRef.current);
+    };
   }, [revealedSeed]);
 
   if (!vault) return null;
@@ -595,7 +604,7 @@ export default function VaultDetailScreen() {
           ) : (
             <>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-                [SEED VISIBLE FOR 60 SECONDS]
+                [SEED VISIBLE FOR {seedSecsLeft}s]
               </div>
               <div
                 style={{
