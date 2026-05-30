@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
@@ -20,6 +20,9 @@ interface FormValues {
   password: string;
 }
 
+const PASSWORD_MAX_ATTEMPTS = 5;
+const PASSWORD_LOCKOUT_SECS = 30;
+
 const VAULT_COLOR: Record<string, string> = {
   slate: "var(--color-vault-slate)",
   red: "var(--color-vault-red)",
@@ -38,6 +41,9 @@ export default function LockScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [bioFailures, setBioFailures] = useState(_bioFailures);
+  const [passwordAttempts, setPasswordAttempts] = useState(0);
+  const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
+  const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
@@ -50,6 +56,22 @@ export default function LockScreen() {
   const bioEnabled = vault ? (settings.biometricVaultIds ?? []).includes(vault.id) : false;
 
   const { register, handleSubmit } = useForm<FormValues>();
+
+  useEffect(() => () => { if (lockoutRef.current) clearInterval(lockoutRef.current); }, []);
+
+  function startLockout() {
+    setLockoutSecsLeft(PASSWORD_LOCKOUT_SECS);
+    lockoutRef.current = setInterval(() => {
+      setLockoutSecsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(lockoutRef.current!);
+          lockoutRef.current = null;
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }
 
   async function finishUnlock(seeds: Seed[]) {
     if (!vault) return;
@@ -91,7 +113,7 @@ export default function LockScreen() {
   }
 
   async function onSubmit({ password }: FormValues) {
-    if (!vault) return;
+    if (!vault || lockoutSecsLeft > 0) return;
     setLoading(true);
     setError("");
     try {
@@ -104,7 +126,15 @@ export default function LockScreen() {
         detail: vault.name,
         vaultId: vault.id,
       });
-      setError("WRONG PASSWORD");
+      const next = passwordAttempts + 1;
+      setPasswordAttempts(next);
+      if (next >= PASSWORD_MAX_ATTEMPTS) {
+        setError(`TOO MANY ATTEMPTS — WAIT ${PASSWORD_LOCKOUT_SECS}s`);
+        startLockout();
+        setPasswordAttempts(0);
+      } else {
+        setError(`WRONG PASSWORD (${next}/${PASSWORD_MAX_ATTEMPTS})`);
+      }
     } finally {
       setLoading(false);
     }
@@ -216,16 +246,22 @@ export default function LockScreen() {
               label="Password"
               placeholder="••••••••••"
               autoComplete="current-password"
-              error={error}
+              error={lockoutSecsLeft > 0 ? `LOCKED — TRY AGAIN IN ${lockoutSecsLeft}s` : error}
+              disabled={lockoutSecsLeft > 0}
               autoFocus
               containerStyle={{ marginBottom: "var(--space-6)" }}
             />
-            <Button type="submit" loading={loading}>
-              Unlock
+            <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
+              {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft}s` : "Unlock"}
             </Button>
           </form>
         )}
 
+        {!watchOnly && bioEnabled && bioFailures >= 3 && (
+          <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: "var(--space-6)" }}>
+            {isLinux ? "QUICK UNLOCK" : "BIOMETRIC"} UNAVAILABLE — USE PASSWORD
+          </div>
+        )}
         {!watchOnly && bioEnabled && bioFailures < 3 && (
           <button
             onClick={onBiometric}
