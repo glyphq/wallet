@@ -353,9 +353,12 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
 
   if (!hasAny) {
     return (
-      <div style={{ textAlign: "center", padding: "var(--space-8) 0" }}>
+      <div style={{ textAlign: "center", padding: "var(--space-8) 0", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
           [NO TRANSACTIONS YET]
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", opacity: 0.6 }}>
+          SEND OR RECEIVE QU TO GET STARTED
         </span>
       </div>
     );
