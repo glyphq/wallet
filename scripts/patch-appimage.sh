@@ -34,11 +34,11 @@ fi
 # go-appimage FUSE-free runtime
 if [ ! -d /tmp/go-appimagetool-extracted ]; then
   echo "Downloading go-appimage runtime..."
-  TMPAI=$(mktemp /tmp/go-appimagetool-XXXXXX.AppImage)
+  TMPAI="/tmp/go-appimagetool-download.AppImage"
   gh release download continuous \
     --repo probonopd/go-appimage \
     --pattern "appimagetool-*-x86_64.AppImage" \
-    --output "$TMPAI"
+    --output "$TMPAI" --clobber
   chmod +x "$TMPAI"
   cd /tmp
   "$TMPAI" --appimage-extract

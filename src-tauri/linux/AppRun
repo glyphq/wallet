@@ -2,36 +2,27 @@
 
 # Self-detect APPDIR if the runtime didn't set it.
 # $0 is the AppRun file itself, so its directory IS the AppDir root.
-# go-appimage's FUSE-free runtime should set APPDIR, but when it doesn't
-# WEBKIT_EXEC_PATH expands to an empty prefix, WebKit falls back to its
-# compiled-in path derivation, and produces a garbage path (././/lib/...).
 if [ -z "${APPDIR}" ]; then
   APPDIR="$(dirname "$(readlink -f "$0")")"
   export APPDIR
 fi
 
+# WebKitGTK subprocess helpers (WebKitNetworkProcess, WebKitWebProcess).
+# linuxdeploy only bundles .so files — the executables must be pointed to
+# explicitly or WebKit derives a garbage path (././/lib/...) and aborts.
+export WEBKIT_EXEC_PATH="${APPDIR}/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
-# WebKitGTK spawns helper processes (WebKitNetworkProcess, WebKitWebProcess).
-# Without WEBKIT_EXEC_PATH it falls back to deriving the path from the executable
-# name, which produces a garbage relative path (././/lib/...) and aborts.
-# Without LD_LIBRARY_PATH the subprocess executables can't load their own libs.
-export WEBKIT_EXEC_PATH="${APPDIR}/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"
-export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
-
-# Ensure the session D-Bus socket is reachable when the app is launched from a
-# file manager or launcher that doesn't inherit the terminal's environment.
-# Without this, zbus can't reach org.freedesktop.Notifications and desktop
-# notifications fail silently (tauriSend returns void, errors are swallowed).
+# Session D-Bus — not always inherited when launched from a file manager.
+# Without this, zbus can't reach org.freedesktop.Notifications.
 if [ -z "${DBUS_SESSION_BUS_ADDRESS}" ]; then
   _UID=$(id -u)
-  if [ -S "/run/user/${_UID}/bus" ]; then
+  [ -S "/run/user/${_UID}/bus" ] && \
     export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${_UID}/bus"
-  fi
 fi
 
-# Self-register a local desktop entry + icon on first run.
-# GNOME silently drops notifications from apps with no registered desktop entry.
+# Self-register a local desktop entry + icon on first run so GNOME's
+# notification daemon associates toasts with this app.
 _APPS="${HOME}/.local/share/applications"
 _DESKTOP="${_APPS}/sigil.desktop"
 if [ ! -f "${_DESKTOP}" ]; then
@@ -46,4 +37,14 @@ if [ ! -f "${_DESKTOP}" ]; then
   update-desktop-database "${_APPS}" 2>/dev/null || true
 fi
 
-exec "${APPDIR}/usr/bin/sigil-wallet" "$@"
+# Source linuxdeploy apprun-hooks — these set GDK_BACKEND=x11, GTK_PATH,
+# GDK_PIXBUF_MODULE_FILE, GIO_EXTRA_MODULES, GSETTINGS_SCHEMA_DIR, etc.
+# Skipping them causes pixbuf loaders to fail, GTK themes to break, and
+# Wayland EGL crashes. They must run before the app binary is exec'd.
+for _hook in "${APPDIR}/apprun-hooks/"*.sh; do
+  [ -f "${_hook}" ] && source "${_hook}"
+done
+
+# Delegate to the original AppRun binary (linuxdeploy renamed it to .wrapped).
+# It handles app-specific launch logic (chdir, Exec= lookup, etc.).
+exec "${APPDIR}/AppRun.wrapped" "$@"
