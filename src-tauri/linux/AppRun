@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
+# Ensure the session D-Bus socket is reachable when the app is launched from a
+# file manager or launcher that doesn't inherit the terminal's environment.
+# Without this, zbus can't reach org.freedesktop.Notifications and desktop
+# notifications fail silently (tauriSend returns void, errors are swallowed).
+if [ -z "${DBUS_SESSION_BUS_ADDRESS}" ]; then
+  _UID=$(id -u)
+  if [ -S "/run/user/${_UID}/bus" ]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${_UID}/bus"
+  fi
+fi
+
 # Self-register a local desktop entry + icon on first run.
 # GNOME silently drops notifications from apps with no registered desktop entry.
 _APPS="${HOME}/.local/share/applications"
