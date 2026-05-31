@@ -1,5 +1,13 @@
 # sigil
 
+## 0.11.16
+
+### Patch Changes
+
+- 44f6ffd: Fix AppImage crashing on startup with WebKit subprocess error.
+
+  - **Linux:** Fixed `SIGABRT` caused by `WebKitNetworkProcess` not being found. Tauri's bundler only copies shared libraries, not WebKit's executable helpers — they are now explicitly included in the AppImage.
+
 ## 0.11.15
 
 ### Patch Changes
