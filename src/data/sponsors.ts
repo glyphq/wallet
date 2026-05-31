@@ -22,7 +22,7 @@ export interface SponsorTransparencyData {
 
 /** Qubic identity that receives donation QU for Sigil development. */
 export const DONATION_IDENTITY =
-  "UVYAOYTNYCRBVFBHNFIJUEOUEPEDIDUWWEAXKFSJEBJVASCQEROJOVOEEATL";
+  "SIGILZXQNLOTDENBWIBTOGRNBPLBWISKLZCQQFMEECEKOTNVJMMGRWYALYQL";
 
 if (!isValidIdentity(DONATION_IDENTITY)) {
   throw new Error(`[sigil] DONATION_IDENTITY is not a valid Qubic address: ${DONATION_IDENTITY}`);
