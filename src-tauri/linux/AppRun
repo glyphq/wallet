@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+
+# Self-detect APPDIR if the runtime didn't set it.
+# $0 is the AppRun file itself, so its directory IS the AppDir root.
+# go-appimage's FUSE-free runtime should set APPDIR, but when it doesn't
+# WEBKIT_EXEC_PATH expands to an empty prefix, WebKit falls back to its
+# compiled-in path derivation, and produces a garbage path (././/lib/...).
+if [ -z "${APPDIR}" ]; then
+  APPDIR="$(dirname "$(readlink -f "$0")")"
+  export APPDIR
+fi
+
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
 # WebKitGTK spawns helper processes (WebKitNetworkProcess, WebKitWebProcess).
