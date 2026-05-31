@@ -192,6 +192,10 @@ jobs:
           rm -f squashfs-root/usr/lib/libgbm.so*
           rm -f squashfs-root/usr/lib/libdrm.so*
 
+          # Disable WebKit GPU compositing to avoid EGL_BAD_PARAMETER on systems where
+          # the EGL platform or display handle isn't compatible with the bundled WebKitGTK.
+          sed -i '2i export WEBKIT_DISABLE_COMPOSITING_MODE=1' squashfs-root/AppRun
+
           # go-appimage requires exactly one arg (AppDir); output filename is auto-generated
           # in CWD as {Name}-{version}-x86_64.AppImage
           APPDIR="$APPTOOL_APPDIR" ARCH=x86_64 "$APPTOOL_APPRUN" squashfs-root
