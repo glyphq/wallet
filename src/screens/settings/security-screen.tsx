@@ -408,7 +408,7 @@ export default function SecurityScreen() {
 
         {isLinux && bioAvailable === true && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [LINUX USES SECRET SERVICE STORAGE — NO OS BIOMETRIC PROMPT]
+            [LINUX: USES SYSTEM SECRET SERVICE — PASSWORD STORED SECURELY, NO BIOMETRIC PROMPT]
           </span>
         )}
 

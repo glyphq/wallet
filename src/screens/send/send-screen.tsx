@@ -133,7 +133,7 @@ export default function SendScreen() {
       setDestError("");
     }
     const amount = amountStr.trim();
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+    if (!amount || !Number.isInteger(Number(amount)) || Number(amount) <= 0) {
       setAmountError("INVALID AMOUNT");
       ok = false;
     } else if (balance !== null && BigInt(amount) > balance) {

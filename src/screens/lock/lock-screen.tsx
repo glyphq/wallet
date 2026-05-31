@@ -129,11 +129,11 @@ export default function LockScreen() {
       const next = passwordAttempts + 1;
       setPasswordAttempts(next);
       if (next >= PASSWORD_MAX_ATTEMPTS) {
-        setError(`TOO MANY ATTEMPTS — WAIT ${PASSWORD_LOCKOUT_SECS}s`);
+        setError(`TOO MANY ATTEMPTS — WAIT ${PASSWORD_LOCKOUT_SECS} SECONDS`);
         startLockout();
         setPasswordAttempts(0);
       } else {
-        setError(`WRONG PASSWORD (${next}/${PASSWORD_MAX_ATTEMPTS})`);
+        setError(`WRONG PASSWORD — ${PASSWORD_MAX_ATTEMPTS - next} ${PASSWORD_MAX_ATTEMPTS - next === 1 ? "ATTEMPT" : "ATTEMPTS"} REMAINING`);
       }
     } finally {
       setLoading(false);
@@ -246,7 +246,7 @@ export default function LockScreen() {
               label="Password"
               placeholder="••••••••••"
               autoComplete="current-password"
-              error={lockoutSecsLeft > 0 ? `LOCKED — TRY AGAIN IN ${lockoutSecsLeft}s` : error}
+              error={lockoutSecsLeft > 0 ? `LOCKED — TRY AGAIN IN ${lockoutSecsLeft} ${lockoutSecsLeft === 1 ? "SECOND" : "SECONDS"}` : error}
               disabled={lockoutSecsLeft > 0}
               autoFocus
               containerStyle={{ marginBottom: "var(--space-6)" }}

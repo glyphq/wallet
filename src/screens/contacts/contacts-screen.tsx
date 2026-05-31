@@ -48,7 +48,7 @@ export default function ContactsScreen() {
   }
 
   function validateIdentity(id: string): boolean {
-    if (!isValidIdentity(id)) { setIdentityError("INVALID IDENTITY — 60 UPPERCASE LETTERS"); return false; }
+    if (!isValidIdentity(id)) { setIdentityError("INVALID IDENTITY"); return false; }
     setIdentityError("");
     return true;
   }
