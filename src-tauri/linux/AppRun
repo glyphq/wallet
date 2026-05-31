@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
+# WebKitGTK spawns helper processes (WebKitNetworkProcess, WebKitWebProcess).
+# Without WEBKIT_EXEC_PATH it falls back to deriving the path from the executable
+# name, which produces a garbage relative path (././/lib/...) and aborts.
+# Without LD_LIBRARY_PATH the subprocess executables can't load their own libs.
+export WEBKIT_EXEC_PATH="${APPDIR}/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+
 # Ensure the session D-Bus socket is reachable when the app is launched from a
 # file manager or launcher that doesn't inherit the terminal's environment.
 # Without this, zbus can't reach org.freedesktop.Notifications and desktop
