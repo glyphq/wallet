@@ -196,13 +196,12 @@ jobs:
           rm -f squashfs-root/usr/lib/libGLX_mesa.so*
           rm -f squashfs-root/usr/lib/libgbm.so*
           rm -f squashfs-root/usr/lib/libdrm.so*
-          # WebKitGTK + WPE — the Ubuntu 22.04 build lacks Wayland/EGL support
-          # that newer distros expect, causing EGL_BAD_PARAMETER and an abort().
-          # Stripping these forces the system-provided WebKitGTK to be used instead.
-          rm -f squashfs-root/usr/lib/libwebkit2gtk-4.1.so*
-          rm -f squashfs-root/usr/lib/libjavascriptcoregtk-4.1.so*
-          rm -f squashfs-root/usr/lib/libwpe-1.0.so*
-          rm -f squashfs-root/usr/lib/libWPEBackend-fdo-1.0.so*
+          # WebKitGTK + WPE are intentionally kept bundled — the Tauri binary's IPC
+          # custom scheme handler is compiled against WebKit 2.36 (Ubuntu 22.04).
+          # Using the system WebKit (2.44+ on Arch) breaks invoke() calls, causing
+          # silent store write failures and vault data being lost on restart.
+          # The EGL_BAD_PARAMETER abort is prevented by WEBKIT_DISABLE_COMPOSITING_MODE=1
+          # set in AppRun, not by stripping WebKit.
 
           # --- Custom AppRun ----------------------------------------------------
           # Replace AppRun with the versioned file from the repo.
