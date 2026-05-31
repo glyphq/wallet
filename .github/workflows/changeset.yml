@@ -144,28 +144,33 @@ jobs:
 
       - name: Patch AppImage for rolling-release distros
         run: |
-          # go-appimage uses versioned filenames; use gh to resolve the current name.
+          # --- Tool setup -------------------------------------------------------
+          # AppImageKit's appimagetool: stable URL, accepts explicit output path,
+          # and crucially PRESERVES our AppRun (go-appimage's tool regenerates it).
+          wget -q -O appimagetool.AppImage \
+            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool.AppImage
+
+          # go-appimage ships a FUSE-free runtime inside its own AppImage.
+          # We can't use a direct URL (filenames are versioned), so we download
+          # with gh and extract just the runtime binary we need.
           gh release download continuous \
             --repo probonopd/go-appimage \
             --pattern "appimagetool-*-x86_64.AppImage" \
             --dir .
           mv appimagetool-*-x86_64.AppImage go-appimagetool.AppImage
           chmod +x go-appimagetool.AppImage
-
-          # --appimage-extract works without FUSE (handled at the ELF runtime level).
-          # Extract the go-appimage tool to get the static Go binary directly,
-          # bypassing the AppImage runtime that drops args when APPIMAGE_EXTRACT_AND_RUN=1.
           ./go-appimagetool.AppImage --appimage-extract
           mv squashfs-root go-appimagetool-extracted
-          APPTOOL_APPRUN="$(pwd)/go-appimagetool-extracted/AppRun"
-          APPTOOL_APPDIR="$(pwd)/go-appimagetool-extracted"
+          RUNTIME="$(pwd)/go-appimagetool-extracted/usr/bin/runtime-x86_64"
 
+          # --- Extract Tauri AppImage -------------------------------------------
           APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" ! -name "*.sig" | head -1)
-
           rm -rf squashfs-root
           APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
 
-          # Remove bundled GTK3/GLib2/Pango/Cairo/util-linux so rolling-release distros use system libs
+          # --- Strip bundled libs -----------------------------------------------
+          # GTK3 / GLib / display stack — use system versions on rolling distros
           rm -f squashfs-root/usr/lib/libgtk-3.so*
           rm -f squashfs-root/usr/lib/libgdk-3.so*
           rm -f squashfs-root/usr/lib/libgio-2.0.so*
@@ -191,16 +196,30 @@ jobs:
           rm -f squashfs-root/usr/lib/libGLX_mesa.so*
           rm -f squashfs-root/usr/lib/libgbm.so*
           rm -f squashfs-root/usr/lib/libdrm.so*
+          # WebKitGTK + WPE — the Ubuntu 22.04 build lacks Wayland/EGL support
+          # that newer distros expect, causing EGL_BAD_PARAMETER and an abort().
+          # Stripping these forces the system-provided WebKitGTK to be used instead.
+          rm -f squashfs-root/usr/lib/libwebkit2gtk-4.1.so*
+          rm -f squashfs-root/usr/lib/libjavascriptcoregtk-4.1.so*
+          rm -f squashfs-root/usr/lib/libwpe-1.0.so*
+          rm -f squashfs-root/usr/lib/libWPEBackend-fdo-1.0.so*
 
-          # Disable WebKit GPU compositing to avoid EGL_BAD_PARAMETER on systems where
-          # the EGL platform or display handle isn't compatible with the bundled WebKitGTK.
-          sed -i '2i export WEBKIT_DISABLE_COMPOSITING_MODE=1' squashfs-root/AppRun
+          # --- Custom AppRun ----------------------------------------------------
+          # Replace AppRun so the env vars are guaranteed to be in the final image.
+          # AppImageKit preserves AppRun as-is; go-appimage's tool would regenerate it,
+          # which is why we switched back to AppImageKit here.
+          cat > squashfs-root/AppRun << 'APPRUN_EOF'
+#!/usr/bin/env bash
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+exec "${APPDIR}/usr/bin/sigil-wallet" "$@"
+APPRUN_EOF
+          chmod +x squashfs-root/AppRun
 
-          # go-appimage requires exactly one arg (AppDir); output filename is auto-generated
-          # in CWD as {Name}-{version}-x86_64.AppImage
-          APPDIR="$APPTOOL_APPDIR" ARCH=x86_64 "$APPTOOL_APPRUN" squashfs-root
-          PATCHED=$(find . -maxdepth 1 -name "*-x86_64.AppImage" -newer go-appimagetool.AppImage | head -1)
-          mv "$PATCHED" "$APPIMAGE"
+          # --- Repackage --------------------------------------------------------
+          # AppImageKit tool + go-appimage FUSE-free runtime via --runtime-file.
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool.AppImage \
+            --runtime-file "$RUNTIME" \
+            squashfs-root "$APPIMAGE"
 
           # Resign — patching changes the checksum so the original .sig is invalid
           bun tauri signer sign \
