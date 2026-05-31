@@ -1,6 +1,6 @@
 [package]
 name = "sigil-wallet"
-version = "0.11.14"
+version = "0.11.15"
 description = "Self-custodial Qubic wallet with dApp deep linking"
 authors = ["alez04"]
 edition = "2021"
