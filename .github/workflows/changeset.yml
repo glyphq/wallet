@@ -205,31 +205,11 @@ jobs:
           rm -f squashfs-root/usr/lib/libWPEBackend-fdo-1.0.so*
 
           # --- Custom AppRun ----------------------------------------------------
-          # Replace AppRun so the env vars are guaranteed to be in the final image.
+          # Replace AppRun with the versioned file from the repo.
           # AppImageKit preserves AppRun as-is; go-appimage's tool would regenerate it,
           # which is why we switched back to AppImageKit here.
-          cat > squashfs-root/AppRun << 'APPRUN_EOF'
-#!/usr/bin/env bash
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
-
-# Self-register a local desktop entry + icon on first run.
-# GNOME silently drops notifications from apps with no registered desktop entry.
-_APPS="${HOME}/.local/share/applications"
-_DESKTOP="${_APPS}/sigil.desktop"
-if [ ! -f "${_DESKTOP}" ]; then
-  mkdir -p "${_APPS}"
-  _SRC=$(find "${APPDIR}" -maxdepth 1 -name "*.desktop" | head -1)
-  [ -n "${_SRC}" ] && cp "${_SRC}" "${_DESKTOP}"
-  _ICON=$(find "${APPDIR}/usr/share/icons" -name "*.png" -path "*/128x128/*" | head -1)
-  if [ -n "${_ICON}" ]; then
-    mkdir -p "${HOME}/.local/share/icons/hicolor/128x128/apps"
-    cp "${_ICON}" "${HOME}/.local/share/icons/hicolor/128x128/apps/sigil.png"
-  fi
-  update-desktop-database "${_APPS}" 2>/dev/null || true
-fi
-
-exec "${APPDIR}/usr/bin/sigil-wallet" "$@"
-APPRUN_EOF
+          # Using a repo file avoids heredoc content at column 0, which breaks YAML.
+          cp src-tauri/linux/AppRun squashfs-root/AppRun
           chmod +x squashfs-root/AppRun
 
           # --- Repackage --------------------------------------------------------
