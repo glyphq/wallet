@@ -169,6 +169,18 @@ jobs:
           rm -rf squashfs-root
           APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
 
+          # --- Copy WebKit subprocess executables ------------------------------------
+          # linuxdeploy only bundles .so files, not executables, so WebKitNetworkProcess
+          # and WebKitWebProcess are never included by the Tauri bundler. Without them
+          # WebKit aborts with "Unable to spawn a new child process". Copy them from
+          # the CI runner (Ubuntu 22.04) into the AppImage alongside the bundled libs.
+          WEBKIT_HELPERS="/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"
+          mkdir -p squashfs-root/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1
+          for exe in WebKitNetworkProcess WebKitWebProcess WebKitWebDriver; do
+            [ -f "${WEBKIT_HELPERS}/${exe}" ] && \
+              cp "${WEBKIT_HELPERS}/${exe}" squashfs-root/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/
+          done
+
           # --- Strip bundled libs -----------------------------------------------
           # GTK3 / GLib / display stack — use system versions on rolling distros
           rm -f squashfs-root/usr/lib/libgtk-3.so*
