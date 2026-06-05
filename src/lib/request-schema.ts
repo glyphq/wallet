@@ -25,7 +25,7 @@ export const transferRequestSchema = baseRequestSchema.extend({
   amount: amountSchema,
   from: z.string().optional(),
   tick_offset: z.number().int().optional(),
-}).passthrough();
+});
 
 export const scCallRequestSchema = baseRequestSchema.extend({
   type: z.literal("sc_call"),
@@ -35,14 +35,14 @@ export const scCallRequestSchema = baseRequestSchema.extend({
   amount: amountSchema.optional(),
   payload: z.string().optional(),
   tick_offset: z.number().int().optional(),
-}).passthrough();
+});
 
 export const signMessageRequestSchema = baseRequestSchema.extend({
   type: z.literal("sign_message"),
   message: z.string(),
   from: z.string().optional(),
   data: z.string().optional(),
-}).passthrough();
+});
 
 export const verifyMessageRequestSchema = baseRequestSchema.extend({
   type: z.literal("verify_message"),
@@ -50,12 +50,12 @@ export const verifyMessageRequestSchema = baseRequestSchema.extend({
   data: z.string().optional(),
   signature: z.string(),
   public_key: z.string(),
-}).passthrough();
+});
 
 export const connectRequestSchema = baseRequestSchema.extend({
   type: z.literal("connect"),
   permissions: z.array(permissionSchema).optional(),
-}).passthrough();
+});
 
 export const sigilRequestSchema = z.discriminatedUnion("type", [
   transferRequestSchema,
