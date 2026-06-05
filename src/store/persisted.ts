@@ -259,14 +259,20 @@ const tauriStorage: StateStorage = {
     }
   },
   setItem: async (name, value) => {
+    let encrypted: string;
     try {
-      const encrypted = await invoke<string>("encrypt_store_value", { value });
+      encrypted = await invoke<string>("encrypt_store_value", { value });
+    } catch (err) {
+      console.error("[sigil] encrypt_store_value failed:", err);
+      window.dispatchEvent(new CustomEvent("sigil:disk-write-error"));
+      return;
+    }
+    try {
       await _disk.set(name, encrypted);
       await _disk.save();
     } catch (err) {
       console.error("[sigil] disk write failed, retrying once:", err);
       try {
-        const encrypted = await invoke<string>("encrypt_store_value", { value });
         await _disk.set(name, encrypted);
         await _disk.save();
       } catch (err2) {
