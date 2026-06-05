@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
@@ -59,17 +59,22 @@ export function useAutoLock() {
     };
   }, [lock, navigate]);
 
+  const isLockedRef = useRef(isLocked);
+  isLockedRef.current = isLocked;
+  const allowBlurLockBypassRef = useRef(allowBlurLockBypass);
+  allowBlurLockBypassRef.current = allowBlurLockBypass;
+
   // Window blur lock (paranoid mode) — disabled in dev mode and Vite dev builds
   useEffect(() => {
     if (!lockOnWindowBlur) return;
 
     function onBlur() {
-      if (!isLocked && !import.meta.env.DEV && !allowBlurLockBypass) {
+      if (!isLockedRef.current && !import.meta.env.DEV && !allowBlurLockBypassRef.current) {
         invoke("force_lock").catch(() => {});
       }
     }
 
     window.addEventListener("blur", onBlur);
     return () => window.removeEventListener("blur", onBlur);
-  }, [lockOnWindowBlur, isLocked, allowBlurLockBypass]);
+  }, [lockOnWindowBlur]);
 }
