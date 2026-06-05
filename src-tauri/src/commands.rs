@@ -239,10 +239,10 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
     if parsed.scheme() != "https" && !(parsed.scheme() == "http" && is_local) {
         return Err("callback URL must use HTTPS (or http://localhost / http://127.0.0.1 for local dev)".into());
     }
-    if !is_local && is_private_host(host) {
-        return Err("callback URL must not target a private or loopback address".into());
-    }
     if !is_local {
+        // Resolve before the request and validate resolved IPs — string-level hostname
+        // checks alone don't cover all private-range encodings and are vulnerable to
+        // DNS rebinding if the check and the connection happen at different times.
         let port = parsed.port_or_known_default().ok_or("callback URL has no usable port")?;
         resolve_public_host(host.to_string(), port).await?;
     }
