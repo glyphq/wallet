@@ -1,5 +1,10 @@
+use sha2::{Digest, Sha256};
 use tauri::command;
 use crate::vault_crypto::{decrypt_vault_data, VaultData};
+
+fn sha256_hex(data: &str) -> String {
+    hex::encode(Sha256::digest(data.as_bytes()))
+}
 
 fn validate_vault_id(vault_id: &str) -> Result<(), String> {
     let is_uuid = vault_id.len() == 36
@@ -272,12 +277,16 @@ pub async fn check_biometric_available() -> bool {
 }
 
 #[command]
-pub async fn enable_biometric(vault_id: String, password: String) -> Result<(), String> {
+pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         validate_vault_id(&vault_id)?;
         // Confirm biometric before storing the password to prevent silent enrollment
         platform::authenticate("Enable biometric unlock for Sigil")?;
-        cred_store::store(&vault_id, &password)
+        let data_json = serde_json::to_string(&vault_data).map_err(|e| e.to_string())?;
+        let hash = sha256_hex(&data_json);
+        // Store as "password\nhash" so unlock can verify the renderer-supplied blob
+        let stored = format!("{}\n{}", password, hash);
+        cred_store::store(&vault_id, &stored)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -288,7 +297,18 @@ pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result
     tokio::task::spawn_blocking(move || {
         validate_vault_id(&vault_id)?;
         platform::authenticate("Unlock Sigil vault")?;
-        let password = cred_store::load(&vault_id)?;
+        let stored = cred_store::load(&vault_id)?;
+        // Stored format: "password\nhash" (new) or "password" (legacy without hash)
+        let (password, expected_hash) = match stored.split_once('\n') {
+            Some((pw, hash)) => (pw.to_string(), Some(hash.to_string())),
+            None => (stored, None),
+        };
+        if let Some(expected) = expected_hash {
+            let data_json = serde_json::to_string(&vault_data).map_err(|e| e.to_string())?;
+            if sha256_hex(&data_json) != expected {
+                return Err("vault data integrity check failed".into());
+            }
+        }
         decrypt_vault_data(&vault_data, &password)
     })
     .await

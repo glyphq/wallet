@@ -64,8 +64,9 @@ export default function SecurityScreen() {
     if (!vault) return;
     setEnableLoading(true);
     setEnableError("");
+    if (!vault.encryptedData) { setEnableError("VAULT DATA MISSING"); setEnableLoading(false); return; }
     try {
-      await unlockVault(vault.encryptedData!, enablePw);
+      await unlockVault(vault.encryptedData, enablePw);
     } catch {
       setEnableError("WRONG PASSWORD");
       setEnableLoading(false);
@@ -74,7 +75,7 @@ export default function SecurityScreen() {
     const pw = enablePw;
     setEnablePw(""); // clear from React state before handing off to biometric system
     try {
-      await invoke("enable_biometric", { vaultId: vault.id, password: pw });
+      await invoke("enable_biometric", { vaultId: vault.id, vaultData: vault.encryptedData, password: pw });
       updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
       setEnabling(false);
     } catch (e) {
