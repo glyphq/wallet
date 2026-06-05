@@ -21,7 +21,7 @@ async function ensureExportSigningSecret(): Promise<string> {
     return settings.exportSigningPrivateJwk.k;
   }
   const secretBytes = crypto.getRandomValues(new Uint8Array(32));
-  const secret = btoa(String.fromCharCode(...secretBytes));
+  const secret = btoa(Array.from(secretBytes, (b) => String.fromCharCode(b)).join(""));
   usePersistedStore.getState().updateSettings({
     exportSigningPrivateJwk: { kty: "oct", k: secret, alg: "HS256", key_ops: ["sign", "verify"], ext: true },
     exportSigningPublicJwk: { kty: "oct", k: secret, alg: "HS256", key_ops: ["verify"], ext: true },
@@ -31,7 +31,7 @@ async function ensureExportSigningSecret(): Promise<string> {
 
 async function sha256(input: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-  return btoa(String.fromCharCode(...new Uint8Array(digest)));
+  return btoa(Array.from(new Uint8Array(digest), (b) => String.fromCharCode(b)).join(""));
 }
 
 async function signPayload(secret: string, payload: string): Promise<string> {
@@ -43,7 +43,7 @@ async function signPayload(secret: string, payload: string): Promise<string> {
     ["sign"],
   );
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
-  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+  return btoa(Array.from(new Uint8Array(signature), (b) => String.fromCharCode(b)).join(""));
 }
 
 async function verifySignature(secret: string, payload: string, signature: string): Promise<boolean> {
