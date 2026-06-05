@@ -5,7 +5,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { truncateId } from "@/lib/format";
 
-const STARTUP_RECEIVED_LOOKBACK_MS = 0;
+const STARTUP_RECEIVED_LOOKBACK_MS = 24 * 60 * 60 * 1000; // 24 h
 const PAGE_SIZE = 50;
 
 export function useNotificationReconcile() {
