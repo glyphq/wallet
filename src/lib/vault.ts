@@ -41,7 +41,15 @@ export async function unlockVault(vaultData: VaultData, password: string): Promi
   });
 }
 
-export async function addToVault(vaultData: VaultData, password: string, seed: Seed): Promise<VaultData> {
-  const seeds = await unlockVault(vaultData, password);
-  return createVault(password, [...seeds, seed]);
+// Serialize vault mutations so concurrent add-account calls cannot interleave
+// decrypt→re-encrypt steps and silently overwrite each other.
+let _vaultMutex = Promise.resolve();
+
+export function addToVault(vaultData: VaultData, password: string, seed: Seed): Promise<VaultData> {
+  const result = _vaultMutex.then(async () => {
+    const seeds = await unlockVault(vaultData, password);
+    return createVault(password, [...seeds, seed]);
+  });
+  _vaultMutex = result.then(() => {}, () => {});
+  return result;
 }
