@@ -350,6 +350,9 @@ interface PersistedState {
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];
   lastNotificationScanAt: number;
+  /** Unix ms timestamp until which password attempts are locked out. 0 = no lockout. */
+  passwordLockoutUntil: number;
+  setPasswordLockoutUntil: (until: number) => void;
   addVault: (vault: VaultMeta) => void;
   updateVault: (id: string, updates: Partial<Omit<VaultMeta, "id">>) => void;
   /** Removes the vault; if it was active, falls back to the first remaining vault (or null). */
@@ -402,6 +405,9 @@ export const usePersistedStore = create<PersistedState>()(
       auditEvents: [],
       requestHistory: [],
       lastNotificationScanAt: 0,
+      passwordLockoutUntil: 0,
+
+      setPasswordLockoutUntil: (until) => set({ passwordLockoutUntil: until }),
 
       addVault: (vault) =>
         set((s) => ({ vaults: [...s.vaults, vault] })),

@@ -44,6 +44,8 @@ export default function LockScreen() {
   const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
+  const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
 
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
@@ -59,8 +61,15 @@ export default function LockScreen() {
 
   useEffect(() => () => { if (lockoutRef.current) clearInterval(lockoutRef.current); }, []);
 
-  function startLockout() {
-    setLockoutSecsLeft(PASSWORD_LOCKOUT_SECS);
+  // Resume any lockout that was active before app restart
+  useEffect(() => {
+    const remaining = Math.ceil((passwordLockoutUntil - Date.now()) / 1000);
+    if (remaining > 0) startCountdown(remaining);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function startCountdown(secs: number) {
+    setLockoutSecsLeft(secs);
     lockoutRef.current = setInterval(() => {
       setLockoutSecsLeft((s) => {
         if (s <= 1) {
@@ -71,6 +80,11 @@ export default function LockScreen() {
         return s - 1;
       });
     }, 1000);
+  }
+
+  function startLockout() {
+    setPasswordLockoutUntil(Date.now() + PASSWORD_LOCKOUT_SECS * 1000);
+    startCountdown(PASSWORD_LOCKOUT_SECS);
   }
 
   async function finishUnlock(seeds: Seed[]) {
