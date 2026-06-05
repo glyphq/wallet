@@ -90,7 +90,7 @@ export const sigilEnvelopeSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri must use HTTPS or localhost HTTP", path: ["redirect_uri"] });
   }
 
-  if (envelope.request.exp && Date.now() / 1000 > envelope.request.exp) {
+  if (envelope.request.exp && Math.floor(Date.now() / 1000) > envelope.request.exp) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Request expired",
