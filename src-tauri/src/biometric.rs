@@ -107,8 +107,15 @@ mod cred_store {
         Entry::new("sigil-bio", vault_id).map_err(|e| e.to_string())
     }
 
+    /// Probes the underlying secret-service backend with a real round-trip.
+    /// Returns false on any platform that has no working secret-service daemon
+    /// (no gnome-keyring, no kwallet, mock backend, etc.).
     pub fn available() -> bool {
-        entry("__sigil_probe__").is_ok()
+        let Ok(e) = entry("__sigil_probe__") else { return false; };
+        if e.set_password("probe").is_err() { return false; }
+        let ok = e.get_password().is_ok();
+        let _ = e.delete_credential();
+        ok
     }
 
     pub fn store(vault_id: &str, password: &str) -> Result<(), String> {
