@@ -69,5 +69,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       ok: false,
       error: err instanceof Error ? err.message : "Worker signing failed",
     });
+  } finally {
+    req.seed.fill(0);
   }
 };
