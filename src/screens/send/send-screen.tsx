@@ -245,6 +245,17 @@ export default function SendScreen() {
     <ScreenHeader
       title="Send QU"
       onBack={() => step === "input" || step === "done" || step === "error" ? navigate("/dashboard") : setStep("input")}
+      action={
+        step === "input" ? (
+          <button
+            type="button"
+            onClick={() => navigate("/send/scheduled")}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
+          >
+            SCHEDULED
+          </button>
+        ) : undefined
+      }
     />
   );
 
