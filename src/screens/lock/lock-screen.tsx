@@ -32,8 +32,10 @@ const VAULT_COLOR: Record<string, string> = {
   violet: "var(--color-vault-violet)",
 };
 
-// Persists across remounts so 3-failure lockout cannot be bypassed by navigation
+// Both counters are module-level so they survive remounts and cannot be reset
+// by navigating away from the lock screen and back.
 let _bioFailures = 0;
+let _passwordAttempts = 0;
 
 export default function LockScreen() {
   const navigate = useNavigate();
@@ -41,7 +43,7 @@ export default function LockScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [bioFailures, setBioFailures] = useState(_bioFailures);
-  const [passwordAttempts, setPasswordAttempts] = useState(0);
+  const [passwordAttempts, setPasswordAttempts] = useState(_passwordAttempts);
   const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
@@ -100,6 +102,7 @@ export default function LockScreen() {
       vaultId: vault.id,
     });
     _bioFailures = 0;
+    _passwordAttempts = 0;
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
 
@@ -141,11 +144,13 @@ export default function LockScreen() {
         detail: vault.name,
         vaultId: vault.id,
       });
-      const next = passwordAttempts + 1;
+      const next = _passwordAttempts + 1;
+      _passwordAttempts = next;
       setPasswordAttempts(next);
       if (next >= PASSWORD_MAX_ATTEMPTS) {
         setError(`TOO MANY ATTEMPTS — WAIT ${PASSWORD_LOCKOUT_SECS} SECONDS`);
         startLockout();
+        _passwordAttempts = 0;
         setPasswordAttempts(0);
       } else {
         setError(`WRONG PASSWORD — ${PASSWORD_MAX_ATTEMPTS - next} ${PASSWORD_MAX_ATTEMPTS - next === 1 ? "ATTEMPT" : "ATTEMPTS"} REMAINING`);
