@@ -11,7 +11,7 @@ import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
 import { deriveIdentityFromSeed, generateRandomSeed, isValidIdentity, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault, addToVault, removeFromVault, exportVault } from "@/lib/vault";
+import { unlockVault, addToVault, removeFromVault, exportVault, createVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
@@ -20,6 +20,11 @@ import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { getAccountIdentity, isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
 import { createSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
+
+const ACCOUNT_NAME_SUGGESTIONS = [
+  "Main", "Trading", "Staking", "Cold Storage", "DeFi", "Savings",
+  "Hot Wallet", "Treasury", "Operations", "Rewards",
+];
 
 const VAULT_COLOR_CSS: Record<string, string> = {
   slate: "var(--color-vault-slate)",
@@ -68,6 +73,13 @@ export default function VaultDetailScreen() {
 
   const [showHidden, setShowHidden] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showRotate, setShowRotate] = useState(false);
+  const [rotateOldPassword, setRotateOldPassword] = useState("");
+  const [rotateNewPassword, setRotateNewPassword] = useState("");
+  const [rotateConfirm, setRotateConfirm] = useState("");
+  const [rotateError, setRotateError] = useState("");
+  const [rotateLoading, setRotateLoading] = useState(false);
+  const [rotateDone, setRotateDone] = useState(false);
   const [hidingAccount, setHidingAccount] = useState<AccountMeta | null>(null);
   const [revealingAccount, setRevealingAccount] = useState<AccountMeta | null>(null);
   const [revealPassword, setRevealPassword] = useState("");
@@ -303,6 +315,31 @@ export default function VaultDetailScreen() {
     }
   }
 
+  async function doRotatePassword() {
+    if (!rotateOldPassword || !rotateNewPassword) return;
+    if (rotateNewPassword !== rotateConfirm) { setRotateError("PASSWORDS DO NOT MATCH"); return; }
+    if (rotateNewPassword.length < 8) { setRotateError("PASSWORD TOO SHORT (MIN 8 CHARS)"); return; }
+    setRotateLoading(true);
+    setRotateError("");
+    try {
+      const seeds = await unlockVault(currentVault.encryptedData!, rotateOldPassword);
+      const newEncrypted = await createVault(rotateNewPassword, seeds);
+      updateVault(currentVault.id, { encryptedData: newEncrypted });
+      if (isActive) {
+        const wallets = unlockSecureSession(seeds);
+        sessionUnlock(currentVault.id, wallets);
+      }
+      setRotateDone(true);
+      setRotateOldPassword("");
+      setRotateNewPassword("");
+      setRotateConfirm("");
+    } catch {
+      setRotateError("WRONG PASSWORD");
+    } finally {
+      setRotateLoading(false);
+    }
+  }
+
   function openReveal(account: AccountMeta) {
     setRevealingAccount(account);
     setRevealPassword("");
@@ -417,9 +454,12 @@ export default function VaultDetailScreen() {
       ))}
 
       {!watchOnly && (
-        <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
+        <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setShowExport(true)}>
             Export vault
+          </Button>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
+            Change password
           </Button>
         </div>
       )}
@@ -460,7 +500,31 @@ export default function VaultDetailScreen() {
               ))}
             </div>
           )}
-          <Input label="Account name" value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. DeFi, Staking" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
+          <div>
+            <Input label="Account name" value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. DeFi, Staking" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
+            {(() => {
+              const existing = new Set(currentVault.accounts.map((a) => a.name.toLowerCase()));
+              const q = addName.toLowerCase();
+              const suggestions = ACCOUNT_NAME_SUGGESTIONS.filter(
+                (s) => !existing.has(s.toLowerCase()) && (!q || s.toLowerCase().includes(q)),
+              ).slice(0, 4);
+              if (!suggestions.length) return null;
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setAddName(s)}
+                      style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "2px var(--space-2)" }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
           {watchOnly && (
             <Input
               label="Identity"
@@ -629,6 +693,33 @@ export default function VaultDetailScreen() {
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRevealingAccount(null)}>
             Close
           </Button>
+        </div>
+      </Modal>
+
+      {/* Password rotation modal */}
+      <Modal open={showRotate} onClose={() => setShowRotate(false)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+            Change vault password
+          </div>
+          {rotateDone ? (
+            <>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
+                [PASSWORD CHANGED SUCCESSFULLY]
+              </div>
+              <Button onClick={() => setShowRotate(false)}>Done</Button>
+            </>
+          ) : (
+            <>
+              <Input type="password" label="Current password" value={rotateOldPassword} onChange={(e) => { setRotateOldPassword(e.target.value); setRotateError(""); }} error="" placeholder="••••••••••" autoComplete="current-password" autoFocus />
+              <Input type="password" label="New password" value={rotateNewPassword} onChange={(e) => { setRotateNewPassword(e.target.value); setRotateError(""); }} placeholder="••••••••••" autoComplete="new-password" />
+              <Input type="password" label="Confirm new password" value={rotateConfirm} onChange={(e) => { setRotateConfirm(e.target.value); setRotateError(""); }} onKeyDown={(e) => e.key === "Enter" && !rotateLoading && doRotatePassword()} error={rotateError} placeholder="••••••••••" autoComplete="new-password" />
+              <Button onClick={doRotatePassword} loading={rotateLoading} disabled={!rotateOldPassword || !rotateNewPassword || !rotateConfirm}>
+                Change password
+              </Button>
+              <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setShowRotate(false)}>Cancel</Button>
+            </>
+          )}
         </div>
       </Modal>
 
