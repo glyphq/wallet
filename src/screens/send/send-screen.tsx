@@ -58,7 +58,7 @@ export default function SendScreen() {
   const [step, setStep] = useState<Step>("input");
   const [draftRestored, setDraftRestored] = useState(false);
   const [destination, setDestination] = useState(() => searchParams.get("to") ?? "");
-  const [amountStr, setAmountStr] = useState("");
+  const [amountStr, setAmountStr] = useState(() => searchParams.get("amount") ?? "");
   const [destError, setDestError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [txHash, setTxHash] = useState("");

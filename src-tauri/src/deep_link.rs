@@ -362,6 +362,47 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     })
 }
 
+struct PayRequest {
+    to: String,
+    amount: Option<String>,
+    label: Option<String>,
+}
+
+fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
+    let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
+    if url.scheme() != "sigil" {
+        return Err("not a sigil:// URI".into());
+    }
+    if url.host_str() != Some("pay") {
+        return Err("not a sigil://pay URI".into());
+    }
+
+    let mut to: Option<String> = None;
+    let mut amount: Option<String> = None;
+    let mut label: Option<String> = None;
+    for (k, v) in url.query_pairs() {
+        match k.as_ref() {
+            "to" => to = Some(v.into_owned()),
+            "amount" => amount = Some(v.into_owned()),
+            "label" => label = Some(v.into_owned().chars().take(200).collect()),
+            _ => {}
+        }
+    }
+
+    let to = to.ok_or("missing 'to' parameter")?;
+    if !is_valid_qubic_identity(&to) {
+        return Err(format!("invalid identity in 'to': {}", &to[..to.len().min(8)]));
+    }
+    if let Some(ref a) = amount {
+        let n: i64 = a.parse().map_err(|_| "amount is not a valid integer")?;
+        if n <= 0 {
+            return Err("amount must be positive".into());
+        }
+    }
+
+    Ok(PayRequest { to, amount, label })
+}
+
 pub fn process_url(app: &AppHandle, raw: &str) {
     // Quick scheme check before full parse to skip non-sigil arguments cheaply.
     let is_sigil_scheme = url::Url::parse(raw)
@@ -370,6 +411,30 @@ pub fn process_url(app: &AppHandle, raw: &str) {
     if !is_sigil_scheme {
         return;
     }
+
+    // Route pay requests separately — no dApp nonce/origin machinery needed.
+    let host = url::Url::parse(raw).ok().and_then(|u| u.host_str().map(|h| h.to_string()));
+    if host.as_deref() == Some("pay") {
+        match validate_pay(raw) {
+            Ok(pay) => {
+                let payload = serde_json::json!({
+                    "to": pay.to,
+                    "amount": pay.amount,
+                    "label": pay.label,
+                });
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+                app.emit("sigil:pay", payload.to_string()).ok();
+            }
+            Err(e) => {
+                eprintln!("[sigil] pay link rejected: {e}");
+            }
+        }
+        return;
+    }
+
     match validate(raw) {
         Ok(parsed) => {
             let state = app.state::<DeepLinkState>();

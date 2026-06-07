@@ -21,7 +21,22 @@ export default function ReceiveScreen() {
   const hideBalances = settings.hideBalances;
   const [qrRevealed, setQrRevealed] = useState(false);
 
-  const statusBar = <ScreenHeader title="Your address" onBack={() => navigate("/dashboard")} backAriaLabel="Go back" />;
+  const statusBar = (
+    <ScreenHeader
+      title="Your address"
+      onBack={() => navigate("/dashboard")}
+      backAriaLabel="Go back"
+      action={
+        <button
+          type="button"
+          onClick={() => navigate("/payment-link")}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
+        >
+          PAY LINK
+        </button>
+      }
+    />
+  );
 
   return (
     <AppShell statusBar={statusBar} contentStyle={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-8)" }}>
