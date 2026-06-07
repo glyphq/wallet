@@ -29,7 +29,7 @@ export function useSigningAccount(from?: string): SigningAccount {
     setSelectedIndex(settings.activeAccountIndex);
   }, [settings.activeAccountIndex]);
 
-  const nameAt = (i: number) => vault?.accounts[i]?.name ?? `Account ${i + 1}`;
+  const nameAt = (i: number) => vault?.accounts.find((a) => a.index === i)?.name ?? `Account ${i + 1}`;
 
   if (wallets.length === 0) {
     return { wallet: null, accountName: "", fromError: null, selectedIndex: 0, setSelectedIndex, showPicker: false };
