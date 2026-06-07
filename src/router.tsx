@@ -12,6 +12,7 @@ import VaultsScreen from "@/screens/vaults/vaults-screen";
 import VaultDetailScreen from "@/screens/vaults/vault-detail-screen";
 import PortfolioScreen from "@/screens/vaults/portfolio-screen";
 import SendScreen from "@/screens/send/send-screen";
+import ScheduledTransfersScreen from "@/screens/send/scheduled-transfers-screen";
 import SendManyScreen from "@/screens/send/send-many-screen";
 import BurnScreen from "@/screens/send/burn-screen";
 import StakeScreen from "@/screens/stake/stake-screen";
@@ -55,6 +56,7 @@ export const router = createHashRouter([
       { path: "/vaults/:id", element: <Screen component={VaultDetailScreen} /> },
       { path: "/vaults/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
       { path: "/send", element: <Screen component={SendScreen} /> },
+      { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
       { path: "/send-many", element: <Screen component={SendManyScreen} /> },
       { path: "/burn", element: <Screen component={BurnScreen} /> },
       { path: "/stake", element: <Screen component={StakeScreen} /> },
