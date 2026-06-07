@@ -29,17 +29,49 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS}" ]; then
   fi
 fi
 
-# Self-register a local desktop entry + icon on first run so the WM and
-# notification daemon can associate the app with the correct icon.
-# gtk-update-icon-cache is required — without it the hicolor theme cache
+# Self-register on first run (and re-register if the AppImage has moved).
+#
+# Two things are required for sigil:// deep links to work:
+#   1. A .desktop file in ~/.local/share/applications/ with the correct
+#      Exec= pointing to THIS AppImage file (not the binary inside the
+#      AppDir — that path only exists while the image is mounted).
+#   2. sigil registered as the default x-scheme-handler via xdg-mime /
+#      mimeapps.list; update-desktop-database alone only says "can handle",
+#      it does not set the default that GNOME / KDE actually use.
+#
+# gtk-update-icon-cache is also required: without it the hicolor theme cache
 # is stale and notify-rust sends notifications with no icon, which some
 # daemons (GNOME, KDE) silently drop or misidentify.
 _APPS="${HOME}/.local/share/applications"
 _DESKTOP="${_APPS}/sigil.desktop"
+_APPIMAGE_PATH="${APPIMAGE:-}"
+
+# Detect if we need to (re-)register: missing desktop file OR Exec= points
+# to a path that no longer matches the current AppImage location.
+_NEEDS_REGISTER=0
 if [ ! -f "${_DESKTOP}" ]; then
+  _NEEDS_REGISTER=1
+elif [ -n "${_APPIMAGE_PATH}" ]; then
+  _CURRENT_EXEC=$(grep "^Exec=" "${_DESKTOP}" | head -1 | sed 's/^Exec=//;s/ %u$//')
+  _CURRENT_EXEC="${_CURRENT_EXEC%\"}"
+  _CURRENT_EXEC="${_CURRENT_EXEC#\"}"
+  if [ "${_CURRENT_EXEC}" != "${_APPIMAGE_PATH}" ]; then
+    _NEEDS_REGISTER=1
+  fi
+fi
+
+if [ "${_NEEDS_REGISTER}" = "1" ]; then
   mkdir -p "${_APPS}"
   _SRC=$(find "${APPDIR}" -maxdepth 1 -name "*.desktop" | head -1)
-  [ -n "${_SRC}" ] && cp "${_SRC}" "${_DESKTOP}"
+  if [ -n "${_SRC}" ]; then
+    if [ -n "${_APPIMAGE_PATH}" ]; then
+      # Rewrite Exec= to the AppImage file itself so the URL scheme handler
+      # and app-menu launcher both work after the image is moved or renamed.
+      sed "s|^Exec=.*|Exec=\"${_APPIMAGE_PATH}\" %u|" "${_SRC}" > "${_DESKTOP}"
+    else
+      cp "${_SRC}" "${_DESKTOP}"
+    fi
+  fi
   for _SIZE in 256x256 128x128; do
     _ICON=$(find "${APPDIR}/usr/share/icons" -name "*.png" -path "*/${_SIZE}/*" 2>/dev/null | head -1)
     if [ -n "${_ICON}" ]; then
@@ -49,6 +81,9 @@ if [ ! -f "${_DESKTOP}" ]; then
   done
   update-desktop-database "${_APPS}" 2>/dev/null || true
   gtk-update-icon-cache -f -t "${HOME}/.local/share/icons/hicolor" 2>/dev/null || true
+  # Register as the default sigil:// handler. xdg-mime writes to
+  # ~/.config/mimeapps.list which is what GNOME and KDE actually consult.
+  xdg-mime default sigil.desktop x-scheme-handler/sigil 2>/dev/null || true
 fi
 
 # Source linuxdeploy apprun-hooks — these set GDK_BACKEND=x11, GTK_PATH,
