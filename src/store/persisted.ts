@@ -547,9 +547,12 @@ export const usePersistedStore = create<PersistedState>()(
       addPriceSnapshot: (snapshot) =>
         set((s) => {
           const latest = s.priceSnapshots[0];
+          const priceFraction = latest && latest.priceUsd > 0
+            ? Math.abs(latest.priceUsd - snapshot.priceUsd) / latest.priceUsd
+            : Infinity;
           if (
             latest &&
-            Math.abs(latest.priceUsd - snapshot.priceUsd) < 0.000001 &&
+            priceFraction < 0.001 &&
             snapshot.timestamp - latest.timestamp < 15 * 60 * 1000
           ) {
             return s;
