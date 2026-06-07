@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { router } from "@/router";
 import { useDeepLink } from "@/hooks/use-deep-link";
+import { usePayLink } from "@/hooks/use-pay-link";
 import { usePersistedStore } from "@/store/persisted";
 import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
@@ -155,6 +156,7 @@ function AppHooks() {
   useAppearance();
   useRpcSync();
   useDeepLink();
+  usePayLink();
   useNotificationTriggers();
   useNotificationReconcile();
   useHideToTray();

@@ -17,6 +17,7 @@ import SendManyScreen from "@/screens/send/send-many-screen";
 import BurnScreen from "@/screens/send/burn-screen";
 import StakeScreen from "@/screens/stake/stake-screen";
 import ReceiveScreen from "@/screens/receive/receive-screen";
+import PaymentLinkScreen from "@/screens/receive/payment-link-screen";
 import HistoryScreen from "@/screens/history/history-screen";
 import AnalyticsScreen from "@/screens/history/analytics-screen";
 import ContactsScreen from "@/screens/contacts/contacts-screen";
@@ -61,6 +62,7 @@ export const router = createHashRouter([
       { path: "/burn", element: <Screen component={BurnScreen} /> },
       { path: "/stake", element: <Screen component={StakeScreen} /> },
       { path: "/receive", element: <Screen component={ReceiveScreen} /> },
+      { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
       { path: "/history", element: <Screen component={HistoryScreen} /> },
       { path: "/analytics", element: <Screen component={AnalyticsScreen} /> },
       { path: "/contacts", element: <Screen component={ContactsScreen} /> },
