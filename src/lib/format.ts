@@ -46,12 +46,14 @@ export function formatQuCompact(amount: bigint | string | number): string {
 export function formatUsdFromQu(amount: bigint | string | number, price: number): string {
   try {
     if (!Number.isFinite(price) || price < 0) return "—";
-    const n = typeof amount === "number" ? BigInt(Math.round(amount)) : BigInt(amount);
-    const priceCents = BigInt(Math.round(price * 100));
-    const totalCents = n * priceCents;
-    const dollars = totalCents / 100n;
-    const cents = (totalCents % 100n).toString().padStart(2, "0");
-    return `${dollars.toLocaleString()}.${cents}`;
+    // QU max supply (~2×10¹⁵) is well under Number.MAX_SAFE_INTEGER so the
+    // cast to float is lossless. BigInt integer-cents math loses all precision
+    // when price < $0.01 (e.g. QU at ~$4×10⁻⁷ rounds priceCents to 0).
+    const qu = Number(amount);
+    const usd = qu * price;
+    if (!Number.isFinite(usd)) return "—";
+    const decimals = usd < 1 ? 4 : 2;
+    return usd.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   } catch { return "—"; }
 }
 
