@@ -74,6 +74,10 @@ export async function notify(title: string, body: string): Promise<NotificationD
     tauriSend({
       title: stripNotificationMarkup(title),
       body: stripNotificationMarkup(body),
+      // Explicit icon name (bundle identifier) bypasses app-name-based icon lookup on
+      // Linux, preventing a collision with any other app also named "Sigil" (e.g. the
+      // ebook editor) that registers an icon under the same display name in the theme.
+      icon: "com.qubic.sigil",
     });
     return { ok: true, state: "sent" };
   } catch (error) {
