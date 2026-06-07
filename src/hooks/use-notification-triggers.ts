@@ -54,19 +54,20 @@ export function useNotificationTriggers() {
       const prev = prevBalancesRef.current[id];
       if (prev !== undefined) {
         if (current !== prev) changedIds.add(id);
-        if (enabled && onReceived && current > prev) {
+        if (current > prev) {
           const diff = current - prev;
-          publishNotificationEvent(createNotificationEvent({
-            kind: "received",
-            title: "Incoming QU",
-            body: `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
-            identity: id,
-          })).catch(() => {});
-          if (onLargeIncoming && largeIncomingThresholdValue !== null && diff >= largeIncomingThresholdValue) {
+          if (enabled && onLargeIncoming && largeIncomingThresholdValue !== null && diff >= largeIncomingThresholdValue) {
             publishNotificationEvent(createNotificationEvent({
               kind: "received",
               title: "Large Incoming QU",
               body: `${diff.toLocaleString()} QU landed on ${truncateId(id, 8, 4)}.`,
+              identity: id,
+            })).catch(() => {});
+          } else if (enabled && onReceived) {
+            publishNotificationEvent(createNotificationEvent({
+              kind: "received",
+              title: "Incoming QU",
+              body: `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
               identity: id,
             })).catch(() => {});
           }
