@@ -2,7 +2,10 @@ use aes_gcm::aead::{Aead, AeadCore, KeyInit, OsRng};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use tauri::command;
+
+static STORE_KEY_CACHE: OnceLock<[u8; 32]> = OnceLock::new();
 
 const STORE_KEY_TARGET: &str = "sigil-store-key";
 const STORE_VALUE_PREFIX: &str = "enc-v1:";
@@ -187,7 +190,11 @@ fn decode_store_key(encoded: &str, label: &str) -> Result<Key<Aes256Gcm>, String
     if decoded.len() != 32 {
         return Err(format!("invalid {label} length"));
     }
-    Ok(Key::<Aes256Gcm>::clone_from_slice(&decoded))
+    let key = Key::<Aes256Gcm>::clone_from_slice(&decoded);
+    let mut bytes = [0u8; 32];
+    bytes.copy_from_slice(key.as_slice());
+    let _ = STORE_KEY_CACHE.set(bytes);
+    Ok(key)
 }
 
 fn generate_store_key() -> Key<Aes256Gcm> {
@@ -214,6 +221,9 @@ fn migrate_file_key_to_secure_store(encoded: &str) -> Result<Key<Aes256Gcm>, Str
 }
 
 fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
+    if let Some(bytes) = STORE_KEY_CACHE.get() {
+        return Ok(*Key::<Aes256Gcm>::from_slice(bytes));
+    }
     #[cfg(target_os = "windows")]
     if let Ok(encoded) = secret_store::load(STORE_KEY_TARGET) {
         return decode_store_key(&encoded, "stored metadata key");
@@ -265,6 +275,9 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
             store_key_file(&encoded)?;
         }
     }
+    let mut bytes = [0u8; 32];
+    bytes.copy_from_slice(key.as_slice());
+    let _ = STORE_KEY_CACHE.set(bytes);
     Ok(key)
 }
 
