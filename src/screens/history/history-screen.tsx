@@ -69,6 +69,14 @@ export default function HistoryScreen() {
   const txMemos = usePersistedStore((s) => s.txMemos);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const handler = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  const wideLayout = windowWidth >= 720;
+
   const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
   const [groupByCounterparty, setGroupByCounterparty] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -223,10 +231,12 @@ export default function HistoryScreen() {
               <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
                 <BarChart2 size={15} strokeWidth={1.5} />
               </button>
-              <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
-                <SlidersHorizontal size={15} />
-                {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
-              </button>
+              {!wideLayout && (
+                <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
+                  <SlidersHorizontal size={15} />
+                  {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
+                </button>
+              )}
               <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
                 <RotateCw size={15} />
               </button>
@@ -234,8 +244,51 @@ export default function HistoryScreen() {
           }
         />
       }
-      contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column" }}
+      contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1 }}
     >
+      {/* ── Wide-screen sticky filter sidebar ── */}
+      {wideLayout && (
+        <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--color-border-subtle)", overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "var(--space-3)" }}>
+            Filter
+            {hasActive && (
+              <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }} style={{ marginLeft: "var(--space-3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", letterSpacing: "0.08em", padding: 0 }}>
+                RESET
+              </button>
+            )}
+          </div>
+          <FilterSection label="Direction">
+            {(["all", "in", "out"] as const).map((v) => (
+              <Pill key={v} label={v === "all" ? "ALL" : v.toUpperCase()} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
+            ))}
+          </FilterSection>
+          <FilterSection label="Type">
+            {(["all", "transfer", "sc"] as const).map((v) => (
+              <Pill key={v} label={v === "all" ? "ALL" : v === "sc" ? "SC CALL" : "TRANSFER"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
+            ))}
+          </FilterSection>
+          <FilterSection label="Group by">
+            <Pill label="NONE" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
+            <Pill label="COUNTERPARTY" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
+          </FilterSection>
+          <FilterSection label="Date from">
+            <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateFrom: draft.dateFrom }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
+          </FilterSection>
+          <FilterSection label="Date to">
+            <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateTo: draft.dateTo }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
+          </FilterSection>
+          <FilterSection label="Min QU">
+            <Input value={draft.minAmount} onChange={(e) => setDraft((d) => ({ ...d, minAmount: e.target.value.replace(/\D/g, "") }))} onBlur={() => setFilters((f) => ({ ...f, minAmount: sanitize(draft.minAmount) }))} placeholder="0" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
+          </FilterSection>
+          <FilterSection label="Max QU">
+            <Input value={draft.maxAmount} onChange={(e) => setDraft((d) => ({ ...d, maxAmount: e.target.value.replace(/\D/g, "") }))} onBlur={() => setFilters((f) => ({ ...f, maxAmount: sanitize(draft.maxAmount) }))} placeholder="∞" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
+          </FilterSection>
+        </div>
+      )}
+
+      {/* ── Main content column ── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
+
       {/* Active filter chips */}
       {chips.length > 0 && (
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
@@ -329,6 +382,8 @@ export default function HistoryScreen() {
       <div ref={sentinelRef} style={{ height: 1 }} />
       {isFetchingNextPage && <StatusText color="var(--color-text-disabled)">[LOADING...]</StatusText>}
       {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">── END ──</StatusText>}
+
+      </div>{/* end main content column */}
 
       {/* ── Filter sheet ────────────────────────────────────────────────────── */}
       <Sheet
