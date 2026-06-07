@@ -8,7 +8,7 @@ import { Modal } from "@/components/modal";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
 import { IdentityDisplay } from "@/components/identity-display";
-import { usePersistedStore, type PendingTx } from "@/store/persisted";
+import { usePersistedStore, type PendingTx, type AppSettings, type PriceSnapshot } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { Download, SlidersHorizontal, RotateCw, BarChart2 } from "lucide-react";
 import {
@@ -70,12 +70,31 @@ export default function HistoryScreen() {
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
   const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
+  const [groupByCounterparty, setGroupByCounterparty] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [draft, setDraft] = useState<DraftInputs>(toDraft(DEFAULT_FILTERS));
   const [detail, setDetail] = useState<TxHistoryItem | PendingTx | null>(null);
+  const [memoExportOpen, setMemoExportOpen] = useState(false);
+  const [memoDateFrom, setMemoDateFrom] = useState("");
+  const [memoDateTo, setMemoDateTo] = useState("");
+  const [memoMinAmount, setMemoMinAmount] = useState("");
 
   function exportMemos() {
-    const entries = Object.entries(txMemos).filter(([, v]) => v.trim());
+    let entries = Object.entries(txMemos).filter(([, v]) => v.trim());
+    // Apply date and amount filters by matching against allTxs
+    if (memoDateFrom || memoDateTo || memoMinAmount) {
+      const from = memoDateFrom ? new Date(memoDateFrom).getTime() : 0;
+      const to = memoDateTo ? new Date(memoDateTo).getTime() + 86400000 : Infinity;
+      const minAmt = memoMinAmount ? BigInt(memoMinAmount) : 0n;
+      const txMap = new Map(allTxs.map((tx) => [tx.hash, tx]));
+      entries = entries.filter(([hash]) => {
+        const tx = txMap.get(hash);
+        if (!tx) return true;
+        if (tx.timestamp && (tx.timestamp < from || tx.timestamp > to)) return false;
+        try { if (BigInt(tx.amount ?? "0") < minAmt) return false; } catch { /* ignore */ }
+        return true;
+      });
+    }
     if (!entries.length) return;
     const blob = new Blob([JSON.stringify(Object.fromEntries(entries), null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -84,6 +103,7 @@ export default function HistoryScreen() {
     a.download = `sigil-memos-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    setMemoExportOpen(false);
   }
 
   const hasMemos = Object.values(txMemos).some((v) => v.trim());
@@ -185,6 +205,7 @@ export default function HistoryScreen() {
       : filters.tickFrom ? `TICK ≥${filters.tickFrom}` : `TICK ≤${filters.tickTo}`;
     chips.push({ label, clear: () => { setFilters((f) => ({ ...f, tickFrom: "", tickTo: "" })); setDraft((d) => ({ ...d, tickFrom: "", tickTo: "" })); } });
   }
+  if (groupByCounterparty) chips.push({ label: "GROUPED", clear: () => setGroupByCounterparty(false) });
 
   return (
     <AppShell
@@ -195,7 +216,7 @@ export default function HistoryScreen() {
           action={
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
               {hasMemos && (
-                <button type="button" onClick={exportMemos} aria-label="Export memos" style={ICON_BTN}>
+                <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
                   <Download size={15} />
                 </button>
               )}
@@ -232,7 +253,10 @@ export default function HistoryScreen() {
       )}
 
       {/* Transaction rows */}
-      {!isLoading && !isError && (
+      {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
+        <GroupedTxs txs={filteredTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={setDetail} />
+      )}
+      {!isLoading && !isError && !groupByCounterparty && (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {filteredPending.map((p, i) => {
             const isIn = p.destination === identity;
@@ -249,6 +273,7 @@ export default function HistoryScreen() {
                     amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
                     amountSecondary={settings.hideBalances || !pendingSnapshot ? "" : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
                     amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
+                    direction="pending"
                   />
                 </button>
               </div>
@@ -291,6 +316,7 @@ export default function HistoryScreen() {
                     amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
                     amountSecondary={settings.hideBalances || !snapshot ? "" : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
                     amountColor={flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+                    direction={flew ? (isIn ? "in" : "out") : undefined}
                   />
                 </button>
               </div>
@@ -359,12 +385,41 @@ export default function HistoryScreen() {
           />
         </FilterSection>
 
+        <FilterSection label="Group by">
+          <Pill label="NONE" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
+          <Pill label="COUNTERPARTY" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
+        </FilterSection>
+
       </Sheet>
 
       {/* Detail modal */}
       <Modal open={!!detail} onClose={() => setDetail(null)}>
         {detail && <TxDetail detail={detail} identity={identity} currentTick={currentTick} txMemos={txMemos} />}
       </Modal>
+
+      {/* Memo export filter sheet */}
+      <Sheet
+        open={memoExportOpen}
+        onClose={() => setMemoExportOpen(false)}
+        title="Export memos"
+        footer={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <button type="button" onClick={() => { setMemoDateFrom(""); setMemoDateTo(""); setMemoMinAmount(""); }} style={GHOST_BTN}>RESET</button>
+            <button type="button" onClick={exportMemos} style={APPLY_BTN}>EXPORT JSON</button>
+          </div>
+        }
+      >
+        <FilterSection label="Date range">
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
+            <Input type="date" value={memoDateFrom} onChange={(e) => setMemoDateFrom(e.target.value)} style={INPUT_SM} containerStyle={{ flex: 1 }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
+            <Input type="date" value={memoDateTo} onChange={(e) => setMemoDateTo(e.target.value)} style={INPUT_SM} containerStyle={{ flex: 1 }} />
+          </div>
+        </FilterSection>
+        <FilterSection label="Min amount (QU)">
+          <Input value={memoMinAmount} onChange={(e) => setMemoMinAmount(e.target.value.replace(/\D/g, ""))} placeholder="0" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
+        </FilterSection>
+      </Sheet>
     </AppShell>
   );
 }
@@ -413,9 +468,11 @@ const APPLY_BTN_DETAIL: React.CSSProperties = {
 
 // ── UI sub-components ─────────────────────────────────────────────────────────
 
-function TxRow({ tag, sub, sub2, amount, amountSecondary, amountColor }: {
+function TxRow({ tag, sub, sub2, amount, amountSecondary, amountColor, direction }: {
   tag: ReactNode; sub: string; sub2: string; amount: string; amountSecondary?: string; amountColor: string;
+  direction?: "in" | "out" | "pending";
 }) {
+  const dirIcon = direction === "in" ? "↙" : direction === "out" ? "↗" : null;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
       <div>
@@ -424,7 +481,9 @@ function TxRow({ tag, sub, sub2, amount, amountSecondary, amountColor }: {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>{sub2}</div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0, paddingLeft: "var(--space-3)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>{amount}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>
+          {dirIcon && <span style={{ opacity: 0.6, marginRight: 2 }}>{dirIcon}</span>}{amount}
+        </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
         {amountSecondary && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
@@ -628,5 +687,63 @@ function MonoVal({ children }: { children: ReactNode }) {
 
 function Dash() {
   return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>;
+}
+
+// ── Grouped-by-counterparty view ──────────────────────────────────────────────
+
+function GroupedTxs({
+  txs, identity, settings, priceSnapshots, onSelect,
+}: {
+  txs: TxHistoryItem[];
+  identity: string | null;
+  settings: AppSettings;
+  priceSnapshots: PriceSnapshot[];
+  onSelect: (tx: TxHistoryItem) => void;
+}) {
+  const groups = new Map<string, { label: string; txs: TxHistoryItem[]; volume: bigint }>();
+  for (const tx of txs) {
+    const isIn = tx.destination === identity;
+    const key = (isIn ? tx.source : tx.destination) ?? "unknown";
+    const label = KNOWN_CONTRACT_ADDRESSES[key] ?? truncateId(key, 10, 8);
+    const existing = groups.get(key) ?? { label, txs: [], volume: 0n };
+    existing.txs.push(tx);
+    try { existing.volume += BigInt(tx.amount ?? "0"); } catch { /* ignore */ }
+    groups.set(key, existing);
+  }
+  const sorted = [...groups.entries()].sort((a, b) => (a[1].volume > b[1].volume ? -1 : 1));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      {sorted.map(([key, group]) => (
+        <div key={key}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)", marginBottom: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>{group.label}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{group.txs.length} TX · {formatQuCompact(group.volume)} QU</span>
+          </div>
+          {group.txs.map((tx, i) => {
+            const isIn = tx.destination === identity;
+            const flew = tx.moneyFlew;
+            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
+            return (
+              <div key={tx.hash}>
+                {i > 0 && <Divider style={{ margin: "var(--space-2) 0" }} />}
+                <button type="button" onClick={() => onSelect(tx)} style={ROW_BTN}>
+                  <TxRow
+                    tag={<Tag variant={!flew ? "error" : isIn ? "success" : "neutral"}>{!flew ? "FAILED" : isIn ? "RECEIVED" : "SENT"}</Tag>}
+                    sub={formatDate(tx.timestamp) || `TICK ${tx.tickNumber}`}
+                    sub2=""
+                    amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
+                    amountSecondary={settings.hideBalances || !snapshot ? "" : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                    amountColor={flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+                    direction={flew ? (isIn ? "in" : "out") : undefined}
+                  />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
 }
 
