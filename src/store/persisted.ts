@@ -48,6 +48,8 @@ export interface ApprovedDapp {
   /** Stamped each time a permission is exercised — used to sort/prune stale dApp entries. */
   lastUsedAt?: number;
   permissions: ("transfer" | "sc_call" | "sign_message")[];
+  /** When set, restricts this dApp's permissions to these specific account identities only. */
+  allowedIdentities?: string[];
 }
 
 export interface AppSettings {
@@ -91,6 +93,10 @@ export interface AppSettings {
   requireBiometricForSeedReveal: boolean;
   highValueSendThreshold: string;
   exportSigningPrivateJwk: JsonWebKey | null;
+  /** QU amount below which a low-balance warning is shown on the dashboard. Empty string = disabled. */
+  lowBalanceThreshold: string;
+  /** Custom price feed URL; when set, useLatestStats fetches from this endpoint instead of the default. */
+  customPriceFeedUrl: string;
 }
 
 export interface Contact {
@@ -100,6 +106,20 @@ export interface Contact {
   note: string;
   addedAt: number;
   lastUsedAt: number;
+  tags?: string[];
+}
+
+/** A recurring transfer that runs on a fixed day interval. */
+export interface ScheduledTransfer {
+  id: string;
+  label: string;
+  sourceIdentity: string;
+  destination: string;
+  amount: string;
+  intervalDays: number;
+  nextRunAt: number;
+  createdAt: number;
+  enabled: boolean;
 }
 
 /** A broadcast transaction awaiting confirmation or expiry tracking. */
@@ -116,6 +136,8 @@ export interface PendingTx {
 
 const MAX_PENDING_TXS = 50;
 const MAX_TX_MEMOS = 500;
+const MAX_TX_TAGS = 500;
+const MAX_SCHEDULED_TRANSFERS = 50;
 const MAX_NOTIFICATION_EVENTS = 200;
 const MAX_AUDIT_EVENTS = 500;
 const MAX_REQUEST_HISTORY = 200;
@@ -242,6 +264,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   requireBiometricForSeedReveal: false,
   highValueSendThreshold: "",
   exportSigningPrivateJwk: null,
+  lowBalanceThreshold: "",
+  customPriceFeedUrl: "",
 };
 
 const _disk = new LazyStore("sigil.json");
@@ -348,6 +372,9 @@ interface PersistedState {
   pendingTxs: PendingTx[];
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
+  /** tx hash → array of user-defined string tags */
+  txTags: Record<string, string[]>;
+  scheduledTransfers: ScheduledTransfer[];
   notificationEvents: NotificationEvent[];
   priceSnapshots: PriceSnapshot[];
   runtimeIssues: RuntimeIssue[];
@@ -379,6 +406,10 @@ interface PersistedState {
   revokeDappPermission: (origin: string, permission: ApprovedDapp["permissions"][number]) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;
+  setTxTags: (hash: string, tags: string[]) => void;
+  addScheduledTransfer: (transfer: ScheduledTransfer) => void;
+  updateScheduledTransfer: (id: string, updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt">>) => void;
+  removeScheduledTransfer: (id: string) => void;
   addNotificationEvent: (event: NotificationEvent) => void;
   markNotificationEventRead: (id: string) => void;
   markAllNotificationEventsRead: () => void;
@@ -403,6 +434,8 @@ export const usePersistedStore = create<PersistedState>()(
       contacts: [],
       pendingTxs: [],
       txMemos: {},
+      txTags: {},
+      scheduledTransfers: [],
       notificationEvents: [],
       priceSnapshots: [],
       runtimeIssues: [],
@@ -509,6 +542,24 @@ export const usePersistedStore = create<PersistedState>()(
           return { txMemos: next };
         }),
 
+      setTxTags: (hash, tags) =>
+        set((s) => {
+          const next = { ...s.txTags };
+          if (tags.length === 0) delete next[hash];
+          else next[hash] = tags;
+          const entries = Object.entries(next);
+          return { txTags: entries.length <= MAX_TX_TAGS ? next : Object.fromEntries(entries.slice(entries.length - MAX_TX_TAGS)) };
+        }),
+
+      addScheduledTransfer: (transfer) =>
+        set((s) => ({ scheduledTransfers: [transfer, ...s.scheduledTransfers].slice(0, MAX_SCHEDULED_TRANSFERS) })),
+
+      updateScheduledTransfer: (id, updates) =>
+        set((s) => ({ scheduledTransfers: s.scheduledTransfers.map((t) => t.id === id ? { ...t, ...updates } : t) })),
+
+      removeScheduledTransfer: (id) =>
+        set((s) => ({ scheduledTransfers: s.scheduledTransfers.filter((t) => t.id !== id) })),
+
       addNotificationEvent: (event) =>
         set((s) => {
           if (event.dedupeKey && s.notificationEvents.some((existing) => existing.dedupeKey === event.dedupeKey)) {
@@ -612,6 +663,13 @@ export const usePersistedStore = create<PersistedState>()(
           ps.txMemos && typeof ps.txMemos === "object" && !Array.isArray(ps.txMemos)
             ? clampTxMemos(ps.txMemos as Record<string, string>)
             : currentState.txMemos;
+        const txTags =
+          ps.txTags && typeof ps.txTags === "object" && !Array.isArray(ps.txTags)
+            ? ps.txTags as Record<string, string[]>
+            : currentState.txTags;
+        const scheduledTransfers = Array.isArray(ps.scheduledTransfers)
+          ? (ps.scheduledTransfers as ScheduledTransfer[]).filter((t) => t && typeof t.id === "string")
+          : currentState.scheduledTransfers;
         const notificationEvents = Array.isArray(ps.notificationEvents)
           ? clampNotificationEvents(
               ps.notificationEvents.filter((event): event is NotificationEvent =>
@@ -701,6 +759,12 @@ export const usePersistedStore = create<PersistedState>()(
           highValueSendThreshold: typeof settingsBase.highValueSendThreshold === "string"
             ? settingsBase.highValueSendThreshold.replace(/[^\d]/g, "")
             : currentState.settings.highValueSendThreshold,
+          lowBalanceThreshold: typeof settingsBase.lowBalanceThreshold === "string"
+            ? settingsBase.lowBalanceThreshold.replace(/[^\d]/g, "")
+            : currentState.settings.lowBalanceThreshold,
+          customPriceFeedUrl: typeof settingsBase.customPriceFeedUrl === "string"
+            ? settingsBase.customPriceFeedUrl
+            : currentState.settings.customPriceFeedUrl,
           largeIncomingThreshold: typeof settingsBase.largeIncomingThreshold === "string"
             ? settingsBase.largeIncomingThreshold.replace(/[^\d]/g, "")
             : currentState.settings.largeIncomingThreshold,
@@ -738,6 +802,8 @@ export const usePersistedStore = create<PersistedState>()(
           contacts,
           pendingTxs,
           txMemos,
+          txTags,
+          scheduledTransfers,
           notificationEvents,
           priceSnapshots,
           runtimeIssues,

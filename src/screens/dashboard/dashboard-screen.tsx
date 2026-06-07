@@ -28,6 +28,15 @@ const HEALTH_COLOR: Record<string, string> = {
   offline: "var(--color-status-error)",
 };
 
+const VAULT_DOT_COLOR: Record<string, string> = {
+  slate: "#64748b",
+  red: "#ef4444",
+  amber: "#f59e0b",
+  emerald: "#10b981",
+  sky: "#0ea5e9",
+  violet: "#8b5cf6",
+};
+
 function AnimatedBalance({ value }: { value: bigint }) {
   const spanRef = useRef<HTMLSpanElement>(null);
   const prevRef = useRef<bigint | null>(null);
@@ -111,7 +120,10 @@ export default function DashboardScreen() {
         style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
       >
         {vault ? (
-          <Identicon seed={`${vault.id}:${vault.color}`} size={18} radius={3} />
+          <>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: VAULT_DOT_COLOR[vault.color] ?? "var(--color-text-disabled)", flexShrink: 0 }} />
+            <Identicon seed={`${vault.id}:${vault.color}`} size={18} radius={3} />
+          </>
         ) : (
           <div style={{ width: 18, height: 18, borderRadius: 3, background: "var(--color-text-disabled)" }} />
         )}
@@ -241,6 +253,19 @@ export default function DashboardScreen() {
               ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
             </div>
           )}
+          {balance && !balanceLoading && settings.lowBalanceThreshold && (() => {
+            try {
+              const threshold = BigInt(settings.lowBalanceThreshold);
+              if (threshold > 0n && balance.balance < threshold) {
+                return (
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", marginTop: "var(--space-2)", letterSpacing: "0.05em" }}>
+                    [LOW BALANCE]
+                  </div>
+                );
+              }
+            } catch { /* ignore bad threshold */ }
+            return null;
+          })()}
         </div>
 
         {/* Account switcher */}
@@ -330,6 +355,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   const { data, isLoading } = useTxHistory(identity);
   const txs = data?.pages[0];
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
+  const removePendingTx = usePersistedStore((s) => s.removePendingTx);
   const { data: lastProcessedTickData } = useLastProcessedTick();
   const queryClient = useQueryClient();
   const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
@@ -349,6 +375,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   const myPending = pendingTxs
     .filter((p) => p.source === activeIdentity || p.destination === activeIdentity)
     .slice(0, 3);
+  const expiredPending = myPending.filter(isExpired);
 
   const recent = (txs ?? []).slice(0, 5 - Math.min(myPending.length, 3));
   const hasAny = myPending.length > 0 || recent.length > 0;
@@ -426,12 +453,22 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
         );
       })}
 
-      <button
-        onClick={onViewAll}
-        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-2) 0", textAlign: "right" }}
-      >
-        VIEW ALL →
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {expiredPending.length > 0 ? (
+          <button
+            onClick={() => expiredPending.forEach((p) => removePendingTx(p.hash))}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-2) 0" }}
+          >
+            CLEAR EXPIRED
+          </button>
+        ) : <span />}
+        <button
+          onClick={onViewAll}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-2) 0" }}
+        >
+          VIEW ALL →
+        </button>
+      </div>
     </div>
   );
 }
