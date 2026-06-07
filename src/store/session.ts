@@ -8,6 +8,12 @@ export interface TxAlert {
   reason: "expired" | "failed";
 }
 
+export interface TxDraft {
+  destination: string;
+  amountStr: string;
+  savedAt: number;
+}
+
 interface SessionState {
   unlockedVaultId: string | null;
   wallets: SessionWallet[];
@@ -16,6 +22,7 @@ interface SessionState {
   pendingRequests: string[];
   isLocked: boolean;
   txAlerts: TxAlert[];
+  txDraft: TxDraft | null;
 
   unlock: (
     vaultId: string,
@@ -27,6 +34,8 @@ interface SessionState {
   shiftPendingRequest: () => void;
   addTxAlert: (alert: TxAlert) => void;
   dismissTxAlert: (id: string) => void;
+  saveTxDraft: (draft: TxDraft) => void;
+  clearTxDraft: () => void;
 }
 
 export const useSessionStore = create<SessionState>()((set) => ({
@@ -36,6 +45,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   pendingRequests: [],
   isLocked: true,
   txAlerts: [],
+  txDraft: null,
 
   unlock: (vaultId, wallets, options) => {
     if (options?.watchOnly) clearSecureSession();
@@ -63,4 +73,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
 
   dismissTxAlert: (id) =>
     set((s) => ({ txAlerts: s.txAlerts.filter((a) => a.id !== id) })),
+
+  saveTxDraft: (draft) => set({ txDraft: draft }),
+  clearTxDraft: () => set({ txDraft: null }),
 }));

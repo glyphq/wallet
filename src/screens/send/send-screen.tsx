@@ -43,6 +43,9 @@ export default function SendScreen() {
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
+  const txDraft = useSessionStore((s) => s.txDraft);
+  const saveTxDraft = useSessionStore((s) => s.saveTxDraft);
+  const clearTxDraft = useSessionStore((s) => s.clearTxDraft);
 
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const watchOnly = isWatchOnlyVault(vault);
@@ -53,6 +56,7 @@ export default function SendScreen() {
   const { data: stats } = useLatestStats();
 
   const [step, setStep] = useState<Step>("input");
+  const [draftRestored, setDraftRestored] = useState(false);
   const [destination, setDestination] = useState(() => searchParams.get("to") ?? "");
   const [amountStr, setAmountStr] = useState("");
   const [destError, setDestError] = useState("");
@@ -110,6 +114,18 @@ export default function SendScreen() {
     }),
     [contacts, destination, identity, recentRecipientIdentities, vaultAccountTargets],
   );
+
+  // Restore failed tx draft on mount (once per session)
+  useEffect(() => {
+    if (draftRestored || !txDraft) return;
+    const age = Date.now() - txDraft.savedAt;
+    if (age < 30 * 60 * 1000) { // only if < 30 min old
+      setDestination(txDraft.destination);
+      setAmountStr(txDraft.amountStr);
+    }
+    setDraftRestored(true);
+    clearTxDraft();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll for confirmation when user opts in
   useEffect(() => {
@@ -207,6 +223,7 @@ export default function SendScreen() {
       setStep("done");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
+      saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
       setStep("error");
     }
   }
@@ -237,6 +254,12 @@ export default function SendScreen() {
       {/* ── Input ── */}
       {step === "input" && (
         <>
+          {draftRestored && (
+            <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--color-surface-raised)", border: "1px solid var(--color-border-strong)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>[DRAFT RESTORED]</span>
+              <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", padding: 0 }}>✕</button>
+            </div>
+          )}
           <div>
             <Input
               label="To"
