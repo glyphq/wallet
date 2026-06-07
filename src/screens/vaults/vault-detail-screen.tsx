@@ -11,7 +11,7 @@ import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
 import { deriveIdentityFromSeed, generateRandomSeed, isValidIdentity, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault, createVault, exportVault } from "@/lib/vault";
+import { unlockVault, addToVault, removeFromVault, exportVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
@@ -187,10 +187,9 @@ export default function VaultDetailScreen() {
 
     setAddLoading(true);
     try {
-      const existingSeeds = await unlockVault(currentVault.encryptedData!, addPassword);
       const newSeed = seedToAdd ?? generateRandomSeed();
-      const newEncrypted = await createVault(addPassword, [...existingSeeds, newSeed]);
-      const newIndex = existingSeeds.length;
+      const newEncrypted = await addToVault(currentVault.encryptedData!, addPassword, newSeed);
+      const newIndex = currentVault.accounts.length;
       const newAccount: AccountMeta = {
         index: newIndex,
         name: addName.trim(),
@@ -205,7 +204,8 @@ export default function VaultDetailScreen() {
         accounts: [...currentVault.accounts, newAccount],
       });
       if (isActive) {
-        sessionUnlock(currentVault.id, unlockSecureSession([...existingSeeds, newSeed]));
+        const allSeeds = await unlockVault(newEncrypted, addPassword);
+        sessionUnlock(currentVault.id, unlockSecureSession(allSeeds));
       }
       setAddingAccount(false);
     } catch {
@@ -280,14 +280,13 @@ export default function VaultDetailScreen() {
         setRemovingAccount(null);
         return;
       }
-      const allSeeds = await unlockVault(currentVault.encryptedData!, removePassword);
-      const remaining = allSeeds.filter((_, i) => i !== removingAccount.index);
-      const newEncrypted = await createVault(removePassword, remaining);
+      const newEncrypted = await removeFromVault(currentVault.encryptedData!, removePassword, removingAccount.index);
       const updatedAccounts = currentVault.accounts
         .filter((a) => a.index !== removingAccount.index)
         .map((a) => ({ ...a, index: a.index > removingAccount.index ? a.index - 1 : a.index }));
       updateVault(currentVault.id, { encryptedData: newEncrypted, accounts: updatedAccounts });
       if (isActive) {
+        const remaining = await unlockVault(newEncrypted, removePassword);
         sessionUnlock(currentVault.id, unlockSecureSession(remaining));
         const activeIdx = settings.activeAccountIndex;
         if (removingAccount.index === activeIdx) {
