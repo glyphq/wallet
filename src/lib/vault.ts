@@ -53,3 +53,12 @@ export function addToVault(vaultData: VaultData, password: string, seed: Seed): 
   _vaultMutex = result.then(() => {}, () => {});
   return result;
 }
+
+export function removeFromVault(vaultData: VaultData, password: string, index: number): Promise<VaultData> {
+  const result = _vaultMutex.then(async () => {
+    const seeds = await unlockVault(vaultData, password);
+    return createVault(password, seeds.filter((_, i) => i !== index));
+  });
+  _vaultMutex = result.then(() => {}, () => {});
+  return result;
+}
