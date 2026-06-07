@@ -289,8 +289,9 @@ pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password:
         validate_vault_id(&vault_id)?;
         // Confirm biometric before storing the password to prevent silent enrollment
         platform::authenticate("Enable biometric unlock for Sigil")?;
-        let data_json = serde_json::to_string(&vault_data).map_err(|e| e.to_string())?;
-        let hash = sha256_hex(&data_json);
+        // Hash the ciphertext hex string — stable across any struct field reordering
+        // or serialization changes that would break a hash over serde_json output.
+        let hash = sha256_hex(&vault_data.ciphertext);
         // Store as "password\nhash" so unlock can verify the renderer-supplied blob
         let stored = format!("{}\n{}", password, hash);
         cred_store::store(&vault_id, &stored)
@@ -311,8 +312,7 @@ pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result
             None => (stored, None),
         };
         if let Some(expected) = expected_hash {
-            let data_json = serde_json::to_string(&vault_data).map_err(|e| e.to_string())?;
-            if sha256_hex(&data_json) != expected {
+            if sha256_hex(&vault_data.ciphertext) != expected {
                 return Err("vault data integrity check failed".into());
             }
         }
