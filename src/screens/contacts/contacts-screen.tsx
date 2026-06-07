@@ -35,15 +35,24 @@ export default function ContactsScreen() {
   const [formName, setFormName] = useState("");
   const [formIdentity, setFormIdentity] = useState("");
   const [formNote, setFormNote] = useState("");
+  const [formTags, setFormTags] = useState("");
   const [identityError, setIdentityError] = useState("");
 
+  function parseTags(raw: string): string[] {
+    return raw.split(/[,\s]+/).map((t) => t.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean);
+  }
+
   function openAdd() {
-    setFormName(""); setFormIdentity(""); setFormNote(""); setIdentityError("");
+    setFormName(""); setFormIdentity(""); setFormNote(""); setFormTags(""); setIdentityError("");
     setAdding(true);
   }
 
   function openEdit(contact: Contact) {
-    setFormName(contact.name); setFormIdentity(contact.identity); setFormNote(contact.note); setIdentityError("");
+    setFormName(contact.name);
+    setFormIdentity(contact.identity);
+    setFormNote(contact.note);
+    setFormTags((contact.tags ?? []).join(", "));
+    setIdentityError("");
     setEditing(contact);
   }
 
@@ -60,6 +69,7 @@ export default function ContactsScreen() {
       name: formName.trim(),
       identity: formIdentity.trim(),
       note: formNote.trim(),
+      tags: parseTags(formTags),
       addedAt: Date.now(),
       lastUsedAt: 0,
     });
@@ -68,13 +78,21 @@ export default function ContactsScreen() {
 
   function doEdit() {
     if (!editing || !formName.trim() || !validateIdentity(formIdentity.trim())) return;
-    updateContact(editing.id, { name: formName.trim(), identity: formIdentity.trim(), note: formNote.trim() });
+    updateContact(editing.id, { name: formName.trim(), identity: formIdentity.trim(), note: formNote.trim(), tags: parseTags(formTags) });
     setEditing(null);
   }
 
   const filtered = useMemo(() =>
     contacts
-      .filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.identity.toLowerCase().includes(search.toLowerCase()))
+      .filter((c) => {
+        if (!search) return true;
+        const q = search.toLowerCase();
+        return (
+          c.name.toLowerCase().includes(q) ||
+          c.identity.toLowerCase().includes(q) ||
+          (c.tags ?? []).some((t) => t.includes(q))
+        );
+      })
       .sort((a, b) => {
         if (a.lastUsedAt && b.lastUsedAt) return b.lastUsedAt - a.lastUsedAt;
         if (a.lastUsedAt) return -1;
@@ -130,6 +148,13 @@ export default function ContactsScreen() {
                     </span>
                   ) : null}
                 </div>
+                {(contact.tags ?? []).length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: 2 }}>
+                    {(contact.tags ?? []).map((tag) => (
+                      <span key={tag} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>#{tag}</span>
+                    ))}
+                  </div>
+                )}
                 {contact.note && (
                   <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
                     {contact.note}
@@ -152,6 +177,7 @@ export default function ContactsScreen() {
           name={formName} onName={setFormName}
           identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
           note={formNote} onNote={setFormNote}
+          tags={formTags} onTags={setFormTags}
           identityError={identityError}
           onSubmit={doAdd}
           onCancel={() => setAdding(false)}
@@ -166,6 +192,7 @@ export default function ContactsScreen() {
           name={formName} onName={setFormName}
           identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
           note={formNote} onNote={setFormNote}
+          tags={formTags} onTags={setFormTags}
           identityError={identityError}
           onSubmit={doEdit}
           onCancel={() => setEditing(null)}
@@ -192,18 +219,20 @@ interface ContactFormProps {
   name: string; onName: (v: string) => void;
   identity: string; onIdentity: (v: string) => void;
   note: string; onNote: (v: string) => void;
+  tags: string; onTags: (v: string) => void;
   identityError: string;
   onSubmit: () => void;
   onCancel: () => void;
   submitLabel: string;
 }
 
-function ContactForm({ title, name, onName, identity, onIdentity, note, onNote, identityError, onSubmit, onCancel, submitLabel }: ContactFormProps) {
+function ContactForm({ title, name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit, onCancel, submitLabel }: ContactFormProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{title}</div>
       <Input label="Name" value={name} onChange={(e) => onName(e.target.value)} placeholder="e.g. Alice" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
       <Input label="Identity" value={identity} onChange={(e) => onIdentity(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSubmit()} error={identityError} placeholder="60 uppercase letters" />
+      <Input label="Tags (optional)" value={tags} onChange={(e) => onTags(e.target.value)} placeholder="exchange, friend, dao" style={{ fontFamily: "var(--font-sans)" }} />
       <Input label="Note (optional)" value={note} onChange={(e) => onNote(e.target.value)} placeholder="e.g. Friend, exchange" style={{ fontFamily: "var(--font-sans)" }} />
       <Button onClick={onSubmit} disabled={!name.trim() || !identity.trim()}>{submitLabel}</Button>
       <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={onCancel}>Cancel</Button>
