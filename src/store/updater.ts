@@ -66,13 +66,18 @@ export const useUpdaterStore = create<UpdaterStoreState>()((set, get) => ({
       set({ context });
     } else {
       const detail = updaterErrorMessage("Unable to determine updater context", contextResult.reason);
+      // Safe fallback: disable auto-update so the UI hides the update button.
+      // We deliberately avoid guessing the platform/packageKind — an incorrect
+      // guess (e.g. "windows"/"nsis" on Linux AppImage) would cause the updater
+      // to attempt an install that cannot succeed.
+      context = {
+        platform: "linux",
+        packageKind: "system_package",
+        supportsAutoUpdate: false,
+        reason: "Unable to determine update context",
+      };
       set({
-        context: {
-          platform: "windows",
-          packageKind: "nsis",
-          supportsAutoUpdate: true,
-          reason: null,
-        },
+        context,
         checkError: true,
         lastError: detail,
       });
