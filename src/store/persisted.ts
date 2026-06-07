@@ -741,6 +741,7 @@ export const usePersistedStore = create<PersistedState>()(
           auditEvents,
           requestHistory,
           lastNotificationScanAt,
+          passwordLockoutUntil: typeof ps.passwordLockoutUntil === "number" ? ps.passwordLockoutUntil : 0,
           settings,
         };
       },
