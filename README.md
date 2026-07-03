@@ -1,6 +1,7 @@
 <div align="center">
 
-<img src="src-tauri/icons/128x128.png" alt="Glyph" width="80" />
+<img src="src/assets/brand/glyph-on-light.png#gh-light-mode-only" alt="Glyph" width="120" />
+<img src="src/assets/brand/glyph-on-dark.png#gh-dark-mode-only" alt="Glyph" width="120" />
 
 # Glyph
 
