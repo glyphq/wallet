@@ -11,7 +11,7 @@ import { useSessionStore } from "@/store/session";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
 
-const WEB_BASE = "https://wallet.glyq.org/pay";
+const WEB_BASE = "https://wallet.glyphq.org/pay";
 
 function buildLinks(to: string, amount: string, label: string) {
   const params = new URLSearchParams({ to });
