@@ -7,7 +7,7 @@ use tauri::command;
 
 static STORE_KEY_CACHE: OnceLock<[u8; 32]> = OnceLock::new();
 
-const STORE_KEY_TARGET: &str = "sigil-store-key";
+const STORE_KEY_TARGET: &str = "glyph-store-key";
 const STORE_VALUE_PREFIX: &str = "enc-v1:";
 const STORE_KEY_FILE: &str = "store-key";
 
@@ -17,7 +17,7 @@ fn store_key_path() -> Result<PathBuf, String> {
         let base = std::env::var_os("APPDATA")
             .map(PathBuf::from)
             .ok_or_else(|| "APPDATA is not set".to_string())?;
-        return Ok(base.join("com.qubic.sigil").join(STORE_KEY_FILE));
+        return Ok(base.join("com.qubic.glyph").join(STORE_KEY_FILE));
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -28,7 +28,7 @@ fn store_key_path() -> Result<PathBuf, String> {
                 std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share"))
             })
             .ok_or_else(|| "HOME is not set".to_string())?;
-        Ok(base.join("com.qubic.sigil").join(STORE_KEY_FILE))
+        Ok(base.join("com.qubic.glyph").join(STORE_KEY_FILE))
     }
 }
 
@@ -64,7 +64,7 @@ fn store_key_file(secret: &str) -> Result<(), String> {
         use std::os::unix::fs::PermissionsExt;
         let perms = std::fs::Permissions::from_mode(0o600);
         if let Err(e) = std::fs::set_permissions(&path, perms) {
-            eprintln!("[sigil] warning: could not restrict store-key file permissions (file may be world-readable): {e}");
+            eprintln!("[glyph] warning: could not restrict store-key file permissions (file may be world-readable): {e}");
         }
     }
 
@@ -79,7 +79,7 @@ fn legacy_dev_fallback_key_path() -> Result<PathBuf, String> {
             std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share"))
         })
         .ok_or_else(|| "HOME is not set".to_string())?;
-    Ok(base.join("sigil").join("dev-store-key"))
+    Ok(base.join("glyph").join("dev-store-key"))
 }
 
 #[cfg(all(debug_assertions, not(target_os = "windows")))]
@@ -161,7 +161,7 @@ mod secret_store {
     use keyring::Error;
 
     fn entry(target_name: &str) -> Result<Entry, String> {
-        Entry::new("sigil-store", target_name).map_err(|e| e.to_string())
+        Entry::new("glyph-store", target_name).map_err(|e| e.to_string())
     }
 
     pub fn load_optional(target_name: &str) -> Result<Option<String>, String> {
@@ -213,7 +213,7 @@ fn migrate_file_key_to_secure_store(encoded: &str) -> Result<Key<Aes256Gcm>, Str
         }
         Err(err) => {
             eprintln!(
-                "[sigil] secure metadata-key storage unavailable, continuing with file fallback: {err}"
+                "[glyph] secure metadata-key storage unavailable, continuing with file fallback: {err}"
             );
         }
     }
@@ -236,14 +236,14 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
             // session keyring, or secret-service daemon not persistent across reboots).
             if matches!(load_store_key_file(), Ok(None)) {
                 if let Err(e) = store_key_file(&encoded) {
-                    eprintln!("[sigil] warning: could not write store-key file backup: {e}");
+                    eprintln!("[glyph] warning: could not write store-key file backup: {e}");
                 }
             }
             return decode_store_key(&encoded, "stored metadata key");
         }
         Ok(None) => {}
         Err(err) => {
-            eprintln!("[sigil] keyring read failed — falling back to file key (existing data may be unreadable if a new key is generated): {err}");
+            eprintln!("[glyph] keyring read failed — falling back to file key (existing data may be unreadable if a new key is generated): {err}");
         }
     }
 
@@ -270,7 +270,7 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
         }
         Err(err) => {
             eprintln!(
-                "[sigil] secure metadata-key storage unavailable, using file fallback: {err}"
+                "[glyph] secure metadata-key storage unavailable, using file fallback: {err}"
             );
             store_key_file(&encoded)?;
         }

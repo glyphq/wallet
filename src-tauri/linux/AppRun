@@ -31,11 +31,11 @@ fi
 
 # Self-register on first run (and re-register if the AppImage has moved).
 #
-# Two things are required for sigil:// deep links to work:
+# Two things are required for glyph:// deep links to work:
 #   1. A .desktop file in ~/.local/share/applications/ with the correct
 #      Exec= pointing to THIS AppImage file (not the binary inside the
 #      AppDir — that path only exists while the image is mounted).
-#   2. sigil registered as the default x-scheme-handler via xdg-mime /
+#   2. glyph registered as the default x-scheme-handler via xdg-mime /
 #      mimeapps.list; update-desktop-database alone only says "can handle",
 #      it does not set the default that GNOME / KDE actually use.
 #
@@ -43,7 +43,7 @@ fi
 # is stale and notify-rust sends notifications with no icon, which some
 # daemons (GNOME, KDE) silently drop or misidentify.
 _APPS="${HOME}/.local/share/applications"
-_DESKTOP="${_APPS}/sigil.desktop"
+_DESKTOP="${_APPS}/glyph.desktop"
 _APPIMAGE_PATH="${APPIMAGE:-}"
 
 # Detect if we need to (re-)register: missing desktop file OR Exec= points
@@ -76,14 +76,14 @@ if [ "${_NEEDS_REGISTER}" = "1" ]; then
     _ICON=$(find "${APPDIR}/usr/share/icons" -name "*.png" -path "*/${_SIZE}/*" 2>/dev/null | head -1)
     if [ -n "${_ICON}" ]; then
       mkdir -p "${HOME}/.local/share/icons/hicolor/${_SIZE}/apps"
-      cp "${_ICON}" "${HOME}/.local/share/icons/hicolor/${_SIZE}/apps/sigil.png"
+      cp "${_ICON}" "${HOME}/.local/share/icons/hicolor/${_SIZE}/apps/glyph.png"
     fi
   done
   update-desktop-database "${_APPS}" 2>/dev/null || true
   gtk-update-icon-cache -f -t "${HOME}/.local/share/icons/hicolor" 2>/dev/null || true
-  # Register as the default sigil:// handler. xdg-mime writes to
+  # Register as the default glyph:// handler. xdg-mime writes to
   # ~/.config/mimeapps.list which is what GNOME and KDE actually consult.
-  xdg-mime default sigil.desktop x-scheme-handler/sigil 2>/dev/null || true
+  xdg-mime default glyph.desktop x-scheme-handler/glyph 2>/dev/null || true
 fi
 
 # Source linuxdeploy apprun-hooks — these set GDK_BACKEND=x11, GTK_PATH,
