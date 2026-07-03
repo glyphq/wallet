@@ -1,18 +1,18 @@
-# sigil
+# glyph
 
 ## 0.12.1
 
 ### Patch Changes
 
 - 73b847e: Fix amount param not consumed when deep link opens an already-mounted send screen; fix AppImage update failing with permission denied on noexec tmpfs
-- 73b847e: Update app icons to new Bracket Sigil brand identity
+- 73b847e: Update app icons to new Bracket Glyph brand identity
 
 ## 0.12.0
 
 ### Minor Changes
 
-- 49d5c4d: Add shareable payment request links. Generate `sigil://pay` and `https://sigilwallet.org/pay` links from the receive screen — pre-fills the recipient's send form with your address, optional amount, and label. Links include a QR code for in-person sharing. Incoming `sigil://pay` deep links auto-navigate to the send screen with all fields pre-populated.
-- bc58e7e: UX polish and new features: vault portfolio view, scheduled recurring transfers, failed tx draft restoration, dApp per-account permission scoping, sticky filter sidebar on wide screens, transaction tags, contact tags, counterparty grouping in history, vault password gate for high-value sends, vault color indicator, low balance warning, activity heatmap and analytics summary, price alert breach history, custom price feed URL, account name suggestions, password rotation, request history search, grouped export filters, directional tx arrows, expired pending tx cleanup. Fix Linux notification icon collision with ebook editor Sigil by using bundle identifier as explicit icon name.
+- 49d5c4d: Add shareable payment request links. Generate `glyph://pay` and `https://wallet.glyq.org/pay` links from the receive screen — pre-fills the recipient's send form with your address, optional amount, and label. Links include a QR code for in-person sharing. Incoming `glyph://pay` deep links auto-navigate to the send screen with all fields pre-populated.
+- bc58e7e: UX polish and new features: vault portfolio view, scheduled recurring transfers, failed tx draft restoration, dApp per-account permission scoping, sticky filter sidebar on wide screens, transaction tags, contact tags, counterparty grouping in history, vault password gate for high-value sends, vault color indicator, low balance warning, activity heatmap and analytics summary, price alert breach history, custom price feed URL, account name suggestions, password rotation, request history search, grouped export filters, directional tx arrows, expired pending tx cleanup. Fix Linux notification icon collision with ebook editor Glyph by using bundle identifier as explicit icon name.
 
 ## 0.11.23
 
@@ -31,7 +31,7 @@
 - ece6591: Fix balance not showing and Linux AppImage deep link registration
 
   - Fix balance always displaying as `—` on any vault with fewer than 16 accounts: `GetBalances16` always returns 16 slots regardless of how many public keys were sent, so the response length check was comparing 16 against the account count and throwing on every poll
-  - Fix `sigil://` deep links not working after installing the AppImage: rewrite `Exec=` in the registered `.desktop` file to point to the AppImage file itself (not the extracted binary inside the AppDir which only exists while mounted), and call `xdg-mime default` to set Sigil as the default handler in `mimeapps.list` (which is what GNOME and KDE actually consult — `update-desktop-database` alone was not enough)
+  - Fix `glyph://` deep links not working after installing the AppImage: rewrite `Exec=` in the registered `.desktop` file to point to the AppImage file itself (not the extracted binary inside the AppDir which only exists while mounted), and call `xdg-mime default` to set Glyph as the default handler in `mimeapps.list` (which is what GNOME and KDE actually consult — `update-desktop-database` alone was not enough)
   - Re-register automatically if the AppImage has been moved since the last launch so deep links stay functional
 
 ## 0.11.21
@@ -75,7 +75,7 @@
   - Guard `effectiveIndex` against `-1` when wallet list is empty; sync `selectedIndex` with active account on external changes
   - Use refs for `isLocked` and `allowBlurLockBypass` in blur lock handler to avoid stale closure
   - Log store-key file permission failure instead of silently ignoring it
-  - Replace `starts_with("sigil://")` guard in deep link handler with a proper URL scheme parse
+  - Replace `starts_with("glyph://")` guard in deep link handler with a proper URL scheme parse
   - Reuse the encrypted value on disk write retry instead of re-encrypting with a new nonce
   - Set startup notification lookback to 24 hours so missed transactions are surfaced on fresh install
   - Use `Math.floor` for request expiry comparison to avoid float/int mismatch
@@ -248,7 +248,7 @@
 
   - **Linux:** AppImage now runs on systems without FUSE installed — uses a fallback runtime that extracts to a temp directory when FUSE is unavailable.
   - **Linux:** Desktop notifications on AppImage now show an accurate hint explaining that the app icon won't appear in toasts until the AppImage is integrated with the desktop, instead of a misleading warning shown to all Linux users including those on deb/rpm.
-  - **Linux:** Deep-link handling (`sigil://` scheme) now registers correctly on deb and rpm installs.
+  - **Linux:** Deep-link handling (`glyph://` scheme) now registers correctly on deb and rpm installs.
   - **UX:** App icon launches now show a loading cursor on Linux desktops that support startup notification.
 
 ## 0.11.3
@@ -322,14 +322,14 @@
 
 - df5f23f: Add typed callback response interfaces and export verifyEnvelopeSignature
 
-  - Added `SigilCallbackResponse` union type and its five constituent interfaces (`SigilSignedTransferCallback`, `SigilSignedMessageCallback`, `SigilConnectedCallback`, `SigilVerifiedCallback`, `SigilRejectedCallback`) to `request-schema.ts`
+  - Added `GlyphCallbackResponse` union type and its five constituent interfaces (`GlyphSignedTransferCallback`, `GlyphSignedMessageCallback`, `GlyphConnectedCallback`, `GlyphVerifiedCallback`, `GlyphRejectedCallback`) to `request-schema.ts`
   - Exported `verifyEnvelopeSignature` from `request-trust.ts` as a standalone helper for verifying ES256 signed envelopes without the full registry trust evaluation
   - Updated `request-screen.tsx` to construct typed callback response objects instead of plain `JSON.stringify` calls, providing compile-time shape guarantees
 
 - 8788706: Fix deep-link requests never reaching the request screen
 
   - `proof: null` from unsigned requests failed zod's `.optional()` check,
-    causing `parseSigilEnvelope` to reject every envelope silently — changed
+    causing `parseGlyphEnvelope` to reject every envelope silently — changed
     to `.nullish()` so absent proof is accepted as `null` or `undefined`
   - `lock()` was clearing `pendingRequests`, destroying any queued deep-link
     request if auto-lock fired before the user could review it — pending
@@ -662,7 +662,7 @@
 
 - 04d0b54: Fix test dApp identity and verify_message instructions in TESTING.md.
 
-  - Replace `AAAA...AAAA` dummy identity with the Sigil donation address which has a valid Qubic checksum — the all-A identity passed Rust format validation but failed the frontend checksum check, causing `[Invalid identity]` on every transfer test
+  - Replace `AAAA...AAAA` dummy identity with the Glyph donation address which has a valid Qubic checksum — the all-A identity passed Rust format validation but failed the frontend checksum check, causing `[Invalid identity]` on every transfer test
   - Clarify verify_message setup steps: sign a message first, copy `signature` and `public_key` from the result, paste into the HTML — the placeholder literal strings were being sent as-is
 
 ## 0.3.2
@@ -671,7 +671,7 @@
 
 - 8f5514f: Fix deep link warm-start, updater feedback, and enable DevTools.
 
-  - Deep link warm-start: when Sigil is already running and a `sigil://` link is clicked, the single-instance callback now processes the URL and brings the window to focus; previously the URL was silently dropped
+  - Deep link warm-start: when Glyph is already running and a `glyph://` link is clicked, the single-instance callback now processes the URL and brings the window to focus; previously the URL was silently dropped
   - Updater: check result now shows `[UP TO DATE]` when no update is available, and `[UPDATE CHECK FAILED]` in red when the check throws (network error, etc.); errors were previously swallowed silently
   - DevTools enabled in production builds (`devtools: true`) so right-click → Inspect works in the installed app
 
@@ -697,13 +697,13 @@
 
   **Features**
 
-  - New `verify_message` deep link type: dApps can ask Sigil to verify a SchnorrQ signature against a message and public key; the sheet shows the message, claimed signer identity, and truncated signature; result (`valid: true/false`) is posted back via callback
+  - New `verify_message` deep link type: dApps can ask Glyph to verify a SchnorrQ signature against a message and public key; the sheet shows the message, claimed signer identity, and truncated signature; result (`valid: true/false`) is posted back via callback
   - `sign_message` now accepts a `from` field so dApps can request signing from a specific identity; when omitted and the vault has multiple accounts, an account picker appears (matching the behaviour of `transfer` and `sc_call`)
   - Success screen no longer shows `[CALLBACK DELIVERED]` when no callback URL was provided; instead a **Copy result** button lets the user copy the JSON response manually
 
   **Fixes**
 
-  - Cold-start deep link: when Sigil is launched by clicking a `sigil://` link while the app is closed, the request now correctly appears after unlocking; previously the `sigil:request` event fired before the frontend listener was registered and was silently lost
+  - Cold-start deep link: when Glyph is launched by clicking a `glyph://` link while the app is closed, the request now correctly appears after unlocking; previously the `glyph:request` event fired before the frontend listener was registered and was silently lost
 
 - e68f33b: Polish and request-screen improvements.
 
@@ -728,14 +728,14 @@
   **Features**
 
   - Auto-updater: Settings footer shows available update with version; user-triggered download and install with live progress (`[DOWNLOADING... 42%]`); CI pipeline signs all platform artifacts and publishes `latest.json` updater manifest to GitHub Releases
-  - Installer branding: window title set to "Sigil", publisher and copyright metadata, per-user NSIS install mode, fullscreen and maximize disabled on Windows
+  - Installer branding: window title set to "Glyph", publisher and copyright metadata, per-user NSIS install mode, fullscreen and maximize disabled on Windows
   - Accessibility: `aria-label` on all icon-only buttons, `aria-live="polite"` on status/error regions, `aria-hidden` on decorative icons, keyboard-triggered QR code reveal
   - Animated seed display: characters appear one by one with a 30 ms stagger on seed generation
   - Request popup now slides up as a bottom sheet with a drag handle and backdrop spacer
 
   **Fixes**
 
-  - Biometric unlock: changed keyring key format from `"bio:{uuid}"` (colon breaks Windows Credential Manager) to a separate service `"sigil-bio"` with vault ID as username; added verify-after-store step so enable fails loudly instead of silently; split error handling so wrong-password and keyring-failure show distinct messages
+  - Biometric unlock: changed keyring key format from `"bio:{uuid}"` (colon breaks Windows Credential Manager) to a separate service `"glyph-bio"` with vault ID as username; added verify-after-store step so enable fails loudly instead of silently; split error handling so wrong-password and keyring-failure show distinct messages
   - SC call preview: amount row is now shown only when the contract call transfers QU; removed the misleading "Fee: None" row (contract fees are the dApp's responsibility to communicate)
   - Transfer and SC call approvals now block when the signer's balance is insufficient (`[INSUFFICIENT BALANCE]`) or a transfer is already pending confirmation (`[TRANSFER PENDING — WAIT FOR CONFIRMATION]`)
   - Connect screen copy clarifies that permissions are per-action approvals, not silent background grants
@@ -749,8 +749,8 @@
 
   **Fixes**
 
-  - Biometric unlock (Windows): bypassed `keyring` crate entirely on Windows; now uses `CredWriteW`/`CredReadW` directly with `CRED_PERSIST_LOCAL_MACHINE` so credentials survive app restarts. Users who previously enabled biometric must disable and re-enable it once after updating (credential target name changed from `sigil-bio/{uuid}` to `sigil-vault/{uuid}`)
-  - Focus rings: removed `outline: none` inline suppressors from color swatch buttons, ThemeCard, FontCard, and accent color picker; bare `<input>` elements in send, send-many, and security screens now use `sigil-input` class for consistent border-based focus treatment; `:focus-visible` ring (1px white, 2px offset) now applies globally without suppression
+  - Biometric unlock (Windows): bypassed `keyring` crate entirely on Windows; now uses `CredWriteW`/`CredReadW` directly with `CRED_PERSIST_LOCAL_MACHINE` so credentials survive app restarts. Users who previously enabled biometric must disable and re-enable it once after updating (credential target name changed from `glyph-bio/{uuid}` to `glyph-vault/{uuid}`)
+  - Focus rings: removed `outline: none` inline suppressors from color swatch buttons, ThemeCard, FontCard, and accent color picker; bare `<input>` elements in send, send-many, and security screens now use `glyph-input` class for consistent border-based focus treatment; `:focus-visible` ring (1px white, 2px offset) now applies globally without suppression
   - Autocomplete: `autoComplete="off"` on all text inputs, `"new-password"` on password fields, preventing browser autofill popups from overlapping the UI
   - CI (macOS): added explicit `rustup target add aarch64-apple-darwin x86_64-apple-darwin` step; `rust-toolchain.toml` causes `dtolnay/rust-toolchain` to ignore its `targets:` input so the separate step is required for universal builds
   - CI (Linux): added `bunfig.toml` with `ignoredDependencies` for `lightningcss-linux-x64-musl` and `lightningcss-linux-arm64-musl` which fail to extract on glibc runners
@@ -772,7 +772,7 @@
   - Added `updater:allow-check` and `updater:allow-download-and-install` permissions to Tauri ACL capabilities — the updater plugin was wired up but blocked by missing ACL grants, causing `[Command plugin:updater|check not allowed by ACL]` in settings
 
 - 2afdab3: Fix app stuck on loading screen in production builds caused by Tauri IPC not being ready when the store hydrates. Notifications now work correctly after store hydration is fixed. Replace the loading screen with a skeleton UI.
-- c10387e: Fix app stuck at [LOADING...] on production builds by making store hydration reactive. Rename installed binary to `sigil-wallet` to avoid conflict with the Sigil ebook editor on Debian/Kali systems.
+- c10387e: Fix app stuck at [LOADING...] on production builds by making store hydration reactive. Rename installed binary to `glyph-wallet` to avoid conflict with the Glyph ebook editor on Debian/Kali systems.
 
 ## 0.3.0-beta.7
 
@@ -782,13 +782,13 @@
 
   **Features**
 
-  - New `verify_message` deep link type: dApps can ask Sigil to verify a SchnorrQ signature against a message and public key; the sheet shows the message, claimed signer identity, and truncated signature; result (`valid: true/false`) is posted back via callback
+  - New `verify_message` deep link type: dApps can ask Glyph to verify a SchnorrQ signature against a message and public key; the sheet shows the message, claimed signer identity, and truncated signature; result (`valid: true/false`) is posted back via callback
   - `sign_message` now accepts a `from` field so dApps can request signing from a specific identity; when omitted and the vault has multiple accounts, an account picker appears (matching the behaviour of `transfer` and `sc_call`)
   - Success screen no longer shows `[CALLBACK DELIVERED]` when no callback URL was provided; instead a **Copy result** button lets the user copy the JSON response manually
 
   **Fixes**
 
-  - Cold-start deep link: when Sigil is launched by clicking a `sigil://` link while the app is closed, the request now correctly appears after unlocking; previously the `sigil:request` event fired before the frontend listener was registered and was silently lost
+  - Cold-start deep link: when Glyph is launched by clicking a `glyph://` link while the app is closed, the request now correctly appears after unlocking; previously the `glyph:request` event fired before the frontend listener was registered and was silently lost
 
 ## 0.3.0-beta.6
 
@@ -813,8 +813,8 @@
 
   **Fixes**
 
-  - Biometric unlock (Windows): bypassed `keyring` crate entirely on Windows; now uses `CredWriteW`/`CredReadW` directly with `CRED_PERSIST_LOCAL_MACHINE` so credentials survive app restarts. Users who previously enabled biometric must disable and re-enable it once after updating (credential target name changed from `sigil-bio/{uuid}` to `sigil-vault/{uuid}`)
-  - Focus rings: removed `outline: none` inline suppressors from color swatch buttons, ThemeCard, FontCard, and accent color picker; bare `<input>` elements in send, send-many, and security screens now use `sigil-input` class for consistent border-based focus treatment; `:focus-visible` ring (1px white, 2px offset) now applies globally without suppression
+  - Biometric unlock (Windows): bypassed `keyring` crate entirely on Windows; now uses `CredWriteW`/`CredReadW` directly with `CRED_PERSIST_LOCAL_MACHINE` so credentials survive app restarts. Users who previously enabled biometric must disable and re-enable it once after updating (credential target name changed from `glyph-bio/{uuid}` to `glyph-vault/{uuid}`)
+  - Focus rings: removed `outline: none` inline suppressors from color swatch buttons, ThemeCard, FontCard, and accent color picker; bare `<input>` elements in send, send-many, and security screens now use `glyph-input` class for consistent border-based focus treatment; `:focus-visible` ring (1px white, 2px offset) now applies globally without suppression
   - Autocomplete: `autoComplete="off"` on all text inputs, `"new-password"` on password fields, preventing browser autofill popups from overlapping the UI
   - CI (macOS): added explicit `rustup target add aarch64-apple-darwin x86_64-apple-darwin` step; `rust-toolchain.toml` causes `dtolnay/rust-toolchain` to ignore its `targets:` input so the separate step is required for universal builds
   - CI (Linux): added `bunfig.toml` with `ignoredDependencies` for `lightningcss-linux-x64-musl` and `lightningcss-linux-arm64-musl` which fail to extract on glibc runners
@@ -833,14 +833,14 @@
   **Features**
 
   - Auto-updater: Settings footer shows available update with version; user-triggered download and install with live progress (`[DOWNLOADING... 42%]`); CI pipeline signs all platform artifacts and publishes `latest.json` updater manifest to GitHub Releases
-  - Installer branding: window title set to "Sigil", publisher and copyright metadata, per-user NSIS install mode, fullscreen and maximize disabled on Windows
+  - Installer branding: window title set to "Glyph", publisher and copyright metadata, per-user NSIS install mode, fullscreen and maximize disabled on Windows
   - Accessibility: `aria-label` on all icon-only buttons, `aria-live="polite"` on status/error regions, `aria-hidden` on decorative icons, keyboard-triggered QR code reveal
   - Animated seed display: characters appear one by one with a 30 ms stagger on seed generation
   - Request popup now slides up as a bottom sheet with a drag handle and backdrop spacer
 
   **Fixes**
 
-  - Biometric unlock: changed keyring key format from `"bio:{uuid}"` (colon breaks Windows Credential Manager) to a separate service `"sigil-bio"` with vault ID as username; added verify-after-store step so enable fails loudly instead of silently; split error handling so wrong-password and keyring-failure show distinct messages
+  - Biometric unlock: changed keyring key format from `"bio:{uuid}"` (colon breaks Windows Credential Manager) to a separate service `"glyph-bio"` with vault ID as username; added verify-after-store step so enable fails loudly instead of silently; split error handling so wrong-password and keyring-failure show distinct messages
   - SC call preview: amount row is now shown only when the contract call transfers QU; removed the misleading "Fee: None" row (contract fees are the dApp's responsibility to communicate)
   - Transfer and SC call approvals now block when the signer's balance is insufficient (`[INSUFFICIENT BALANCE]`) or a transfer is already pending confirmation (`[TRANSFER PENDING — WAIT FOR CONFIRMATION]`)
   - Connect screen copy clarifies that permissions are per-action approvals, not silent background grants
@@ -886,4 +886,4 @@
 
 ### Patch Changes
 
-- c10387e: Fix app stuck at [LOADING...] on production builds by making store hydration reactive. Rename installed binary to `sigil-wallet` to avoid conflict with the Sigil ebook editor on Debian/Kali systems.
+- c10387e: Fix app stuck at [LOADING...] on production builds by making store hydration reactive. Rename installed binary to `glyph-wallet` to avoid conflict with the Glyph ebook editor on Debian/Kali systems.

@@ -1,25 +1,25 @@
 <div align="center">
 
-<img src="src-tauri/icons/128x128.png" alt="Sigil" width="80" />
+<img src="src-tauri/icons/128x128.png" alt="Glyph" width="80" />
 
-# Sigil
+# Glyph
 
 **Self-custodial Qubic desktop wallet**
 
-[![Release](https://img.shields.io/github/v/release/sigil-oss/sigil.app?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/sigil-oss/sigil.app/releases/latest)
-[![CI](https://img.shields.io/github/actions/workflow/status/sigil-oss/sigil.app/changeset.yml?style=flat-square&label=build&color=0d0d0d&labelColor=1a1a1a)](https://github.com/sigil-oss/sigil.app/actions)
+[![Release](https://img.shields.io/github/v/release/glyph-oss/glyph.app?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-oss/glyph.app/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/glyph-oss/glyph.app/changeset.yml?style=flat-square&label=build&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-oss/glyph.app/actions)
 [![License](https://img.shields.io/badge/license-source--available-0d0d0d?style=flat-square&labelColor=1a1a1a)](./LICENSE)
 [![Discord](https://img.shields.io/badge/discord-join-0d0d0d?style=flat-square&labelColor=1a1a1a)](https://discord.gg/s5qNRNGu96)
 
 Windows · macOS (Universal) · Linux (AppImage · .deb · .rpm)
 
-[**Download**](https://github.com/sigil-oss/sigil.app/releases/latest) · [Website](https://sigilwallet.org) · [Discord](https://discord.gg/s5qNRNGu96)
+[**Download**](https://github.com/glyph-oss/glyph.app/releases/latest) · [Website](https://wallet.glyq.org) · [Discord](https://discord.gg/s5qNRNGu96)
 
 </div>
 
 ---
 
-Keys stay encrypted on disk. Signing material lives only in Rust process memory and is wiped immediately on lock. No Sigil backend, no key escrow, no browser extension surface.
+Keys stay encrypted on disk. Signing material lives only in Rust process memory and is wiped immediately on lock. No Glyph backend, no key escrow, no browser extension surface.
 
 ## Features
 
@@ -39,7 +39,7 @@ Keys stay encrypted on disk. Signing material lives only in Rust process memory 
 - Signed update payload verification
 
 **dApp integration**
-- Native `sigil://` deep-link protocol
+- Native `glyph://` deep-link protocol
 - Request types: `transfer`, `sc_call`, `sign_message`, `verify_message`, `connect`
 - Replay protection via nonce store (1-hour window)
 - Result delivery via server callback POST or browser redirect
@@ -76,7 +76,7 @@ Sensitive operations are isolated to the Rust layer — the renderer only sends 
 
 ## Deep-Link Protocol
 
-dApps send requests by opening a `sigil://v1/request?d=<base64url-envelope>` URL. Sigil validates, queues, and presents a review screen. Results are delivered to the dApp via callback POST or redirect URL.
+dApps send requests by opening a `glyph://v1/request?d=<base64url-envelope>` URL. Glyph validates, queues, and presents a review screen. Results are delivered to the dApp via callback POST or redirect URL.
 
 ```mermaid
 sequenceDiagram
@@ -85,24 +85,24 @@ sequenceDiagram
     participant React as Renderer
     participant User
 
-    dApp->>Rust: open sigil://v1/request?d=<payload>
+    dApp->>Rust: open glyph://v1/request?d=<payload>
     Rust->>Rust: validate URL · check nonce · store payload
-    Rust->>React: emit sigil:request event
+    Rust->>React: emit glyph:request event
     React->>User: request review UI
     User->>React: approve / reject
     React->>Rust: post_callback(url, body)
     Rust->>dApp: HTTP POST result JSON
 ```
 
-Use [`@sigil-oss/connect`](https://github.com/sigil-oss/sigil.connect) to build envelopes and handle result delivery from any framework.
+Use [`@glyph-oss/connect`](https://github.com/glyph-oss/glyph.connect) to build envelopes and handle result delivery from any framework.
 
 ## Build Locally
 
 **Requirements:** [Rust stable](https://rustup.rs/) · [Bun](https://bun.sh/) · [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/)
 
 ```sh
-git clone https://github.com/sigil-oss/sigil.app
-cd sigil.app
+git clone https://github.com/glyph-oss/glyph.app
+cd glyph.app
 bun install
 bun tauri dev        # dev server
 bun tauri build      # production bundle → src-tauri/target/release/bundle/
@@ -139,8 +139,8 @@ cargo check --manifest-path src-tauri/Cargo.toml
 ## Community
 
 - **Discord:** https://discord.gg/s5qNRNGu96
-- **GitHub:** https://github.com/sigil-oss/sigil.app
-- **Website:** https://sigilwallet.org
+- **GitHub:** https://github.com/glyph-oss/glyph.app
+- **Website:** https://wallet.glyq.org
 
 ## License
 

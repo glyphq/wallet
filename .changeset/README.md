@@ -15,7 +15,7 @@ Write changesets as release-note inputs, not as commit logs.
 
 ```md
 ---
-"sigil": patch
+"glyph": patch
 ---
 
 Improve [area] across [high-level themes].
@@ -32,7 +32,7 @@ Improve [area] across [high-level themes].
 
 ```md
 ---
-"sigil": patch
+"glyph": patch
 ---
 
 Improve wallet safety and export behavior.
@@ -47,7 +47,7 @@ Improve wallet safety and export behavior.
 
 ```md
 ---
-"sigil": patch
+"glyph": patch
 ---
 
 Strengthen vault handling and signing safety.

@@ -13,7 +13,7 @@ Only the latest release receives security fixes. We do not backport patches to o
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Report vulnerabilities privately via GitHub's [Security Advisories](https://github.com/sigil-oss/sigil.app/security/advisories/new), or email **security@sigil.app**.
+Report vulnerabilities privately via GitHub's [Security Advisories](https://github.com/glyph-oss/glyph.app/security/advisories/new), or email **security@glyph.app**.
 
 Include as much of the following as possible:
 
@@ -46,7 +46,7 @@ We aim to acknowledge reports within **48 hours** and provide a resolution timel
 
 ## Architecture notes for researchers
 
-Sigil is a **Tauri v2** desktop app. The frontend (React) runs in a sandboxed webview and communicates with native code exclusively via `invoke()` IPC — there are no Node.js APIs in the renderer. Key properties:
+Glyph is a **Tauri v2** desktop app. The frontend (React) runs in a sandboxed webview and communicates with native code exclusively via `invoke()` IPC — there are no Node.js APIs in the renderer. Key properties:
 
 - **No remote code execution**: CSP blocks `eval` and inline scripts. All JS is bundled at build time.
 - **Keys never leave the process**: Seeds are decrypted in the webview from the encrypted vault stored on disk. Decrypted key material is held only in memory and never written to disk or sent over the network.
