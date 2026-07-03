@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
-import logoSrc from "../../src-tauri/icons/32x32.png";
+import logoSrc from "../assets/brand/glyph-dark.png";
 
 function WinBtn({
   onClick,
