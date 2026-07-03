@@ -102,14 +102,13 @@ jobs:
           ref: ${{ needs.version-or-publish.outputs.tag }}
 
       - name: Install Linux system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >-
-            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-            libssl-dev libgtk-3-dev libglib2.0-dev libdbus-1-dev
-            libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
-            libgdk-pixbuf-2.0-dev rpm
-          version: 2.0
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+            patchelf libssl-dev libgtk-3-dev libglib2.0-dev \
+            libdbus-1-dev libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev libgdk-pixbuf-2.0-dev rpm
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -182,25 +181,13 @@ jobs:
               cp "${WEBKIT_HELPERS}/${exe}" squashfs-root/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/
           done
 
-          # --- Strip bundled libs -----------------------------------------------
-          # GTK3 / GLib / display stack — use system versions on rolling distros
-          rm -f squashfs-root/usr/lib/libgtk-3.so*
-          rm -f squashfs-root/usr/lib/libgdk-3.so*
-          rm -f squashfs-root/usr/lib/libgio-2.0.so*
-          rm -f squashfs-root/usr/lib/libglib-2.0.so*
-          rm -f squashfs-root/usr/lib/libgobject-2.0.so*
-          rm -f squashfs-root/usr/lib/libgmodule-2.0.so*
-          rm -f squashfs-root/usr/lib/libgthread-2.0.so*
-          rm -f squashfs-root/usr/lib/libgdk_pixbuf-2.0.so*
-          rm -f squashfs-root/usr/lib/libpango-1.0.so*
-          rm -f squashfs-root/usr/lib/libpangocairo-1.0.so*
-          rm -f squashfs-root/usr/lib/libpangoft2-1.0.so*
-          rm -f squashfs-root/usr/lib/libcairo.so*
-          rm -f squashfs-root/usr/lib/libcairo-gobject.so*
-          rm -f squashfs-root/usr/lib/libatk-1.0.so*
-          rm -f squashfs-root/usr/lib/libharfbuzz.so*
-          rm -f squashfs-root/usr/lib/libmount.so*
-          rm -f squashfs-root/usr/lib/libblkid.so*
+          # --- Strip display / GPU libs only -------------------------------------------
+          # Remove only the Mesa/EGL/GL stack that conflicts with system GPU drivers.
+          # GTK3, GLib, Cairo, Pango, HarfBuzz, ATK, GDK-Pixbuf, and the WebKit stack
+          # are intentionally kept bundled — they are compiled against Ubuntu 22.04
+          # and stripping them causes libgtk / pixbuf / theme errors on most distros.
+          # The apprun-hooks from linuxdeploy set GTK_PATH, GDK_PIXBUF_MODULE_FILE,
+          # etc. to point at these bundled libs, so they must be present.
           rm -f squashfs-root/usr/lib/libEGL.so*
           rm -f squashfs-root/usr/lib/libEGL_mesa.so*
           rm -f squashfs-root/usr/lib/libGL.so*
@@ -209,12 +196,6 @@ jobs:
           rm -f squashfs-root/usr/lib/libGLX_mesa.so*
           rm -f squashfs-root/usr/lib/libgbm.so*
           rm -f squashfs-root/usr/lib/libdrm.so*
-          # WebKitGTK + WPE are intentionally kept bundled — the Tauri binary's IPC
-          # custom scheme handler is compiled against WebKit 2.36 (Ubuntu 22.04).
-          # Using the system WebKit (2.44+ on Arch) breaks invoke() calls, causing
-          # silent store write failures and vault data being lost on restart.
-          # The EGL_BAD_PARAMETER abort is prevented by WEBKIT_DISABLE_COMPOSITING_MODE=1
-          # set in AppRun, not by stripping WebKit.
 
           # --- Custom AppRun ----------------------------------------------------
           # Replace AppRun with the versioned file from the repo.
