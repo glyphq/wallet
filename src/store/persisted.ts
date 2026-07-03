@@ -268,7 +268,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   customPriceFeedUrl: "",
 };
 
-const _disk = new LazyStore("sigil.json");
+const _disk = new LazyStore("glyph.json");
 
 const tauriStorage: StateStorage = {
   getItem: async (name) => {
@@ -277,8 +277,8 @@ const tauriStorage: StateStorage = {
       if (raw === null) return null;
       return await invoke<string>("decrypt_store_value", { value: raw });
     } catch (err) {
-      console.error("[sigil] disk read failed:", err);
-      window.dispatchEvent(new CustomEvent("sigil:disk-read-error"));
+      console.error("[glyph] disk read failed:", err);
+      window.dispatchEvent(new CustomEvent("glyph:disk-read-error"));
       throw err;
     }
   },
@@ -287,21 +287,21 @@ const tauriStorage: StateStorage = {
     try {
       encrypted = await invoke<string>("encrypt_store_value", { value });
     } catch (err) {
-      console.error("[sigil] encrypt_store_value failed:", err);
-      window.dispatchEvent(new CustomEvent("sigil:disk-write-error"));
+      console.error("[glyph] encrypt_store_value failed:", err);
+      window.dispatchEvent(new CustomEvent("glyph:disk-write-error"));
       return;
     }
     try {
       await _disk.set(name, encrypted);
       await _disk.save();
     } catch (err) {
-      console.error("[sigil] disk write failed, retrying once:", err);
+      console.error("[glyph] disk write failed, retrying once:", err);
       try {
         await _disk.set(name, encrypted);
         await _disk.save();
       } catch (err2) {
-        console.error("[sigil] disk write failed permanently — data may be lost on restart:", err2);
-        window.dispatchEvent(new CustomEvent("sigil:disk-write-error"));
+        console.error("[glyph] disk write failed permanently — data may be lost on restart:", err2);
+        window.dispatchEvent(new CustomEvent("glyph:disk-write-error"));
       }
     }
   },
@@ -426,7 +426,7 @@ interface PersistedState {
   clearRequestHistory: () => void;
 }
 
-/** Zustand store backed by Tauri LazyStore (`sigil.json` on disk). Survives app restarts. */
+/** Zustand store backed by Tauri LazyStore (`glyph.json` on disk). Survives app restarts. */
 export const usePersistedStore = create<PersistedState>()(
   persist(
     (set) => ({
@@ -643,7 +643,7 @@ export const usePersistedStore = create<PersistedState>()(
 
     }),
     {
-      name: "sigil-persisted",
+      name: "glyph-persisted",
       storage: createJSONStorage(() => tauriStorage),
       // Deep-merge settings so new fields added to DEFAULT_SETTINGS survive rehydration.
       // Validate array fields so corrupted JSON cannot replace typed arrays with scalars.

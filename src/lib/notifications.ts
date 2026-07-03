@@ -22,7 +22,7 @@ function notificationPlatform(): "macos" | "linux" | "other" {
 function permissionDeniedMessage(): string {
   switch (notificationPlatform()) {
     case "macos":
-      return "Notifications are blocked for Sigil in macOS system settings.";
+      return "Notifications are blocked for Glyph in macOS system settings.";
     case "linux":
       return "Desktop notifications are unavailable. On Linux this is often caused by an unpackaged app without a registered desktop entry.";
     default:
@@ -33,11 +33,11 @@ function permissionDeniedMessage(): string {
 function permissionErrorMessage(): string {
   switch (notificationPlatform()) {
     case "macos":
-      return "Sigil could not verify macOS notification authorization.";
+      return "Glyph could not verify macOS notification authorization.";
     case "linux":
-      return "Sigil could not reach the Linux desktop notification service.";
+      return "Glyph could not reach the Linux desktop notification service.";
     default:
-      return "Sigil could not verify notification availability.";
+      return "Glyph could not verify notification availability.";
   }
 }
 
@@ -75,9 +75,9 @@ export async function notify(title: string, body: string): Promise<NotificationD
       title: stripNotificationMarkup(title),
       body: stripNotificationMarkup(body),
       // Explicit icon name (bundle identifier) bypasses app-name-based icon lookup on
-      // Linux, preventing a collision with any other app also named "Sigil" (e.g. the
+      // Linux, preventing a collision with any other app also named "Glyph" (e.g. the
       // ebook editor) that registers an icon under the same display name in the theme.
-      icon: "com.qubic.sigil",
+      icon: "com.qubic.glyph",
     });
     return { ok: true, state: "sent" };
   } catch (error) {

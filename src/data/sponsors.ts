@@ -20,12 +20,12 @@ export interface SponsorTransparencyData {
   latestContributors: Sponsor[];
 }
 
-/** Qubic identity that receives donation QU for Sigil development. */
+/** Qubic identity that receives donation QU for Glyph development. */
 export const DONATION_IDENTITY =
-  "SIGILZXQNLOTDENBWIBTOGRNBPLBWISKLZCQQFMEECEKOTNVJMMGRWYALYQL";
+  "GLYPHZXQNLOTDENBWIBTOGRNBPLBWISKLZCQQFMEECEKOTNVJMMGRWYALYQL";
 
 if (!isValidIdentity(DONATION_IDENTITY)) {
-  throw new Error(`[sigil] DONATION_IDENTITY is not a valid Qubic address: ${DONATION_IDENTITY}`);
+  throw new Error(`[glyph] DONATION_IDENTITY is not a valid Qubic address: ${DONATION_IDENTITY}`);
 }
 
 export const SPONSOR_NAMES = sponsorNames as Record<string, string>;

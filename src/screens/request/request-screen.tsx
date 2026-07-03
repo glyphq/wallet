@@ -17,7 +17,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { ScreenHeader } from "@/components/screen-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { parseSigilEnvelope, REQUEST_TYPE_LABEL, type SigilCallbackResponse } from "@/lib/request-schema";
+import { parseGlyphEnvelope, REQUEST_TYPE_LABEL, type GlyphCallbackResponse } from "@/lib/request-schema";
 
 type CallbackStatus = "pending" | "ok" | "failed";
 
@@ -53,7 +53,7 @@ export default function RequestScreen() {
   const addRequestHistoryItem = usePersistedStore((s) => s.addRequestHistoryItem);
   const updateRequestHistoryItem = usePersistedStore((s) => s.updateRequestHistoryItem);
 
-  const parseResult = parseSigilEnvelope(pendingRequest);
+  const parseResult = parseGlyphEnvelope(pendingRequest);
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<SuccessState | null>(null);
@@ -98,7 +98,7 @@ export default function RequestScreen() {
   function reject() {
     if (envelope) {
       const requestHistoryId = makeRequestHistoryId();
-      const response: SigilCallbackResponse = {
+      const response: GlyphCallbackResponse = {
         status: "rejected",
         nonce: envelope.request.nonce,
         type: envelope.request.type,
@@ -202,7 +202,7 @@ export default function RequestScreen() {
     const callbackUrl = envelope.callback;
     const redirectUri = envelope.redirect_uri ?? null;
 
-    const response: SigilCallbackResponse = {
+    const response: GlyphCallbackResponse = {
       status: "signed",
       type: envelope.request.type as "transfer" | "sc_call",
       nonce: envelope.request.nonce,
@@ -254,7 +254,7 @@ export default function RequestScreen() {
     const callbackUrl = envelope.callback;
     const redirectUri = envelope.redirect_uri ?? null;
 
-    const response: SigilCallbackResponse = {
+    const response: GlyphCallbackResponse = {
       status: "signed",
       type: "sign_message",
       nonce: envelope.request.nonce,
@@ -306,7 +306,7 @@ export default function RequestScreen() {
     const callbackUrl = envelope.callback;
     const redirectUri = envelope.redirect_uri ?? null;
 
-    const response: SigilCallbackResponse = {
+    const response: GlyphCallbackResponse = {
       status: "verified",
       type: "verify_message",
       nonce: envelope.request.nonce,
@@ -357,7 +357,7 @@ export default function RequestScreen() {
     const callbackUrl = envelope.callback;
     const redirectUri = envelope.redirect_uri ?? null;
 
-    const response: SigilCallbackResponse = {
+    const response: GlyphCallbackResponse = {
       status: "connected",
       type: "connect",
       nonce: envelope.request.nonce,
@@ -409,7 +409,7 @@ export default function RequestScreen() {
   }
 
   async function saveResult(successState: SuccessState) {
-    await saveFileDialog(`sigil-request-result-${Date.now()}.json`, successState.callbackBody);
+    await saveFileDialog(`glyph-request-result-${Date.now()}.json`, successState.callbackBody);
   }
 
   // ── Success screen ──

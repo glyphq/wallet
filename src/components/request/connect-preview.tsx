@@ -3,13 +3,13 @@ import { Button } from "@/components/button";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
-import type { ConnectRequest, SigilPermission } from "@/lib/request-schema";
+import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
 export interface ConnectApproveResult {
   identity: string;
-  permissions: SigilPermission[];
+  permissions: GlyphPermission[];
 }
 
 interface ConnectPreviewProps {
@@ -46,7 +46,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   function approve() {
     if (!selectedWallet) return;
-    const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as SigilPermission[];
+    const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as GlyphPermission[];
     onApprove({ identity: selectedWallet.identity, permissions });
   }
 
@@ -57,7 +57,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
       </div>
 
       <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-        [THIS REQUEST IS UNVERIFIED. SIGIL DOES NOT PERSIST TRUST FOR DEEP-LINK SENDERS.]
+        [THIS REQUEST IS UNVERIFIED. GLYPH DOES NOT PERSIST TRUST FOR DEEP-LINK SENDERS.]
       </div>
 
       {/* Account picker */}

@@ -358,7 +358,7 @@ export default function CreateVaultScreen() {
                     maxLength={1}
                     autoFocus={i === 0}
                     aria-label={`Character at position ${pos + 1}`}
-                    className="sigil-input"
+                    className="glyph-input"
                     style={{
                       width: "100%",
                       textAlign: "center",

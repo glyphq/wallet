@@ -32,7 +32,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
         maxLength={maxLength}
         autoComplete={props.autoComplete ?? "off"}
         id={inputId}
-        className="sigil-input"
+        className="glyph-input"
         data-error={error ? "true" : undefined}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error && errorId ? errorId : undefined}

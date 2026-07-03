@@ -72,14 +72,14 @@ export default function WelcomeScreen() {
       try {
         const text = await file.text();
         const parsed = await parseSignedExportEnvelope<{
-          sigil: number;
+          glyph: number;
           name: string;
           color: VaultColor;
           accounts: AccountMeta[];
           vault: VaultData;
         }>(text, "vault");
         const envelopePayload = parsed.payload;
-        if (envelopePayload.sigil !== 1 || !envelopePayload.vault || !envelopePayload.name?.trim()) throw new Error("bad format");
+        if (envelopePayload.glyph !== 1 || !envelopePayload.vault || !envelopePayload.name?.trim()) throw new Error("bad format");
         const accounts: AccountMeta[] = envelopePayload.accounts ?? [];
         setImportData({
           name: envelopePayload.name,
@@ -224,7 +224,7 @@ export default function WelcomeScreen() {
               marginBottom: "var(--space-4)",
             }}
           >
-            SIGIL
+            GLYPH
           </div>
           <div
             style={{

@@ -108,7 +108,7 @@ export default function HistoryScreen() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sigil-memos-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `glyph-memos-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setMemoExportOpen(false);
@@ -748,7 +748,7 @@ function TxDetail({ detail, identity, currentTick, txMemos }: {
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(tagInput); } }}
               placeholder="#tag"
-              className="sigil-input"
+              className="glyph-input"
               style={{ background: "none", border: "1px dashed var(--color-border-strong)", borderRadius: "var(--radius-sharp)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "2px var(--space-2)", width: 72 }}
             />
           </div>

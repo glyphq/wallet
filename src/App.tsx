@@ -129,13 +129,13 @@ function useRuntimeDiagnostics() {
       });
     }
 
-    window.addEventListener("sigil:disk-read-error", handleDiskReadError as EventListener);
-    window.addEventListener("sigil:disk-write-error", handleDiskWriteError as EventListener);
+    window.addEventListener("glyph:disk-read-error", handleDiskReadError as EventListener);
+    window.addEventListener("glyph:disk-write-error", handleDiskWriteError as EventListener);
     window.addEventListener("error", handleError);
     window.addEventListener("unhandledrejection", handleRejection);
     return () => {
-      window.removeEventListener("sigil:disk-read-error", handleDiskReadError as EventListener);
-      window.removeEventListener("sigil:disk-write-error", handleDiskWriteError as EventListener);
+      window.removeEventListener("glyph:disk-read-error", handleDiskReadError as EventListener);
+      window.removeEventListener("glyph:disk-write-error", handleDiskWriteError as EventListener);
       window.removeEventListener("error", handleError);
       window.removeEventListener("unhandledrejection", handleRejection);
     };

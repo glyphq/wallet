@@ -8,12 +8,12 @@ interface PayPayload {
   label?: string | null;
 }
 
-/** Listens for sigil://pay deep links and navigates to the send screen with pre-filled params. */
+/** Listens for glyph://pay deep links and navigates to the send screen with pre-filled params. */
 export function usePayLink() {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
-    listen<string>("sigil:pay", (event) => {
+    listen<string>("glyph:pay", (event) => {
       try {
         const pay = JSON.parse(event.payload) as PayPayload;
         const params = new URLSearchParams({ to: pay.to });

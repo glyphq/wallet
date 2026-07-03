@@ -181,12 +181,12 @@ export default function NotificationsScreen() {
   async function sendTest() {
     const result = await publishNotificationEvent(createNotificationEvent({
       kind: "deep_link",
-      title: "Sigil Notifications Enabled",
+      title: "Glyph Notifications Enabled",
       body: "Desktop notifications are working and ready for wallet events.",
     }));
     if (!result) {
       setStatusTone("neutral");
-      setStatusMessage("Notification recorded in Sigil. Desktop delivery is disabled in settings.");
+      setStatusMessage("Notification recorded in Glyph. Desktop delivery is disabled in settings.");
       return;
     }
     if (result.ok) {
@@ -232,7 +232,7 @@ export default function NotificationsScreen() {
       {/* Tray */}
       <SettingRow
         label="Hide to tray on close"
-        description="Keep Sigil running in the system tray when the window is closed"
+        description="Keep Glyph running in the system tray when the window is closed"
         value={hideToTray}
         onChange={(v) => updateSettings({ hideToTray: v })}
       />
@@ -274,7 +274,7 @@ export default function NotificationsScreen() {
         >
           Running as AppImage — a desktop entry is registered automatically on first launch so
           notifications work with your desktop shell. If notifications don't appear, relaunch
-          Sigil once to complete registration.
+          Glyph once to complete registration.
         </div>
       )}
 
@@ -431,9 +431,9 @@ export default function NotificationsScreen() {
           lineHeight: 1.5,
         }}
       >
-        Vault balances, ticks, tx history, and price checks follow the profile above. Sigil
+        Vault balances, ticks, tx history, and price checks follow the profile above. Glyph
         keeps polling in background, tray-hidden, and locked modes using the configured cadence.
-        When locked notifications are off, desktop alerts stay in Sigil's inbox and do not reach
+        When locked notifications are off, desktop alerts stay in Glyph's inbox and do not reach
         the OS notification surface.
       </div>
 

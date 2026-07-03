@@ -6,10 +6,10 @@ import "@/styles/global.css";
 document.documentElement.setAttribute("data-theme", "dark");
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 window.addEventListener("error", (event) => {
-  console.error("[sigil] window error:", event.error ?? event.message);
+  console.error("[glyph] window error:", event.error ?? event.message);
 });
 window.addEventListener("unhandledrejection", (event) => {
-  console.error("[sigil] unhandled rejection:", event.reason);
+  console.error("[glyph] unhandled rejection:", event.reason);
 });
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

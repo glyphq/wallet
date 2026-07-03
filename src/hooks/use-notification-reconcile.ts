@@ -49,7 +49,7 @@ export function useNotificationReconcile() {
               await publishNotificationEvent(createNotificationEvent({
                 kind: "received",
                 title: "Incoming QU",
-                body: `Received ${BigInt(tx.amount ?? "0").toLocaleString()} QU on ${truncateId(identity, 8, 4)} while Sigil was closed.`,
+                body: `Received ${BigInt(tx.amount ?? "0").toLocaleString()} QU on ${truncateId(identity, 8, 4)} while Glyph was closed.`,
                 identity,
                 txHash: tx.hash,
                 dedupeKey: `received:${tx.hash}:${identity}`,

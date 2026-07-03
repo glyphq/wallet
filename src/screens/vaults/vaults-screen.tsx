@@ -217,13 +217,13 @@ export default function VaultsScreen() {
       try {
         const text = await file.text();
         const parsed = await parseSignedExportEnvelope<{
-          sigil: number;
+          glyph: number;
           name: string;
           color: VaultColor;
           accounts: unknown[];
           vault: VaultData;
         }>(text, "vault");
-        if (parsed.payload.sigil !== 1 || !parsed.payload.vault || !parsed.payload.name?.trim()) throw new Error();
+        if (parsed.payload.glyph !== 1 || !parsed.payload.vault || !parsed.payload.name?.trim()) throw new Error();
         const rawAccounts: unknown[] = Array.isArray(parsed.payload.accounts) ? parsed.payload.accounts : [];
         const sanitizedAccounts: AccountMeta[] = rawAccounts
           .filter((a): a is Record<string, unknown> => a !== null && typeof a === "object" && !Array.isArray(a))
@@ -550,7 +550,7 @@ export default function VaultsScreen() {
             [{importFileError}]
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-            Make sure you are importing a Sigil vault export file (.json).
+            Make sure you are importing a Glyph vault export file (.json).
           </div>
           <Button onClick={() => setImportFileError("")}>OK</Button>
         </div>

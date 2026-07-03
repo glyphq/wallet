@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "sigil",
+      "name": "glyph",
       "dependencies": {
         "@fontsource/doto": "^5.2.10",
         "@fontsource/fira-code": "^5.2.7",

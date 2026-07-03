@@ -60,7 +60,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search contacts or accounts..."
-          className="sigil-input"
+          className="glyph-input"
           style={{ background: "var(--color-bg-subtle)", borderRadius: "var(--radius-sharp)", padding: "var(--space-2) var(--space-3)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)", width: "100%", boxSizing: "border-box" }}
         />
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", maxHeight: 340, overflowY: "auto" }}>

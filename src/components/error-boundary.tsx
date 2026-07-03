@@ -19,7 +19,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[sigil] uncaught render error:", error, info.componentStack);
+    console.error("[glyph] uncaught render error:", error, info.componentStack);
     this.setState({ componentStack: info.componentStack ?? "" });
     recordRuntimeIssue({
       source: "renderer",

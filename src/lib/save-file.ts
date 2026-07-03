@@ -5,7 +5,7 @@ function sanitizeDefaultName(defaultName: string): string {
   const trimmed = defaultName.trim().replace(/\\/g, "/");
   const leaf = trimmed.split("/").pop() ?? "";
   const cleaned = leaf.replace(/\.\.+/g, ".").trim();
-  return cleaned || "sigil-export.json";
+  return cleaned || "glyph-export.json";
 }
 
 export async function saveFileDialog(
@@ -19,7 +19,7 @@ export async function saveFileDialog(
     await writeTextFile(path, content);
     return true;
   } catch (err) {
-    console.error("[sigil] save file failed:", err);
+    console.error("[glyph] save file failed:", err);
     return false;
   }
 }

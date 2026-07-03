@@ -106,7 +106,7 @@ export function TitleBar() {
             color: "var(--color-text-secondary)",
           }}
         >
-          SIGIL
+          GLYPH
         </span>
         {version && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", color: "var(--color-text-disabled)" }}>

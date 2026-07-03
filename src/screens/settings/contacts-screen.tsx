@@ -87,7 +87,7 @@ export default function SettingsContactsScreen() {
       id, name, identity, note, addedAt, lastUsedAt,
     }));
     const envelope = await createSignedExportEnvelope("contacts", exportable);
-    const saved = await saveFileDialog("sigil-contacts.json", JSON.stringify(envelope, null, 2));
+    const saved = await saveFileDialog("glyph-contacts.json", JSON.stringify(envelope, null, 2));
     if (saved) {
       recordAuditEvent({
         kind: "contacts_exported",

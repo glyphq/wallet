@@ -75,7 +75,7 @@ export default function SplashScreen() {
       <div />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.2em" }}>
-          SIGIL
+          GLYPH
         </div>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: "var(--color-text-display)", textAlign: "center" }}>
           Your keys.<br />Your Qubic.

@@ -1,7 +1,7 @@
 import { usePersistedStore } from "@/store/persisted";
 
 export interface SignedExportMeta {
-  schema: "sigil_export";
+  schema: "glyph_export";
   version: 2;
   exportType: "vault" | "contacts";
   createdAt: number;
@@ -73,7 +73,7 @@ export async function createSignedExportEnvelope<T>(exportType: SignedExportMeta
   const signature = await signPayload(secret, `${exportType}:${createdAt}:${payloadHash}`);
   return {
     meta: {
-      schema: "sigil_export",
+      schema: "glyph_export",
       version: 2,
       exportType,
       createdAt,
@@ -109,7 +109,7 @@ export async function parseSignedExportEnvelope<T>(raw: string, expectedType: Si
       ? settings.exportSigningPrivateJwk.k
       : "";
     const schemaOk =
-      envelope.meta?.schema === "sigil_export" &&
+      envelope.meta?.schema === "glyph_export" &&
       envelope.meta?.version === 2 &&
       envelope.meta?.exportType === expectedType &&
       envelope.meta?.payloadHash === payloadHash;

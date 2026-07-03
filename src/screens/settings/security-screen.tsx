@@ -233,7 +233,7 @@ export default function SecurityScreen() {
             value={highValueSendThreshold}
             onChange={(e) => updateSettings({ highValueSendThreshold: e.target.value.replace(/[^0-9]/g, "") })}
             placeholder="Disabled when empty"
-            className="sigil-input"
+            className="glyph-input"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "var(--text-mono-sm)",
@@ -474,7 +474,7 @@ export default function SecurityScreen() {
               onChange={(e) => setEnablePw(e.target.value)}
               placeholder="••••••••••"
               onKeyDown={(e) => e.key === "Enter" && handleEnable()}
-              className="sigil-input"
+              className="glyph-input"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "var(--text-mono-sm)",

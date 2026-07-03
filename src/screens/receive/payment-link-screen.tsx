@@ -11,7 +11,7 @@ import { useSessionStore } from "@/store/session";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
 
-const WEB_BASE = "https://sigilwallet.org/pay";
+const WEB_BASE = "https://wallet.glyq.org/pay";
 
 function buildLinks(to: string, amount: string, label: string) {
   const params = new URLSearchParams({ to });
@@ -21,7 +21,7 @@ function buildLinks(to: string, amount: string, label: string) {
   const query = params.toString();
   return {
     web: `${WEB_BASE}?${query}`,
-    deep: `sigil://pay?${query}`,
+    deep: `glyph://pay?${query}`,
   };
 }
 
@@ -149,7 +149,7 @@ export default function PaymentLinkScreen() {
                     letterSpacing: "0.05em",
                   }}
                 >
-                  {mode === "web" ? "WEB LINK" : "SIGIL://"}
+                  {mode === "web" ? "WEB LINK" : "GLYPH://"}
                 </button>
               ))}
             </div>
@@ -182,7 +182,7 @@ export default function PaymentLinkScreen() {
 
             <LinkRow
               label="Direct link"
-              sublabel="Opens Sigil directly — best for Sigil-to-Sigil sharing"
+              sublabel="Opens Glyph directly — best for Glyph-to-Glyph sharing"
               value={links.deep}
               copied={copiedDeep}
               onCopy={() => copy(links.deep, "deep")}

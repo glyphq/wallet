@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { buildRequestNotification, parseSigilEnvelope } from "@/lib/request-schema";
+import { buildRequestNotification, parseGlyphEnvelope } from "@/lib/request-schema";
 
-describe("parseSigilEnvelope", () => {
+describe("parseGlyphEnvelope", () => {
   test("accepts https origins and localhost callbacks", () => {
-    const result = parseSigilEnvelope(JSON.stringify({
+    const result = parseGlyphEnvelope(JSON.stringify({
       request: {
         type: "transfer",
         dapp: { name: "Demo", origin: "https://demo.app" },
@@ -19,7 +19,7 @@ describe("parseSigilEnvelope", () => {
   });
 
   test("rejects insecure origins", () => {
-    const result = parseSigilEnvelope(JSON.stringify({
+    const result = parseGlyphEnvelope(JSON.stringify({
       request: {
         type: "connect",
         dapp: { name: "Demo", origin: "http://demo.app" },

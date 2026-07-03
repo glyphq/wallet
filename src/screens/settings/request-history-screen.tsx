@@ -40,7 +40,7 @@ export default function RequestHistoryScreen() {
 
   async function saveResult(item: RequestHistoryItem) {
     if (!item.callbackBody) return;
-    await saveFileDialog(`sigil-request-result-${item.id}.json`, item.callbackBody);
+    await saveFileDialog(`glyph-request-result-${item.id}.json`, item.callbackBody);
   }
 
   const q = search.trim().toLowerCase();
@@ -64,7 +64,7 @@ export default function RequestHistoryScreen() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by dApp, type..."
-            className="sigil-input"
+            className="glyph-input"
             style={{ flex: 1, background: "var(--color-bg-subtle)", borderRadius: "var(--radius-sharp)", padding: "var(--space-2) var(--space-3)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}
           />
           <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", flexShrink: 0 }} onClick={clearRequestHistory}>

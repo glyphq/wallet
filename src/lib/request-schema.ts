@@ -57,7 +57,7 @@ export const connectRequestSchema = baseRequestSchema.extend({
   permissions: z.array(permissionSchema).optional(),
 });
 
-export const sigilRequestSchema = z.discriminatedUnion("type", [
+export const glyphRequestSchema = z.discriminatedUnion("type", [
   transferRequestSchema,
   scCallRequestSchema,
   signMessageRequestSchema,
@@ -65,8 +65,8 @@ export const sigilRequestSchema = z.discriminatedUnion("type", [
   connectRequestSchema,
 ]);
 
-export const sigilEnvelopeSchema = z.object({
-  request: sigilRequestSchema,
+export const glyphEnvelopeSchema = z.object({
+  request: glyphRequestSchema,
   callback: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
   redirect_uri: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
 }).superRefine((envelope, ctx) => {
@@ -101,7 +101,7 @@ export const sigilEnvelopeSchema = z.object({
 
 // ── Callback response types ────────────────────────────────────────────────────
 
-export interface SigilSignedTransferCallback {
+export interface GlyphSignedTransferCallback {
   status: "signed";
   type: "transfer" | "sc_call";
   nonce: string;
@@ -110,7 +110,7 @@ export interface SigilSignedTransferCallback {
   target_tick: number;
 }
 
-export interface SigilSignedMessageCallback {
+export interface GlyphSignedMessageCallback {
   status: "signed";
   type: "sign_message";
   nonce: string;
@@ -119,15 +119,15 @@ export interface SigilSignedMessageCallback {
   public_key: string;
 }
 
-export interface SigilConnectedCallback {
+export interface GlyphConnectedCallback {
   status: "connected";
   type: "connect";
   nonce: string;
   identity: string;
-  permissions: SigilPermission[];
+  permissions: GlyphPermission[];
 }
 
-export interface SigilVerifiedCallback {
+export interface GlyphVerifiedCallback {
   status: "verified";
   type: "verify_message";
   nonce: string;
@@ -135,19 +135,19 @@ export interface SigilVerifiedCallback {
   identity: string;
 }
 
-export interface SigilRejectedCallback {
+export interface GlyphRejectedCallback {
   status: "rejected";
-  type: SigilRequest["type"];
+  type: GlyphRequest["type"];
   nonce: string;
   reason: "user_rejected";
 }
 
-export type SigilCallbackResponse =
-  | SigilSignedTransferCallback
-  | SigilSignedMessageCallback
-  | SigilConnectedCallback
-  | SigilVerifiedCallback
-  | SigilRejectedCallback;
+export type GlyphCallbackResponse =
+  | GlyphSignedTransferCallback
+  | GlyphSignedMessageCallback
+  | GlyphConnectedCallback
+  | GlyphVerifiedCallback
+  | GlyphRejectedCallback;
 
 export type DappMeta = z.infer<typeof dappMetaSchema>;
 export type TransferRequest = z.infer<typeof transferRequestSchema>;
@@ -155,15 +155,15 @@ export type ScCallRequest = z.infer<typeof scCallRequestSchema>;
 export type SignMessageRequest = z.infer<typeof signMessageRequestSchema>;
 export type VerifyMessageRequest = z.infer<typeof verifyMessageRequestSchema>;
 export type ConnectRequest = z.infer<typeof connectRequestSchema>;
-export type SigilRequest = z.infer<typeof sigilRequestSchema>;
-export type SigilEnvelope = z.infer<typeof sigilEnvelopeSchema>;
-export type SigilPermission = z.infer<typeof permissionSchema>;
+export type GlyphRequest = z.infer<typeof glyphRequestSchema>;
+export type GlyphEnvelope = z.infer<typeof glyphEnvelopeSchema>;
+export type GlyphPermission = z.infer<typeof permissionSchema>;
 
 export type ParsedEnvelopeResult =
-  | { envelope: SigilEnvelope; error: null }
+  | { envelope: GlyphEnvelope; error: null }
   | { envelope: null; error: string };
 
-export const REQUEST_TYPE_LABEL: Record<SigilRequest["type"], string> = {
+export const REQUEST_TYPE_LABEL: Record<GlyphRequest["type"], string> = {
   transfer: "Send QU",
   sc_call: "Contract call",
   sign_message: "Sign message",
@@ -182,11 +182,11 @@ export function isAllowedCallbackUrl(value: string): boolean {
   }
 }
 
-export function parseSigilEnvelope(raw: string | null): ParsedEnvelopeResult {
+export function parseGlyphEnvelope(raw: string | null): ParsedEnvelopeResult {
   if (!raw) return { envelope: null, error: "No pending request" };
   try {
     const parsed = JSON.parse(raw) as unknown;
-    const result = sigilEnvelopeSchema.safeParse(parsed);
+    const result = glyphEnvelopeSchema.safeParse(parsed);
     if (!result.success) {
       const firstIssue = result.error.issues[0];
       return { envelope: null, error: firstIssue?.message ?? "Invalid request format" };
@@ -208,7 +208,7 @@ function parseQuAmount(value: unknown): bigint | null {
   return null;
 }
 
-export function buildRequestNotification(input: SigilRequest): { title: string; body: string } | null {
+export function buildRequestNotification(input: GlyphRequest): { title: string; body: string } | null {
   switch (input.type) {
     case "transfer": {
       const amount = parseQuAmount(input.amount);

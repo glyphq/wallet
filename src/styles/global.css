@@ -112,30 +112,30 @@ button, label, nav {
 }
 
 /* ── Button active animation ─────────────────────────────────────── */
-.sigil-btn {
+.glyph-btn {
   transition: opacity var(--duration-fast) var(--ease-out),
               transform var(--duration-fast) var(--ease-out);
 }
 
-.sigil-btn:active:not(:disabled) {
+.glyph-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
 /* ── Input border states ─────────────────────────────────────────── */
-.sigil-input {
+.glyph-input {
   border: 1px solid var(--color-border-strong);
   transition: border-color var(--duration-fast) var(--ease-out);
 }
 
-.sigil-input:focus {
+.glyph-input:focus {
   outline: none;
   border-color: var(--color-text-display);
 }
 
-.sigil-input[data-error="true"] {
+.glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
 }
 
-.sigil-input[data-error="true"]:focus {
+.glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
 }

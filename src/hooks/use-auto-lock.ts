@@ -29,7 +29,7 @@ export function useAutoLock() {
     let unlisten: (() => void) | undefined;
     let active = true;
 
-    listen("sigil:lock", () => {
+    listen("glyph:lock", () => {
       invoke("lock_clipboard").catch(() => {});
       lock();
       navigate("/lock", { replace: true });

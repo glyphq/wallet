@@ -442,7 +442,7 @@ export default function SendScreen() {
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && doSaveContact()}
                   placeholder="Contact name"
-                  className="sigil-input"
+                  className="glyph-input"
                   style={{
                     flex: 1,
                     background: "var(--color-bg-subtle)",
@@ -656,7 +656,7 @@ function AmountInput({
           onChange={(e) => mode === "QU" ? handleQu(e.target.value) : handleUsd(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
           placeholder="0"
-          className="sigil-input"
+          className="glyph-input"
           style={{
             width: "100%",
             background: "var(--color-bg-surface)",

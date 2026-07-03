@@ -11,7 +11,7 @@ import { useSponsors, useInvalidateSponsors } from "@/hooks/use-sponsors";
 import { usePersistedStore } from "@/store/persisted";
 import { formatDate, formatQu, truncateId } from "@/lib/format";
 
-const GITHUB_URL = "https://github.com/sigil-oss/sigil.app";
+const GITHUB_URL = "https://github.com/glyph-oss/glyph.app";
 
 const MIN_PX = 36;
 const MAX_PX = 88;
@@ -352,7 +352,7 @@ export default function SupportScreen() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Support Sigil
+            Support Glyph
           </div>
           <div style={{ marginTop: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
             Send QU to support the project. Sponsors are featured below.
@@ -393,7 +393,7 @@ export default function SupportScreen() {
             Attribution controls
           </div>
           <div style={{ marginTop: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            Save how you want future support to be represented in Sigil’s transparency page.
+            Save how you want future support to be represented in Glyph’s transparency page.
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>

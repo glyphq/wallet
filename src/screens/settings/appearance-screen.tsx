@@ -150,7 +150,7 @@ function ColorPreview({ bg, text, accent }: { bg: string; text: string; accent: 
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: v["--color-text-disabled"], letterSpacing: "0.08em" }}>
-          [SIGIL]
+          [GLYPH]
         </span>
         <div style={{ width: 5, height: 5, borderRadius: "50%", background: v["--color-status-success"] }} />
       </div>

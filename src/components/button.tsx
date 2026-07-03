@@ -62,7 +62,7 @@ export function Button({
       type="button"
       {...props}
       disabled={disabled || loading}
-      className={`sigil-btn ${className}`}
+      className={`glyph-btn ${className}`}
       style={{
         display: "inline-flex",
         alignItems: "center",

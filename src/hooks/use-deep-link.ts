@@ -6,9 +6,9 @@ import { usePersistedStore } from "@/store/persisted";
 import { router } from "@/router";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { buildRequestNotification, parseSigilEnvelope } from "@/lib/request-schema";
+import { buildRequestNotification, parseGlyphEnvelope } from "@/lib/request-schema";
 
-/** Listens for `sigil:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
+/** Listens for `glyph:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
   const enqueuePendingRequest = useSessionStore((s) => s.enqueuePendingRequest);
   const isLocked = useSessionStore((s) => s.isLocked);
@@ -26,7 +26,7 @@ export function useDeepLink() {
     let unlisten: (() => void) | undefined;
 
     function applyPayload(payload: string) {
-      const parsed = parseSigilEnvelope(payload);
+      const parsed = parseGlyphEnvelope(payload);
       if (!parsed.envelope) return;
       enqueuePendingRequestRef.current(payload);
       recordAuditEvent({
@@ -51,7 +51,7 @@ export function useDeepLink() {
       // If locked, lock screen reads pendingRequests and navigates to /request after unlock.
     }
 
-    listen<string>("sigil:request", (event) => {
+    listen<string>("glyph:request", (event) => {
       applyPayload(event.payload);
       invoke("clear_pending_request").catch(() => {});
     }).then((fn) => { unlisten = fn; }).catch(() => {});

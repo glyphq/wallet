@@ -117,7 +117,7 @@ export default function VaultDetailScreen() {
   async function doExport() {
     if (!currentVault.encryptedData) return;
     const envelope = await createSignedExportEnvelope("vault", {
-      sigil: 1,
+      glyph: 1,
       name: currentVault.name,
       color: currentVault.color,
       accounts: currentVault.accounts,
@@ -125,7 +125,7 @@ export default function VaultDetailScreen() {
       vault: JSON.parse(exportVault(currentVault.encryptedData)),
     });
     const data = JSON.stringify(envelope, null, 2);
-    const defaultName = `sigil-${currentVault.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
+    const defaultName = `glyph-${currentVault.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "vault"}.json`;
     const saved = await saveFileDialog(defaultName, data);
     if (saved) {
       recordAuditEvent({

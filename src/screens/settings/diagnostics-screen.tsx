@@ -121,7 +121,7 @@ export default function DiagnosticsScreen() {
 
   async function exportBundle() {
     await saveFileDialog(
-      `sigil-debug-bundle-${new Date().toISOString().slice(0, 10)}.json`,
+      `glyph-debug-bundle-${new Date().toISOString().slice(0, 10)}.json`,
       JSON.stringify(bundle, null, 2),
     );
   }
