@@ -1,0 +1,15 @@
+[advisories]
+ignore = [
+  # glib VariantStrIter unsoundness (RUSTSEC-2024-0429).
+  # Fixed in glib >=0.20.0, but libappindicator pins glib ^0.18 and has no
+  # newer release. VariantStrIter is not exercised by any code path in this
+  # app; upgrade when libappindicator supports glib 0.20+.
+  "RUSTSEC-2024-0429",
+
+  # quick-xml quadratic run time / namespace-declaration allocation
+  # (RUSTSEC-2026-0194, RUSTSEC-2026-0195). Fixed in >=0.41.0, but pinned
+  # by tauri-utils via plist 1.9.0 (quick-xml ^0.39) and
+  # tauri-winrt-notification (quick-xml ^0.37). Upgrade when Tauri bumps.
+  "RUSTSEC-2026-0194",
+  "RUSTSEC-2026-0195",
+]
