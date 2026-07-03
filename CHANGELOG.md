@@ -1,5 +1,11 @@
 # glyph
 
+## 0.13.1
+
+### Patch Changes
+
+- 5d1a803: Fix Linux CI build by resolving missing gdk-3.0 system dependency
+
 ## 0.13.0
 
 ### Minor Changes
