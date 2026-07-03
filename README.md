@@ -13,7 +13,7 @@
 
 Windows · macOS (Universal) · Linux (AppImage · .deb · .rpm)
 
-[**Download**](https://github.com/glyph-oss/glyph.app/releases/latest) · [Website](https://wallet.glyq.org) · [Discord](https://discord.gg/s5qNRNGu96)
+[**Download**](https://github.com/glyph-oss/glyph.app/releases/latest) · [Website](https://wallet.glyphq.org) · [Discord](https://discord.gg/s5qNRNGu96)
 
 </div>
 
@@ -140,7 +140,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 
 - **Discord:** https://discord.gg/s5qNRNGu96
 - **GitHub:** https://github.com/glyph-oss/glyph.app
-- **Website:** https://wallet.glyq.org
+- **Website:** https://wallet.glyphq.org
 
 ## License
 
