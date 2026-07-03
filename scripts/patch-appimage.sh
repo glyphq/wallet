@@ -49,7 +49,7 @@ fi
 RUNTIME="/tmp/go-appimagetool-extracted/usr/bin/runtime-x86_64"
 
 # ── Extract AppImage ─────────────────────────────────────────────────────────
-WORKDIR=$(mktemp -d /tmp/sigil-patch-XXXXXX)
+WORKDIR=$(mktemp -d /tmp/glyph-patch-XXXXXX)
 trap 'rm -rf "$WORKDIR"' EXIT
 cd "$WORKDIR"
 
