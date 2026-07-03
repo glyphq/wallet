@@ -43,7 +43,7 @@ mod cred_store {
     }
 
     fn target(vault_id: &str) -> Vec<u16> {
-        to_wide(&format!("sigil-vault/{}", vault_id))
+        to_wide(&format!("glyph-vault/{}", vault_id))
     }
 
     pub fn store(vault_id: &str, password: &str) -> Result<(), String> {
@@ -104,14 +104,14 @@ mod cred_store {
     use keyring::Entry;
 
     fn entry(vault_id: &str) -> Result<Entry, String> {
-        Entry::new("sigil-bio", vault_id).map_err(|e| e.to_string())
+        Entry::new("glyph-bio", vault_id).map_err(|e| e.to_string())
     }
 
     /// Probes the underlying secret-service backend with a real round-trip.
     /// Returns false on any platform that has no working secret-service daemon
     /// (no gnome-keyring, no kwallet, mock backend, etc.).
     pub fn available() -> bool {
-        let Ok(e) = entry("__sigil_probe__") else { return false; };
+        let Ok(e) = entry("__glyph_probe__") else { return false; };
         if e.set_password("probe").is_err() { return false; }
         let ok = e.get_password().is_ok();
         let _ = e.delete_credential();
@@ -288,7 +288,7 @@ pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password:
     tokio::task::spawn_blocking(move || {
         validate_vault_id(&vault_id)?;
         // Confirm biometric before storing the password to prevent silent enrollment
-        platform::authenticate("Enable biometric unlock for Sigil")?;
+        platform::authenticate("Enable biometric unlock for Glyph")?;
         // Hash the ciphertext hex string — stable across any struct field reordering
         // or serialization changes that would break a hash over serde_json output.
         let hash = sha256_hex(&vault_data.ciphertext);
@@ -304,7 +304,7 @@ pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password:
 pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result<Vec<String>, String> {
     tokio::task::spawn_blocking(move || {
         validate_vault_id(&vault_id)?;
-        platform::authenticate("Unlock Sigil vault")?;
+        platform::authenticate("Unlock Glyph vault")?;
         let stored = cred_store::load(&vault_id)?;
         // Stored format: "password\nhash" (new) or "password" (legacy without hash)
         let (password, expected_hash) = match stored.split_once('\n') {

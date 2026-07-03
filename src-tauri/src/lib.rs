@@ -57,7 +57,7 @@ pub fn run() {
             auto_lock::spawn_lock_watcher(app.handle().clone());
             clipboard::spawn_clipboard_watcher(app.handle().clone());
 
-            let show_i = MenuItem::with_id(app, "show", "Open Sigil", true, None::<&str>)?;
+            let show_i = MenuItem::with_id(app, "show", "Open Glyph", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
@@ -92,7 +92,7 @@ pub fn run() {
                     })
                     .build(app)?;
             } else {
-                eprintln!("[sigil] tray icon disabled: default window icon unavailable");
+                eprintln!("[glyph] tray icon disabled: default window icon unavailable");
             }
 
             Ok(())
@@ -148,5 +148,5 @@ pub fn run() {
             biometric::disable_biometric,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running sigil");
+        .expect("error while running glyph");
 }

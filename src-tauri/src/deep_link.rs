@@ -9,7 +9,7 @@ use tauri_plugin_store::StoreExt;
 use tiny_keccak::{Hasher, KangarooTwelve};
 use url::Url;
 
-const NONCE_STORE_PATH: &str = "sigil-security.json";
+const NONCE_STORE_PATH: &str = "glyph-security.json";
 const NONCE_STORE_KEY: &str = "seen_nonces";
 const MAX_NONCE_AGE_SECS: u64 = 3600;
 const MAX_SIGN_MESSAGE_LEN: usize = 2048;
@@ -169,11 +169,11 @@ fn parse_positive_i64(value: &Value) -> Option<i64> {
 fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
 
-    if url.scheme() != "sigil" {
-        return Err("not a sigil:// URI".into());
+    if url.scheme() != "glyph" {
+        return Err("not a glyph:// URI".into());
     }
     if url.host_str() != Some("v1") || url.path() != "/request" {
-        return Err("expected sigil://v1/request".into());
+        return Err("expected glyph://v1/request".into());
     }
 
     let mut d_param: Option<String> = None;
@@ -370,11 +370,11 @@ struct PayRequest {
 
 fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
-    if url.scheme() != "sigil" {
-        return Err("not a sigil:// URI".into());
+    if url.scheme() != "glyph" {
+        return Err("not a glyph:// URI".into());
     }
     if url.host_str() != Some("pay") {
-        return Err("not a sigil://pay URI".into());
+        return Err("not a glyph://pay URI".into());
     }
 
     let mut to: Option<String> = None;
@@ -404,11 +404,11 @@ fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
 }
 
 pub fn process_url(app: &AppHandle, raw: &str) {
-    // Quick scheme check before full parse to skip non-sigil arguments cheaply.
-    let is_sigil_scheme = url::Url::parse(raw)
-        .map(|u| u.scheme() == "sigil")
+    // Quick scheme check before full parse to skip non-glyph arguments cheaply.
+    let is_glyph_scheme = url::Url::parse(raw)
+        .map(|u| u.scheme() == "glyph")
         .unwrap_or(false);
-    if !is_sigil_scheme {
+    if !is_glyph_scheme {
         return;
     }
 
@@ -426,10 +426,10 @@ pub fn process_url(app: &AppHandle, raw: &str) {
                     let _ = window.show();
                     let _ = window.set_focus();
                 }
-                app.emit("sigil:pay", payload.to_string()).ok();
+                app.emit("glyph:pay", payload.to_string()).ok();
             }
             Err(e) => {
-                eprintln!("[sigil] pay link rejected: {e}");
+                eprintln!("[glyph] pay link rejected: {e}");
             }
         }
         return;
@@ -440,7 +440,7 @@ pub fn process_url(app: &AppHandle, raw: &str) {
             let state = app.state::<DeepLinkState>();
             if !state.record_nonce(app, &parsed.nonce) {
                 eprintln!(
-                    "[sigil] deep link rejected: duplicate nonce '{}'",
+                    "[glyph] deep link rejected: duplicate nonce '{}'",
                     parsed.nonce
                 );
                 return;
@@ -452,10 +452,10 @@ pub fn process_url(app: &AppHandle, raw: &str) {
             });
             let payload = envelope.to_string();
             state.store(payload.clone());
-            app.emit("sigil:request", payload).ok();
+            app.emit("glyph:request", payload).ok();
         }
         Err(e) => {
-            eprintln!("[sigil] deep link rejected: {e}");
+            eprintln!("[glyph] deep link rejected: {e}");
         }
     }
 }

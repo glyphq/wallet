@@ -72,7 +72,7 @@ pub fn spawn_lock_watcher(app: AppHandle) {
             *last_wall = now_wall;
 
             if *lock_on_sleep.lock().unwrap_or_else(|e| e.into_inner()) && wall_delta.as_secs() > POLL_SECS + 2 {
-                app.emit("sigil:lock", ()).ok();
+                app.emit("glyph:lock", ()).ok();
                 *last_activity.lock().unwrap_or_else(|e| e.into_inner()) = Instant::now();
                 continue;
             }
@@ -91,7 +91,7 @@ pub fn spawn_lock_watcher(app: AppHandle) {
         let elapsed = last_activity.lock().unwrap_or_else(|e| e.into_inner()).elapsed();
 
         if elapsed >= timeout {
-            app.emit("sigil:lock", ()).ok();
+            app.emit("glyph:lock", ()).ok();
             *last_activity.lock().unwrap_or_else(|e| e.into_inner()) = Instant::now();
         }
     });

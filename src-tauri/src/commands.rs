@@ -44,7 +44,7 @@ pub fn get_updater_context() -> UpdaterContext {
             platform: "linux",
             package_kind: "system_package",
             supports_auto_update: false,
-            reason: Some("Sigil's Linux updater currently targets the AppImage release path. deb/rpm installs must be updated through the system package you installed."),
+            reason: Some("Glyph's Linux updater currently targets the AppImage release path. deb/rpm installs must be updated through the system package you installed."),
         };
     }
 
@@ -111,7 +111,7 @@ pub fn get_seconds_until_lock(state: State<'_, AutoLockState>) -> Option<u64> {
 #[tauri::command]
 pub fn force_lock(app: AppHandle, state: State<'_, AutoLockState>) {
     state.reset();
-    app.emit("sigil:lock", ()).ok();
+    app.emit("glyph:lock", ()).ok();
 }
 
 #[tauri::command]

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Sigil",
+  "productName": "Glyph",
   "version": "0.12.1",
-  "identifier": "com.qubic.sigil",
+  "identifier": "com.qubic.glyph",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Sigil",
+        "title": "Glyph",
         "width": 380,
         "height": 680,
         "minWidth": 360,
@@ -53,10 +53,10 @@
     },
     "linux": {
       "deb": {
-        "desktopTemplate": "linux/sigil.desktop.hbs"
+        "desktopTemplate": "linux/glyph.desktop.hbs"
       },
       "rpm": {
-        "desktopTemplate": "linux/sigil.desktop.hbs"
+        "desktopTemplate": "linux/glyph.desktop.hbs"
       }
     }
   },
@@ -64,7 +64,7 @@
     "deep-link": {
       "desktop": {
         "schemes": [
-          "sigil"
+          "glyph"
         ]
       }
     },
@@ -74,7 +74,7 @@
       },
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhFMUQ5MjkxMEVFRUY1MUQKUldRZDllNE9rWklkamd2UUpHNVZrWEVEQkNOQmtRVmhtclBtR2t2RVk2dWhpWW44OWdtVmZLczQK",
       "endpoints": [
-        "https://github.com/sigil-oss/sigil.app/releases/latest/download/latest.json"
+        "https://github.com/glyph-oss/glyph.app/releases/latest/download/latest.json"
       ]
     }
   }
