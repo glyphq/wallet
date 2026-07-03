@@ -1,7 +1,7 @@
 [package]
 name = "glyph-wallet"
 version = "0.13.2"
-description = "Self-custodial Qubic wallet with dApp deep linking"
+description = "Self-custodial Glyph wallet with dApp deep linking"
 authors = ["alez04"]
 edition = "2021"
 
