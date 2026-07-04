@@ -1,31 +1,14 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { motion } from "framer-motion";
+
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
-import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { Modal } from "@/components/modal";
-import { Divider } from "@/components/divider";
+import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
-import { saveFileDialog } from "@/lib/save-file";
-import { createSignedExportEnvelope, parseSignedExportEnvelope } from "@/lib/export-format";
-import { recordAuditEvent } from "@/lib/audit-log";
-
-interface ImportPreview {
-  toAdd: Contact[];
-  duplicates: number;
-  replacing: boolean;
-  formatVersion: number;
-  signatureVerified: boolean;
-  legacy: boolean;
-}
 
 export default function SettingsContactsScreen() {
-  const navigate = useNavigate();
-
   const contacts = usePersistedStore((s) => s.contacts);
   const addContact = usePersistedStore((s) => s.addContact);
   const updateContact = usePersistedStore((s) => s.updateContact);
@@ -33,10 +16,6 @@ export default function SettingsContactsScreen() {
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
-  const [deleting, setDeleting] = useState<Contact | null>(null);
-  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
-  const [importError, setImportError] = useState("");
-  const [importAll, setImportAll] = useState<Contact[]>([]);
   const [search, setSearch] = useState("");
 
   const [formName, setFormName] = useState("");
@@ -44,376 +23,413 @@ export default function SettingsContactsScreen() {
   const [formNote, setFormNote] = useState("");
   const [identityError, setIdentityError] = useState("");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   function openAdd() {
-    setFormName(""); setFormIdentity(""); setFormNote(""); setIdentityError("");
+    setFormName("");
+    setFormIdentity("");
+    setFormNote("");
+    setIdentityError("");
     setAdding(true);
+    setEditing(null);
   }
 
   function openEdit(contact: Contact) {
-    setFormName(contact.name); setFormIdentity(contact.identity); setFormNote(contact.note); setIdentityError("");
+    setFormName(contact.name);
+    setFormIdentity(contact.identity);
+    setFormNote(contact.note);
+    setIdentityError("");
     setEditing(contact);
+    setAdding(false);
+  }
+
+  function closeForm() {
+    setAdding(false);
+    setEditing(null);
+    setIdentityError("");
   }
 
   function validateIdentity(id: string): boolean {
-    if (!isValidIdentity(id)) { setIdentityError("INVALID IDENTITY — 60 UPPERCASE LETTERS"); return false; }
+    if (!isValidIdentity(id)) {
+      setIdentityError("Must be 60 uppercase letters");
+      return false;
+    }
     setIdentityError("");
     return true;
   }
 
-  function doAdd() {
+  function doSave() {
     if (!formName.trim() || !validateIdentity(formIdentity.trim())) return;
-    addContact({
-      id: newId(),
-      name: formName.trim(),
-      identity: formIdentity.trim(),
-      note: formNote.trim(),
-      addedAt: Date.now(),
-      lastUsedAt: 0,
-    });
-    setAdding(false);
-  }
-
-  function doEdit() {
-    if (!editing || !formName.trim() || !validateIdentity(formIdentity.trim())) return;
-    updateContact(editing.id, { name: formName.trim(), identity: formIdentity.trim(), note: formNote.trim() });
-    setEditing(null);
-  }
-
-  // ── Export ──────────────────────────────────────────────────────────────
-  async function doExport() {
-    const exportable = contacts.map(({ id, name, identity, note, addedAt, lastUsedAt }) => ({
-      id, name, identity, note, addedAt, lastUsedAt,
-    }));
-    const envelope = await createSignedExportEnvelope("contacts", exportable);
-    const saved = await saveFileDialog("glyph-contacts.json", JSON.stringify(envelope, null, 2));
-    if (saved) {
-      recordAuditEvent({
-        kind: "contacts_exported",
-        status: "success",
-        title: "Contacts exported",
-        detail: `${contacts.length} contacts saved as signed export v2`,
+    if (editing) {
+      updateContact(editing.id, {
+        name: formName.trim(),
+        identity: formIdentity.trim(),
+        note: formNote.trim(),
+      });
+    } else {
+      addContact({
+        id: newId(),
+        name: formName.trim(),
+        identity: formIdentity.trim(),
+        note: formNote.trim(),
+        addedAt: Date.now(),
+        lastUsedAt: 0,
       });
     }
-  }
-
-  // ── Import ──────────────────────────────────────────────────────────────
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    setImportError("");
-    let parsed: ReturnType<typeof parseSignedExportEnvelope<Contact[]>> extends Promise<infer T> ? T : never;
-    try {
-      parsed = await parseSignedExportEnvelope<Contact[]>(await file.text(), "contacts");
-    } catch {
-      setImportError("Could not parse file — must be valid JSON");
-      return;
-    }
-
-    if (!Array.isArray(parsed.payload)) {
-      setImportError("Invalid format — expected a JSON array");
-      return;
-    }
-
-    const valid: Contact[] = [];
-    for (const item of parsed.payload) {
-      if (
-        item && typeof item === "object" &&
-        typeof item.name === "string" && item.name.trim() &&
-        typeof item.identity === "string" && isValidIdentity(item.identity)
-      ) {
-        valid.push({
-          id: newId(),
-          name: item.name.trim(),
-          identity: item.identity,
-          note: typeof item.note === "string" ? item.note : "",
-          addedAt: typeof item.addedAt === "number" ? item.addedAt : Date.now(),
-          lastUsedAt: typeof item.lastUsedAt === "number" ? item.lastUsedAt : 0,
-        });
-      }
-    }
-
-    if (valid.length === 0) {
-      setImportError("No valid contacts found in file");
-      return;
-    }
-
-    // Deduplicate within the file itself — last occurrence wins
-    const seenInFile = new Map<string, Contact>();
-    for (const c of valid) seenInFile.set(c.identity, c);
-    const deduped = Array.from(seenInFile.values());
-
-    const existingIdentities = new Set(contacts.map((c) => c.identity));
-    const toAdd = deduped.filter((c) => !existingIdentities.has(c.identity));
-    const duplicates = deduped.length - toAdd.length;
-
-    setImportAll(deduped);
-    setImportPreview({
-      toAdd,
-      duplicates,
-      replacing: false,
-      formatVersion: parsed.version,
-      signatureVerified: parsed.verified,
-      legacy: parsed.legacy,
-    });
-  }
-
-  function doImportMerge() {
-    if (!importPreview) return;
-    for (const c of importPreview.toAdd) addContact(c);
-    setImportPreview(null);
-  }
-
-  function doImportReplace() {
-    if (!importAll.length) return;
-    usePersistedStore.setState({ contacts: importAll });
-    setImportPreview(null);
-    setImportAll([]);
+    closeForm();
   }
 
   const filtered = contacts
-    .filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.identity.toLowerCase().includes(search.toLowerCase()))
+    .filter(
+      (c) =>
+        !search ||
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.identity.toLowerCase().includes(search.toLowerCase()),
+    )
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const statusBar = (
-    <ScreenHeader
-      title="Contacts"
-      onBack={() => navigate("/settings")}
-      action={<button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>+ ADD</button>}
-    />
-  );
+  const showForm = adding || editing !== null;
 
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell
+      fullBleed
+      contentStyle={{
+        padding: "var(--space-6)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-6)",
+      }}
+    >
+      <motion.div
+        initial={{ y: 4 }}
+        animate={{ y: 0 }}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
+      >
+        <SettingsPageHeader title="Contacts" />
 
-      {/* Import / Export actions */}
-      <div style={{ display: "flex", gap: "var(--space-2)" }}>
-        <button
-          onClick={doExport}
-          disabled={contacts.length === 0}
-          style={{
-            flex: 1,
-            background: "none",
-            border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
-            padding: "var(--space-3)",
-            cursor: contacts.length === 0 ? "default" : "pointer",
-            opacity: contacts.length === 0 ? 0.4 : 1,
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
-            color: "var(--color-text-secondary)",
-            letterSpacing: "0.05em",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "var(--space-2)",
-          }}
-        >
-          ↓ EXPORT JSON
-        </button>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            flex: 1,
-            background: "none",
-            border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
-            padding: "var(--space-3)",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
-            color: "var(--color-text-secondary)",
-            letterSpacing: "0.05em",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "var(--space-2)",
-          }}
-        >
-          ↑ IMPORT JSON
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          onChange={handleFileChange}
-          style={{ display: "none" }}
-        />
-      </div>
+        {/* Search and add */}
+        {contacts.length > 0 && (
+          <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or identity"
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                borderBottom: "1px solid var(--color-border-strong)",
+                borderRadius: 0,
+                padding: "var(--space-2) 0",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-body)",
+                color: "var(--color-text-display)",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={openAdd}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-small)",
+                color: "var(--color-text-disabled)",
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              + Add
+            </button>
+          </div>
+        )}
 
-      {importError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {importError}
-        </div>
-      )}
+        {/* Inline add/edit form */}
+        {showForm && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-3)",
+              background: "var(--color-bg-surface)",
+              borderRadius: "var(--radius-card)",
+              padding: "var(--space-4)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 500,
+                color: "var(--color-text-primary)",
+              }}
+            >
+              {editing ? "Edit contact" : "Add contact"}
+            </div>
 
-      {/* Count badge */}
-      {contacts.length > 0 && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [{contacts.length} {contacts.length === 1 ? "CONTACT" : "CONTACTS"}]
-        </div>
-      )}
+            <input
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="Name"
+              autoFocus
+              style={{
+                background: "transparent",
+                border: "none",
+                borderBottom: "1px solid var(--color-border-subtle)",
+                borderRadius: 0,
+                padding: "var(--space-2) 0",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-body)",
+                color: "var(--color-text-primary)",
+                outline: "none",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
 
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name or identity"
-        style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}
-      />
-
-      {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          {contacts.length === 0 ? "[NO CONTACTS YET]" : "[NO RESULTS]"}
-        </div>
-      )}
-
-      {filtered.map((contact, i) => (
-        <div key={contact.id}>
-          {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-            <div style={{ flex: 1, minWidth: 0, display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-              <Identicon seed={contact.identity} size={32} radius={5} style={{ marginTop: 2, flexShrink: 0 }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
-                  {contact.name}
+            <div>
+              <input
+                value={formIdentity}
+                onChange={(e) => {
+                  setFormIdentity(e.target.value);
+                  setIdentityError("");
+                }}
+                onKeyDown={(e) => e.key === "Enter" && doSave()}
+                placeholder="Identity (60 uppercase letters)"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: identityError
+                    ? "1px solid var(--color-status-error)"
+                    : "1px solid var(--color-border-subtle)",
+                  borderRadius: 0,
+                  padding: "var(--space-2) 0",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-sm)",
+                  color: "var(--color-text-primary)",
+                  outline: "none",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              />
+              {identityError && (
+                <div
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-small)",
+                    color: "var(--color-status-error)",
+                    marginTop: "var(--space-1)",
+                  }}
+                >
+                  {identityError}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                  {truncateId(contact.identity)}
-                </div>
-                {contact.note && (
-                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
-                    {contact.note}
+              )}
+            </div>
+
+            <input
+              value={formNote}
+              onChange={(e) => setFormNote(e.target.value)}
+              placeholder="Note (optional)"
+              style={{
+                background: "transparent",
+                border: "none",
+                borderBottom: "1px solid var(--color-border-subtle)",
+                borderRadius: 0,
+                padding: "var(--space-2) 0",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-body)",
+                color: "var(--color-text-primary)",
+                outline: "none",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
+              <button
+                onClick={doSave}
+                disabled={!formName.trim() || !formIdentity.trim()}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  border: "none",
+                  cursor: !formName.trim() || !formIdentity.trim() ? "default" : "pointer",
+                  opacity: !formName.trim() || !formIdentity.trim() ? 0.4 : 1,
+                  borderRadius: "var(--radius-sharp)",
+                  background: "var(--color-text-primary)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  color: "var(--color-bg-base)",
+                }}
+              >
+                Save
+              </button>
+              <button
+                onClick={closeForm}
+                style={{
+                  padding: "10px 16px",
+                  background: "var(--color-bg-elevated)",
+                  border: "none",
+                  borderRadius: "var(--radius-sharp)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {contacts.length === 0 && !showForm && (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-body)",
+              color: "var(--color-text-disabled)",
+              textAlign: "center",
+            }}
+          >
+            No contacts yet
+          </div>
+        )}
+
+        {contacts.length > 0 && filtered.length === 0 && (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-body)",
+              color: "var(--color-text-disabled)",
+              textAlign: "center",
+            }}
+          >
+            No results
+          </div>
+        )}
+
+        {/* Add button when list exists and no form open */}
+        {contacts.length === 0 && !showForm && (
+          <button
+            onClick={openAdd}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-small)",
+              color: "var(--color-text-disabled)",
+              padding: 0,
+              textAlign: "center",
+            }}
+          >
+            + Add contact
+          </button>
+        )}
+
+        {/* Contact list */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {filtered.map((contact, i) => (
+            <>
+              {i > 0 && <div style={{ height: 1, background: "var(--color-border-subtle)" }} />}
+              <div
+                key={contact.id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                  padding: "var(--space-3) 0",
+                }}
+              >
+              <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+                <Identicon
+                  seed={contact.identity}
+                  size={32}
+                  radius={5}
+                  style={{ marginTop: 2, flexShrink: 0 }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontWeight: 500,
+                      color: "var(--color-text-primary)",
+                    }}
+                  >
+                    {contact.name}
                   </div>
-                )}
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--text-mono-sm)",
+                      color: "var(--color-text-disabled)",
+                      marginTop: "var(--space-1)",
+                    }}
+                  >
+                    {truncateId(contact.identity)}
+                  </div>
+                  {contact.note && (
+                    <div
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "var(--text-small)",
+                        color: "var(--color-text-secondary)",
+                        marginTop: "var(--space-1)",
+                      }}
+                    >
+                      {contact.note}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div style={{ display: "flex", gap: "var(--space-2)", flexShrink: 0 }}>
-              <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openEdit(contact)}>Edit</Button>
-              <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setDeleting(contact)}>Remove</Button>
-            </div>
-          </div>
+
+              <div style={{ display: "flex", gap: "var(--space-3)" }}>
+                <button
+                  onClick={() => openEdit(contact)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 500,
+                    color: "var(--color-text-secondary)",
+                    padding: 0,
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => removeContact(contact.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 500,
+                    color: "var(--color-status-error)",
+                    padding: 0,
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+              </div>
+            </>
+          ))}
         </div>
-      ))}
-
-      {/* Add modal */}
-      <Modal open={adding} onClose={() => setAdding(false)}>
-        <ContactForm
-          title="Add contact"
-          name={formName} onName={setFormName}
-          identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
-          note={formNote} onNote={setFormNote}
-          identityError={identityError}
-          onSubmit={doAdd}
-          onCancel={() => setAdding(false)}
-          submitLabel="Add contact"
-        />
-      </Modal>
-
-      {/* Edit modal */}
-      <Modal open={!!editing} onClose={() => setEditing(null)}>
-        <ContactForm
-          title="Edit contact"
-          name={formName} onName={setFormName}
-          identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
-          note={formNote} onNote={setFormNote}
-          identityError={identityError}
-          onSubmit={doEdit}
-          onCancel={() => setEditing(null)}
-          submitLabel="Save"
-        />
-      </Modal>
-
-      {/* Delete modal */}
-      <Modal open={!!deleting} onClose={() => setDeleting(null)}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Remove {deleting?.name}?
-          </div>
-          <Button variant="danger" shape="sharp" onClick={() => { if (deleting) { removeContact(deleting.id); setDeleting(null); } }}>Remove</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setDeleting(null)}>Cancel</Button>
-        </div>
-      </Modal>
-
-      {/* Import preview modal */}
-      <Modal open={!!importPreview} onClose={() => { setImportPreview(null); setImportAll([]); }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Import contacts
-          </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: importPreview?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            {importPreview?.legacy ? "[LEGACY FORMAT V1]" : importPreview?.signatureVerified ? "[SIGNED EXPORT V2 VERIFIED]" : "[SIGNED EXPORT V2 — SIGNATURE NOT VERIFIED ON THIS DEVICE]"}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <StatRow label="FOUND IN FILE" value={String(importAll.length)} />
-            <StatRow label="NEW" value={String(importPreview?.toAdd.length ?? 0)} color="var(--color-status-success)" />
-            {(importPreview?.duplicates ?? 0) > 0 && (
-              <StatRow label="ALREADY EXIST" value={String(importPreview?.duplicates ?? 0)} color="var(--color-text-disabled)" />
-            )}
-          </div>
-
-          <Divider />
-
-          {(importPreview?.toAdd.length ?? 0) > 0 ? (
-            <Button onClick={doImportMerge}>
-              Add {importPreview?.toAdd.length} new contact{(importPreview?.toAdd.length ?? 0) !== 1 ? "s" : ""}
-            </Button>
-          ) : (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", textAlign: "center" }}>
-              [ALL CONTACTS ALREADY EXIST]
-            </div>
-          )}
-
-          <Button variant="danger" shape="sharp" onClick={doImportReplace}>
-            Replace all ({importAll.length})
-          </Button>
-
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => { setImportPreview(null); setImportAll([]); }}>
-            Cancel
-          </Button>
-        </div>
-      </Modal>
-
+      </motion.div>
     </AppShell>
-  );
-}
-
-function StatRow({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: color ?? "var(--color-text-primary)", letterSpacing: "0.05em", fontWeight: 600 }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-interface ContactFormProps {
-  title: string;
-  name: string; onName: (v: string) => void;
-  identity: string; onIdentity: (v: string) => void;
-  note: string; onNote: (v: string) => void;
-  identityError: string;
-  onSubmit: () => void;
-  onCancel: () => void;
-  submitLabel: string;
-}
-
-function ContactForm({ title, name, onName, identity, onIdentity, note, onNote, identityError, onSubmit, onCancel, submitLabel }: ContactFormProps) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{title}</div>
-      <Input label="Name" value={name} onChange={(e) => onName(e.target.value)} placeholder="e.g. Alice" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
-      <Input label="Identity" value={identity} onChange={(e) => onIdentity(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSubmit()} error={identityError} placeholder="60 uppercase letters" />
-      <Input label="Note (optional)" value={note} onChange={(e) => onNote(e.target.value)} placeholder="e.g. Friend, exchange" style={{ fontFamily: "var(--font-sans)" }} />
-      <Button onClick={onSubmit} disabled={!name.trim() || !identity.trim()}>{submitLabel}</Button>
-      <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={onCancel}>Cancel</Button>
-    </div>
   );
 }

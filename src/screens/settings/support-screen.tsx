@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
-import { Button } from "@/components/button";
+import { SettingsPageHeader } from "@/components/settings-page-header";
 import { DONATION_IDENTITY, type Sponsor, type SponsorDonation } from "@/data/sponsors";
 import { useSponsors, useInvalidateSponsors } from "@/hooks/use-sponsors";
 import { usePersistedStore } from "@/store/persisted";
@@ -108,9 +107,8 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
 
         {/* Identicon */}
         <div style={{
-          background: "var(--color-bg-elevated)",
-          border: "1px solid var(--color-border-strong)",
-          borderRadius: "var(--radius-sharp)",
+          background: "var(--color-bg-surface)",
+          borderRadius: "var(--radius-card)",
           padding: "var(--space-5)",
         }}>
           <Identicon name={sponsor.name} size={120} />
@@ -122,10 +120,9 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
             fontFamily: "var(--font-display)",
             fontSize: "var(--text-headline)",
             color: "var(--color-text-display)",
-            letterSpacing: "0.1em",
             wordBreak: "break-word",
           }}>
-            {sponsor.name.toUpperCase()}
+            {sponsor.name}
           </span>
           <span style={{
             fontFamily: "var(--font-mono)",
@@ -141,8 +138,8 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
           onClick={onClose}
           style={{ background: "none", border: "none", cursor: "pointer", padding: "var(--space-2)" }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [CLOSE]
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+            Close
           </span>
         </button>
       </motion.div>
@@ -162,13 +159,13 @@ function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
         <div style={{
           width: MIN_PX, height: MIN_PX,
           border: "1px dashed var(--color-border-strong)",
-          borderRadius: "var(--radius-sharp)",
+          borderRadius: "var(--radius-card)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>?</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>?</span>
         </div>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [BE THE FIRST]
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+          Be the first
         </span>
       </div>
     );
@@ -189,14 +186,14 @@ function SponsorGrid({ sponsors }: { sponsors: Sponsor[] }) {
               aria-label={`Sponsor: ${sponsor.name}`}
               style={{
                 width: size, height: size,
-                background: "var(--color-bg-elevated)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
+                background: "var(--color-bg-surface)",
+                borderRadius: "var(--radius-card)",
                 cursor: "pointer",
                 flexShrink: 0,
                 padding: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 overflow: "hidden",
+                border: "none",
               }}
             >
               <Identicon name={sponsor.name} size={size} />
@@ -264,12 +261,12 @@ function DiscordSheet({ onClose }: { onClose: () => void }) {
 
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <span style={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "var(--font-sans)",
             fontSize: "var(--text-headline)",
             color: "var(--color-text-display)",
-            letterSpacing: "0.1em",
+            fontWeight: 500,
           }}>
-            THANK YOU
+            Thank you
           </span>
           <span style={{
             fontFamily: "var(--font-sans)",
@@ -284,21 +281,21 @@ function DiscordSheet({ onClose }: { onClose: () => void }) {
         <button
           onClick={copy}
           style={{
-            background: "var(--color-bg-elevated)",
-            border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
+            background: "var(--color-bg-surface)",
+            borderRadius: "var(--radius-card)",
             cursor: "pointer",
             padding: "var(--space-3) var(--space-5)",
             display: "flex",
             alignItems: "center",
             gap: "var(--space-3)",
+            border: "none",
           }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-display)", letterSpacing: "0.05em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>
             @{DISCORD_HANDLE}
           </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: copied ? "var(--color-text-primary)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {copied ? "[COPIED]" : "[COPY]"}
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: copied ? "var(--color-accent)" : "var(--color-text-disabled)" }}>
+            {copied ? "Copied" : "Copy"}
           </span>
         </button>
 
@@ -306,8 +303,8 @@ function DiscordSheet({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           style={{ background: "none", border: "none", cursor: "pointer", padding: "var(--space-2)" }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [CLOSE]
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+            Close
           </span>
         </button>
       </motion.div>
@@ -342,155 +339,155 @@ export default function SupportScreen() {
     }
   }, [pendingTxs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const statusBar = <ScreenHeader title="Support" onBack={() => navigate("/settings")} />;
-
   return (
     <>
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+      <motion.div initial={{ y: 4 }} animate={{ y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+        <SettingsPageHeader title="Support" />
 
-      {/* Donation */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Support Glyph
+        {/* Donation */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Support Glyph
+            </div>
+            <div style={{ marginTop: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              Send QU to support the project. Sponsors are featured below.
+            </div>
           </div>
-          <div style={{ marginTop: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            Send QU to support the project. Sponsors are featured below.
+
+          <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+            <QRCodeSVG
+              value={DONATION_IDENTITY}
+              size={160}
+              bgColor="transparent"
+              fgColor="var(--color-text-display)"
+              level="M"
+              aria-label="Donation QR code"
+              role="img"
+              style={{ display: "block" }}
+            />
           </div>
-        </div>
 
-        <div style={{ background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", padding: "var(--space-4)" }}>
-          <QRCodeSVG
-            value={DONATION_IDENTITY}
-            size={160}
-            bgColor="transparent"
-            fgColor="var(--color-text-display)"
-            level="M"
-            aria-label="Donation QR code"
-            role="img"
-            style={{ display: "block" }}
-          />
-        </div>
-
-        <button
-          onClick={() => navigator.clipboard.writeText(DONATION_IDENTITY).catch(() => {})}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          aria-label="Copy donation identity"
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-            {DONATION_IDENTITY.slice(0, 10)}...{DONATION_IDENTITY.slice(-10)}
-          </span>
-        </button>
-
-        <Button onClick={() => navigate(`/send?to=${DONATION_IDENTITY}`)}>
-          Send support →
-        </Button>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Attribution controls
-          </div>
-          <div style={{ marginTop: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            Save how you want future support to be represented in Glyph’s transparency page.
-          </div>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-          {[
-            { value: "anonymous", label: "Anonymous" },
-            { value: "identity", label: "Show identity" },
-            { value: "custom", label: "Custom name" },
-          ].map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                updateSettings({ sponsorAttribution: option.value as typeof sponsorAttribution });
-                if (option.value === "custom") setShowDiscord(true);
-              }}
-              style={{
-                background: sponsorAttribution === option.value ? "var(--color-text-primary)" : "none",
-                border: `1px solid ${sponsorAttribution === option.value ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-                borderRadius: "var(--radius-sharp)",
-                cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-sm)",
-                color: sponsorAttribution === option.value ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                letterSpacing: "0.05em",
-                padding: "var(--space-1) var(--space-3)",
-              }}
-            >
-              {option.label.toUpperCase()}
-            </button>
-          ))}
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", overflowWrap: "break-word", wordBreak: "break-word" }}>
-          {sponsorAttribution === "custom"
-            ? "[CUSTOM NAME REQUIRES A MANUAL DISCORD CONFIRMATION.]"
-            : sponsorAttribution === "identity"
-              ? "[YOUR DONOR IDENTITY WILL REMAIN VISIBLE UNTIL A CUSTOM NAME OVERRIDE IS ADDED.]"
-              : "[ANONYMOUS IS A LOCAL PREFERENCE ONLY — SEND FROM A SEPARATE IDENTITY IF YOU NEED FULL ON-CHAIN PRIVACY.]"}
-        </div>
-      </div>
-
-      {/* Sponsors */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <div style={{ flex: 1, height: 1, background: "var(--color-border-subtle)" }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
-            SPONSORS
-          </span>
-          <div style={{ flex: 1, height: 1, background: "var(--color-border-subtle)" }} />
-        </div>
-
-        <div style={{ maxHeight: 220, overflowY: "auto" }}>
-          <SponsorGrid sponsors={sponsors} />
-        </div>
-
-        {latestContributors.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              LATEST CONTRIBUTORS
+          <button
+            onClick={() => navigator.clipboard.writeText(DONATION_IDENTITY).catch(() => {})}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            aria-label="Copy donation identity"
+          >
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+              {DONATION_IDENTITY.slice(0, 10)}...{DONATION_IDENTITY.slice(-10)}
             </span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-              {latestContributors.map((sponsor) => (
-                <div key={`latest-${sponsor.identity}`} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2) var(--space-3)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
+          </button>
+
+          <button
+            onClick={() => navigate(`/send?to=${DONATION_IDENTITY}`)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
+              Send support →
+            </span>
+          </button>
+        </div>
+
+        {/* Attribution controls */}
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Attribution controls
+            </div>
+            <div style={{ marginTop: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              Save how you want future support to be represented in Glyph's transparency page.
+            </div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+            {[
+              { value: "anonymous", label: "Anonymous" },
+              { value: "identity", label: "Show identity" },
+              { value: "custom", label: "Custom name" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  updateSettings({ sponsorAttribution: option.value as typeof sponsorAttribution });
+                  if (option.value === "custom") setShowDiscord(true);
+                }}
+                style={{
+                  padding: "var(--space-2) var(--space-4)",
+                  background: sponsorAttribution === option.value ? "var(--color-accent)" : "transparent",
+                  color: sponsorAttribution === option.value ? "#111" : "var(--color-text-secondary)",
+                  border: "none",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", overflowWrap: "break-word", wordBreak: "break-word" }}>
+            {sponsorAttribution === "custom"
+              ? "Custom name requires a manual Discord confirmation."
+              : sponsorAttribution === "identity"
+                ? "Your donor identity will remain visible until a custom name override is added."
+                : "Anonymous is a local preference only — send from a separate identity if you need full on-chain privacy."}
+          </div>
+        </div>
+
+        {/* Sponsors */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+            Sponsors
+          </span>
+
+          <div style={{ maxHeight: 220, overflowY: "auto" }}>
+            <SponsorGrid sponsors={sponsors} />
+          </div>
+
+          {latestContributors.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+                Latest contributors
+              </span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1) var(--space-3)" }}>
+                {latestContributors.map((sponsor) => (
+                  <span key={`latest-${sponsor.identity}`} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)" }}>
                     {sponsor.name}
+                    <span style={{ color: "var(--color-text-disabled)", marginLeft: "var(--space-1)" }}>
+                      {formatQu(sponsor.amount)} QU
+                    </span>
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
-                    {formatQu(sponsor.amount)} QU
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {donations.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              DONATION HISTORY
+          {donations.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+                Donation history
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", maxHeight: 260, overflowY: "auto" }}>
+                {donations.map((donation, i) => (
+                  <DonationRow key={donation.hash} donation={donation} sponsorName={sponsors.find((item) => item.identity === donation.source)?.name} showDivider={i < donations.length - 1} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => openUrl(GITHUB_URL).catch(() => {})}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, alignSelf: "center" }}
+          >
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              ★ Star on GitHub
             </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxHeight: 260, overflowY: "auto" }}>
-              {donations.map((donation) => (
-                <DonationRow key={donation.hash} donation={donation} sponsorName={sponsors.find((item) => item.identity === donation.source)?.name} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={() => openUrl(GITHUB_URL).catch(() => {})}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, alignSelf: "center" }}
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-            ★ STAR ON GITHUB
-          </span>
-        </button>
-      </div>
-
+          </button>
+        </div>
+      </motion.div>
     </AppShell>
     <AnimatePresence>
       {showDiscord && <DiscordSheet onClose={() => setShowDiscord(false)} />}
@@ -499,14 +496,21 @@ export default function SupportScreen() {
   );
 }
 
-function DonationRow({ donation, sponsorName }: { donation: SponsorDonation; sponsorName?: string }) {
+function DonationRow({ donation, sponsorName, showDivider }: { donation: SponsorDonation; sponsorName?: string; showDivider: boolean }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "flex-start", padding: "var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)" }}>
+    <div style={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: "var(--space-3)",
+      alignItems: "flex-start",
+      padding: "var(--space-3) 0",
+      borderBottom: showDivider ? "1px solid var(--color-border-subtle)" : "none",
+    }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)" }}>
           {sponsorName ?? truncateId(donation.source, 10, 8)}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
           {formatDate(donation.timestamp)}
         </span>
       </div>
