@@ -36,24 +36,18 @@ fn build_html(kind: &str, title: &str, body: &str, duration: u64) -> String {
     format!(r##"<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
 *{{margin:0;padding:0;box-sizing:border-box}}
-html,body{{width:100%;height:100%;background:transparent;overflow:hidden;
+html,body{{width:100%;height:100%;background:#161618;overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
   user-select:none;-webkit-user-select:none}}
-.n{{display:flex;align-items:center;gap:12px;padding:14px 16px;
+.n{{display:flex;align-items:center;gap:12px;padding:16px 18px;
   width:100%;height:100%;
-  background:rgba(20,20,22,.97);
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:14px;
-  box-shadow:0 8px 32px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.03);
-  cursor:pointer;position:relative;
-  opacity:1;transform:translateY(0);
-  transition:opacity .2s ease,transform .2s ease}}
-.n.out{{opacity:0;transform:translateY(8px)}}
+  background:#161618;
+  cursor:pointer;position:relative}}
 .ic{{flex-shrink:0;width:34px;height:34px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;background:{color}14}}
 .ic svg{{width:18px;height:18px}}
-.c{{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}}
-.c h{{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.92);line-height:1.25;letter-spacing:-.01em}}
+.c{{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}}
+.c h{{font-size:14px;font-weight:600;color:rgba(255,255,255,.92);line-height:1.25;letter-spacing:-.01em}}
 .c b{{font-size:12.5px;color:rgba(255,255,255,.42);font-weight:400;line-height:1.35;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .x{{flex-shrink:0;background:none;border:none;padding:6px;cursor:pointer;
@@ -61,7 +55,7 @@ html,body{{width:100%;height:100%;background:transparent;overflow:hidden;
   opacity:0;transition:opacity .15s}}
 .n:hover .x{{opacity:.35}}
 .x:hover{{opacity:.8;background:rgba(255,255,255,.06)}}
-.p{{position:absolute;bottom:0;left:10px;right:10px;height:2px;border-radius:1px;
+.p{{position:absolute;bottom:0;left:12px;right:12px;height:2px;border-radius:1px;
   opacity:.25;transform-origin:left;animation:shrink {duration}ms linear forwards}}
 @keyframes shrink{{from{{transform:scaleX(1)}}to{{transform:scaleX(0)}}}}
 </style></head><body>
@@ -86,22 +80,21 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
         if let Ok(Some(m)) = w.primary_monitor() {
             let (px, py, sw, sh, sc) = (m.position().x as f64, m.position().y as f64,
                 m.size().width as f64, m.size().height as f64, m.scale_factor());
-            (px + sw / sc - 376.0 - 16.0, py + sh / sc - 96.0 - 56.0)
+            (px + sw / sc - 380.0 - 16.0, py + sh / sc - 88.0 - 56.0)
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    // Base64 the HTML to avoid any escaping issues
+    // Base64 the notification HTML
     let b64 = base64_encode(html.as_bytes());
 
-    // JS that writes the HTML AND sets up click-to-close + auto-close
+    // IIFE that writes HTML + attaches click handlers + auto-close
     let eval_js = format!(
         r#"(function(){{
-          var h=atob('{}');
-          document.open();document.write(h);document.close();
+          document.documentElement.innerHTML=atob('{}');
           var n=document.getElementById('n'),x=document.getElementById('x');
           function close(){{
             n.classList.add('out');
-            setTimeout(function(){{try{{window.close()}}catch(e)}}),150);
+            setTimeout(function(){{try{{window.close()}}catch(e)}}),200);
           }}
           n.addEventListener('click',close);
           x.addEventListener('click',function(e){{e.stopPropagation();close()}});
@@ -118,38 +111,45 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
 
         eprintln!("[notif] building...");
 
+        // about:blank loads instantly — inject HTML via eval right after
         let url = "about:blank".parse::<url::Url>().unwrap();
+
         let _window = match WebviewWindowBuilder::new(&app2, &label, WebviewUrl::External(url))
-            .inner_size(376.0, 88.0)
+            .inner_size(380.0, 88.0)
             .position(x, y)
             .decorations(false)
-            .transparent(true)
             .always_on_top(true)
             .resizable(false)
             .skip_taskbar(true)
             .visible(false)
             .focused(false)
+            .background_color(tauri::window::Color(22, 22, 24, 255))
             .build()
         {
             Ok(w) => { eprintln!("[notif] built OK"); w }
             Err(e) => { eprintln!("[notif] build err: {e}"); return; }
         };
 
-        // about:blank is loaded immediately — inject right away
-        if let Some(w) = app2.get_webview_window(&label) {
-            match w.eval(&eval_js) {
-                Ok(_) => eprintln!("[notif] eval OK"),
-                Err(e) => eprintln!("[notif] eval err: {e}"),
-            }
-            let _ = w.show();
-        }
-
-        // Safety net destroy
+        // Inject notification content after the stub page loads
         let app3 = app2.clone();
         let l2 = label.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(duration + 500));
+            std::thread::sleep(std::time::Duration::from_millis(50));
             if let Some(w) = app3.get_webview_window(&l2) {
+                match w.eval(&eval_js) {
+                    Ok(_) => eprintln!("[notif] eval OK"),
+                    Err(e) => eprintln!("[notif] eval err: {e}"),
+                }
+                let _ = w.show();
+            }
+        });
+
+        // Safety net destroy
+        let app4 = app2.clone();
+        let l3 = label.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(duration + 500));
+            if let Some(w) = app4.get_webview_window(&l3) {
                 let _ = w.destroy();
             }
         });
