@@ -420,6 +420,25 @@ export default function DashboardScreen() {
   const { data: stats } = useLatestStats();
   const { data: ownedAssets } = useOwnedAssets(identity);
   const txAlerts = useSessionStore((s) => s.txAlerts);
+  const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
+
+  // Compute 24h price change from snapshots
+  const priceChange24h = (() => {
+    if (!stats?.price || priceSnapshots.length < 2) return null;
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    // Find the snapshot closest to 24h ago
+    let closest = priceSnapshots[0];
+    let minDiff = Math.abs(closest.timestamp - dayAgo);
+    for (const snap of priceSnapshots) {
+      const diff = Math.abs(snap.timestamp - dayAgo);
+      if (diff < minDiff) { closest = snap; minDiff = diff; }
+    }
+    // Only use if within 6h window
+    if (minDiff > 6 * 60 * 60 * 1000) return null;
+    if (closest.priceUsd <= 0) return null;
+    return ((stats.price - closest.priceUsd) / closest.priceUsd) * 100;
+  })();
 
   useEffect(() => {
     if (isLocked) navigate("/lock", { replace: true });
@@ -498,9 +517,21 @@ export default function DashboardScreen() {
           )}
 
           {balance && !balanceLoading && !settings.hideBalances && stats?.price && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
+              </span>
+              {priceChange24h !== null && (
+                <span style={{
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500,
+                  color: priceChange24h >= 0 ? "var(--color-status-success)" : "var(--color-status-error)",
+                  padding: "1px var(--space-2)", borderRadius: "var(--radius-pill)",
+                  background: priceChange24h >= 0 ? "rgba(52,199,89,0.1)" : "rgba(255,59,48,0.1)",
+                }}>
+                  {priceChange24h >= 0 ? "+" : ""}{priceChange24h.toFixed(1)}%
+                </span>
+              )}
+            </div>
           )}
 
           {/* Owned assets chips */}
