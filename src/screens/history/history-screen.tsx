@@ -121,13 +121,6 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
-      <div style={{
-        width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-        background: "var(--color-bg-surface)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        {TypeIcon && <TypeIcon size={18} weight="Bold" />}
-      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
           {label}
@@ -140,9 +133,12 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
-          {amount}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          {TypeIcon && <TypeIcon size={14} style={{ color: amountColor, opacity: 0.7 }} />}
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
+            {amount}
+          </span>
+        </div>
         {amountUsd && (
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
             {amountUsd}
