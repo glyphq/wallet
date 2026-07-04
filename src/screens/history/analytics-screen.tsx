@@ -52,7 +52,7 @@ export default function AnalyticsScreen() {
                 fontSize: "var(--text-display)",
                 letterSpacing: "-0.02em",
                 color: analytics.netFlow >= 0n
-                  ? "var(--color-status-success)"
+                  ? "var(--color-accent)"
                   : "var(--color-status-warning)",
               }}>
                 {analytics.netFlow >= 0n ? "+" : "−"}{compactQu(analytics.netFlow >= 0n ? analytics.netFlow : -analytics.netFlow)}
@@ -161,13 +161,13 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {/* Proportional bar */}
       <div style={{ height: 8, display: "flex", overflow: "hidden", borderRadius: 0, background: "var(--color-border-strong)" }}>
-        <div style={{ width: `${inPct}%`, background: "var(--color-status-success)", transition: "width 0.3s ease-out" }} />
+        <div style={{ width: `${inPct}%`, background: "var(--color-accent)", transition: "width 0.3s ease-out" }} />
       </div>
       {/* Labels */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-status-success)", letterSpacing: "0.08em", textTransform: "uppercase" }}>IN</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-status-success)", letterSpacing: "0.03em" }}>{compactQu(incoming)} QU</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.08em", textTransform: "uppercase" }}>IN</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-accent)", letterSpacing: "0.03em" }}>{compactQu(incoming)} QU</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "right" }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.08em", textTransform: "uppercase" }}>OUT</span>
@@ -242,7 +242,7 @@ function ActivityHeatmap({ days }: { days: DailyActivityStat[] }) {
                   borderRadius: 2,
                   background: cell.count === 0
                     ? "var(--color-border-strong)"
-                    : `color-mix(in srgb, var(--color-status-success) ${Math.round(intensity * 100)}%, var(--color-border-strong))`,
+                    : `color-mix(in srgb, var(--color-accent) ${Math.round(intensity * 100)}%, var(--color-border-strong))`,
                 }}
               />
             );
@@ -277,9 +277,9 @@ function MonthlyBars({ summaries }: { summaries: MonthlySummaryStat[] }) {
             {/* Incoming bar */}
             {s.incoming > 0n && (
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                <div style={{ width: 20, fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-status-success)", letterSpacing: "0.04em", flexShrink: 0 }}>IN</div>
+                <div style={{ width: 20, fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.04em", flexShrink: 0 }}>IN</div>
                 <div style={{ flex: 1, height: 6, background: "var(--color-border-strong)", borderRadius: 0, overflow: "hidden" }}>
-                  <div style={{ width: `${inPct}%`, height: "100%", background: "var(--color-status-success)" }} />
+                  <div style={{ width: `${inPct}%`, height: "100%", background: "var(--color-accent)" }} />
                 </div>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", letterSpacing: "0.03em", width: 64, textAlign: "right", flexShrink: 0 }}>
                   {compactQu(s.incoming)}
