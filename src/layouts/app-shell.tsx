@@ -1,18 +1,24 @@
 import { useRef, useEffect, useLayoutEffect, type CSSProperties, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { useLockCountdown } from "@/hooks/use-lock-countdown";
+import { useHeaderSlot } from "./header-slot";
 
 export interface AppShellProps {
   children: ReactNode;
   statusBar?: ReactNode;
-  bottomNav?: ReactNode;
   contentStyle?: CSSProperties;
+  fullBleed?: boolean;
 }
 
-export function AppShell({ children, statusBar, bottomNav, contentStyle }: AppShellProps) {
-  const countdown = useLockCountdown();
+export function AppShell({ children, statusBar, contentStyle, fullBleed }: AppShellProps) {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
+  const { setHeader } = useHeaderSlot();
+
+  // Push statusBar content to the static header slot in AnimatedLayout
+  useEffect(() => {
+    setHeader(statusBar ?? null);
+    return () => setHeader(null);
+  }, [statusBar, setHeader]);
 
   useLayoutEffect(() => {
     const saved = sessionStorage.getItem(`scroll:${location.key}`);
@@ -26,73 +32,18 @@ export function AppShell({ children, statusBar, bottomNav, contentStyle }: AppSh
   }, [location.key]);
 
   return (
-    <div
+    <main
+      ref={mainRef}
       style={{
         height: "100%",
-        display: "flex",
-        flexDirection: "column",
+        overflowY: "auto",
+        padding: fullBleed ? 0 : "var(--space-4)",
         background: "var(--color-bg-base)",
-        overflow: "hidden",
+        ...contentStyle,
+        ...(!fullBleed && { paddingBottom: 76 }),
       }}
     >
-      {statusBar && (
-        <header
-          style={{
-            flexShrink: 0,
-            height: 44,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 var(--space-4)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          {statusBar}
-        </header>
-      )}
-
-      {countdown !== null && (
-        <div
-          aria-live="polite"
-          style={{
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "var(--space-1) var(--space-4)",
-            background: "var(--color-bg-elevated)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            [LOCKING IN {countdown}s]
-          </span>
-        </div>
-      )}
-
-      <main
-        ref={mainRef}
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "var(--space-4)",
-          ...contentStyle,
-        }}
-      >
-        {children}
-      </main>
-
-      {bottomNav && (
-        <nav
-          style={{
-            flexShrink: 0,
-            height: 56,
-            display: "flex",
-            borderTop: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          {bottomNav}
-        </nav>
-      )}
-    </div>
+      {children}
+    </main>
   );
 }

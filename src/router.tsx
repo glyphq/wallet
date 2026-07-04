@@ -19,6 +19,7 @@ import StakeScreen from "@/screens/stake/stake-screen";
 import ReceiveScreen from "@/screens/receive/receive-screen";
 import PaymentLinkScreen from "@/screens/receive/payment-link-screen";
 import HistoryScreen from "@/screens/history/history-screen";
+import TxDetailScreen from "@/screens/history/tx-detail-screen";
 import AnalyticsScreen from "@/screens/history/analytics-screen";
 import ContactsScreen from "@/screens/contacts/contacts-screen";
 import SearchScreen from "@/screens/search/search-screen";
@@ -61,9 +62,11 @@ export const router = createHashRouter([
       { path: "/send-many", element: <Screen component={SendManyScreen} /> },
       { path: "/burn", element: <Screen component={BurnScreen} /> },
       { path: "/stake", element: <Screen component={StakeScreen} /> },
+      { path: "/earn", element: <Screen component={StakeScreen} /> },
       { path: "/receive", element: <Screen component={ReceiveScreen} /> },
       { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
       { path: "/history", element: <Screen component={HistoryScreen} /> },
+      { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },
       { path: "/analytics", element: <Screen component={AnalyticsScreen} /> },
       { path: "/contacts", element: <Screen component={ContactsScreen} /> },
       { path: "/search", element: <Screen component={SearchScreen} /> },
