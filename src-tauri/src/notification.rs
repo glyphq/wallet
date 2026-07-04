@@ -49,8 +49,6 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
     let duration = payload.duration.unwrap_or(5000);
 
-    eprintln!("[notif] label={label}");
-
     let (x, y) = if let Some(w) = app.get_webview_window("main") {
         if let Ok(Some(m)) = w.primary_monitor() {
             let (px, py, sw, sh, sc) = (m.position().x as f64, m.position().y as f64,
@@ -59,7 +57,14 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App("index.html".into()))
+    eprintln!("[notif] position=({x:.0},{y:.0}), duration={duration}");
+
+    // Use a tiny data: URL — no Tauri dev proxy, no React app, no CSP.
+    // eval() replaces the document body with the notification UI.
+    let empty_html = "data:text/html,<html><head><style>html,body{margin:0;background:%230F0F0F}</style></head><body></body></html>"
+        .parse::<url::Url>()
+        .map_err(|e| e.to_string())?;
+    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(empty_html))
         .inner_size(376.0, 100.0)
         .position(x, y)
         .decorations(false)
@@ -72,7 +77,7 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         .build()
         .map_err(|e| { eprintln!("[notif] build failed: {e}"); e.to_string() })?;
 
-    eprintln!("[notif] built, will eval in 800ms");
+    eprintln!("[notif] window created, scheduling eval in 500ms");
 
     // Inject the notification HTML after the webview loads.
     // eval() bypasses CSP and works on all platforms.
