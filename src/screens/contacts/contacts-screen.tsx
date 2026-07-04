@@ -8,16 +8,9 @@ import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { truncateId } from "@/lib/format";
+import { truncateId, timeAgo } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
 
-function timeAgo(ms: number): string {
-  const diff = Date.now() - ms;
-  if (diff < 60_000) return "just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
-}
 
 export default function ContactsScreen() {
   const navigate = useNavigate();

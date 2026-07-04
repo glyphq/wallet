@@ -9,7 +9,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, toSeed } from "@/lib/vault";
-import { extractMessage } from "@/lib/format";
+import { extractMessage, timeAgo } from "@/lib/format";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -28,14 +28,6 @@ const PASSWORD_LOCKOUT_SECS = 30;
 let _bioFailures = 0;
 let _passwordAttempts = 0;
 
-function timeAgo(ms: number): string {
-  if (!ms) return "Never";
-  const diff = Date.now() - ms;
-  if (diff < 60_000) return "Just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
-}
 
 // ── Vault card ───────────────────────────────────────────────────────────────
 

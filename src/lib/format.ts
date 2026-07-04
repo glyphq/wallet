@@ -60,6 +60,16 @@ export function formatUsdFromQu(amount: bigint | string | number, price: number)
   } catch { return "—"; }
 }
 
+/** Human-readable relative time. "Just now" / "5m ago" / "3h ago" / "2d ago". */
+export function timeAgo(ms: number): string {
+  if (!ms) return "Never";
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return "Just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
 /** Format a Unix-ms timestamp as locale date+time, e.g. "May 21, 14:32". */
 export function formatDate(timestampMs: number | null | undefined): string {
   if (!timestampMs) return "";

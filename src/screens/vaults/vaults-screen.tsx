@@ -16,15 +16,8 @@ import { isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
 
 import { parseSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
+import { timeAgo } from "@/lib/format";
 
-function timeAgo(ms: number): string {
-  if (!ms) return "Never";
-  const diff = Date.now() - ms;
-  if (diff < 60_000) return "Just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
-}
 
 export default function VaultsScreen() {
   const navigate = useNavigate();

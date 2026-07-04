@@ -18,23 +18,13 @@ import {
 
 type Step = 1 | 2 | 3;
 
-function strengthOf(pw: string) {
-  if (pw.length < 10) return { label: "Too short", level: 0, color: "var(--color-status-error)" };
-  const score =
-    (pw.length >= 14 ? 1 : 0) +
-    (/[A-Z]/.test(pw) ? 1 : 0) +
-    (/[0-9]/.test(pw) ? 1 : 0) +
-    (/[^A-Za-z0-9]/.test(pw) ? 1 : 0);
-  if (score <= 1) return { label: "Fair", level: 1, color: "var(--color-status-warning)" };
-  if (score <= 2) return { label: "Good", level: 2, color: "var(--color-status-success)" };
-  return { label: "Strong", level: 3, color: "var(--color-status-success)" };
-}
+import { passwordStrength } from "@/lib/password-strength";
 
 const accentPill: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
   gap: "var(--space-2)",
   width: "100%", height: 48,
-  background: "var(--color-accent)", color: "var(--color-bg-base)",
+  background: "var(--color-text-display)", color: "var(--color-bg-base)",
   borderRadius: "var(--radius-pill)", border: "none",
   fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-body)",
   cursor: "pointer",
@@ -79,7 +69,7 @@ export default function ImportVaultScreen() {
   const [nameError, setNameError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const strength = strengthOf(password);
+  const strength = passwordStrength(password);
 
   function validateAndContinue() {
     try {
