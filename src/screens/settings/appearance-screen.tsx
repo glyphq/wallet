@@ -7,7 +7,7 @@ import { FONT_PAIRS, ACCENT_COLORS } from "@/lib/appearance";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
-  fontSize: "0.8125rem",
+  fontSize: "var(--text-label)",
   fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
@@ -25,10 +25,10 @@ function FontCard({ pair, selected, onSelect }: { pair: typeof FONT_PAIRS[0]; se
         width: "100%",
       }}
     >
-      <div style={{ fontFamily: pair.sans, fontSize: "13px", fontWeight: 500, color: selected ? "var(--color-bg)" : "var(--color-text-primary)", lineHeight: 1.2 }}>
+      <div style={{ fontFamily: pair.sans, fontSize: "var(--text-label)", fontWeight: 500, color: selected ? "var(--color-bg)" : "var(--color-text-primary)", lineHeight: 1.2 }}>
         {pair.name}
       </div>
-      <div style={{ fontFamily: pair.mono, fontSize: "10px", color: selected ? "var(--color-bg)" : "var(--color-text-secondary)", marginTop: 4, letterSpacing: "0.04em" }}>
+      <div style={{ fontFamily: pair.mono, fontSize: "var(--text-caption)", color: selected ? "var(--color-bg)" : "var(--color-text-secondary)", marginTop: "var(--space-1)", letterSpacing: "0.04em" }}>
         MONO 0123
       </div>
     </button>

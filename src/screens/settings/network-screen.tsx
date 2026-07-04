@@ -17,7 +17,7 @@ const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
 
 const labelStyle = {
   fontFamily: "var(--font-sans)",
-  fontSize: "0.8125rem",
+  fontSize: "var(--text-label)",
   fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
@@ -25,8 +25,8 @@ const labelStyle = {
 const inputStyle: React.CSSProperties = {
   background: "transparent",
   borderBottom: "1px solid var(--color-border-subtle)",
-  fontFamily: "var(--font-mono)",
-  fontSize: "var(--text-mono-sm)",
+  fontFamily: "var(--font-sans)",
+  fontSize: "var(--text-label)",
   border: "none",
   outline: "none",
   padding: "var(--space-2) 0",
@@ -47,12 +47,12 @@ function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: "var(--space-2) var(--space-4)",
     background: active ? "var(--color-accent)" : "transparent",
-    color: active ? "#111" : "var(--color-text-secondary)",
+    color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
     border: "none",
-    borderRadius: 999,
+    borderRadius: "var(--radius-pill)",
     cursor: "pointer",
     fontFamily: "var(--font-sans)",
-    fontSize: "0.8125rem",
+    fontSize: "var(--text-label)",
     fontWeight: 500,
   };
 }
@@ -150,7 +150,7 @@ export default function NetworkScreen() {
                 border: "none",
                 cursor: "pointer",
                 fontFamily: "var(--font-sans)",
-                fontSize: "0.8125rem",
+                fontSize: "var(--text-label)",
                 fontWeight: 500,
                 color: "var(--color-accent)",
                 padding: 0,
@@ -160,27 +160,27 @@ export default function NetworkScreen() {
             </button>
             <button
               onClick={resetToDefaults}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0 }}
             >
               Reset to defaults
             </button>
             {testStatus === "ok" && testTick !== null && (
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-success)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-success)" }}>
                 Tick #{testTick}
               </span>
             )}
             {testStatus === "error" && (
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-error)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>
                 Unreachable
               </span>
             )}
           </div>
           {testError && (
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-error)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>
               {testError}
             </div>
           )}
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
             Custom RPCs must use HTTPS
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function NetworkScreen() {
         {/* Display currency */}
         <div style={cardStyle}>
           <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-primary)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
               Display currency
             </div>
             <div style={{ ...labelStyle, marginTop: "var(--space-1)" }}>
@@ -211,7 +211,7 @@ export default function NetworkScreen() {
         {/* Tick offset */}
         <div style={cardStyle}>
           <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-primary)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
               Transaction tick offset
             </div>
             <div style={{ ...labelStyle, marginTop: "var(--space-1)" }}>

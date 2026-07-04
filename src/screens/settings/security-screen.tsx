@@ -20,7 +20,7 @@ import { isWatchOnlyVault } from "@/lib/accounts";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
-  fontSize: "0.8125rem",
+  fontSize: "var(--text-label)",
   fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
@@ -49,7 +49,7 @@ function ToggleRow({ icon, label, description, enabled, onToggle }: {
       onClick={onToggle}
       style={{
         display: "flex", alignItems: "center", gap: "var(--space-3)",
-        padding: "11px 0", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left",
+        padding: "var(--space-3) 0", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left",
       }}
     >
       <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
@@ -62,12 +62,12 @@ function ToggleRow({ icon, label, description, enabled, onToggle }: {
         </div>
       </div>
       <div style={{
-        width: 36, height: 20, borderRadius: 10, flexShrink: 0, position: "relative",
+        width: 36, height: 20, borderRadius: "var(--radius-pill)", flexShrink: 0, position: "relative",
         background: enabled ? "var(--color-accent)" : "var(--color-border-strong)",
         transition: "background 0.15s ease",
       }}>
         <div style={{
-          width: 16, height: 16, borderRadius: "50%", background: enabled ? "#111" : "var(--color-text-disabled)",
+          width: 16, height: 16, borderRadius: "50%", background: enabled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
           position: "absolute", top: 2, left: enabled ? 18 : 2, transition: "left 0.15s ease",
         }} />
       </div>
@@ -87,10 +87,10 @@ function PillGroup({ options, selected, onSelect }: {
             key={opt.value}
             onClick={() => onSelect(opt.value)}
             style={{
-              padding: "8px 16px", borderRadius: 999, border: "none", cursor: "pointer",
+              padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
               background: active ? "var(--color-accent)" : "var(--color-bg-elevated)",
-              fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
-              color: active ? "#111" : "var(--color-text-secondary)",
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+              color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
               transition: "background 0.12s ease, color 0.12s ease",
             }}
           >
@@ -202,12 +202,12 @@ export default function SecurityScreen() {
               Lock behavior
             </span>
           </div>
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
 
           <SectionLabel>Auto-lock timeout</SectionLabel>
           <PillGroup options={TIMEOUT_OPTIONS} selected={autoLockMinutes} onSelect={setLockTimeout} />
 
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "11px -16px 0" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "var(--space-3) calc(-1 * var(--space-4)) 0" }} />
           <ToggleRow
             icon={<MoonSleep size={22} weight="Linear" />}
             label="Lock on sleep"
@@ -216,7 +216,7 @@ export default function SecurityScreen() {
             onToggle={() => updateSettings({ lockOnSleep: !lockOnSleep })}
           />
 
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
           <ToggleRow
             icon={<LockKeyhole size={22} weight="Linear" />}
             label="Lock on window blur"
@@ -225,12 +225,12 @@ export default function SecurityScreen() {
             onToggle={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })}
           />
           {lockOnWindowBlur && (
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)", display: "block", marginTop: 4 }}>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)", display: "block", marginTop: "var(--space-1)" }}>
               Paranoid mode — app locks every time you switch windows
             </span>
           )}
           {lockOnWindowBlur && allowBlurLockBypass && (
-            <span style={{ ...labelStyle, color: "var(--color-status-error)", display: "block", marginTop: 4 }}>
+            <span style={{ ...labelStyle, color: "var(--color-status-error)", display: "block", marginTop: "var(--space-1)" }}>
               Blur-lock bypass is enabled. Turn it off in network settings.
             </span>
           )}
@@ -244,7 +244,7 @@ export default function SecurityScreen() {
               Clipboard
             </span>
           </div>
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
           <SectionLabel>Clear copied addresses after</SectionLabel>
           <PillGroup options={CLIPBOARD_OPTIONS} selected={clipboardClearSeconds} onSelect={(v) => updateSettings({ clipboardClearSeconds: v })} />
         </div>
@@ -257,7 +257,7 @@ export default function SecurityScreen() {
               Approval policies
             </span>
           </div>
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
 
           <ToggleRow
             icon={<Fire size={22} weight="Linear" />}
@@ -267,7 +267,7 @@ export default function SecurityScreen() {
             onToggle={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })}
           />
 
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
           <ToggleRow
             icon={<Eye size={22} weight="Linear" />}
             label="Require biometric for seed reveal"
@@ -286,7 +286,7 @@ export default function SecurityScreen() {
               {isLinux ? "Quick unlock" : "Biometric unlock"}
             </span>
           </div>
-          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
           <div style={{ paddingTop: "var(--space-3)" }}>
             <span style={{ ...labelStyle, display: "block", marginBottom: "var(--space-2)" }}>
               {isLinux
@@ -321,14 +321,14 @@ export default function SecurityScreen() {
                 onClick={() => setEnabling(true)}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "11px 0", width: "100%", background: "none", border: "none", cursor: "pointer",
+                  padding: "var(--space-3) 0", width: "100%", background: "none", border: "none", cursor: "pointer",
                 }}
               >
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
                   Enable for {vault.name}
                 </span>
                 <div style={{
-                  width: 36, height: 20, borderRadius: 10, flexShrink: 0, position: "relative",
+                  width: 36, height: 20, borderRadius: "var(--radius-pill)", flexShrink: 0, position: "relative",
                   background: "var(--color-border-strong)",
                 }}>
                   <div style={{
@@ -354,9 +354,9 @@ export default function SecurityScreen() {
                   onKeyDown={(e) => e.key === "Enter" && handleEnable()}
                   className="glyph-input"
                   style={{
-                    fontFamily: "var(--font-sans)", fontSize: "0.875rem",
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
                     color: "var(--color-text-primary)", background: "transparent",
-                    borderRadius: 0, padding: "12px 0",
+                    borderRadius: 0, padding: "var(--space-3) 0",
                     width: "100%", boxSizing: "border-box", border: "none",
                   }}
                 />
@@ -368,10 +368,10 @@ export default function SecurityScreen() {
                     onClick={handleEnable}
                     disabled={enableLoading || !enablePw}
                     style={{
-                      flex: 1, padding: "10px", border: "none", cursor: enableLoading || !enablePw ? "default" : "pointer",
+                      flex: 1, padding: "var(--space-3)", border: "none", cursor: enableLoading || !enablePw ? "default" : "pointer",
                       opacity: enableLoading || !enablePw ? 0.4 : 1, borderRadius: "var(--radius-sharp)",
                       background: "var(--color-text-primary)", fontFamily: "var(--font-sans)",
-                      fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-bg-base)",
+                      fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-bg-base)",
                     }}
                   >
                     {enableLoading ? "Saving..." : "Confirm"}
@@ -379,9 +379,9 @@ export default function SecurityScreen() {
                   <button
                     onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
                     style={{
-                      padding: "10px 16px", background: "var(--color-bg-elevated)", border: "none",
+                      padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-elevated)", border: "none",
                       borderRadius: "var(--radius-sharp)", cursor: "pointer",
-                      fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+                      fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
                       color: "var(--color-text-secondary)",
                     }}
                   >
@@ -396,13 +396,13 @@ export default function SecurityScreen() {
                 onClick={handleDisable}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "11px 0", width: "100%", background: "none", border: "none", cursor: "pointer",
+                  padding: "var(--space-3) 0", width: "100%", background: "none", border: "none", cursor: "pointer",
                 }}
               >
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
                   Enabled for {vault.name}
                 </span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-warning)" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-warning)" }}>
                   Disable
                 </span>
               </button>

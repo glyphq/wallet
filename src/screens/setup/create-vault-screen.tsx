@@ -47,29 +47,29 @@ function strengthOf(pw: string) {
 const accentPill: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
   width: "100%", height: 48,
-  background: "var(--color-accent)", color: "#111",
-  borderRadius: 999, border: "none",
-  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "0.875rem",
+  background: "var(--color-accent)", color: "var(--color-bg-base)",
+  borderRadius: "var(--radius-pill)", border: "none",
+  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-body)",
   cursor: "pointer",
 };
 
 const ghostBtn: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer",
-  fontFamily: "var(--font-sans)", fontSize: "0.8125rem",
-  color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center",
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+  color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center",
 };
 
 const inputField: React.CSSProperties = {
   background: "transparent", border: "none",
   borderBottom: "1px solid var(--color-border-strong)",
-  borderRadius: 0, padding: "12px 0",
+  borderRadius: 0, padding: "var(--space-3) 0",
   fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
   color: "var(--color-text-display)", width: "100%", outline: "none",
 };
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-  fontWeight: 500, color: "var(--color-text-secondary)",
+  fontWeight: 500, color: "var(--color-text-disabled)",
 };
 
 const stepMotion = {
@@ -210,7 +210,7 @@ export default function CreateVaultScreen() {
                 style={inputField}
               />
               {nameError && (
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-status-error)" }}>{nameError}</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>{nameError}</span>
               )}
             </div>
 
@@ -302,7 +302,7 @@ export default function CreateVaultScreen() {
                     justifyContent: "center", borderRadius: "var(--radius-card)",
                   }}
                 >
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-secondary)" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
                     Tap to reveal
                   </span>
                 </button>
@@ -315,8 +315,8 @@ export default function CreateVaultScreen() {
                 onClick={copySeed}
                 style={{
                   flex: 1, background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
-                  border: "none", borderRadius: "var(--radius-sharp)", padding: "10px 0",
-                  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, cursor: "pointer",
+                  border: "none", borderRadius: "var(--radius-sharp)", padding: "var(--space-3) 0",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, cursor: "pointer",
                 }}
               >
                 {copied ? "Copied" : "Copy"}
@@ -326,8 +326,8 @@ export default function CreateVaultScreen() {
                 onClick={() => setSeedRevealed((v) => !v)}
                 style={{
                   flex: 1, background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
-                  border: "none", borderRadius: "var(--radius-sharp)", padding: "10px 0",
-                  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, cursor: "pointer",
+                  border: "none", borderRadius: "var(--radius-sharp)", padding: "var(--space-3) 0",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, cursor: "pointer",
                 }}
               >
                 {seedRevealed ? "Hide" : "Reveal"}
@@ -392,7 +392,7 @@ export default function CreateVaultScreen() {
             <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)" }}>
               {checkPositions.map((pos, i) => (
                 <div key={pos} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", flex: 1 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
                     #{pos + 1}
                   </span>
                   <input
@@ -414,7 +414,7 @@ export default function CreateVaultScreen() {
                           : "var(--color-border-strong)"
                       }`,
                       borderRadius: 0,
-                      padding: "10px 0",
+                      padding: "var(--space-3) 0",
                       color: "var(--color-text-display)",
                       outline: "none",
                       transition: "border-color 0.1s ease",
@@ -458,7 +458,7 @@ export default function CreateVaultScreen() {
               </div>
               {password.length > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  <div style={{ display: "flex", gap: 3, flex: 1 }}>
+                  <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }}>
                     {[0, 1, 2, 3].map((i) => (
                       <div
                         key={i}
@@ -470,7 +470,7 @@ export default function CreateVaultScreen() {
                       />
                     ))}
                   </div>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: strength.color }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: strength.color }}>
                     {strength.label}
                   </span>
                 </div>
@@ -479,7 +479,7 @@ export default function CreateVaultScreen() {
 
             <button type="button" onClick={finish} disabled={loading || strength.level < 1} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
               {loading ? (
-                <span style={{ width: 16, height: 16, border: "2px solid #111", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+                <span style={{ width: 16, height: 16, border: "2px solid var(--color-bg-base)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
               ) : "Create vault"}
             </button>
           </motion.div>

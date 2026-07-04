@@ -153,8 +153,8 @@ export default function RequestHistoryScreen() {
               </span>
               <span
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-label)",
                   color: "var(--color-text-disabled)",
                 }}
               >

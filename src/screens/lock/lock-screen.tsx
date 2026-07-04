@@ -237,7 +237,7 @@ export default function LockScreen() {
         <div style={{ textAlign: "center" }}>
           <span style={{
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(2rem, 5vw, 2.5rem)",
+            fontSize: "var(--text-display)",
             fontWeight: 400,
             color: "var(--color-text-display)",
             letterSpacing: "0.15em",
@@ -254,7 +254,7 @@ export default function LockScreen() {
             style={{
               display: "flex", alignItems: "center", gap: "var(--space-3)",
               background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-card)", padding: "12px var(--space-4)",
+              borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)",
               cursor: "pointer", width: "100%",
             }}
           >

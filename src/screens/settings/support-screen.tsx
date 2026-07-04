@@ -92,7 +92,7 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
           maxHeight: "85dvh",
           overflowY: "auto",
           background: "var(--color-bg-base)",
-          borderRadius: "12px 12px 0 0",
+          borderRadius: "var(--radius-card) var(--radius-card) 0 0",
           borderTop: "1px solid var(--color-border-strong)",
           zIndex: 51,
           display: "flex",
@@ -125,10 +125,9 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
             {sponsor.name}
           </span>
           <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-label)",
             color: "var(--color-text-secondary)",
-            letterSpacing: "0.05em",
           }}>
             {formatQu(sponsor.amount)} QU
           </span>
@@ -247,7 +246,7 @@ function DiscordSheet({ onClose }: { onClose: () => void }) {
           maxHeight: "85dvh",
           overflowY: "auto",
           background: "var(--color-bg-base)",
-          borderRadius: "12px 12px 0 0",
+          borderRadius: "var(--radius-card) var(--radius-card) 0 0",
           borderTop: "1px solid var(--color-border-strong)",
           zIndex: 51,
           display: "flex",
@@ -374,7 +373,7 @@ export default function SupportScreen() {
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
             aria-label="Copy donation identity"
           >
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
               {DONATION_IDENTITY.slice(0, 10)}...{DONATION_IDENTITY.slice(-10)}
             </span>
           </button>
@@ -415,12 +414,12 @@ export default function SupportScreen() {
                 style={{
                   padding: "var(--space-2) var(--space-4)",
                   background: sponsorAttribution === option.value ? "var(--color-accent)" : "transparent",
-                  color: sponsorAttribution === option.value ? "#111" : "var(--color-text-secondary)",
+                  color: sponsorAttribution === option.value ? "var(--color-bg-base)" : "var(--color-text-secondary)",
                   border: "none",
-                  borderRadius: 999,
+                  borderRadius: "var(--radius-pill)",
                   cursor: "pointer",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "0.8125rem",
+                  fontSize: "var(--text-label)",
                   fontWeight: 500,
                 }}
               >
@@ -515,10 +514,10 @@ function DonationRow({ donation, sponsorName, showDivider }: { donation: Sponsor
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "right" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
           {formatQu(donation.amount)} QU
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
           {truncateId(donation.hash, 8, 8)}
         </span>
       </div>

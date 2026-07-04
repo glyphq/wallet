@@ -86,8 +86,8 @@ export default function DappsScreen() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "var(--text-mono-sm)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-label)",
                       color: "var(--color-text-disabled)",
                       marginTop: "var(--space-1)",
                     }}

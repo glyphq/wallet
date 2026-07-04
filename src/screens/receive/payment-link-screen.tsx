@@ -106,7 +106,7 @@ export default function PaymentLinkScreen() {
           border: "none",
           cursor: "pointer",
           color: "var(--color-text-secondary)",
-          padding: "8px 0",
+          padding: "var(--space-2) 0",
           display: "flex",
           alignItems: "center",
         }}
@@ -119,7 +119,7 @@ export default function PaymentLinkScreen() {
           left: "50%",
           transform: "translateX(-50%)",
           fontFamily: "var(--font-sans)",
-          fontSize: "0.875rem",
+          fontSize: "var(--text-body)",
           fontWeight: 500,
           color: "var(--color-text-display)",
           whiteSpace: "nowrap",
@@ -167,7 +167,7 @@ export default function PaymentLinkScreen() {
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      padding: "4px 8px",
+                      padding: "var(--space-1) var(--space-2)",
                       borderRadius: "var(--radius-sharp)",
                       fontFamily: "var(--font-sans)",
                       fontSize: "var(--text-body)",
@@ -267,7 +267,7 @@ export default function PaymentLinkScreen() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    padding: "4px 8px",
+                    padding: "var(--space-1) var(--space-2)",
                     borderRadius: "var(--radius-sharp)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "var(--text-body)",
@@ -284,7 +284,7 @@ export default function PaymentLinkScreen() {
             </div>
             <div
               style={{
-                padding: 16,
+                padding: "var(--space-4)",
                 background: "#fff",
                 borderRadius: "var(--radius-card)",
               }}
@@ -324,7 +324,7 @@ export default function PaymentLinkScreen() {
               style={{
                 background: "var(--color-bg-surface)",
                 borderRadius: "var(--radius-card)",
-                padding: "14px 16px",
+                padding: "var(--space-3) var(--space-4)",
               }}
             >
               <span
@@ -394,7 +394,7 @@ function LinkRow({
             padding: 0,
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: "var(--space-1)",
           }}
         >
           {copied ? (

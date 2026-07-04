@@ -31,24 +31,24 @@ export function AddressSuggestions({
             background: "transparent",
             border: "none",
             cursor: "pointer",
-            padding: "10px 12px",
+            padding: "var(--space-3)",
             textAlign: "left",
-            borderRadius: 10,
+            borderRadius: "var(--radius-card)",
             transition: "background 0.1s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-border-subtle)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <Identicon seed={suggestion.identity} size={24} radius={6} style={{ flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-display)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "1px" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {suggestion.label}
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", color: "var(--color-text-disabled)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {suggestion.secondary}
             </span>
           </div>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.625rem", fontWeight: 500, color: "var(--color-text-disabled)", flexShrink: 0, letterSpacing: "0.06em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", flexShrink: 0, letterSpacing: "0.06em" }}>
             {KIND_LABEL[suggestion.kind]}
           </span>
         </button>

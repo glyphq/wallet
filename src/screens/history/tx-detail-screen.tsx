@@ -14,7 +14,7 @@ import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
 
@@ -22,12 +22,12 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
   icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
       <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
       <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
       <span style={{
         fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "0.8125rem", fontWeight: useMono ? 400 : 500,
+        fontSize: "var(--text-body)", fontWeight: useMono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
       }}>{value}</span>
@@ -38,11 +38,11 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
 const CARD_STYLE: React.CSSProperties = {
   background: "var(--color-bg-surface)",
   borderRadius: "var(--radius-card)",
-  padding: "4px 16px",
+  padding: "var(--space-1) var(--space-4)",
 };
 
 const DIVIDER: React.CSSProperties = {
-  height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+  height: 1, background: "var(--color-border-subtle)", margin: "0 calc(var(--space-4) * -1)",
 };
 
 function resolveProcedureName(contractName: string | undefined, fromContract: string | undefined, inputType: number | null | undefined): string | undefined {
@@ -98,10 +98,10 @@ export default function TxDetailScreen() {
 
   const statusBar = (
     <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => navigate(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 0", display: "flex", alignItems: "center", flexShrink: 0 }}>
+      <button type="button" onClick={() => navigate(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "var(--space-2) 0", display: "flex", alignItems: "center", flexShrink: 0 }}>
         <AltArrowLeft size={20} style={{ color: "var(--color-text-primary)" }} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--color-text-display)", whiteSpace: "nowrap", pointerEvents: "none" }}>Transaction</span>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)", whiteSpace: "nowrap", pointerEvents: "none" }}>Transaction</span>
     </div>
   );
 
@@ -110,7 +110,7 @@ export default function TxDetailScreen() {
       <AppShell statusBar={statusBar} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-12) 0", gap: "var(--space-3)" }}>
           <ShieldWarning size={32} style={{ color: "var(--color-text-disabled)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-disabled)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
             Transaction not found
           </span>
         </div>
@@ -137,15 +137,15 @@ export default function TxDetailScreen() {
         <motion.div initial={{ y: 4 }} animate={{ y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {/* Amount + Status */}
           <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "1.75rem", fontWeight: 500, color: amountColor }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor }}>
               {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
             </div>
             {snapshot && !hideBalances && (
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
                 ≈ ${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}
               </div>
             )}
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
               {statusLabel}
             </div>
           </div>
@@ -201,15 +201,15 @@ export default function TxDetailScreen() {
       <motion.div initial={{ y: 4 }} animate={{ y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         {/* Amount + Status */}
         <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "1.75rem", fontWeight: 500, color: amountColor }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor }}>
             {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(detail.amount ?? "0")} QU`}
           </div>
           {snapshot && !hideBalances && (
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
               ≈ $${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}
             </div>
           )}
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
             {statusLabel}
           </div>
         </div>
@@ -236,7 +236,7 @@ export default function TxDetailScreen() {
           <div style={{
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
-            padding: "14px 16px",
+            padding: "var(--space-4) var(--space-4)",
             display: "flex", flexDirection: "column", gap: "var(--space-3)",
           }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
@@ -250,29 +250,29 @@ export default function TxDetailScreen() {
                 style={{
                   flex: 1, background: "none", border: "none", outline: "none",
                   color: "var(--color-text-display)", fontFamily: "var(--font-sans)",
-                  fontSize: "0.8125rem", lineHeight: 1.5, padding: 0, resize: "none",
+                  fontSize: "var(--text-body)", lineHeight: 1.5, padding: 0, resize: "none",
                   boxSizing: "border-box", minWidth: 0,
                 }}
               />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
-              <button type="button" onClick={() => { setMemo(txMemos[hash] ?? ""); setMemoEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-disabled)", padding: "var(--space-1) var(--space-2)" }}>Cancel</button>
-              <button type="button" onClick={saveMemo} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-primary)", padding: "var(--space-1) var(--space-3)" }}>Save</button>
+              <button type="button" onClick={() => { setMemo(txMemos[hash] ?? ""); setMemoEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)", padding: "var(--space-1) var(--space-2)" }}>Cancel</button>
+              <button type="button" onClick={saveMemo} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)", padding: "var(--space-1) var(--space-3)" }}>Save</button>
             </div>
           </div>
         ) : (
           <div style={{
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
-            padding: "14px 16px",
+            padding: "var(--space-4) var(--space-4)",
             display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
             cursor: "pointer",
           }} onClick={() => setMemoEditing(true)}>
             <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
             {memo.trim() ? (
-              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-display)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{memo.trim()}</span>
+              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{memo.trim()}</span>
             ) : (
-              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>Add a note</span>
+              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>Add a note</span>
             )}
           </div>
         )}

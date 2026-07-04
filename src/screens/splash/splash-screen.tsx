@@ -88,7 +88,7 @@ export default function SplashScreen() {
         <p
           key={factIdx}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: "var(--text-mono-sm)",
             color: "var(--color-text-disabled)",
             letterSpacing: "0.04em",

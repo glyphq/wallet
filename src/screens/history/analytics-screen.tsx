@@ -27,13 +27,13 @@ export default function AnalyticsScreen() {
       contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
     >
       {isLoading && !analytics && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
           Loading...
         </div>
       )}
 
       {!isLoading && !analytics && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
           No data yet
         </div>
       )}
@@ -42,7 +42,7 @@ export default function AnalyticsScreen() {
         <>
           {/* ── Hero: Net flow ─────────────────────────────────────────── */}
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Net flow
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
@@ -166,11 +166,11 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
       {/* Labels */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.04em" }}>In</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.05em" }}>In</span>
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-lg)", color: "var(--color-accent)" }}>{compactQu(incoming)} QU</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "right" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>Out</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>Out</span>
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-primary)" }}>{compactQu(outgoing)} QU</span>
         </div>
       </div>
@@ -181,7 +181,7 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
         {label}
       </span>
       {children}
@@ -193,14 +193,14 @@ function DataRow({ primary, secondary, value }: { primary: string; secondary: st
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {primary}
         </span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
           {secondary}
         </span>
       </div>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", whiteSpace: "nowrap", flexShrink: 0 }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", whiteSpace: "nowrap", flexShrink: 0 }}>
         {value}
       </span>
     </div>
@@ -227,9 +227,9 @@ function ActivityHeatmap({ days }: { days: DailyActivityStat[] }) {
   for (let w = 0; w < 12; w++) weeks.push(cells.slice(w * 7, w * 7 + 7));
 
   return (
-    <div style={{ display: "flex", gap: 3 }}>
+    <div style={{ display: "flex", gap: "var(--space-1)" }}>
       {weeks.map((week, wi) => (
-        <div key={wi} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <div key={wi} style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           {week.map((cell) => {
             const intensity = cell.count === 0 ? 0 : Math.max(0.15, cell.count / max);
             return (
@@ -267,7 +267,7 @@ function MonthlyBars({ summaries }: { summaries: MonthlySummaryStat[] }) {
         return (
           <div key={s.sortKey} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
                 {s.month}
               </span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>

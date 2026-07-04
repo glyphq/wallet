@@ -568,7 +568,7 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
         }}
       >
         {/* Handle bar */}
-        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 0", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-3) 0 0", flexShrink: 0 }}>
           <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
         </div>
 

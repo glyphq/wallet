@@ -229,7 +229,7 @@ export default function DiagnosticsScreen() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-disabled)" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
         {title}
       </span>
       {children}

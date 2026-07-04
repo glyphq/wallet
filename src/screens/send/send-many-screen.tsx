@@ -46,7 +46,7 @@ function emptyRecipient(): Recipient {
 // ── Shared styles ────────────────────────────────────────────────────────────
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
 
@@ -66,7 +66,7 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
       <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
       <span style={{
         fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "0.8125rem", fontWeight: useMono ? 400 : 500,
+        fontSize: "var(--text-label)", fontWeight: useMono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
       }}>
@@ -247,10 +247,10 @@ export default function SendManyScreen() {
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button type="button" onClick={() => step === "input" ? navigate("/send") : step === "review" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
         <AltArrowLeft size={20} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
         {step === "input" ? `Send to many · ${accountName}` : step === "review" ? "Review" : step === "done" ? "Sent" : step === "sending" ? "Sending" : "Error"}
       </span>
     </div>
@@ -270,10 +270,10 @@ export default function SendManyScreen() {
 
         {/* Import links */}
         <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)" }}>
-          <button onClick={() => setImportOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+          <button onClick={() => setImportOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
             <Clipboard size={12} /> Paste list
           </button>
-          <button onClick={openImportFile} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+          <button onClick={openImportFile} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
             <Document size={12} /> Import CSV
           </button>
         </div>
@@ -289,7 +289,7 @@ export default function SendManyScreen() {
               <div style={{
                 background: "var(--color-bg-surface)",
                 borderRadius: "var(--radius-card)",
-                padding: "14px 16px",
+                padding: "var(--space-3) var(--space-4)",
                 display: "flex", flexDirection: "column", gap: "var(--space-3)",
               }}>
                 {/* Identity row */}
@@ -304,7 +304,7 @@ export default function SendManyScreen() {
                     placeholder={recipients.length > 1 ? `Recipient ${i + 1}` : "Identity or contact"}
                     style={{
                       flex: 1, background: "none", border: "none", outline: "none",
-                      fontFamily: "var(--font-sans)", fontSize: "0.9375rem",
+                      fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
                       color: "var(--color-text-display)", padding: 0, minWidth: 0,
                     }}
                   />
@@ -324,7 +324,7 @@ export default function SendManyScreen() {
 
                 {/* Amount row */}
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", flexShrink: 0, width: 20, textAlign: "center" }}>QU</span>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", flexShrink: 0, width: 20, textAlign: "center" }}>QU</span>
                   <input
                     autoComplete="off"
                     value={r.amount}
@@ -333,12 +333,12 @@ export default function SendManyScreen() {
                     inputMode="numeric"
                     style={{
                       flex: 1, background: "none", border: "none", outline: "none",
-                      fontFamily: "var(--font-mono)", fontSize: "0.9375rem",
+                      fontFamily: "var(--font-mono)", fontSize: "var(--text-body)",
                       color: "var(--color-text-display)", padding: 0, minWidth: 0,
                     }}
                   />
                   {price && r.amount && Number(r.amount) > 0 && (
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-text-disabled)", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", flexShrink: 0 }}>
                       ≈ ${(Number(r.amount) * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
@@ -346,14 +346,14 @@ export default function SendManyScreen() {
 
                 {/* Errors */}
                 {(r.identityError || r.amountError) && (
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-status-error)" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
                     {r.identityError || r.amountError}
                   </span>
                 )}
 
                 {/* Contact match */}
                 {matchedContact && !r.identityError && (
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-accent)" }}>{matchedContact.name}</span>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-accent)" }}>{matchedContact.name}</span>
                 )}
               </div>
 
@@ -361,7 +361,7 @@ export default function SendManyScreen() {
               {showSuggestions && (
                 <div style={{
                   position: "absolute", top: "100%", left: 8, right: 8, zIndex: 50,
-                  marginTop: 4, paddingTop: "var(--space-2)", paddingBottom: "var(--space-2)",
+                  marginTop: "var(--space-1)", paddingTop: "var(--space-2)", paddingBottom: "var(--space-2)",
                   background: "var(--color-bg-elevated)",
                   borderRadius: "var(--radius-card)",
                   border: "1px solid var(--color-border-subtle)",
@@ -383,9 +383,9 @@ export default function SendManyScreen() {
         {recipients.length < MAX_RECIPIENTS && (
           <button onClick={addRecipient} style={{
             background: "none", border: "1px dashed var(--color-border-strong)",
-            borderRadius: "var(--radius-card)", padding: "12px",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            fontFamily: "var(--font-sans)", fontSize: "0.8125rem",
+            borderRadius: "var(--radius-card)", padding: "var(--space-3)",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
+            fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
             color: "var(--color-text-disabled)", width: "100%",
           }}>
             <AddCircle size={14} /> Add recipient ({recipients.length}/{MAX_RECIPIENTS})
@@ -396,17 +396,17 @@ export default function SendManyScreen() {
         <div style={{
           background: "var(--color-bg-surface)",
           borderRadius: "var(--radius-card)",
-          padding: "4px 16px",
+          padding: "var(--space-1) var(--space-4)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
             <ArrowRightUp size={16} style={{ color: "var(--color-text-disabled)" }} />
             <span style={{ ...labelStyle, flex: 1 }}>Total</span>
             <div style={{ textAlign: "right" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "var(--color-text-display)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>
                 {totalAmount.toLocaleString()} QU
               </span>
               {price && totalAmount > 0 && (
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-text-disabled)" }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
                   ≈ ${(totalAmount * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               )}
@@ -414,17 +414,17 @@ export default function SendManyScreen() {
           </div>
           {fee !== null && (
             <>
-              <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+              <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
               <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={`${Number(fee).toLocaleString()} QU`} mono={false} />
             </>
           )}
           {remaining !== null && (
             <>
-              <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+              <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
                 <Wallet size={16} style={{ color: "var(--color-text-disabled)" }} />
                 <span style={{ ...labelStyle, flex: 1 }}>Remaining</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: overBalance ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: overBalance ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
                   {formatQu(remaining < 0n ? 0n : remaining)} QU
                 </span>
               </div>
@@ -453,7 +453,7 @@ export default function SendManyScreen() {
         {/* Import sheet */}
         <Sheet open={importOpen} onClose={() => { setImportOpen(false); setImportError(""); setImportText(""); }} title="Paste recipients">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
               CSV: identity, amount, label. JSON arrays with identity and amount.
             </div>
             <textarea
@@ -466,12 +466,12 @@ export default function SendManyScreen() {
                 background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
                 border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sharp)", padding: "var(--space-3)",
-                fontFamily: "var(--font-mono)", fontSize: "0.75rem",
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
                 outline: "none", boxSizing: "border-box",
               }}
             />
             {importError && (
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-status-error)" }}>{importError}</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>{importError}</span>
             )}
             <Button onClick={importFromText}>Import</Button>
           </div>
@@ -481,14 +481,14 @@ export default function SendManyScreen() {
         <Sheet open={pickerIndex !== null} onClose={() => setPickerIndex(null)} title="Pick recipient">
           {contacts.map((c) => (
             <button key={c.id} onClick={() => { setField(pickerIndex!, { identity: c.identity, identityError: "" }); setPickerIndex(null); }}
-              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "var(--space-3) 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>{c.name}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(c.identity)}</span>
             </button>
           ))}
           {vaultAccountTargets.map((a) => (
             <button key={a.identity} onClick={() => { setField(pickerIndex!, { identity: a.identity, identityError: "" }); setPickerIndex(null); }}
-              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "var(--space-3) 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>{a.name}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(a.identity)}</span>
             </button>
@@ -504,11 +504,11 @@ export default function SendManyScreen() {
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-surface)",
     borderRadius: "var(--radius-card)",
-    padding: "4px 16px",
+    padding: "var(--space-1) var(--space-4)",
 
   };
   const divider: React.CSSProperties = {
-    height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+    height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
   };
 
   if (step === "review") {
@@ -520,10 +520,10 @@ export default function SendManyScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "2.5rem", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {totalAmount.toLocaleString()} QU
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
             {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
           </div>
         </div>
@@ -538,10 +538,10 @@ export default function SendManyScreen() {
                 {i > 0 && <div style={divider} />}
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
                   <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><UserId size={16} /></span>
-                  <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: contact ? "var(--color-accent)" : "var(--color-text-display)" }}>
+                  <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: contact ? "var(--color-accent)" : "var(--color-text-display)" }}>
                     {contact ? contact.name : truncateId(id)}
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "var(--color-text-display)", flexShrink: 0 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)", flexShrink: 0 }}>
                     {Number(r.amount).toLocaleString()} QU
                   </span>
                 </div>
@@ -561,7 +561,7 @@ export default function SendManyScreen() {
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "12px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -569,7 +569,7 @@ export default function SendManyScreen() {
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueConfirmed && (
-          <div style={{ background: "rgba(245, 158, 11, 0.06)", borderRadius: "var(--radius-card)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer", userSelect: "none" }}
+          <div style={{ background: "rgba(245, 158, 11, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer", userSelect: "none" }}
             role="checkbox" aria-checked={highValueConfirmed} tabIndex={0}
             onClick={() => setHighValueConfirmed(true)}
             onKeyDown={(e) => e.key === "Enter" && setHighValueConfirmed(true)}>
@@ -578,9 +578,9 @@ export default function SendManyScreen() {
           </div>
         )}
         {needsHighValueConfirmation && highValueConfirmed && (
-          <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ShieldCheck size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
           </div>
         )}
 
@@ -594,7 +594,7 @@ export default function SendManyScreen() {
             </span>
           </Button>
           <button type="button" onClick={() => setStep("input")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Edit
           </button>
         </div>
@@ -614,8 +614,8 @@ export default function SendManyScreen() {
           <ArrowRightUp size={18} style={{ color: "var(--color-accent)" }} />
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
             {totalAmount.toLocaleString()} QU to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
           </div>
         </div>
@@ -635,12 +635,12 @@ export default function SendManyScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "2.5rem", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {totalAmount.toLocaleString()} QU
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
             <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-accent)" }}>Sent to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Sent to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}</span>
           </div>
         </div>
 
@@ -666,7 +666,7 @@ export default function SendManyScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
           <button type="button" onClick={() => navigate("/history")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
           </button>
         </div>
@@ -684,15 +684,15 @@ export default function SendManyScreen() {
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4, maxWidth: 280 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
           {txError || "The transaction could not be broadcast."}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button onClick={() => setStep("review")}>Try again</Button>
         <button type="button" onClick={() => navigate("/send")}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
         </button>
       </div>

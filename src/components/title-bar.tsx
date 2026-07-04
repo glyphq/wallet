@@ -34,7 +34,7 @@ function WinBtn({
           : "transparent",
         border: "none",
         cursor: "pointer",
-        color: hovered && danger ? "#fff" : "var(--color-text-disabled)",
+        color: hovered && danger ? "var(--color-text-display)" : "var(--color-text-disabled)",
         transition: "background 80ms, color 80ms",
         flexShrink: 0,
       }}
@@ -91,15 +91,15 @@ export function TitleBar() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          padding: "0 12px",
+          gap: "var(--space-2)",
+          padding: "0 var(--space-3)",
           pointerEvents: "none",
         }}
       >
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "0.5625rem",
+            fontSize: "var(--text-caption)",
             letterSpacing: "0.15em",
             color: "var(--color-text-secondary)",
           }}
@@ -107,7 +107,7 @@ export function TitleBar() {
           glyph
         </span>
         {version && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", color: "var(--color-text-disabled)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: "var(--color-text-disabled)" }}>
             v{version}
           </span>
         )}

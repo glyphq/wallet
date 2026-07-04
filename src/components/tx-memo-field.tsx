@@ -18,7 +18,7 @@ export function TxMemoField({ hash }: { hash: string }) {
     <div style={{
       background: "var(--color-bg-surface)",
       borderRadius: "var(--radius-card)",
-      padding: "14px 16px",
+      padding: "var(--space-3) var(--space-4)",
       display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
     }}>
       <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
@@ -35,7 +35,7 @@ export function TxMemoField({ hash }: { hash: string }) {
           outline: "none",
           color: "var(--color-text-display)",
           fontFamily: "var(--font-sans)",
-          fontSize: "0.8125rem",
+          fontSize: "var(--text-body)",
           lineHeight: 1.5,
           padding: 0,
           resize: "none",

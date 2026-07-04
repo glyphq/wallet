@@ -173,7 +173,7 @@ export default function VaultDetailScreen() {
     if (watchOnly) {
       const identity = addIdentity.trim().toUpperCase();
       if (!isValidIdentity(identity)) {
-        setAddError("INVALID IDENTITY");
+        setAddError("Invalid identity");
         return;
       }
         const newAccount: AccountMeta = {
@@ -195,7 +195,7 @@ export default function VaultDetailScreen() {
       try {
         seedToAdd = toSeed(addSeed.trim().toLowerCase());
       } catch (e) {
-        setAddSeedError(e instanceof InvalidSeedError ? "55 LOWERCASE LETTERS REQUIRED" : "INVALID SEED");
+        setAddSeedError(e instanceof InvalidSeedError ? "55 lowercase letters required" : "Invalid seed");
         return;
       }
     }
@@ -224,7 +224,7 @@ export default function VaultDetailScreen() {
       }
       setAddingAccount(false);
     } catch {
-      setAddError("WRONG PASSWORD");
+      setAddError("Wrong password");
     } finally {
       setAddLoading(false);
     }
@@ -312,7 +312,7 @@ export default function VaultDetailScreen() {
       }
       setRemovingAccount(null);
     } catch {
-      setRemoveError("WRONG PASSWORD");
+      setRemoveError("Wrong password");
     } finally {
       setRemoveLoading(false);
     }
@@ -320,8 +320,8 @@ export default function VaultDetailScreen() {
 
   async function doRotatePassword() {
     if (!rotateOldPassword || !rotateNewPassword) return;
-    if (rotateNewPassword !== rotateConfirm) { setRotateError("PASSWORDS DO NOT MATCH"); return; }
-    if (rotateNewPassword.length < 8) { setRotateError("PASSWORD TOO SHORT (MIN 8 CHARS)"); return; }
+    if (rotateNewPassword !== rotateConfirm) { setRotateError("Passwords do not match"); return; }
+    if (rotateNewPassword.length < 8) { setRotateError("Password too short (min 8 chars)"); return; }
     setRotateLoading(true);
     setRotateError("");
     try {
@@ -337,7 +337,7 @@ export default function VaultDetailScreen() {
       setRotateNewPassword("");
       setRotateConfirm("");
     } catch {
-      setRotateError("WRONG PASSWORD");
+      setRotateError("Wrong password");
     } finally {
       setRotateLoading(false);
     }
@@ -362,7 +362,7 @@ export default function VaultDetailScreen() {
       if (requireBiometricForSeedReveal) {
         const bioEnabled = biometricVaultIds.includes(currentVault.id);
         if (!bioEnabled) {
-          setRevealError("ENABLE BIOMETRIC FOR THIS VAULT FIRST");
+          setRevealError("Enable biometric for this vault first");
           setRevealLoading(false);
           return;
         }
@@ -387,7 +387,7 @@ export default function VaultDetailScreen() {
         accountIndex: revealingAccount.index,
       });
     } catch {
-      setRevealError("WRONG PASSWORD");
+      setRevealError("Wrong password");
     } finally {
       setRevealLoading(false);
     }
@@ -434,7 +434,7 @@ export default function VaultDetailScreen() {
             border: "1px solid var(--color-border-strong)",
             borderRadius: "var(--radius-sharp)",
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: "var(--text-mono-sm)",
             color: "var(--color-text-disabled)",
             letterSpacing: "0.05em",
@@ -442,7 +442,7 @@ export default function VaultDetailScreen() {
             textAlign: "left",
           }}
         >
-          {showHidden ? "▾" : "▸"} {hidden.length} HIDDEN {hidden.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
+          {showHidden ? "▾" : "▸"} {hidden.length} hidden {hidden.length === 1 ? "account" : "accounts"}
         </button>
       )}
 
@@ -494,9 +494,9 @@ export default function VaultDetailScreen() {
                   <button
                     type="button"
                     onClick={() => { setAddMode(mode); setAddSeed(""); setAddSeedError(""); }}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, color: addMode === mode ? "var(--color-text-display)" : "var(--color-text-disabled)" }}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, color: addMode === mode ? "var(--color-text-display)" : "var(--color-text-disabled)" }}
                   >
-                    {mode === "new" ? "NEW SEED" : "IMPORT SEED"}
+                    {mode === "new" ? "New seed" : "Import seed"}
                   </button>
                 </div>
               ))}
@@ -518,7 +518,7 @@ export default function VaultDetailScreen() {
                       key={s}
                       type="button"
                       onClick={() => setAddName(s)}
-                      style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "2px var(--space-2)" }}
+                      style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "2px var(--space-2)" }}
                     >
                       {s}
                     </button>
@@ -643,7 +643,7 @@ export default function VaultDetailScreen() {
                 />
               )}
               {requireBiometricForSeedReveal && revealError && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
                   [{revealError}]
                 </div>
               )}
@@ -653,7 +653,7 @@ export default function VaultDetailScreen() {
             </>
           ) : (
             <>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
                 [SEED VISIBLE FOR {seedSecsLeft}s]
               </div>
               <div
@@ -685,7 +685,7 @@ export default function VaultDetailScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           {rotateDone ? (
             <>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
                 Password changed
               </div>
               <Button onClick={() => setShowRotate(false)}>Done</Button>
@@ -845,7 +845,7 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, onManag
               border: "1px solid var(--color-border-strong)",
               borderRadius: "var(--radius-sharp)",
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: "var(--text-mono-sm)",
               color: "var(--color-text-secondary)",
               letterSpacing: "0.05em",
@@ -853,22 +853,22 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, onManag
               flexShrink: 0,
             }}
           >
-            MANAGE
+            Manage
           </button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: accentColor, letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: accentColor, letterSpacing: "0.05em" }}>
               Active
             </span>
           )}
           {account.hidden && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Hidden
             </span>
           )}
           {tags.map((tag) => (
-            <span key={tag} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+            <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
               #{tag}
             </span>
           ))}

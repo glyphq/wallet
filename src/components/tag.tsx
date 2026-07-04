@@ -20,9 +20,9 @@ export function Tag({ children, variant = "neutral", style }: TagProps) {
     <span
       style={{
         fontFamily: "var(--font-sans)",
-        fontSize: "10px",
+        fontSize: "var(--text-caption)",
         color: VARIANT_COLOR[variant],
-        padding: "1px 6px",
+        padding: "1px var(--space-1)",
         border: "1px solid var(--color-border-strong)",
         borderRadius: "var(--radius-pill)",
         lineHeight: "16px",

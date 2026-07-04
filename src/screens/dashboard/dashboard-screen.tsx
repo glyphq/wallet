@@ -494,7 +494,7 @@ export default function DashboardScreen() {
                     key={`${asset.issuanceIndex}-${asset.managingContractIndex}`}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
-                      padding: "3px 10px",
+                      padding: "var(--space-1) var(--space-3)",
                       background: "var(--color-bg-surface)",
                       borderRadius: "var(--radius-pill)",
                       fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em",
@@ -515,10 +515,10 @@ export default function DashboardScreen() {
                 className="glyph-btn"
                 style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-                  height: 40, padding: "0 24px",
+                  height: 40, padding: "0 var(--space-6)",
                   background: "var(--color-text-display)", color: "var(--color-bg-base)",
                   border: "none", borderRadius: "var(--radius-pill)",
-                  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
                   letterSpacing: "0.08em", cursor: "pointer",
                 }}
               >
@@ -530,10 +530,10 @@ export default function DashboardScreen() {
                 className="glyph-btn"
                 style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-                  height: 40, padding: "0 24px",
+                  height: 40, padding: "0 var(--space-6)",
                   background: "transparent", color: "var(--color-text-primary)",
                   border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-pill)",
-                  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
                   letterSpacing: "0.08em", cursor: "pointer",
                 }}
               >
@@ -545,7 +545,7 @@ export default function DashboardScreen() {
         </div>
 
         {/* Recent activity card */}
-        <div style={{ background: "var(--color-bg-surface)", borderRadius: 24, padding: "var(--space-4)" }}>
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Activity
@@ -553,7 +553,7 @@ export default function DashboardScreen() {
             <button
               onClick={() => navigate("/history")}
               aria-label="More options"
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: 4, display: "flex", alignItems: "center" }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: "var(--space-1)", display: "flex", alignItems: "center" }}
             >
               <MenuDots size={14} weight="Linear" />
             </button>

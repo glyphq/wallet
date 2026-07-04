@@ -235,10 +235,10 @@ export default function HistoryScreen() {
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button type="button" onClick={() => navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
         <AltArrowLeft size={20} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
         Transactions
       </span>
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
@@ -272,7 +272,7 @@ export default function HistoryScreen() {
       {/* ── Wide-screen sticky filter sidebar ── */}
       {wideLayout && (
         <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--color-border-subtle)", overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", marginBottom: "var(--space-3)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
             Filter
             {hasActive && (
               <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }} style={{ marginLeft: "var(--space-3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", padding: 0 }}>
@@ -512,7 +512,7 @@ const ICON_BTN: React.CSSProperties = {
   display: "flex", alignItems: "center", color: "var(--color-text-secondary)",
 };
 
-const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "8px 12px" };
+const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
 
 const GHOST_BTN: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer",
@@ -531,7 +531,7 @@ const APPLY_BTN: React.CSSProperties = {
 function FilterSection({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ marginBottom: "var(--space-6)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", marginBottom: "var(--space-3)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
         {label}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>{children}</div>
@@ -577,7 +577,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
       padding: "var(--space-1) var(--space-2)",
       display: "flex", alignItems: "center", gap: "var(--space-1)",
     }}>
-      {label} <span style={{ fontSize: "0.75em", lineHeight: 1 }}>✕</span>
+      {label} <span style={{ fontSize: "var(--text-caption)", lineHeight: 1 }}>✕</span>
     </button>
   );
 }

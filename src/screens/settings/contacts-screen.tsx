@@ -202,8 +202,8 @@ export default function SettingsContactsScreen() {
                     : "1px solid var(--color-border-subtle)",
                   borderRadius: 0,
                   padding: "var(--space-2) 0",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-label)",
                   color: "var(--color-text-primary)",
                   outline: "none",
                   width: "100%",
@@ -249,14 +249,14 @@ export default function SettingsContactsScreen() {
                 disabled={!formName.trim() || !formIdentity.trim()}
                 style={{
                   flex: 1,
-                  padding: "10px",
+                  padding: "var(--space-3)",
                   border: "none",
                   cursor: !formName.trim() || !formIdentity.trim() ? "default" : "pointer",
                   opacity: !formName.trim() || !formIdentity.trim() ? 0.4 : 1,
                   borderRadius: "var(--radius-sharp)",
                   background: "var(--color-text-primary)",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "0.8125rem",
+                  fontSize: "var(--text-label)",
                   fontWeight: 500,
                   color: "var(--color-bg-base)",
                 }}
@@ -266,13 +266,13 @@ export default function SettingsContactsScreen() {
               <button
                 onClick={closeForm}
                 style={{
-                  padding: "10px 16px",
+                  padding: "var(--space-3) var(--space-4)",
                   background: "var(--color-bg-elevated)",
                   border: "none",
                   borderRadius: "var(--radius-sharp)",
                   cursor: "pointer",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "0.8125rem",
+                  fontSize: "var(--text-label)",
                   fontWeight: 500,
                   color: "var(--color-text-secondary)",
                 }}
@@ -372,8 +372,8 @@ export default function SettingsContactsScreen() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "var(--text-mono-sm)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-label)",
                       color: "var(--color-text-disabled)",
                       marginTop: "var(--space-1)",
                     }}

@@ -38,7 +38,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
         style={{
           background: "var(--color-bg-subtle)",
           borderRadius: "var(--radius-card)",
-          padding: "12px 14px",
+          padding: "var(--space-3) var(--space-4)",
           fontFamily: "var(--font-mono)",
           fontSize: "var(--text-mono-lg)",
           color: "var(--color-text-display)",

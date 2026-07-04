@@ -19,7 +19,7 @@ import { usePersistedStore } from "@/store/persisted";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
-  fontSize: "0.8125rem",
+  fontSize: "var(--text-label)",
   fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
@@ -57,7 +57,7 @@ export default function SettingsScreen() {
       <button type="button" onClick={() => navigate("/dashboard")} style={{ position: "absolute", left: "var(--space-4)", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
         <AltArrowLeft size={20} style={{ color: "var(--color-text-primary)" }} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
         Settings
       </span>
     </div>
@@ -121,13 +121,13 @@ export default function SettingsScreen() {
                 opacity: installing ? 0.6 : 1,
               }}
             >
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-success)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-success)" }}>
                 {installing
                   ? progress > 0 ? `Downloading... ${progress}%` : "Downloading..."
                   : `Update available — v${update.version}`}
               </span>
               {!installing && (
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-success)" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-success)" }}>
                   Install
                 </span>
               )}

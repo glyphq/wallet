@@ -27,7 +27,7 @@ import { exceedsHighValueThreshold } from "@/lib/session-policies";
 type Step = "input" | "review" | "sending" | "done" | "error";
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
 
@@ -47,7 +47,7 @@ function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: ()
     <div style={{
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
-      gap: 4,
+      gap: "var(--space-1)",
       maxWidth: 320,
       width: "100%",
       margin: "0 auto",
@@ -72,10 +72,10 @@ function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: ()
               border: "none",
               cursor: isActive ? "pointer" : "default",
               fontFamily: "var(--font-sans)",
-              fontSize: isMaxSlot ? "0.8125rem" : "1.375rem",
+              fontSize: isMaxSlot ? "var(--text-label)" : "1.375rem",
               fontWeight: isMaxSlot ? 500 : 400,
               color: isMaxSlot ? "var(--color-accent)" : key === "⌫" ? "var(--color-text-secondary)" : "var(--color-text-display)",
-              borderRadius: 14,
+              borderRadius: "var(--radius-card)",
               transition: "background 0.08s",
               userSelect: "none",
               WebkitTapHighlightColor: "transparent",
@@ -106,7 +106,7 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
       <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
       <span style={{
         fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "0.8125rem", fontWeight: useMono ? 400 : 500,
+        fontSize: "var(--text-label)", fontWeight: useMono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
       }}>
@@ -319,10 +319,10 @@ export default function SendScreen() {
     const header = (
       <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
         <button type="button" onClick={() => navigate("/dashboard")}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
           <AltArrowLeft size={20} />
         </button>
-        <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+        <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
           Send from {accountName}
         </span>
       </div>
@@ -333,12 +333,12 @@ export default function SendScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
 
         {/* Amount display */}
-        <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: 4, position: "relative", overflow: "hidden", width: "100%" }}>
+        <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: "var(--space-1)", position: "relative", overflow: "hidden", width: "100%" }}>
 
           {/* Draft notice */}
           {draftRestored && (
-            <div style={{ position: "absolute", top: "var(--space-3)", padding: "4px 12px", background: "rgba(245, 158, 11, 0.1)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-              <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "0.75rem" }}>Draft restored</span>
+            <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "rgba(245, 158, 11, 0.1)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "var(--text-label)" }}>Draft restored</span>
               <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-status-warning)", fontSize: "0.625rem", padding: 0 }}>✕</button>
             </div>
           )}
@@ -347,7 +347,7 @@ export default function SendScreen() {
             fontFamily: "var(--font-sans)",
             fontSize: (() => {
               const raw = usdMode ? usdStr : amountStr;
-              if (!raw) return "3rem";
+              if (!raw) return "var(--text-display)";
               const len = raw.length + (usdMode ? 1 : 0); // +1 for $
               if (len <= 6) return "3.5rem";
               if (len <= 9) return "2.75rem";
@@ -377,7 +377,7 @@ export default function SendScreen() {
               }
               setUsdMode((v) => !v);
             }}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: 0 }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0 }}
           >
             {usdMode
               ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
@@ -386,7 +386,7 @@ export default function SendScreen() {
           </button>
 
           {amountError && (
-            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "0.75rem" }}>{amountError}</span>
+            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)" }}>{amountError}</span>
           )}
         </div>
 
@@ -395,7 +395,7 @@ export default function SendScreen() {
           <div style={{
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
-            padding: "14px 16px",
+            padding: "var(--space-4) var(--space-4)",
             boxShadow: "0 2px 8px rgba(0,0,0,0.2), 0 0 1px rgba(255,255,255,0.05)",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
@@ -409,7 +409,7 @@ export default function SendScreen() {
                 onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
                 style={{
                   flex: 1, background: "none", border: "none", outline: "none",
-                  fontFamily: "var(--font-sans)", fontSize: "0.875rem",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
                   color: "var(--color-text-display)", padding: 0, minWidth: 0,
                 }}
               />
@@ -426,7 +426,7 @@ export default function SendScreen() {
           {destination.trim() && suggestions.filter((s) => s.identity !== destUpper).length > 0 && (
             <div style={{
               position: "absolute", top: "100%", left: 8, right: 8, zIndex: 50,
-              marginTop: 4, paddingTop: "var(--space-2)", paddingBottom: "var(--space-2)",
+              marginTop: "var(--space-1)", paddingTop: "var(--space-2)", paddingBottom: "var(--space-2)",
               background: "var(--color-bg-elevated)",
               borderRadius: "var(--radius-card)",
               border: "1px solid var(--color-border-subtle)",
@@ -441,17 +441,17 @@ export default function SendScreen() {
             </div>
           )}
           {matchedContact && !destError && (
-            <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "0.75rem", paddingLeft: 4, marginTop: 4, display: "block" }}>{matchedContact.name}</span>
+            <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{matchedContact.name}</span>
           )}
           {destError && (
-            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "0.75rem", paddingLeft: 4, marginTop: 4, display: "block" }}>{destError}</span>
+            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{destError}</span>
           )}
         </div>
 
         {/* Available balance */}
         {balance !== null && (
           <div style={{ flex: "0 0 auto", textAlign: "center", paddingBottom: "var(--space-1)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-text-disabled)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
               {formatQu(balance)} available
             </span>
           </div>
@@ -471,12 +471,12 @@ export default function SendScreen() {
           </Button>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "var(--space-3)" }}>
             <button onClick={() => navigate("/send-many")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "0.75rem" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
               Send to many
             </button>
             <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-text-disabled)", opacity: 0.5, flexShrink: 0 }} />
             <button onClick={() => navigate("/burn")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "0.75rem" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
               Burn QU
             </button>
           </div>
@@ -499,10 +499,10 @@ export default function SendScreen() {
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button type="button" onClick={() => step === "review" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
         <AltArrowLeft size={20} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
         {step === "review" ? "Review" : step === "done" ? "Sent" : step === "sending" ? "Sending" : "Error"}
       </span>
     </div>
@@ -512,11 +512,11 @@ export default function SendScreen() {
     const cardStyle: React.CSSProperties = {
       background: "var(--color-bg-surface)",
       borderRadius: "var(--radius-card)",
-      padding: "4px 16px",
+      padding: "var(--space-1) var(--space-4)",
       animation: "fade-in-up 0.25s ease-out both",
     };
     const divider: React.CSSProperties = {
-      height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+      height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
     };
     const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—";
 
@@ -526,11 +526,11 @@ export default function SendScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
           {price && amountStr && (
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
               ≈ ${(Number(amountStr) * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           )}
@@ -572,7 +572,7 @@ export default function SendScreen() {
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "12px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -599,7 +599,7 @@ export default function SendScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
           <button type="button" onClick={() => setStep("input")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Edit
           </button>
         </div>
@@ -626,8 +626,8 @@ export default function SendScreen() {
           <ArrowRightUp size={18} style={{ color: "var(--color-accent)" }} />
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
             {formatQu(amountStr)} to {matchedContact?.name ?? truncateId(destUpper)}
           </div>
         </div>
@@ -642,10 +642,10 @@ export default function SendScreen() {
     const cardStyle: React.CSSProperties = {
       background: "var(--color-bg-surface)",
       borderRadius: "var(--radius-card)",
-      padding: "4px 16px",
+      padding: "var(--space-1) var(--space-4)",
     };
     const divider: React.CSSProperties = {
-      height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+      height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
     };
 
     const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-disabled)";
@@ -656,12 +656,12 @@ export default function SendScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
             <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-accent)" }}>Sent</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Sent</span>
           </div>
         </div>
 
@@ -693,7 +693,7 @@ export default function SendScreen() {
           <div style={{
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
-            padding: "14px 16px",
+            padding: "var(--space-4) var(--space-4)",
             display: "flex", alignItems: "center", gap: "var(--space-3)",
           }}>
             <Bookmark size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
@@ -703,14 +703,14 @@ export default function SendScreen() {
               placeholder="Save as contact"
               style={{
                 flex: 1, background: "none", border: "none", outline: "none",
-                fontFamily: "var(--font-sans)", fontSize: "0.8125rem",
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
                 color: "var(--color-text-display)", padding: 0, minWidth: 0,
               }}
             />
             <button type="button" onClick={doSaveContact} disabled={!saveName.trim()}
               style={{
                 background: "none", border: "none", cursor: saveName.trim() ? "pointer" : "default",
-                fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
                 color: saveName.trim() ? "var(--color-accent)" : "var(--color-text-disabled)",
                 padding: 0, flexShrink: 0,
               }}>
@@ -722,11 +722,11 @@ export default function SendScreen() {
           <div style={{
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
-            padding: "14px 16px",
+            padding: "var(--space-4) var(--space-4)",
             display: "flex", alignItems: "center", gap: "var(--space-3)",
           }}>
             <CheckCircle size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-accent)" }}>Contact saved</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Contact saved</span>
           </div>
         )}
 
@@ -739,7 +739,7 @@ export default function SendScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
           <button type="button" onClick={() => navigate("/history")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
           </button>
         </div>
@@ -761,15 +761,15 @@ export default function SendScreen() {
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4, maxWidth: 280 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
           {txError || "The transaction could not be broadcast."}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button onClick={() => setStep("review")}>Try again</Button>
         <button type="button" onClick={() => navigate("/dashboard")}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
         </button>
       </div>

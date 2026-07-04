@@ -20,9 +20,9 @@ import { parseSignedExportEnvelope } from "@/lib/export-format";
 const accentBtn: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
   width: "100%", height: 48,
-  background: "var(--color-accent)", color: "#111",
-  borderRadius: 999, border: "none",
-  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "0.875rem",
+  background: "var(--color-accent)", color: "var(--color-bg-base)",
+  borderRadius: "var(--radius-pill)", border: "none",
+  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-body)",
   cursor: "pointer",
 };
 
@@ -31,7 +31,7 @@ const secondaryBtn: React.CSSProperties = {
   width: "100%", height: 44,
   background: "transparent", color: "var(--color-text-primary)",
   borderRadius: "var(--radius-sharp)", border: "1px solid var(--color-border-strong)",
-  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "0.8125rem",
+  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-label)",
   cursor: "pointer",
 };
 
@@ -40,27 +40,27 @@ const ghostBtn: React.CSSProperties = {
   width: "100%", height: 40,
   background: "transparent", color: "var(--color-text-secondary)",
   borderRadius: 0, border: "none",
-  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "0.8125rem",
+  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-label)",
   cursor: "pointer",
 };
 
 const inputField: React.CSSProperties = {
   background: "transparent", border: "none",
   borderBottom: "1px solid var(--color-border-strong)",
-  borderRadius: 0, padding: "12px 0",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)",
+  borderRadius: 0, padding: "var(--space-3) 0",
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
   color: "var(--color-text-display)", width: "100%", outline: "none",
 };
 
 const fieldLabel: React.CSSProperties = {
   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-  fontWeight: 500, color: "var(--color-text-secondary)",
+  fontWeight: 500, color: "var(--color-text-disabled)",
 };
 
 const rowDivider: React.CSSProperties = {
   height: 1,
   background: "var(--color-border-subtle)",
-  margin: "0 -16px",
+  margin: "0 calc(-1 * var(--space-4))",
 };
 
 function Spinner() {
@@ -292,7 +292,7 @@ export default function WelcomeScreen() {
 
         {/* Brand + tagline */}
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.1em", marginBottom: "var(--space-4)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.1em", marginBottom: "var(--space-4)" }}>
             Glyph
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, lineHeight: 1.25 }}>
@@ -352,7 +352,7 @@ export default function WelcomeScreen() {
                       style={{
                         display: "flex", alignItems: "center", gap: "var(--space-3)",
                         background: "none", border: "none", textAlign: "left",
-                        padding: "11px 0", cursor: atLimit ? "not-allowed" : "pointer",
+                        padding: "var(--space-3) 0", cursor: atLimit ? "not-allowed" : "pointer",
                         opacity: atLimit ? 0.35 : 1, width: "100%",
                       }}
                     >
@@ -438,7 +438,7 @@ export default function WelcomeScreen() {
                 border: "none",
                 borderBottom: "1px solid var(--color-border-strong)",
                 borderRadius: 0,
-                padding: "12px 0",
+                padding: "var(--space-3) 0",
                 fontFamily: "var(--font-mono)",
                 fontSize: "var(--text-mono-sm)",
                 lineHeight: 1.6,

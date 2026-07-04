@@ -19,7 +19,7 @@ import { getVaultAccountIdentity } from "@/lib/accounts";
 type Step = "input" | "confirm" | "sending" | "done" | "error";
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
 
@@ -32,7 +32,7 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
       <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
       <span style={{
         fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "0.8125rem", fontWeight: useMono ? 400 : 500,
+        fontSize: "var(--text-label)", fontWeight: useMono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
       }}>
@@ -130,10 +130,10 @@ export default function BurnScreen() {
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button type="button" onClick={() => step === "input" ? navigate("/send") : step === "confirm" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
         <AltArrowLeft size={20} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
         {step === "input" ? `Burn · ${accountName}` : step === "confirm" ? "Confirm burn" : step === "done" ? "Burned" : step === "sending" ? "Burning" : "Error"}
       </span>
     </div>
@@ -142,10 +142,10 @@ export default function BurnScreen() {
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-surface)",
     borderRadius: "var(--radius-card)",
-    padding: "4px 16px",
+    padding: "var(--space-1) var(--space-4)",
   };
   const divider: React.CSSProperties = {
-    height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+    height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
   };
 
   // ── Input ──────────────────────────────────────────────────────────────────
@@ -156,9 +156,9 @@ export default function BurnScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Warning */}
-        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
           <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-error)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>
             Burned QU is permanently destroyed. This cannot be undone.
           </span>
         </div>
@@ -175,22 +175,22 @@ export default function BurnScreen() {
               autoFocus
               style={{
                 width: "100%", background: "none", border: "none", outline: "none",
-                fontFamily: "var(--font-sans)", fontSize: "3rem", fontWeight: 700,
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700,
                 color: amountError ? "var(--color-status-error)" : amountStr ? "var(--color-text-display)" : "var(--color-text-disabled)",
                 letterSpacing: "-0.03em", textAlign: "center", padding: 0,
               }}
             />
           </div>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)" }}>QU</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>QU</span>
 
           {balance !== null && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-text-disabled)", marginTop: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: "var(--space-2)" }}>
               {formatQu(balance)} available
             </span>
           )}
 
           {amountError && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: "var(--color-status-error)", marginTop: "var(--space-1)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)", marginTop: "var(--space-1)" }}>
               {amountError}
             </span>
           )}
@@ -218,16 +218,16 @@ export default function BurnScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-status-error)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-status-error)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-error)", marginTop: 4, opacity: 0.7 }}>QU to burn</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)", marginTop: "var(--space-1)", opacity: 0.7 }}>QU to burn</div>
         </div>
 
         {/* Warning card */}
-        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
           <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-error)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>
             This QU will be permanently destroyed. There is no undo.
           </span>
         </div>
@@ -255,20 +255,20 @@ export default function BurnScreen() {
                 autoComplete="current-password"
                 style={{
                   width: "100%", background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-subtle)",
-                  borderRadius: 12, padding: "10px 14px",
-                  fontFamily: "var(--font-sans)", fontSize: "0.875rem",
+                  borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
                   color: "var(--color-text-display)", outline: "none", boxSizing: "border-box",
                 }}
               />
               {burnPasswordError && (
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: "var(--color-status-error)" }}>{burnPasswordError}</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>{burnPasswordError}</span>
               )}
             </div>
           </div>
         )}
 
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "12px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -284,7 +284,7 @@ export default function BurnScreen() {
             </span>
           </Button>
           <button type="button" onClick={() => setStep("input")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Cancel
           </button>
         </div>
@@ -304,8 +304,8 @@ export default function BurnScreen() {
           <Fire size={18} style={{ color: "var(--color-status-error)" }} />
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Burning</div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Burning</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
             {formatQu(amountStr)} QU
           </div>
         </div>
@@ -323,12 +323,12 @@ export default function BurnScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
             <Fire size={14} style={{ color: "var(--color-status-error)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-error)" }}>Burned</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>Burned</span>
           </div>
         </div>
 
@@ -346,7 +346,7 @@ export default function BurnScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
           <button type="button" onClick={() => navigate("/history")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
           </button>
         </div>
@@ -364,15 +364,15 @@ export default function BurnScreen() {
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Burn failed</div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4, maxWidth: 280 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Burn failed</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
           {txError || "The burn transaction could not be broadcast."}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button variant="danger" onClick={() => setStep("confirm")}>Try again</Button>
         <button type="button" onClick={() => navigate("/send")}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
         </button>
       </div>
@@ -380,3 +380,4 @@ export default function BurnScreen() {
     </AppShell>
   );
 }
+

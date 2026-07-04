@@ -25,14 +25,14 @@ export default function ReceiveScreen() {
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button type="button" onClick={() => navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
         <AltArrowLeft size={20} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
         Your address
       </span>
       <button type="button" onClick={() => navigate("/payment-link")}
-        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-secondary)", padding: "8px 0" }}>
+        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", padding: "var(--space-2) 0" }}>
         Payment link
       </button>
     </div>
@@ -46,7 +46,7 @@ export default function ReceiveScreen() {
         transition={{ duration: 0.15, ease: "easeOut" }}
         style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}
       >
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-secondary)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
           {accountName}
         </span>
 
@@ -59,7 +59,7 @@ export default function ReceiveScreen() {
               style={{
                 background: "#FFFFFF",
                 borderRadius: "var(--radius-card)",
-                padding: 16,
+                padding: "var(--space-4)",
                 position: "relative",
                 cursor: hideBalances && !qrRevealed ? "pointer" : "default",
               }}
@@ -81,7 +81,7 @@ export default function ReceiveScreen() {
               />
               {hideBalances && !qrRevealed && (
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", borderRadius: "var(--radius-card)" }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "#333333" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-bg-base)" }}>
                     Tap or hover to reveal
                   </span>
                 </div>
@@ -91,7 +91,7 @@ export default function ReceiveScreen() {
             <IdentityDisplay identity={identity} style={{ textAlign: "center", maxWidth: 300 }} />
           </>
         ) : (
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.875rem", color: "var(--color-text-disabled)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
             No account
           </span>
         )}

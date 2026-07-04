@@ -19,7 +19,7 @@ export function SettingsPageHeader({ title, backTo = "/settings" }: { title: str
       </button>
       <span style={{
         position: "absolute", left: "50%", transform: "translateX(-50%)",
-        fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500,
+        fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
         color: "var(--color-text-display)", whiteSpace: "nowrap",
       }}>
         {title}

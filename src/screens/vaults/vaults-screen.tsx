@@ -337,7 +337,7 @@ export default function VaultsScreen() {
             key={vault.id}
             style={{
               display: "flex", alignItems: "center", gap: "var(--space-3)",
-              padding: "12px var(--space-4)",
+              padding: "var(--space-3) var(--space-4)",
               background: isActive ? "var(--color-bg-elevated)" : "transparent",
               borderRadius: "var(--radius-card)",
               border: `1px solid ${isActive ? "var(--color-border-strong)" : "transparent"}`,
@@ -365,9 +365,9 @@ export default function VaultsScreen() {
                   </span>
                   {watchOnly && (
                     <span style={{
-                      fontFamily: "var(--font-sans)", fontSize: "10px",
+                      fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
                       color: "var(--color-text-disabled)",
-                      padding: "1px 6px",
+                      padding: "1px var(--space-1)",
                       border: "1px solid var(--color-border-strong)",
                       borderRadius: "var(--radius-pill)",
                       lineHeight: "16px",
