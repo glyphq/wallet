@@ -89,7 +89,7 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            {...presets.fadeInUpLg}
+            {...presets.fadeIn}
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "var(--color-bg-elevated)",

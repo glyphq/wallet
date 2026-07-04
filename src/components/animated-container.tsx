@@ -11,7 +11,7 @@ import { presets, staggerContainer, staggerItem, transition } from "@/lib/animat
 
 interface AnimatedContainerProps {
   children: ReactNode;
-  animation?: "fadeIn" | "fadeInUp" | "fadeInUpLg" | "scaleIn" | "slideUp" | "slideDown";
+  animation?: "fadeIn" | "scaleIn" | "slideUp" | "slideDown";
   delay?: number;
   style?: CSSProperties;
   className?: string;
@@ -23,7 +23,7 @@ interface AnimatedContainerProps {
  */
 export function AnimatedContainer({
   children,
-  animation = "fadeInUp",
+  animation = "fadeIn",
   delay = 0,
   style,
   className,
