@@ -49,6 +49,9 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::default().build())
         .plugin(tauri_plugin_process::init())
+        .register_uri_scheme_protocol("notif", |ctx, request| {
+            notification::handle_protocol(ctx, request)
+        })
         .manage(AutoLockState::default())
         .manage(DeepLinkState::default())
         .manage(ClipboardState::default())
