@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { Wallet } from "@solar-icons/react";
 
 const FACTS = [
   "Qubic is founded by Sergey Ivancheglo — the original creator of NXT and co-founder of IOTA.",
@@ -62,8 +61,8 @@ export default function SplashScreen() {
         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}
       >
         {/* Logo + wordmark */}
-        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "var(--space-2)" }}>
-          <Wallet size={28} weight="Outline" style={{ color: "var(--color-accent)" }} />
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "var(--space-3)" }}>
+          <img src="/icon.png" width={36} height={36} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
           <span style={{
             fontFamily: "var(--font-sans)",
             fontSize: "1.5rem",

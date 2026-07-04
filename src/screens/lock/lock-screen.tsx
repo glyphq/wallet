@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { LockKeyhole, Eye, EyeClosed, Wallet } from "@solar-icons/react";
+import { LockKeyhole, Eye, EyeClosed } from "@solar-icons/react";
 import { motion, AnimatePresence } from "motion/react";
 import { presets, gesture } from "@/lib/animations";
 import { usePersistedStore } from "@/store/persisted";
@@ -307,7 +307,7 @@ export default function LockScreen() {
             {/* Logo */}
             <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
               <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-                <Wallet size={20} weight="Outline" style={{ color: "var(--color-accent)" }} />
+                <img src="/icon.png" width={24} height={24} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
                 <span style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "var(--text-headline)",
