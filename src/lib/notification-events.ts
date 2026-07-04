@@ -1,6 +1,6 @@
-import { notify, type NotificationDeliveryResult } from "@/lib/notifications";
+import { type NotificationDeliveryResult } from "@/lib/notifications";
+import { addToast, type ToastKind } from "@/store/toast";
 import { useSessionStore } from "@/store/session";
-import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
 
 function makeEventId(): string {
@@ -48,13 +48,10 @@ export async function publishNotificationEvent(
   if (isLocked && !notifyWhenLocked) {
     return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the vault is locked." };
   }
-  const result = await notify(event.title, event.body);
-  if (!result.ok) {
-    recordRuntimeIssue({
-      source: "native",
-      title: "Notification delivery failed",
-      detail: result.message,
-    });
-  }
-  return result;
+  addToast({
+    kind: event.kind as ToastKind,
+    title: event.title,
+    body: event.body,
+  });
+  return { ok: true, state: "sent" };
 }
