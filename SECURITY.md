@@ -13,7 +13,7 @@ Only the latest release receives security fixes. We do not backport patches to o
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Report vulnerabilities privately via GitHub's [Security Advisories](https://github.com/glyph-oss/glyph.app/security/advisories/new), or email **security@glyph.app**.
+Report vulnerabilities privately via GitHub's [Security Advisories](https://github.com/glyph-ecosystem/wallet/security/advisories/new), or email **security@glyph.app**.
 
 Include as much of the following as possible:
 

@@ -21,13 +21,16 @@ function Toggle({ label, description, enabled, onToggle, disabled }: {
       <div style={{
         width: 36, height: 20, borderRadius: "var(--radius-pill)", flexShrink: 0, position: "relative",
         background: enabled ? "var(--color-accent)" : "var(--color-border-strong)",
-        transition: "background 0.15s ease",
       }}>
-        <div style={{
-          width: 16, height: 16, borderRadius: "50%",
-          background: enabled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
-          position: "absolute", top: 2, left: enabled ? 18 : 2, transition: "left 0.15s ease",
-        }} />
+        <motion.div
+          animate={{ x: enabled ? 18 : 2 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          style={{
+            width: 16, height: 16, borderRadius: "50%",
+            background: enabled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
+            position: "absolute", top: 2,
+          }}
+        />
       </div>
     </button>
   );
