@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { Eye, EyeOff, Search } from "lucide-react";
+import { AltArrowDown, Bolt, Eye, EyeClosed, Magnifer, MultipleForwardRight } from "@solar-icons/react";
 import { BottomNav } from "@/components/bottom-nav";
 import { AppShell } from "@/layouts/app-shell";
 import { Modal } from "@/components/modal";
-import { Tag } from "@/components/tag";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -97,6 +96,20 @@ export default function DashboardScreen() {
   const dismissTxAlert = useSessionStore((s) => s.dismissTxAlert);
 
   const [showNetworkOverlay, setShowNetworkOverlay] = useState(false);
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close account dropdown on outside click
+  useEffect(() => {
+    if (!accountDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(e.target as Node)) {
+        setAccountDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [accountDropdownOpen]);
 
   useEffect(() => {
     if (isLocked) navigate("/lock", { replace: true });
@@ -130,19 +143,15 @@ export default function DashboardScreen() {
           aria-label="Search"
           style={{ display: "flex", alignItems: "center", background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--color-text-disabled)" }}
         >
-          <Search size={14} strokeWidth={1.5} />
+          <Magnifer size={14} weight="Linear" />
         </button>
         <button
           onClick={() => setShowNetworkOverlay(true)}
           aria-label="Network status"
-          style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {`TICK #${padTick(tickInfo?.tick)}`}
-          </span>
           <div
             title={health === "healthy" ? "Network healthy" : health === "degraded" ? "Network degraded" : "Network offline"}
-            aria-label={health === "healthy" ? "Network healthy" : health === "degraded" ? "Network degraded" : "Network offline"}
             style={{
               width: 6, height: 6, borderRadius: "50%",
               background: HEALTH_COLOR[health],
@@ -170,43 +179,130 @@ export default function DashboardScreen() {
                   gap: "var(--space-3)",
                   padding: "var(--space-3) var(--space-4)",
                   background: "var(--color-bg-surface)",
-                  border: "1px solid var(--color-status-error)",
-                  borderRadius: "var(--radius-sharp)",
+                  border: "1px solid var(--color-border-subtle)",
+                  borderRadius: "var(--radius-card)",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-                    [{alert.reason === "expired" ? "TICK MISSED" : "TX FAILED"}] {alert.label}
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+                    {alert.reason === "expired" ? "Tick missed" : "Transaction failed"} — {alert.label}
                   </span>
                 </div>
                 <button
                   onClick={() => dismissTxAlert(alert.id)}
                   aria-label="Dismiss"
-                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, flexShrink: 0 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", padding: 0, flexShrink: 0 }}
                 >
-                  ✕
+                  Dismiss
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Identity + account name */}
-        {identity ? (
+        {/* Account selector dropdown */}
+        {identity && visibleAccounts.length > 1 ? (
+          <div ref={accountDropdownRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setAccountDropdownOpen((prev) => !prev)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-1)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
+                {vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`}
+              </span>
+              <AltArrowDown
+                size={14}
+                weight="Linear"
+                style={{
+                  color: "var(--color-text-disabled)",
+                  transform: accountDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.15s ease",
+                }}
+              />
+            </button>
+            {accountDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + var(--space-2))",
+                  left: 0,
+                  zIndex: 100,
+                  minWidth: 240,
+                  background: "var(--color-bg-elevated)",
+                  border: "1px solid var(--color-border-default)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: "var(--space-1)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                }}
+              >
+                {visibleAccounts.map((account) => {
+                  const isActive = account.index === activeIndex;
+                  const accIdentity = getVaultAccountIdentity(vault, account.index, wallets);
+                  return (
+                    <button
+                      key={account.index}
+                      onClick={() => {
+                        setActiveAccountIndex(account.index);
+                        setAccountDropdownOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 2,
+                        width: "100%",
+                        padding: "var(--space-3) var(--space-3)",
+                        borderRadius: "var(--radius-md)",
+                        border: "none",
+                        background: isActive ? "var(--color-bg-surface)" : "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                        {account.name}
+                      </span>
+                      {accIdentity && (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                          {truncateId(accIdentity)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {watchOnly && (
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)", marginTop: "var(--space-2)" }}>
+                Watch only
+              </div>
+            )}
+            <div style={{ marginTop: "var(--space-2)" }}>
+              <IdentityDisplay identity={identity} />
+            </div>
+          </div>
+        ) : identity ? (
           <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "var(--space-2)" }}>
               {vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`}
             </div>
             {watchOnly && (
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-                WATCH-ONLY
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)", marginBottom: "var(--space-2)" }}>
+                Watch only
               </div>
             )}
             <IdentityDisplay identity={identity} />
           </div>
         ) : (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [NO ACCOUNT]
+            [No account]
           </div>
         )}
 
@@ -217,7 +313,7 @@ export default function DashboardScreen() {
             aria-label={settings.hideBalances ? "Show balances" : "Hide balances"}
             style={{ position: "absolute", top: 0, right: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center" }}
           >
-            {settings.hideBalances ? <EyeOff size={14} strokeWidth={1.5} /> : <Eye size={14} strokeWidth={1.5} />}
+            {settings.hideBalances ? <EyeClosed size={14} weight="Linear" /> : <Eye size={14} weight="Linear" />}
           </button>
           {settings.hideBalances ? (
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", color: "var(--color-text-disabled)" }}>
@@ -226,7 +322,7 @@ export default function DashboardScreen() {
           ) : (
             <div style={{ display: "inline-flex", alignItems: "baseline", gap: "var(--space-2)" }}>
               <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-                {balanceLoading ? "[LOADING...]" : balance ? <AnimatedBalance value={balance.balance} /> : "—"}
+                {balanceLoading ? "Loading..." : balance ? <AnimatedBalance value={balance.balance} /> : "—"}
               </span>
               {!balanceLoading && balance && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>
@@ -235,11 +331,7 @@ export default function DashboardScreen() {
               )}
             </div>
           )}
-          {balance && !balanceLoading && tickInfo?.tick && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", marginTop: "var(--space-2)", letterSpacing: "0.05em" }}>
-              AS OF TICK {tickInfo.tick}
-            </div>
-          )}
+
           {balance && !balanceLoading && !settings.hideBalances && stats?.price && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", letterSpacing: "0.05em" }}>
               ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
@@ -250,8 +342,8 @@ export default function DashboardScreen() {
               const threshold = BigInt(settings.lowBalanceThreshold);
               if (threshold > 0n && balance.balance < threshold) {
                 return (
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", marginTop: "var(--space-2)", letterSpacing: "0.05em" }}>
-                    [LOW BALANCE]
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)", marginTop: "var(--space-2)" }}>
+                    Low balance
                   </div>
                 );
               }
@@ -260,44 +352,20 @@ export default function DashboardScreen() {
           })()}
         </div>
 
-        {/* Account switcher */}
-        {visibleAccounts.length > 1 && (
-          <div style={{ display: "flex", gap: "var(--space-2)", overflowX: "auto", paddingBottom: "var(--space-1)" }}>
-            {visibleAccounts.map((account) => (
-              <button
-                key={account.index}
-                onClick={() => setActiveAccountIndex(account.index)}
-                style={{
-                  flexShrink: 0,
-                  padding: "var(--space-2) var(--space-3)",
-                  borderRadius: "var(--radius-pill)",
-                  border: "1px solid",
-                  borderColor: account.index === activeIndex ? "var(--color-text-display)" : "var(--color-border-strong)",
-                  background: account.index === activeIndex ? "var(--color-text-display)" : "transparent",
-                  color: account.index === activeIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {account.name}
-              </button>
-            ))}
-          </div>
-        )}
+
 
         {/* Recent transactions */}
         <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} onViewAll={() => navigate("/history")} />
 
         {/* Utility shortcuts */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-6)" }}>
-          <button onClick={() => navigate("/stake")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
-            QEARN →
+        <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-3)" }}>
+          <button onClick={() => navigate("/stake")} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", background: "none", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-pill)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", padding: "var(--space-2) var(--space-4)" }}>
+            <Bolt size={14} weight="Linear" />
+            Qearn
           </button>
-          <button onClick={() => navigate("/send-many")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
-            SEND MANY →
+          <button onClick={() => navigate("/send-many")} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", background: "none", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-pill)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", padding: "var(--space-2) var(--space-4)" }}>
+            <MultipleForwardRight size={14} weight="Linear" />
+            Send many
           </button>
         </div>
 
@@ -307,12 +375,14 @@ export default function DashboardScreen() {
       <Modal open={showNetworkOverlay} onClose={() => setShowNetworkOverlay(false)}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
               Network
             </span>
-            <Tag variant={health === "healthy" ? "success" : health === "degraded" ? "warning" : "error"}>
-              {health.toUpperCase()}
-            </Tag>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+                {health}
+              </span>
+            </div>
           </div>
           <NetworkRow label="RPC" value={settings.network.liveApiUrl} />
           <NetworkRow label="Tick" value={tickInfo?.tick ? `#${padTick(tickInfo.tick)}` : "—"} />
@@ -324,8 +394,8 @@ export default function DashboardScreen() {
             {(["healthy", "degraded", "offline"] as const).map((s) => (
               <div key={s} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: HEALTH_COLOR[s], flexShrink: 0 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                  {s.toUpperCase()}
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", textTransform: "capitalize" }}>
+                  {s}
                 </span>
               </div>
             ))}
@@ -375,8 +445,8 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   if (isLoading && !hasAny) {
     return (
       <div style={{ textAlign: "center", padding: "var(--space-8) 0" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [LOADING...]
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+          Loading...
         </span>
       </div>
     );
@@ -385,11 +455,11 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
   if (!hasAny) {
     return (
       <div style={{ textAlign: "center", padding: "var(--space-8) 0", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [NO TRANSACTIONS YET]
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
+          No transactions yet
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", opacity: 0.6 }}>
-          SEND OR RECEIVE QU TO GET STARTED
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
+          Send or receive QU to get started
         </span>
       </div>
     );
@@ -405,7 +475,9 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
             {i > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-                <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: expired ? "var(--color-status-error)" : "var(--color-status-warning)" }}>
+                  {expired ? "Failed" : "Pending"}
+                </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
                   {truncateId(isIn ? p.source : p.destination)}
                 </span>
@@ -421,8 +493,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
       {recent.map((tx, i) => {
         const isIn = tx.destination === activeIdentity;
         const flew = tx.moneyFlew ?? true;
-        const statusVariant = flew ? (isIn ? "success" : "neutral") : "error";
-        const statusLabel = flew ? (isIn ? "RECEIVED" : "SENT") : "FAILED";
         const amountColor = flew
           ? isIn ? "var(--color-status-success)" : "var(--color-text-primary)"
           : "var(--color-text-disabled)";
@@ -432,7 +502,9 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
             {offset > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-                <Tag variant={statusVariant}>{statusLabel}</Tag>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-secondary)") : "var(--color-status-error)" }}>
+                  {flew ? (isIn ? "Received" : "Sent") : "Failed"}
+                </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
                   {truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"))}
                 </span>
@@ -449,16 +521,16 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
         {expiredPending.length > 0 ? (
           <button
             onClick={() => expiredPending.forEach((p) => removePendingTx(p.hash))}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-2) 0" }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0" }}
           >
-            CLEAR EXPIRED
+            Clear expired
           </button>
         ) : <span />}
         <button
           onClick={onViewAll}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-2) 0" }}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0" }}
         >
-          VIEW ALL →
+          View all →
         </button>
       </div>
     </div>
@@ -468,7 +540,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, onViewAll }: Recent
 function NetworkRow({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
         {label}
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: warn ? "var(--color-status-warning)" : "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
