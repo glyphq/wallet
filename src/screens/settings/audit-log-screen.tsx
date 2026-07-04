@@ -1,5 +1,6 @@
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { presets } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore } from "@/store/persisted";
@@ -10,7 +11,7 @@ export default function AuditLogScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+      <motion.div {...presets.fadeIn}>
         <SettingsPageHeader title="Audit log" backTo="/settings/security" />
         {auditEvents.length > 0 && (
           <button

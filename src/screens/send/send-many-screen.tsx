@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion, gesture } from "@/lib/animations";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { AltArrowLeft, UserId, AddCircle, TrashBinMinimalistic, Clipboard, Document, ClockCircle, Bolt, Wallet, ArrowRightUp, ShieldCheck, ShieldWarning, CheckCircle } from "@solar-icons/react";
@@ -50,12 +51,6 @@ const labelStyle: React.CSSProperties = {
   color: "var(--color-text-secondary)",
 };
 
-const stepMotion = {
-  initial: { y: 4 },
-  animate: { y: 0 },
-  exit: { y: -4 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
   icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
@@ -277,12 +272,12 @@ export default function SendManyScreen() {
 
         {/* Import links */}
         <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)" }}>
-          <button onClick={() => setImportOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          <motion.button {...gesture.pressSubtle} onClick={() => setImportOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
             <Clipboard size={12} /> Paste list
-          </button>
-          <button onClick={openImportFile} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          </motion.button>
+          <motion.button {...gesture.pressSubtle} onClick={openImportFile} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
             <Document size={12} /> Import CSV
-          </button>
+          </motion.button>
         </div>
 
         {/* Recipient rows */}
@@ -391,7 +386,7 @@ export default function SendManyScreen() {
 
         {/* Add recipient */}
         {recipients.length < MAX_RECIPIENTS && (
-          <button onClick={addRecipient} style={{
+          <motion.button {...gesture.pressSubtle} onClick={addRecipient} style={{
             background: "none", border: "1px dashed var(--color-border-strong)",
             borderRadius: "var(--radius-card)", padding: "var(--space-3)",
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
@@ -399,7 +394,7 @@ export default function SendManyScreen() {
             color: "var(--color-text-disabled)", width: "100%",
           }}>
             <AddCircle size={14} /> Add recipient ({recipients.length}/{MAX_RECIPIENTS})
-          </button>
+          </motion.button>
         )}
 
         {/* Summary card */}
@@ -603,10 +598,10 @@ export default function SendManyScreen() {
               Sign and send <ArrowRightUp size={16} weight="Bold" />
             </span>
           </Button>
-          <button type="button" onClick={() => setStep("input")}
+          <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Edit
-          </button>
+          </motion.button>
         </div>
         </motion.div>
       </AppShell>
@@ -675,10 +670,10 @@ export default function SendManyScreen() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
-          <button type="button" onClick={() => navigate("/history")}
+          <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/history")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
-          </button>
+          </motion.button>
         </div>
         </motion.div>
       </AppShell>
@@ -701,10 +696,10 @@ export default function SendManyScreen() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button onClick={() => setStep("review")}>Try again</Button>
-        <button type="button" onClick={() => navigate("/send")}
+        <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/send")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
-        </button>
+        </motion.button>
       </div>
       </motion.div>
     </AppShell>

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 import {
   AltArrowLeft,
   AltArrowDown,
@@ -50,12 +51,6 @@ interface Position {
 const idToPk = (id: string) => identityToPublicKey(id as Identity);
 const SC_OPTS = { identityToPublicKey: idToPk };
 
-const stepMotion = {
-  initial: { y: 4 },
-  animate: { y: 0 },
-  exit: { y: -4 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 const accentPill: React.CSSProperties = {
   background: "var(--color-accent)",

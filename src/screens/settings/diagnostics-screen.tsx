@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -124,7 +125,7 @@ export default function DiagnosticsScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div initial={{ y: 4 }} animate={{ y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <SettingsPageHeader title="Diagnostics" />
         <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
           <button

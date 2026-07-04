@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion, gesture } from "@/lib/animations";
 import {
   AltArrowLeft,
   AltArrowRight,
@@ -67,9 +68,7 @@ export default function SettingsScreen() {
   return (
     <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
       <motion.div
-        initial={{ y: 4 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        {...stepMotion}
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minHeight: 0 }}
       >
         {/* Settings rows with section headers */}
@@ -88,7 +87,8 @@ export default function SettingsScreen() {
                     <div style={{ flex: 1, height: 1, background: "var(--color-border-subtle)" }} />
                   </div>
                 )}
-                <button
+                <motion.button
+                  {...gesture.pressSubtle}
                   onClick={() => navigate(row.route)}
                   className="stagger-item"
                   style={{
@@ -114,7 +114,7 @@ export default function SettingsScreen() {
                     </div>
                   </div>
                   <AltArrowRight size={14} color="var(--color-text-disabled)" weight="Linear" style={{ flexShrink: 0 }} />
-                </button>
+                </motion.button>
               </div>
             );
           });

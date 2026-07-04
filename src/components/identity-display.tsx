@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { motion } from "motion/react";
+import { transition } from "@/lib/animations";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
 import { clearClipboard, copyToClipboard } from "@/lib/clipboard";
@@ -62,7 +63,7 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
         <motion.button
           animate={{ opacity: flash ? 0.6 : 1 }}
           className={flash ? "flash-success" : ""}
-          transition={{ duration: 0.1, ease: [0, 0, 0.2, 1] }}
+          transition={transition.quick}
           onClick={toggle}
           aria-label={expanded ? `Address: ${identity} — click to collapse` : `Copy address ${truncateId(identity, 10, 10)}`}
           style={{

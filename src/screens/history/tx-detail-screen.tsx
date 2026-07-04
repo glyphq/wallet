@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { presets } from "@/lib/animations";
 import { AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -136,7 +137,7 @@ export default function TxDetailScreen() {
 
     return (
       <AppShell statusBar={statusBar} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div initial={{ y: 4 }} animate={{ y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <motion.div {...presets.fadeInUp} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {/* Amount + Status */}
           <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor }}>
