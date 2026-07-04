@@ -5,7 +5,6 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
-import { Modal } from "@/components/modal";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
@@ -557,19 +556,16 @@ export default function VaultDetailScreen() {
         </div>
       </Sheet>
 
-      {/* Rename modal */}
-      <Modal open={!!renamingAccount} onClose={() => setRenamingAccount(null)}>
+      {/* Rename sheet */}
+      <Sheet open={!!renamingAccount} onClose={() => setRenamingAccount(null)} title="Rename account">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Rename account</div>
           <Input label="Name" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doRename()} autoFocus style={{ fontFamily: "var(--font-sans)" }} />
           <Button onClick={doRename} disabled={!renameValue.trim()}>Save</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRenamingAccount(null)}>Cancel</Button>
         </div>
-      </Modal>
+      </Sheet>
 
-      <Modal open={!!editingMeta} onClose={() => setEditingMeta(null)}>
+      <Sheet open={!!editingMeta} onClose={() => setEditingMeta(null)} title="Notes and tags">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Notes and tags</div>
           <Input
             label="Tags"
             value={metaTags}
@@ -577,7 +573,7 @@ export default function VaultDetailScreen() {
             placeholder="staking, cold, treasury"
           />
           <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Note
             </span>
             <textarea
@@ -599,45 +595,33 @@ export default function VaultDetailScreen() {
             />
           </label>
           <Button onClick={saveAccountMeta}>Save</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setEditingMeta(null)}>Cancel</Button>
         </div>
-      </Modal>
+      </Sheet>
 
-      {/* Hide confirmation modal */}
-      <Modal open={!!hidingAccount} onClose={() => setHidingAccount(null)}>
+      {/* Hide confirmation sheet */}
+      <Sheet open={!!hidingAccount} onClose={() => setHidingAccount(null)} title={hidingAccount ? `Hide ${hidingAccount.name}?` : "Hide account"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Hide {hidingAccount?.name}?
-          </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
             The account will be removed from the switcher. It can be restored from this screen.
           </div>
           <Button onClick={confirmHide}>Hide account</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setHidingAccount(null)}>Cancel</Button>
         </div>
-      </Modal>
+      </Sheet>
 
-      {/* Remove modal */}
-      <Modal open={!!removingAccount} onClose={() => setRemovingAccount(null)}>
+      {/* Remove sheet */}
+      <Sheet open={!!removingAccount} onClose={() => setRemovingAccount(null)} title={removingAccount ? `Remove ${removingAccount.name}?` : "Remove account"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>Remove {removingAccount?.name}?</div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>This cannot be undone.</div>
-          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>This cannot be undone.</div>
           {!watchOnly && (
             <Input type="password" label="Vault password" value={removePassword} onChange={(e) => { setRemovePassword(e.target.value); setRemoveError(""); }} onKeyDown={(e) => e.key === "Enter" && doRemove()} error={removeError} placeholder="••••••••••" autoComplete="current-password" autoFocus />
           )}
           <Button variant="danger" shape="sharp" onClick={doRemove} loading={removeLoading} disabled={!watchOnly && !removePassword}>Remove account</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRemovingAccount(null)}>Cancel</Button>
         </div>
-      </Modal>
+      </Sheet>
 
-      {/* Reveal seed modal */}
-      <Modal open={!!revealingAccount} onClose={() => setRevealingAccount(null)}>
+      {/* Reveal seed sheet */}
+      <Sheet open={!!revealingAccount} onClose={() => setRevealingAccount(null)} title={revealingAccount ? `Reveal seed for ${revealingAccount.name}` : "Reveal seed"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Reveal seed for {revealingAccount?.name}
-          </div>
           {!revealedSeed ? (
             <>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
@@ -689,26 +673,20 @@ export default function VaultDetailScreen() {
                 {revealedSeed}
               </div>
               <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
-                {seedCopied ? "[COPIED]" : "Copy"}
+                {seedCopied ? "Copied" : "Copy"}
               </Button>
             </>
           )}
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setRevealingAccount(null)}>
-            Close
-          </Button>
         </div>
-      </Modal>
+      </Sheet>
 
-      {/* Password rotation modal */}
-      <Modal open={showRotate} onClose={() => setShowRotate(false)}>
+      {/* Password rotation sheet */}
+      <Sheet open={showRotate} onClose={() => setShowRotate(false)} title="Change vault password">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Change vault password
-          </div>
           {rotateDone ? (
             <>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-                [PASSWORD CHANGED SUCCESSFULLY]
+                Password changed
               </div>
               <Button onClick={() => setShowRotate(false)}>Done</Button>
             </>
@@ -716,15 +694,14 @@ export default function VaultDetailScreen() {
             <>
               <Input type="password" label="Current password" value={rotateOldPassword} onChange={(e) => { setRotateOldPassword(e.target.value); setRotateError(""); }} error="" placeholder="••••••••••" autoComplete="current-password" autoFocus />
               <Input type="password" label="New password" value={rotateNewPassword} onChange={(e) => { setRotateNewPassword(e.target.value); setRotateError(""); }} placeholder="••••••••••" autoComplete="new-password" />
-              <Input type="password" label="Confirm new password" value={rotateConfirm} onChange={(e) => { setRotateConfirm(e.target.value); setRotateError(""); }} onKeyDown={(e) => e.key === "Enter" && !rotateLoading && doRotatePassword()} error={rotateError} placeholder="••••••••••" autoComplete="new-password" />
+              <Input type="password" label="Confirm new password" value={rotateConfirm} onChange={(e) => { setRotateConfirm(e.target.value); setRotateError(""); }} onKeyDown={(e) => e.key === "Enter" && !rotateLoading && doRotatePassword()} error={rotateError} placeholder="•••••••••" autoComplete="new-password" />
               <Button onClick={doRotatePassword} loading={rotateLoading} disabled={!rotateOldPassword || !rotateNewPassword || !rotateConfirm}>
                 Change password
               </Button>
-              <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setShowRotate(false)}>Cancel</Button>
             </>
           )}
         </div>
-      </Modal>
+      </Sheet>
 
       <Sheet
         open={!!selectedAccount}
@@ -882,12 +859,12 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, onManag
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: accentColor, letterSpacing: "0.05em" }}>
-              [ACTIVE]
+              Active
             </span>
           )}
           {account.hidden && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              [HIDDEN]
+              Hidden
             </span>
           )}
           {tags.map((tag) => (

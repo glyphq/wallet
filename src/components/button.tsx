@@ -69,7 +69,6 @@ export function Button({
         justifyContent: "center",
         fontFamily: "var(--font-sans)",
         fontWeight: 500,
-        textTransform: "uppercase",
         letterSpacing: "0.08em",
         fontSize: "0.8125rem",
         border: "1px solid",

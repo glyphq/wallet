@@ -18,7 +18,7 @@ export function ScreenHeader({ title, onBack, backAriaLabel, action }: ScreenHea
       >
         ← back
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 400, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", pointerEvents: "none" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 400, color: "var(--color-text-primary)", letterSpacing: "0.08em", whiteSpace: "nowrap", pointerEvents: "none" }}>
         {title}
       </span>
       <div style={{ marginLeft: "auto", flexShrink: 0 }}>

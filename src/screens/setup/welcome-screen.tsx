@@ -2,7 +2,7 @@ import { useState, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
-import { Modal } from "@/components/modal";
+import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { DangerTriangle } from "@solar-icons/react";
@@ -320,18 +320,15 @@ export default function WelcomeScreen() {
       </motion.div>
 
       {/* ---- Import vault file modal ---- */}
-      <Modal open={!!importData} onClose={() => setImportData(null)}>
+      <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? ""}`}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
-              Import {importData?.name}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
               {importData && importData.accounts.length > MAX_VAULT_ACCOUNTS
                 ? `${selectedIndices.size} / ${MAX_VAULT_ACCOUNTS} selected`
                 : `${importData?.accounts.length ?? 0} ${(importData?.accounts.length ?? 0) === 1 ? "account" : "accounts"}`}
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: importData?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)", marginTop: "var(--space-1)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: importData?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)", marginTop: "var(--space-1)" }}>
               {importData?.legacy
                 ? "Legacy format v1 — import with care"
                 : importData?.signatureVerified
@@ -391,7 +388,7 @@ export default function WelcomeScreen() {
               style={inputField}
             />
             {importError && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
                 {importError}
               </span>
             )}
@@ -406,22 +403,14 @@ export default function WelcomeScreen() {
           >
             {importLoading ? <Spinner /> : "Import vault"}
           </button>
-          <button type="button" onClick={() => setImportData(null)} style={{ ...ghostBtn, margin: "0 auto" }}>
-            Cancel
-          </button>
         </div>
-      </Modal>
+      </Sheet>
 
       {/* ---- Watch-only modal ---- */}
-      <Modal open={watchOpen} onClose={() => setWatchOpen(false)}>
+      <Sheet open={watchOpen} onClose={() => setWatchOpen(false)} title="Create watch-only vault">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-1)" }}>
-              Create watch-only vault
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-              One identity per line. Optional label after a comma.
-            </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+            One identity per line. Optional label after a comma.
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -458,7 +447,7 @@ export default function WelcomeScreen() {
           </div>
 
           {watchError && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
               {watchError}
             </span>
           )}
@@ -466,11 +455,8 @@ export default function WelcomeScreen() {
           <button type="button" onClick={createWatchOnlyVault} style={accentBtn}>
             Create watch-only vault
           </button>
-          <button type="button" onClick={() => setWatchOpen(false)} style={{ ...ghostBtn, margin: "0 auto" }}>
-            Cancel
-          </button>
         </div>
-      </Modal>
+      </Sheet>
     </FullPage>
   );
 }

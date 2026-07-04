@@ -528,7 +528,7 @@ export default function VaultsScreen() {
             <span style={{
               fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
               fontWeight: 500, color: "var(--color-text-secondary)",
-              textTransform: "uppercase", letterSpacing: "0.05em",
+              letterSpacing: "0.05em",
             }}>
               Identities
             </span>

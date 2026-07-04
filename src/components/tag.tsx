@@ -19,15 +19,17 @@ export function Tag({ children, variant = "neutral", style }: TagProps) {
   return (
     <span
       style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: "var(--text-mono-sm)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "10px",
         color: VARIANT_COLOR[variant],
-        textTransform: "uppercase",
-        letterSpacing: "0.05em",
+        padding: "1px 6px",
+        border: "1px solid var(--color-border-strong)",
+        borderRadius: "var(--radius-pill)",
+        lineHeight: "16px",
         ...style,
       }}
     >
-      [{children}]
+      {children}
     </span>
   );
 }

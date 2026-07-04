@@ -23,15 +23,16 @@ const labelStyle: React.CSSProperties = {
   color: "var(--color-text-secondary)",
 };
 
-function DetailRow({ icon, label, value, valueColor }: {
-  icon: React.ReactNode; label: string; value: string; valueColor?: string;
+function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
+  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
       <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
       <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
       <span style={{
-        fontFamily: "var(--font-mono)", fontSize: "0.8125rem",
+        fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
+        fontSize: "0.8125rem", fontWeight: useMono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
       }}>
@@ -237,7 +238,7 @@ export default function BurnScreen() {
           <div style={divider} />
           <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
           <div style={divider} />
-          <DetailRow icon={<Bolt size={16} />} label="Fee" value="None" />
+          <DetailRow icon={<Bolt size={16} />} label="Fee" value="None" mono={false} />
         </div>
 
         {/* Password confirmation (inline) */}
@@ -337,7 +338,7 @@ export default function BurnScreen() {
           <div style={divider} />
           <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
           <div style={divider} />
-          <DetailRow icon={<Wallet size={16} />} label="Status" value="Pending" valueColor="var(--color-text-disabled)" />
+          <DetailRow icon={<Wallet size={16} />} label="Status" value="Pending" valueColor="var(--color-text-disabled)" mono={false} />
         </div>
 
         <div style={{ flex: 1 }} />

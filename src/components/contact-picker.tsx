@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Modal } from "@/components/modal";
+import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/button";
 import { Identicon } from "@/components/identicon";
 import type { Contact } from "@/store/persisted";
@@ -52,7 +52,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
   const hasResults = filteredAccounts.length > 0 || filteredContacts.length > 0;
 
   return (
-    <Modal open={open} onClose={handleClose}>
+    <Sheet open={open} onClose={handleClose}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <input
           autoFocus
@@ -71,7 +71,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
                 key: `account:${account.identity}`,
                 name: account.name,
                 identity: account.identity,
-                badge: "ACCOUNT",
+                badge: "Account",
               }))}
               onSelect={handleSelect}
             />
@@ -95,7 +95,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
         </div>
         <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={handleClose}>Cancel</Button>
       </div>
-    </Modal>
+    </Sheet>
   );
 }
 
@@ -117,7 +117,7 @@ function PickerSection({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.06em", textTransform: "uppercase", padding: "0 var(--space-1)" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.06em", padding: "0 var(--space-1)" }}>
         {title}
       </div>
       {entries.map((entry) => (

@@ -415,14 +415,14 @@ export default function RequestScreen() {
   // ── Success screen ──
   if (success) {
     const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Identity";
-    const tagLabel = success.kind === "tx" ? "SENT" : success.kind === "message" ? "SIGNED" : success.kind === "verify" ? (success.detail === "VALID" ? "VALID" : "INVALID") : "CONNECTED";
+    const tagLabel = success.kind === "tx" ? "Sent" : success.kind === "message" ? "Signed" : success.kind === "verify" ? (success.detail === "VALID" ? "Valid" : "Invalid") : "Connected";
 
     return (
       <SheetLayout
         statusBar={
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Request Complete
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Request complete
             </span>
           </div>
         }
@@ -432,7 +432,7 @@ export default function RequestScreen() {
         </div>
 
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "var(--space-2)" }}>
             {detailLabel}
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
@@ -452,17 +452,17 @@ export default function RequestScreen() {
               Copy result
             </Button>
           ) : success.callbackStatus === "pending" ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              [SENDING CALLBACK...]
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+              Sending callback...
             </div>
           ) : success.callbackStatus === "ok" ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-              [CALLBACK DELIVERED]
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-success)" }}>
+              Callback delivered
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-                [CALLBACK FAILED]
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>
+                Callback failed
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
                 <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={retryCallbackFromSuccess}>
@@ -488,9 +488,9 @@ export default function RequestScreen() {
     return (
       <SheetLayout statusBar={<ScreenHeader title="Request" onBack={() => navigate("/dashboard")} />}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <Tag variant="error">INVALID REQUEST</Tag>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-            [{parseError}]
+          <Tag variant="error">Invalid request</Tag>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>
+            {parseError}
           </div>
           <Button variant="secondary" shape="sharp" onClick={() => { shiftPendingRequest(); navigate("/dashboard"); }}>Back to app</Button>
         </div>
@@ -507,8 +507,8 @@ export default function RequestScreen() {
     <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>
       <RequestHeader dapp={request.dapp} />
       {pendingRequestCount > 1 && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-          [{pendingRequestCount - 1} MORE REQUEST{pendingRequestCount > 2 ? "S" : ""} QUEUED]
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-warning)" }}>
+          {pendingRequestCount - 1} more request{pendingRequestCount > 2 ? "s" : ""} queued
         </div>
       )}
       <Divider />
@@ -562,7 +562,7 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
           display: "flex",
           flexDirection: "column",
           background: "var(--color-bg-base)",
-          borderRadius: "12px 12px 0 0",
+          borderRadius: "var(--radius-card) var(--radius-card) 0 0",
           borderTop: "1px solid var(--color-border-strong)",
           overflow: "hidden",
         }}
@@ -600,8 +600,8 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
               borderBottom: "1px solid var(--color-border-subtle)",
             }}
           >
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-              [LOCKING IN {countdown}s]
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-warning)" }}>
+              Locking in {countdown}s
             </span>
           </div>
         )}
@@ -620,8 +620,8 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
               borderBottom: "1px solid var(--color-border-subtle)",
             }}
           >
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: expirySecsLeft <= 10 ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              [REQUEST EXPIRES IN {expirySecsLeft}s]
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: expirySecsLeft <= 10 ? "var(--color-status-error)" : "var(--color-text-disabled)" }}>
+              Request expires in {expirySecsLeft}s
             </span>
           </div>
         )}

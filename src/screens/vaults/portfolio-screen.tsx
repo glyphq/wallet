@@ -25,7 +25,7 @@ export default function PortfolioScreen() {
     return (
       <AppShell statusBar={<ScreenHeader title="Portfolio" onBack={() => navigate("/vaults")} />}>
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
-          [VAULT NOT FOUND]
+          [vault not found]
         </div>
       </AppShell>
     );
@@ -53,12 +53,12 @@ export default function PortfolioScreen() {
     >
       {/* ── Total balance ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
           Total balance
         </span>
         <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", letterSpacing: "-0.02em", color: "var(--color-text-display)" }}>
-            {!allLoaded ? "[LOADING...]" : hideBalances ? "••••••" : formatQu(totalBalance)}
+            {!allLoaded ? "Loading..." : hideBalances ? "••••••" : formatQu(totalBalance)}
           </span>
           {allLoaded && !hideBalances && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-disabled)" }}>QU</span>
@@ -70,7 +70,7 @@ export default function PortfolioScreen() {
           </span>
         )}
         {vault.kind === "watch_only" && (
-          <Tag variant="neutral" style={{ alignSelf: "flex-start", marginTop: "var(--space-1)" }}>WATCH ONLY</Tag>
+          <Tag variant="neutral" style={{ alignSelf: "flex-start", marginTop: "var(--space-1)" }}>Watch only</Tag>
         )}
       </div>
 
@@ -83,7 +83,7 @@ export default function PortfolioScreen() {
 
       {/* ── Account list ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
           Accounts ({visibleAccounts.length})
         </span>
 
@@ -157,7 +157,7 @@ function DistributionBar({ accounts, total }: {
           return (
             <div key={account.index} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
                 {account.name} {pct}%
               </span>
             </div>

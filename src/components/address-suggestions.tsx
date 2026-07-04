@@ -48,7 +48,7 @@ export function AddressSuggestions({
               {suggestion.secondary}
             </span>
           </div>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.625rem", fontWeight: 500, color: "var(--color-text-disabled)", flexShrink: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.625rem", fontWeight: 500, color: "var(--color-text-disabled)", flexShrink: 0, letterSpacing: "0.06em" }}>
             {KIND_LABEL[suggestion.kind]}
           </span>
         </button>

@@ -519,7 +519,7 @@ export default function DashboardScreen() {
                   background: "var(--color-text-display)", color: "var(--color-bg-base)",
                   border: "none", borderRadius: "var(--radius-pill)",
                   fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
-                  textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer",
+                  letterSpacing: "0.08em", cursor: "pointer",
                 }}
               >
                 <ArrowRightUp size={16} weight="Bold" />
@@ -534,7 +534,7 @@ export default function DashboardScreen() {
                   background: "transparent", color: "var(--color-text-primary)",
                   border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-pill)",
                   fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
-                  textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer",
+                  letterSpacing: "0.08em", cursor: "pointer",
                 }}
               >
                 <QrCode size={16} weight="Bold" />
@@ -547,7 +547,7 @@ export default function DashboardScreen() {
         {/* Recent activity card */}
         <div style={{ background: "var(--color-bg-surface)", borderRadius: 24, padding: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Activity
             </span>
             <button

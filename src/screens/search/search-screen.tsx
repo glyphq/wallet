@@ -185,13 +185,13 @@ export default function SearchScreen() {
       />
 
       {!normalizedQuery && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [START TYPING TO SEARCH]
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+          Start typing to search
         </div>
       )}
 
       {normalizedQuery && results.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
           No results
         </div>
       )}
@@ -199,8 +199,8 @@ export default function SearchScreen() {
       {(Object.entries(grouped) as Array<[SearchSection, SearchResult[]]>).map(([section, sectionResults]) => (
         sectionResults.length > 0 ? (
           <div key={section} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              {section}
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+              {section === "accounts" ? "Accounts" : section === "contacts" ? "Contacts" : section === "transactions" ? "Transactions" : "Contracts"}
             </div>
             {sectionResults.map((result, index) => (
               <div key={result.key}>

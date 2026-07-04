@@ -69,7 +69,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
       </div>
 
       <div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
           Message
         </div>
         <div style={{
@@ -96,7 +96,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
             Sign as
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
@@ -127,7 +127,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
         </div>
       ) : (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
             From
           </span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>

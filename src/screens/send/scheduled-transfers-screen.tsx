@@ -4,7 +4,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Modal } from "@/components/modal";
+import { Sheet } from "@/components/sheet";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type ScheduledTransfer } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -79,9 +79,9 @@ export default function ScheduledTransfersScreen() {
             <button
               type="button"
               onClick={openAdd}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", padding: 0 }}
             >
-              + NEW
+              + New
             </button>
           }
         />
@@ -89,8 +89,8 @@ export default function ScheduledTransfersScreen() {
       contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
     >
       {scheduledTransfers.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [NO SCHEDULED TRANSFERS]
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+          No scheduled transfers
         </div>
       )}
 
@@ -109,17 +109,14 @@ export default function ScheduledTransfersScreen() {
         </div>
       ))}
 
-      {/* New transfer modal */}
-      <Modal open={adding} onClose={() => setAdding(false)}>
+      {/* New transfer sheet */}
+      <Sheet open={adding} onClose={() => setAdding(false)} title="New scheduled transfer">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            New scheduled transfer
-          </div>
           <Input label="Label" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="e.g. Weekly allowance" autoFocus />
 
           {wallets.length > 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>FROM</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>From</div>
               {wallets.map((w) => (
                 <button
                   key={w.identity}
@@ -138,7 +135,7 @@ export default function ScheduledTransfersScreen() {
           <Input label="Every N days" value={formInterval} onChange={(e) => setFormInterval(e.target.value)} placeholder="7" inputMode="numeric" />
 
           {formError && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
               {formError}
             </div>
           )}
@@ -146,11 +143,8 @@ export default function ScheduledTransfersScreen() {
           <Button onClick={doAdd} disabled={!formLabel.trim() || !formDest.trim() || !formAmount.trim()}>
             Schedule
           </Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setAdding(false)}>
-            Cancel
-          </Button>
         </div>
-      </Modal>
+      </Sheet>
     </AppShell>
   );
 }
@@ -177,34 +171,34 @@ function TransferRow({ transfer, onToggle, onSendNow, onRemove, confirmingRemove
             {formatQu(BigInt(transfer.amount))} QU → {truncateId(transfer.destination)}
           </span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            Every {transfer.intervalDays}d · {transfer.enabled ? formatNextRun(transfer.nextRunAt) : "PAUSED"}
+            Every {transfer.intervalDays}d · {transfer.enabled ? formatNextRun(transfer.nextRunAt) : "Paused"}
           </span>
         </div>
         <button
           type="button"
           onClick={onToggle}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: transfer.enabled ? "var(--color-status-success)" : "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, flexShrink: 0 }}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: transfer.enabled ? "var(--color-status-success)" : "var(--color-text-disabled)", padding: 0, flexShrink: 0 }}
         >
-          {transfer.enabled ? "ON" : "OFF"}
+          {transfer.enabled ? "On" : "Off"}
         </button>
       </div>
 
       {confirmingRemove ? (
         <div style={{ display: "flex", gap: "var(--space-3)" }}>
-          <button type="button" onClick={onConfirmRemove} style={{ background: "none", border: "1px solid var(--color-status-error)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)" }}>
-            REMOVE
+          <button type="button" onClick={onConfirmRemove} style={{ background: "none", border: "1px solid var(--color-status-error)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)", padding: "var(--space-1) var(--space-3)" }}>
+            Remove
           </button>
-          <button type="button" onClick={onCancelRemove} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)" }}>
-            CANCEL
+          <button type="button" onClick={onCancelRemove} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", padding: "var(--space-1) var(--space-3)" }}>
+            Cancel
           </button>
         </div>
       ) : (
         <div style={{ display: "flex", gap: "var(--space-3)" }}>
-          <button type="button" onClick={onSendNow} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)" }}>
-            SEND NOW
+          <button type="button" onClick={onSendNow} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", padding: "var(--space-1) var(--space-3)" }}>
+            Send now
           </button>
-          <button type="button" onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em", padding: 0 }}>
-            REMOVE
+          <button type="button" onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)", padding: 0 }}>
+            Remove
           </button>
         </div>
       )}

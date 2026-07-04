@@ -96,7 +96,6 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
               fontSize: "var(--text-mono-sm)",
               color: "var(--color-text-disabled)",
               letterSpacing: "0.05em",
-              textTransform: "uppercase",
             }}
           >
             Clipboard clears in {countdown}s
@@ -115,7 +114,7 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
               padding: 0,
             }}
           >
-            CLEAR NOW
+            Clear now
           </button>
         </div>
       )}

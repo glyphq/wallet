@@ -52,6 +52,13 @@ Keys stay encrypted on disk. Signing material lives only in Rust process memory 
 - Multiple vaults with color coding, watch-only support
 - Themes, font pairs, accent colors
 
+**Design**
+- Comprehensive design system (`DESIGN.md`) — colors, typography, spacing, components
+- Sheet-based dialogs throughout (bottom-slide pattern)
+- Geist font family (sans, display, mono)
+- Phantom-inspired dark UI with floating navigation
+- Bottom nav auto-hides when sheets are open
+
 ## Security Model
 
 Vault data is encrypted before hitting disk. Unlocked keys never leave the Rust process.
@@ -124,6 +131,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 | Frontend | React 19 + TypeScript |
 | State | Zustand v5 + TanStack Query v5 |
 | Animations | Motion |
+| Design system | See [`DESIGN.md`](./DESIGN.md) |
 | Native | Rust |
 | Crypto | `aes-gcm` (Rust) |
 | Qubic SDK | `@qubic-lib/{crypto,tx,rpc,contracts}` |

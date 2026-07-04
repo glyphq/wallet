@@ -27,14 +27,14 @@ export default function AnalyticsScreen() {
       contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
     >
       {isLoading && !analytics && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
-          [LOADING...]
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+          Loading...
         </div>
       )}
 
       {!isLoading && !analytics && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
-          [NO DATA YET]
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+          No data yet
         </div>
       )}
 
@@ -42,7 +42,7 @@ export default function AnalyticsScreen() {
         <>
           {/* ── Hero: Net flow ─────────────────────────────────────────── */}
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
               Net flow
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
@@ -57,12 +57,12 @@ export default function AnalyticsScreen() {
               }}>
                 {analytics.netFlow >= 0n ? "+" : "−"}{compactQu(analytics.netFlow >= 0n ? analytics.netFlow : -analytics.netFlow)}
               </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-disabled)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-disabled)" }}>
                 QU
               </span>
             </div>
             <Tag variant={analytics.netFlow >= 0n ? "success" : "warning"}>
-              {analytics.netFlow >= 0n ? "NET IN" : "NET OUT"}
+              {analytics.netFlow >= 0n ? "Net in" : "Net out"}
             </Tag>
           </div>
 
@@ -166,12 +166,12 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
       {/* Labels */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.08em", textTransform: "uppercase" }}>IN</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-accent)", letterSpacing: "0.03em" }}>{compactQu(incoming)} QU</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.04em" }}>In</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-lg)", color: "var(--color-accent)" }}>{compactQu(incoming)} QU</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "right" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.08em", textTransform: "uppercase" }}>OUT</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-primary)", letterSpacing: "0.03em" }}>{compactQu(outgoing)} QU</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>Out</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-primary)" }}>{compactQu(outgoing)} QU</span>
         </div>
       </div>
     </div>
@@ -181,7 +181,7 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
         {label}
       </span>
       {children}
@@ -193,14 +193,14 @@ function DataRow({ primary, secondary, value }: { primary: string; secondary: st
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {primary}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
           {secondary}
         </span>
       </div>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em", whiteSpace: "nowrap", flexShrink: 0 }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", whiteSpace: "nowrap", flexShrink: 0 }}>
         {value}
       </span>
     </div>
@@ -267,21 +267,21 @@ function MonthlyBars({ summaries }: { summaries: MonthlySummaryStat[] }) {
         return (
           <div key={s.sortKey} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>
                 {s.month}
               </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
                 {s.count} tx
               </span>
             </div>
             {/* Incoming bar */}
             {s.incoming > 0n && (
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                <div style={{ width: 20, fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-accent)", letterSpacing: "0.04em", flexShrink: 0 }}>IN</div>
+                <div style={{ width: 20, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-accent)", flexShrink: 0 }}>In</div>
                 <div style={{ flex: 1, height: 6, background: "var(--color-border-strong)", borderRadius: 0, overflow: "hidden" }}>
                   <div style={{ width: `${inPct}%`, height: "100%", background: "var(--color-accent)" }} />
                 </div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", letterSpacing: "0.03em", width: 64, textAlign: "right", flexShrink: 0 }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", width: 64, textAlign: "right", flexShrink: 0 }}>
                   {compactQu(s.incoming)}
                 </span>
               </div>
@@ -289,11 +289,11 @@ function MonthlyBars({ summaries }: { summaries: MonthlySummaryStat[] }) {
             {/* Outgoing bar */}
             {s.outgoing > 0n && (
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                <div style={{ width: 20, fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", letterSpacing: "0.04em", flexShrink: 0 }}>OUT</div>
+                <div style={{ width: 20, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", flexShrink: 0 }}>Out</div>
                 <div style={{ flex: 1, height: 6, background: "var(--color-border-strong)", borderRadius: 0, overflow: "hidden" }}>
                   <div style={{ width: `${outPct}%`, height: "100%", background: "var(--color-text-secondary)" }} />
                 </div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", letterSpacing: "0.03em", width: 64, textAlign: "right", flexShrink: 0 }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", width: 64, textAlign: "right", flexShrink: 0 }}>
                   {compactQu(s.outgoing)}
                 </span>
               </div>

@@ -9,6 +9,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { AddressSuggestions } from "@/components/address-suggestions";
 import { TxMemoField } from "@/components/tx-memo-field";
+import { Sheet } from "@/components/sheet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -449,85 +450,50 @@ export default function SendManyScreen() {
           </Button>
         </div>
 
-        {/* Import modal */}
-        {importOpen && (
-          <div style={{
-            position: "fixed", inset: 0, zIndex: 100,
-            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "var(--space-4)",
-          }} onClick={() => { setImportOpen(false); setImportError(""); setImportText(""); }}>
-            <div onClick={(e) => e.stopPropagation()} style={{
-              background: "var(--color-bg-elevated)",
-              borderRadius: "var(--radius-card)",
-              padding: "var(--space-6)",
-              width: "100%", maxWidth: 400,
-              display: "flex", flexDirection: "column", gap: "var(--space-4)",
-            }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Paste recipients</div>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
-                  CSV: identity, amount, label. JSON arrays with identity and amount.
-                </div>
-              </div>
-              <textarea
-                value={importText}
-                onChange={(e) => { setImportText(e.target.value); setImportError(""); }}
-                rows={6}
-                placeholder={"identity,amount,label\nABC...,1000,Treasury"}
-                style={{
-                  width: "100%", resize: "vertical",
-                  background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
-                  border: "1px solid var(--color-border-subtle)",
-                  borderRadius: "var(--radius-card)", padding: "var(--space-3)",
-                  fontFamily: "var(--font-mono)", fontSize: "0.75rem",
-                  outline: "none", boxSizing: "border-box",
-                }}
-              />
-              {importError && (
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-status-error)" }}>{importError}</span>
-              )}
-              <Button onClick={importFromText}>Import</Button>
-              <button type="button" onClick={() => { setImportOpen(false); setImportError(""); setImportText(""); }}
-                style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
-                Cancel
-              </button>
+        {/* Import sheet */}
+        <Sheet open={importOpen} onClose={() => { setImportOpen(false); setImportError(""); setImportText(""); }} title="Paste recipients">
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)" }}>
+              CSV: identity, amount, label. JSON arrays with identity and amount.
             </div>
+            <textarea
+              value={importText}
+              onChange={(e) => { setImportText(e.target.value); setImportError(""); }}
+              rows={6}
+              placeholder={"identity,amount,label\nABC...,1000,Treasury"}
+              style={{
+                width: "100%", resize: "vertical",
+                background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)", padding: "var(--space-3)",
+                fontFamily: "var(--font-mono)", fontSize: "0.75rem",
+                outline: "none", boxSizing: "border-box",
+              }}
+            />
+            {importError && (
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-status-error)" }}>{importError}</span>
+            )}
+            <Button onClick={importFromText}>Import</Button>
           </div>
-        )}
+        </Sheet>
 
-        {/* Contact picker */}
-        {pickerIndex !== null && (
-          <div style={{
-            position: "fixed", inset: 0, zIndex: 100,
-            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-            display: "flex", alignItems: "flex-end",
-          }} onClick={() => setPickerIndex(null)}>
-            <div onClick={(e) => e.stopPropagation()} style={{
-              background: "var(--color-bg-elevated)",
-              borderRadius: "var(--radius-card) var(--radius-card) 0 0",
-              padding: "var(--space-6)", width: "100%", maxHeight: "70vh", overflowY: "auto",
-            }}>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)", marginBottom: "var(--space-4)" }}>
-                Pick recipient
-              </div>
-              {contacts.map((c) => (
-                <button key={c.id} onClick={() => { setField(pickerIndex, { identity: c.identity, identityError: "" }); setPickerIndex(null); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-display)" }}>{c.name}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", color: "var(--color-text-disabled)" }}>{truncateId(c.identity)}</span>
-                </button>
-              ))}
-              {vaultAccountTargets.map((a) => (
-                <button key={a.identity} onClick={() => { setField(pickerIndex, { identity: a.identity, identityError: "" }); setPickerIndex(null); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-display)" }}>{a.name}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", color: "var(--color-text-disabled)" }}>{truncateId(a.identity)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Contact picker sheet */}
+        <Sheet open={pickerIndex !== null} onClose={() => setPickerIndex(null)} title="Pick recipient">
+          {contacts.map((c) => (
+            <button key={c.id} onClick={() => { setField(pickerIndex!, { identity: c.identity, identityError: "" }); setPickerIndex(null); }}
+              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>{c.name}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(c.identity)}</span>
+            </button>
+          ))}
+          {vaultAccountTargets.map((a) => (
+            <button key={a.identity} onClick={() => { setField(pickerIndex!, { identity: a.identity, identityError: "" }); setPickerIndex(null); }}
+              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>{a.name}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(a.identity)}</span>
+            </button>
+          ))}
+        </Sheet>
         </motion.div>
       </AppShell>
     );

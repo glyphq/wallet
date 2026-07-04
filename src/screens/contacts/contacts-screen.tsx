@@ -4,7 +4,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Modal } from "@/components/modal";
+import { Sheet } from "@/components/sheet";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
@@ -57,7 +57,7 @@ export default function ContactsScreen() {
   }
 
   function validateIdentity(id: string): boolean {
-    if (!isValidIdentity(id)) { setIdentityError("INVALID IDENTITY"); return false; }
+    if (!isValidIdentity(id)) { setIdentityError("Invalid identity"); return false; }
     setIdentityError("");
     return true;
   }
@@ -106,7 +106,7 @@ export default function ContactsScreen() {
     <ScreenHeader
       title="Contacts"
       onBack={() => navigate("/dashboard")}
-      action={<button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>+ ADD</button>}
+      action={<button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", padding: 0 }}>+ Add</button>}
     />
   );
 
@@ -120,7 +120,7 @@ export default function ContactsScreen() {
       />
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
           {contacts.length === 0 ? "No contacts yet" : "No results"}
         </div>
       )}
@@ -151,7 +151,7 @@ export default function ContactsScreen() {
                 {(contact.tags ?? []).length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: 2 }}>
                     {(contact.tags ?? []).map((tag) => (
-                      <span key={tag} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>#{tag}</span>
+                      <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>#{tag}</span>
                     ))}
                   </div>
                 )}
@@ -170,10 +170,9 @@ export default function ContactsScreen() {
         </div>
       ))}
 
-      {/* Add modal */}
-      <Modal open={adding} onClose={() => setAdding(false)}>
+      {/* Add contact sheet */}
+      <Sheet open={adding} onClose={() => setAdding(false)} title="Add contact">
         <ContactForm
-          title="Add contact"
           name={formName} onName={setFormName}
           identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
           note={formNote} onNote={setFormNote}
@@ -183,12 +182,11 @@ export default function ContactsScreen() {
           onCancel={() => setAdding(false)}
           submitLabel="Add contact"
         />
-      </Modal>
+      </Sheet>
 
-      {/* Edit modal */}
-      <Modal open={!!editing} onClose={() => setEditing(null)}>
+      {/* Edit contact sheet */}
+      <Sheet open={!!editing} onClose={() => setEditing(null)} title="Edit contact">
         <ContactForm
-          title="Edit contact"
           name={formName} onName={setFormName}
           identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
           note={formNote} onNote={setFormNote}
@@ -198,24 +196,20 @@ export default function ContactsScreen() {
           onCancel={() => setEditing(null)}
           submitLabel="Save"
         />
-      </Modal>
+      </Sheet>
 
-      {/* Delete modal */}
-      <Modal open={!!deleting} onClose={() => setDeleting(null)}>
+      {/* Delete contact sheet */}
+      <Sheet open={!!deleting} onClose={() => setDeleting(null)} title={deleting ? `Remove ${deleting.name}?` : "Remove contact?"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Remove {deleting?.name}?
-          </div>
           <Button variant="danger" shape="sharp" onClick={() => { if (deleting) { removeContact(deleting.id); setDeleting(null); } }}>Remove</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setDeleting(null)}>Cancel</Button>
         </div>
-      </Modal>
+      </Sheet>
     </AppShell>
   );
 }
 
 interface ContactFormProps {
-  title: string;
   name: string; onName: (v: string) => void;
   identity: string; onIdentity: (v: string) => void;
   note: string; onNote: (v: string) => void;
@@ -226,10 +220,9 @@ interface ContactFormProps {
   submitLabel: string;
 }
 
-function ContactForm({ title, name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit, onCancel, submitLabel }: ContactFormProps) {
+function ContactForm({ name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit, onCancel, submitLabel }: ContactFormProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{title}</div>
       <Input label="Name" value={name} onChange={(e) => onName(e.target.value)} placeholder="e.g. Alice" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
       <Input label="Identity" value={identity} onChange={(e) => onIdentity(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSubmit()} error={identityError} placeholder="60 uppercase letters" />
       <Input label="Tags (optional)" value={tags} onChange={(e) => onTags(e.target.value)} placeholder="exchange, friend, dao" style={{ fontFamily: "var(--font-sans)" }} />

@@ -137,7 +137,7 @@ export default function TxDetailScreen() {
         <motion.div initial={{ y: 4 }} animate={{ y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {/* Amount + Status */}
           <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.75rem", fontWeight: 500, color: amountColor }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "1.75rem", fontWeight: 500, color: amountColor }}>
               {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
             </div>
             {snapshot && !hideBalances && (
@@ -156,7 +156,7 @@ export default function TxDetailScreen() {
             <div style={DIVIDER} />
             <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" />
             <div style={DIVIDER} />
-            <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={String(detail.targetTick)} />
+            <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={String(detail.targetTick)} mono={false} />
             <div style={DIVIDER} />
             <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} />
           </div>
@@ -179,7 +179,7 @@ export default function TxDetailScreen() {
     statusColor = "var(--color-text-error)";
     amountColor = "var(--color-text-disabled)";
   } else if (isSc) {
-    statusLabel = procedureName ?? "SC Call";
+    statusLabel = procedureName ?? "SC call";
     statusColor = "var(--color-text-secondary)";
     amountColor = "var(--color-text-display)";
   } else if (isIn) {
@@ -201,7 +201,7 @@ export default function TxDetailScreen() {
       <motion.div initial={{ y: 4 }} animate={{ y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         {/* Amount + Status */}
         <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.75rem", fontWeight: 500, color: amountColor }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "1.75rem", fontWeight: 500, color: amountColor }}>
             {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(detail.amount ?? "0")} QU`}
           </div>
           {snapshot && !hideBalances && (
@@ -220,13 +220,13 @@ export default function TxDetailScreen() {
           <div style={DIVIDER} />
           <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" />
           <div style={DIVIDER} />
-          <DetailRow icon={<ShieldCheck size={16} />} label="Tick" value={detail.tickNumber != null ? String(detail.tickNumber) : "—"} />
+          <DetailRow icon={<ShieldCheck size={16} />} label="Tick" value={detail.tickNumber != null ? String(detail.tickNumber) : "—"} mono={false} />
           <div style={DIVIDER} />
           <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} />
           {snapshot && !hideBalances && (
             <>
               <div style={DIVIDER} />
-              <DetailRow icon={<Wallet size={16} />} label="Fiat value" value={`$${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}`} valueColor="var(--color-text-secondary)" />
+              <DetailRow icon={<Wallet size={16} />} label="Fiat value" value={`$${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}`} valueColor="var(--color-text-secondary)" mono={false} />
             </>
           )}
         </div>

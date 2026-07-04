@@ -77,7 +77,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
                 <span style={{
                   fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-                  color: "var(--color-text-secondary)", letterSpacing: "0.08em", textTransform: "uppercase",
+                  color: "var(--color-text-secondary)", letterSpacing: "0.08em",
                 }}>
                   {title}
                 </span>

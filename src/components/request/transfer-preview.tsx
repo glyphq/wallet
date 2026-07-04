@@ -108,7 +108,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
             Sign as
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
@@ -152,7 +152,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
           Preflight
         </div>
         <Row label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
@@ -223,7 +223,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
         {label}
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>

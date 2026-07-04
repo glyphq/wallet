@@ -81,7 +81,7 @@ export default function ReceiveScreen() {
               />
               {hideBalances && !qrRevealed && (
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", borderRadius: "var(--radius-card)" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "#333333", letterSpacing: "0.05em" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "#333333" }}>
                     Tap or hover to reveal
                   </span>
                 </div>

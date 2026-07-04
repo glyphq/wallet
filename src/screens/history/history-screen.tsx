@@ -79,7 +79,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
           {address}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
           {time}
         </span>
       </div>
@@ -88,7 +88,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
           {amount}
         </span>
         {amountUsd && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
             {amountUsd}
           </span>
         )}
@@ -272,11 +272,11 @@ export default function HistoryScreen() {
       {/* ── Wide-screen sticky filter sidebar ── */}
       {wideLayout && (
         <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--color-border-subtle)", overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "var(--space-3)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", marginBottom: "var(--space-3)" }}>
             Filter
             {hasActive && (
-              <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }} style={{ marginLeft: "var(--space-3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", letterSpacing: "0.08em", padding: 0 }}>
-                RESET
+              <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }} style={{ marginLeft: "var(--space-3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", padding: 0 }}>
+                Reset
               </button>
             )}
           </div>
@@ -448,7 +448,7 @@ export default function HistoryScreen() {
         <FilterSection label="Date range">
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
             <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
             <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
           </div>
         </FilterSection>
@@ -493,7 +493,7 @@ export default function HistoryScreen() {
         <FilterSection label="Date range">
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
             <Input type="date" value={memoDateFrom} onChange={(e) => setMemoDateFrom(e.target.value)} style={INPUT_SM} containerStyle={{ flex: 1 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
             <Input type="date" value={memoDateTo} onChange={(e) => setMemoDateTo(e.target.value)} style={INPUT_SM} containerStyle={{ flex: 1 }} />
           </div>
         </FilterSection>
@@ -516,22 +516,22 @@ const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding
 
 const GHOST_BTN: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0,
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
+  color: "var(--color-text-disabled)", padding: 0,
 };
 
 const APPLY_BTN: React.CSSProperties = {
   background: "var(--color-text-primary)", border: "none",
   borderRadius: "var(--radius-sharp)", cursor: "pointer",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-bg-base)", letterSpacing: "0.05em",
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
+  color: "var(--color-bg-base)",
   padding: "var(--space-2) var(--space-4)",
 };
 
 function FilterSection({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ marginBottom: "var(--space-6)" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "var(--space-3)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", marginBottom: "var(--space-3)" }}>
         {label}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>{children}</div>
@@ -546,7 +546,7 @@ function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, onFro
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
       <Input value={fromValue} onChange={(e) => onFromChange(e.target.value)} placeholder={fromPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
       <Input value={toValue} onChange={(e) => onToChange(e.target.value)} placeholder={toPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
     </div>
   );
@@ -558,9 +558,9 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
       background: active ? "var(--color-text-primary)" : "none",
       border: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
       borderRadius: "var(--radius-sharp)", cursor: "pointer",
-      fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+      fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
       color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-      letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
+      padding: "var(--space-1) var(--space-3)",
     }}>
       {label}
     </button>
@@ -572,8 +572,8 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
     <button type="button" onClick={onRemove} style={{
       background: "none", border: "1px solid var(--color-text-primary)",
       borderRadius: "var(--radius-sharp)", cursor: "pointer",
-      fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-      color: "var(--color-text-primary)", letterSpacing: "0.05em",
+      fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
+      color: "var(--color-text-primary)",
       padding: "var(--space-1) var(--space-2)",
       display: "flex", alignItems: "center", gap: "var(--space-1)",
     }}>
@@ -584,7 +584,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 function StatusText({ children, color }: { children: ReactNode; color: string }) {
   return (
-    <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color, letterSpacing: "0.05em" }}>
+    <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color }}>
       {children}
     </div>
   );
@@ -619,7 +619,7 @@ function GroupedTxs({
         <div key={key}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)", marginBottom: "var(--space-2)" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>{group.label}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{group.txs.length} tx · {formatQuCompact(group.volume)} QU</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{group.txs.length} tx · {formatQuCompact(group.volume)} QU</span>
           </div>
           {group.txs.map((tx) => {
             const isIn = tx.destination === identity;

@@ -20,7 +20,6 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
             fontFamily: "var(--font-mono)",
             fontSize: "var(--text-label)",
             color: "var(--color-text-secondary)",
-            textTransform: "uppercase",
             letterSpacing: "0.08em",
           }}
         >
@@ -57,7 +56,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
             color: "var(--color-status-error)",
           }}
         >
-          {error.toUpperCase()}
+          {error}
         </span>
       )}
     </div>

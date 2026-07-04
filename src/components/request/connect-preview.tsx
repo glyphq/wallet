@@ -62,7 +62,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
       {/* Account picker */}
       <div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
           Reveal account
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -104,7 +104,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
       {requestedPerms.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
               Permissions requested
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>

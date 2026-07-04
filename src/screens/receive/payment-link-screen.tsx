@@ -14,7 +14,7 @@ const WEB_BASE = "https://wallet.glyphq.org/pay";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
-  fontSize: "0.8125rem",
+  fontSize: "var(--text-body)",
   fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
@@ -168,9 +168,9 @@ export default function PaymentLinkScreen() {
                       border: "none",
                       cursor: "pointer",
                       padding: "4px 8px",
-                      borderRadius: "var(--radius-sm)",
+                      borderRadius: "var(--radius-sharp)",
                       fontFamily: "var(--font-sans)",
-                      fontSize: "0.8125rem",
+                      fontSize: "var(--text-body)",
                       fontWeight: 500,
                       color:
                         to === a.identity
@@ -198,8 +198,8 @@ export default function PaymentLinkScreen() {
                 background: "none",
                 border: "none",
                 outline: "none",
-                fontFamily: "var(--font-sans)",
-                fontSize: "0.875rem",
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-body)",
                 color: "var(--color-text-display)",
                 padding: 0,
                 minWidth: 0,
@@ -220,7 +220,7 @@ export default function PaymentLinkScreen() {
                 border: "none",
                 outline: "none",
                 fontFamily: "var(--font-sans)",
-                fontSize: "0.875rem",
+                fontSize: "var(--text-body)",
                 color: "var(--color-text-display)",
                 padding: 0,
                 minWidth: 0,
@@ -234,7 +234,7 @@ export default function PaymentLinkScreen() {
           <div
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: "0.8125rem",
+              fontSize: "var(--text-body)",
               color: "var(--color-text-disabled)",
               textAlign: "center",
               padding: "var(--space-6) 0",
@@ -268,9 +268,9 @@ export default function PaymentLinkScreen() {
                     border: "none",
                     cursor: "pointer",
                     padding: "4px 8px",
-                    borderRadius: "var(--radius-sm)",
+                    borderRadius: "var(--radius-sharp)",
                     fontFamily: "var(--font-sans)",
-                    fontSize: "0.8125rem",
+                    fontSize: "var(--text-body)",
                     fontWeight: 500,
                     color:
                       qrMode === mode
@@ -330,7 +330,7 @@ export default function PaymentLinkScreen() {
               <span
                 style={{
                   fontFamily: "var(--font-sans)",
-                  fontSize: "0.8125rem",
+                  fontSize: "var(--text-body)",
                   color: "var(--color-text-disabled)",
                 }}
               >
@@ -386,7 +386,7 @@ function LinkRow({
             border: "none",
             cursor: "pointer",
             fontFamily: "var(--font-sans)",
-            fontSize: "0.8125rem",
+            fontSize: "var(--text-body)",
             fontWeight: 500,
             color: copied
               ? "var(--color-accent)"
@@ -410,7 +410,7 @@ function LinkRow({
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: "0.8125rem",
+          fontSize: "var(--text-mono-sm)",
           color: "var(--color-text-disabled)",
           wordBreak: "break-all",
         }}
@@ -420,7 +420,7 @@ function LinkRow({
       <div
         style={{
           fontFamily: "var(--font-sans)",
-          fontSize: "0.75rem",
+          fontSize: "var(--text-caption)",
           color: "var(--color-text-disabled)",
         }}
       >
