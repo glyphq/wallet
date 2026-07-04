@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion, gesture } from "@/lib/animations";
 import { ArrowRightUp, QrCode, AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -31,12 +32,6 @@ const labelStyle: React.CSSProperties = {
   color: "var(--color-text-secondary)",
 };
 
-const stepMotion = {
-  initial: { y: 4 },
-  animate: { y: 0 },
-  exit: { y: -4 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 // ── Numpad ───────────────────────────────────────────────────────────────────
 
@@ -475,15 +470,15 @@ export default function SendScreen() {
             </span>
           </Button>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "var(--space-3)" }}>
-            <button onClick={() => navigate("/send-many")}
+            <motion.button {...gesture.pressSubtle} onClick={() => navigate("/send-many")}
               style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
               Send to many
-            </button>
+            </motion.button>
             <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-text-disabled)", opacity: 0.5, flexShrink: 0 }} />
-            <button onClick={() => navigate("/burn")}
+            <motion.button {...gesture.pressSubtle} onClick={() => navigate("/burn")}
               style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
               Burn QU
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -605,10 +600,10 @@ export default function SendScreen() {
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
-          <button type="button" onClick={() => setStep("input")}
+          <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Edit
-          </button>
+          </motion.button>
         </div>
         </motion.div>
       </AppShell>
@@ -747,10 +742,10 @@ export default function SendScreen() {
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
-          <button type="button" onClick={() => navigate("/history")}
+          <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/history")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
-          </button>
+          </motion.button>
         </div>
         </motion.div>
       </AppShell>
@@ -777,10 +772,10 @@ export default function SendScreen() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button onClick={() => setStep("review")}>Try again</Button>
-        <button type="button" onClick={() => navigate("/dashboard")}
+        <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/dashboard")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
-        </button>
+        </motion.button>
       </div>
       </motion.div>
     </AppShell>

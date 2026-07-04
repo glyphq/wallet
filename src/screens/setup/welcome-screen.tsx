@@ -1,6 +1,7 @@
 import { useState, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { presets, gesture } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/persisted";
@@ -266,9 +267,7 @@ export default function WelcomeScreen() {
   return (
     <FullPage>
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        {...presets.fadeInUpLg}
         style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
       >
         {/* Pending request warning */}
@@ -304,18 +303,18 @@ export default function WelcomeScreen() {
 
         {/* Action buttons */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <button type="button" onClick={() => navigate("/setup/create")} style={accentBtn}>
+          <motion.button type="button" onClick={() => navigate("/setup/create")} {...gesture.press} style={accentBtn}>
             Create wallet
-          </button>
-          <button type="button" onClick={() => navigate("/setup/import")} style={secondaryBtn}>
+          </motion.button>
+          <motion.button type="button" onClick={() => navigate("/setup/import")} {...gesture.press} style={secondaryBtn}>
             Import seed
-          </button>
-          <button type="button" onClick={() => setWatchOpen(true)} style={ghostBtn}>
+          </motion.button>
+          <motion.button type="button" onClick={() => setWatchOpen(true)} {...gesture.pressSubtle} style={ghostBtn}>
             Import watch-only
-          </button>
-          <button type="button" onClick={openFilePicker} style={ghostBtn}>
+          </motion.button>
+          <motion.button type="button" onClick={openFilePicker} {...gesture.pressSubtle} style={ghostBtn}>
             Import vault file
-          </button>
+          </motion.button>
         </div>
       </motion.div>
 
@@ -345,10 +344,11 @@ export default function WelcomeScreen() {
                 const atLimit = !selected && selectedIndices.size >= MAX_VAULT_ACCOUNTS;
                 return (
                   <Fragment key={account.index}>
-                    <button
+                    <motion.button
                       type="button"
                       onClick={() => toggleAccount(account.index)}
                       disabled={atLimit}
+                      {...gesture.pressSubtle}
                       style={{
                         display: "flex", alignItems: "center", gap: "var(--space-3)",
                         background: "none", border: "none", textAlign: "left",
@@ -366,7 +366,7 @@ export default function WelcomeScreen() {
                       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: selected ? "var(--color-text-display)" : "var(--color-text-secondary)" }}>
                         {account.name}
                       </span>
-                    </button>
+                    </motion.button>
                     {i < arr.length - 1 && <div style={rowDivider} />}
                   </Fragment>
                 );
@@ -398,14 +398,15 @@ export default function WelcomeScreen() {
           </div>
 
           {/* Actions */}
-          <button
+          <motion.button
             type="button"
             onClick={doImport}
             disabled={!importPw || importLoading || (importData !== null && importData.accounts.length > MAX_VAULT_ACCOUNTS && selectedIndices.size === 0)}
+            {...gesture.press}
             style={{ ...accentBtn, opacity: (!importPw || importLoading || (importData !== null && importData.accounts.length > MAX_VAULT_ACCOUNTS && selectedIndices.size === 0)) ? 0.4 : 1, cursor: (!importPw || importLoading) ? "not-allowed" : "pointer" }}
           >
             {importLoading ? <Spinner /> : "Import vault"}
-          </button>
+          </motion.button>
         </div>
       </Sheet>
 
@@ -455,9 +456,9 @@ export default function WelcomeScreen() {
             </span>
           )}
 
-          <button type="button" onClick={createWatchOnlyVault} style={accentBtn}>
+          <motion.button type="button" onClick={createWatchOnlyVault} {...gesture.press} style={accentBtn}>
             Create watch-only vault
-          </button>
+          </motion.button>
         </div>
       </Sheet>
     </FullPage>

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { LockKeyhole, Eye, EyeClosed, CheckCircle } from "@solar-icons/react";
 import { motion, AnimatePresence } from "motion/react";
+import { presets, gesture } from "@/lib/animations";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -246,10 +247,7 @@ export default function LockScreen() {
         {unlocking ? (
           <motion.div
             key="unlock-success"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            {...presets.scaleIn}
             style={{
               width: "100%", maxWidth: 340,
               display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)",
@@ -271,10 +269,7 @@ export default function LockScreen() {
         ) : (
           <motion.div
             key="lock-form"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            {...presets.fadeInUpLg}
             style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
           >
         {/* Logo */}
@@ -292,9 +287,10 @@ export default function LockScreen() {
 
         {/* Vault selector */}
         {hasMultiple ? (
-          <button
+          <motion.button
             type="button"
             onClick={() => setSheetOpen(true)}
+            {...gesture.pressSubtle}
             style={{
               display: "flex", alignItems: "center", gap: "var(--space-3)",
               background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
@@ -315,7 +311,7 @@ export default function LockScreen() {
               stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9" />
             </svg>
-          </button>
+          </motion.button>
         ) : (
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-1)" }}>
             <Identicon seed={`${selected.id}:${selected.color}`} size={24} radius={6} />

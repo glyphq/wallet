@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 import {
   ShieldCheck,
   Lock,
@@ -187,9 +188,7 @@ export default function SecurityScreen() {
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
       <motion.div
-        initial={{ y: 4 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        {...stepMotion}
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", minHeight: 0 }}
       >
         {/* Inline header — slot hidden for /settings/* routes */}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
+import { presets } from "@/lib/animations";
 import { useSheetRegister } from "@/layouts/sheet-state";
 
 export interface SheetProps {
@@ -10,8 +11,6 @@ export interface SheetProps {
   children: ReactNode;
   footer?: ReactNode;
 }
-
-const EASE_OUT = [0, 0, 0.2, 1] as const;
 
 export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -36,10 +35,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.12, ease: EASE_OUT }}
+          {...presets.overlay}
           onClick={onClose}
           style={{
             position: "fixed", inset: 0,
@@ -53,10 +49,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            initial={{ y: 24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
-            transition={{ duration: 0.2, ease: EASE_OUT }}
+            {...presets.slideUp}
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "var(--color-bg-elevated)",

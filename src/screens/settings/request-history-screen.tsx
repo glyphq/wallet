@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -41,8 +42,7 @@ export default function RequestHistoryScreen() {
       }}
     >
       <motion.div
-        initial={{ y: 4 }}
-        animate={{ y: 0 }}
+        {...stepMotion}
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
       >
         <SettingsPageHeader title="Request history" />

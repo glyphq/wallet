@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion, gesture } from "@/lib/animations";
 import { AltArrowLeft, Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -42,12 +43,6 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
   );
 }
 
-const stepMotion = {
-  initial: { y: 4 },
-  animate: { y: 0 },
-  exit: { y: -4 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 export default function BurnScreen() {
   const navigate = useNavigate();
@@ -288,10 +283,10 @@ export default function BurnScreen() {
               <Fire size={16} weight="Bold" /> Burn {formatQu(amountStr)} QU
             </span>
           </Button>
-          <button type="button" onClick={() => setStep("input")}
+          <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Cancel
-          </button>
+          </motion.button>
         </div>
         </motion.div>
       </AppShell>
@@ -352,10 +347,10 @@ export default function BurnScreen() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
-          <button type="button" onClick={() => navigate("/history")}
+          <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/history")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
-          </button>
+          </motion.button>
         </div>
         </motion.div>
       </AppShell>
@@ -378,10 +373,10 @@ export default function BurnScreen() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button variant="danger" onClick={() => setStep("confirm")}>Try again</Button>
-        <button type="button" onClick={() => navigate("/send")}
+        <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/send")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
-        </button>
+        </motion.button>
       </div>
         </motion.div>
     </AppShell>

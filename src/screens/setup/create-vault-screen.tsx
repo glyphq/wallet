@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { stepMotion, gesture } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { deriveIdentityFromSeed, generateRandomSeed, newId } from "@/lib/crypto";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -72,12 +73,6 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500, color: "var(--color-text-disabled)",
 };
 
-const stepMotion = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 export default function CreateVaultScreen() {
   const navigate = useNavigate();
@@ -218,12 +213,13 @@ export default function CreateVaultScreen() {
               <div style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>Color</div>
               <div style={{ display: "flex", gap: "var(--space-3)" }}>
                 {COLORS.map((c) => (
-                  <button
+                  <motion.button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
                     aria-label={`Vault color: ${c}`}
                     aria-pressed={color === c}
+                    {...gesture.pressSubtle}
                     style={{
                       width: 28, height: 28, borderRadius: "50%",
                       background: COLOR_CSS[c],
@@ -236,12 +232,12 @@ export default function CreateVaultScreen() {
               </div>
             </div>
 
-            <button type="button" onClick={goStep2} style={accentPill}>
+            <motion.button type="button" onClick={goStep2} {...gesture.press} style={accentPill}>
               Continue
-            </button>
-            <button type="button" onClick={() => navigate("/setup")} style={ghostBtn}>
+            </motion.button>
+            <motion.button type="button" onClick={() => navigate("/setup")} {...gesture.pressSubtle} style={ghostBtn}>
               Back
-            </button>
+            </motion.button>
           </motion.div>
         )}
 
@@ -293,9 +289,10 @@ export default function CreateVaultScreen() {
                     )}
               </div>
               {!seedRevealed && (
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setSeedRevealed(true)}
+                  {...gesture.pressSubtle}
                   style={{
                     position: "absolute", inset: 0, width: "100%", background: "none",
                     border: "none", cursor: "pointer", display: "flex", alignItems: "center",
@@ -305,14 +302,15 @@ export default function CreateVaultScreen() {
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
                     Tap to reveal
                   </span>
-                </button>
+                </motion.button>
               )}
             </div>
 
             <div style={{ display: "flex", gap: "var(--space-3)" }}>
-              <button
+              <motion.button
                 type="button"
                 onClick={copySeed}
+                {...gesture.pressSubtle}
                 style={{
                   flex: 1, background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
                   border: "none", borderRadius: "var(--radius-sharp)", padding: "var(--space-3) 0",
@@ -320,10 +318,11 @@ export default function CreateVaultScreen() {
                 }}
               >
                 {copied ? "Copied" : "Copy"}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 onClick={() => setSeedRevealed((v) => !v)}
+                {...gesture.pressSubtle}
                 style={{
                   flex: 1, background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
                   border: "none", borderRadius: "var(--radius-sharp)", padding: "var(--space-3) 0",
@@ -331,11 +330,11 @@ export default function CreateVaultScreen() {
                 }}
               >
                 {seedRevealed ? "Hide" : "Reveal"}
-              </button>
+              </motion.button>
             </div>
-            <button type="button" onClick={() => setStep(3)} style={accentPill}>
+            <motion.button type="button" onClick={() => setStep(3)} {...gesture.press} style={accentPill}>
               I've written it down
-            </button>
+            </motion.button>
           </motion.div>
         )}
 
@@ -424,9 +423,9 @@ export default function CreateVaultScreen() {
               ))}
             </div>
 
-            <button type="button" onClick={() => setStep(4)} disabled={!checkComplete} style={{ ...accentPill, opacity: checkComplete ? 1 : 0.4 }}>
+            <motion.button type="button" onClick={() => setStep(4)} disabled={!checkComplete} {...gesture.press} style={{ ...accentPill, opacity: checkComplete ? 1 : 0.4 }}>
               Confirm
-            </button>
+            </motion.button>
           </motion.div>
         )}
 
@@ -480,11 +479,11 @@ export default function CreateVaultScreen() {
               )}
             </div>
 
-            <button type="button" onClick={finish} disabled={loading || strength.level < 1} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
+            <motion.button type="button" onClick={finish} disabled={loading || strength.level < 1} {...gesture.press} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
               {loading ? (
                 <span style={{ width: 16, height: 16, border: "2px solid var(--color-bg-base)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
               ) : "Create vault"}
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </div>

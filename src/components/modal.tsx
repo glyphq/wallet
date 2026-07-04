@@ -1,6 +1,7 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
+import { presets } from "@/lib/animations";
 
 export interface ModalProps {
   open: boolean;
@@ -10,7 +11,6 @@ export interface ModalProps {
   title?: string;
 }
 
-const EASE_OUT = [0, 0, 0.2, 1] as const;
 
 const FOCUSABLE = [
   "a[href]",
@@ -72,10 +72,7 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.12, ease: EASE_OUT }}
+          {...presets.overlay}
           onClick={onClose}
           style={{
             position: "fixed",
@@ -92,10 +89,7 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            initial={{ y: 16, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 16, opacity: 0 }}
-            transition={{ duration: 0.18, ease: EASE_OUT }}
+            {...presets.fadeInUpLg}
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "var(--color-bg-elevated)",

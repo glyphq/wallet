@@ -1,5 +1,6 @@
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore, type FontPairId, type AccentColorId } from "@/store/persisted";
@@ -42,7 +43,7 @@ export default function AppearanceScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-      <motion.div initial={{ y: 4 }} animate={{ y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
         <SettingsPageHeader title="Appearance" />
 
         {/* ── Font ── */}

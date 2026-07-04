@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
+import { pageTransition } from "@/lib/animations";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
@@ -102,10 +103,7 @@ function LayoutShell() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.key}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeOut" } }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            {...pageTransition}
             style={{ height: "100%", position: "absolute", inset: 0 }}
           >
             {element}

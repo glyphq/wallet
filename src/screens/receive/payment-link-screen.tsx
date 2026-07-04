@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 import { QRCodeSVG } from "qrcode.react";
 import { AltArrowLeft, Copy, CheckCircle, LinkRound, QrCode } from "@solar-icons/react";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -14,11 +15,6 @@ import { truncateId } from "@/lib/format";
 
 const WEB_BASE = "https://wallet.glyphq.org/pay";
 
-const stepMotion = {
-  initial: { y: 4 },
-  animate: { y: 0 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 function buildLinks(to: string, amount: string, label: string) {
   const params = new URLSearchParams({ to });
