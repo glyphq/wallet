@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -117,6 +117,8 @@ export default function SendManyScreen() {
   const [importError, setImportError] = useState("");
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
+  const [sending, setSending] = useState(false);
+  const identityRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
   const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
 
@@ -164,6 +166,10 @@ export default function SendManyScreen() {
     }
     setRecipients(updated);
     setFormError(nextFormError);
+    if (!ok) {
+      const firstErr = updated.findIndex((r) => r.identityError || r.amountError);
+      if (firstErr >= 0) identityRefs.current.get(firstErr)?.focus();
+    }
     return ok;
   }
 
@@ -207,6 +213,7 @@ export default function SendManyScreen() {
 
   async function send() {
     if (!wallet || fee === null) return;
+    setSending(true);
     setStep("sending");
     try {
       const currentTick = await getLatestTick();
@@ -296,11 +303,13 @@ export default function SendManyScreen() {
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
                   <input
+                    ref={(el) => { if (el) identityRefs.current.set(i, el); else identityRefs.current.delete(i); }}
                     autoComplete="off"
                     value={r.identity}
                     onChange={(e) => setField(i, { identity: e.target.value, identityError: "" })}
                     onFocus={() => setFocusIndex(i)}
                     onBlur={() => setTimeout(() => setFocusIndex(null), 150)}
+                    onKeyDown={(e) => e.key === "Enter" && goReview()}
                     placeholder={recipients.length > 1 ? `Recipient ${i + 1}` : "Identity or contact"}
                     style={{
                       flex: 1, background: "none", border: "none", outline: "none",
@@ -329,6 +338,7 @@ export default function SendManyScreen() {
                     autoComplete="off"
                     value={r.amount}
                     onChange={(e) => setField(i, { amount: e.target.value.replace(/[^0-9]/g, ""), amountError: "" })}
+                    onKeyDown={(e) => e.key === "Enter" && goReview()}
                     placeholder="Amount"
                     inputMode="numeric"
                     style={{
@@ -588,7 +598,7 @@ export default function SendManyScreen() {
 
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-          <Button onClick={send} disabled={!wallet || fee === null || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>
+          <Button onClick={send} loading={sending} disabled={!wallet || fee === null || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
               Sign and send <ArrowRightUp size={16} weight="Bold" />
             </span>
@@ -634,7 +644,7 @@ export default function SendManyScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
-        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+        <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {totalAmount.toLocaleString()} QU
           </div>

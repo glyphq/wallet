@@ -14,6 +14,7 @@ import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
+import { Button } from "@/components/button";
 import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
@@ -53,7 +54,7 @@ function AnimatedBalance({ value }: { value: bigint }) {
   }, [num, value, maxSafe]);
 
   return (
-    <span ref={spanRef} aria-live="polite" aria-atomic="true">
+    <span ref={spanRef} aria-live="polite" aria-atomic="true" style={{ fontVariantNumeric: "tabular-nums" }}>
       {formatQu(value)}
     </span>
   );
@@ -238,23 +239,27 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
 
   if (isLoading && !hasAny) {
     return (
-      <div style={{ textAlign: "center", padding: "var(--space-6) 0" }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-          Loading...
-        </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div className="skeleton" style={{ width: 80, height: 12 }} />
+              <div className="skeleton" style={{ width: 120, height: 10 }} />
+            </div>
+            <div className="skeleton" style={{ width: 64, height: 12 }} />
+          </div>
+        ))}
       </div>
     );
   }
 
   if (!hasAny) {
     return (
-      <div style={{ textAlign: "center", padding: "var(--space-6) 0", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-          No activity yet
-        </span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-          Transactions will appear here
-        </span>
+      <div style={{ textAlign: "center", padding: "var(--space-12) 0" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
+          No transactions yet
+        </div>
+        <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>Send your first transaction</Button>
       </div>
     );
   }
@@ -326,7 +331,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {items.map((item, i) => (
-        <div key={i}>
+        <div key={i} className="stagger-item">
           {i > 0 && <Divider />}
           {item}
         </div>
@@ -470,7 +475,7 @@ export default function DashboardScreen() {
             </span>
           ) : (
             <span style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-              {balanceLoading ? "Loading..." : balance ? <AnimatedBalance value={balance.balance} /> : "—"}
+              {balanceLoading ? <div className="skeleton" style={{ width: 200, height: 48 }} /> : balance ? <AnimatedBalance value={balance.balance} /> : "—"}
             </span>
           )}
 

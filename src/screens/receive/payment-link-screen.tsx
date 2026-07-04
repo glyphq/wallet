@@ -233,6 +233,10 @@ export default function PaymentLinkScreen() {
         {!links && (
           <div
             style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "var(--space-2)",
               fontFamily: "var(--font-sans)",
               fontSize: "var(--text-body)",
               color: "var(--color-text-disabled)",
@@ -240,7 +244,10 @@ export default function PaymentLinkScreen() {
               padding: "var(--space-6) 0",
             }}
           >
-            Select an account to generate a link
+            <span>Select an account above to generate a payment link</span>
+            <span style={{ fontSize: "var(--text-label)" }}>
+              You can also enter an amount and label to pre-fill the payment
+            </span>
           </div>
         )}
 

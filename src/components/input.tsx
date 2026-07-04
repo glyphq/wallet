@@ -29,6 +29,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
       <input
         {...props}
         maxLength={maxLength}
+        spellCheck={false}
         autoComplete={props.autoComplete ?? "off"}
         id={inputId}
         className="glyph-input"
@@ -51,8 +52,8 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
           id={errorId}
           role="alert"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-caption)",
             color: "var(--color-status-error)",
           }}
         >

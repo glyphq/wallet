@@ -136,3 +136,65 @@ button, label, nav {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* ── Skeleton loading ──────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.06; }
+  50%      { opacity: 0.12; }
+}
+
+.skeleton {
+  background: var(--color-text-primary);
+  border-radius: var(--radius-sharp);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Stagger entrance for list items ───────────────────────────── */
+.stagger-item {
+  animation: fade-in-up 0.25s var(--ease-out) both;
+}
+
+.stagger-item:nth-child(1)  { animation-delay: 0ms; }
+.stagger-item:nth-child(2)  { animation-delay: 30ms; }
+.stagger-item:nth-child(3)  { animation-delay: 60ms; }
+.stagger-item:nth-child(4)  { animation-delay: 90ms; }
+.stagger-item:nth-child(5)  { animation-delay: 120ms; }
+.stagger-item:nth-child(6)  { animation-delay: 150ms; }
+.stagger-item:nth-child(7)  { animation-delay: 180ms; }
+.stagger-item:nth-child(8)  { animation-delay: 210ms; }
+.stagger-item:nth-child(9)  { animation-delay: 240ms; }
+.stagger-item:nth-child(10) { animation-delay: 270ms; }
+
+/* ── Success flash ─────────────────────────────────────────────── */
+@keyframes success-flash {
+  0%   { background-color: transparent; }
+  30%  { background-color: rgba(52, 199, 89, 0.08); }
+  100% { background-color: transparent; }
+}
+
+.flash-success {
+  animation: success-flash 0.8s ease-out;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton {
+    animation: none;
+    opacity: 0.08;
+  }
+}
+
+/* ── Link reset ────────────────────────────────────────────────── */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

@@ -220,7 +220,7 @@ export default function WelcomeScreen() {
       unlock(newVaultId, unlockSecureSession(finalSeeds));
       navigate("/dashboard", { replace: true });
     } catch {
-      setImportError("Wrong password");
+      setImportError("Wrong password. Please check and try again.");
     } finally {
       setImportLoading(false);
     }
@@ -229,7 +229,7 @@ export default function WelcomeScreen() {
   function createWatchOnlyVault() {
     const name = watchName.trim();
     if (!name) {
-      setWatchError("Name required");
+      setWatchError("Please enter a vault name");
       return;
     }
     const accounts = parseWatchOnlyAccounts(watchInput);
@@ -238,7 +238,7 @@ export default function WelcomeScreen() {
       return;
     }
     if (accounts.some((account) => !account.identity || !isValidIdentity(account.identity))) {
-      setWatchError("Invalid identity in list");
+      setWatchError("One or more identities are invalid. Check the format and try again.");
       return;
     }
 
@@ -384,6 +384,9 @@ export default function WelcomeScreen() {
               onKeyDown={(e) => e.key === "Enter" && !importLoading && doImport()}
               placeholder="••••••••••"
               autoComplete="current-password"
+              spellCheck={false}
+              autoCapitalize="none"
+              aria-label="Vault password"
               autoFocus
               style={inputField}
             />

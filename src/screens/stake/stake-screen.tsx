@@ -411,7 +411,17 @@ export default function StakeScreen() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ padding: "var(--space-3) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>Loading...</div>
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                      <div className="skeleton" style={{ width: 100, height: 14 }} />
+                      <div className="skeleton" style={{ width: 140, height: 14 }} />
+                    </div>
+                    <div style={rowDivider} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                      <div className="skeleton" style={{ width: 100, height: 14 }} />
+                      <div className="skeleton" style={{ width: 120, height: 14 }} />
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -578,7 +588,7 @@ export default function StakeScreen() {
                     const isEarly = currentEpoch < unlockEpoch;
                     const epochsLeft = isEarly ? unlockEpoch - currentEpoch : 0;
                     return (
-                      <div key={pos.epoch}>
+                      <div key={pos.epoch} className="stagger-item">
                         {i > 0 && <div style={rowDivider} />}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0", gap: "var(--space-3)" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>

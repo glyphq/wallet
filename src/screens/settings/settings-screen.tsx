@@ -76,6 +76,7 @@ export default function SettingsScreen() {
           <button
             key={row.route}
             onClick={() => navigate(row.route)}
+            className="stagger-item"
             style={{
               display: "flex",
               alignItems: "center",

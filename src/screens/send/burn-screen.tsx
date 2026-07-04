@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AltArrowLeft, Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
@@ -74,14 +74,16 @@ export default function BurnScreen() {
   const [burnPassword, setBurnPassword] = useState("");
   const [burnPasswordError, setBurnPasswordError] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
+  const [sending, setSending] = useState(false);
+  const amountRef = useRef<HTMLInputElement>(null);
 
   function goConfirm() {
     const trimmed = amountStr.trim();
     if (!trimmed || !/^\d+$/.test(trimmed) || BigInt(trimmed) <= 0n) {
-      setAmountError("Invalid amount"); return;
+      setAmountError("Invalid amount"); amountRef.current?.focus(); return;
     }
     if (balance !== null && BigInt(trimmed) > balance) {
-      setAmountError("Insufficient balance"); return;
+      setAmountError("Insufficient balance"); amountRef.current?.focus(); return;
     }
     setAmountError("");
     if (settings.requirePasswordForBurn && vault?.encryptedData) {
@@ -92,11 +94,13 @@ export default function BurnScreen() {
 
   async function send() {
     if (!wallet) return;
+    setSending(true);
     if (needsPassword && vault?.encryptedData) {
       try {
         await unlockVault(vault.encryptedData, burnPassword);
       } catch {
         setBurnPasswordError("Wrong password");
+        setSending(false);
         return;
       }
     }
@@ -167,6 +171,7 @@ export default function BurnScreen() {
         <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
           <div style={{ position: "relative", width: "100%", maxWidth: 280 }}>
             <input
+              ref={amountRef}
               autoComplete="off"
               value={amountStr}
               onChange={(e) => { setAmountStr(e.target.value.replace(/[^0-9]/g, "")); setAmountError(""); }}
@@ -278,7 +283,7 @@ export default function BurnScreen() {
 
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-          <Button variant="danger" onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsPassword && !burnPassword)}>
+          <Button variant="danger" onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsPassword && !burnPassword)}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
               <Fire size={16} weight="Bold" /> Burn {formatQu(amountStr)} QU
             </span>
@@ -322,7 +327,7 @@ export default function BurnScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
-        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+        <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>

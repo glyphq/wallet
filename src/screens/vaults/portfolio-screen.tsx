@@ -58,7 +58,7 @@ export default function PortfolioScreen() {
         </span>
         <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", letterSpacing: "-0.02em", color: "var(--color-text-display)" }}>
-            {!allLoaded ? "Loading..." : hideBalances ? "••••••" : formatQu(totalBalance)}
+            {!allLoaded ? <div className="skeleton" style={{ width: 200, height: 48 }} /> : hideBalances ? "••••••" : formatQu(totalBalance)}
           </span>
           {allLoaded && !hideBalances && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-disabled)" }}>QU</span>
@@ -92,7 +92,7 @@ export default function PortfolioScreen() {
             ? Math.round(Number((balance * 1000n) / totalBalance) / 10)
             : 0;
           return (
-            <div key={account.index}>
+            <div key={account.index} className="stagger-item">
               {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
                 {identity && <Identicon seed={identity} size={36} radius={6} style={{ flexShrink: 0 }} />}
@@ -102,7 +102,7 @@ export default function PortfolioScreen() {
                       {account.name}
                     </span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em", flexShrink: 0 }}>
-                      {!allLoaded ? "…" : hideBalances ? "••••••" : balance !== null ? `${formatQu(balance)} QU` : "—"}
+                      {!allLoaded ? <div className="skeleton" style={{ width: 80, height: 12 }} /> : hideBalances ? "••••••" : balance !== null ? `${formatQu(balance)} QU` : "—"}
                     </span>
                   </div>
                   {identity && (

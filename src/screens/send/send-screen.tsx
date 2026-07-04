@@ -161,6 +161,7 @@ export default function SendScreen() {
   const [saved, setSaved] = useState(false);
   const [usdMode, setUsdMode] = useState(false);
   const [usdStr, setUsdStr] = useState("");
+  const [sending, setSending] = useState(false);
 
   const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
@@ -189,6 +190,7 @@ export default function SendScreen() {
 
   // Sync from URL
   const prevSearchRef = useRef(searchParams.toString());
+  const destRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const current = searchParams.toString();
     if (current === prevSearchRef.current) return;
@@ -269,8 +271,8 @@ export default function SendScreen() {
 
   function validateInputs(): boolean {
     let ok = true;
-    if (!wallet) { setDestError(watchOnly ? "Watch-only account" : "Account locked"); return false; }
-    if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); ok = false; } else setDestError("");
+    if (!wallet) { setDestError(watchOnly ? "Watch-only account" : "Account locked"); destRef.current?.focus(); return false; }
+    if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); destRef.current?.focus(); ok = false; } else setDestError("");
     const amount = amountStr.trim();
     if (!amount || !Number.isInteger(Number(amount)) || Number(amount) <= 0) { setAmountError("Enter an amount"); ok = false; }
     else if (balance !== null && BigInt(amount) > balance) { setAmountError("Insufficient balance"); ok = false; }
@@ -290,6 +292,7 @@ export default function SendScreen() {
 
   async function send() {
     if (!wallet) return;
+    setSending(true);
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
@@ -401,6 +404,7 @@ export default function SendScreen() {
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
               <input
+                ref={destRef}
                 autoComplete="off"
                 value={destination}
                 onChange={(e) => { setDestination(e.target.value); setDestError(""); }}
@@ -597,7 +601,7 @@ export default function SendScreen() {
 
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-          <Button onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
+          <Button onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
           <button type="button" onClick={() => setStep("input")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             Edit
@@ -659,7 +663,7 @@ export default function SendScreen() {
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+          <div className="flash-success" style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)", }}>
             <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Sent</span>
           </div>

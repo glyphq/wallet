@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
+import { Button } from "@/components/button";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
 import { useVaultAnalytics } from "@/hooks/use-vault-analytics";
@@ -27,14 +28,27 @@ export default function AnalyticsScreen() {
       contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
     >
       {isLoading && !analytics && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-          Loading...
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "var(--space-6) 0" }}>
+          <div className="skeleton" style={{ width: 200, height: 28 }} />
+          <div className="skeleton" style={{ width: 120, height: 16 }} />
+          <div style={{ display: "flex", gap: "var(--space-3)" }}>
+            <div className="skeleton" style={{ flex: 1, height: 8 }} />
+          </div>
+          {[160, 140, 120].map((w, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
+              <div className="skeleton" style={{ width: w, height: 16 }} />
+              <div className="skeleton" style={{ width: 80, height: 16 }} />
+            </div>
+          ))}
         </div>
       )}
 
       {!isLoading && !analytics && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-          No data yet
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
+            No analytics data yet
+          </div>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/history")}>View transaction history</Button>
         </div>
       )}
 

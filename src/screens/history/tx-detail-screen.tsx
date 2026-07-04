@@ -4,6 +4,7 @@ import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTickInfo } from "@/hooks/use-tick-info";
@@ -113,6 +114,7 @@ export default function TxDetailScreen() {
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
             Transaction not found
           </span>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/history")}>Back to history</Button>
         </div>
       </AppShell>
     );

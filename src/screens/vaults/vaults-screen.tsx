@@ -40,6 +40,7 @@ export default function VaultsScreen() {
 
   // Action sheet
   const [actionVault, setActionVault] = useState<VaultMeta | null>(null);
+  const [recentlySwitchedId, setRecentlySwitchedId] = useState<string | null>(null);
 
   // Switch
   const [switchingVault, setSwitchingVault] = useState<VaultMeta | null>(null);
@@ -116,6 +117,7 @@ export default function VaultsScreen() {
       unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
       touchVaultUnlocked(switchingVault.id);
+      setRecentlySwitchedId(switchingVault.id);
       recordAuditEvent({
         kind: "unlock_succeeded",
         status: "success",
@@ -148,6 +150,7 @@ export default function VaultsScreen() {
   function doRename() {
     if (!renamingVault || !renameValue.trim()) return;
     updateVault(renamingVault.id, { name: renameValue.trim() });
+    setRecentlySwitchedId(renamingVault.id);
     setRenamingVault(null);
   }
 
@@ -335,6 +338,7 @@ export default function VaultsScreen() {
         return (
           <div
             key={vault.id}
+            className={`stagger-item${recentlySwitchedId === vault.id ? " flash-success" : ""}`}
             style={{
               display: "flex", alignItems: "center", gap: "var(--space-3)",
               padding: "var(--space-3) var(--space-4)",

@@ -111,7 +111,7 @@ export default function CreateVaultScreen() {
   const strength = strengthOf(password);
 
   function goStep2() {
-    if (!name.trim()) { setNameError("Name required"); return; }
+    if (!name.trim()) { setNameError("Please enter a vault name"); return; }
     setNameError("");
     setStep(2);
   }
@@ -452,6 +452,9 @@ export default function CreateVaultScreen() {
                   onKeyDown={(e) => e.key === "Enter" && !loading && strength.level >= 1 && finish()}
                   placeholder="••••••••••"
                   autoComplete="new-password"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  aria-label="Password"
                   autoFocus
                   style={inputField}
                 />

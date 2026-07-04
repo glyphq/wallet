@@ -184,7 +184,7 @@ export default function LockScreen() {
     if (!selected || bioFailures >= 3) return;
     setLoading(true);
     setError("");
-    if (!selected.encryptedData) { setError("Vault data missing"); setLoading(false); return; }
+    if (!selected.encryptedData) { setError("Vault data missing. Try re-importing your vault."); setLoading(false); return; }
     try {
       const seeds = await invoke<string[]>("biometric_unlock", {
         vaultId: selected.id,
@@ -303,6 +303,8 @@ export default function LockScreen() {
               label="Password"
               placeholder="••••••••••"
               autoComplete="current-password"
+              spellCheck={false}
+              autoCapitalize="none"
               error={lockoutSecsLeft > 0 ? `Locked — try again in ${lockoutSecsLeft}s` : error}
               disabled={lockoutSecsLeft > 0}
               autoFocus

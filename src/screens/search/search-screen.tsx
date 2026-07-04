@@ -185,14 +185,24 @@ export default function SearchScreen() {
       />
 
       {!normalizedQuery && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-          Start typing to search
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+            Start typing to search
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", opacity: 0.7 }}>
+            Search accounts, contacts, transactions, or contracts
+          </div>
         </div>
       )}
 
       {normalizedQuery && results.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-          No results
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+            No results for "{query.trim()}"
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", opacity: 0.7 }}>
+            Try a different name, identity, or hash
+          </div>
         </div>
       )}
 
@@ -203,7 +213,7 @@ export default function SearchScreen() {
               {section === "accounts" ? "Accounts" : section === "contacts" ? "Contacts" : section === "transactions" ? "Transactions" : "Contracts"}
             </div>
             {sectionResults.map((result, index) => (
-              <div key={result.key}>
+              <div key={result.key} className="stagger-item">
                 {index > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
                 <button
                   type="button"

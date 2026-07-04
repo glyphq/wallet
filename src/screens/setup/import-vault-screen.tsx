@@ -97,12 +97,12 @@ export default function ImportVaultScreen() {
       setSeedError("");
       setStep(2);
     } catch (e) {
-      setSeedError(e instanceof InvalidSeedError ? "55 lowercase letters required" : "Invalid seed");
+      setSeedError(e instanceof InvalidSeedError ? "Enter exactly 55 lowercase letters" : "Invalid seed phrase. Check your input and try again.");
     }
   }
 
   function goStep3() {
-    if (!name.trim()) { setNameError("Name required"); return; }
+    if (!name.trim()) { setNameError("Please enter a vault name"); return; }
     setNameError("");
     setStep(3);
   }
@@ -176,6 +176,9 @@ export default function ImportVaultScreen() {
                 onChange={(e) => { setSeedInput(e.target.value); if (seedError) setSeedError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && validateAndContinue()}
                 placeholder="55 characters, lowercase"
+                spellCheck={false}
+                autoCapitalize="none"
+                aria-label="Seed phrase"
                 autoFocus
                 style={inputField}
               />
@@ -277,6 +280,9 @@ export default function ImportVaultScreen() {
                   onKeyDown={(e) => e.key === "Enter" && !loading && strength.level >= 1 && finish()}
                   placeholder="••••••••••"
                   autoComplete="new-password"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  aria-label="Password"
                   autoFocus
                   style={inputField}
                 />

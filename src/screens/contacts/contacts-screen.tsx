@@ -30,6 +30,7 @@ export default function ContactsScreen() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState<Contact | null>(null);
+  const [recentlySavedId, setRecentlySavedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const [formName, setFormName] = useState("");
@@ -64,8 +65,9 @@ export default function ContactsScreen() {
 
   function doAdd() {
     if (!formName.trim() || !validateIdentity(formIdentity.trim())) return;
+    const contactId = newId();
     addContact({
-      id: newId(),
+      id: contactId,
       name: formName.trim(),
       identity: formIdentity.trim(),
       note: formNote.trim(),
@@ -73,12 +75,14 @@ export default function ContactsScreen() {
       addedAt: Date.now(),
       lastUsedAt: 0,
     });
+    setRecentlySavedId(contactId);
     setAdding(false);
   }
 
   function doEdit() {
     if (!editing || !formName.trim() || !validateIdentity(formIdentity.trim())) return;
     updateContact(editing.id, { name: formName.trim(), identity: formIdentity.trim(), note: formNote.trim(), tags: parseTags(formTags) });
+    setRecentlySavedId(editing.id);
     setEditing(null);
   }
 
@@ -120,13 +124,20 @@ export default function ContactsScreen() {
       />
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-          {contacts.length === 0 ? "No contacts yet" : "No results"}
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+            {contacts.length === 0 ? "No contacts yet" : "No results"}
+          </div>
+          {contacts.length === 0 && (
+            <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={openAdd}>
+              Add your first contact
+            </Button>
+          )}
         </div>
       )}
 
       {filtered.map((contact, i) => (
-        <div key={contact.id}>
+        <div key={contact.id} className={`stagger-item${recentlySavedId === contact.id ? " flash-success" : ""}`}>
           {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
             <button

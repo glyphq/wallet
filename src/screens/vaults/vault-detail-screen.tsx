@@ -53,6 +53,7 @@ export default function VaultDetailScreen() {
   const isActive = vault?.id === settings.activeVaultId;
 
   const [addingAccount, setAddingAccount] = useState(false);
+  const [newlyAddedIndex, setNewlyAddedIndex] = useState<number | null>(null);
   const [addMode, setAddMode] = useState<"new" | "import">("new");
   const [addName, setAddName] = useState("");
   const [addIdentity, setAddIdentity] = useState("");
@@ -186,6 +187,7 @@ export default function VaultDetailScreen() {
         tags: parseAccountTags("watch-only"),
       };
       updateVault(currentVault.id, { accounts: [...currentVault.accounts, newAccount] });
+      setNewlyAddedIndex(currentVault.accounts.length);
       setAddingAccount(false);
       return;
     }
@@ -222,6 +224,7 @@ export default function VaultDetailScreen() {
         const allSeeds = await unlockVault(newEncrypted, addPassword);
         sessionUnlock(currentVault.id, unlockSecureSession(allSeeds));
       }
+      setNewlyAddedIndex(newIndex);
       setAddingAccount(false);
     } catch {
       setAddError("Wrong password");
@@ -415,6 +418,17 @@ export default function VaultDetailScreen() {
 
   return (
     <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      {visible.length === 0 && hidden.length === 0 && (
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+            No accounts in this vault
+          </div>
+          <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={openAdd}>
+            Add your first account
+          </Button>
+        </div>
+      )}
+
       {visible.map((account) => (
         <AccountRow
           key={account.index}
@@ -422,6 +436,7 @@ export default function VaultDetailScreen() {
           accentColor={accentColor}
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           isCurrent={isActive && settings.activeAccountIndex === account.index}
+          flashSuccess={newlyAddedIndex === account.index}
           onManage={() => openAccountMenu(account)}
         />
       ))}
@@ -805,15 +820,17 @@ interface AccountRowProps {
   identity: string | null;
   isCurrent: boolean;
   dimmed?: boolean;
+  flashSuccess?: boolean;
   onManage: () => void;
 }
 
-function AccountRow({ account, accentColor, identity, isCurrent, dimmed, onManage }: AccountRowProps) {
+function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSuccess, onManage }: AccountRowProps) {
   const tags = account.tags ?? [];
   const note = account.note?.trim() ?? "";
 
   return (
     <div
+      className={`stagger-item${flashSuccess ? " flash-success" : ""}`}
       style={{
         opacity: dimmed ? 0.55 : 1,
         background: "var(--color-bg-surface)",

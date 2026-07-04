@@ -5,6 +5,7 @@ import { AltArrowLeft, Download, Filters, Refresh, Chart } from "@solar-icons/re
 import { AppShell } from "@/layouts/app-shell";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
+import { Button } from "@/components/button";
 import { usePersistedStore, type PendingTx, type AppSettings, type PriceSnapshot } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import {
@@ -53,7 +54,7 @@ function isDefault(f: TxFilters): boolean {
 
 // ── Activity item ─────────────────────────────────────────────────────────────
 
-function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor }: {
+function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className }: {
   onClick: () => void;
   label: string;
   labelColor: string;
@@ -62,11 +63,13 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
   amount: string;
   amountUsd?: string;
   amountColor: string;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      className={className}
       style={{
         display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)",
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
@@ -204,6 +207,7 @@ export default function HistoryScreen() {
   });
 
   const filteredTxs = allTxs;
+  const pendingHashes = new Set(pendingTxs.map((p) => p.hash));
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
 
@@ -327,12 +331,31 @@ export default function HistoryScreen() {
       )}
 
       {/* States */}
-      {isLoading && <StatusText color="var(--color-text-disabled)">Loading...</StatusText>}
+      {isLoading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4) 0" }}>
+          {[120, 180, 140, 160].map((w, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div className="skeleton" style={{ width: w, height: 16 }} />
+                <div className="skeleton" style={{ width: 100, height: 12 }} />
+              </div>
+              <div className="skeleton" style={{ width: 80, height: 16 }} />
+            </div>
+          ))}
+        </div>
+      )}
       {isError && <StatusText color="var(--color-status-error)">Network error</StatusText>}
       {!isLoading && !isError && filteredPending.length === 0 && filteredTxs.length === 0 && (
-        <StatusText color="var(--color-text-disabled)">
-          {allTxs.length === 0 && visiblePending.length === 0 ? "No transactions yet" : "No results"}
-        </StatusText>
+        allTxs.length === 0 && visiblePending.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "var(--space-12) 0" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
+              No transactions yet
+            </div>
+            <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>Send your first transaction</Button>
+          </div>
+        ) : (
+          <StatusText color="var(--color-text-disabled)">No results</StatusText>
+        )
       )}
 
       {/* Transaction rows */}
@@ -356,6 +379,7 @@ export default function HistoryScreen() {
             return (
               <ActivityItem
                 key={`p-${p.hash}`}
+                className="stagger-item"
                 onClick={() => navigate(`/tx/${p.hash}`)}
                 label={label}
                 labelColor={labelColor}
@@ -394,6 +418,7 @@ export default function HistoryScreen() {
             return (
               <ActivityItem
                 key={tx.hash}
+                className={`stagger-item${pendingHashes.has(tx.hash) ? " flash-success" : ""}`}
                 onClick={() => navigate(`/tx/${tx.hash}`)}
                 label={label}
                 labelColor={labelColor}
@@ -410,7 +435,19 @@ export default function HistoryScreen() {
 
       {/* Infinite scroll */}
       <div ref={sentinelRef} style={{ height: 1 }} />
-      {isFetchingNextPage && <StatusText color="var(--color-text-disabled)">Loading...</StatusText>}
+      {isFetchingNextPage && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4) 0" }}>
+          {[140, 160, 120].map((w, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div className="skeleton" style={{ width: w, height: 16 }} />
+                <div className="skeleton" style={{ width: 100, height: 12 }} />
+              </div>
+              <div className="skeleton" style={{ width: 80, height: 16 }} />
+            </div>
+          ))}
+        </div>
+      )}
       {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
 
       </motion.div>
@@ -630,6 +667,7 @@ function GroupedTxs({
             return (
               <ActivityItem
                 key={tx.hash}
+                className="stagger-item"
                 onClick={() => onSelect(tx)}
                 label={label}
                 labelColor={labelColor}
