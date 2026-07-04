@@ -40,7 +40,7 @@ export function AppShell({ children, statusBar, contentStyle, fullBleed }: AppSh
         padding: fullBleed ? 0 : "var(--space-4)",
         background: "var(--color-bg-base)",
         ...contentStyle,
-        ...(!fullBleed && { paddingBottom: 76 }),
+        paddingBottom: 76,
       }}
     >
       {children}
