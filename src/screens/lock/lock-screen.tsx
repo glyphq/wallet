@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { LockKeyhole } from "@solar-icons/react";
-import { motion } from "motion/react";
+import { LockKeyhole, Eye, EyeClosed, CheckCircle } from "@solar-icons/react";
+import { motion, AnimatePresence } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -79,6 +79,9 @@ export default function LockScreen() {
   const [, setPasswordAttempts] = useState(_passwordAttempts);
   const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
 
   const { register, handleSubmit, setValue } = useForm<FormValues>();
 
@@ -96,6 +99,15 @@ export default function LockScreen() {
     if (remaining > 0) startCountdown(remaining);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Escape to clear password
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setValue("password", "");
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [setValue]);
 
   function startCountdown(secs: number) {
     setLockoutSecsLeft(secs);
@@ -131,6 +143,8 @@ export default function LockScreen() {
     });
     _bioFailures = 0;
     _passwordAttempts = 0;
+    setUnlocking(true);
+    await new Promise<void>((r) => setTimeout(r, 800));
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
 
@@ -175,6 +189,7 @@ export default function LockScreen() {
       } else {
         setError(`Wrong password — ${PASSWORD_MAX_ATTEMPTS - next} ${PASSWORD_MAX_ATTEMPTS - next === 1 ? "attempt" : "attempts"} remaining`);
       }
+      setShakeKey((k) => k + 1);
     } finally {
       setLoading(false);
     }
@@ -227,12 +242,41 @@ export default function LockScreen() {
 
   return (
     <FullPage>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
-      >
+      <AnimatePresence mode="wait">
+        {unlocking ? (
+          <motion.div
+            key="unlock-success"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{
+              width: "100%", maxWidth: 340,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)",
+            }}
+          >
+            <motion.div
+              animate={{ rotate: [0, -8, 8, -4, 4, 0] }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              <CheckCircle size={48} color="var(--color-status-success)" weight="Bold" />
+            </motion.div>
+            <span style={{
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
+              color: "var(--color-text-secondary)", letterSpacing: "0.02em",
+            }}>
+              Unlocking…
+            </span>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="lock-form"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
+          >
         {/* Logo */}
         <div style={{ textAlign: "center" }}>
           <span style={{
@@ -254,14 +298,12 @@ export default function LockScreen() {
             style={{
               display: "flex", alignItems: "center", gap: "var(--space-3)",
               background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
+              borderLeft: `3px solid ${VAULT_COLOR[selected.color] ?? "var(--color-text-secondary)"}`,
               borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)",
               cursor: "pointer", width: "100%",
             }}
           >
-            <div style={{
-              width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
-              background: VAULT_COLOR[selected.color] ?? "var(--color-text-secondary)",
-            }} />
+            <Identicon seed={`${selected.id}:${selected.color}`} size={24} radius={6} style={{ flexShrink: 0 }} />
             <span style={{
               flex: 1, textAlign: "left",
               fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
@@ -276,10 +318,7 @@ export default function LockScreen() {
           </button>
         ) : (
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-1)" }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: "50%",
-              background: VAULT_COLOR[selected.color] ?? "var(--color-text-secondary)",
-            }} />
+            <Identicon seed={`${selected.id}:${selected.color}`} size={24} radius={6} />
             <span style={{
               fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
               fontWeight: 500, color: "var(--color-text-primary)",
@@ -297,18 +336,35 @@ export default function LockScreen() {
           </Button>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            <Input
-              {...register("password")}
-              type="password"
-              label="Password"
-              placeholder="••••••••••"
-              autoComplete="current-password"
-              spellCheck={false}
-              autoCapitalize="none"
-              error={lockoutSecsLeft > 0 ? `Locked — try again in ${lockoutSecsLeft}s` : error}
-              disabled={lockoutSecsLeft > 0}
-              autoFocus
-            />
+            <div key={shakeKey} className={error ? "lock-shake" : undefined}>
+              <Input
+                {...register("password")}
+                type={showPassword ? "text" : "password"}
+                label="Password"
+                placeholder="••••••••••"
+                autoComplete="current-password"
+                spellCheck={false}
+                autoCapitalize="none"
+                error={lockoutSecsLeft > 0 ? `Locked — try again in ${lockoutSecsLeft}s` : error}
+                disabled={lockoutSecsLeft > 0}
+                autoFocus
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      display: "flex", alignItems: "center", padding: 0,
+                      color: "var(--color-text-disabled)",
+                    }}
+                  >
+                    {showPassword ? <EyeClosed size={18} weight="Linear" /> : <Eye size={18} weight="Linear" />}
+                  </button>
+                }
+              />
+            </div>
             <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
               {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft}s` : "Unlock"}
             </Button>
@@ -356,7 +412,9 @@ export default function LockScreen() {
             Last unlocked {lastUnlocked}
           </span>
         )}
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Vault picker sheet */}
       <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Select vault">
@@ -372,7 +430,9 @@ export default function LockScreen() {
                 style={{
                   display: "flex", alignItems: "center", gap: "var(--space-3)",
                   background: isActive ? "var(--color-bg-surface)" : "transparent",
-                  border: "none", borderRadius: "var(--radius-sharp)",
+                  border: "none",
+                  borderLeft: isActive ? `3px solid ${VAULT_COLOR[v.color] ?? "var(--color-accent)"}` : "3px solid transparent",
+                  borderRadius: "var(--radius-sharp)",
                   padding: "10px var(--space-3)", cursor: "pointer", width: "100%",
                   textAlign: "left",
                 }}

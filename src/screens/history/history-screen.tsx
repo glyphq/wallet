@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AltArrowLeft, Download, Filters, Refresh, Chart } from "@solar-icons/react";
+import { AltArrowLeft, Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { Identicon } from "@/components/identicon";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
@@ -52,9 +53,52 @@ function isDefault(f: TxFilters): boolean {
   );
 }
 
+// ── Date grouping ──────────────────────────────────────────────────────────────
+
+type TxSection = { label: string; txs: TxHistoryItem[] };
+
+function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
+  if (!txs.length) return [];
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86_400_000;
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
+
+  const today: TxHistoryItem[] = [];
+  const yesterday: TxHistoryItem[] = [];
+  const thisWeek: TxHistoryItem[] = [];
+  const earlier: TxHistoryItem[] = [];
+
+  for (const tx of txs) {
+    const ts = tx.timestamp ?? 0;
+    if (ts >= todayStart) today.push(tx);
+    else if (ts >= yesterdayStart) yesterday.push(tx);
+    else if (ts >= weekStart) thisWeek.push(tx);
+    else earlier.push(tx);
+  }
+
+  const sections: TxSection[] = [];
+  if (today.length) sections.push({ label: "Today", txs: today });
+  if (yesterday.length) sections.push({ label: "Yesterday", txs: yesterday });
+  if (thisWeek.length) sections.push({ label: "This week", txs: thisWeek });
+  if (earlier.length) sections.push({ label: "Earlier", txs: earlier });
+  return sections;
+}
+
+// ── Transaction type icon map ───────────────────────────────────────────────────
+
+const TX_TYPE_ICONS: Record<string, typeof ArrowRightUp> = {
+  sent: ArrowRightUp,
+  received: ArrowToDownLeft,
+  sc: Bolt,
+  failed: ShieldWarning,
+  pending: ClockCircle,
+};
+
 // ── Activity item ─────────────────────────────────────────────────────────────
 
-function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className }: {
+function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className, identity, txType }: {
   onClick: () => void;
   label: string;
   labelColor: string;
@@ -64,7 +108,10 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
   amountUsd?: string;
   amountColor: string;
   className?: string;
+  identity?: string;
+  txType?: "sent" | "received" | "sc" | "failed" | "pending";
 }) {
+  const TypeIcon = txType ? TX_TYPE_ICONS[txType] : null;
   return (
     <button
       type="button"
@@ -75,7 +122,32 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      {/* Identicon with type icon badge, or fallback icon circle */}
+      <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+        {identity ? (
+          <Identicon seed={identity} size={28} radius={6} />
+        ) : (
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: "var(--color-bg-surface)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {TypeIcon && <TypeIcon size={14} weight="Bold" />}
+          </div>
+        )}
+        {identity && TypeIcon && (
+          <div style={{
+            position: "absolute", bottom: -2, right: -2,
+            width: 14, height: 14, borderRadius: "50%",
+            background: "var(--color-bg-base)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "1px solid var(--color-border-subtle)",
+          }}>
+            <TypeIcon size={9} weight="Bold" color={txType === "failed" ? "var(--color-status-error)" : txType === "pending" ? "var(--color-status-warning)" : "currentColor"} />
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
           {label}
         </span>
@@ -87,11 +159,11 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
           {amount}
         </span>
         {amountUsd && (
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
             {amountUsd}
           </span>
         )}
@@ -388,48 +460,67 @@ export default function HistoryScreen() {
                 amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
                 amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
                 amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
+                identity={isIn ? p.source : p.destination}
+                txType={expired ? "failed" : "pending"}
               />
             );
           })}
 
-          {filteredTxs.map((tx) => {
-            const isIn = tx.destination === identity;
-            const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
-            const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
-            const isSc = !!(contractName || fromContract);
-            const flew = tx.moneyFlew;
+          {groupTxsByDate(filteredTxs).map((section) => (
+            <div key={section.label}>
+              <div style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-label)",
+                fontWeight: 500,
+                color: "var(--color-text-disabled)",
+                letterSpacing: "0.05em",
+                padding: "var(--space-3) 0 var(--space-2)",
+              }}>
+                {section.label}
+              </div>
+              {section.txs.map((tx) => {
+                const isIn = tx.destination === identity;
+                const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
+                const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
+                const isSc = !!(contractName || fromContract);
+                const flew = tx.moneyFlew;
 
-            // Resolve contract index from known address to look up procedure name
-            const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
-            const contractIndex = scAddress
-              ? Object.entries(CONTRACT_NAMES).find(([, name]) => (contractName ?? fromContract) === name)?.[0]
-              : null;
-            const procedureName = contractIndex !== undefined && contractIndex !== null && tx.inputType !== null
-              ? CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${tx.inputType}`]
-              : undefined;
+                const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
+                const contractIndex = scAddress
+                  ? Object.entries(CONTRACT_NAMES).find(([, name]) => (contractName ?? fromContract) === name)?.[0]
+                  : null;
+                const procedureName = contractIndex !== undefined && contractIndex !== null && tx.inputType !== null
+                  ? CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${tx.inputType}`]
+                  : undefined;
 
-            const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
-            const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
-            const address = isSc
-              ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
-              : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
-            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
+                const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
+                const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
+                const address = isSc
+                  ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
+                  : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
+                const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
+                const counterparty = isIn ? (tx.source ?? undefined) : (tx.destination ?? undefined);
+                const txType = !flew ? "failed" as const : isSc ? "sc" as const : isIn ? "received" as const : "sent" as const;
 
-            return (
-              <ActivityItem
-                key={tx.hash}
-                className={`stagger-item${pendingHashes.has(tx.hash) ? " flash-success" : ""}`}
-                onClick={() => navigate(`/tx/${tx.hash}`)}
-                label={label}
-                labelColor={labelColor}
-                address={address}
-                time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
-                amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
-                amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
-              />
-            );
-          })}
+                return (
+                  <ActivityItem
+                    key={tx.hash}
+                    className={`stagger-item${pendingHashes.has(tx.hash) ? " flash-success" : ""}`}
+                    onClick={() => navigate(`/tx/${tx.hash}`)}
+                    label={label}
+                    labelColor={labelColor}
+                    address={address}
+                    time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
+                    amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
+                    amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                    amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+                    identity={counterparty}
+                    txType={txType}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -676,6 +767,8 @@ function GroupedTxs({
                 amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
                 amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
                 amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+                identity={isIn ? (tx.source ?? undefined) : (tx.destination ?? undefined)}
+                txType={!flew ? "failed" : isIn ? "received" : "sent"}
               />
             );
           })}

@@ -33,6 +33,7 @@ import {
 import { qk } from "@/lib/query-keys";
 import { formatQu, truncateId, extractMessage } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
+import { Identicon } from "@/components/identicon";
 
 type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
@@ -119,6 +120,12 @@ export default function StakeScreen() {
   const { data: balanceData } = useBalance(identity);
   const balance = balanceData?.balance ?? null;
   const currentEpoch = tickInfo?.epoch ?? null;
+  const epochProgress = tickInfo?.tick != null && tickInfo?.initialTick != null && tickInfo?.duration != null && tickInfo.duration > 0
+    ? Math.min(1, Math.max(0, (tickInfo.tick - tickInfo.initialTick) / tickInfo.duration))
+    : null;
+  const ticksRemaining = tickInfo?.tick != null && tickInfo?.initialTick != null && tickInfo?.duration != null
+    ? Math.max(0, tickInfo.initialTick + tickInfo.duration - tickInfo.tick)
+    : null;
 
   const [tab, setTab] = useState<Tab>("lock");
   const [step, setStep] = useState<Step>("main");
@@ -391,12 +398,32 @@ export default function StakeScreen() {
             <>
               {/* Epoch stats card */}
               <div style={cardStyle}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
-                  <span style={{ color: "var(--color-text-disabled)" }}><Bolt size={22} weight="Linear" /></span>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                    Epoch {currentEpoch ?? "—"}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                    <span style={{ color: "var(--color-accent)" }}><Bolt size={22} weight="Bold" /></span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                      Current Epoch
+                    </span>
+                  </div>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700, color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1 }}>
+                    {currentEpoch ?? "—"}
                   </span>
                 </div>
+                {epochProgress !== null && (
+                  <div style={{ marginBottom: "var(--space-3)" }}>
+                    <div style={{ width: "100%", height: 4, borderRadius: 2, background: "var(--color-bg-base)", overflow: "hidden" }}>
+                      <div style={{ width: `${epochProgress * 100}%`, height: "100%", borderRadius: 2, background: "var(--color-accent)", transition: "width 0.3s ease" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-1)" }}>
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
+                        {Math.round(epochProgress * 100)}% complete
+                      </span>
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
+                        ~{ticksRemaining != null ? ticksRemaining.toLocaleString() : "—"} ticks left
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div style={rowDivider} />
                 {epochInfo ? (
                   <>
@@ -539,15 +566,16 @@ export default function StakeScreen() {
               {positions && positions.length > 0 && (
                 <div style={cardStyle}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-text-disabled)" }}><Lock size={22} weight="Linear" /></span>
+                    <span style={{ color: "var(--color-accent)" }}><Lock size={22} weight="Bold" /></span>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
                       Your positions
                     </span>
                   </div>
-                  <div style={rowDivider} />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                    <span style={labelStyle}>Total locked</span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{formatQu(totalUserLocked)} QU</span>
+                  <div style={{ padding: "var(--space-2) 0 var(--space-3)" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700, color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                      {formatQu(totalUserLocked)}
+                    </span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginLeft: "var(--space-2)" }}>QU locked</span>
                   </div>
                   <div style={rowDivider} />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
@@ -561,6 +589,24 @@ export default function StakeScreen() {
                         <span style={labelStyle}>Ready to unlock</span>
                         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>{readyPositions.length}</span>
                       </div>
+                      <button
+                        type="button"
+                        disabled={!wallet || !tickInfo || hasPendingTx}
+                        onClick={() => {
+                          if (!unlockIsActiveAccount) setActiveAccountIndex(unlockAccountIdx);
+                          setUnlockTarget(readyPositions[0]);
+                          setStep("confirm");
+                        }}
+                        style={{
+                          ...accentPill,
+                          marginTop: "var(--space-2)",
+                          opacity: !wallet || !tickInfo || hasPendingTx ? 0.5 : 1,
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
+                        }}
+                      >
+                        <LockUnlocked size={16} weight="Bold" />
+                        Unlock all {readyPositions.length}
+                      </button>
                     </>
                   )}
                 </div>
@@ -591,23 +637,48 @@ export default function StakeScreen() {
                       <div key={pos.epoch} className="stagger-item">
                         {i > 0 && <div style={rowDivider} />}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0", gap: "var(--space-3)" }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-                              {formatQu(pos.lockedAmount)} QU
-                            </span>
-                            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-                                Epoch {pos.epoch}
+                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
+                            <div style={{ position: "relative" }}>
+                              <Identicon seed={`qearn-pos-${pos.epoch}`} size={40} radius={6} style={{ flexShrink: 0 }} />
+                              <span style={{
+                                position: "absolute", bottom: -2, right: -2,
+                                width: 12, height: 12, borderRadius: "50%",
+                                background: isEarly ? "var(--color-text-disabled)" : "var(--color-accent)",
+                                border: "2px solid var(--color-bg-base)",
+                              }} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
+                                {formatQu(pos.lockedAmount)} QU
                               </span>
-                              {isEarly ? (
-                                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                                  · {epochsLeft} epoch{epochsLeft !== 1 ? "s" : ""} left
+                              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+                                  Epoch {pos.epoch}
                                 </span>
-                              ) : (
-                                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>
-                                  · Ready
-                                </span>
-                              )}
+                                {isEarly ? (
+                                  <span style={{
+                                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+                                    color: "var(--color-text-secondary)",
+                                    padding: "0 var(--space-1)",
+                                    background: "var(--color-bg-surface)",
+                                    borderRadius: "var(--radius-pill)",
+                                    lineHeight: "18px",
+                                  }}>
+                                    {epochsLeft} epoch{epochsLeft !== 1 ? "s" : ""} left
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500,
+                                    color: "var(--color-accent)",
+                                    padding: "0 var(--space-1)",
+                                    background: "color-mix(in srgb, var(--color-accent) 12%, transparent)",
+                                    borderRadius: "var(--radius-pill)",
+                                    lineHeight: "18px",
+                                  }}>
+                                    Ready
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <button
@@ -632,8 +703,12 @@ export default function StakeScreen() {
                               cursor: "pointer",
                               flexShrink: 0,
                               opacity: !wallet || !tickInfo || hasPendingTx ? 0.5 : 1,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "var(--space-1)",
                             }}
                           >
+                            {!isEarly && <LockUnlocked size={14} weight="Bold" />}
                             {isEarly ? "Early" : "Unlock"}
                           </button>
                         </div>

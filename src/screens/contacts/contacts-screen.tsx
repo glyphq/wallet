@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
-import { Divider } from "@/components/divider";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
@@ -124,9 +124,13 @@ export default function ContactsScreen() {
       />
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
+          <UsersGroupRounded size={48} weight="Linear" style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
             {contacts.length === 0 ? "No contacts yet" : "No results"}
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", opacity: 0.7 }}>
+            {contacts.length === 0 ? "Add contacts to quickly send to people you know" : "Try a different search term"}
           </div>
           {contacts.length === 0 && (
             <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={openAdd}>
@@ -136,15 +140,14 @@ export default function ContactsScreen() {
         </div>
       )}
 
-      {filtered.map((contact, i) => (
+      {filtered.map((contact) => (
         <div key={contact.id} className={`stagger-item${recentlySavedId === contact.id ? " flash-success" : ""}`}>
-          {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
+          <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
             <button
               onClick={() => navigate(`/send?to=${contact.identity}`)}
               style={{ flex: 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
             >
-              <Identicon seed={contact.identity} size={32} radius={5} style={{ marginTop: 2, flexShrink: 0 }} />
+              <Identicon seed={contact.identity} size={36} radius={6} style={{ marginTop: 2, flexShrink: 0 }} />
               <div>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
                   {contact.name}

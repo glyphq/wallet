@@ -328,12 +328,14 @@ export default function BurnScreen() {
 
         {/* Amount */}
         <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {formatQu(amountStr)}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
+            <Fire size={64} style={{ color: "var(--color-status-error)" }} />
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
-            <Fire size={14} style={{ color: "var(--color-status-error)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>Burned</span>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+            QU burned
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1, marginTop: "var(--space-2)" }}>
+            {formatQu(amountStr)}
           </div>
         </div>
 

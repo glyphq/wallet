@@ -162,7 +162,7 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
 
 // ── Recent transactions ──────────────────────────────────────────────────────
 
-function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor }: {
+function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, identiconSeed }: {
   onClick: () => void;
   label: string;
   labelColor: string;
@@ -171,6 +171,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
   amount: string;
   amountUsd?: string;
   amountColor: string;
+  identiconSeed?: string;
 }) {
   return (
     <button
@@ -181,7 +182,8 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      {identiconSeed && <Identicon seed={identiconSeed} size={32} radius={6} />}
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
           {label}
         </span>
@@ -192,7 +194,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
           {time}
         </span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, marginLeft: "var(--space-2)" }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor }}>
           {amount}
         </span>
@@ -283,6 +285,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         time={formatDate(p.broadcastAt) || `Target tick ${p.targetTick}`}
         amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(p.amount ?? "0")} QU`}
         amountColor={amountColor}
+        identiconSeed={isIn ? p.source : p.destination}
       />,
     );
   });
@@ -324,6 +327,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         amount={amount}
         amountUsd={amountUsd}
         amountColor={amountColor}
+        identiconSeed={isIn ? (tx.source ?? "") : (tx.destination ?? "")}
       />,
     );
   });
@@ -405,9 +409,10 @@ export default function DashboardScreen() {
         )}
       </button>
 
-      {/* Center: title */}
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.02em", whiteSpace: "nowrap", pointerEvents: "none" }}>
+      {/* Center: title + health */}
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.02em", whiteSpace: "nowrap", pointerEvents: "none" }}>
         Home
+        <HealthBadge health={health} />
       </span>
 
       {/* Right: eye + bell */}
@@ -448,7 +453,7 @@ export default function DashboardScreen() {
             }} />
           )}
         </button>
-        <HealthBadge health={health} />
+        {/* HealthBadge moved to title area */}
       </div>
     </div>
   );
@@ -515,36 +520,14 @@ export default function DashboardScreen() {
           {/* CTA buttons */}
           {!watchOnly && (
             <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-3)" }}>
-              <button
-                onClick={() => navigate("/send")}
-                className="glyph-btn"
-                style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-                  height: 40, padding: "0 var(--space-6)",
-                  background: "var(--color-text-display)", color: "var(--color-bg-base)",
-                  border: "none", borderRadius: "var(--radius-pill)",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
-                  letterSpacing: "0.08em", cursor: "pointer",
-                }}
-              >
+              <Button variant="primary" size="md" shape="pill" onClick={() => navigate("/send")}>
                 <ArrowRightUp size={16} weight="Bold" />
                 Send
-              </button>
-              <button
-                onClick={() => navigate("/receive")}
-                className="glyph-btn"
-                style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-                  height: 40, padding: "0 var(--space-6)",
-                  background: "transparent", color: "var(--color-text-primary)",
-                  border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-pill)",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
-                  letterSpacing: "0.08em", cursor: "pointer",
-                }}
-              >
+              </Button>
+              <Button variant="secondary" size="md" shape="pill" onClick={() => navigate("/receive")}>
                 <QrCode size={16} weight="Bold" />
                 Receive
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -552,14 +535,20 @@ export default function DashboardScreen() {
         {/* Recent activity card */}
         <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.02em", textTransform: "uppercase" }}>
               Activity
             </span>
             <button
               onClick={() => navigate("/history")}
-              aria-label="More options"
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-disabled)", padding: "var(--space-1)", display: "flex", alignItems: "center" }}
+              aria-label="View all activity"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+                color: "var(--color-text-secondary)", padding: "var(--space-1)",
+                display: "flex", alignItems: "center", gap: "var(--space-1)",
+              }}
             >
+              View all
               <MenuDots size={14} weight="Linear" />
             </button>
           </div>

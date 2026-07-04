@@ -6,6 +6,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { ContactPicker } from "@/components/contact-picker";
+import { Identicon } from "@/components/identicon";
 import { AddressSuggestions } from "@/components/address-suggestions";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -76,16 +77,17 @@ function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: ()
               fontWeight: isMaxSlot ? 500 : 400,
               color: isMaxSlot ? "var(--color-accent)" : key === "⌫" ? "var(--color-text-secondary)" : "var(--color-text-display)",
               borderRadius: "var(--radius-card)",
-              transition: "background 0.08s",
+              transition: "transform 0.08s, background 0.08s",
               userSelect: "none",
               WebkitTapHighlightColor: "transparent",
             }}
             onPointerDown={(e) => {
               if (!isActive) return;
-              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.transform = "scale(0.95)";
             }}
-            onPointerUp={(e) => { e.currentTarget.style.background = "transparent"; }}
-            onPointerLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            onPointerUp={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "scale(1)"; }}
+            onPointerLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "scale(1)"; }}
           >
             {label}
           </button>
@@ -444,8 +446,13 @@ export default function SendScreen() {
               />
             </div>
           )}
-          {matchedContact && !destError && (
-            <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{matchedContact.name}</span>
+          {!destError && isValidIdentity(destUpper) && (
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)" }}>
+              <Identicon seed={destUpper} size={20} radius={4} />
+              {matchedContact && (
+                <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)" }}>{matchedContact.name}</span>
+              )}
+            </div>
           )}
           {destError && (
             <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{destError}</span>
@@ -530,7 +537,7 @@ export default function SendScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
           {price && amountStr && (
@@ -540,10 +547,12 @@ export default function SendScreen() {
           )}
         </div>
 
+        <div style={{ height: 1, background: "var(--color-border-subtle)", opacity: 0.5, margin: "var(--space-1) 0" }} />
+
         {/* Parties card */}
         <div style={cardStyle}>
           <DetailRow
-            icon={<UserId size={16} />}
+            icon={<Identicon seed={destUpper} size={16} radius={3} />}
             label="To"
             value={matchedContact ? matchedContact.name : truncateId(destUpper)}
             mono={!matchedContact}
@@ -659,20 +668,22 @@ export default function SendScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
-        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {formatQu(amountStr)}
+        <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
+            <CheckCircle size={64} style={{ color: "var(--color-accent)" }} />
           </div>
-          <div className="flash-success" style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)", }}>
-            <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Sent</span>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+            Transaction sent
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1, marginTop: "var(--space-2)" }}>
+            {formatQu(amountStr)}
           </div>
         </div>
 
         {/* Details card */}
         <div style={cardStyle}>
           <DetailRow
-            icon={<UserId size={16} />}
+            icon={<Identicon seed={destUpper} size={16} radius={3} />}
             label="To"
             value={matchedContact ? matchedContact.name : truncateId(destUpper)}
             mono={!matchedContact}
