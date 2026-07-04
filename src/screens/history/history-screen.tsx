@@ -121,11 +121,11 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
       }}
     >
       <div style={{
-        width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+        width: 36, height: 36, borderRadius: 8, flexShrink: 0,
         background: "var(--color-bg-surface)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        {TypeIcon && <TypeIcon size={14} weight="Bold" />}
+        {TypeIcon && <TypeIcon size={18} weight="Bold" />}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>

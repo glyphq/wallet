@@ -1,23 +1,18 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
-import { AltArrowLeft, CheckCircle } from "@solar-icons/react";
+import { AltArrowLeft, Copy, CheckCircle, LinkRound, QrCode } from "@solar-icons/react";
 import { copyToClipboard } from "@/lib/clipboard";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
 
 const WEB_BASE = "https://wallet.glyphq.org/pay";
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-body)",
-  fontWeight: 500,
-  color: "var(--color-text-secondary)",
-};
 
 const stepMotion = {
   initial: { y: 4 },
@@ -90,41 +85,15 @@ export default function PaymentLinkScreen() {
   // ── Header ──────────────────────────────────────────────────────────────────
 
   const header = (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        width: "100%",
-        padding: "0 var(--space-4)",
-      }}
-    >
+    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button
         type="button"
         onClick={() => navigate("/receive")}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--color-text-secondary)",
-          padding: "var(--space-2) 0",
-          display: "flex",
-          alignItems: "center",
-        }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}
       >
         <AltArrowLeft size={20} />
       </button>
-      <span
-        style={{
-          position: "absolute",
-          left: "50%",
-          transform: "translateX(-50%)",
-          fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-body)",
-          fontWeight: 500,
-          color: "var(--color-text-display)",
-          whiteSpace: "nowrap",
-        }}
-      >
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
         Payment link
       </span>
     </div>
@@ -133,306 +102,172 @@ export default function PaymentLinkScreen() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell
-      statusBar={header}
-      fullBleed
-      contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}
-    >
-      <motion.div
-        {...stepMotion}
-        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}
-      >
-        {/* ── Form card ── */}
-        <div
-          style={{
-            background: "var(--color-bg-surface)",
-            borderRadius: "var(--radius-card)",
-            padding: "var(--space-4)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-3)",
-          }}
-        >
-          {/* Account selector when multiple accounts exist */}
-          {accountOptions.length > 1 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              <span style={labelStyle}>Receive to</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-                {accountOptions.map((a) => (
-                  <button
-                    key={a.identity}
-                    type="button"
-                    onClick={() => setTo(a.identity)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "var(--space-1) var(--space-2)",
-                      borderRadius: "var(--radius-sharp)",
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "var(--text-body)",
-                      fontWeight: 500,
-                      color:
-                        to === a.identity
-                          ? "var(--color-accent)"
-                          : "var(--color-text-secondary)",
-                    }}
-                  >
-                    {a.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
-          {/* Amount input */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <span style={labelStyle}>Amount (QU, optional)</span>
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
-              placeholder="Leave blank to let sender choose"
-              inputMode="numeric"
-              autoComplete="off"
-              style={{
-                background: "none",
-                border: "none",
-                outline: "none",
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-display)",
-                padding: 0,
-                minWidth: 0,
-              }}
-            />
-          </div>
-
-          {/* Label / note input */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <span style={labelStyle}>Label / note (optional)</span>
-            <input
-              value={label}
-              onChange={(e) => setLabel(e.target.value.slice(0, 100))}
-              placeholder="e.g. Coffee, Invoice #42"
-              autoComplete="off"
-              style={{
-                background: "none",
-                border: "none",
-                outline: "none",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-display)",
-                padding: 0,
-                minWidth: 0,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* ── No account state ── */}
-        {!links && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "var(--space-2)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body)",
-              color: "var(--color-text-disabled)",
-              textAlign: "center",
-              padding: "var(--space-6) 0",
-            }}
-          >
-            <span>Select an account above to generate a payment link</span>
-            <span style={{ fontSize: "var(--text-label)" }}>
-              You can also enter an amount and label to pre-fill the payment
+        {/* ── Account selector ── */}
+        {accountOptions.length > 1 && (
+          <div>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", display: "block", marginBottom: "var(--space-2)" }}>
+              Receive to
             </span>
-          </div>
-        )}
-
-        {/* ── QR code section ── */}
-        {links && (
-          <div
-            style={{
-              background: "var(--color-bg-surface)",
-              borderRadius: "var(--radius-card)",
-              padding: "var(--space-4)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-3)",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ display: "flex", gap: "var(--space-2)" }}>
-              {(["web", "deep"] as const).map((mode) => (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {accountOptions.map((a) => (
                 <button
-                  key={mode}
+                  key={a.identity}
                   type="button"
-                  onClick={() => setQrMode(mode)}
+                  onClick={() => setTo(a.identity)}
                   style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "var(--space-1) var(--space-2)",
+                    background: to === a.identity ? "var(--color-text-primary)" : "none",
+                    border: `1px solid ${to === a.identity ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
                     borderRadius: "var(--radius-sharp)",
+                    cursor: "pointer",
+                    padding: "var(--space-1) var(--space-3)",
                     fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body)",
+                    fontSize: "var(--text-label)",
                     fontWeight: 500,
-                    color:
-                      qrMode === mode
-                        ? "var(--color-text-primary)"
-                        : "var(--color-text-disabled)",
+                    color: to === a.identity ? "var(--color-bg-base)" : "var(--color-text-secondary)",
                   }}
                 >
-                  {mode === "web" ? "Web link" : "Glyph://"}
+                  {a.name}
                 </button>
               ))}
             </div>
-            <div
-              style={{
-                padding: "var(--space-4)",
-                background: "#fff",
-                borderRadius: "var(--radius-card)",
-              }}
-            >
-              <QRCodeSVG
-                value={qrMode === "web" ? links.web : links.deep}
-                size={180}
-                bgColor="#FFFFFF"
-                fgColor="#111111"
-                level="M"
-              />
-            </div>
           </div>
         )}
 
-        {/* ── Link outputs ── */}
-        {links && (
+        {/* ── Form card ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <Input
+            label="Amount (QU)"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+            placeholder="Leave blank to let sender choose"
+            inputMode="numeric"
+            autoComplete="off"
+          />
+          <Input
+            label="Label"
+            value={label}
+            onChange={(e) => setLabel(e.target.value.slice(0, 100))}
+            placeholder="e.g. Coffee, Invoice #42"
+            autoComplete="off"
+          />
+        </div>
+
+        {/* ── QR + links (only when valid) ── */}
+        {links ? (
           <>
-            <LinkRow
-              label="Web link"
-              sublabel="Share on Discord, embed on web — shows a preview page"
-              value={links.web}
-              copied={copiedWeb}
-              onCopy={() => copy(links.web, "web")}
-            />
+            {/* QR code */}
+            <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+              {/* Mode toggle */}
+              <div style={{ display: "flex", gap: "var(--space-1)", background: "var(--color-bg-elevated)", borderRadius: "var(--radius-sharp)", padding: 2 }}>
+                {(["web", "deep"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setQrMode(mode)}
+                    style={{
+                      background: qrMode === mode ? "var(--color-bg-surface)" : "transparent",
+                      border: "none",
+                      borderRadius: "var(--radius-sharp)",
+                      cursor: "pointer",
+                      padding: "var(--space-1) var(--space-3)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-label)",
+                      fontWeight: 500,
+                      color: qrMode === mode ? "var(--color-text-primary)" : "var(--color-text-disabled)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-1)",
+                      transition: "background 0.15s, color 0.15s",
+                    }}
+                  >
+                    {mode === "web" ? <LinkRound size={12} /> : <QrCode size={12} />}
+                    {mode === "web" ? "Web" : "App"}
+                  </button>
+                ))}
+              </div>
 
-            <LinkRow
-              label="Direct link"
-              sublabel="Opens Glyph directly — best for Glyph-to-Glyph sharing"
-              value={links.deep}
-              copied={copiedDeep}
-              onCopy={() => copy(links.deep, "deep")}
-            />
+              {/* QR */}
+              <div style={{ padding: "var(--space-4)", background: "#fff", borderRadius: "var(--radius-card)" }}>
+                <QRCodeSVG
+                  value={qrMode === "web" ? links.web : links.deep}
+                  size={200}
+                  bgColor="#FFFFFF"
+                  fgColor="#111111"
+                  level="M"
+                />
+              </div>
 
-            {/* ── Receiving identity ── */}
-            <div
-              style={{
-                background: "var(--color-bg-surface)",
-                borderRadius: "var(--radius-card)",
-                padding: "var(--space-3) var(--space-4)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-body)",
-                  color: "var(--color-text-disabled)",
-                }}
-              >
-                Receiving identity: {truncateId(to, 8, 6)}
+              {/* Link preview */}
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", wordBreak: "break-all", textAlign: "center", maxWidth: 280 }}>
+                {qrMode === "web" ? links.web : links.deep}
               </span>
             </div>
+
+            {/* Copy buttons */}
+            <div style={{ display: "flex", gap: "var(--space-3)" }}>
+              <CopyButton
+                label="Copy web link"
+                copied={copiedWeb}
+                onCopy={() => copy(links.web, "web")}
+              />
+              <CopyButton
+                label="Copy app link"
+                copied={copiedDeep}
+                onCopy={() => copy(links.deep, "deep")}
+              />
+            </div>
+
+            {/* Receiving identity */}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", textAlign: "center", display: "block" }}>
+              Receiving to {truncateId(to, 8, 6)}
+            </span>
           </>
+        ) : (
+          /* ── Empty state ── */
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-8) 0", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-bg-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <LinkRound size={22} style={{ color: "var(--color-text-disabled)" }} />
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+                Select an account to generate a link
+              </div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
+                Add an amount or label to pre-fill the payment
+              </div>
+            </div>
+          </div>
         )}
       </motion.div>
     </AppShell>
   );
 }
 
-// ── LinkRow ──────────────────────────────────────────────────────────────────
+// ── CopyButton ──────────────────────────────────────────────────────────────
 
-function LinkRow({
-  label,
-  sublabel,
-  value,
-  copied,
-  onCopy,
-}: {
-  label: string;
-  sublabel: string;
-  value: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
+function CopyButton({ label, copied, onCopy }: { label: string; copied: boolean; onCopy: () => void }) {
   return (
-    <div
-      style={{
-        background: "var(--color-bg-surface)",
-        borderRadius: "var(--radius-card)",
-        padding: "var(--space-4)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-2)",
-      }}
+    <Button
+      variant={copied ? "secondary" : "secondary"}
+      size="sm"
+      shape="sharp"
+      onClick={onCopy}
+      style={{ flex: 1, color: copied ? "var(--color-accent)" : undefined }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <span style={labelStyle}>{label}</span>
-        <button
-          type="button"
-          onClick={onCopy}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-body)",
-            fontWeight: 500,
-            color: copied
-              ? "var(--color-accent)"
-              : "var(--color-accent)",
-            padding: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-1)",
-          }}
-        >
-          {copied ? (
-            <>
-              <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
-              Copied
-            </>
-          ) : (
-            "Copy"
-          )}
-        </button>
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          color: "var(--color-text-disabled)",
-          wordBreak: "break-all",
-        }}
-      >
-        {value}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-caption)",
-          color: "var(--color-text-disabled)",
-        }}
-      >
-        {sublabel}
-      </div>
-    </div>
+      {copied ? (
+        <>
+          <CheckCircle size={14} />
+          Copied
+        </>
+      ) : (
+        <>
+          <Copy size={14} />
+          {label}
+        </>
+      )}
+    </Button>
   );
 }
