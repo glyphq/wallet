@@ -333,9 +333,13 @@ export default function LockScreen() {
               </div>
             </div>
 
-            {/* Vault list — always visible when multiple */}
+            {/* Vault list — always visible when multiple (scrollable for 4+) */}
             {hasMultiple && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div style={{
+                display: "flex", flexDirection: "column", gap: "var(--space-2)",
+                maxHeight: 220, overflowY: "auto",
+                scrollbarWidth: "thin",
+              }}>
                 {lockedVaults.map((v) => (
                   <VaultCard
                     key={v.id}

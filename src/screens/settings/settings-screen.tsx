@@ -17,6 +17,7 @@ import {
 import { AppShell } from "@/layouts/app-shell";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
+import { useSessionStore } from "@/store/session";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)",
@@ -185,6 +186,34 @@ export default function SettingsScreen() {
             </span>
           )}
         </div>
+        {/* Lock wallet */}
+        <motion.button
+          {...gesture.pressSubtle}
+          onClick={() => {
+            useSessionStore.getState().lock();
+            navigate("/", { replace: true });
+          }}
+          style={{
+            marginTop: "var(--space-4)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
+            background: "transparent",
+            border: "1px solid var(--color-border-subtle)",
+            borderRadius: "var(--radius-card)",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
+            <rect x="4" y="4" width="32" height="32" rx="8" stroke="var(--color-text-disabled)" strokeWidth="2" />
+            <path d="M14 14h12M14 20h12M14 26h8" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <span style={{
+            fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+            fontWeight: 500, color: "var(--color-text-disabled)",
+          }}>
+            Lock wallet
+          </span>
+        </motion.button>
       </motion.div>
     </AppShell>
   );
