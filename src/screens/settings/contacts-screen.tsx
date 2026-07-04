@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { stepMotion } from "@/lib/animations";
-
+import { stepMotion, gesture } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
+import { Input } from "@/components/input";
+import { Button } from "@/components/button";
+import { AltArrowRight, TrashBinMinimalistic } from "@solar-icons/react";
 
 export default function SettingsContactsScreen() {
   const contacts = usePersistedStore((s) => s.contacts);
@@ -15,7 +17,7 @@ export default function SettingsContactsScreen() {
   const updateContact = usePersistedStore((s) => s.updateContact);
   const removeContact = usePersistedStore((s) => s.removeContact);
 
-  const [adding, setAdding] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
 
@@ -23,413 +25,176 @@ export default function SettingsContactsScreen() {
   const [formIdentity, setFormIdentity] = useState("");
   const [formNote, setFormNote] = useState("");
   const [identityError, setIdentityError] = useState("");
+  const [nameError, setNameError] = useState("");
 
   function openAdd() {
-    setFormName("");
-    setFormIdentity("");
-    setFormNote("");
-    setIdentityError("");
-    setAdding(true);
-    setEditing(null);
+    setFormName(""); setFormIdentity(""); setFormNote("");
+    setIdentityError(""); setNameError("");
+    setEditing(null); setFormOpen(true);
   }
 
   function openEdit(contact: Contact) {
-    setFormName(contact.name);
-    setFormIdentity(contact.identity);
-    setFormNote(contact.note);
-    setIdentityError("");
-    setEditing(contact);
-    setAdding(false);
+    setFormName(contact.name); setFormIdentity(contact.identity); setFormNote(contact.note);
+    setIdentityError(""); setNameError("");
+    setEditing(contact); setFormOpen(true);
   }
 
   function closeForm() {
-    setAdding(false);
-    setEditing(null);
-    setIdentityError("");
-  }
-
-  function validateIdentity(id: string): boolean {
-    if (!isValidIdentity(id)) {
-      setIdentityError("Must be 60 uppercase letters");
-      return false;
-    }
-    setIdentityError("");
-    return true;
+    setFormOpen(false); setEditing(null);
   }
 
   function doSave() {
-    if (!formName.trim() || !validateIdentity(formIdentity.trim())) return;
+    let valid = true;
+    if (!formName.trim()) { setNameError("Required"); valid = false; }
+    if (!isValidIdentity(formIdentity.trim())) { setIdentityError("Must be 60 uppercase letters"); valid = false; }
+    if (!valid) return;
+
     if (editing) {
-      updateContact(editing.id, {
-        name: formName.trim(),
-        identity: formIdentity.trim(),
-        note: formNote.trim(),
-      });
+      updateContact(editing.id, { name: formName.trim(), identity: formIdentity.trim(), note: formNote.trim() });
     } else {
       addContact({
-        id: newId(),
-        name: formName.trim(),
-        identity: formIdentity.trim(),
-        note: formNote.trim(),
-        addedAt: Date.now(),
-        lastUsedAt: 0,
+        id: newId(), name: formName.trim(), identity: formIdentity.trim(),
+        note: formNote.trim(), addedAt: Date.now(), lastUsedAt: 0,
       });
     }
     closeForm();
   }
 
   const filtered = contacts
-    .filter(
-      (c) =>
-        !search ||
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.identity.toLowerCase().includes(search.toLowerCase()),
-    )
+    .filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.identity.includes(search.toUpperCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const showForm = adding || editing !== null;
-
   return (
-    <AppShell
-      fullBleed
-      contentStyle={{
-        padding: "var(--space-6)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-6)",
-      }}
-    >
-      <motion.div
-        {...stepMotion}
-        style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
-      >
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", paddingBottom: "calc(var(--space-4) + 76px)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <SettingsPageHeader title="Contacts" />
 
-        {/* Search and add */}
-        {contacts.length > 0 && (
+        {/* Add / Edit form */}
+        {formOpen && (
+          <Card>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
+              {editing ? "Edit contact" : "New contact"}
+            </span>
+            <Input label="Name" value={formName} onChange={(e) => { setFormName(e.target.value); setNameError(""); }} placeholder="Alice" error={nameError} autoFocus />
+            <Input label="Identity" value={formIdentity} onChange={(e) => { setFormIdentity(e.target.value); setIdentityError(""); }} placeholder="60 uppercase letters" error={identityError} />
+            <Input label="Note" value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="Optional" />
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <Button onClick={doSave} style={{ flex: 1 }}>{editing ? "Save" : "Add contact"}</Button>
+              <button onClick={closeForm} style={{
+                padding: "var(--space-3) var(--space-4)", background: "transparent",
+                border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
+                cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+                fontWeight: 500, color: "var(--color-text-secondary)",
+              }}>
+                Cancel
+              </button>
+            </div>
+          </Card>
+        )}
+
+        {/* Search + add button */}
+        {contacts.length > 0 && !formOpen && (
           <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or identity"
+              placeholder="Search contacts..."
               style={{
-                flex: 1,
-                background: "transparent",
-                border: "none",
-                borderBottom: "1px solid var(--color-border-strong)",
-                borderRadius: 0,
-                padding: "var(--space-2) 0",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-display)",
-                outline: "none",
+                flex: 1, background: "transparent", border: "none",
+                borderBottom: "1px solid var(--color-border-subtle)", borderRadius: 0,
+                padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-body)", color: "var(--color-text-display)", outline: "none",
               }}
             />
-            <button
-              onClick={openAdd}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-small)",
-                color: "var(--color-text-disabled)",
-                padding: 0,
-                flexShrink: 0,
-              }}
-            >
+            <motion.button {...gesture.pressSubtle} onClick={openAdd} style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+              fontWeight: 500, color: "var(--color-accent)", padding: 0, flexShrink: 0,
+            }}>
               + Add
-            </button>
+            </motion.button>
           </div>
-        )}
-
-        {/* Inline add/edit form */}
-        {showForm && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-3)",
-              background: "var(--color-bg-surface)",
-              borderRadius: "var(--radius-card)",
-              padding: "var(--space-4)",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 500,
-                color: "var(--color-text-primary)",
-              }}
-            >
-              {editing ? "Edit contact" : "Add contact"}
-            </div>
-
-            <input
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              placeholder="Name"
-              autoFocus
-              style={{
-                background: "transparent",
-                border: "none",
-                borderBottom: "1px solid var(--color-border-subtle)",
-                borderRadius: 0,
-                padding: "var(--space-2) 0",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-primary)",
-                outline: "none",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            />
-
-            <div>
-              <input
-                value={formIdentity}
-                onChange={(e) => {
-                  setFormIdentity(e.target.value);
-                  setIdentityError("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && doSave()}
-                placeholder="Identity (60 uppercase letters)"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: identityError
-                    ? "1px solid var(--color-status-error)"
-                    : "1px solid var(--color-border-subtle)",
-                  borderRadius: 0,
-                  padding: "var(--space-2) 0",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-label)",
-                  color: "var(--color-text-primary)",
-                  outline: "none",
-                  width: "100%",
-                  boxSizing: "border-box",
-                }}
-              />
-              {identityError && (
-                <div
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-small)",
-                    color: "var(--color-status-error)",
-                    marginTop: "var(--space-1)",
-                  }}
-                >
-                  {identityError}
-                </div>
-              )}
-            </div>
-
-            <input
-              value={formNote}
-              onChange={(e) => setFormNote(e.target.value)}
-              placeholder="Note (optional)"
-              style={{
-                background: "transparent",
-                border: "none",
-                borderBottom: "1px solid var(--color-border-subtle)",
-                borderRadius: 0,
-                padding: "var(--space-2) 0",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-primary)",
-                outline: "none",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            />
-
-            <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
-              <button
-                onClick={doSave}
-                disabled={!formName.trim() || !formIdentity.trim()}
-                style={{
-                  flex: 1,
-                  padding: "var(--space-3)",
-                  border: "none",
-                  cursor: !formName.trim() || !formIdentity.trim() ? "default" : "pointer",
-                  opacity: !formName.trim() || !formIdentity.trim() ? 0.4 : 1,
-                  borderRadius: "var(--radius-sharp)",
-                  background: "var(--color-text-primary)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-label)",
-                  fontWeight: 500,
-                  color: "var(--color-bg-base)",
-                }}
-              >
-                Save
-              </button>
-              <button
-                onClick={closeForm}
-                style={{
-                  padding: "var(--space-3) var(--space-4)",
-                  background: "var(--color-bg-elevated)",
-                  border: "none",
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-label)",
-                  fontWeight: 500,
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {contacts.length === 0 && !showForm && (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body)",
-              color: "var(--color-text-disabled)",
-              textAlign: "center",
-            }}
-          >
-            No contacts yet
-          </div>
-        )}
-
-        {contacts.length > 0 && filtered.length === 0 && (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body)",
-              color: "var(--color-text-disabled)",
-              textAlign: "center",
-            }}
-          >
-            No results
-          </div>
-        )}
-
-        {/* Add button when list exists and no form open */}
-        {contacts.length === 0 && !showForm && (
-          <button
-            onClick={openAdd}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-small)",
-              color: "var(--color-text-disabled)",
-              padding: 0,
-              textAlign: "center",
-            }}
-          >
-            + Add contact
-          </button>
         )}
 
         {/* Contact list */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {filtered.map((contact, i) => (
-            <>
-              {i > 0 && <div style={{ height: 1, background: "var(--color-border-subtle)" }} />}
-              <div
-                key={contact.id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-3)",
-                  padding: "var(--space-3) 0",
-                }}
-              >
-              <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                <Identicon
-                  seed={contact.identity}
-                  size={32}
-                  radius={5}
-                  style={{ marginTop: 2, flexShrink: 0 }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontWeight: 500,
-                      color: "var(--color-text-primary)",
-                    }}
-                  >
-                    {contact.name}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "var(--text-label)",
-                      color: "var(--color-text-disabled)",
-                      marginTop: "var(--space-1)",
-                    }}
-                  >
-                    {truncateId(contact.identity)}
-                  </div>
-                  {contact.note && (
-                    <div
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontSize: "var(--text-small)",
-                        color: "var(--color-text-secondary)",
-                        marginTop: "var(--space-1)",
-                      }}
-                    >
-                      {contact.note}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "var(--space-3)" }}>
-                <button
+        {filtered.length > 0 && (
+          <Card>
+            {filtered.map((contact, i) => (
+              <div key={contact.id}>
+                {i > 0 && <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />}
+                <motion.button
+                  {...gesture.pressSubtle}
                   onClick={() => openEdit(contact)}
                   style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 500,
-                    color: "var(--color-text-secondary)",
-                    padding: 0,
+                    display: "flex", alignItems: "center", gap: "var(--space-3)",
+                    width: "100%", padding: "var(--space-3) 0", background: "none",
+                    border: "none", cursor: "pointer", textAlign: "left",
                   }}
                 >
-                  Edit
-                </button>
-                <button
-                  onClick={() => removeContact(contact.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 500,
-                    color: "var(--color-status-error)",
-                    padding: 0,
-                  }}
-                >
-                  Delete
-                </button>
+                  <Identicon seed={contact.identity} size={32} radius={6} style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                      {contact.name}
+                    </div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
+                      {truncateId(contact.identity, 10, 6)}
+                    </div>
+                    {contact.note && (
+                      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: 2 }}>
+                        {contact.note}
+                      </div>
+                    )}
+                  </div>
+                  <AltArrowRight size={14} weight="Outline" style={{ color: "var(--color-text-disabled)", flexShrink: 0 }} />
+                </motion.button>
               </div>
-              </div>
-            </>
-          ))}
-        </div>
+            ))}
+          </Card>
+        )}
+
+        {/* Empty state */}
+        {contacts.length === 0 && !formOpen && (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", gap: "var(--space-4)", padding: "var(--space-8) 0",
+          }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+              No contacts yet
+            </span>
+            <Button onClick={openAdd}>Add your first contact</Button>
+          </div>
+        )}
+
+        {/* Delete (when editing) */}
+        {editing && formOpen && (
+          <motion.button
+            {...gesture.pressSubtle}
+            onClick={() => { removeContact(editing.id); closeForm(); }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
+              background: "transparent", border: "none", cursor: "pointer",
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+              fontWeight: 500, color: "var(--color-status-error)",
+            }}
+          >
+            <TrashBinMinimalistic size={14} weight="Outline" />
+            Delete contact
+          </motion.button>
+        )}
       </motion.div>
     </AppShell>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", gap: "var(--space-3)",
+      background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
+      padding: "var(--space-4)",
+    }}>
+      {children}
+    </div>
   );
 }
