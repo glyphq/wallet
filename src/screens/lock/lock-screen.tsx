@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { Fingerprint } from "lucide-react";
+import { LockKeyhole } from "@solar-icons/react";
 import { motion } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -302,7 +302,7 @@ export default function LockScreen() {
               padding: "var(--space-2)",
             }}
             >
-              <Fingerprint size={18} color="var(--color-text-secondary)" strokeWidth={1.5} />
+              <LockKeyhole size={18} color="var(--color-text-secondary)" weight="Linear" />
               <span
               style={{
                 fontFamily: "var(--font-mono)",

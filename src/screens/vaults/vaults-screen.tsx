@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderOpen, Eye, Plus } from "lucide-react";
+import { FolderOpen, Eye, AddCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
@@ -315,13 +315,13 @@ export default function VaultsScreen() {
       action={
         <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
           <button type="button" onClick={openImportPicker} aria-label="Import vault file" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2)", display: "flex", alignItems: "center" }}>
-            <FolderOpen size={15} strokeWidth={1.5} />
+            <FolderOpen size={15} weight="Linear" />
           </button>
           <button type="button" onClick={() => setWatchOpen(true)} aria-label="New watch-only vault" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2)", display: "flex", alignItems: "center" }}>
-            <Eye size={15} strokeWidth={1.5} />
+            <Eye size={15} weight="Linear" />
           </button>
           <button type="button" onClick={() => navigate("/setup/create")} aria-label="New vault" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2)", display: "flex", alignItems: "center" }}>
-            <Plus size={15} strokeWidth={1.5} />
+            <AddCircle size={15} weight="Linear" />
           </button>
         </div>
       }
