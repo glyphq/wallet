@@ -68,7 +68,12 @@ export function stripNotificationMarkup(value: string): string {
 
 export async function notify(title: string, body: string): Promise<NotificationDeliveryResult> {
   try {
-    if (!(await isPermissionGranted())) {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const res = await requestPermission();
+      granted = res === "granted";
+    }
+    if (!granted) {
       return { ok: false, state: "denied", message: permissionDeniedMessage() };
     }
     tauriSend({

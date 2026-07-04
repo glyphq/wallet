@@ -3,7 +3,6 @@ mod biometric;
 mod clipboard;
 mod commands;
 mod deep_link;
-mod notification;
 mod store_crypto;
 mod vault_crypto;
 
@@ -147,7 +146,6 @@ pub fn run() {
             biometric::enable_biometric,
             biometric::biometric_unlock,
             biometric::disable_biometric,
-            notification::show_notification_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running glyph");

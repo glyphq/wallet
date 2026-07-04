@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
-import { type NotificationDeliveryResult } from "@/lib/notifications";
+import { notify, type NotificationDeliveryResult } from "@/lib/notifications";
 import { useSessionStore } from "@/store/session";
+import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
 
 function makeEventId(): string {
@@ -48,13 +48,13 @@ export async function publishNotificationEvent(
   if (isLocked && !notifyWhenLocked) {
     return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the vault is locked." };
   }
-  invoke("show_notification_window", {
-    payload: {
-      kind: event.kind,
-      title: event.title,
-      body: event.body,
-      duration: 5000,
-    },
-  }).catch(() => {});
-  return { ok: true, state: "sent" };
+  const result = await notify(event.title, event.body);
+  if (!result.ok) {
+    recordRuntimeIssue({
+      source: "native",
+      title: "Notification delivery failed",
+      detail: result.message,
+    });
+  }
+  return result;
 }
