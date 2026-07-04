@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { UserRounded, UsersGroupRounded, TransferHorizontal, Document, Magnifier } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Input } from "@/components/input";
@@ -13,6 +14,20 @@ import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { truncateId } from "@/lib/format";
 import { getAccountIdentity } from "@/lib/accounts";
 import { getKnownContractLabel, normalizeArchiveTransaction, pendingTxToRecord } from "@/lib/tx-domain";
+
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  accounts: <UserRounded size={14} weight="Linear" />,
+  contacts: <UsersGroupRounded size={14} weight="Linear" />,
+  transactions: <TransferHorizontal size={14} weight="Linear" />,
+  contracts: <Document size={14} weight="Linear" />,
+};
+
+const SECTION_LABELS: Record<string, string> = {
+  accounts: "Accounts",
+  contacts: "Contacts",
+  transactions: "Transactions",
+  contracts: "Contracts",
+};
 
 type SearchSection = "accounts" | "contacts" | "transactions" | "contracts";
 
@@ -176,16 +191,20 @@ export default function SearchScreen() {
 
   return (
     <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <Input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search contacts, accounts, tx hashes, memos, contracts"
-        autoFocus
-        style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}
-      />
+      <div style={{ position: "relative" }}>
+        <Magnifier size={18} weight="Linear" style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search contacts, accounts, transactions, contracts"
+          autoFocus
+          style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", paddingLeft: "var(--space-10)" }}
+        />
+      </div>
 
       {!normalizedQuery && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
+          <Magnifier size={48} weight="Linear" style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
             Start typing to search
           </div>
@@ -196,7 +215,8 @@ export default function SearchScreen() {
       )}
 
       {normalizedQuery && results.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
+          <Magnifier size={48} weight="Linear" style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
             No results for "{query.trim()}"
           </div>
@@ -209,8 +229,11 @@ export default function SearchScreen() {
       {(Object.entries(grouped) as Array<[SearchSection, SearchResult[]]>).map(([section, sectionResults]) => (
         sectionResults.length > 0 ? (
           <div key={section} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-              {section === "accounts" ? "Accounts" : section === "contacts" ? "Contacts" : section === "transactions" ? "Transactions" : "Contracts"}
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", color: "var(--color-text-disabled)" }}>
+              <span style={{ flexShrink: 0 }}>{SECTION_ICONS[section]}</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500 }}>
+                {SECTION_LABELS[section]}
+              </span>
             </div>
             {sectionResults.map((result, index) => (
               <div key={result.key} className="stagger-item">

@@ -2,12 +2,15 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AltArrowLeft } from "@solar-icons/react";
+import { AltArrowLeft, Copy, CheckCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { IdentityDisplay } from "@/components/identity-display";
+import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getVaultAccountIdentity } from "@/lib/accounts";
+import { copyToClipboard } from "@/lib/clipboard";
+import { truncateId } from "@/lib/format";
 
 export default function ReceiveScreen() {
   const navigate = useNavigate();
@@ -21,6 +24,15 @@ export default function ReceiveScreen() {
   const accountName = vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`;
   const hideBalances = settings.hideBalances;
   const [qrRevealed, setQrRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (!identity) return;
+    const clearSecs = settings.clipboardClearSeconds;
+    await copyToClipboard(identity, clearSecs);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
@@ -46,9 +58,19 @@ export default function ReceiveScreen() {
         transition={{ duration: 0.15, ease: "easeOut" }}
         style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}
       >
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-          {accountName}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          {identity && <Identicon seed={identity} size={36} radius={6} />}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>
+              {accountName}
+            </span>
+            {identity && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                {truncateId(identity, 10, 10)}
+              </span>
+            )}
+          </div>
+        </div>
 
         {identity ? (
           <>
@@ -70,7 +92,7 @@ export default function ReceiveScreen() {
             >
               <QRCodeSVG
                 value={identity}
-                size={200}
+                size={260}
                 bgColor="#FFFFFF"
                 fgColor="#111111"
                 level="M"
@@ -89,6 +111,36 @@ export default function ReceiveScreen() {
             </div>
 
             <IdentityDisplay identity={identity} style={{ textAlign: "center", maxWidth: 300 }} />
+
+            <button
+              type="button"
+              onClick={handleCopy}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
+                padding: "var(--space-3) var(--space-6)",
+                background: copied ? "var(--color-status-success)" : "var(--color-bg-surface)",
+                border: `1px solid ${copied ? "var(--color-status-success)" : "var(--color-border-strong)"}`,
+                borderRadius: "var(--radius-pill)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              {copied ? (
+                <>
+                  <CheckCircle size={16} weight="Bold" style={{ color: "var(--color-bg-base)" }} />
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-bg-base)" }}>
+                    Copied!
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} weight="Linear" style={{ color: "var(--color-text-primary)" }} />
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                    Copy address
+                  </span>
+                </>
+              )}
+            </button>
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>

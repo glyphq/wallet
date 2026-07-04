@@ -6,7 +6,7 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
-import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
+import { MAX_VAULT_ACCOUNTS, useVaultBalances } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
 import { deriveIdentityFromSeed, generateRandomSeed, isValidIdentity, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -19,9 +19,10 @@ import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { getAccountIdentity, isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
 import { createSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
+import { formatQu } from "@/lib/format";
 import {
   Pen2, DocumentText, Key, EyeClosed, Eye, TrashBinMinimalistic,
-  AddCircle,
+  AddCircle, InfoCircle,
 } from "@solar-icons/react";
 
 const ACCOUNT_NAME_SUGGESTIONS = [
@@ -95,6 +96,7 @@ export default function VaultDetailScreen() {
   const seedCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
+  const { data: vaultBalances } = useVaultBalances();
 
   useEffect(() => {
     if (!revealedSeed) return;
@@ -437,6 +439,7 @@ export default function VaultDetailScreen() {
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           isCurrent={isActive && settings.activeAccountIndex === account.index}
           flashSuccess={newlyAddedIndex === account.index}
+          balance={isActive && vaultBalances ? vaultBalances[getAccountIdentity(account, sessionWallets[account.index] ?? null) ?? ""] ?? null : null}
           onManage={() => openAccountMenu(account)}
         />
       ))}
@@ -474,16 +477,16 @@ export default function VaultDetailScreen() {
       ))}
 
       <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => navigate(`/vaults/${currentVault.id}/portfolio`)}>
-          Portfolio
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/vaults/${currentVault.id}/portfolio`)}>
+          <InfoCircle size={14} weight="Linear" /> Portfolio
         </Button>
         {!watchOnly && (
           <>
-            <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setShowExport(true)}>
-              Export vault
+            <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => setShowExport(true)}>
+              <DocumentText size={14} weight="Linear" /> Export vault
             </Button>
-            <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
-              Change password
+            <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
+              <Key size={14} weight="Linear" /> Change password
             </Button>
           </>
         )}
@@ -742,7 +745,7 @@ export default function VaultDetailScreen() {
               }}
             >
               <Identicon seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} size={40} radius={6} style={{ flexShrink: 0 }} />
-              <div style={{ minWidth: 0 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                   {selectedAccount.name}
                 </div>
@@ -752,8 +755,20 @@ export default function VaultDetailScreen() {
                   {isActive && settings.activeAccountIndex === selectedAccount.index ? " · ACTIVE" : ""}
                 </div>
               </div>
+              {vaultBalances && (() => {
+                const id = getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null);
+                const bal = id ? vaultBalances[id] ?? null : null;
+                return bal !== null ? (
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
+                    {formatQu(bal)} QU
+                  </span>
+                ) : null;
+              })()}
             </div>
 
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              Identity
+            </div>
             <ActionCard
               title="Rename"
               description="Change the label shown in the vault and account switcher."
@@ -775,17 +790,27 @@ export default function VaultDetailScreen() {
                 closeAccountMenu();
               }}
             />
+
             {!watchOnly && (
-              <ActionCard
-                title="Reveal seed"
-                description="Decrypt and display this account seed for a limited time."
-                icon={Key}
-                onClick={() => {
-                  openReveal(selectedAccount);
-                  closeAccountMenu();
-                }}
-              />
+              <>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  Security
+                </div>
+                <ActionCard
+                  title="Reveal seed"
+                  description="Decrypt and display this account seed for a limited time."
+                  icon={Key}
+                  onClick={() => {
+                    openReveal(selectedAccount);
+                    closeAccountMenu();
+                  }}
+                />
+              </>
             )}
+
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              Visibility
+            </div>
             <ActionCard
               title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
               description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove this account from the switcher without deleting it."}
@@ -795,6 +820,10 @@ export default function VaultDetailScreen() {
                 closeAccountMenu();
               }}
             />
+
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-error)", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: "var(--space-2)" }}>
+              Danger zone
+            </div>
             <ActionCard
               title="Remove account"
               description="Delete this account from the vault. This cannot be undone."
@@ -821,19 +850,24 @@ interface AccountRowProps {
   isCurrent: boolean;
   dimmed?: boolean;
   flashSuccess?: boolean;
+  balance?: bigint | null;
   onManage: () => void;
 }
 
-function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSuccess, onManage }: AccountRowProps) {
+function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSuccess, balance, onManage }: AccountRowProps) {
   const tags = account.tags ?? [];
   const note = account.note?.trim() ?? "";
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
       className={`stagger-item${flashSuccess ? " flash-success" : ""}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onManage}
       style={{
         opacity: dimmed ? 0.55 : 1,
-        background: "var(--color-bg-surface)",
+        background: hovered ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
         border: "1px solid var(--color-border-strong)",
         borderLeft: `3px solid ${accentColor}`,
         borderRadius: "var(--radius-sharp)",
@@ -841,6 +875,9 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSu
         display: "flex",
         gap: "var(--space-3)",
         alignItems: "flex-start",
+        cursor: "pointer",
+        transition: "background 0.12s ease, transform 0.12s ease",
+        transform: hovered ? "translateY(-1px)" : "translateY(0)",
       }}
     >
       <Identicon seed={identity ?? account.name} size={40} radius={6} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -854,24 +891,30 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSu
               ACCOUNT {account.index + 1}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onManage}
-            style={{
-              background: "none",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-sharp)",
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-mono-sm)",
-              color: "var(--color-text-secondary)",
-              letterSpacing: "0.05em",
-              padding: "var(--space-1) var(--space-2)",
-              flexShrink: 0,
-            }}
-          >
-            Manage
-          </button>
+          {balance !== null && balance !== undefined ? (
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
+              {formatQu(balance)}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onManage(); }}
+              style={{
+                background: "none",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-mono-sm)",
+                color: "var(--color-text-secondary)",
+                letterSpacing: "0.05em",
+                padding: "var(--space-1) var(--space-2)",
+                flexShrink: 0,
+              }}
+            >
+              Manage
+            </button>
+          )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (

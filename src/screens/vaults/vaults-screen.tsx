@@ -13,6 +13,15 @@ import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, type VaultData } from "@/lib/vault";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
+
+const VAULT_COLOR_CSS: Record<string, string> = {
+  slate: "var(--color-vault-slate)",
+  red: "var(--color-vault-red)",
+  amber: "var(--color-vault-amber)",
+  emerald: "var(--color-vault-emerald)",
+  sky: "var(--color-vault-sky)",
+  violet: "var(--color-vault-violet)",
+};
 import { parseSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
 
@@ -345,7 +354,9 @@ export default function VaultsScreen() {
               background: isActive ? "var(--color-bg-elevated)" : "transparent",
               borderRadius: "var(--radius-card)",
               border: `1px solid ${isActive ? "var(--color-border-strong)" : "transparent"}`,
-              transition: "background 0.12s, border-color 0.12s",
+              borderLeft: `3px solid ${VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-disabled)"}`,
+              boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+              transition: "background 0.12s, border-color 0.12s, box-shadow 0.12s",
             }}
           >
             <button
@@ -358,27 +369,26 @@ export default function VaultsScreen() {
               }}
             >
               <Identicon seed={`${vault.id}:${vault.color}`} size={36} radius={8} style={{ flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                   <span style={{
                     fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                    fontWeight: 500, color: "var(--color-text-display)",
+                    fontWeight: 600, color: "var(--color-text-display)",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>
                     {vault.name}
                   </span>
-                  {watchOnly && (
-                    <span style={{
-                      fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
-                      color: "var(--color-text-disabled)",
-                      padding: "1px var(--space-1)",
-                      border: "1px solid var(--color-border-strong)",
-                      borderRadius: "var(--radius-pill)",
-                      lineHeight: "16px",
-                    }}>
-                      Watch
-                    </span>
-                  )}
+                  <span style={{
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+                    color: watchOnly ? "var(--color-text-disabled)" : "var(--color-accent)",
+                    padding: "1px var(--space-1)",
+                    border: `1px solid ${watchOnly ? "var(--color-border-strong)" : "color-mix(in srgb, var(--color-accent) 40%, transparent)"}`,
+                    borderRadius: "var(--radius-pill)",
+                    lineHeight: "16px",
+                    letterSpacing: "0.02em",
+                  }}>
+                    {watchOnly ? "Watch-only" : "Standard"}
+                  </span>
                 </div>
                 <span style={{
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",

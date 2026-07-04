@@ -278,13 +278,27 @@ export default function SecurityScreen() {
 
         </div>
 
-        {/* Biometric card */}
-        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+        {/* Biometric card — highlighted */}
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", border: bioEnabled ? "1px solid var(--color-accent)" : "1px solid var(--color-border-subtle)", position: "relative", overflow: "hidden" }}>
+          {bioEnabled && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "var(--color-accent)" }} />
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", paddingBottom: "var(--space-2)" }}>
-            <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><FaceScanCircle size={22} weight="Linear" /></span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+            <span style={{ flexShrink: 0, color: bioEnabled ? "var(--color-accent)" : "var(--color-text-disabled)" }}><FaceScanCircle size={22} weight={bioEnabled ? "Bold" : "Linear"} /></span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}>
               {isLinux ? "Quick unlock" : "Biometric unlock"}
             </span>
+            {bioEnabled && (
+              <span style={{
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600,
+                color: "var(--color-accent)",
+                padding: "2px var(--space-2)", borderRadius: "var(--radius-pill)",
+                background: "color-mix(in srgb, var(--color-accent) 15%, transparent)",
+                marginLeft: "auto",
+              }}>
+                Active
+              </span>
+            )}
           </div>
           <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
           <div style={{ paddingTop: "var(--space-3)" }}>
@@ -340,26 +354,33 @@ export default function SecurityScreen() {
             )}
 
             {enabling && !watchOnly && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>
+              <div style={{
+                display: "flex", flexDirection: "column", gap: "var(--space-3)",
+                marginTop: "var(--space-3)", padding: "var(--space-4)",
+                background: "var(--color-bg-elevated)", borderRadius: "var(--radius-card)",
+              }}>
                 <span style={{ ...labelStyle }}>
                   Confirm your vault password to enable {isLinux ? "quick unlock" : "biometric unlock"}
                 </span>
-                <input
-                  ref={pwRef}
-                  type="password"
-                  autoComplete="new-password"
-                  value={enablePw}
-                  onChange={(e) => setEnablePw(e.target.value)}
-                  placeholder="Password"
-                  onKeyDown={(e) => e.key === "Enter" && handleEnable()}
-                  className="glyph-input"
-                  style={{
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                    color: "var(--color-text-primary)", background: "transparent",
-                    borderRadius: 0, padding: "var(--space-3) 0",
-                    width: "100%", boxSizing: "border-box", border: "none",
-                  }}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    ref={pwRef}
+                    type="password"
+                    autoComplete="new-password"
+                    value={enablePw}
+                    onChange={(e) => setEnablePw(e.target.value)}
+                    placeholder="Vault password"
+                    onKeyDown={(e) => e.key === "Enter" && handleEnable()}
+                    className="glyph-input"
+                    style={{
+                      fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
+                      color: "var(--color-text-primary)", background: "var(--color-bg-surface)",
+                      borderRadius: "var(--radius-sharp)", padding: "var(--space-3) var(--space-4)",
+                      width: "100%", boxSizing: "border-box",
+                      border: "1px solid var(--color-border-strong)",
+                    }}
+                  />
+                </div>
                 {enableError && (
                   <span style={{ ...labelStyle, color: "var(--color-status-error)" }}>{enableError}</span>
                 )}
@@ -370,16 +391,16 @@ export default function SecurityScreen() {
                     style={{
                       flex: 1, padding: "var(--space-3)", border: "none", cursor: enableLoading || !enablePw ? "default" : "pointer",
                       opacity: enableLoading || !enablePw ? 0.4 : 1, borderRadius: "var(--radius-sharp)",
-                      background: "var(--color-text-primary)", fontFamily: "var(--font-sans)",
-                      fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-bg-base)",
+                      background: "var(--color-accent)", fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-bg-base)",
                     }}
                   >
-                    {enableLoading ? "Saving..." : "Confirm"}
+                    {enableLoading ? "Saving..." : "Enable"}
                   </button>
                   <button
                     onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
                     style={{
-                      padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-elevated)", border: "none",
+                      padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
                       borderRadius: "var(--radius-sharp)", cursor: "pointer",
                       fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
                       color: "var(--color-text-secondary)",
