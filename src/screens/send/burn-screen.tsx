@@ -326,7 +326,7 @@ export default function BurnScreen() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
             <Fire size={64} style={{ color: "var(--color-status-error)" }} />
           </div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
             QU burned
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1, marginTop: "var(--space-2)" }}>

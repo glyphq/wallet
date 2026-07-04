@@ -57,7 +57,7 @@ export default function PortfolioScreen() {
           Total balance
         </span>
         <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
-          <span style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "var(--text-display)", letterSpacing: "-0.02em", color: "var(--color-text-display)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 400, fontSize: "var(--text-display)", letterSpacing: "-0.02em", color: "var(--color-text-display)" }}>
             {!allLoaded ? <div className="skeleton" style={{ width: 200, height: 48 }} /> : hideBalances ? "••••••" : formatQu(totalBalance)}
           </span>
           {allLoaded && !hideBalances && (

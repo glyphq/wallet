@@ -60,17 +60,33 @@ export default function SplashScreen() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}
       >
-        {/* Wordmark */}
-        <span style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "3.5rem",
-          fontWeight: 400,
-          color: "var(--color-text-display)",
-          letterSpacing: "0.2em",
-          lineHeight: 1,
-        }}>
-          GLYPH
-        </span>
+        {/* Logo + wordmark */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <rect x="4" y="4" width="32" height="32" rx="8" stroke="var(--color-text-display)" strokeWidth="2" />
+            <path d="M14 14h12M14 20h12M14 26h8" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-1)" }}>
+            <span style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "1.5rem",
+              fontWeight: 600,
+              color: "var(--color-text-display)",
+              letterSpacing: "-0.01em",
+            }}>
+              Glyph
+            </span>
+            <span style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "1.5rem",
+              fontWeight: 300,
+              color: "var(--color-text-secondary)",
+              letterSpacing: "-0.01em",
+            }}>
+              Wallet
+            </span>
+          </div>
+        </div>
 
         {/* Pulsing dot loader */}
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
