@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { AltArrowLeft, Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { Modal } from "@/components/modal";
-import { Tag } from "@/components/tag";
-import { Divider } from "@/components/divider";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -15,11 +12,41 @@ import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
-import { formatQu, extractMessage } from "@/lib/format";
-import { TxSending, TxError } from "@/components/tx-status";
+import { formatQu, extractMessage, truncateId } from "@/lib/format";
 import { unlockVault } from "@/lib/vault";
+import { getVaultAccountIdentity } from "@/lib/accounts";
 
 type Step = "input" | "confirm" | "sending" | "done" | "error";
+
+const labelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+  color: "var(--color-text-secondary)",
+};
+
+function DetailRow({ icon, label, value, valueColor }: {
+  icon: React.ReactNode; label: string; value: string; valueColor?: string;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
+      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
+      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: "0.8125rem",
+        color: valueColor ?? "var(--color-text-display)",
+        textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
+      }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+const stepMotion = {
+  initial: { y: 4 },
+  animate: { y: 0 },
+  exit: { y: -4 },
+  transition: { duration: 0.15, ease: "easeOut" as const },
+};
 
 export default function BurnScreen() {
   const navigate = useNavigate();
@@ -30,9 +57,11 @@ export default function BurnScreen() {
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
   const wallet = wallets[settings.activeAccountIndex] ?? null;
-  const hasPendingTx = pendingTxs.some((tx) => tx.source === (wallet?.identity ?? ""));
+  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
+  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
+  const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const { data: tickInfo } = useTickInfo();
-  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
 
   const [step, setStep] = useState<Step>("input");
@@ -40,29 +69,35 @@ export default function BurnScreen() {
   const [amountError, setAmountError] = useState("");
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
-  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
+  const [savedTargetTick, setSavedTargetTick] = useState(0);
   const [burnPassword, setBurnPassword] = useState("");
   const [burnPasswordError, setBurnPasswordError] = useState("");
+  const [needsPassword, setNeedsPassword] = useState(false);
 
   function goConfirm() {
     const trimmed = amountStr.trim();
     if (!trimmed || !/^\d+$/.test(trimmed) || BigInt(trimmed) <= 0n) {
-      setAmountError("INVALID AMOUNT");
-      return;
+      setAmountError("Invalid amount"); return;
     }
     if (balance !== null && BigInt(trimmed) > balance) {
-      setAmountError("INSUFFICIENT BALANCE");
-      return;
+      setAmountError("Insufficient balance"); return;
     }
     setAmountError("");
+    if (settings.requirePasswordForBurn && vault?.encryptedData) {
+      setNeedsPassword(true);
+    }
     setStep("confirm");
   }
 
   async function send() {
     if (!wallet) return;
-    if (settings.requirePasswordForBurn && vault?.encryptedData) {
-      setPasswordConfirmOpen(true);
-      return;
+    if (needsPassword && vault?.encryptedData) {
+      try {
+        await unlockVault(vault.encryptedData, burnPassword);
+      } catch {
+        setBurnPasswordError("Wrong password");
+        return;
+      }
     }
     await finalizeSend();
   }
@@ -74,159 +109,273 @@ export default function BurnScreen() {
       const amount = BigInt(amountStr.trim());
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
-
       const { inputType, payload } = buildQUtilBurnQubicInput({ amount });
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,
-        inputType,
-        payload,
-        amount,
-        targetTick,
-        currentTick,
+        inputType, payload, amount, targetTick, currentTick,
       });
-
       await broadcastTx(encoded);
-
-      addPendingTx({
-        hash,
-        source: wallet.identity,
-        destination: QUTIL_ADDRESS,
-        amount: amount.toString(),
-        targetTick,
-        broadcastAt: Date.now(),
-        contractName: "QUtil · Burn",
-      });
-
-      setTxHash(hash);
-      setStep("done");
+      addPendingTx({ hash, source: identity, destination: QUTIL_ADDRESS, amount: amount.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Burn" });
+      setSavedTargetTick(targetTick); setTxHash(hash); setStep("done");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
     }
   }
 
-  async function confirmBurnPassword() {
-    if (!vault?.encryptedData) return;
-    try {
-      await unlockVault(vault.encryptedData, burnPassword);
-      setPasswordConfirmOpen(false);
-      setBurnPassword("");
-      setBurnPasswordError("");
-      await finalizeSend();
-    } catch {
-      setBurnPasswordError("WRONG PASSWORD");
-    }
-  }
+  // ── Header ─────────────────────────────────────────────────────────────────
 
-  const statusBar = (
-    <ScreenHeader
-      title="Burn QU"
-      onBack={() => step === "input" || step === "done" || step === "error" ? navigate("/send") : setStep("input")}
-    />
+  const header = (
+    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
+      <button type="button" onClick={() => step === "input" ? navigate("/send") : step === "confirm" ? setStep("input") : navigate("/dashboard")}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        <AltArrowLeft size={20} />
+      </button>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+        {step === "input" ? `Burn · ${accountName}` : step === "confirm" ? "Confirm burn" : step === "done" ? "Burned" : step === "sending" ? "Burning" : "Error"}
+      </span>
+    </div>
   );
 
-  return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+  const cardStyle: React.CSSProperties = {
+    background: "var(--color-bg-surface)",
+    borderRadius: "var(--radius-card)",
+    padding: "4px 16px",
+  };
+  const divider: React.CSSProperties = {
+    height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+  };
 
-      {/* ── Input ── */}
-      {step === "input" && (
-        <>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-            [WARNING] BURNED QU IS PERMANENTLY DESTROYED. THIS CANNOT BE UNDONE.
-          </div>
-          <Input
-            label="Amount (QU)"
-            value={amountStr}
-            onChange={(e) => { setAmountStr(e.target.value.replace(/[^0-9]/g, "")); setAmountError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && goConfirm()}
-            error={amountError}
-            placeholder="0"
-            style={{ textAlign: "right", fontSize: "var(--text-display)", fontWeight: 300, fontFamily: "var(--font-sans)" }}
-          />
-          <Button variant="danger" shape="sharp" onClick={goConfirm} disabled={!amountStr.trim() || !wallet || !tickInfo}>
-            Continue
-          </Button>
-        </>
-      )}
+  // ── Input ──────────────────────────────────────────────────────────────────
 
-      {/* ── Confirm ── */}
-      {step === "confirm" && (
-        <>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-status-error)", letterSpacing: "-0.02em" }}>
-              {formatQu(amountStr)}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-status-error)" }}>QU</div>
-          </div>
+  if (step === "input") {
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
-          <Divider />
-
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6, textAlign: "center" }}>
-            THIS QU WILL BE PERMANENTLY DESTROYED.
-            <br />
-            THERE IS NO UNDO.
-          </div>
-
-          <Divider />
-
-          <Button variant="danger" shape="sharp" onClick={send} disabled={!wallet || !tickInfo || hasPendingTx}>Burn {formatQu(amountStr)} QU</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setStep("input")}>Cancel</Button>
-        </>
-      )}
-
-      {/* ── Sending ── */}
-      {step === "sending" && <TxSending />}
-
-      {/* ── Done ── */}
-      {step === "done" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          <div style={{ textAlign: "center" }}>
-            <Tag variant="success">BURNED</Tag>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-              Transaction hash
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
-              {txHash}
-            </div>
-          </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {formatQu(amountStr)} QU DESTROYED
-          </div>
-          <Button onClick={() => navigate("/dashboard")}>Done</Button>
+        {/* Warning */}
+        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-error)" }}>
+            Burned QU is permanently destroyed. This cannot be undone.
+          </span>
         </div>
-      )}
 
-      {/* ── Error ── */}
-      {step === "error" && <TxError message={txError} onRetry={() => setStep("confirm")} onCancel={() => navigate("/send")} />}
-
-      <Modal open={passwordConfirmOpen} onClose={() => setPasswordConfirmOpen(false)}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Confirm burn password
+        {/* Amount */}
+        <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+          <div style={{ position: "relative", width: "100%", maxWidth: 280 }}>
+            <input
+              autoComplete="off"
+              value={amountStr}
+              onChange={(e) => { setAmountStr(e.target.value.replace(/[^0-9]/g, "")); setAmountError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && goConfirm()}
+              placeholder="0"
+              autoFocus
+              style={{
+                width: "100%", background: "none", border: "none", outline: "none",
+                fontFamily: "var(--font-sans)", fontSize: "3rem", fontWeight: 700,
+                color: amountError ? "var(--color-status-error)" : amountStr ? "var(--color-text-display)" : "var(--color-text-disabled)",
+                letterSpacing: "-0.03em", textAlign: "center", padding: 0,
+              }}
+            />
           </div>
-          <Input
-            type="password"
-            label="Vault password"
-            value={burnPassword}
-            onChange={(e) => { setBurnPassword(e.target.value); setBurnPasswordError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && confirmBurnPassword()}
-            error={burnPasswordError}
-            placeholder="••••••••••"
-            autoComplete="current-password"
-            autoFocus
-          />
-          <Button variant="danger" shape="sharp" onClick={confirmBurnPassword} disabled={!burnPassword}>
-            Confirm burn
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)" }}>QU</span>
+
+          {balance !== null && (
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-text-disabled)", marginTop: "var(--space-2)" }}>
+              {formatQu(balance)} available
+            </span>
+          )}
+
+          {amountError && (
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: "var(--color-status-error)", marginTop: "var(--space-1)" }}>
+              {amountError}
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ paddingBottom: "var(--space-6)" }}>
+          <Button variant="danger" onClick={goConfirm} disabled={!amountStr.trim() || !wallet || !tickInfo}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+              <Fire size={16} weight="Bold" /> Continue
+            </span>
           </Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setPasswordConfirmOpen(false)}>
+        </div>
+      </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Confirm ────────────────────────────────────────────────────────────────
+
+  if (step === "confirm") {
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
+
+        {/* Amount */}
+        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-status-error)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            {formatQu(amountStr)}
+          </div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-error)", marginTop: 4, opacity: 0.7 }}>QU to burn</div>
+        </div>
+
+        {/* Warning card */}
+        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-error)" }}>
+            This QU will be permanently destroyed. There is no undo.
+          </span>
+        </div>
+
+        {/* Details card */}
+        <div style={cardStyle}>
+          <DetailRow icon={<Wallet size={16} />} label="From" value={`${accountName} · ${truncateId(identity)}`} valueColor="var(--color-text-secondary)" />
+          <div style={divider} />
+          <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
+          <div style={divider} />
+          <DetailRow icon={<Bolt size={16} />} label="Fee" value="None" />
+        </div>
+
+        {/* Password confirmation (inline) */}
+        {needsPassword && (
+          <div style={cardStyle}>
+            <div style={{ padding: "11px 0", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <span style={{ ...labelStyle }}>Vault password required</span>
+              <input
+                type="password"
+                value={burnPassword}
+                onChange={(e) => { setBurnPassword(e.target.value); setBurnPasswordError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && send()}
+                placeholder="••••••••••"
+                autoComplete="current-password"
+                style={{
+                  width: "100%", background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-subtle)",
+                  borderRadius: 12, padding: "10px 14px",
+                  fontFamily: "var(--font-sans)", fontSize: "0.875rem",
+                  color: "var(--color-text-display)", outline: "none", boxSizing: "border-box",
+                }}
+              />
+              {burnPasswordError && (
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", fontWeight: 500, color: "var(--color-status-error)" }}>{burnPasswordError}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasPendingTx && (
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "12px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
+          </div>
+        )}
+
+        <div style={{ flex: 1 }} />
+
+        {/* Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
+          <Button variant="danger" onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsPassword && !burnPassword)}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+              <Fire size={16} weight="Bold" /> Burn {formatQu(amountStr)} QU
+            </span>
+          </Button>
+          <button type="button" onClick={() => setStep("input")}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
             Cancel
-          </Button>
+          </button>
         </div>
-      </Modal>
+        </motion.div>
+      </AppShell>
+    );
+  }
 
+  // ── Sending ────────────────────────────────────────────────────────────────
+
+  if (step === "sending") {
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
+        <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-status-error)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+          <Fire size={18} style={{ color: "var(--color-status-error)" }} />
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Burning</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+            {formatQu(amountStr)} QU
+          </div>
+        </div>
+        </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Done ───────────────────────────────────────────────────────────────────
+
+  if (step === "done") {
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
+
+        {/* Amount */}
+        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-text-disabled)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            {formatQu(amountStr)}
+          </div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+            <Fire size={14} style={{ color: "var(--color-status-error)" }} />
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-error)" }}>Burned</span>
+          </div>
+        </div>
+
+        {/* Details card */}
+        <div style={cardStyle}>
+          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
+          <div style={divider} />
+          <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
+          <div style={divider} />
+          <DetailRow icon={<Wallet size={16} />} label="Status" value="Pending" valueColor="var(--color-text-disabled)" />
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
+          <Button onClick={() => navigate("/dashboard")}>Done</Button>
+          <button type="button" onClick={() => navigate("/history")}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            View history
+          </button>
+        </div>
+        </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Error ──────────────────────────────────────────────────────────────────
+
+  return (
+    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
+      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Burn failed</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4, maxWidth: 280 }}>
+          {txError || "The burn transaction could not be broadcast."}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
+        <Button variant="danger" onClick={() => setStep("confirm")}>Try again</Button>
+        <button type="button" onClick={() => navigate("/send")}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+          Cancel
+        </button>
+      </div>
+        </motion.div>
     </AppShell>
   );
 }
