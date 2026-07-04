@@ -33,33 +33,65 @@ fn build_html(kind: &str, title: &str, body: &str, duration: u64) -> String {
     let title = esc(title);
     let body = esc(body);
 
+    // Fills entire transparent window — no "card inside a window" look.
     format!(r##"<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
 *{{margin:0;padding:0;box-sizing:border-box}}
-html,body{{background:transparent;height:100%;overflow:hidden;font-family:-apple-system,system-ui,sans-serif;user-select:none;-webkit-user-select:none}}
-.c{{position:fixed;inset:6px;display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:14px;background:rgba(22,22,24,.95);border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden;cursor:pointer;opacity:1;transform:translateX(0);transition:opacity .2s,transform .2s}}
-.c.out{{opacity:0;transform:translateX(40px)}}
-.b{{position:absolute;top:0;left:12px;right:12px;height:2px;border-radius:1px;opacity:.6;background:linear-gradient(90deg,{color}00,{color},{color}00)}}
-.i{{flex-shrink:0;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{color}18}}
-.i svg{{width:18px;height:18px}}
-.t{{flex:1;min-width:0}}
-.t h{{display:block;font-size:13px;font-weight:600;color:#fff;line-height:1.3;letter-spacing:-.01em}}
-.t b{{display:block;font-size:12px;color:rgba(255,255,255,.55);line-height:1.4;margin-top:2px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.x{{flex-shrink:0;background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;opacity:.3;transition:opacity .15s}}
-.x:hover{{opacity:.7}}
-.p{{position:absolute;bottom:0;left:0;width:100%;height:2px;opacity:.35;transform-origin:left;animation:sh {duration}ms linear forwards}}
-@keyframes sh{{from{{transform:scaleX(1)}}to{{transform:scaleX(0)}}}}
-</style></head><body><div class="c" id="c"><div class="b"></div><div class="i"><svg viewBox="0 0 24 24" fill="none">{icon_svg}</svg></div><div class="t"><h>{title}</h><b>{body}</b></div><button class="x" id="x"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="p" style="background:{color}"></div></div><script>function close(){{document.getElementById("c").classList.add("out");setTimeout((function(){{try{{window.close()}}catch(e)}}),200)}}document.getElementById("c").onclick=close;document.getElementById("x").onclick=function(e){{e.stopPropagation();close()}};setTimeout(close,{duration})</script></body></html>"##)
+html,body{{width:100%;height:100%;background:transparent;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  user-select:none;-webkit-user-select:none}}
+.notif{{display:flex;align-items:flex-start;gap:10px;padding:12px;
+  width:100%;height:100%;
+  background:rgba(22,22,24,.95);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+  cursor:pointer;
+  opacity:1;transform:translateX(0);
+  transition:opacity .2s,transform .2s;
+  position:relative}}
+.notif.out{{opacity:0;transform:translateX(40px)}}
+.bar{{position:absolute;top:0;left:12px;right:12px;height:2px;border-radius:1px;opacity:.6;
+  background:linear-gradient(90deg,{color}00,{color},{color}00)}}
+.icon{{flex-shrink:0;width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  background:{color}18}}
+.icon svg{{width:18px;height:18px}}
+.content{{flex:1;min-width:0}}
+.content h{{display:block;font-size:13px;font-weight:600;color:#fff;line-height:1.3}}
+.content b{{display:block;font-size:12px;color:rgba(255,255,255,.55);line-height:1.4;
+  margin-top:2px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.close{{flex-shrink:0;background:none;border:none;padding:4px;cursor:pointer;
+  display:flex;align-items:center;opacity:.3;transition:opacity .15s}}
+.close:hover{{opacity:.7}}
+.progress{{position:absolute;bottom:0;left:0;width:100%;height:2px;opacity:.35;
+  transform-origin:left;animation:shrink {duration}ms linear forwards}}
+@keyframes shrink{{from{{transform:scaleX(1)}}to{{transform:scaleX(0)}}}}
+</style></head><body>
+<div class="notif" id="n">
+  <div class="bar"></div>
+  <div class="icon"><svg viewBox="0 0 24 24" fill="none">{icon_svg}</svg></div>
+  <div class="content"><h>{title}</h><b>{body}</b></div>
+  <button class="close" id="x"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="progress" style="background:{color}"></div>
+</div>
+<script>
+function close(){{var n=document.getElementById("n");n.classList.add("out");
+  setTimeout(function(){{try{{window.close()}}catch(e)}}),200)}}
+document.getElementById("n").onclick=close;
+document.getElementById("x").onclick=function(e){{e.stopPropagation();close()}};
+setTimeout(close,{duration});
+</script></body></html>"##)
 }
 
-/// Must be async — on Windows, WebviewWindowBuilder::build() deadlocks
-/// when called from a synchronous command (wry#583).
+/// Async — WebviewWindowBuilder::build() deadlocks on Windows in sync commands (wry#583).
 #[tauri::command]
 pub async fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayload) -> Result<(), String> {
     let duration = payload.duration.unwrap_or(5000);
     let html = build_html(&payload.kind, &payload.title, &payload.body, duration);
 
-    // Calculate position
     let (x, y) = if let Some(w) = app.get_webview_window("main") {
         if let Ok(Some(m)) = w.primary_monitor() {
             let (px, py, sw, sh, sc) = (m.position().x as f64, m.position().y as f64,
@@ -68,12 +100,11 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    // Escape HTML for eval injection
+    // Escape for eval injection
     let escaped = html.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n").replace('\r', "");
     let eval_js = format!(r#"document.open();document.write("{}");document.close();"#, escaped);
 
-    // Spawn on a SEPARATE THREAD to avoid WebView2 deadlock on Windows (wry#583).
-    // build() MUST NOT be called from the IPC thread.
+    // Spawn on separate thread — WebView2 deadlock if called from IPC thread (wry#583)
     let app2 = app.clone();
     std::thread::spawn(move || {
         let label = format!("notif-{}", std::time::SystemTime::now()
@@ -81,37 +112,27 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
 
         eprintln!("[notif] building on spawned thread...");
 
-        let url = match "http://localhost:1420/".parse::<url::Url>() {
-            Ok(u) => u,
-            Err(e) => { eprintln!("[notif] url err: {e}"); return; }
-        };
-
+        let url = "http://localhost:1420/".parse::<url::Url>().unwrap();
         let _window = match WebviewWindowBuilder::new(&app2, &label, WebviewUrl::External(url))
             .inner_size(376.0, 100.0)
             .position(x, y)
             .decorations(false)
+            .transparent(true)
             .always_on_top(true)
             .resizable(false)
             .skip_taskbar(true)
             .visible(false)
             .focused(false)
-            .background_color(tauri::window::Color(15, 15, 15, 255))
             .build()
         {
-            Ok(w) => {
-                eprintln!("[notif] window built OK");
-                w
-            }
-            Err(e) => {
-                eprintln!("[notif] build failed: {e}");
-                return;
-            }
+            Ok(w) => { eprintln!("[notif] built OK"); w }
+            Err(e) => { eprintln!("[notif] build err: {e}"); return; }
         };
 
-        // Inject notification HTML via eval after the dev server page loads.
+        // Inject after page loads
         let app3 = app2.clone();
         let l2 = label.clone();
-        let js = eval_js.clone();
+        let js = eval_js;
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(1500));
             if let Some(w) = app3.get_webview_window(&l2) {
@@ -123,7 +144,7 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
             }
         });
 
-        // Auto-close safety net
+        // Safety net auto-close
         let app4 = app2.clone();
         let l3 = label.clone();
         std::thread::spawn(move || {
