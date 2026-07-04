@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { stepMotion, gesture } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { deriveIdentityFromSeed, toSeed, InvalidSeedError, newId } from "@/lib/crypto";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -63,12 +64,6 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500, color: "var(--color-text-disabled)",
 };
 
-const stepMotion = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: 0.15, ease: "easeOut" as const },
-};
 
 export default function ImportVaultScreen() {
   const navigate = useNavigate();
@@ -187,12 +182,12 @@ export default function ImportVaultScreen() {
               )}
             </div>
 
-            <button type="button" onClick={validateAndContinue} style={accentPill}>
+            <motion.button type="button" onClick={validateAndContinue} {...gesture.press} style={accentPill}>
               Continue
-            </button>
-            <button type="button" onClick={() => navigate("/setup")} style={ghostBtn}>
+            </motion.button>
+            <motion.button type="button" onClick={() => navigate("/setup")} {...gesture.pressSubtle} style={ghostBtn}>
               Back
-            </button>
+            </motion.button>
           </motion.div>
         )}
 
@@ -234,12 +229,13 @@ export default function ImportVaultScreen() {
               <div style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>Color</div>
               <div style={{ display: "flex", gap: "var(--space-3)" }}>
                 {COLORS.map((c) => (
-                  <button
+                  <motion.button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
                     aria-label={`Vault color: ${c}`}
                     aria-pressed={color === c}
+                    {...gesture.pressSubtle}
                     style={{
                       width: 28, height: 28, borderRadius: "50%",
                       background: COLOR_CSS[c],
@@ -252,9 +248,9 @@ export default function ImportVaultScreen() {
               </div>
             </div>
 
-            <button type="button" onClick={goStep3} style={accentPill}>
+            <motion.button type="button" onClick={goStep3} {...gesture.press} style={accentPill}>
               Continue
-            </button>
+            </motion.button>
           </motion.div>
         )}
 
@@ -308,11 +304,11 @@ export default function ImportVaultScreen() {
               )}
             </div>
 
-            <button type="button" onClick={finish} disabled={loading || strength.level < 1} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
+            <motion.button type="button" onClick={finish} disabled={loading || strength.level < 1} {...gesture.press} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
               {loading ? (
                 <span style={{ width: 16, height: 16, border: "2px solid var(--color-bg-base)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
               ) : "Import vault"}
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </div>

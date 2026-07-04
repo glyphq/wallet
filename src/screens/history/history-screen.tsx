@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { presets } from "@/lib/animations";
 import { AltArrowLeft, Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Sheet } from "@/components/sheet";
@@ -369,9 +370,7 @@ export default function HistoryScreen() {
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
 
       <motion.div
-        initial={{ y: 4 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        {...presets.fadeInUp}
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
 

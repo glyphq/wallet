@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { stepMotion } from "@/lib/animations";
 import { AltArrowLeft, Copy, CheckCircle, LinkRound } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { IdentityDisplay } from "@/components/identity-display";
@@ -54,9 +55,7 @@ export default function ReceiveScreen() {
   return (
     <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div
-        initial={{ y: 4 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        {...stepMotion}
         style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>

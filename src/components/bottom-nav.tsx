@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { transition } from "@/lib/animations";
 import { HomeSmile, CardSend, CardReceive, MoneyBag, ClockCircle, Settings } from "@solar-icons/react";
 
 export type BottomNavTab = "home" | "send" | "receive" | "earn" | "history" | "settings";
@@ -65,7 +66,7 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
                   background: "rgba(204, 252, 251, 0.1)",
                   borderRadius: "var(--radius-pill)",
                 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                transition={transition.navPill}
               />
             )}
             <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
