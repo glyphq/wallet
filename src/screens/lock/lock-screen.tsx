@@ -12,6 +12,7 @@ import { extractMessage } from "@/lib/format";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { Sheet } from "@/components/sheet";
 import type { Seed } from "@/lib/crypto";
 import { isWatchOnlyVault } from "@/lib/accounts";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -32,38 +33,63 @@ const VAULT_COLOR: Record<string, string> = {
   violet: "var(--color-vault-violet)",
 };
 
-// Both counters are module-level so they survive remounts and cannot be reset
-// by navigating away from the lock screen and back.
 let _bioFailures = 0;
 let _passwordAttempts = 0;
+
+function timeAgo(ms: number): string {
+  if (!ms) return "Never";
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return "Just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
 
 export default function LockScreen() {
   const navigate = useNavigate();
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
+
+  const vaults = usePersistedStore((s) => s.vaults);
+  const settings = usePersistedStore((s) => s.settings);
+  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
+  const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
+  const unlock = useSessionStore((s) => s.unlock);
+  const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
+  const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
+  const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
+
+  const lockedVaults = vaults.filter((v) => !isWatchOnlyVault(v));
+  const hasMultiple = lockedVaults.length > 1;
+
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    const activeId = settings.activeVaultId;
+    if (activeId && lockedVaults.some((v) => v.id === activeId)) return activeId;
+    return lockedVaults[0]?.id ?? "";
+  });
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const selected = lockedVaults.find((v) => v.id === selectedId) ?? lockedVaults[0];
+  const watchOnly = selected ? isWatchOnlyVault(selected) : false;
+  const bioEnabled = selected ? (settings.biometricVaultIds ?? []).includes(selected.id) : false;
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [bioFailures, setBioFailures] = useState(_bioFailures);
   const [, setPasswordAttempts] = useState(_passwordAttempts);
   const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
-  const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
 
-  const vaults = usePersistedStore((s) => s.vaults);
-  const settings = usePersistedStore((s) => s.settings);
-  const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
-  const unlock = useSessionStore((s) => s.unlock);
-  const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
-
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
-  const watchOnly = isWatchOnlyVault(vault);
-  const bioEnabled = vault ? (settings.biometricVaultIds ?? []).includes(vault.id) : false;
-
-  const { register, handleSubmit } = useForm<FormValues>();
+  const { register, handleSubmit, setValue } = useForm<FormValues>();
 
   useEffect(() => () => { if (lockoutRef.current) clearInterval(lockoutRef.current); }, []);
 
-  // Resume any lockout that was active before app restart
+  // Reset password when vault changes
+  useEffect(() => {
+    setValue("password", "");
+    setError("");
+  }, [selectedId, setValue]);
+
+  // Resume lockout on mount
   useEffect(() => {
     const remaining = Math.ceil((passwordLockoutUntil - Date.now()) / 1000);
     if (remaining > 0) startCountdown(remaining);
@@ -75,7 +101,7 @@ export default function LockScreen() {
     lockoutRef.current = setInterval(() => {
       setLockoutSecsLeft((s) => {
         if (s <= 1) {
-          clearInterval(lockoutRef.current!);
+          if (lockoutRef.current) clearInterval(lockoutRef.current);
           lockoutRef.current = null;
           return 0;
         }
@@ -90,16 +116,17 @@ export default function LockScreen() {
   }
 
   async function finishUnlock(seeds: Seed[]) {
-    if (!vault) return;
+    if (!selected) return;
+    setActiveVault(selected.id);
     const wallets = unlockSecureSession(seeds);
-    unlock(vault.id, wallets);
-    touchVaultUnlocked(vault.id);
+    unlock(selected.id, wallets);
+    touchVaultUnlocked(selected.id);
     recordAuditEvent({
       kind: "unlock_succeeded",
       status: "success",
       title: "Vault unlocked",
-      detail: vault.name,
-      vaultId: vault.id,
+      detail: selected.name,
+      vaultId: selected.id,
     });
     _bioFailures = 0;
     _passwordAttempts = 0;
@@ -107,31 +134,23 @@ export default function LockScreen() {
   }
 
   async function doUnlock(password: string) {
-    if (!vault) return;
-    if (!vault.encryptedData) { setError("VAULT DATA MISSING"); return; }
-    const seeds = await unlockVault(vault.encryptedData, password);
+    if (!selected || !selected.encryptedData) return;
+    const seeds = await unlockVault(selected.encryptedData, password);
     await finishUnlock(seeds);
   }
 
-  async function openWatchOnlyVault() {
-    if (!vault) return;
-    unlock(vault.id, [], {
-      watchOnly: true,
-      identities: vault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
-    });
-    touchVaultUnlocked(vault.id);
-    recordAuditEvent({
-      kind: "unlock_succeeded",
-      status: "success",
-      title: "Watch-only vault opened",
-      detail: vault.name,
-      vaultId: vault.id,
-    });
-    navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
-  }
-
   async function onSubmit({ password }: FormValues) {
-    if (!vault || lockoutSecsLeft > 0) return;
+    if (!selected || lockoutSecsLeft > 0) return;
+    if (watchOnly) {
+      unlock(selected.id, [], {
+        watchOnly: true,
+        identities: selected.accounts.map((a) => a.identity).filter((id): id is string => !!id),
+      });
+      setActiveVault(selected.id);
+      touchVaultUnlocked(selected.id);
+      navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -141,19 +160,19 @@ export default function LockScreen() {
         kind: "unlock_failed",
         status: "failure",
         title: "Unlock failed",
-        detail: vault.name,
-        vaultId: vault.id,
+        detail: selected.name,
+        vaultId: selected.id,
       });
       const next = _passwordAttempts + 1;
       _passwordAttempts = next;
       setPasswordAttempts(next);
       if (next >= PASSWORD_MAX_ATTEMPTS) {
-        setError(`TOO MANY ATTEMPTS — WAIT ${PASSWORD_LOCKOUT_SECS} SECONDS`);
+        setError(`Too many attempts — wait ${PASSWORD_LOCKOUT_SECS}s`);
         startLockout();
         _passwordAttempts = 0;
         setPasswordAttempts(0);
       } else {
-        setError(`WRONG PASSWORD — ${PASSWORD_MAX_ATTEMPTS - next} ${PASSWORD_MAX_ATTEMPTS - next === 1 ? "ATTEMPT" : "ATTEMPTS"} REMAINING`);
+        setError(`Wrong password — ${PASSWORD_MAX_ATTEMPTS - next} ${PASSWORD_MAX_ATTEMPTS - next === 1 ? "attempt" : "attempts"} remaining`);
       }
     } finally {
       setLoading(false);
@@ -161,14 +180,14 @@ export default function LockScreen() {
   }
 
   async function onBiometric() {
-    if (!vault || bioFailures >= 3) return;
+    if (!selected || bioFailures >= 3) return;
     setLoading(true);
     setError("");
-    if (!vault.encryptedData) { setError("VAULT DATA MISSING"); setLoading(false); return; }
+    if (!selected.encryptedData) { setError("Vault data missing"); setLoading(false); return; }
     try {
       const seeds = await invoke<string[]>("biometric_unlock", {
-        vaultId: vault.id,
-        vaultData: vault.encryptedData,
+        vaultId: selected.id,
+        vaultData: selected.encryptedData,
       });
       await finishUnlock(seeds.map(toSeed));
     } catch (e) {
@@ -176,101 +195,116 @@ export default function LockScreen() {
         kind: "unlock_failed",
         status: "failure",
         title: "Biometric unlock failed",
-        detail: vault.name,
-        vaultId: vault.id,
+        detail: selected.name,
+        vaultId: selected.id,
       });
       const next = bioFailures + 1;
       _bioFailures = next;
       setBioFailures(next);
       if (next >= 3) {
-        setError("TOO MANY FAILURES — USE PASSWORD");
+        setError("Too many failures — use password");
       } else {
-        setError(`${isLinux ? "QUICK UNLOCK" : "BIOMETRIC"} FAILED: ${extractMessage(e)}`);
+        setError(`${isLinux ? "Quick unlock" : "Biometric"} failed: ${extractMessage(e)}`);
       }
     } finally {
       setLoading(false);
     }
   }
 
-  const lastUnlocked = vault?.lastUnlockedAt
-    ? new Date(vault.lastUnlockedAt).toLocaleString(undefined, {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+  function selectVault(id: string) {
+    setSelectedId(id);
+    setSheetOpen(false);
+  }
+
+  const lastUnlocked = selected?.lastUnlockedAt
+    ? new Date(selected.lastUnlockedAt).toLocaleString(undefined, {
+        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
       })
     : null;
 
-  if (!vault) return null;
+  if (!selected) return null;
 
   return (
     <FullPage>
       <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.18, ease: "easeOut" }}
-        style={{ width: "100%", maxWidth: 320 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
       >
-        {vault && (
-          <div style={{ textAlign: "center", marginBottom: "var(--space-12)" }}>
-            <div
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: "50%",
-                background: VAULT_COLOR[vault.color] ?? "var(--color-text-secondary)",
-                display: "inline-block",
-                marginBottom: "var(--space-4)",
-              }}
-            />
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--text-headline)",
-                color: "var(--color-text-display)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              {vault.name.toUpperCase()}
-            </div>
-            {lastUnlocked && (
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  color: "var(--color-text-disabled)",
-                  marginTop: "var(--space-2)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                LAST UNLOCKED {lastUnlocked.toUpperCase()}
-              </div>
-            )}
+        {/* Logo */}
+        <div style={{ textAlign: "center" }}>
+          <span style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(2rem, 5vw, 2.5rem)",
+            fontWeight: 400,
+            color: "var(--color-text-display)",
+            letterSpacing: "0.15em",
+          }}>
+            GLYPH
+          </span>
+        </div>
+
+        {/* Vault selector */}
+        {hasMultiple ? (
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "var(--space-3)",
+              background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
+              borderRadius: "var(--radius-card)", padding: "12px var(--space-4)",
+              cursor: "pointer", width: "100%",
+            }}
+          >
+            <div style={{
+              width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
+              background: VAULT_COLOR[selected.color] ?? "var(--color-text-secondary)",
+            }} />
+            <span style={{
+              flex: 1, textAlign: "left",
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
+              fontWeight: 500, color: "var(--color-text-display)",
+            }}>
+              {selected.name}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        ) : (
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-1)" }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: "50%",
+              background: VAULT_COLOR[selected.color] ?? "var(--color-text-secondary)",
+            }} />
+            <span style={{
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
+              fontWeight: 500, color: "var(--color-text-primary)",
+              letterSpacing: "0.02em",
+            }}>
+              {selected.name}
+            </span>
           </div>
         )}
 
+        {/* Password / Watch-only */}
         {watchOnly ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-              WATCH-ONLY VAULT
-            </div>
-            <Button onClick={openWatchOnlyVault}>
-              Open vault
-            </Button>
-          </div>
+          <Button onClick={() => onSubmit({ password: "" })}>
+            Open vault
+          </Button>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             <Input
               {...register("password")}
               type="password"
               label="Password"
               placeholder="••••••••••"
               autoComplete="current-password"
-              error={lockoutSecsLeft > 0 ? `LOCKED — TRY AGAIN IN ${lockoutSecsLeft} ${lockoutSecsLeft === 1 ? "SECOND" : "SECONDS"}` : error}
+              error={lockoutSecsLeft > 0 ? `Locked — try again in ${lockoutSecsLeft}s` : error}
               disabled={lockoutSecsLeft > 0}
               autoFocus
-              containerStyle={{ marginBottom: "var(--space-6)" }}
             />
             <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
               {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft}s` : "Unlock"}
@@ -278,44 +312,106 @@ export default function LockScreen() {
           </form>
         )}
 
-        {!watchOnly && bioEnabled && bioFailures >= 3 && (
-          <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: "var(--space-6)" }}>
-            {isLinux ? "QUICK UNLOCK" : "BIOMETRIC"} UNAVAILABLE — USE PASSWORD
-          </div>
-        )}
+        {/* Biometric */}
         {!watchOnly && bioEnabled && bioFailures < 3 && (
           <button
             onClick={onBiometric}
             disabled={loading}
-            aria-label={isLinux ? "Unlock with secure storage" : "Unlock with biometrics"}
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "var(--space-2)",
-              marginTop: "var(--space-6)",
-              width: "100%",
-              background: "none",
-              border: "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: "var(--space-2)", width: "100%",
+              background: "none", border: "none",
               cursor: loading ? "default" : "pointer",
-              opacity: loading ? 0.4 : 1,
-              padding: "var(--space-2)",
+              opacity: loading ? 0.4 : 1, padding: "var(--space-2)",
             }}
-            >
-              <LockKeyhole size={18} color="var(--color-text-secondary)" weight="Linear" />
-              <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-sm)",
-                color: "var(--color-text-secondary)",
-                letterSpacing: "0.05em",
-              }}
-              >
-                {isLinux ? "USE QUICK UNLOCK" : "USE BIOMETRIC"}
-              </span>
-            </button>
+          >
+            <LockKeyhole size={16} color="var(--color-text-disabled)" weight="Linear" />
+            <span style={{
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+              color: "var(--color-text-disabled)", letterSpacing: "0.04em",
+            }}>
+              {isLinux ? "Quick unlock" : "Biometric"}
+            </span>
+          </button>
+        )}
+        {!watchOnly && bioEnabled && bioFailures >= 3 && (
+          <span style={{
+            textAlign: "center", fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-caption)", color: "var(--color-text-disabled)",
+          }}>
+            {isLinux ? "Quick unlock" : "Biometric"} unavailable
+          </span>
+        )}
+
+        {/* Last unlocked */}
+        {lastUnlocked && (
+          <span style={{
+            textAlign: "center",
+            fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+            color: "var(--color-text-disabled)", opacity: 0.6,
+          }}>
+            Last unlocked {lastUnlocked}
+          </span>
         )}
       </motion.div>
+
+      {/* Vault picker sheet */}
+      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Select vault">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+          {lockedVaults.map((v) => {
+            const isActive = v.id === selectedId;
+            const color = VAULT_COLOR[v.color] ?? "var(--color-text-secondary)";
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => selectVault(v.id)}
+                onMouseDown={(e) => e.preventDefault()}
+                style={{
+                  display: "flex", alignItems: "center", gap: "var(--space-3)",
+                  background: isActive ? "var(--color-bg-surface)" : "transparent",
+                  border: "none", borderRadius: "var(--radius-sharp)",
+                  padding: "10px var(--space-3)", cursor: "pointer", width: "100%",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{
+                  width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
+                  background: color,
+                }} />
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
+                    fontWeight: isActive ? 600 : 400, color: "var(--color-text-display)",
+                  }}>
+                    {v.name}
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+                    color: "var(--color-text-disabled)",
+                  }}>
+                    Unlocked {timeAgo(v.lastUnlockedAt)}
+                  </span>
+                </div>
+                {v.accounts.length > 0 && (
+                  <span style={{
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+                    color: "var(--color-text-disabled)",
+                  }}>
+                    {v.accounts.length} {v.accounts.length === 1 ? "account" : "accounts"}
+                  </span>
+                )}
+                {isActive && (
+                  <div style={{
+                    width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                    background: "var(--color-accent)",
+                  }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Sheet>
     </FullPage>
   );
 }
