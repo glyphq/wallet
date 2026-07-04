@@ -180,10 +180,10 @@ export default function ImportVaultScreen() {
             </div>
 
             <motion.button type="button" onClick={validateAndContinue} {...gesture.press} style={accentPill}>
-              Continue <AltArrowRight size={16} weight="Bold" />
+              Continue <AltArrowRight size={16} weight="Outline" />
             </motion.button>
             <motion.button type="button" onClick={() => navigate("/setup")} {...gesture.pressSubtle} style={ghostBtn}>
-              <AltArrowLeft size={16} weight="Bold" /> Back
+              <AltArrowLeft size={16} weight="Outline" /> Back
             </motion.button>
           </motion.div>
         )}
@@ -223,7 +223,7 @@ export default function ImportVaultScreen() {
             </div>
 
             <motion.button type="button" onClick={goStep3} {...gesture.press} style={accentPill}>
-              Continue <AltArrowRight size={16} weight="Bold" />
+              Continue <AltArrowRight size={16} weight="Outline" />
             </motion.button>
           </motion.div>
         )}
@@ -283,7 +283,7 @@ export default function ImportVaultScreen() {
                 <span style={{ width: 16, height: 16, border: "2px solid var(--color-bg-base)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
               ) : (
                 <>
-                  <LockKeyhole size={16} weight="Bold" /> Import vault
+                  <LockKeyhole size={16} weight="Outline" /> Import vault
                 </>
               )}
             </motion.button>

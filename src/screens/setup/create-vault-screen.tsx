@@ -295,7 +295,7 @@ export default function CreateVaultScreen() {
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, cursor: "pointer",
                 }}
               >
-                <Copy size={14} weight="Linear" />
+                <Copy size={14} weight="Outline" />
                 {copied ? "Copied" : "Copy"}
               </motion.button>
               <motion.button
@@ -309,7 +309,7 @@ export default function CreateVaultScreen() {
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, cursor: "pointer",
                 }}
               >
-                {seedRevealed ? <EyeClosed size={14} weight="Linear" /> : <Eye size={14} weight="Linear" />}
+                {seedRevealed ? <EyeClosed size={14} weight="Outline" /> : <Eye size={14} weight="Outline" />}
                 {seedRevealed ? "Hide" : "Reveal"}
               </motion.button>
             </div>

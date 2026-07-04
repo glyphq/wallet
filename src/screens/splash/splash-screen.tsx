@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
+import { Wallet } from "@solar-icons/react";
 
 const FACTS = [
   "Qubic is founded by Sergey Ivancheglo — the original creator of NXT and co-founder of IOTA.",
@@ -61,31 +62,17 @@ export default function SplashScreen() {
         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}
       >
         {/* Logo + wordmark */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <rect x="4" y="4" width="32" height="32" rx="8" stroke="var(--color-text-display)" strokeWidth="2" />
-            <path d="M14 14h12M14 20h12M14 26h8" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-1)" }}>
-            <span style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "1.5rem",
-              fontWeight: 600,
-              color: "var(--color-text-display)",
-              letterSpacing: "-0.01em",
-            }}>
-              Glyph
-            </span>
-            <span style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "1.5rem",
-              fontWeight: 300,
-              color: "var(--color-text-secondary)",
-              letterSpacing: "-0.01em",
-            }}>
-              Wallet
-            </span>
-          </div>
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "var(--space-2)" }}>
+          <Wallet size={28} weight="Outline" style={{ color: "var(--color-accent)" }} />
+          <span style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: "1.5rem",
+            fontWeight: 600,
+            color: "var(--color-text-display)",
+            letterSpacing: "-0.01em",
+          }}>
+            Glyph Wallet
+          </span>
         </div>
 
         {/* Pulsing dot loader */}

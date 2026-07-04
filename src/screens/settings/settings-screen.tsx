@@ -204,7 +204,7 @@ export default function SettingsScreen() {
             cursor: "pointer",
           }}
         >
-          <LockKeyhole size={16} weight="Linear" style={{ color: "var(--color-text-disabled)" }} />
+          <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-text-disabled)" }} />
           <span style={{
             fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
             fontWeight: 500, color: "var(--color-text-disabled)",

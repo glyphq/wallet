@@ -307,7 +307,7 @@ export default function LockScreen() {
             {/* Logo */}
             <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
               <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-                <Wallet size={20} weight="Linear" style={{ color: "var(--color-accent)" }} />
+                <Wallet size={20} weight="Outline" style={{ color: "var(--color-accent)" }} />
                 <span style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "var(--text-headline)",

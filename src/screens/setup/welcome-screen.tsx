@@ -325,7 +325,7 @@ export default function WelcomeScreen() {
             Import watch-only
           </motion.button>
           <motion.button type="button" onClick={openFilePicker} {...gesture.pressSubtle} style={ghostBtn}>
-            <Document size={16} weight="Linear" />
+            <Document size={16} weight="Outline" />
             Import vault file
           </motion.button>
         </div>
