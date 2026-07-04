@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowRightUp, QrCode, AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle } from "@solar-icons/react";
+import { ArrowRightUp, QrCode, AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -129,6 +129,7 @@ export default function SendScreen() {
   const txDraft = useSessionStore((s) => s.txDraft);
   const saveTxDraft = useSessionStore((s) => s.saveTxDraft);
   const clearTxDraft = useSessionStore((s) => s.clearTxDraft);
+  const setTxMemo = usePersistedStore((s) => s.setTxMemo);
 
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const watchOnly = isWatchOnlyVault(vault);
@@ -152,6 +153,7 @@ export default function SendScreen() {
   const [highValuePasswordError, setHighValuePasswordError] = useState("");
   const [highValueVerified, setHighValueVerified] = useState(false);
   const [highValueVerifying, setHighValueVerifying] = useState(false);
+  const [memo, setMemo] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saved, setSaved] = useState(false);
@@ -299,6 +301,7 @@ export default function SendScreen() {
       addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
       setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
+      if (memo.trim()) setTxMemo(hash, memo.trim());
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
@@ -594,6 +597,28 @@ export default function SendScreen() {
         {needsHighValueConfirmation && highValueVerified && (
           <div style={{ ...labelStyle, color: "var(--color-accent)", textAlign: "center" }}>High-value transfer confirmed ✓</div>
         )}
+
+        {/* Memo */}
+        <div style={{
+          background: "var(--color-bg-surface)",
+          borderRadius: "var(--radius-card)",
+          padding: "var(--space-3) var(--space-4)",
+          display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
+        }}>
+          <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
+          <textarea
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="Add a note (optional)"
+            rows={2}
+            style={{
+              flex: 1, background: "none", border: "none", outline: "none",
+              color: "var(--color-text-display)", fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-body)", lineHeight: 1.5, padding: 0,
+              resize: "none", boxSizing: "border-box", minWidth: 0,
+            }}
+          />
+        </div>
 
         <div style={{ flex: 1 }} />
 
