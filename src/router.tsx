@@ -35,6 +35,7 @@ import SettingsContactsScreen from "@/screens/settings/contacts-screen";
 import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
 import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
+import NotificationWindow from "@/screens/notification/notification-window";
 
 function Screen({ component: C }: { component: React.ComponentType }) {
   return (
@@ -83,5 +84,9 @@ export const router = createHashRouter([
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
       { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
     ],
+  },
+  {
+    path: "/notification",
+    element: <NotificationWindow />,
   },
 ]);
