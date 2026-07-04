@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
-import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { ScreenHeader } from "@/components/screen-header";
+import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
 
@@ -17,9 +15,49 @@ type TestStatus = "idle" | "testing" | "ok" | "error";
 const CURRENCIES = ["USD", "EUR", "BTC"] as const;
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
 
-export default function NetworkScreen() {
-  const navigate = useNavigate();
+const labelStyle = {
+  fontFamily: "var(--font-sans)",
+  fontSize: "0.8125rem",
+  fontWeight: 500,
+  color: "var(--color-text-secondary)",
+};
 
+const inputStyle: React.CSSProperties = {
+  background: "transparent",
+  borderBottom: "1px solid var(--color-border-subtle)",
+  fontFamily: "var(--font-mono)",
+  fontSize: "var(--text-mono-sm)",
+  border: "none",
+  outline: "none",
+  padding: "var(--space-2) 0",
+  width: "100%",
+  color: "var(--color-text-primary)",
+};
+
+const cardStyle: React.CSSProperties = {
+  background: "var(--color-bg-surface)",
+  borderRadius: "var(--radius-card)",
+  padding: "var(--space-4)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--space-3)",
+};
+
+function pillStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: "var(--space-2) var(--space-4)",
+    background: active ? "var(--color-accent)" : "transparent",
+    color: active ? "#111" : "var(--color-text-secondary)",
+    border: "none",
+    borderRadius: 999,
+    cursor: "pointer",
+    fontFamily: "var(--font-sans)",
+    fontSize: "0.8125rem",
+    fontWeight: 500,
+  };
+}
+
+export default function NetworkScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
@@ -78,232 +116,121 @@ export default function NetworkScreen() {
     queryClient.invalidateQueries();
   }
 
-  const statusBar = <ScreenHeader title="Network" onBack={() => navigate("/settings")} />;
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <motion.div initial={{ y: 4 }} animate={{ y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <SettingsPageHeader title="Network" />
 
-      {/* RPC Endpoints */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            RPC endpoints
+        {/* RPC endpoints */}
+        <div style={cardStyle}>
+          <div>
+            <span style={labelStyle}>Live API</span>
+            <input
+              value={liveUrl}
+              onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }}
+              placeholder="https://rpc.qubic.org/live/v1"
+              style={{ ...inputStyle, marginTop: "var(--space-1)" }}
+            />
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Live and archive API base URLs
+          <div>
+            <span style={labelStyle}>Archive API</span>
+            <input
+              value={queryUrl}
+              onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }}
+              placeholder="https://rpc.qubic.org/query/v1"
+              style={{ ...inputStyle, marginTop: "var(--space-1)" }}
+            />
           </div>
-        </div>
-        <Input
-          label="Live API"
-          value={liveUrl}
-          onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }}
-          placeholder="https://rpc.qubic.org/live/v1"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}
-        />
-        <Input
-          label="Archive API"
-          value={queryUrl}
-          onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }}
-          placeholder="https://rpc.qubic.org/query/v1"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <Button
-            variant="secondary"
-            shape="sharp"
-            size="sm"
-            style={{ width: "auto" }}
-            onClick={testAndSave}
-            loading={testStatus === "testing"}
-            disabled={!liveUrl.trim() || !queryUrl.trim()}
-          >
-            Test &amp; save
-          </Button>
-          <button
-            onClick={resetToDefaults}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}
-          >
-            RESET
-          </button>
-          {testStatus === "ok" && testTick !== null && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-              [TICK #{testTick}]
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <button
+              onClick={testAndSave}
+              disabled={!liveUrl.trim() || !queryUrl.trim() || testStatus === "testing"}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                color: "var(--color-accent)",
+                padding: 0,
+              }}
+            >
+              {testStatus === "testing" ? "Testing\u2026" : "Test & save"}
+            </button>
+            <button
+              onClick={resetToDefaults}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: 0 }}
+            >
+              Reset to defaults
+            </button>
+            {testStatus === "ok" && testTick !== null && (
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-success)" }}>
+                Tick #{testTick}
+              </span>
+            )}
+            {testStatus === "error" && (
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-error)" }}>
+                Unreachable
+              </span>
+            )}
+          </div>
+          {testError && (
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-status-error)" }}>
+              {testError}
+            </div>
           )}
-          {testStatus === "error" && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-              [UNREACHABLE]
-            </span>
-          )}
-        </div>
-        {testError && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-            [{testError.toUpperCase()}]
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--color-text-disabled)" }}>
+            Custom RPCs must use HTTPS
           </div>
-        )}
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [CUSTOM RPCS MUST USE HTTPS]
         </div>
-      </div>
 
-      {/* Custom price feed */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Custom price feed
+        {/* Display currency */}
+        <div style={cardStyle}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Display currency
+            </div>
+            <div style={{ ...labelStyle, marginTop: "var(--space-1)" }}>
+              Used for fiat equivalent when price data is available
+            </div>
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Override the default price source. Must return <code>{`{"data":{"price":0.0,...}}`}</code>
-          </div>
-        </div>
-        <Input
-          label="Price feed URL (optional)"
-          value={settings.customPriceFeedUrl}
-          onChange={(e) => updateSettings({ customPriceFeedUrl: e.target.value.trim() })}
-          placeholder="https://example.com/v1/latest-stats"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}
-        />
-        {settings.customPriceFeedUrl && (
-          <button
-            onClick={() => updateSettings({ customPriceFeedUrl: "" })}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, textAlign: "left" }}
-          >
-            CLEAR (use default)
-          </button>
-        )}
-      </div>
-
-      {/* Tick offset */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Transaction tick offset
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Target tick = current tick + offset. Higher = more time to confirm.
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-          {TICK_PRESETS.map((v) => {
-            const isSelected = v === settings.tickOffset;
-            return (
-              <button
-                key={v}
-                onClick={() => updateSettings({ tickOffset: v })}
-                style={{
-                  padding: "var(--space-2) var(--space-3)",
-                  background: "none",
-                  border: `1px solid ${isSelected ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em",
-                  color: isSelected ? "var(--color-text-display)" : "var(--color-text-secondary)",
-                }}
-              >
-                +{v}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Currency */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Display currency
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Used for fiat equivalent when price data is available
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          {CURRENCIES.map((c) => {
-            const isSelected = c === settings.currency;
-            return (
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            {CURRENCIES.map((c) => (
               <button
                 key={c}
                 onClick={() => updateSettings({ currency: c })}
-                style={{
-                  padding: "var(--space-2) var(--space-4)",
-                  background: "none",
-                  border: `1px solid ${isSelected ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em",
-                  color: isSelected ? "var(--color-text-display)" : "var(--color-text-secondary)",
-                }}
+                style={pillStyle(c === settings.currency)}
               >
                 {c}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
-      {/* Debug mode */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <button
-          onClick={() => updateSettings({ debugMode: !settings.debugMode })}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: `1px solid ${settings.debugMode ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Diagnostic UI
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Enable developer-oriented diagnostics and advanced inspection surfaces
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: settings.debugMode ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-            {settings.debugMode ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-        <button
-          onClick={() => updateSettings({ allowBlurLockBypass: !settings.allowBlurLockBypass })}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: `1px solid ${settings.allowBlurLockBypass ? "var(--color-status-error)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Blur-lock bypass
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Developer-only bypass for lock-on-blur without disabling diagnostics
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: settings.allowBlurLockBypass ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-            {settings.allowBlurLockBypass ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-      </div>
 
+        {/* Tick offset */}
+        <div style={cardStyle}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Transaction tick offset
+            </div>
+            <div style={{ ...labelStyle, marginTop: "var(--space-1)" }}>
+              Target tick = current tick + offset. Higher = more time to confirm.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            {TICK_PRESETS.map((v) => (
+              <button
+                key={v}
+                onClick={() => updateSettings({ tickOffset: v })}
+                style={pillStyle(v === settings.tickOffset)}
+              >
+                +{v}
+              </button>
+            ))}
+          </div>
+        </div>
+      </motion.div>
     </AppShell>
   );
 }
