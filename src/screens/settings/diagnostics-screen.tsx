@@ -103,6 +103,7 @@ export default function DiagnosticsScreen() {
     },
     counts: { vaults: vaults.length, contacts: contacts.length, accounts: totalAccounts },
     settings: { ...settings, exportSigningPrivateJwk: settings.exportSigningPrivateJwk ? "[redacted]" : null },
+    exportSigningKey: usePersistedStore.getState().exportSigningKey ? "[redacted]" : null,
   }), [auditEvents, contacts.length, lastProcessedTick?.tickNumber, latestStats?.activeAddresses, latestStats?.price, pendingRequestCount, pendingTxs.length, recentIssues, settings, tickInfo?.epoch, tickInfo?.tick, totalAccounts, updater, vaults.length]);
 
   async function exportBundle() {
