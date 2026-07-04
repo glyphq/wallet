@@ -13,14 +13,17 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 // Check if this is a notification window (data injected by Rust before React boots)
-const notifData = (window as any).__NOTIF_DATA__ as { kind: string; title: string; body: string; duration: number } | undefined;
+const notifData = (window as any).__NOTIF_DATA__;
+console.log("[main] __NOTIF_DATA__:", notifData);
 
 if (notifData) {
-  console.log("[notif] __NOTIF_DATA__ found, rendering notification directly:", notifData);
+  console.log("[main] rendering notification directly");
+  alert("[main] __NOTIF_DATA__ found: " + JSON.stringify(notifData));
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-    <NotificationWindow data={notifData as any} />
+    <NotificationWindow data={notifData} />
   );
 } else {
+  console.log("[main] no __NOTIF_DATA__, rendering normal app");
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <App />
