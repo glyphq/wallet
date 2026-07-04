@@ -56,6 +56,7 @@ function useAppearance() {
         root.style.removeProperty(v);
       }
       root.style.setProperty("--color-status-success", accent.hex);
+      root.style.setProperty("--color-accent", accent.hex);
     }
   }, [accentColor, customScheme]);
 }
