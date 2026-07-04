@@ -59,7 +59,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
 
   lock: () => {
     clearSecureSession();
-    set({ unlockedVaultId: null, wallets: [], isLocked: true });
+    set({ unlockedVaultId: null, wallets: [], isLocked: true, txAlerts: [], txDraft: null });
   },
 
   enqueuePendingRequest: (raw) =>

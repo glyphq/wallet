@@ -31,6 +31,14 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/settings", "settings"],
 ];
 
+/** Instant transition — no animation for lateral navigation within a section. */
+const instantTransition = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0 },
+} as const;
+
 function showChrome(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname.startsWith("/settings/")) return false;
@@ -42,6 +50,14 @@ function activeTabFromPath(pathname: string): BottomNavTab {
     if (pathname === prefix || pathname.startsWith(prefix + "/")) return tab;
   }
   return "home";
+}
+
+/** Returns true when both paths are within the same top-level section. */
+function isSameSection(a: string, b: string): boolean {
+  if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
+  if (a.startsWith("/vaults") && b.startsWith("/vaults")) return true;
+  if (a.startsWith("/setup") && b.startsWith("/setup")) return true;
+  return false;
 }
 
 // ── Layout shell (inside provider) ───────────────────────────────────────────
@@ -57,7 +73,11 @@ function LayoutShell() {
   const sheetsOpen = useSheetsOpen();
 
   const prevRef = useRef(cur);
+  const prev = prevRef.current;
   useLayoutEffect(() => { prevRef.current = cur; }, [cur]);
+
+  // Use instant transition for lateral navigation within a section
+  const transition = isSameSection(prev, cur) ? instantTransition : pageTransition;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -103,7 +123,7 @@ function LayoutShell() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.key}
-            {...pageTransition}
+            {...transition}
             style={{ height: "100%", position: "absolute", inset: 0 }}
           >
             {element}

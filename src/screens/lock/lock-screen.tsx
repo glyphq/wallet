@@ -102,6 +102,11 @@ export default function LockScreen() {
     .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   const hasMultiple = lockedVaults.length > 1;
 
+  // If no seeded vaults exist, go straight to setup
+  useEffect(() => {
+    if (vaults.length > 0 && lockedVaults.length === 0) navigate("/setup", { replace: true });
+  }, [vaults.length, lockedVaults.length, navigate]);
+
   const [selectedId, setSelectedId] = useState<string>(() => {
     // Default to the most recently unlocked vault
     return lockedVaults[0]?.id ?? "";
