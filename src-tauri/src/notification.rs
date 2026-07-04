@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use tauri::{Manager, UriSchemeContext, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 #[derive(Deserialize)]
 pub struct NotificationPayload {
@@ -9,8 +9,7 @@ pub struct NotificationPayload {
     pub duration: Option<u64>,
 }
 
-/// Build the notification HTML from params.
-fn build_html(kind: &str, title: &str, body: &str, duration: u64) -> String {
+fn build_eval_js(kind: &str, title: &str, body: &str, duration: u64) -> String {
     let colors = [
         ("received", "#4ade80"), ("sent", "#60a5fa"), ("confirmed", "#ccfcfb"),
         ("failed", "#f87171"), ("expired", "#fbbf24"), ("deep_link", "#60a5fa"),
@@ -30,72 +29,18 @@ fn build_html(kind: &str, title: &str, body: &str, duration: u64) -> String {
     let icon = icons.iter().find(|(k, _)| *k == kind).map(|(_, i)| *i).unwrap_or(icons[0].1);
     let icon_svg = icon.replace('C', color);
 
-    // HTML-escape the text content
-    let esc = |s: &str| s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;");
+    let esc = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
     let title = esc(title);
     let body = esc(body);
 
-    format!(r##"<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>
-*{{margin:0;padding:0;box-sizing:border-box}}
-html,body{{background:transparent;height:100%;overflow:hidden;font-family:-apple-system,system-ui,sans-serif;user-select:none;-webkit-user-select:none}}
-.c{{position:fixed;inset:6px;display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:14px;background:rgba(22,22,24,.95);border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden;cursor:pointer;opacity:1;transform:translateX(0);transition:opacity .2s,transform .2s}}
-.c.out{{opacity:0;transform:translateX(40px)}}
-.b{{position:absolute;top:0;left:12px;right:12px;height:2px;border-radius:1px;opacity:.6;background:linear-gradient(90deg,{color}00,{color},{color}00)}}
-.i{{flex-shrink:0;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{color}18}}
-.i svg{{width:18px;height:18px}}
-.t{{flex:1;min-width:0}}
-.t h{{display:block;font-size:13px;font-weight:600;color:#fff;line-height:1.3;letter-spacing:-.01em}}
-.t b{{display:block;font-size:12px;color:rgba(255,255,255,.55);line-height:1.4;margin-top:2px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.x{{flex-shrink:0;background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;opacity:.3;transition:opacity .15s}}
-.x:hover{{opacity:.7}}
-.p{{position:absolute;bottom:0;left:0;width:100%;height:2px;opacity:.35;transform-origin:left;animation:sh {dur}ms linear forwards}}
-@keyframes sh{{from{{transform:scaleX(1)}}to{{transform:scaleX(0)}}}}
-</style></head><body>
-<div class="c" id="c">
-<div class="b"></div>
-<div class="i"><svg viewBox="0 0 24 24" fill="none">{icon_svg}</svg></div>
-<div class="t"><h>{title}</h><b>{body}</b></div>
-<button class="x" id="x"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-<div class="p" style="background:{color}"></div>
-</div>
-<script>
-function close(){{document.getElementById('c').classList.add('out');setTimeout(function(){{try{{window.close()}}catch(e)}}),200)}}
-document.getElementById('c').onclick=close;
-document.getElementById('x').onclick=function(e){{e.stopPropagation();close()}};
-setTimeout(close,{dur});
-</script></body></html>"##,
-        color = color,
-        icon_svg = icon_svg,
-        title = title,
-        body = body,
-        dur = duration,
+    format!(
+        r#"document.documentElement.innerHTML='<head><style>*{{margin:0;padding:0;box-sizing:border-box}}html,body{{background:transparent;height:100%;overflow:hidden;font-family:-apple-system,sans-serif;user-select:none}}.c{{position:fixed;inset:6px;display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:14px;background:rgba(22,22,24,.95);border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden;cursor:pointer;opacity:1;transform:translateX(0);transition:opacity .2s,transform .2s}}.c.out{{opacity:0;transform:translateX(40px)}}.b{{position:absolute;top:0;left:12px;right:12px;height:2px;border-radius:1px;opacity:.6;background:linear-gradient(90deg,{c}00,{c},{c}00)}}.i{{flex-shrink:0;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{c}18}}.i svg{{width:18px;height:18px}}.t{{flex:1;min-width:0}}.t h{{display:block;font-size:13px;font-weight:600;color:#fff;line-height:1.3}}.t b{{display:block;font-size:12px;color:rgba(255,255,255,.55);line-height:1.4;margin-top:2px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.x{{flex-shrink:0;background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;opacity:.3;transition:opacity .15s}}.x:hover{{opacity:.7}}.p{{position:absolute;bottom:0;left:0;width:100%;height:2px;opacity:.35;transform-origin:left;animation:sh {d}ms linear forwards}}@keyframes sh{{from{{transform:scaleX(1)}}to{{transform:scaleX(0)}}}}</style></head><body><div class="c" id="c"><div class="b"></div><div class="i"><svg viewBox="0 0 24 24" fill="none">{ic}</svg></div><div class="t"><h>{t}</h><b>{b}</b></div><button class="x" id="x"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="p" style="background:{c}"></div></div><script>function close(){{document.getElementById("c").classList.add("out");setTimeout(function(){{try{{window.close()}}catch(e)}}),200)}}document.getElementById("c").onclick=close;document.getElementById("x").onclick=function(e){{e.stopPropagation();close()}};setTimeout(close,{d})<\/script></body>';"#,
+        c = color,
+        ic = icon_svg,
+        t = title,
+        b = body,
+        d = duration,
     )
-}
-
-/// Protocol handler for `notif://` scheme.
-pub fn handle_protocol(
-    _ctx: UriSchemeContext<'_, tauri::Wry>,
-    request: http::Request<Vec<u8>>,
-) -> http::Response<Vec<u8>> {
-    eprintln!("[notif] PROTOCOL HANDLER called! uri={}", request.uri());
-    let uri = request.uri();
-    let query = uri.query().unwrap_or("");
-    let params: std::collections::HashMap<String, String> =
-        url::form_urlencoded::parse(query.as_bytes()).into_owned().collect();
-
-    let kind = params.get("kind").map(|s| s.as_str()).unwrap_or("received");
-    let title = params.get("title").map(|s| s.as_str()).unwrap_or("Notification");
-    let body = params.get("body").map(|s| s.as_str()).unwrap_or("");
-    let duration: u64 = params.get("duration").and_then(|s| s.parse().ok()).unwrap_or(5000);
-
-    let html = build_html(kind, title, body, duration);
-
-    http::Response::builder()
-        .status(200)
-        .header("content-type", "text/html; charset=utf-8")
-        .body(html.into_bytes())
-        .unwrap()
 }
 
 #[tauri::command]
@@ -106,17 +51,6 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
 
     eprintln!("[notif] label={label}");
 
-    let qs = format!(
-        "kind={}&title={}&body={}&duration={}",
-        urlencoding::encode(&payload.kind),
-        urlencoding::encode(&payload.title),
-        urlencoding::encode(&payload.body),
-        duration,
-    );
-
-    let url: url::Url = format!("notif://localhost/?{qs}").parse().map_err(|e| format!("url parse: {e}"))?;
-    eprintln!("[notif] url={url}");
-
     let (x, y) = if let Some(w) = app.get_webview_window("main") {
         if let Ok(Some(m)) = w.primary_monitor() {
             let (px, py, sw, sh, sc) = (m.position().x as f64, m.position().y as f64,
@@ -125,9 +59,7 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    eprintln!("[notif] building at ({x:.0},{y:.0})");
-
-    let _window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::CustomProtocol(url.into()))
+    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App("index.html".into()))
         .inner_size(376.0, 100.0)
         .position(x, y)
         .decorations(false)
@@ -135,18 +67,34 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         .resizable(false)
         .skip_taskbar(true)
         .visible(true)
-        .focused(true)
+        .focused(false)
         .background_color(tauri::window::Color(15, 15, 15, 255))
         .build()
         .map_err(|e| { eprintln!("[notif] build failed: {e}"); e.to_string() })?;
 
-    eprintln!("[notif] built OK");
+    eprintln!("[notif] built, will eval in 800ms");
 
+    // Inject the notification HTML after the webview loads.
+    // eval() bypasses CSP and works on all platforms.
+    let js = build_eval_js(&payload.kind, &payload.title, &payload.body, duration);
+    let w2 = window.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(800));
+        match w2.eval(&js) {
+            Ok(_) => eprintln!("[notif] eval OK"),
+            Err(e) => eprintln!("[notif] eval ERR: {e}"),
+        }
+    });
+
+    // Fallback auto-close (the JS close() also handles this)
     let app2 = app.clone();
     let l2 = label.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(duration + 500));
-        if let Some(w) = app2.get_webview_window(&l2) { let _ = w.destroy(); }
+        std::thread::sleep(std::time::Duration::from_millis(duration + 2000));
+        if let Some(w) = app2.get_webview_window(&l2) {
+            eprintln!("[notif] fallback destroy {l2}");
+            let _ = w.destroy();
+        }
     });
 
     Ok(())
