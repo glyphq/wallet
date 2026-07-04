@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { AltArrowLeft, Download, Filters, Refresh, Chart } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
-import { Tag } from "@/components/tag";
-import { Divider } from "@/components/divider";
-import { Modal } from "@/components/modal";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
-import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore, type PendingTx, type AppSettings, type PriceSnapshot } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { Download, Filters, Refresh, Chart } from "@solar-icons/react";
 import {
   useTxHistory,
   type TxHistoryItem,
@@ -19,7 +15,7 @@ import {
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
-import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
+import { truncateId, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 
@@ -55,11 +51,56 @@ function isDefault(f: TxFilters): boolean {
   );
 }
 
+// ── Activity item ─────────────────────────────────────────────────────────────
+
+function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor }: {
+  onClick: () => void;
+  label: string;
+  labelColor: string;
+  address: string;
+  time: string;
+  amount: string;
+  amountUsd?: string;
+  amountColor: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)",
+        width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
+          {label}
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+          {address}
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+          {time}
+        </span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor }}>
+          {amount}
+        </span>
+        {amountUsd && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+            {amountUsd}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function HistoryScreen() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const settings = usePersistedStore((s) => s.settings);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const wallets = useSessionStore((s) => s.wallets);
@@ -81,7 +122,6 @@ export default function HistoryScreen() {
   const [groupByCounterparty, setGroupByCounterparty] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [draft, setDraft] = useState<DraftInputs>(toDraft(DEFAULT_FILTERS));
-  const [detail, setDetail] = useState<TxHistoryItem | PendingTx | null>(null);
   const [memoExportOpen, setMemoExportOpen] = useState(false);
   const [memoDateFrom, setMemoDateFrom] = useState("");
   const [memoDateTo, setMemoDateTo] = useState("");
@@ -164,37 +204,13 @@ export default function HistoryScreen() {
   });
 
   const filteredTxs = allTxs;
-  const focusHash = searchParams.get("focus");
-
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
 
-  useEffect(() => {
-    if (!focusHash) return;
-    const pending = filteredPending.find((tx) => tx.hash === focusHash);
-    if (pending) {
-      setDetail(pending);
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete("focus");
-        return next;
-      }, { replace: true });
-      return;
-    }
-    const match = filteredTxs.find((tx) => tx.hash === focusHash);
-    if (!match) return;
-    setDetail(match);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete("focus");
-      return next;
-    }, { replace: true });
-  }, [filteredPending, filteredTxs, focusHash, setSearchParams]);
-
   // ── Active filter chips ───────────────────────────────────────────────────
   const chips: { label: string; clear: () => void }[] = [];
-  if (filters.direction !== "all") chips.push({ label: filters.direction.toUpperCase(), clear: () => setFilters((f) => ({ ...f, direction: "all" })) });
-  if (filters.type !== "all") chips.push({ label: filters.type === "sc" ? "SC CALL" : "TRANSFER", clear: () => setFilters((f) => ({ ...f, type: "all" })) });
+  if (filters.direction !== "all") chips.push({ label: filters.direction === "in" ? "Incoming" : "Outgoing", clear: () => setFilters((f) => ({ ...f, direction: "all" })) });
+  if (filters.type !== "all") chips.push({ label: filters.type === "sc" ? "SC calls" : "Transfers", clear: () => setFilters((f) => ({ ...f, type: "all" })) });
   if (filters.minAmount || filters.maxAmount) {
     const label = filters.minAmount && filters.maxAmount
       ? `${formatQuCompact(filters.minAmount)}–${formatQuCompact(filters.maxAmount)} QU`
@@ -204,47 +220,54 @@ export default function HistoryScreen() {
   if (filters.dateFrom || filters.dateTo) {
     const label = filters.dateFrom && filters.dateTo
       ? `${filters.dateFrom} – ${filters.dateTo}`
-      : filters.dateFrom ? `FROM ${filters.dateFrom}` : `TO ${filters.dateTo}`;
+      : filters.dateFrom ? `From ${filters.dateFrom}` : `To ${filters.dateTo}`;
     chips.push({ label, clear: () => { setFilters((f) => ({ ...f, dateFrom: "", dateTo: "" })); setDraft((d) => ({ ...d, dateFrom: "", dateTo: "" })); } });
   }
   if (filters.tickFrom || filters.tickTo) {
     const label = filters.tickFrom && filters.tickTo
-      ? `TICK ${filters.tickFrom}–${filters.tickTo}`
-      : filters.tickFrom ? `TICK ≥${filters.tickFrom}` : `TICK ≤${filters.tickTo}`;
+      ? `Tick ${filters.tickFrom}–${filters.tickTo}`
+      : filters.tickFrom ? `Tick ≥${filters.tickFrom}` : `Tick ≤${filters.tickTo}`;
     chips.push({ label, clear: () => { setFilters((f) => ({ ...f, tickFrom: "", tickTo: "" })); setDraft((d) => ({ ...d, tickFrom: "", tickTo: "" })); } });
   }
-  if (groupByCounterparty) chips.push({ label: "GROUPED", clear: () => setGroupByCounterparty(false) });
+  if (groupByCounterparty) chips.push({ label: "Grouped", clear: () => setGroupByCounterparty(false) });
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  const header = (
+    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
+      <button type="button" onClick={() => navigate("/dashboard")}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        <AltArrowLeft size={20} />
+      </button>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+        Transactions
+      </span>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+        {hasMemos && (
+          <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
+            <Download size={15} weight="Linear" />
+          </button>
+        )}
+        <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
+          <Chart size={15} weight="Linear" />
+        </button>
+        {!wideLayout && (
+          <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
+            <Filters size={15} weight="Linear" />
+            {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
+          </button>
+        )}
+        <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
+          <Refresh size={15} weight="Linear" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <AppShell
-      statusBar={
-        <ScreenHeader
-          title="Transactions"
-          onBack={() => navigate("/dashboard")}
-          action={
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-              {hasMemos && (
-                <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
-                  <Download size={15} weight="Linear" />
-                </button>
-              )}
-              <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
-                <Chart size={15} weight="Linear" />
-              </button>
-              {!wideLayout && (
-                <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
-                  <Filters size={15} weight="Linear" />
-                  {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
-                </button>
-              )}
-              <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
-                <Refresh size={15} weight="Linear" />
-              </button>
-            </div>
-          }
-        />
-      }
-      contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1 }}
+      statusBar={header}
+      fullBleed
+      contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1, padding: 0 }}
     >
       {/* ── Wide-screen sticky filter sidebar ── */}
       {wideLayout && (
@@ -259,17 +282,17 @@ export default function HistoryScreen() {
           </div>
           <FilterSection label="Direction">
             {(["all", "in", "out"] as const).map((v) => (
-              <Pill key={v} label={v === "all" ? "ALL" : v.toUpperCase()} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
+              <Pill key={v} label={v === "all" ? "All" : v === "in" ? "In" : "Out"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
             ))}
           </FilterSection>
           <FilterSection label="Type">
             {(["all", "transfer", "sc"] as const).map((v) => (
-              <Pill key={v} label={v === "all" ? "ALL" : v === "sc" ? "SC CALL" : "TRANSFER"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
+              <Pill key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
             ))}
           </FilterSection>
           <FilterSection label="Group by">
-            <Pill label="NONE" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-            <Pill label="COUNTERPARTY" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
+            <Pill label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
+            <Pill label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
           </FilterSection>
           <FilterSection label="Date from">
             <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateFrom: draft.dateFrom }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
@@ -289,6 +312,13 @@ export default function HistoryScreen() {
       {/* ── Main content column ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
 
+      <motion.div
+        initial={{ y: 4 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        style={{ display: "flex", flexDirection: "column", flex: 1 }}
+      >
+
       {/* Active filter chips */}
       {chips.length > 0 && (
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
@@ -297,51 +327,53 @@ export default function HistoryScreen() {
       )}
 
       {/* States */}
-      {isLoading && <StatusText color="var(--color-text-disabled)">[LOADING...]</StatusText>}
-      {isError && <StatusText color="var(--color-status-error)">[NETWORK ERROR]</StatusText>}
+      {isLoading && <StatusText color="var(--color-text-disabled)">Loading...</StatusText>}
+      {isError && <StatusText color="var(--color-status-error)">Network error</StatusText>}
       {!isLoading && !isError && filteredPending.length === 0 && filteredTxs.length === 0 && (
         <StatusText color="var(--color-text-disabled)">
-          {allTxs.length === 0 && visiblePending.length === 0 ? "[NO TRANSACTIONS YET]" : "[NO RESULTS]"}
+          {allTxs.length === 0 && visiblePending.length === 0 ? "No transactions yet" : "No results"}
         </StatusText>
       )}
 
       {/* Transaction rows */}
       {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={filteredTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={setDetail} />
+        <GroupedTxs txs={filteredTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
       {!isLoading && !isError && !groupByCounterparty && (
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {filteredPending.map((p, i) => {
+          {filteredPending.map((p) => {
             const isIn = p.destination === identity;
             const expired = isExpired(p);
             const pendingSnapshot = findClosestPriceSnapshot(p.broadcastAt, priceSnapshots);
+            const label = expired ? "Failed" : "Pending";
+            const labelColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
+            const address = p.contractName ?? (isIn ? truncateId(p.source) : truncateId(p.destination));
+            const time = expired
+              ? `Expired at tick ${p.targetTick}`
+              : currentTick > 0
+                ? `ETA ~${Math.max(1, p.targetTick - currentTick)}s`
+                : `Target tick ${p.targetTick}`;
             return (
-              <div key={`p-${p.hash}`}>
-                {i > 0 && <Divider style={{ margin: "var(--space-3) 0" }} />}
-                <button type="button" onClick={() => setDetail(p)} style={ROW_BTN}>
-                  <TxRow
-                    tag={<Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>}
-                    sub={p.contractName ?? (isIn ? truncateId(p.source) : truncateId(p.destination))}
-                    sub2={expired ? `EXPIRED AT TICK ${p.targetTick}` : currentTick > 0 ? `ETA ~${Math.max(1, p.targetTick - currentTick)}s` : `TARGET ${p.targetTick}`}
-                    amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
-                    amountSecondary={settings.hideBalances || !pendingSnapshot ? "" : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
-                    amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
-                    direction="pending"
-                  />
-                </button>
-              </div>
+              <ActivityItem
+                key={`p-${p.hash}`}
+                onClick={() => navigate(`/tx/${p.hash}`)}
+                label={label}
+                labelColor={labelColor}
+                address={address}
+                time={time}
+                amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
+                amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
+                amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
+              />
             );
           })}
 
-          {filteredTxs.map((tx, i) => {
+          {filteredTxs.map((tx) => {
             const isIn = tx.destination === identity;
             const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
             const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
             const isSc = !!(contractName || fromContract);
             const flew = tx.moneyFlew;
-            const variant = !flew ? "error" : isSc ? "neutral" : isIn ? "success" : "neutral";
-            const label = !flew ? "FAILED" : isSc ? "SC CALL" : isIn ? "RECEIVED" : "SENT";
-            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
 
             // Resolve contract index from known address to look up procedure name
             const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
@@ -352,27 +384,25 @@ export default function HistoryScreen() {
               ? CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${tx.inputType}`]
               : undefined;
 
-            const counterparty = isSc
-              ? procedureName
-                ? `${contractName ?? fromContract} · ${procedureName}`
-                : (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
+            const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
+            const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
+            const address = isSc
+              ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
               : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
-            const offset = filteredPending.length + i;
+            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
+
             return (
-              <div key={tx.hash}>
-                {offset > 0 && <Divider style={{ margin: "var(--space-3) 0" }} />}
-                <button type="button" onClick={() => setDetail(tx)} style={ROW_BTN}>
-                  <TxRow
-                    tag={<Tag variant={variant}>{label}</Tag>}
-                    sub={counterparty}
-                    sub2={formatDate(tx.timestamp) || `TICK ${tx.tickNumber}`}
-                    amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                    amountSecondary={settings.hideBalances || !snapshot ? "" : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
-                    amountColor={flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
-                    direction={flew ? (isIn ? "in" : "out") : undefined}
-                  />
-                </button>
-              </div>
+              <ActivityItem
+                key={tx.hash}
+                onClick={() => navigate(`/tx/${tx.hash}`)}
+                label={label}
+                labelColor={labelColor}
+                address={address}
+                time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
+                amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
+                amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+              />
             );
           })}
         </div>
@@ -380,9 +410,10 @@ export default function HistoryScreen() {
 
       {/* Infinite scroll */}
       <div ref={sentinelRef} style={{ height: 1 }} />
-      {isFetchingNextPage && <StatusText color="var(--color-text-disabled)">[LOADING...]</StatusText>}
-      {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">── END ──</StatusText>}
+      {isFetchingNextPage && <StatusText color="var(--color-text-disabled)">Loading...</StatusText>}
+      {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
 
+      </motion.div>
       </div>{/* end main content column */}
 
       {/* ── Filter sheet ────────────────────────────────────────────────────── */}
@@ -394,23 +425,23 @@ export default function HistoryScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             {hasActive ? (
               <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); setFilterOpen(false); }} style={GHOST_BTN}>
-                RESET ALL
+                Reset all
               </button>
             ) : <span />}
-            <button type="button" onClick={applyAndClose} style={APPLY_BTN}>APPLY</button>
+            <button type="button" onClick={applyAndClose} style={APPLY_BTN}>Apply</button>
           </div>
         }
       >
 
         <FilterSection label="Direction">
           {(["all", "in", "out"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "ALL" : v.toUpperCase()} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
+            <Pill key={v} label={v === "all" ? "All" : v === "in" ? "In" : "Out"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
           ))}
         </FilterSection>
 
         <FilterSection label="Type">
           {(["all", "transfer", "sc"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "ALL" : v === "sc" ? "SC CALL" : "TRANSFER"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
+            <Pill key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
           ))}
         </FilterSection>
 
@@ -441,16 +472,11 @@ export default function HistoryScreen() {
         </FilterSection>
 
         <FilterSection label="Group by">
-          <Pill label="NONE" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-          <Pill label="COUNTERPARTY" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
+          <Pill label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
+          <Pill label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
         </FilterSection>
 
       </Sheet>
-
-      {/* Detail modal */}
-      <Modal open={!!detail} onClose={() => setDetail(null)}>
-        {detail && <TxDetail detail={detail} identity={identity} currentTick={currentTick} txMemos={txMemos} />}
-      </Modal>
 
       {/* Memo export filter sheet */}
       <Sheet
@@ -459,8 +485,8 @@ export default function HistoryScreen() {
         title="Export memos"
         footer={
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <button type="button" onClick={() => { setMemoDateFrom(""); setMemoDateTo(""); setMemoMinAmount(""); }} style={GHOST_BTN}>RESET</button>
-            <button type="button" onClick={exportMemos} style={APPLY_BTN}>EXPORT JSON</button>
+            <button type="button" onClick={() => { setMemoDateFrom(""); setMemoDateTo(""); setMemoMinAmount(""); }} style={GHOST_BTN}>Reset</button>
+            <button type="button" onClick={exportMemos} style={APPLY_BTN}>Export JSON</button>
           </div>
         }
       >
@@ -486,11 +512,6 @@ const ICON_BTN: React.CSSProperties = {
   display: "flex", alignItems: "center", color: "var(--color-text-secondary)",
 };
 
-const ROW_BTN: React.CSSProperties = {
-  width: "100%", background: "none", border: "none", cursor: "pointer",
-  padding: "var(--space-3) 0", textAlign: "left",
-};
-
 const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "8px 12px" };
 
 const GHOST_BTN: React.CSSProperties = {
@@ -506,49 +527,6 @@ const APPLY_BTN: React.CSSProperties = {
   color: "var(--color-bg-base)", letterSpacing: "0.05em",
   padding: "var(--space-2) var(--space-4)",
 };
-
-const GHOST_BTN_DETAIL: React.CSSProperties = {
-  background: "none", border: "none", cursor: "pointer",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0,
-};
-
-const APPLY_BTN_DETAIL: React.CSSProperties = {
-  background: "none", border: "1px solid var(--color-border-strong)",
-  borderRadius: "var(--radius-sharp)", cursor: "pointer",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-text-primary)", letterSpacing: "0.05em",
-  padding: "var(--space-1) var(--space-3)",
-};
-
-// ── UI sub-components ─────────────────────────────────────────────────────────
-
-function TxRow({ tag, sub, sub2, amount, amountSecondary, amountColor, direction }: {
-  tag: ReactNode; sub: string; sub2: string; amount: string; amountSecondary?: string; amountColor: string;
-  direction?: "in" | "out" | "pending";
-}) {
-  const dirIcon = direction === "in" ? "↙" : direction === "out" ? "↗" : null;
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-      <div>
-        <div style={{ marginBottom: "var(--space-1)" }}>{tag}</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>{sub}</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>{sub2}</div>
-      </div>
-      <div style={{ textAlign: "right", flexShrink: 0, paddingLeft: "var(--space-3)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: amountColor }}>
-          {dirIcon && <span style={{ opacity: 0.6, marginRight: 2 }}>{dirIcon}</span>}{amount}
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>QU</div>
-        {amountSecondary && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginTop: 2 }}>
-            {amountSecondary}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function FilterSection({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -582,7 +560,7 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
       borderRadius: "var(--radius-sharp)", cursor: "pointer",
       fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
       color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-      letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)", textTransform: "uppercase",
+      letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
     }}>
       {label}
     </button>
@@ -599,7 +577,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
       padding: "var(--space-1) var(--space-2)",
       display: "flex", alignItems: "center", gap: "var(--space-1)",
     }}>
-      {label} ✕
+      {label} <span style={{ fontSize: "0.75em", lineHeight: 1 }}>✕</span>
     </button>
   );
 }
@@ -610,173 +588,6 @@ function StatusText({ children, color }: { children: ReactNode; color: string })
       {children}
     </div>
   );
-}
-
-// ── Detail modal ──────────────────────────────────────────────────────────────
-
-function TxDetail({ detail, identity, currentTick, txMemos }: {
-  detail: TxHistoryItem | PendingTx; identity: string | null; currentTick: number;
-  txMemos: Record<string, string>;
-}) {
-  const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
-  const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
-  const setTxMemo = usePersistedStore((s) => s.setTxMemo);
-  const deleteTxMemo = usePersistedStore((s) => s.deleteTxMemo);
-  const txTags = usePersistedStore((s) => s.txTags);
-  const setTxTags = usePersistedStore((s) => s.setTxTags);
-  const isPending = (d: TxHistoryItem | PendingTx): d is PendingTx => "broadcastAt" in d;
-
-  const hash = detail.hash ?? null;
-  const [memo, setMemo] = useState(hash ? (txMemos[hash] ?? "") : "");
-  const [memoEditing, setMemoEditing] = useState(false);
-  const [tagInput, setTagInput] = useState("");
-  const currentTags: string[] = hash ? (txTags[hash] ?? []) : [];
-
-  function addTag(raw: string) {
-    const tag = raw.trim().replace(/^#+/, "").toLowerCase();
-    if (!tag || !hash || currentTags.includes(tag)) { setTagInput(""); return; }
-    setTxTags(hash, [...currentTags, tag]);
-    setTagInput("");
-  }
-  function removeTag(tag: string) {
-    if (!hash) return;
-    setTxTags(hash, currentTags.filter((t) => t !== tag));
-  }
-
-  function saveMemo() {
-    if (!hash) return;
-    if (memo.trim()) setTxMemo(hash, memo.trim());
-    else deleteTxMemo(hash);
-    setMemoEditing(false);
-  }
-
-  const contractName = detail.destination ? KNOWN_CONTRACT_ADDRESSES[detail.destination] : undefined;
-  const fromContract = detail.source ? KNOWN_CONTRACT_ADDRESSES[detail.source] : undefined;
-  const isSc = !!(contractName || fromContract);
-  const snapshot = findClosestPriceSnapshot(isPending(detail) ? detail.broadcastAt : detail.timestamp, priceSnapshots);
-
-  if (isPending(detail)) {
-    const expired = currentTick > 0 && currentTick > detail.targetTick;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-          <Tag variant={expired ? "error" : "warning"}>{expired ? "FAILED" : "PENDING"}</Tag>
-          {detail.contractName && <Tag variant="neutral">{detail.contractName}</Tag>}
-        </div>
-        <DetailRow label="Amount"><AmountVal amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
-        {snapshot && !hideBalances && <DetailRow label="Approx. fiat"><MonoVal>${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}</MonoVal></DetailRow>}
-        <DetailRow label="From">{detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}</DetailRow>
-        <DetailRow label="To">{detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}</DetailRow>
-        <DetailRow label="Target tick"><MonoVal>{detail.targetTick}</MonoVal></DetailRow>
-        {detail.hash && <DetailRow label="Hash"><IdentityDisplay identity={detail.hash} showIdenticon={false} /></DetailRow>}
-      </div>
-    );
-  }
-
-  const isIn = detail.destination === identity;
-  const flew = detail.moneyFlew;
-  const variant = !flew ? "error" : isSc ? "neutral" : isIn ? "success" : "neutral";
-  const label = !flew ? "FAILED" : isSc ? "SC CALL" : isIn ? "RECEIVED" : "SENT";
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-        <Tag variant={variant}>{label}</Tag>
-        {isSc && <Tag variant="neutral">{contractName ?? fromContract ?? ""}</Tag>}
-      </div>
-      <DetailRow label="Amount"><AmountVal amount={detail.amount ?? "0"} hide={hideBalances} /></DetailRow>
-      {snapshot && !hideBalances && <DetailRow label="Approx. fiat"><MonoVal>${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}</MonoVal></DetailRow>}
-      <DetailRow label="From">{detail.source ? <IdentityDisplay identity={detail.source} /> : <Dash />}</DetailRow>
-      <DetailRow label="To">{detail.destination ? <IdentityDisplay identity={detail.destination} /> : <Dash />}</DetailRow>
-      <DetailRow label="Tick"><MonoVal>{detail.tickNumber ?? "—"}</MonoVal></DetailRow>
-      {detail.hash && <DetailRow label="Hash"><IdentityDisplay identity={detail.hash} showIdenticon={false} /></DetailRow>}
-
-      {hash && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Note</span>
-            {!memoEditing && (
-              <button type="button" onClick={() => setMemoEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
-                {memo.trim() ? "EDIT" : "+ ADD"}
-              </button>
-            )}
-          </div>
-          {memoEditing ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              <textarea
-                autoFocus
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                placeholder="Add a note to this transaction..."
-                rows={3}
-                style={{
-                  width: "100%",
-                  background: "var(--color-bg-elevated)",
-                  border: "1px solid var(--color-border-strong)",
-                  borderRadius: "var(--radius-sharp)",
-                  color: "var(--color-text-primary)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.04em",
-                  lineHeight: 1.6,
-                  padding: "var(--space-2) var(--space-3)",
-                  resize: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)" }}>
-                <button type="button" onClick={() => { setMemo(hash ? (txMemos[hash] ?? "") : ""); setMemoEditing(false); }} style={GHOST_BTN_DETAIL}>CANCEL</button>
-                <button type="button" onClick={saveMemo} style={APPLY_BTN_DETAIL}>SAVE</button>
-              </div>
-            </div>
-          ) : memo.trim() ? (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{memo.trim()}</span>
-          ) : null}
-        </div>
-      )}
-      {hash && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tags</span>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {currentTags.map((tag) => (
-              <button key={tag} type="button" onClick={() => removeTag(tag)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: "2px var(--space-2)" }}>
-                #{tag} ✕
-              </button>
-            ))}
-            <input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(tagInput); } }}
-              placeholder="#tag"
-              className="glyph-input"
-              style={{ background: "none", border: "1px dashed var(--color-border-strong)", borderRadius: "var(--radius-sharp)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "2px var(--space-2)", width: 72 }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DetailRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function AmountVal({ amount, hide }: { amount: string; hide: boolean }) {
-  return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>{hide ? "••••••" : `${formatQu(amount)} QU`}</span>;
-}
-
-function MonoVal({ children }: { children: ReactNode }) {
-  return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)" }}>{children}</span>;
-}
-
-function Dash() {
-  return <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>—</span>;
 }
 
 // ── Grouped-by-counterparty view ──────────────────────────────────────────────
@@ -808,27 +619,26 @@ function GroupedTxs({
         <div key={key}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)", marginBottom: "var(--space-2)" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>{group.label}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{group.txs.length} TX · {formatQuCompact(group.volume)} QU</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{group.txs.length} tx · {formatQuCompact(group.volume)} QU</span>
           </div>
-          {group.txs.map((tx, i) => {
+          {group.txs.map((tx) => {
             const isIn = tx.destination === identity;
             const flew = tx.moneyFlew;
             const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
+            const label = !flew ? "Failed" : isIn ? "Received" : "Sent";
+            const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
             return (
-              <div key={tx.hash}>
-                {i > 0 && <Divider style={{ margin: "var(--space-2) 0" }} />}
-                <button type="button" onClick={() => onSelect(tx)} style={ROW_BTN}>
-                  <TxRow
-                    tag={<Tag variant={!flew ? "error" : isIn ? "success" : "neutral"}>{!flew ? "FAILED" : isIn ? "RECEIVED" : "SENT"}</Tag>}
-                    sub={formatDate(tx.timestamp) || `TICK ${tx.tickNumber}`}
-                    sub2=""
-                    amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                    amountSecondary={settings.hideBalances || !snapshot ? "" : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
-                    amountColor={flew ? (isIn ? "var(--color-status-success)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
-                    direction={flew ? (isIn ? "in" : "out") : undefined}
-                  />
-                </button>
-              </div>
+              <ActivityItem
+                key={tx.hash}
+                onClick={() => onSelect(tx)}
+                label={label}
+                labelColor={labelColor}
+                address={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
+                time=""
+                amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
+                amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
+              />
             );
           })}
         </div>
@@ -836,4 +646,3 @@ function GroupedTxs({
     </div>
   );
 }
-
