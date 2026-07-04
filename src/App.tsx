@@ -27,27 +27,13 @@ const queryClient = new QueryClient({
 });
 
 function useAppearance() {
-  const { theme, fontPair, accentColor, customScheme } = usePersistedStore(
+  const { fontPair, accentColor, customScheme } = usePersistedStore(
     useShallow((s) => ({
-      theme: s.settings.theme,
       fontPair: s.settings.fontPair,
       accentColor: s.settings.accentColor,
       customScheme: s.settings.customScheme,
     }))
   );
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      root.setAttribute("data-theme", mq.matches ? "dark" : "light");
-      const handler = (e: MediaQueryListEvent) =>
-        root.setAttribute("data-theme", e.matches ? "dark" : "light");
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    }
-    root.setAttribute("data-theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     const pair = FONT_PAIRS.find((p) => p.id === fontPair) ?? FONT_PAIRS[0];

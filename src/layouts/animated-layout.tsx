@@ -2,84 +2,141 @@ import { useLayoutEffect, useRef } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { useAutoLock } from "@/hooks/use-auto-lock";
+import { useLockCountdown } from "@/hooks/use-lock-countdown";
+import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
+import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 
-type PageVariant = { opacity: number; x?: number; y?: number };
+// ── Route helpers ────────────────────────────────────────────────────────────
 
-const ROUTE_DEPTH: Record<string, number> = {
-  "/": 0,
-  "/lock": 0,
-  "/setup": 1,
-  "/dashboard": 1,
-  "/request": 1,
-  "/setup/create": 2,
-  "/setup/import": 2,
-  "/send": 2,
-  "/send-many": 2,
-  "/burn": 2,
-  "/stake": 2,
-  "/receive": 2,
-  "/history": 2,
-  "/analytics": 3,
-  "/contacts": 2,
-  "/vaults": 2,
-  "/settings": 2,
-  "/settings/dapps": 3,
-  "/settings/security": 3,
-  "/settings/network": 3,
-  "/settings/appearance": 3,
-  "/settings/contacts": 3,
-  "/settings/notifications": 3,
-};
+const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
 
-function getDepth(pathname: string): number {
-  if (ROUTE_DEPTH[pathname] !== undefined) return ROUTE_DEPTH[pathname];
-  if (pathname.startsWith("/vaults/")) return 3;
-  return 2;
+const HIDDEN_NAV_ROUTES = new Set(["/send", "/send-many", "/burn", "/earn"]);
+
+const NAV_PREFIXES: [string, BottomNavTab][] = [
+  ["/dashboard", "home"],
+  ["/send", "send"],
+  ["/send-many", "send"],
+  ["/burn", "send"],
+  ["/stake", "send"],
+  ["/receive", "receive"],
+  ["/payment-link", "receive"],
+  ["/earn", "earn"],
+  ["/history", "history"],
+  ["/analytics", "history"],
+  ["/contacts", "history"],
+  ["/search", "history"],
+  ["/vaults", "home"],
+  ["/settings", "settings"],
+];
+
+function showChrome(pathname: string): boolean {
+  if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
+  if (pathname.startsWith("/settings/")) return false;
+  return true;
 }
+
+function activeTabFromPath(pathname: string): BottomNavTab {
+  for (const [prefix, tab] of NAV_PREFIXES) {
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) return tab;
+  }
+  return "home";
+}
+
+// ── Layout shell (inside provider) ───────────────────────────────────────────
+
+function LayoutShell() {
+  const location = useLocation();
+  const element = useOutlet();
+  const { header } = useHeaderSlot();
+  const countdown = useLockCountdown();
+  const cur = location.pathname;
+  const show = showChrome(cur);
+  const showNav = show && !HIDDEN_NAV_ROUTES.has(cur);
+
+  const prevRef = useRef(cur);
+  useLayoutEffect(() => { prevRef.current = cur; }, [cur]);
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* ── Static header ── */}
+      {show && header && (
+        <header
+          style={{
+            flexShrink: 0,
+            height: 44,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 var(--space-4)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+            background: "var(--color-bg-base)",
+          }}
+        >
+          {header}
+        </header>
+      )}
+
+      {/* ── Lock countdown banner ── */}
+      {countdown !== null && (
+        <div
+          aria-live="polite"
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--space-1) var(--space-4)",
+            background: "var(--color-bg-elevated)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+          }}
+        >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+            Locking in {countdown}s
+          </span>
+        </div>
+      )}
+
+      {/* ── Animated page content ── */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.key}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeOut" } }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            style={{ height: "100%", position: "absolute", inset: 0 }}
+          >
+            {element}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── Floating bottom nav ── */}
+      {showNav && (
+        <nav
+          style={{
+            position: "absolute",
+            bottom: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 100,
+          }}
+        >
+          <BottomNav active={activeTabFromPath(cur)} />
+        </nav>
+      )}
+    </div>
+  );
+}
+
+// ── Exported layout ──────────────────────────────────────────────────────────
 
 export function AnimatedLayout() {
   useAutoLock();
 
-  const location = useLocation();
-  const element = useOutlet();
-
-  const prevRef = useRef(location.pathname);
-  const prev = prevRef.current;
-  const cur = location.pathname;
-
-  let initial: PageVariant;
-
-  if (cur === "/request") {
-    // Request sheet arrives from below
-    initial = { opacity: 0, y: 64 };
-  } else if (prev === "/request") {
-    // Returning from request: fade in only (request slides out below)
-    initial = { opacity: 0 };
-  } else if (cur === "/lock" || prev === "/lock") {
-    // Lock/unlock uses its own internal scale animation — outer wrapper fades only
-    initial = { opacity: 0 };
-  } else {
-    const goingDeeper = getDepth(cur) >= getDepth(prev);
-    initial = { opacity: 0, x: goingDeeper ? 20 : -20 };
-  }
-
-  // Update after render so the next render sees the correct "previous" path
-  useLayoutEffect(() => {
-    prevRef.current = cur;
-  }, [cur]);
-
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.key}
-        initial={initial}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        exit={{ opacity: 0, transition: { duration: 0.1, ease: "easeOut" } }}
-        transition={{ duration: cur === "/request" ? 0.22 : 0.15, ease: "easeOut" }}
-        style={{ height: "100%", position: "absolute", inset: 0 }}
-      >
-        {element}
-      </motion.div>
-    </AnimatePresence>
+    <HeaderSlotProvider>
+      <LayoutShell />
+    </HeaderSlotProvider>
   );
 }
