@@ -267,7 +267,7 @@ export default function WelcomeScreen() {
   return (
     <FullPage>
       <motion.div
-        {...presets.fadeInUpLg}
+        {...presets.fadeIn}
         style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
       >
         {/* Pending request warning */}

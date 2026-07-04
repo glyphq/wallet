@@ -269,7 +269,7 @@ export default function LockScreen() {
         ) : (
           <motion.div
             key="lock-form"
-            {...presets.fadeInUpLg}
+            {...presets.fadeIn}
             style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
           >
         {/* Logo */}

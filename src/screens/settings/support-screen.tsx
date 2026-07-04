@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
+import { presets } from "@/lib/animations";
 import { QRCodeSVG } from "qrcode.react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { AppShell } from "@/layouts/app-shell";
@@ -341,7 +342,7 @@ export default function SupportScreen() {
   return (
     <>
     <AppShell fullBleed contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-      <motion.div initial={{ y: 4 }} animate={{ y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+      <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
         <SettingsPageHeader title="Support" />
 
         {/* Donation */}

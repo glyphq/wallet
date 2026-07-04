@@ -6,7 +6,7 @@
  *
  * Usage:
  *   import { presets, variants, transition } from "@/lib/animations";
- *   <motion.div {...presets.fadeInUp} />
+ *   <motion.div {...presets.fadeIn} />
  *   <motion.div variants={variants.staggerItem} />
  */
 
@@ -49,25 +49,11 @@ export const transition = {
 // Use for one-off animations where variants aren't needed.
 
 export const presets = {
-  /** Fade in. */
+  /** Fade in. Standard entrance. */
   fadeIn: {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
     exit: { opacity: 0 },
-    transition: transition.quick,
-  },
-  /** Fade in + slide up 4px. The workhorse entrance. */
-  fadeInUp: {
-    initial: { opacity: 0, y: 4 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -4 },
-    transition: transition.enter,
-  },
-  /** Fade in + slide up 8px. For larger containers / modals. */
-  fadeInUpLg: {
-    initial: { opacity: 0, y: 8 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: 8 },
     transition: transition.enter,
   },
   /** Fade in + scale up slightly. For cards, tooltips. */
@@ -138,12 +124,11 @@ export const staggerSlow: Variants = {
   },
 };
 
-/** Child: fade in + slide up. Use inside a stagger parent. */
+/** Child: fade in. Use inside a stagger parent. */
 export const staggerItem: Variants = {
-  hidden: { opacity: 0, y: 6 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    y: 0,
     transition: { duration: 0.2, ease: EASE_OUT },
   },
 };
@@ -165,9 +150,9 @@ export const staggerScale: Variants = {
  * Replaces the `stepMotion` objects duplicated across screens.
  */
 export const stepMotion = {
-  initial: { opacity: 0, y: 4 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
   transition: transition.enter,
 } as const;
 
@@ -192,9 +177,9 @@ export const gesture = {
     whileTap: { scale: 0.95 },
     transition: transition.springStiff,
   },
-  /** Lift on hover — translate up slightly. */
+  /** Lift on hover — scale up slightly. */
   lift: {
-    whileHover: { y: -2 },
+    whileHover: { scale: 1.02 },
     transition: transition.spring,
   },
 } as const;

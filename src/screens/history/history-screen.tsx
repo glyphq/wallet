@@ -366,7 +366,7 @@ export default function HistoryScreen() {
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
 
       <motion.div
-        {...presets.fadeInUp}
+        {...presets.fadeIn}
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
 
