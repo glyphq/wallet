@@ -102,15 +102,16 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
         b64
     );
 
-    // Spawn on separate thread — WebView2 deadlock if called from IPC thread (wry#583)
+    // Spawn on separate thread — WebView2 deadlock on IPC thread (wry#583)
     let app2 = app.clone();
     std::thread::spawn(move || {
         let label = format!("notif-{}", std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
 
-        eprintln!("[notif] building on spawned thread...");
+        eprintln!("[notif] building...");
 
-        let url = "http://localhost:1420/".parse::<url::Url>().unwrap();
+        // about:blank loads instantly — no network request, no React app overhead
+        let url = "about:blank".parse::<url::Url>().unwrap();
         let _window = match WebviewWindowBuilder::new(&app2, &label, WebviewUrl::External(url))
             .inner_size(376.0, 76.0)
             .position(x, y)
@@ -127,25 +128,21 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
             Err(e) => { eprintln!("[notif] build err: {e}"); return; }
         };
 
+        // Inject immediately — about:blank is already loaded
+        if let Some(w) = app2.get_webview_window(&label) {
+            match w.eval(&eval_js) {
+                Ok(_) => eprintln!("[notif] eval OK"),
+                Err(e) => eprintln!("[notif] eval err: {e}"),
+            }
+            let _ = w.show();
+        }
+
+        // Safety net destroy — JS handles timing, this just cleans up stragglers
         let app3 = app2.clone();
         let l2 = label.clone();
-        let js = eval_js;
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(1500));
+            std::thread::sleep(std::time::Duration::from_millis(duration + 500));
             if let Some(w) = app3.get_webview_window(&l2) {
-                match w.eval(&js) {
-                    Ok(_) => eprintln!("[notif] eval OK"),
-                    Err(e) => eprintln!("[notif] eval err: {e}"),
-                }
-                let _ = w.show();
-            }
-        });
-
-        let app4 = app2.clone();
-        let l3 = label.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(duration + 3000));
-            if let Some(w) = app4.get_webview_window(&l3) {
                 let _ = w.destroy();
             }
         });
