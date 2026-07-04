@@ -67,7 +67,13 @@ html,body{{width:100%;height:100%;background:#161618;overflow:hidden;
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <div class="p" style="background:{color}"></div>
 </div>
-</body></html>"##)
+<script>
+var n=document.getElementById("n"),x=document.getElementById("x");
+function close(){{n.classList.add("out");setTimeout(function(){{try{{window.close()}}catch(e)}}),200)}}
+n.addEventListener("click",close);
+x.addEventListener("click",function(e){{e.stopPropagation();close()}});
+setTimeout(close,{duration});
+\x3c/script></body></html>"##)
 }
 
 /// Async — WebviewWindowBuilder::build() deadlocks on Windows in sync commands (wry#583).
@@ -84,24 +90,9 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    // Base64 the notification HTML
+    // Base64 encode — avoids all escaping issues with </script>, quotes, etc.
     let b64 = base64_encode(html.as_bytes());
-
-    // IIFE that writes HTML + attaches click handlers + auto-close
-    let eval_js = format!(
-        r#"(function(){{
-          document.documentElement.innerHTML=atob('{}');
-          var n=document.getElementById('n'),x=document.getElementById('x');
-          function close(){{
-            n.classList.add('out');
-            setTimeout(function(){{try{{window.close()}}catch(e)}}),200);
-          }}
-          n.addEventListener('click',close);
-          x.addEventListener('click',function(e){{e.stopPropagation();close()}});
-          setTimeout(close,{});
-        }})();"#,
-        b64, duration
-    );
+    let eval_js = format!("document.open();document.write(atob('{}'));document.close();", b64);
 
     // Spawn on separate thread — WebView2 deadlock on IPC thread (wry#583)
     let app2 = app.clone();
@@ -111,9 +102,7 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
 
         eprintln!("[notif] building...");
 
-        // about:blank loads instantly — inject HTML via eval right after
         let url = "about:blank".parse::<url::Url>().unwrap();
-
         let _window = match WebviewWindowBuilder::new(&app2, &label, WebviewUrl::External(url))
             .inner_size(380.0, 88.0)
             .position(x, y)
@@ -130,26 +119,21 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
             Err(e) => { eprintln!("[notif] build err: {e}"); return; }
         };
 
-        // Inject notification content after the stub page loads
+        // about:blank loads instantly — inject right away
+        if let Some(w) = app2.get_webview_window(&label) {
+            match w.eval(&eval_js) {
+                Ok(_) => eprintln!("[notif] eval OK"),
+                Err(e) => eprintln!("[notif] eval err: {e}"),
+            }
+            let _ = w.show();
+        }
+
+        // Safety net destroy
         let app3 = app2.clone();
         let l2 = label.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(50));
-            if let Some(w) = app3.get_webview_window(&l2) {
-                match w.eval(&eval_js) {
-                    Ok(_) => eprintln!("[notif] eval OK"),
-                    Err(e) => eprintln!("[notif] eval err: {e}"),
-                }
-                let _ = w.show();
-            }
-        });
-
-        // Safety net destroy
-        let app4 = app2.clone();
-        let l3 = label.clone();
-        std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(duration + 500));
-            if let Some(w) = app4.get_webview_window(&l3) {
+            if let Some(w) = app3.get_webview_window(&l2) {
                 let _ = w.destroy();
             }
         });
