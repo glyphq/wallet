@@ -10,6 +10,11 @@ import { usePersistedStore, type VaultColor } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { truncateId } from "@/lib/format";
 import type { Seed } from "@/lib/crypto";
+import {
+  AltArrowLeft,
+  AltArrowRight,
+  LockKeyhole,
+} from "@solar-icons/react";
 
 type Step = 1 | 2 | 3;
 
@@ -27,6 +32,7 @@ function strengthOf(pw: string) {
 
 const accentPill: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
+  gap: "var(--space-2)",
   width: "100%", height: 48,
   background: "var(--color-accent)", color: "var(--color-bg-base)",
   borderRadius: "var(--radius-pill)", border: "none",
@@ -35,6 +41,8 @@ const accentPill: React.CSSProperties = {
 };
 
 const ghostBtn: React.CSSProperties = {
+  display: "flex", alignItems: "center", justifyContent: "center",
+  gap: "var(--space-2)",
   background: "none", border: "none", cursor: "pointer",
   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
   color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center",
@@ -172,10 +180,10 @@ export default function ImportVaultScreen() {
             </div>
 
             <motion.button type="button" onClick={validateAndContinue} {...gesture.press} style={accentPill}>
-              Continue
+              Continue <AltArrowRight size={16} weight="Bold" />
             </motion.button>
             <motion.button type="button" onClick={() => navigate("/setup")} {...gesture.pressSubtle} style={ghostBtn}>
-              Back
+              <AltArrowLeft size={16} weight="Bold" /> Back
             </motion.button>
           </motion.div>
         )}
@@ -215,7 +223,7 @@ export default function ImportVaultScreen() {
             </div>
 
             <motion.button type="button" onClick={goStep3} {...gesture.press} style={accentPill}>
-              Continue
+              Continue <AltArrowRight size={16} weight="Bold" />
             </motion.button>
           </motion.div>
         )}
@@ -273,7 +281,11 @@ export default function ImportVaultScreen() {
             <motion.button type="button" onClick={finish} disabled={loading || strength.level < 1} {...gesture.press} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
               {loading ? (
                 <span style={{ width: 16, height: 16, border: "2px solid var(--color-bg-base)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
-              ) : "Import vault"}
+              ) : (
+                <>
+                  <LockKeyhole size={16} weight="Bold" /> Import vault
+                </>
+              )}
             </motion.button>
           </motion.div>
         )}
