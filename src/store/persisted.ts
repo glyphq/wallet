@@ -6,7 +6,7 @@ import type { StateStorage } from "zustand/middleware";
 import type { VaultData } from "@qubic.org/wallet";
 
 export type VaultColor = "slate" | "red" | "amber" | "emerald" | "sky" | "violet";
-export type FontPairId = "default" | "geist" | "inter" | "ibm" | "roboto" | "fira";
+export type FontPairId = "default";
 export type AccentColorId = "green" | "amber" | "sky" | "violet" | "rose" | "mono";
 
 /** Persisted display metadata for a single account within a vault. Index mirrors position in the seed array. */
@@ -57,7 +57,6 @@ export interface AppSettings {
   lockOnSleep: boolean;
   lockOnWindowBlur: boolean;
   clipboardClearSeconds: number;
-  theme: "dark" | "graphite" | "midnight" | "light" | "system";
   network: NetworkConfig;
   activeVaultId: string | null;
   activeAccountIndex: number;
@@ -136,7 +135,6 @@ export interface PendingTx {
 
 const MAX_PENDING_TXS = 50;
 const MAX_TX_MEMOS = 500;
-const MAX_TX_TAGS = 500;
 const MAX_SCHEDULED_TRANSFERS = 50;
 const MAX_NOTIFICATION_EVENTS = 200;
 const MAX_AUDIT_EVENTS = 500;
@@ -225,7 +223,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   lockOnSleep: true,
   lockOnWindowBlur: false,
   clipboardClearSeconds: 30,
-  theme: "dark",
   network: {
     liveApiUrl: "https://rpc.qubic.org/live/v1",
     queryApiUrl: "https://rpc.qubic.org/query/v1",
@@ -372,7 +369,7 @@ interface PersistedState {
   pendingTxs: PendingTx[];
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
-  /** tx hash → array of user-defined string tags */
+  /** @deprecated Kept for migration compat only — no longer used in UI. */
   txTags: Record<string, string[]>;
   scheduledTransfers: ScheduledTransfer[];
   notificationEvents: NotificationEvent[];
@@ -407,7 +404,6 @@ interface PersistedState {
   setDappAllowedIdentities: (origin: string, identities: string[] | undefined) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;
-  setTxTags: (hash: string, tags: string[]) => void;
   addScheduledTransfer: (transfer: ScheduledTransfer) => void;
   updateScheduledTransfer: (id: string, updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt">>) => void;
   removeScheduledTransfer: (id: string) => void;
@@ -553,15 +549,6 @@ export const usePersistedStore = create<PersistedState>()(
           const next = { ...s.txMemos };
           delete next[hash];
           return { txMemos: next };
-        }),
-
-      setTxTags: (hash, tags) =>
-        set((s) => {
-          const next = { ...s.txTags };
-          if (tags.length === 0) delete next[hash];
-          else next[hash] = tags;
-          const entries = Object.entries(next);
-          return { txTags: entries.length <= MAX_TX_TAGS ? next : Object.fromEntries(entries.slice(entries.length - MAX_TX_TAGS)) };
         }),
 
       addScheduledTransfer: (transfer) =>
