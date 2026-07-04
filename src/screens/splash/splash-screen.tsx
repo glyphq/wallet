@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
@@ -35,13 +35,17 @@ export default function SplashScreen() {
     return () => clearInterval(id);
   }, []);
 
+  const mountedAt = useRef(Date.now());
+
   useEffect(() => {
     if (!hydrated) return;
+    const elapsed = Date.now() - mountedAt.current;
+    const remaining = Math.max(0, 3000 - elapsed);
     const timer = setTimeout(() => {
       if (vaults.length === 0) navigate("/setup", { replace: true });
       else if (isLocked) navigate("/lock", { replace: true });
       else navigate("/dashboard", { replace: true });
-    }, 600);
+    }, remaining);
     return () => clearTimeout(timer);
   }, [hydrated, vaults.length, isLocked, navigate]);
 
