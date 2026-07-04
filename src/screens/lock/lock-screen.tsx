@@ -97,12 +97,13 @@ export default function LockScreen() {
   const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
   const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
 
-  const lockedVaults = vaults.filter((v) => !isWatchOnlyVault(v));
+  const lockedVaults = vaults
+    .filter((v) => !isWatchOnlyVault(v))
+    .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   const hasMultiple = lockedVaults.length > 1;
 
   const [selectedId, setSelectedId] = useState<string>(() => {
-    const activeId = settings.activeVaultId;
-    if (activeId && lockedVaults.some((v) => v.id === activeId)) return activeId;
+    // Default to the most recently unlocked vault
     return lockedVaults[0]?.id ?? "";
   });
 

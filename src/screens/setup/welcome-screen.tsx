@@ -6,7 +6,13 @@ import { FullPage } from "@/layouts/full-page";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { DangerTriangle } from "@solar-icons/react";
+import {
+  DangerTriangle,
+  Wallet,
+  DownloadMinimalistic,
+  Eye,
+  Document,
+} from "@solar-icons/react";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { parseAccountTags } from "@/lib/accounts";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -20,6 +26,7 @@ import { parseSignedExportEnvelope } from "@/lib/export-format";
 
 const accentBtn: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
+  gap: "var(--space-2)",
   width: "100%", height: 48,
   background: "var(--color-accent)", color: "var(--color-bg-base)",
   borderRadius: "var(--radius-pill)", border: "none",
@@ -29,6 +36,7 @@ const accentBtn: React.CSSProperties = {
 
 const secondaryBtn: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
+  gap: "var(--space-2)",
   width: "100%", height: 44,
   background: "transparent", color: "var(--color-text-primary)",
   borderRadius: "var(--radius-sharp)", border: "1px solid var(--color-border-strong)",
@@ -38,6 +46,7 @@ const secondaryBtn: React.CSSProperties = {
 
 const ghostBtn: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
+  gap: "var(--space-2)",
   width: "100%", height: 40,
   background: "transparent", color: "var(--color-text-secondary)",
   borderRadius: 0, border: "none",
@@ -304,15 +313,19 @@ export default function WelcomeScreen() {
         {/* Action buttons */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <motion.button type="button" onClick={() => navigate("/setup/create")} {...gesture.press} style={accentBtn}>
+            <Wallet size={18} weight="Bold" />
             Create wallet
           </motion.button>
           <motion.button type="button" onClick={() => navigate("/setup/import")} {...gesture.press} style={secondaryBtn}>
+            <DownloadMinimalistic size={16} weight="Linear" />
             Import seed
           </motion.button>
           <motion.button type="button" onClick={() => setWatchOpen(true)} {...gesture.pressSubtle} style={ghostBtn}>
+            <Eye size={16} weight="Linear" />
             Import watch-only
           </motion.button>
           <motion.button type="button" onClick={openFilePicker} {...gesture.pressSubtle} style={ghostBtn}>
+            <Document size={16} weight="Linear" />
             Import vault file
           </motion.button>
         </div>
