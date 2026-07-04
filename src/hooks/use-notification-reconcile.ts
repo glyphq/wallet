@@ -48,7 +48,7 @@ export function useNotificationReconcile() {
               if (!tx.hash || tx.moneyFlew === false) continue;
               await publishNotificationEvent(createNotificationEvent({
                 kind: "received",
-                title: "QU received",
+                title: "Funds received",
                 body: `${BigInt(tx.amount ?? "0").toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
                 identity,
                 txHash: tx.hash,
