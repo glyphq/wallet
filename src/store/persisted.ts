@@ -6,7 +6,7 @@ import type { StateStorage } from "zustand/middleware";
 import type { VaultData } from "@qubic.org/wallet";
 
 export type VaultColor = "slate" | "red" | "amber" | "emerald" | "sky" | "violet";
-export type FontPairId = "default";
+export type FontPairId = "default" | "inter" | "ibm-plex" | "space-grotesk" | "fira" | "jetbrains";
 export type AccentColorId = "green" | "amber" | "sky" | "violet" | "rose" | "mono";
 
 /** Persisted display metadata for a single account within a vault. Index mirrors position in the seed array. */
