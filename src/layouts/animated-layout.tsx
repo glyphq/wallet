@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
-import { ToastContainer } from "@/components/toast";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 
 // ── Route helpers ────────────────────────────────────────────────────────────
@@ -111,9 +110,6 @@ function LayoutShell() {
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* ── Custom toast notifications ── */}
-      <ToastContainer />
 
       {/* ── Floating bottom nav ── */}
       {showNav && (

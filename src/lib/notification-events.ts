@@ -1,5 +1,5 @@
+import { invoke } from "@tauri-apps/api/core";
 import { type NotificationDeliveryResult } from "@/lib/notifications";
-import { addToast, type ToastKind } from "@/store/toast";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
 
@@ -48,10 +48,13 @@ export async function publishNotificationEvent(
   if (isLocked && !notifyWhenLocked) {
     return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the vault is locked." };
   }
-  addToast({
-    kind: event.kind as ToastKind,
-    title: event.title,
-    body: event.body,
-  });
+  invoke("show_notification_window", {
+    payload: {
+      kind: event.kind,
+      title: event.title,
+      body: event.body,
+      duration: 5000,
+    },
+  }).catch(() => {});
   return { ok: true, state: "sent" };
 }
