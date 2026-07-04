@@ -380,7 +380,12 @@ interface PersistedState {
   lastNotificationScanAt: number;
   /** Unix ms timestamp until which password attempts are locked out. 0 = no lockout. */
   passwordLockoutUntil: number;
+  /** Number of consecutive failed password attempts — persists across restarts. */
+  passwordAttempts: number;
+  /** HMAC signing key for vault export envelopes — stored separately from settings for isolation. */
+  exportSigningKey: JsonWebKey | null;
   setPasswordLockoutUntil: (until: number) => void;
+  setPasswordAttempts: (n: number) => void;
   addVault: (vault: VaultMeta) => void;
   updateVault: (id: string, updates: Partial<Omit<VaultMeta, "id">>) => void;
   /** Removes the vault; if it was active, falls back to the first remaining vault (or null). */
@@ -440,8 +445,11 @@ export const usePersistedStore = create<PersistedState>()(
       requestHistory: [],
       lastNotificationScanAt: 0,
       passwordLockoutUntil: 0,
+      passwordAttempts: 0,
+      exportSigningKey: null,
 
       setPasswordLockoutUntil: (until) => set({ passwordLockoutUntil: until }),
+      setPasswordAttempts: (n) => set({ passwordAttempts: n }),
 
       addVault: (vault) =>
         set((s) => ({ vaults: [...s.vaults, vault] })),

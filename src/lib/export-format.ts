@@ -16,15 +16,14 @@ export interface SignedExportEnvelope<T> {
 }
 
 async function ensureExportSigningSecret(): Promise<string> {
-  const settings = usePersistedStore.getState().settings;
-  if (settings.exportSigningPrivateJwk?.k && typeof settings.exportSigningPrivateJwk.k === "string") {
-    return settings.exportSigningPrivateJwk.k;
+  const store = usePersistedStore.getState();
+  const key = store.exportSigningKey;
+  if (key?.k && typeof key.k === "string") {
+    return key.k;
   }
   const secretBytes = crypto.getRandomValues(new Uint8Array(32));
   const secret = btoa(Array.from(secretBytes, (b) => String.fromCharCode(b)).join(""));
-  usePersistedStore.getState().updateSettings({
-    exportSigningPrivateJwk: { kty: "oct", k: secret, alg: "HS256", key_ops: ["sign", "verify"], ext: true },
-  });
+  usePersistedStore.setState({ exportSigningKey: { kty: "oct", k: secret, alg: "HS256", key_ops: ["sign", "verify"], ext: true } });
   return secret;
 }
 
@@ -104,9 +103,10 @@ export async function parseSignedExportEnvelope<T>(raw: string, expectedType: Si
     const envelope = parsed as SignedExportEnvelope<T>;
     const payloadText = JSON.stringify(envelope.payload);
     const payloadHash = await sha256(payloadText);
-    const settings = usePersistedStore.getState().settings;
-    const secret = settings.exportSigningPrivateJwk?.k && typeof settings.exportSigningPrivateJwk.k === "string"
-      ? settings.exportSigningPrivateJwk.k
+    const store = usePersistedStore.getState();
+    const key = store.exportSigningKey;
+    const secret = key?.k && typeof key.k === "string"
+      ? key.k
       : "";
     const schemaOk =
       envelope.meta?.schema === "glyph_export" &&

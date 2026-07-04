@@ -26,7 +26,6 @@ const PASSWORD_MAX_ATTEMPTS = 5;
 const PASSWORD_LOCKOUT_SECS = 30;
 
 let _bioFailures = 0;
-let _passwordAttempts = 0;
 
 
 // ── Vault card ───────────────────────────────────────────────────────────────
@@ -88,6 +87,8 @@ export default function LockScreen() {
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
   const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
   const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
+  const passwordAttempts = usePersistedStore((s) => s.passwordAttempts);
+  const setPasswordAttempts = usePersistedStore((s) => s.setPasswordAttempts);
 
   const lockedVaults = vaults
     .filter((v) => !isWatchOnlyVault(v))
@@ -111,7 +112,6 @@ export default function LockScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [bioFailures, setBioFailures] = useState(_bioFailures);
-  const [, setPasswordAttempts] = useState(_passwordAttempts);
   const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [unlocking, setUnlocking] = useState(false);
@@ -174,7 +174,7 @@ export default function LockScreen() {
       vaultId: selected.id,
     });
     _bioFailures = 0;
-    _passwordAttempts = 0;
+    setPasswordAttempts(0);
     setUnlocking(true);
     await new Promise<void>((r) => setTimeout(r, 600));
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
@@ -210,13 +210,11 @@ export default function LockScreen() {
         detail: selected.name,
         vaultId: selected.id,
       });
-      const next = _passwordAttempts + 1;
-      _passwordAttempts = next;
+      const next = passwordAttempts + 1;
       setPasswordAttempts(next);
       if (next >= PASSWORD_MAX_ATTEMPTS) {
         setError(`Too many attempts — wait ${PASSWORD_LOCKOUT_SECS}s`);
         startLockout();
-        _passwordAttempts = 0;
         setPasswordAttempts(0);
       } else {
         setError(`Wrong password — ${PASSWORD_MAX_ATTEMPTS - next} ${PASSWORD_MAX_ATTEMPTS - next === 1 ? "attempt" : "attempts"} remaining`);
