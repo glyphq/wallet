@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { AltArrowLeft } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -21,75 +22,80 @@ export default function ReceiveScreen() {
   const hideBalances = settings.hideBalances;
   const [qrRevealed, setQrRevealed] = useState(false);
 
-  const statusBar = (
-    <ScreenHeader
-      title="Your address"
-      onBack={() => navigate("/dashboard")}
-      backAriaLabel="Go back"
-      action={
-        <button
-          type="button"
-          onClick={() => navigate("/payment-link")}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
-        >
-          PAY LINK
-        </button>
-      }
-    />
+  const header = (
+    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
+      <button type="button" onClick={() => navigate("/dashboard")}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        <AltArrowLeft size={20} />
+      </button>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+        Your address
+      </span>
+      <button type="button" onClick={() => navigate("/payment-link")}
+        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-secondary)", padding: "8px 0" }}>
+        Payment link
+      </button>
+    </div>
   );
 
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-8)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        {accountName}
-      </div>
-
-      {identity ? (
-        <>
-          <div
-            role={hideBalances ? "button" : undefined}
-            tabIndex={hideBalances ? 0 : undefined}
-            aria-label={hideBalances ? (qrRevealed ? "Hide QR code" : "Reveal QR code") : undefined}
-            style={{
-              background: "#FFFFFF",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-sharp)",
-              padding: "var(--space-3)",
-              position: "relative",
-              cursor: hideBalances && !qrRevealed ? "pointer" : "default",
-            }}
-            onMouseEnter={() => hideBalances && setQrRevealed(true)}
-            onMouseLeave={() => hideBalances && setQrRevealed(false)}
-            onClick={() => hideBalances && setQrRevealed((v) => !v)}
-            onKeyDown={(e) => { if (hideBalances && (e.key === "Enter" || e.key === " ")) setQrRevealed((v) => !v); }}
-          >
-            <QRCodeSVG
-              value={identity}
-              size={200}
-              bgColor="#FFFFFF"
-              fgColor="#111111"
-              level="M"
-              aria-label={`QR code for address ${identity}`}
-              role="img"
-              includeMargin
-              style={{ display: "block", filter: hideBalances && !qrRevealed ? "blur(12px)" : "none", transition: "filter 0.15s ease" }}
-            />
-            {hideBalances && !qrRevealed && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", borderRadius: "var(--radius-sharp)" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "#333333", letterSpacing: "0.05em" }}>
-                  TAP OR HOVER TO REVEAL
-                </span>
-              </div>
-            )}
-          </div>
-
-          <IdentityDisplay identity={identity} style={{ textAlign: "center", maxWidth: 300 }} />
-        </>
-      ) : (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [NO ACCOUNT]
+    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <motion.div
+        initial={{ y: 4 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}
+      >
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-text-secondary)" }}>
+          {accountName}
         </span>
-      )}
+
+        {identity ? (
+          <>
+            <div
+              role={hideBalances ? "button" : undefined}
+              tabIndex={hideBalances ? 0 : undefined}
+              aria-label={hideBalances ? (qrRevealed ? "Hide QR code" : "Reveal QR code") : undefined}
+              style={{
+                background: "#FFFFFF",
+                borderRadius: "var(--radius-card)",
+                padding: 16,
+                position: "relative",
+                cursor: hideBalances && !qrRevealed ? "pointer" : "default",
+              }}
+              onMouseEnter={() => hideBalances && setQrRevealed(true)}
+              onMouseLeave={() => hideBalances && setQrRevealed(false)}
+              onClick={() => hideBalances && setQrRevealed((v) => !v)}
+              onKeyDown={(e) => { if (hideBalances && (e.key === "Enter" || e.key === " ")) setQrRevealed((v) => !v); }}
+            >
+              <QRCodeSVG
+                value={identity}
+                size={200}
+                bgColor="#FFFFFF"
+                fgColor="#111111"
+                level="M"
+                aria-label={`QR code for address ${identity}`}
+                role="img"
+                includeMargin
+                style={{ display: "block", filter: hideBalances && !qrRevealed ? "blur(12px)" : "none", transition: "filter 0.15s ease" }}
+              />
+              {hideBalances && !qrRevealed && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", borderRadius: "var(--radius-card)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "#333333", letterSpacing: "0.05em" }}>
+                    Tap or hover to reveal
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <IdentityDisplay identity={identity} style={{ textAlign: "center", maxWidth: 300 }} />
+          </>
+        ) : (
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.875rem", color: "var(--color-text-disabled)" }}>
+            No account
+          </span>
+        )}
+      </motion.div>
     </AppShell>
   );
 }
