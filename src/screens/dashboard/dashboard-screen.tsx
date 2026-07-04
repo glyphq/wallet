@@ -28,14 +28,7 @@ const HEALTH_COLOR: Record<string, string> = {
   offline: "var(--color-status-error)",
 };
 
-const VAULT_DOT_COLOR: Record<string, string> = {
-  slate: "#64748b",
-  red: "#ef4444",
-  amber: "#f59e0b",
-  emerald: "#10b981",
-  sky: "#0ea5e9",
-  violet: "#8b5cf6",
-};
+
 
 function AnimatedBalance({ value }: { value: bigint }) {
   const spanRef = useRef<HTMLSpanElement>(null);
@@ -121,7 +114,6 @@ export default function DashboardScreen() {
       >
         {vault ? (
           <>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: VAULT_DOT_COLOR[vault.color] ?? "var(--color-text-disabled)", flexShrink: 0 }} />
             <Identicon seed={`${vault.id}:${vault.color}`} size={18} radius={3} />
           </>
         ) : (
