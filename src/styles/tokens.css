@@ -1,35 +1,39 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Space Grotesk", system-ui, sans-serif;
-  --font-mono: "Space Mono", "Courier New", monospace;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Courier New", monospace;
   --font-display: "Doto", monospace;
 }
 
-/* ── Dark mode (default) ─────────────────────────────────────────── */
-[data-theme="dark"] {
+/* ── Tokens ─────────────────────────────────────────────────────── */
+:root {
   color-scheme: dark;
 
   /* Backgrounds */
-  --color-bg-base:     #000000;
-  --color-bg-surface:  #0f0f0f;
-  --color-bg-elevated: #181818;
-  --color-bg-subtle:   #1f1f1f;
+  --color-bg-base:     #0F0F0F;
+  --color-bg-surface:  #282828;
+  --color-bg-elevated: #161618;
+  --color-bg-subtle:   #2c2c2e;
 
   /* Text */
   --color-text-display:   #ffffff;
-  --color-text-primary:   #e8e8e8;
-  --color-text-secondary: #909090;
-  --color-text-disabled:  #484848;
+  --color-text-primary:   #ffffff;
+  --color-text-secondary: #a8a8ac;
+  --color-text-disabled:  #5a5a5e;
 
   /* Borders */
-  --color-border-strong: #2a2a2a;
-  --color-border-subtle: #181818;
+  --color-border-strong: #2c2c2e;
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
 
   /* Status — data encoding only, never decoration */
-  --color-status-success: #22c55e;
+  /* ── Accent ────────────────────────────────────────────────────────────── */
+  --color-accent: #ccfcfb;
+
+  /* ── Status (alerts only — not for accents) ────────────────────────────── */
+  --color-status-success: #34c759;
   --color-status-warning: #f59e0b;
-  --color-status-error:   #d71921;
+  --color-status-error:   #ff3b30;
 
   /* Vault accents — visual distinction between vaults */
   --color-vault-slate:   #64748b;
@@ -38,97 +42,8 @@
   --color-vault-emerald: #10b981;
   --color-vault-sky:     #0ea5e9;
   --color-vault-violet:  #8b5cf6;
-}
 
-/* ── Light mode ──────────────────────────────────────────────────── */
-[data-theme="light"] {
-  color-scheme: light;
-
-  --color-bg-base:     #f5f3ef;
-  --color-bg-surface:  #edeae4;
-  --color-bg-elevated: #e5e1da;
-  --color-bg-subtle:   #ddd9d2;
-
-  --color-text-display:   #0a0a0a;
-  --color-text-primary:   #1a1a1a;
-  --color-text-secondary: #666660;
-  --color-text-disabled:  #a8a8a0;
-
-  --color-border-strong: #c8c4bc;
-  --color-border-subtle: #d8d4cc;
-
-  --color-status-success: #16a34a;
-  --color-status-warning: #d97706;
-  --color-status-error:   #b91c1c;
-
-  --color-vault-slate:   #64748b;
-  --color-vault-red:     #ef4444;
-  --color-vault-amber:   #f59e0b;
-  --color-vault-emerald: #10b981;
-  --color-vault-sky:     #0ea5e9;
-  --color-vault-violet:  #8b5cf6;
-}
-
-/* ── Graphite ────────────────────────────────────────────────────── */
-[data-theme="graphite"] {
-  color-scheme: dark;
-
-  --color-bg-base:     #111111;
-  --color-bg-surface:  #1a1a1a;
-  --color-bg-elevated: #242424;
-  --color-bg-subtle:   #2e2e2e;
-
-  --color-text-display:   #f0f0f0;
-  --color-text-primary:   #d4d4d4;
-  --color-text-secondary: #888888;
-  --color-text-disabled:  #484848;
-
-  --color-border-strong: #333333;
-  --color-border-subtle: #242424;
-
-  --color-status-success: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-error:   #d71921;
-
-  --color-vault-slate:   #64748b;
-  --color-vault-red:     #ef4444;
-  --color-vault-amber:   #f59e0b;
-  --color-vault-emerald: #10b981;
-  --color-vault-sky:     #0ea5e9;
-  --color-vault-violet:  #8b5cf6;
-}
-
-/* ── Midnight ─────────────────────────────────────────────────────── */
-[data-theme="midnight"] {
-  color-scheme: dark;
-
-  --color-bg-base:     #050810;
-  --color-bg-surface:  #0b1020;
-  --color-bg-elevated: #111828;
-  --color-bg-subtle:   #192030;
-
-  --color-text-display:   #dde8ff;
-  --color-text-primary:   #b8c8ee;
-  --color-text-secondary: #6878aa;
-  --color-text-disabled:  #2e3a66;
-
-  --color-border-strong: #1a2640;
-  --color-border-subtle: #111828;
-
-  --color-status-success: #34d399;
-  --color-status-warning: #fbbf24;
-  --color-status-error:   #f87171;
-
-  --color-vault-slate:   #64748b;
-  --color-vault-red:     #ef4444;
-  --color-vault-amber:   #f59e0b;
-  --color-vault-emerald: #10b981;
-  --color-vault-sky:     #0ea5e9;
-  --color-vault-violet:  #8b5cf6;
-}
-
-/* ── Type scale ──────────────────────────────────────────────────── */
-:root {
+  /* Type scale */
   --text-display:  3rem;
   --text-headline: 1.5rem;
   --text-body:     0.9375rem;
@@ -150,7 +65,7 @@
 
   /* Radius */
   --radius-sharp: 4px;
-  --radius-card:  8px;
+  --radius-card:  16px;
   --radius-pill:  9999px;
 
   /* Motion */

@@ -1,40 +1,9 @@
-/* Space (default) */
-@import "@fontsource/space-grotesk/latin-300.css";
-@import "@fontsource/space-grotesk/latin-400.css";
-@import "@fontsource/space-grotesk/latin-500.css";
-@import "@fontsource/space-mono/latin-400.css";
-@import "@fontsource/space-mono/latin-400-italic.css";
-@import "@fontsource/space-mono/latin-700.css";
 /* Geist */
 @import "@fontsource/geist/latin-300.css";
 @import "@fontsource/geist/latin-400.css";
 @import "@fontsource/geist/latin-500.css";
 @import "@fontsource/geist-mono/latin-400.css";
 @import "@fontsource/geist-mono/latin-700.css";
-/* Inter + JetBrains Mono */
-@import "@fontsource/inter/latin-300.css";
-@import "@fontsource/inter/latin-400.css";
-@import "@fontsource/inter/latin-500.css";
-@import "@fontsource/jetbrains-mono/latin-400.css";
-@import "@fontsource/jetbrains-mono/latin-700.css";
-/* IBM Plex */
-@import "@fontsource/ibm-plex-sans/latin-300.css";
-@import "@fontsource/ibm-plex-sans/latin-400.css";
-@import "@fontsource/ibm-plex-sans/latin-500.css";
-@import "@fontsource/ibm-plex-mono/latin-400.css";
-@import "@fontsource/ibm-plex-mono/latin-700.css";
-/* Roboto */
-@import "@fontsource/roboto/latin-300.css";
-@import "@fontsource/roboto/latin-400.css";
-@import "@fontsource/roboto/latin-500.css";
-@import "@fontsource/roboto-mono/latin-400.css";
-@import "@fontsource/roboto-mono/latin-700.css";
-/* Fira */
-@import "@fontsource/fira-sans/latin-300.css";
-@import "@fontsource/fira-sans/latin-400.css";
-@import "@fontsource/fira-sans/latin-500.css";
-@import "@fontsource/fira-code/latin-400.css";
-@import "@fontsource/fira-code/latin-700.css";
 /* Display */
 @import "@fontsource/doto/latin-400.css";
 @import "./tokens.css";
@@ -60,6 +29,8 @@ body {
   font-size: var(--text-body);
   font-weight: 400;
   line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
   overflow: hidden; /* wallet window — no scroll on body */
@@ -138,4 +109,30 @@ button, label, nav {
 
 .glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
+}
+
+/* ── Spinner animation ──────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Entrance animations ────────────────────────────────────────── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
