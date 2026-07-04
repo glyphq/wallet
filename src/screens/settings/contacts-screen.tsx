@@ -75,7 +75,7 @@ export default function SettingsContactsScreen() {
             display: "flex", flexDirection: "column", gap: "var(--space-3)",
             background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)",
           }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", letterSpacing: "0.06em" }}>
               {editing ? "Edit contact" : "New contact"}
             </span>
             <Input label="Name" value={formName} onChange={(e) => { setFormName(e.target.value); setNameError(""); }} placeholder="Alice" error={nameError} autoFocus />

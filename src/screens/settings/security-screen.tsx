@@ -244,7 +244,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <span style={{
       fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
       fontWeight: 600, color: "var(--color-text-disabled)",
-      textTransform: "uppercase" as const, letterSpacing: "0.06em",
+      textTransform: "none", letterSpacing: "0.06em",
     }}>
       {children}
     </span>

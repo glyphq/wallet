@@ -81,7 +81,7 @@ export default function SettingsScreen() {
               <div key={row.route}>
                 {showHeader && (
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", margin: lastSection === "General" ? 0 : "var(--space-3) 0 var(--space-2)", marginBottom: "var(--space-2)" }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
                       {row.section}
                     </span>
                     <div style={{ flex: 1, height: 1, background: "var(--color-border-subtle)" }} />

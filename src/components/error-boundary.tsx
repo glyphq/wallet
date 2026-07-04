@@ -100,17 +100,17 @@ export class ErrorBoundary extends Component<Props, State> {
           <button
             onClick={() => this.setState({ error: null, componentStack: "" })}
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--text-mono-sm)",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-label)",
+              fontWeight: 500,
               color: "var(--color-text-secondary)",
-              letterSpacing: "0.05em",
               background: "none",
               border: "none",
               cursor: "pointer",
-              padding: 0,
+              padding: "var(--space-2) 0",
             }}
           >
-            RETRY
+            Retry
           </button>
         </div>
       );

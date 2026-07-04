@@ -13,6 +13,10 @@ import { getVaultAccountIdentity } from "@/lib/accounts";
 import { copyToClipboard } from "@/lib/clipboard";
 import { truncateId } from "@/lib/format";
 
+// High-contrast pair required for QR readability
+const QR_BG = "#FFFFFF";
+const QR_FG = "#111111";
+
 export default function ReceiveScreen() {
   const navigate = useNavigate();
 
@@ -79,7 +83,7 @@ export default function ReceiveScreen() {
               tabIndex={hideBalances ? 0 : undefined}
               aria-label={hideBalances ? (qrRevealed ? "Hide QR code" : "Reveal QR code") : undefined}
               style={{
-                background: "#FFFFFF",
+                background: QR_BG,
                 borderRadius: "var(--radius-card)",
                 padding: "var(--space-4)",
                 position: "relative",
@@ -93,8 +97,8 @@ export default function ReceiveScreen() {
               <QRCodeSVG
                 value={identity}
                 size={260}
-                bgColor="#FFFFFF"
-                fgColor="#111111"
+                bgColor={QR_BG}
+                fgColor={QR_FG}
                 level="M"
                 aria-label={`QR code for address ${identity}`}
                 role="img"
