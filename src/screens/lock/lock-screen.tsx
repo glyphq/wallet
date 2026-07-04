@@ -305,15 +305,32 @@ export default function LockScreen() {
           >
             {/* Logo */}
             <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
-              <span style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "2rem",
-                fontWeight: 400,
-                color: "var(--color-text-display)",
-                letterSpacing: "0.2em",
-              }}>
-                GLYPH
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                  <rect x="4" y="4" width="32" height="32" rx="8" stroke="var(--color-text-display)" strokeWidth="2" />
+                  <path d="M14 14h12M14 20h12M14 26h8" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-1)" }}>
+                  <span style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-headline)",
+                    fontWeight: 600,
+                    color: "var(--color-text-display)",
+                    letterSpacing: "-0.01em",
+                  }}>
+                    Glyph
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-headline)",
+                    fontWeight: 300,
+                    color: "var(--color-text-secondary)",
+                    letterSpacing: "-0.01em",
+                  }}>
+                    Wallet
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Vault list — always visible when multiple */}
@@ -345,6 +362,30 @@ export default function LockScreen() {
                 </span>
               </div>
             )}
+
+            {/* Create new vault */}
+            <motion.button
+              {...gesture.pressSubtle}
+              onClick={() => navigate("/setup")}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
+                background: "transparent",
+                border: "1px dashed var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span style={{
+                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+                fontWeight: 500, color: "var(--color-text-disabled)",
+              }}>
+                Create new vault
+              </span>
+            </motion.button>
 
             {/* Password / Watch-only */}
             {watchOnly ? (

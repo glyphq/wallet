@@ -3,7 +3,7 @@
 @theme {
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Courier New", monospace;
-  --font-display: "Doto", monospace;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
 }
 
 /* ── Tokens ─────────────────────────────────────────────────────── */
@@ -34,14 +34,6 @@
   --color-status-success: #34c759;
   --color-status-warning: #f59e0b;
   --color-status-error:   #ff3b30;
-
-  /* Vault accents — visual distinction between vaults */
-  --color-vault-slate:   #64748b;
-  --color-vault-red:     #ef4444;
-  --color-vault-amber:   #f59e0b;
-  --color-vault-emerald: #10b981;
-  --color-vault-sky:     #0ea5e9;
-  --color-vault-violet:  #8b5cf6;
 
   /* Type scale */
   --text-display:  3rem;

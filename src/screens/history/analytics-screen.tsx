@@ -61,7 +61,7 @@ export default function AnalyticsScreen() {
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
               <span style={{
-                fontFamily: "var(--font-display)",
+                fontFamily: "var(--font-mono)",
                 fontWeight: 400,
                 fontSize: "var(--text-display)",
                 letterSpacing: "-0.02em",

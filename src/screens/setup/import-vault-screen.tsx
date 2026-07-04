@@ -13,17 +13,6 @@ import type { Seed } from "@/lib/crypto";
 
 type Step = 1 | 2 | 3;
 
-const COLORS: VaultColor[] = ["slate", "red", "amber", "emerald", "sky", "violet"];
-
-const COLOR_CSS: Record<VaultColor, string> = {
-  slate: "var(--color-vault-slate)",
-  red: "var(--color-vault-red)",
-  amber: "var(--color-vault-amber)",
-  emerald: "var(--color-vault-emerald)",
-  sky: "var(--color-vault-sky)",
-  violet: "var(--color-vault-violet)",
-};
-
 function strengthOf(pw: string) {
   if (pw.length < 10) return { label: "Too short", level: 0, color: "var(--color-status-error)" };
   const score =
@@ -76,7 +65,7 @@ export default function ImportVaultScreen() {
   const [seed, setSeed] = useState<Seed | null>(null);
   const [derivedIdentity, setDerivedIdentity] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [color, setColor] = useState<VaultColor>("slate");
+
   const [password, setPassword] = useState("");
   const [seedError, setSeedError] = useState("");
   const [nameError, setNameError] = useState("");
@@ -110,7 +99,7 @@ export default function ImportVaultScreen() {
       const vault = {
         id: newId(),
         name: name.trim(),
-        color,
+        color: "slate" as VaultColor,
         kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -191,7 +180,7 @@ export default function ImportVaultScreen() {
           </motion.div>
         )}
 
-        {/* Step 2 — Name + color */}
+        {/* Step 2 — Name */}
         {step === 2 && (
           <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <div>
@@ -223,29 +212,6 @@ export default function ImportVaultScreen() {
               {nameError && (
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>{nameError}</span>
               )}
-            </div>
-
-            <div>
-              <div style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>Color</div>
-              <div style={{ display: "flex", gap: "var(--space-3)" }}>
-                {COLORS.map((c) => (
-                  <motion.button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    aria-label={`Vault color: ${c}`}
-                    aria-pressed={color === c}
-                    {...gesture.pressSubtle}
-                    style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: COLOR_CSS[c],
-                      border: color === c ? "2px solid var(--color-text-display)" : "2px solid transparent",
-                      cursor: "pointer", padding: 0,
-                      transition: "border-color 0.15s ease",
-                    }}
-                  />
-                ))}
-              </div>
             </div>
 
             <motion.button type="button" onClick={goStep3} {...gesture.press} style={accentPill}>

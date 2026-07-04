@@ -30,15 +30,6 @@ const ACCOUNT_NAME_SUGGESTIONS = [
   "Hot Wallet", "Treasury", "Operations", "Rewards",
 ];
 
-const VAULT_COLOR_CSS: Record<string, string> = {
-  slate: "var(--color-vault-slate)",
-  red: "var(--color-vault-red)",
-  amber: "var(--color-vault-amber)",
-  emerald: "var(--color-vault-emerald)",
-  sky: "var(--color-vault-sky)",
-  violet: "var(--color-vault-violet)",
-};
-
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -147,7 +138,7 @@ export default function VaultDetailScreen() {
 
   const visible = currentVault.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index);
   const hidden = currentVault.accounts.filter((a) => a.hidden).sort((a, b) => a.index - b.index);
-  const accentColor = VAULT_COLOR_CSS[currentVault.color] ?? "var(--color-text-secondary)";
+
 
   function openAccountMenu(account: AccountMeta) {
     setSelectedAccount(account);
@@ -435,7 +426,6 @@ export default function VaultDetailScreen() {
         <AccountRow
           key={account.index}
           account={account}
-          accentColor={accentColor}
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           isCurrent={isActive && settings.activeAccountIndex === account.index}
           flashSuccess={newlyAddedIndex === account.index}
@@ -468,7 +458,6 @@ export default function VaultDetailScreen() {
         <AccountRow
           key={account.index}
           account={account}
-          accentColor={accentColor}
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           dimmed
           isCurrent={false}
@@ -845,7 +834,6 @@ export default function VaultDetailScreen() {
 
 interface AccountRowProps {
   account: AccountMeta;
-  accentColor: string;
   identity: string | null;
   isCurrent: boolean;
   dimmed?: boolean;
@@ -854,7 +842,7 @@ interface AccountRowProps {
   onManage: () => void;
 }
 
-function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSuccess, balance, onManage }: AccountRowProps) {
+function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, onManage }: AccountRowProps) {
   const tags = account.tags ?? [];
   const note = account.note?.trim() ?? "";
   const [hovered, setHovered] = useState(false);
@@ -869,7 +857,7 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSu
         opacity: dimmed ? 0.55 : 1,
         background: hovered ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
         border: "1px solid var(--color-border-strong)",
-        borderLeft: `3px solid ${accentColor}`,
+        borderLeft: "3px solid var(--color-border-subtle)",
         borderRadius: "var(--radius-sharp)",
         padding: "var(--space-3)",
         display: "flex",
@@ -918,7 +906,7 @@ function AccountRow({ account, accentColor, identity, isCurrent, dimmed, flashSu
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: accentColor, letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
               Active
             </span>
           )}

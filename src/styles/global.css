@@ -22,8 +22,6 @@
 @import "@fontsource/fira-code/latin-400.css";
 /* JetBrains Mono */
 @import "@fontsource/jetbrains-mono/latin-400.css";
-/* Display */
-@import "@fontsource/doto/latin-400.css";
 @import "./tokens.css";
 
 /* ── Reset ───────────────────────────────────────────────────────── */

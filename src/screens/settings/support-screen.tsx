@@ -118,7 +118,7 @@ function SponsorSheet({ sponsor, onClose }: { sponsor: Sponsor; onClose: () => v
         {/* Info */}
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "var(--space-2)", width: "100%", overflowWrap: "break-word" }}>
           <span style={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "var(--font-sans)",
             fontSize: "var(--text-headline)",
             color: "var(--color-text-display)",
             wordBreak: "break-word",

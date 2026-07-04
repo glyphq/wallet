@@ -14,14 +14,6 @@ import { unlockVault, type VaultData } from "@/lib/vault";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
 
-const VAULT_COLOR_CSS: Record<string, string> = {
-  slate: "var(--color-vault-slate)",
-  red: "var(--color-vault-red)",
-  amber: "var(--color-vault-amber)",
-  emerald: "var(--color-vault-emerald)",
-  sky: "var(--color-vault-sky)",
-  violet: "var(--color-vault-violet)",
-};
 import { parseSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
 
@@ -354,7 +346,7 @@ export default function VaultsScreen() {
               background: isActive ? "var(--color-bg-elevated)" : "transparent",
               borderRadius: "var(--radius-card)",
               border: `1px solid ${isActive ? "var(--color-border-strong)" : "transparent"}`,
-              borderLeft: `3px solid ${VAULT_COLOR_CSS[vault.color] ?? "var(--color-text-disabled)"}`,
+              borderLeft: "3px solid var(--color-border-subtle)",
               boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
               transition: "background 0.12s, border-color 0.12s, box-shadow 0.12s",
             }}

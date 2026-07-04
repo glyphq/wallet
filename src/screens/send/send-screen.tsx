@@ -526,7 +526,7 @@ export default function SendScreen() {
 
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
           {price && amountStr && (
@@ -661,7 +661,7 @@ export default function SendScreen() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
             <CheckCircle size={64} style={{ color: "var(--color-accent)" }} />
           </div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
             Transaction sent
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1, marginTop: "var(--space-2)" }}>
