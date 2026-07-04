@@ -13,7 +13,6 @@ use auto_lock::AutoLockState;
 use clipboard::ClipboardState;
 use commands::HideToTrayState;
 use deep_link::DeepLinkState;
-use notification::NotificationDataStore;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
@@ -54,7 +53,6 @@ pub fn run() {
         .manage(DeepLinkState::default())
         .manage(ClipboardState::default())
         .manage(HideToTrayState::default())
-        .manage(NotificationDataStore::default())
         .setup(|app| {
             deep_link::register_handler(&app.handle().clone());
             auto_lock::spawn_lock_watcher(app.handle().clone());
@@ -150,7 +148,6 @@ pub fn run() {
             biometric::biometric_unlock,
             biometric::disable_biometric,
             notification::show_notification_window,
-            notification::take_notification_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running glyph");

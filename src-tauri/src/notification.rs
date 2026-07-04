@@ -1,7 +1,5 @@
 use serde::Deserialize;
-use std::collections::HashMap;
-use std::sync::Mutex;
-use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 #[derive(Deserialize)]
 pub struct NotificationPayload {
@@ -11,21 +9,16 @@ pub struct NotificationPayload {
     pub duration: Option<u64>,
 }
 
-/// Holds notification data for windows that haven't fetched it yet.
-pub struct NotificationDataStore(pub Mutex<HashMap<String, serde_json::Value>>);
-
-impl Default for NotificationDataStore {
-    fn default() -> Self {
-        Self(Mutex::new(HashMap::new()))
+fn pct_encode(v: &str) -> String {
+    let mut s = String::with_capacity(v.len() * 3);
+    for b in v.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => s.push(b as char),
+            b' ' => s.push('+'),
+            _ => { s.push('%'); s.push_str(&format!("{:02X}", b)); }
+        }
     }
-}
-
-#[tauri::command]
-pub fn take_notification_data(
-    label: String,
-    store: tauri::State<'_, NotificationDataStore>,
-) -> Option<serde_json::Value> {
-    store.0.lock().ok()?.remove(&label)
+    s
 }
 
 #[tauri::command]
@@ -40,26 +33,23 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
 
     let duration = payload.duration.unwrap_or(5000);
 
-    // Build the notification data
-    let data = serde_json::json!({
-        "kind": payload.kind,
-        "title": payload.title,
-        "body": payload.body,
-        "duration": duration,
-    });
+    // Data as URL search params — the HTML page reads location.search directly
+    let qs = format!(
+        "kind={}&title={}&body={}&duration={}",
+        pct_encode(&payload.kind),
+        pct_encode(&payload.title),
+        pct_encode(&payload.body),
+        duration,
+    );
 
-    // Store data so the frontend can fetch it
-    if let Ok(mut map) = app.state::<NotificationDataStore>().0.lock() {
-        map.insert(label.clone(), data);
-    }
-
-    // Simple URL — no data in the URL at all
+    // Load the standalone notification.html — no React, no router
     let webview_url = if let Some(dev_url) = app.config().build.dev_url.clone() {
         let mut url = dev_url.to_string().trim_end_matches('/').to_string();
-        url.push_str("/#/notification");
+        url.push_str("/notification.html?");
+        url.push_str(&qs);
         WebviewUrl::External(url.parse().map_err(|e: url::ParseError| e.to_string())?)
     } else {
-        WebviewUrl::App("index.html/#/notification".into())
+        WebviewUrl::App(format!("notification.html?{qs}").into())
     };
 
     // Bottom-right of primary monitor, above the taskbar
@@ -99,14 +89,6 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         .build()
         .map_err(|e| e.to_string())?;
 
-    // Give the webview a moment to load, then emit the data
-    let emit_label = label.clone();
-    let emit_app = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        let _ = emit_app.emit_to(&emit_label, "notification:data", data_ref(&emit_app, &emit_label));
-    });
-
     // Auto-close after duration
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(duration));
@@ -116,14 +98,4 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
     });
 
     Ok(())
-}
-
-/// Helper to grab data from the store for emission.
-fn data_ref(app: &tauri::AppHandle, label: &str) -> serde_json::Value {
-    app.state::<NotificationDataStore>()
-        .0
-        .lock()
-        .ok()
-        .and_then(|map| map.get(label).cloned())
-        .unwrap_or(serde_json::Value::Null)
 }
