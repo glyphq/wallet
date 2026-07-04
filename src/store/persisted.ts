@@ -67,8 +67,11 @@ export interface AppSettings {
   tickOffset: number;
   debugMode: boolean;
   biometricVaultIds: string[];
+  /** @deprecated Kept for migration compat — no longer configurable in UI. */
   fontPair: FontPairId;
+  /** @deprecated Kept for migration compat — no longer configurable in UI. */
   accentColor: AccentColorId;
+  /** @deprecated Kept for migration compat — no longer configurable in UI. */
   customScheme: { bg: string; text: string } | null;
   notificationsEnabled: boolean;
   notifyOnReceived: boolean;
@@ -91,6 +94,7 @@ export interface AppSettings {
   requirePasswordForBurn: boolean;
   requireBiometricForSeedReveal: boolean;
   highValueSendThreshold: string;
+  /** @deprecated Kept for migration compat — signing key now in top-level exportSigningKey. */
   exportSigningPrivateJwk: JsonWebKey | null;
   /** QU amount below which a low-balance warning is shown on the dashboard. Empty string = disabled. */
   lowBalanceThreshold: string;
