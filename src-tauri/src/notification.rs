@@ -78,6 +78,7 @@ pub fn handle_protocol(
     _ctx: UriSchemeContext<'_, tauri::Wry>,
     request: http::Request<Vec<u8>>,
 ) -> http::Response<Vec<u8>> {
+    eprintln!("[notif] PROTOCOL HANDLER called! uri={}", request.uri());
     let uri = request.uri();
     let query = uri.query().unwrap_or("");
     let params: std::collections::HashMap<String, String> =
