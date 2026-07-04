@@ -1,31 +1,116 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
+import { motion } from "framer-motion";
+import {
+  ShieldCheck,
+  Lock,
+  Clipboard,
+  Fire,
+  Eye,
+  FaceScanCircle,
+  MoonSleep,
+  LockKeyhole,
+} from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
+import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore } from "@/store/persisted";
 import { unlockVault } from "@/lib/vault";
 import { extractMessage } from "@/lib/format";
 import { isWatchOnlyVault } from "@/lib/accounts";
 
-const TIMEOUT_OPTIONS: { label: string; value: number }[] = [
-  { label: "1 minute", value: 1 },
-  { label: "5 minutes", value: 5 },
-  { label: "15 minutes", value: 15 },
-  { label: "30 minutes", value: 30 },
-  { label: "1 hour", value: 60 },
+const labelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: "0.8125rem",
+  fontWeight: 500,
+  color: "var(--color-text-secondary)",
+};
+
+const TIMEOUT_OPTIONS = [
+  { label: "1m", value: 1 },
+  { label: "5m", value: 5 },
+  { label: "15m", value: 15 },
+  { label: "30m", value: 30 },
+  { label: "1h", value: 60 },
   { label: "Never", value: 0 },
 ];
 
-const CLIPBOARD_OPTIONS: { label: string; value: number }[] = [
-  { label: "15 seconds", value: 15 },
-  { label: "30 seconds", value: 30 },
-  { label: "1 minute", value: 60 },
+const CLIPBOARD_OPTIONS = [
+  { label: "15s", value: 15 },
+  { label: "30s", value: 30 },
+  { label: "1m", value: 60 },
   { label: "Never", value: 0 },
 ];
+
+function ToggleRow({ icon, label, description, enabled, onToggle }: {
+  icon: React.ReactNode; label: string; description: string; enabled: boolean; onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        display: "flex", alignItems: "center", gap: "var(--space-3)",
+        padding: "11px 0", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left",
+      }}
+    >
+      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+          {label}
+        </div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: 2 }}>
+          {description}
+        </div>
+      </div>
+      <div style={{
+        width: 36, height: 20, borderRadius: 10, flexShrink: 0, position: "relative",
+        background: enabled ? "var(--color-accent)" : "var(--color-border-strong)",
+        transition: "background 0.15s ease",
+      }}>
+        <div style={{
+          width: 16, height: 16, borderRadius: "50%", background: enabled ? "#111" : "var(--color-text-disabled)",
+          position: "absolute", top: 2, left: enabled ? 18 : 2, transition: "left 0.15s ease",
+        }} />
+      </div>
+    </button>
+  );
+}
+
+function PillGroup({ options, selected, onSelect }: {
+  options: { label: string; value: number }[]; selected: number; onSelect: (v: number) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+      {options.map((opt) => {
+        const active = opt.value === selected;
+        return (
+          <button
+            key={opt.value}
+            onClick={() => onSelect(opt.value)}
+            style={{
+              padding: "8px 16px", borderRadius: 999, border: "none", cursor: "pointer",
+              background: active ? "var(--color-accent)" : "var(--color-bg-elevated)",
+              fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+              color: active ? "#111" : "var(--color-text-secondary)",
+              transition: "background 0.12s ease, color 0.12s ease",
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{ ...labelStyle, color: "var(--color-text-disabled)", display: "block", marginBottom: "var(--space-2)", marginTop: "var(--space-3)" }}>
+      {children}
+    </span>
+  );
+}
 
 export default function SecurityScreen() {
-  const navigate = useNavigate();
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
 
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
@@ -34,7 +119,6 @@ export default function SecurityScreen() {
   const clipboardClearSeconds = usePersistedStore((s) => s.settings.clipboardClearSeconds);
   const requirePasswordForBurn = usePersistedStore((s) => s.settings.requirePasswordForBurn);
   const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
-  const highValueSendThreshold = usePersistedStore((s) => s.settings.highValueSendThreshold);
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
@@ -64,22 +148,22 @@ export default function SecurityScreen() {
     if (!vault) return;
     setEnableLoading(true);
     setEnableError("");
-    if (!vault.encryptedData) { setEnableError("VAULT DATA MISSING"); setEnableLoading(false); return; }
+    if (!vault.encryptedData) { setEnableError("Vault data missing"); setEnableLoading(false); return; }
     try {
       await unlockVault(vault.encryptedData, enablePw);
     } catch {
-      setEnableError("WRONG PASSWORD");
+      setEnableError("Wrong password");
       setEnableLoading(false);
       return;
     }
     const pw = enablePw;
-    setEnablePw(""); // clear from React state before handing off to biometric system
+    setEnablePw("");
     try {
       await invoke("enable_biometric", { vaultId: vault.id, vaultData: vault.encryptedData, password: pw });
       updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
       setEnabling(false);
     } catch (e) {
-      setEnableError(`SECURE STORAGE FAILED: ${extractMessage(e)}`);
+      setEnableError(`Secure storage failed: ${extractMessage(e)}`);
     } finally {
       setEnableLoading(false);
     }
@@ -100,462 +184,232 @@ export default function SecurityScreen() {
     invoke("set_lock_timeout", { minutes }).catch(() => {});
   }
 
-  function toggleWindowBlur() {
-    updateSettings({ lockOnWindowBlur: !lockOnWindowBlur });
-  }
-
-  const statusBar = <ScreenHeader title="Security" onBack={() => navigate("/settings")} />;
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <motion.div
+        initial={{ y: 4 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", minHeight: 0 }}
+      >
+        {/* Inline header — slot hidden for /settings/* routes */}
+        <SettingsPageHeader title="Security" />
+        {/* Lock card */}
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", paddingBottom: "var(--space-2)" }}>
+            <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><Lock size={22} weight="Linear" /></span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Lock behavior
+            </span>
+          </div>
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
 
-      {/* Auto-lock timeout */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Auto-lock timeout
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Lock after this much idle time
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          {TIMEOUT_OPTIONS.map((opt) => {
-            const isSelected = opt.value === autoLockMinutes;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => setLockTimeout(opt.value)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "var(--space-3) var(--space-4)",
-                  background: "none",
-                  border: `1px solid ${isSelected ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer",
-                  width: "100%",
-                }}
-              >
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: isSelected ? "var(--color-text-display)" : "var(--color-text-primary)" }}>
-                  {opt.label}
-                </span>
-                {isSelected && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-display)", letterSpacing: "0.05em" }}>
-                    ✓
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          <SectionLabel>Auto-lock timeout</SectionLabel>
+          <PillGroup options={TIMEOUT_OPTIONS} selected={autoLockMinutes} onSelect={setLockTimeout} />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Approval policies
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Extra checks for destructive or sensitive actions
-          </div>
-        </div>
-
-        <button
-          onClick={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: `1px solid ${requirePasswordForBurn ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Require password for burn
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Ask for the vault password again before broadcasting burns
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: requirePasswordForBurn ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {requirePasswordForBurn ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-
-        <button
-          onClick={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: `1px solid ${requireBiometricForSeedReveal ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Require biometric for seed reveal
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Uses the vault biometric path instead of password-only reveal when available
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: requireBiometricForSeedReveal ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {requireBiometricForSeedReveal ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-
-        <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              High-value send threshold
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Amount in QU that triggers an extra confirmation step for sends and dApp transfers
-            </div>
-          </div>
-          <input
-            value={highValueSendThreshold}
-            onChange={(e) => updateSettings({ highValueSendThreshold: e.target.value.replace(/[^0-9]/g, "") })}
-            placeholder="Disabled when empty"
-            className="glyph-input"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--text-mono-sm)",
-              color: "var(--color-text-primary)",
-              background: "var(--color-bg-elevated)",
-              borderRadius: "var(--radius-sharp)",
-              padding: "var(--space-3) var(--space-4)",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "11px -16px 0" }} />
+          <ToggleRow
+            icon={<MoonSleep size={22} weight="Linear" />}
+            label="Lock on sleep"
+            description="Lock when the screen locks or machine sleeps"
+            enabled={lockOnSleep}
+            onToggle={() => updateSettings({ lockOnSleep: !lockOnSleep })}
           />
-        </div>
 
-        <button
-          onClick={() => navigate("/settings/security/audit-log")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Audit log
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              View local unlock, export, reveal, and request-approval events
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            OPEN →
-          </span>
-        </button>
-      </div>
-
-      {/* Lock on sleep */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <button
-          onClick={() => updateSettings({ lockOnSleep: !lockOnSleep })}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: `1px solid ${lockOnSleep ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Lock on sleep
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Lock when the screen locks or machine sleeps
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: lockOnSleep ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-            {lockOnSleep ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-      </div>
-
-      {/* Window blur */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <button
-          onClick={toggleWindowBlur}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            background: "none",
-            border: `1px solid ${lockOnWindowBlur ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%",
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Lock on window blur
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              Lock immediately when the app loses focus
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: lockOnWindowBlur ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-            {lockOnWindowBlur ? "[ON]" : "[OFF]"}
-          </span>
-        </button>
-        {lockOnWindowBlur && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            [PARANOID MODE — app locks every time you switch windows]
-          </div>
-        )}
-        {lockOnWindowBlur && allowBlurLockBypass && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-            [BLUR-LOCK BYPASS IS ENABLED. TURN IT OFF IN NETWORK SETTINGS.]
-          </div>
-        )}
-      </div>
-
-      {/* Clipboard clear timeout */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            Clipboard clear timeout
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            Automatically clear copied addresses after this time
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          {CLIPBOARD_OPTIONS.map((opt) => {
-            const isSelected = opt.value === clipboardClearSeconds;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "var(--space-3) var(--space-4)",
-                  background: "none",
-                  border: `1px solid ${isSelected ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer",
-                  width: "100%",
-                }}
-              >
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: isSelected ? "var(--color-text-display)" : "var(--color-text-primary)" }}>
-                  {opt.label}
-                </span>
-                {isSelected && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-display)", letterSpacing: "0.05em" }}>
-                    ✓
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Biometric unlock */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-            {isLinux ? "Quick unlock" : "Biometric unlock"}
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            {isLinux
-              ? "Use Linux secure storage to unlock vaults without retyping the password"
-              : "Use Touch ID or Windows Hello to unlock vaults"}
-          </div>
-        </div>
-
-        {isLinux && bioAvailable === true && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [LINUX: USES SYSTEM SECRET SERVICE — PASSWORD STORED SECURELY, NO BIOMETRIC PROMPT]
-          </span>
-        )}
-
-        {bioAvailable === null && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [CHECKING...]
-          </span>
-        )}
-
-        {bioAvailable === false && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [NOT AVAILABLE ON THIS DEVICE]
-          </span>
-        )}
-
-        {bioAvailable === true && !vault && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [NO VAULT SELECTED]
-          </span>
-        )}
-
-        {bioAvailable === true && vault && watchOnly && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            [WATCH-ONLY VAULTS DO NOT NEED BIOMETRIC UNLOCK]
-          </span>
-        )}
-
-        {bioAvailable === true && vault && !watchOnly && !bioEnabled && !enabling && (
-          <button
-            onClick={() => setEnabling(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "var(--space-3) var(--space-4)",
-              background: "none",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-sharp)",
-              cursor: "pointer",
-              width: "100%",
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
-              Enable for {vault.name}
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <ToggleRow
+            icon={<LockKeyhole size={22} weight="Linear" />}
+            label="Lock on window blur"
+            description="Lock immediately when the app loses focus"
+            enabled={lockOnWindowBlur}
+            onToggle={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })}
+          />
+          {lockOnWindowBlur && (
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)", display: "block", marginTop: 4 }}>
+              Paranoid mode — app locks every time you switch windows
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              [OFF]
+          )}
+          {lockOnWindowBlur && allowBlurLockBypass && (
+            <span style={{ ...labelStyle, color: "var(--color-status-error)", display: "block", marginTop: 4 }}>
+              Blur-lock bypass is enabled. Turn it off in network settings.
             </span>
-          </button>
-        )}
+          )}
+        </div>
 
-        {enabling && !watchOnly && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-              Confirm your vault password to enable {isLinux ? "quick unlock" : "biometric unlock"}
-            </div>
-            <input
-              ref={pwRef}
-              type="password"
-              autoComplete="new-password"
-              value={enablePw}
-              onChange={(e) => setEnablePw(e.target.value)}
-              placeholder="••••••••••"
-              onKeyDown={(e) => e.key === "Enter" && handleEnable()}
-              className="glyph-input"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-sm)",
-                color: "var(--color-text-primary)",
-                background: "var(--color-bg-elevated)",
-                borderRadius: "var(--radius-sharp)",
-                padding: "var(--space-3) var(--space-4)",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            />
-            {enableError && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-                {enableError}
+        {/* Clipboard card */}
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", paddingBottom: "var(--space-2)" }}>
+            <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><Clipboard size={22} weight="Linear" /></span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Clipboard
+            </span>
+          </div>
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <SectionLabel>Clear copied addresses after</SectionLabel>
+          <PillGroup options={CLIPBOARD_OPTIONS} selected={clipboardClearSeconds} onSelect={(v) => updateSettings({ clipboardClearSeconds: v })} />
+        </div>
+
+        {/* Approval policies card */}
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", paddingBottom: "var(--space-2)" }}>
+            <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><ShieldCheck size={22} weight="Linear" /></span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              Approval policies
+            </span>
+          </div>
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+
+          <ToggleRow
+            icon={<Fire size={22} weight="Linear" />}
+            label="Require password for burn"
+            description="Ask for the vault password before broadcasting burns"
+            enabled={requirePasswordForBurn}
+            onToggle={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })}
+          />
+
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <ToggleRow
+            icon={<Eye size={22} weight="Linear" />}
+            label="Require biometric for seed reveal"
+            description="Use vault biometric path instead of password-only when available"
+            enabled={requireBiometricForSeedReveal}
+            onToggle={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })}
+          />
+
+        </div>
+
+        {/* Biometric card */}
+        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", paddingBottom: "var(--space-2)" }}>
+            <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><FaceScanCircle size={22} weight="Linear" /></span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+              {isLinux ? "Quick unlock" : "Biometric unlock"}
+            </span>
+          </div>
+          <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 -16px" }} />
+          <div style={{ paddingTop: "var(--space-3)" }}>
+            <span style={{ ...labelStyle, display: "block", marginBottom: "var(--space-2)" }}>
+              {isLinux
+                ? "Use Linux secure storage to unlock vaults without retyping the password"
+                : "Use Touch ID or Windows Hello to unlock vaults"}
+            </span>
+
+            {isLinux && bioAvailable === true && (
+              <span style={{ ...labelStyle, color: "var(--color-text-disabled)", display: "block", marginBottom: "var(--space-2)" }}>
+                Uses system secret service — password stored securely, no biometric prompt
               </span>
             )}
-            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+
+            {bioAvailable === null && (
+              <span style={{ ...labelStyle, color: "var(--color-text-disabled)" }}>Checking...</span>
+            )}
+
+            {bioAvailable === false && (
+              <span style={{ ...labelStyle, color: "var(--color-text-disabled)" }}>Not available on this device</span>
+            )}
+
+            {bioAvailable === true && !vault && (
+              <span style={{ ...labelStyle, color: "var(--color-text-disabled)" }}>No vault selected</span>
+            )}
+
+            {bioAvailable === true && vault && watchOnly && (
+              <span style={{ ...labelStyle, color: "var(--color-text-disabled)" }}>Watch-only vaults don't need biometric unlock</span>
+            )}
+
+            {bioAvailable === true && vault && !watchOnly && !bioEnabled && !enabling && (
               <button
-                onClick={handleEnable}
-                disabled={enableLoading || !enablePw}
+                onClick={() => setEnabling(true)}
                 style={{
-                  flex: 1,
-                  padding: "var(--space-3)",
-                  background: "none",
-                  border: "1px solid var(--color-text-display)",
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: enableLoading || !enablePw ? "default" : "pointer",
-                  opacity: enableLoading || !enablePw ? 0.4 : 1,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  color: "var(--color-text-display)",
-                  letterSpacing: "0.05em",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "11px 0", width: "100%", background: "none", border: "none", cursor: "pointer",
                 }}
               >
-                {enableLoading ? "[SAVING...]" : "[CONFIRM]"}
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                  Enable for {vault.name}
+                </span>
+                <div style={{
+                  width: 36, height: 20, borderRadius: 10, flexShrink: 0, position: "relative",
+                  background: "var(--color-border-strong)",
+                }}>
+                  <div style={{
+                    width: 16, height: 16, borderRadius: "50%", background: "var(--color-text-disabled)",
+                    position: "absolute", top: 2, left: 2,
+                  }} />
+                </div>
               </button>
+            )}
+
+            {enabling && !watchOnly && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>
+                <span style={{ ...labelStyle }}>
+                  Confirm your vault password to enable {isLinux ? "quick unlock" : "biometric unlock"}
+                </span>
+                <input
+                  ref={pwRef}
+                  type="password"
+                  autoComplete="new-password"
+                  value={enablePw}
+                  onChange={(e) => setEnablePw(e.target.value)}
+                  placeholder="Password"
+                  onKeyDown={(e) => e.key === "Enter" && handleEnable()}
+                  className="glyph-input"
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: "0.875rem",
+                    color: "var(--color-text-primary)", background: "transparent",
+                    borderRadius: 0, padding: "12px 0",
+                    width: "100%", boxSizing: "border-box", border: "none",
+                  }}
+                />
+                {enableError && (
+                  <span style={{ ...labelStyle, color: "var(--color-status-error)" }}>{enableError}</span>
+                )}
+                <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                  <button
+                    onClick={handleEnable}
+                    disabled={enableLoading || !enablePw}
+                    style={{
+                      flex: 1, padding: "10px", border: "none", cursor: enableLoading || !enablePw ? "default" : "pointer",
+                      opacity: enableLoading || !enablePw ? 0.4 : 1, borderRadius: "var(--radius-sharp)",
+                      background: "var(--color-text-primary)", fontFamily: "var(--font-sans)",
+                      fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-bg-base)",
+                    }}
+                  >
+                    {enableLoading ? "Saving..." : "Confirm"}
+                  </button>
+                  <button
+                    onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
+                    style={{
+                      padding: "10px 16px", background: "var(--color-bg-elevated)", border: "none",
+                      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+                      fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bioAvailable === true && vault && !watchOnly && bioEnabled && (
               <button
-                onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
+                onClick={handleDisable}
                 style={{
-                  padding: "var(--space-3) var(--space-4)",
-                  background: "none",
-                  border: "1px solid var(--color-border-strong)",
-                  borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  color: "var(--color-text-secondary)",
-                  letterSpacing: "0.05em",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "11px 0", width: "100%", background: "none", border: "none", cursor: "pointer",
                 }}
               >
-                [CANCEL]
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
+                  Enabled for {vault.name}
+                </span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-status-warning)" }}>
+                  Disable
+                </span>
               </button>
-            </div>
+            )}
           </div>
-        )}
-
-        {bioAvailable === true && vault && !watchOnly && bioEnabled && (
-          <button
-            onClick={handleDisable}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "var(--space-3) var(--space-4)",
-              background: "none",
-              border: "1px solid var(--color-text-display)",
-              borderRadius: "var(--radius-sharp)",
-              cursor: "pointer",
-              width: "100%",
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>
-              Enabled for {vault.name}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-              [DISABLE]
-            </span>
-          </button>
-        )}
-      </div>
-
+        </div>
+      </motion.div>
     </AppShell>
   );
 }
