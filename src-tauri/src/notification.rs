@@ -95,8 +95,8 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    // Per Tauri docs: Windows uses http://<scheme>.localhost/ format
-    let url = format!("http://notif.localhost/?kind={}&title={}&body={}&duration={}",
+    // Use notif:// custom protocol — CustomProtocol variant creates the window OK
+    let url = format!("notif://localhost/?kind={}&title={}&body={}&duration={}",
         urlencoding::encode(&payload.kind),
         urlencoding::encode(&payload.title),
         urlencoding::encode(&payload.body),
@@ -106,7 +106,7 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
     eprintln!("[notif] url={url}");
     eprintln!("[notif] building at ({x:.0},{y:.0})");
 
-    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::CustomProtocol(url.parse().map_err(|e: url::ParseError| e.to_string())?))
+    WebviewWindowBuilder::new(&app, &label, WebviewUrl::CustomProtocol(url.parse().map_err(|e: url::ParseError| e.to_string())?))
         .inner_size(376.0, 100.0)
         .position(x, y)
         .decorations(false)
