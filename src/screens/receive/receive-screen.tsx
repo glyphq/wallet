@@ -2,7 +2,7 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AltArrowLeft, Copy, CheckCircle } from "@solar-icons/react";
+import { AltArrowLeft, Copy, CheckCircle, LinkRound } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
@@ -44,8 +44,9 @@ export default function ReceiveScreen() {
         Your address
       </span>
       <button type="button" onClick={() => navigate("/payment-link")}
-        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", padding: "var(--space-2) 0" }}>
-        Payment link
+        aria-label="Payment link"
+        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
+        <LinkRound size={20} />
       </button>
     </div>
   );
