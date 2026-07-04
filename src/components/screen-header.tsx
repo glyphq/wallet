@@ -14,11 +14,11 @@ export function ScreenHeader({ title, onBack, backAriaLabel, action }: ScreenHea
         type="button"
         onClick={onBack}
         aria-label={backAriaLabel}
-        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0, flexShrink: 0 }}
+        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.06em", padding: 0, flexShrink: 0 }}
       >
-        ← BACK
+        ← back
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", pointerEvents: "none" }}>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 400, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", pointerEvents: "none" }}>
         {title}
       </span>
       <div style={{ marginLeft: "auto", flexShrink: 0 }}>

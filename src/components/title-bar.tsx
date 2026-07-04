@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
-import logoSrc from "../assets/brand/glyph-on-light.png";
 
 function WinBtn({
   onClick,
@@ -97,16 +96,15 @@ export function TitleBar() {
           pointerEvents: "none",
         }}
       >
-        <img src={logoSrc} width={14} height={14} alt="" style={{ imageRendering: "pixelated", flexShrink: 0 }} />
         <span
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "0.5625rem",
-            letterSpacing: "0.2em",
+            letterSpacing: "0.15em",
             color: "var(--color-text-secondary)",
           }}
         >
-          GLYPH
+          glyph
         </span>
         {version && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.5rem", letterSpacing: "0.1em", color: "var(--color-text-disabled)" }}>
