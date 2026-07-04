@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { LockKeyhole, Eye, EyeClosed } from "@solar-icons/react";
+import { LockKeyhole, Eye, EyeClosed, Wallet } from "@solar-icons/react";
 import { motion, AnimatePresence } from "motion/react";
 import { presets, gesture } from "@/lib/animations";
 import { usePersistedStore } from "@/store/persisted";
@@ -306,31 +306,17 @@ export default function LockScreen() {
           >
             {/* Logo */}
             <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
-                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
-                  <rect x="4" y="4" width="32" height="32" rx="8" stroke="var(--color-text-display)" strokeWidth="2" />
-                  <path d="M14 14h12M14 20h12M14 26h8" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-1)" }}>
-                  <span style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-headline)",
-                    fontWeight: 600,
-                    color: "var(--color-text-display)",
-                    letterSpacing: "-0.01em",
-                  }}>
-                    Glyph
-                  </span>
-                  <span style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-headline)",
-                    fontWeight: 300,
-                    color: "var(--color-text-secondary)",
-                    letterSpacing: "-0.01em",
-                  }}>
-                    Wallet
-                  </span>
-                </div>
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+                <Wallet size={20} weight="Linear" style={{ color: "var(--color-accent)" }} />
+                <span style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-headline)",
+                  fontWeight: 600,
+                  color: "var(--color-text-display)",
+                  letterSpacing: "-0.01em",
+                }}>
+                  Glyph Wallet
+                </span>
               </div>
             </div>
 

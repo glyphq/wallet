@@ -40,7 +40,7 @@ const secondaryBtn: React.CSSProperties = {
   width: "100%", height: 44,
   background: "transparent", color: "var(--color-text-primary)",
   borderRadius: "var(--radius-sharp)", border: "1px solid var(--color-border-strong)",
-  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-label)",
+  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-body)",
   cursor: "pointer",
 };
 
@@ -50,7 +50,7 @@ const ghostBtn: React.CSSProperties = {
   width: "100%", height: 40,
   background: "transparent", color: "var(--color-text-secondary)",
   borderRadius: 0, border: "none",
-  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-label)",
+  fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "var(--text-body)",
   cursor: "pointer",
 };
 
