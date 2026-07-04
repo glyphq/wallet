@@ -117,7 +117,7 @@ export default function DiagnosticsScreen() {
   const tickAge = tickUpdatedAt ? Math.round((Date.now() - tickUpdatedAt) / 1000) : null;
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", paddingBottom: "calc(var(--space-4) + 76px)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <SettingsPageHeader title="Diagnostics" />
 
