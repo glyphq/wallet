@@ -96,7 +96,9 @@ function hslToHex(h: number, s: number, l: number): string {
 
 function clampAccentLightness(hex: string, dark: boolean): string {
   const [h, s, l] = hexToHsl(hex);
-  const [lo, hi] = dark ? [0.40, 0.85] : [0.25, 0.65];
+  // On dark themes: only ensure accent isn't too dark (min 0.40), no upper cap
+  // On light themes: ensure accent is dark enough to read (max 0.65)
+  const [lo, hi] = dark ? [0.40, 1.0] : [0.25, 0.65];
   if (l >= lo && l <= hi) return hex;
   return hslToHex(h, s, Math.max(lo, Math.min(hi, l)));
 }

@@ -236,7 +236,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   tickOffset: 10,
   debugMode: false,
   biometricVaultIds: [],
-  fontPair: "default",
+  fontPair: "space-grotesk",
   accentColor: "green",
   customScheme: null,
   notificationsEnabled: false,

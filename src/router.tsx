@@ -30,7 +30,6 @@ import RequestHistoryScreen from "@/screens/settings/request-history-screen";
 import SecurityScreen from "@/screens/settings/security-screen";
 import AuditLogScreen from "@/screens/settings/audit-log-screen";
 import NetworkScreen from "@/screens/settings/network-screen";
-import AppearanceScreen from "@/screens/settings/appearance-screen";
 import SettingsContactsScreen from "@/screens/settings/contacts-screen";
 import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
@@ -77,7 +76,6 @@ export const router = createHashRouter([
       { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
       { path: "/settings/security/audit-log", element: <Screen component={AuditLogScreen} /> },
       { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
-      { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
       { path: "/settings/contacts", element: <Screen component={SettingsContactsScreen} /> },
       { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
