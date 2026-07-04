@@ -13,7 +13,7 @@ pub struct NotificationPayload {
 #[tauri::command]
 pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayload) -> Result<(), String> {
     let label = format!(
-        "notification-{}",
+        "notif-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -32,8 +32,6 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
     .map_err(|e| e.to_string())?;
     let b64 = URL_SAFE_NO_PAD.encode(json.as_bytes());
 
-    // The app uses createHashRouter, so data must live inside the hash fragment.
-    // Format: index.html#/notification?data=<base64>
     let hash_path = format!("#/notification?data={b64}");
 
     let webview_url = if let Some(dev_url) = app.config().build.dev_url.clone() {
@@ -45,15 +43,16 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         WebviewUrl::App(format!("index.html/{hash_path}").into())
     };
 
-    // Bottom-right of primary monitor
+    // Bottom-right of primary monitor, above the taskbar
     let (x, y) = if let Some(window) = app.get_webview_window("main") {
         if let Ok(Some(monitor)) = window.primary_monitor() {
             let pos = monitor.position();
             let size = monitor.size();
             let scale = monitor.scale_factor();
-            let margin = 16.0;
-            let sx = (pos.x as f64) + (size.width as f64) / scale - 376.0 - margin;
-            let sy = (pos.y as f64) + (size.height as f64) / scale - 100.0 - margin;
+            let margin_right = 16.0;
+            let margin_bottom = 56.0; // clear the taskbar
+            let sx = (pos.x as f64) + (size.width as f64) / scale - 376.0 - margin_right;
+            let sy = (pos.y as f64) + (size.height as f64) / scale - 100.0 - margin_bottom;
             (sx, sy)
         } else {
             (100.0, 100.0)
@@ -72,12 +71,13 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
         .max_inner_size(376.0, 100.0)
         .position(x, y)
         .decorations(false)
-        .transparent(true)
         .always_on_top(true)
         .resizable(false)
         .skip_taskbar(true)
         .visible(true)
         .focused(false)
+        // Dark background — prevents white flash before HTML loads
+        .background_color(tauri::window::Color(15, 15, 15, 255))
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -85,7 +85,7 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(duration));
         if let Some(w) = notif_app.get_webview_window(&close_label) {
-            let _ = w.close();
+            let _ = w.destroy();
         }
     });
 
