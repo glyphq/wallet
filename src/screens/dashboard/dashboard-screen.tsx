@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "motion/react";
 import { animate } from "motion/react";
+import { gesture } from "@/lib/animations";
 import { AltArrowDown, Eye, EyeClosed, Bell, MenuDots, ArrowRightUp, QrCode, ShieldCheck, ShieldWarning, ShieldCross } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
@@ -188,16 +190,16 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
           {address}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
           {time}
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
           {amount}
         </span>
         {amountUsd && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
             {amountUsd}
           </span>
         )}
@@ -255,7 +257,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
 
   if (!hasAny) {
     return (
-      <div style={{ textAlign: "center", padding: "var(--space-12) 0" }}>
+      <div style={{ textAlign: "center", padding: "var(--space-8) 0" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
           No transactions yet
         </div>
@@ -269,7 +271,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   myPending.forEach((p) => {
     const isIn = p.destination === activeIdentity;
     const expired = isExpired(p);
-    const label = expired ? "Failed" : p.contractName ? "Pending" : "Pending";
+    const label = expired ? "Failed" : "Pending";
     const labelColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
     const amountColor = expired ? "var(--color-text-disabled)" : "var(--color-status-warning)";
     const address = p.contractName ?? truncateId(isIn ? p.source : p.destination);
@@ -294,7 +296,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
     const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
     const isSc = !!(contractName || fromContract);
 
-    // Resolve procedure name for SC calls
     const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
     const contractIndex = scAddress
       ? Object.entries(CONTRACT_NAMES).find(([, name]) => (contractName ?? fromContract) === name)?.[0]
@@ -352,8 +353,47 @@ function HealthBadge({ health }: { health: string }) {
   const cfg = HEALTH_CONFIG[health] ?? HEALTH_CONFIG.offline;
   return (
     <div title={health} style={{ display: "flex" }}>
-      <cfg.Icon size={14} color={cfg.color} />
+      <cfg.Icon size={12} color={cfg.color} />
     </div>
+  );
+}
+
+// ── Header icon button ───────────────────────────────────────────────────────
+
+function HeaderIcon({ onClick, label, children, badge }: {
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+  badge?: boolean;
+}) {
+  return (
+    <motion.button
+      {...gesture.pressSubtle}
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        position: "relative",
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: "var(--color-bg-surface)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--color-text-secondary)",
+      }}
+    >
+      {children}
+      {badge && (
+        <span style={{
+          position: "absolute", top: 5, right: 5,
+          width: 6, height: 6, borderRadius: "50%",
+          background: "var(--color-status-error)",
+        }} />
+      )}
+    </motion.button>
   );
 }
 
@@ -388,68 +428,45 @@ export default function DashboardScreen() {
   const hasAlerts = txAlerts.length > 0;
 
   const statusBar = (
-    <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%" }}>
-      {/* Left: identicon */}
+    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "var(--space-2)" }}>
+      {/* Left: vault identicon + name */}
       <button
         onClick={() => navigate("/vaults")}
         aria-label={`Switch vault — ${vault?.name ?? "none"}`}
         style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0,
+          display: "flex", alignItems: "center", gap: "var(--space-2)",
+          background: "none", border: "none", cursor: "pointer", padding: 0,
         }}
       >
         {vault ? (
-          <Identicon seed={`${vault.id}:${vault.color}`} size={28} radius={14} />
+          <Identicon seed={`${vault.id}:${vault.color}`} size={26} radius={13} />
         ) : (
-          <div style={{ width: 28, height: 28, borderRadius: 14, background: "var(--color-bg-elevated)" }} />
+          <div style={{ width: 26, height: 26, borderRadius: 13, background: "var(--color-bg-elevated)" }} />
         )}
+        <span style={{
+          fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+          color: "var(--color-text-secondary)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {vault?.name ?? "No vault"}
+        </span>
+        <HealthBadge health={health} />
       </button>
 
-      {/* Center: title + health */}
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.02em", whiteSpace: "nowrap", pointerEvents: "none" }}>
-        Home
-        <HealthBadge health={health} />
-      </span>
-
       {/* Right: eye + bell */}
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginLeft: "auto", flexShrink: 0 }}>
-        <button
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginLeft: "auto" }}>
+        <HeaderIcon
           onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
-          aria-label={settings.hideBalances ? "Show balances" : "Hide balances"}
-          style={{
-            width: 28, height: 28,
-            borderRadius: "50%",
-            background: "var(--color-bg-elevated)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", cursor: "pointer",
-            color: "var(--color-text-secondary)",
-          }}
+          label={settings.hideBalances ? "Show balances" : "Hide balances"}
         >
-          {settings.hideBalances ? <EyeClosed size={14} weight="Linear" /> : <Eye size={14} weight="Linear" />}
-        </button>
-        <button
+          {settings.hideBalances ? <EyeClosed size={15} weight="Linear" /> : <Eye size={15} weight="Linear" />}
+        </HeaderIcon>
+        <HeaderIcon
           onClick={() => navigate("/settings/notifications")}
-          aria-label="Notifications"
-          style={{
-            position: "relative",
-            width: 28, height: 28,
-            borderRadius: "50%",
-            background: "var(--color-bg-elevated)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "none", cursor: "pointer",
-            color: "var(--color-text-secondary)",
-          }}
+          label="Notifications"
+          badge={hasAlerts}
         >
-          <Bell size={14} weight="Linear" />
-          {hasAlerts && (
-            <span style={{
-              position: "absolute", top: 4, right: 4,
-              width: 6, height: 6, borderRadius: "50%",
-              background: "var(--color-status-error)",
-            }} />
-          )}
-        </button>
-        {/* HealthBadge moved to title area */}
+          <Bell size={15} weight="Linear" />
+        </HeaderIcon>
       </div>
     </div>
   );
@@ -459,7 +476,7 @@ export default function DashboardScreen() {
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
         {/* Hero: account + balance */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-6) 0 var(--space-4)" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>
           <AccountSelector
             vault={vault}
             activeIndex={activeIndex}
@@ -488,7 +505,7 @@ export default function DashboardScreen() {
 
           {/* Owned assets chips */}
           {ownedAssets && ownedAssets.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
               {ownedAssets.map((asset) => {
                 const amount = Number(asset.numberOfUnits);
                 const decimals = asset.numberOfDecimalPlaces;
@@ -515,7 +532,7 @@ export default function DashboardScreen() {
 
           {/* CTA buttons */}
           {!watchOnly && (
-            <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-3)" }}>
+            <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
               <Button variant="primary" size="md" shape="pill" onClick={() => navigate("/send")}>
                 <ArrowRightUp size={16} weight="Bold" />
                 Send
@@ -530,9 +547,9 @@ export default function DashboardScreen() {
 
         {/* Recent activity card */}
         <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-2)" }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Activity
+              Recent activity
             </span>
             <button
               onClick={() => navigate("/history")}
@@ -540,7 +557,7 @@ export default function DashboardScreen() {
               style={{
                 background: "none", border: "none", cursor: "pointer",
                 fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                color: "var(--color-text-secondary)", padding: "var(--space-1)",
+                color: "var(--color-text-secondary)", padding: 0,
                 display: "flex", alignItems: "center", gap: "var(--space-1)",
               }}
             >
