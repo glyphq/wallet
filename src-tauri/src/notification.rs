@@ -73,7 +73,7 @@ function close(){{n.classList.add("out");setTimeout(function(){{try{{window.clos
 n.addEventListener("click",close);
 x.addEventListener("click",function(e){{e.stopPropagation();close()}});
 setTimeout(close,{duration});
-\x3c/script></body></html>"##)
+</script></body></html>"##)
 }
 
 /// Async — WebviewWindowBuilder::build() deadlocks on Windows in sync commands (wry#583).
