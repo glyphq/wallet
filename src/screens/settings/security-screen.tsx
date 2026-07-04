@@ -82,22 +82,35 @@ export default function SecurityScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <SectionLabel>Auto-lock timeout</SectionLabel>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {TIMEOUT_OPTIONS.map((opt) => (
-              <motion.button
-                key={opt.value}
-                {...gesture.pressSubtle}
-                onClick={() => setLockTimeout(opt.value)}
-                style={{
-                  padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-pill)",
-                  border: "none", cursor: "pointer",
-                  background: opt.value === autoLockMinutes ? "var(--color-accent)" : "var(--color-bg-surface)",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                  color: opt.value === autoLockMinutes ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                }}
-              >
-                {opt.label}
-              </motion.button>
-            ))}
+            {TIMEOUT_OPTIONS.map((opt) => {
+              const isActive = opt.value === autoLockMinutes;
+              return (
+                <motion.button
+                  key={opt.value}
+                  {...gesture.pressSubtle}
+                  onClick={() => setLockTimeout(opt.value)}
+                  style={{
+                    position: "relative", padding: "var(--space-2) var(--space-4)",
+                    borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
+                    background: "transparent",
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+                    color: isActive ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+                  }}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="autoLock-pill"
+                      style={{
+                        position: "absolute", inset: 0,
+                        background: "var(--color-accent)", borderRadius: "var(--radius-pill)",
+                      }}
+                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                    />
+                  )}
+                  <span style={{ position: "relative", zIndex: 1 }}>{opt.label}</span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
 
@@ -115,22 +128,35 @@ export default function SecurityScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <SectionLabel>Clear clipboard after</SectionLabel>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {CLIPBOARD_OPTIONS.map((opt) => (
-              <motion.button
-                key={opt.value}
-                {...gesture.pressSubtle}
-                onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
-                style={{
-                  padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-pill)",
-                  border: "none", cursor: "pointer",
-                  background: opt.value === clipboardClearSeconds ? "var(--color-accent)" : "var(--color-bg-surface)",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                  color: opt.value === clipboardClearSeconds ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                }}
-              >
-                {opt.label}
-              </motion.button>
-            ))}
+            {CLIPBOARD_OPTIONS.map((opt) => {
+              const isActive = opt.value === clipboardClearSeconds;
+              return (
+                <motion.button
+                  key={opt.value}
+                  {...gesture.pressSubtle}
+                  onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
+                  style={{
+                    position: "relative", padding: "var(--space-2) var(--space-4)",
+                    borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
+                    background: "transparent",
+                    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+                    color: isActive ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+                  }}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="clipboard-pill"
+                      style={{
+                        position: "absolute", inset: 0,
+                        background: "var(--color-accent)", borderRadius: "var(--radius-pill)",
+                      }}
+                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                    />
+                  )}
+                  <span style={{ position: "relative", zIndex: 1 }}>{opt.label}</span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
 
@@ -274,13 +300,16 @@ function Toggle({ label, description, enabled, onToggle }: {
       <div style={{
         width: 36, height: 20, borderRadius: "var(--radius-pill)", flexShrink: 0, position: "relative",
         background: enabled ? "var(--color-accent)" : "var(--color-border-strong)",
-        transition: "background 0.15s ease",
       }}>
-        <div style={{
-          width: 16, height: 16, borderRadius: "50%",
-          background: enabled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
-          position: "absolute", top: 2, left: enabled ? 18 : 2, transition: "left 0.15s ease",
-        }} />
+        <motion.div
+          animate={{ x: enabled ? 18 : 2 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          style={{
+            width: 16, height: 16, borderRadius: "50%",
+            background: enabled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
+            position: "absolute", top: 2,
+          }}
+        />
       </div>
     </button>
   );
