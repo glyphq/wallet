@@ -59,15 +59,15 @@ export function useNotificationTriggers() {
           if (enabled && onLargeIncoming && largeIncomingThresholdValue !== null && diff >= largeIncomingThresholdValue) {
             publishNotificationEvent(createNotificationEvent({
               kind: "received",
-              title: "Large Incoming QU",
-              body: `${diff.toLocaleString()} QU landed on ${truncateId(id, 8, 4)}.`,
+              title: "Large transfer received",
+              body: `${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}`,
               identity: id,
             })).catch(() => {});
           } else if (enabled && onReceived) {
             publishNotificationEvent(createNotificationEvent({
               kind: "received",
-              title: "Incoming QU",
-              body: `Received ${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}.`,
+              title: "QU received",
+              body: `${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}`,
               identity: id,
             })).catch(() => {});
           }
@@ -102,8 +102,8 @@ export function useNotificationTriggers() {
           if (tx.contractName) {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
-              title: "Contract Transaction Sent",
-              body: `${tx.contractName} was broadcast and is awaiting confirmation.`,
+              title: "Contract broadcast",
+              body: `${tx.contractName} submitted, awaiting confirmation`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
@@ -111,8 +111,8 @@ export function useNotificationTriggers() {
           } else {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
-              title: "Transaction Sent",
-              body: `Sent ${BigInt(tx.amount).toLocaleString()} QU to ${truncateId(tx.destination, 8, 4)}. Awaiting confirmation.`,
+              title: "QU sent",
+              body: `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination, 8, 4)}`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
@@ -183,8 +183,8 @@ export function useNotificationTriggers() {
         if (enabled && onConfirmed) {
           publishNotificationEvent(createNotificationEvent({
             kind: "confirmed",
-            title: "Transaction Confirmed",
-            body: `${label} was confirmed on chain.`,
+            title: "Confirmed",
+            body: `${label} landed on chain`,
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:confirmed`,
@@ -195,8 +195,8 @@ export function useNotificationTriggers() {
         if (enabled && onMissedConfirmations) {
           publishNotificationEvent(createNotificationEvent({
             kind: "failed",
-            title: "Transaction Failed",
-            body: `${label} reached the chain, but the transfer did not complete successfully.`,
+            title: "Failed",
+            body: `${label} didn't complete — check alerts`,
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:failed`,
@@ -220,8 +220,8 @@ export function useNotificationTriggers() {
         if (enabled && onMissedConfirmations) {
           publishNotificationEvent(createNotificationEvent({
             kind: "expired",
-            title: "Transaction Expired",
-            body: `${label} missed its target tick and was removed from pending.`,
+            title: "Expired",
+            body: `${label} missed its window and was dropped`,
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:expired`,
