@@ -192,7 +192,7 @@ export default function SearchScreen() {
 
       {normalizedQuery && results.length === 0 && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          [NO RESULTS]
+          No results
         </div>
       )}
 

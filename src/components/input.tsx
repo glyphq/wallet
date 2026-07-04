@@ -57,7 +57,7 @@ export function Input({ label, error, style, id, containerStyle, ...props }: Inp
             color: "var(--color-status-error)",
           }}
         >
-          [{error.toUpperCase()}]
+          {error.toUpperCase()}
         </span>
       )}
     </div>
