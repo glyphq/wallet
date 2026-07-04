@@ -274,7 +274,7 @@ const tauriStorage: StateStorage = {
   getItem: async (name) => {
     try {
       const raw = await _disk.get<string>(name);
-      if (raw === null) return null;
+      if (raw == null) return null;
       return await invoke<string>("decrypt_store_value", { value: raw });
     } catch (err) {
       console.error("[glyph] disk read failed:", err);

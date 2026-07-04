@@ -22,7 +22,7 @@ export interface SponsorTransparencyData {
 
 /** Qubic identity that receives donation QU for Glyph development. */
 export const DONATION_IDENTITY =
-  "GLYPHZXQNLOTDENBWIBTOGRNBPLBWISKLZCQQFMEECEKOTNVJMMGRWYALYQL";
+  "GLYPHEPREMKMQFAOYQFJQWASTSEBQPIQYNBFLMOUCDLRHQEFAHGUDVCHSZEE";
 
 if (!isValidIdentity(DONATION_IDENTITY)) {
   throw new Error(`[glyph] DONATION_IDENTITY is not a valid Qubic address: ${DONATION_IDENTITY}`);
