@@ -89,8 +89,8 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
 
   if (!identity) {
     return (
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-        [No account]
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+        No account
       </span>
     );
   }
@@ -103,7 +103,7 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.02em" }}>
           {accountName}
         </span>
-        {watchOnly && <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>WATCH</span>}
+        {watchOnly && <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-warning)" }}>Watch-only</span>}
       </div>
     );
   }

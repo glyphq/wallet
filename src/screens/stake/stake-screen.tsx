@@ -53,7 +53,7 @@ const SC_OPTS = { identityToPublicKey: idToPk };
 
 
 const accentPill: React.CSSProperties = {
-  background: "var(--color-accent)",
+  background: "var(--color-text-display)",
   color: "var(--color-bg-base)",
   border: "none",
   borderRadius: "var(--radius-pill)",
@@ -396,7 +396,7 @@ export default function StakeScreen() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                     <span style={{ color: "var(--color-accent)" }}><Bolt size={22} weight="Bold" /></span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
                       Current Epoch
                     </span>
                   </div>

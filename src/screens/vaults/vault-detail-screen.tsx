@@ -755,7 +755,7 @@ export default function VaultDetailScreen() {
               })()}
             </div>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Identity
             </div>
             <ActionCard
@@ -782,7 +782,7 @@ export default function VaultDetailScreen() {
 
             {!watchOnly && (
               <>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
                   Security
                 </div>
                 <ActionCard
@@ -797,7 +797,7 @@ export default function VaultDetailScreen() {
               </>
             )}
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Visibility
             </div>
             <ActionCard
@@ -810,7 +810,7 @@ export default function VaultDetailScreen() {
               }}
             />
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-error)", letterSpacing: "0.05em", textTransform: "uppercase", marginTop: "var(--space-2)" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-error)", letterSpacing: "0.05em", marginTop: "var(--space-2)" }}>
               Danger zone
             </div>
             <ActionCard
