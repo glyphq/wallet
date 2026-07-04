@@ -1,13 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Pen } from "@solar-icons/react";
+import { motion } from "framer-motion";
+import { ArrowRightUp, QrCode, AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
-import { Tag } from "@/components/tag";
-import { Divider } from "@/components/divider";
 import { ContactPicker } from "@/components/contact-picker";
 import { AddressSuggestions } from "@/components/address-suggestions";
 import { usePersistedStore } from "@/store/persisted";
@@ -22,14 +19,104 @@ import { broadcastTx } from "@/lib/broadcast";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
-import { ReviewRow } from "@/components/review-row";
-import { TxSending, TxError } from "@/components/tx-status";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
+
+const labelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+  color: "var(--color-text-secondary)",
+};
+
+const stepMotion = {
+  initial: { y: 4 },
+  animate: { y: 0 },
+  exit: { y: -4 },
+  transition: { duration: 0.15, ease: "easeOut" as const },
+};
+
+// ── Numpad ───────────────────────────────────────────────────────────────────
+
+const PAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
+
+function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: () => void }) {
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
+      gap: 4,
+      maxWidth: 320,
+      width: "100%",
+      margin: "0 auto",
+    }}>
+      {PAD_KEYS.map((key, i) => {
+        const isMaxSlot = i === 9;
+        const label = isMaxSlot ? "MAX" : key;
+        const isActive = !!key || isMaxSlot;
+        return (
+          <button
+            key={i}
+            type="button"
+            disabled={!isActive}
+            onClick={() => {
+              if (isMaxSlot) onMax?.();
+              else if (key) onPress(key);
+            }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              height: 58,
+              background: "transparent",
+              border: "none",
+              cursor: isActive ? "pointer" : "default",
+              fontFamily: "var(--font-sans)",
+              fontSize: isMaxSlot ? "0.8125rem" : "1.375rem",
+              fontWeight: isMaxSlot ? 500 : 400,
+              color: isMaxSlot ? "var(--color-accent)" : key === "⌫" ? "var(--color-text-secondary)" : "var(--color-text-display)",
+              borderRadius: 14,
+              transition: "background 0.08s",
+              userSelect: "none",
+              WebkitTapHighlightColor: "transparent",
+            }}
+            onPointerDown={(e) => {
+              if (!isActive) return;
+              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+            }}
+            onPointerUp={(e) => { e.currentTarget.style.background = "transparent"; }}
+            onPointerLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Detail row (for review/done screens) ────────────────────────────────────
+
+function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
+  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
+      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
+      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
+      <span style={{
+        fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
+        fontSize: "0.8125rem", fontWeight: useMono ? 400 : 500,
+        color: valueColor ?? "var(--color-text-display)",
+        textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
+      }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SendScreen() {
   const navigate = useNavigate();
@@ -64,32 +151,23 @@ export default function SendScreen() {
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
   const [savedTargetTick, setSavedTargetTick] = useState(0);
-  const [watchConfirmation, setWatchConfirmation] = useState(
-    !!(settings.notificationsEnabled && settings.notifyOnConfirmed)
-  );
   const [watchResult, setWatchResult] = useState<"pending" | "confirmed" | "failed">("pending");
   const [highValuePassword, setHighValuePassword] = useState("");
   const [highValuePasswordError, setHighValuePasswordError] = useState("");
   const [highValueVerified, setHighValueVerified] = useState(false);
   const [highValueVerifying, setHighValueVerifying] = useState(false);
-
   const [showPicker, setShowPicker] = useState(false);
-
-  // Save-contact state shown in done step
   const [saveName, setSaveName] = useState("");
   const [saved, setSaved] = useState(false);
+  const [usdMode, setUsdMode] = useState(false);
+  const [usdStr, setUsdStr] = useState("");
 
   const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const vaultAccountTargets = (vault?.accounts ?? [])
-    .filter((account) => !account.hidden)
-    .map((account) => ({
-      name: account.name,
-      identity: account.identity ?? wallets[account.index]?.identity ?? "",
-      note: account.note,
-      tags: account.tags,
-    }))
-    .filter((account) => account.identity && account.identity !== identity);
+    .filter((a) => !a.hidden)
+    .map((a) => ({ name: a.name, identity: a.identity ?? wallets[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
+    .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
 
   const { data: recentTxsData } = useTxHistory(identity || null);
@@ -100,22 +178,16 @@ export default function SendScreen() {
   const destIsKnownContact = !!matchedContact;
   const amountValue = (() => { try { return BigInt(amountStr.trim() || "0"); } catch { return 0n; } })();
   const needsHighValueConfirmation = exceedsHighValueThreshold(amountValue, settings.highValueSendThreshold);
-  const recentRecipientIdentities = useMemo(
-    () => getRecentRecipientIdentities(identity || null, recentTxs),
-    [identity, recentTxs],
-  );
+  const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
   const suggestions = useMemo(
-    () => buildAddressSuggestions({
-      query: destination,
-      contacts,
-      accounts: vaultAccountTargets,
-      currentIdentity: identity,
-      recentIdentities: recentRecipientIdentities,
-    }),
+    () => buildAddressSuggestions({ query: destination, contacts, accounts: vaultAccountTargets, currentIdentity: identity, recentIdentities: recentRecipientIdentities }),
     [contacts, destination, identity, recentRecipientIdentities, vaultAccountTargets],
   );
 
-  // Sync destination/amount from URL params when they change (e.g. incoming deep link while already on /send)
+  const price = stats?.price;
+  const usdEquiv = price && amountStr ? Number(amountStr) * price : null;
+
+  // Sync from URL
   const prevSearchRef = useRef(searchParams.toString());
   useEffect(() => {
     const current = searchParams.toString();
@@ -128,79 +200,93 @@ export default function SendScreen() {
     if (amount) setAmountStr(amount);
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Restore failed tx draft on mount (once per session)
+  // Restore draft
   useEffect(() => {
     if (draftRestored || !txDraft) return;
     const age = Date.now() - txDraft.savedAt;
-    if (age < 30 * 60 * 1000) { // only if < 30 min old
-      setDestination(txDraft.destination);
-      setAmountStr(txDraft.amountStr);
-    }
+    if (age < 30 * 60 * 1000) { setDestination(txDraft.destination); setAmountStr(txDraft.amountStr); }
     setDraftRestored(true);
     clearTxDraft();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Poll for confirmation when user opts in
+  // Watch for confirmation (always active after send)
   useEffect(() => {
-    if (!watchConfirmation || !txHash || watchResult !== "pending") return;
+    if (!txHash || watchResult !== "pending") return;
     const found = recentTxs?.find((t) => t.hash === txHash);
-    if (found) {
-      setWatchResult(found.moneyFlew === false ? "failed" : "confirmed");
-      return;
+    if (found) { setWatchResult(found.moneyFlew === false ? "failed" : "confirmed"); return; }
+    if (tickInfo?.tick && savedTargetTick && tickInfo.tick > savedTargetTick + 30) setWatchResult("failed");
+  }, [txHash, recentTxs, tickInfo, savedTargetTick, watchResult]);
+
+  // Numpad handler
+  const handleNumpad = useCallback((key: string) => {
+    setAmountError("");
+    if (usdMode) {
+      if (key === "⌫") {
+        setUsdStr((prev) => prev.slice(0, -1));
+        if (price) {
+          const newStr = usdStr.slice(0, -1);
+          const n = parseFloat(newStr);
+          setAmountStr(!isNaN(n) && n > 0 ? Math.round(n / price).toString() : "");
+        }
+      } else {
+        const next = usdStr + key;
+        if (price) {
+          const n = parseFloat(next);
+          const quAmount = !isNaN(n) && n > 0 ? Math.round(n / price) : 0;
+          if (balance !== null && BigInt(quAmount) > balance) return; // cap at balance
+          setAmountStr(quAmount > 0 ? quAmount.toString() : "");
+        }
+        setUsdStr(next);
+      }
+    } else {
+      if (key === "⌫") {
+        setAmountStr((prev) => prev.slice(0, -1));
+      } else {
+        setAmountStr((prev) => {
+          if (prev === "0" && key !== "0") return key;
+          if (prev === "0" && key === "0") return prev;
+          const next = prev + key;
+          if (balance !== null) {
+            try { if (BigInt(next) > balance) return prev; } catch { return prev; }
+          }
+          return next;
+        });
+      }
     }
-    if (tickInfo?.tick && savedTargetTick && tickInfo.tick > savedTargetTick + 30) {
-      setWatchResult("failed");
-    }
-  }, [watchConfirmation, txHash, recentTxs, tickInfo, savedTargetTick, watchResult]);
+  }, [usdMode, price, usdStr, balance]);
+
+  // Keyboard support
+  useEffect(() => {
+    if (step !== "input") return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key >= "0" && e.key <= "9") handleNumpad(e.key);
+      else if (e.key === "Backspace") handleNumpad("⌫");
+      else if (e.key === "Enter") goReview();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   function validateInputs(): boolean {
     let ok = true;
-    if (!wallet) {
-      setDestError(watchOnly ? "WATCH-ONLY ACCOUNT" : "ACCOUNT LOCKED");
-      return false;
-    }
-    if (!isValidIdentity(destUpper)) {
-      setDestError("INVALID IDENTITY");
-      ok = false;
-    } else {
-      setDestError("");
-    }
+    if (!wallet) { setDestError(watchOnly ? "Watch-only account" : "Account locked"); return false; }
+    if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); ok = false; } else setDestError("");
     const amount = amountStr.trim();
-    if (!amount || !Number.isInteger(Number(amount)) || Number(amount) <= 0) {
-      setAmountError("INVALID AMOUNT");
-      ok = false;
-    } else if (balance !== null && BigInt(amount) > balance) {
-      setAmountError("INSUFFICIENT BALANCE");
-      ok = false;
-    } else {
-      setAmountError("");
-    }
+    if (!amount || !Number.isInteger(Number(amount)) || Number(amount) <= 0) { setAmountError("Enter an amount"); ok = false; }
+    else if (balance !== null && BigInt(amount) > balance) { setAmountError("Insufficient balance"); ok = false; }
+    else setAmountError("");
     return ok;
   }
 
   async function verifyHighValue() {
     if (!vault?.encryptedData || !highValuePassword) return;
-    setHighValueVerifying(true);
-    setHighValuePasswordError("");
-    try {
-      await unlockVault(vault.encryptedData, highValuePassword);
-      setHighValueVerified(true);
-      setHighValuePassword("");
-    } catch {
-      setHighValuePasswordError("WRONG PASSWORD");
-    } finally {
-      setHighValueVerifying(false);
-    }
+    setHighValueVerifying(true); setHighValuePasswordError("");
+    try { await unlockVault(vault.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
+    catch { setHighValuePasswordError("Wrong password"); }
+    finally { setHighValueVerifying(false); }
   }
 
-  function goReview() {
-    if (validateInputs()) {
-      setHighValueVerified(false);
-      setHighValuePassword("");
-      setHighValuePasswordError("");
-      setStep("review");
-    }
-  }
+  function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
 
   async function send() {
     if (!wallet) return;
@@ -209,31 +295,11 @@ export default function SendScreen() {
       const amount = BigInt(amountStr.trim());
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
-
-      const { encoded, hash } = await buildTransferFromSession({
-        accountIndex: settings.activeAccountIndex,
-        destination: destUpper,
-        amount,
-        targetTick,
-        currentTick,
-      });
-
+      const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
       await broadcastTx(encoded);
-
-      addPendingTx({
-        hash,
-        source: identity,
-        destination: destUpper,
-        amount: amount.toString(),
-        targetTick,
-        broadcastAt: Date.now(),
-      });
-
+      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
-
-      setSavedTargetTick(targetTick);
-      setTxHash(hash);
-      setStep("done");
+      setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
@@ -243,556 +309,471 @@ export default function SendScreen() {
 
   function doSaveContact() {
     if (!saveName.trim()) return;
-    addContact({
-      id: newId(),
-      name: saveName.trim(),
-      identity: destUpper,
-      note: "",
-      addedAt: Date.now(),
-      lastUsedAt: Date.now(),
-    });
+    addContact({ id: newId(), name: saveName.trim(), identity: destUpper, note: "", addedAt: Date.now(), lastUsedAt: Date.now() });
     setSaved(true);
   }
 
-  const statusBar = (
-    <ScreenHeader
-      title="Send QU"
-      onBack={() => step === "input" || step === "done" || step === "error" ? navigate("/dashboard") : setStep("input")}
-      action={
-        step === "input" ? (
-          <button
-            type="button"
-            onClick={() => navigate("/send/scheduled")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}
-          >
-            SCHEDULED
-          </button>
-        ) : undefined
-      }
-    />
-  );
+  // ── Input step (numpad layout) ───────────────────────────────────────────
 
-  return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+  if (step === "input") {
+    const header = (
+      <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
+        <button type="button" onClick={() => navigate("/dashboard")}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+          <AltArrowLeft size={20} />
+        </button>
+        <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+          Send from {accountName}
+        </span>
+      </div>
+    );
 
-      {/* ── Input ── */}
-      {step === "input" && (
-        <>
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "hidden" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+
+        {/* Amount display */}
+        <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: 4, position: "relative", overflow: "hidden", width: "100%" }}>
+
+          {/* Draft notice */}
           {draftRestored && (
-            <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--color-surface-raised)", border: "1px solid var(--color-border-strong)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>[DRAFT RESTORED]</span>
-              <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", padding: 0 }}>✕</button>
+            <div style={{ position: "absolute", top: "var(--space-3)", padding: "4px 12px", background: "rgba(245, 158, 11, 0.1)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "0.75rem" }}>Draft restored</span>
+              <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-status-warning)", fontSize: "0.625rem", padding: 0 }}>✕</button>
             </div>
           )}
-          <div>
-            <Input
-              label="To"
-              value={destination}
-              onChange={(e) => { setDestination(e.target.value); setDestError(""); }}
-              error={destError}
-              placeholder="60-character identity"
-            />
-            {destination.trim() && (
-              <AddressSuggestions
-                suggestions={suggestions.filter((suggestion) => suggestion.identity !== destUpper)}
-                onSelect={(nextIdentity) => { setDestination(nextIdentity); setDestError(""); }}
+
+          <span style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: (() => {
+              const raw = usdMode ? usdStr : amountStr;
+              if (!raw) return "3rem";
+              const len = raw.length + (usdMode ? 1 : 0); // +1 for $
+              if (len <= 6) return "3.5rem";
+              if (len <= 9) return "2.75rem";
+              if (len <= 12) return "2.125rem";
+              return "1.75rem";
+            })(),
+            fontWeight: 700,
+            color: amountError ? "var(--color-status-error)" : (usdMode ? usdStr : amountStr) ? "var(--color-text-display)" : "var(--color-text-disabled)",
+            letterSpacing: "-0.03em", lineHeight: 1.1, minHeight: "3.5rem",
+            transition: "color 0.15s, font-size 0.15s",
+          }}>
+            {usdMode
+              ? (usdStr ? `$${Number(usdStr).toLocaleString()}` : "$0")
+              : (amountStr ? Number(amountStr).toLocaleString() : "0")
+            }
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!usdMode && price && amountStr) {
+                setUsdStr((Number(amountStr) * price).toFixed(2));
+              }
+              if (usdMode && price && usdStr) {
+                const n = parseFloat(usdStr);
+                if (!isNaN(n) && n > 0) setAmountStr(Math.round(n / price).toString());
+              }
+              setUsdMode((v) => !v);
+            }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: 0 }}
+          >
+            {usdMode
+              ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
+              : (usdEquiv !== null && usdEquiv > 0 ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "USD")
+            }
+          </button>
+
+          {amountError && (
+            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "0.75rem" }}>{amountError}</span>
+          )}
+        </div>
+
+        {/* Recipient */}
+        <div style={{ flex: "0 0 auto", position: "relative" }}>
+          <div style={{
+            background: "var(--color-bg-surface)",
+            borderRadius: "var(--radius-card)",
+            padding: "14px 16px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2), 0 0 1px rgba(255,255,255,0.05)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
+              <input
+                autoComplete="off"
+                value={destination}
+                onChange={(e) => { setDestination(e.target.value); setDestError(""); }}
+                placeholder="Enter identity or contact"
+                onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = "var(--color-text-secondary)"; }}
+                onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
+                style={{
+                  flex: 1, background: "none", border: "none", outline: "none",
+                  fontFamily: "var(--font-sans)", fontSize: "0.875rem",
+                  color: "var(--color-text-display)", padding: 0, minWidth: 0,
+                }}
               />
-            )}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-1)" }}>
-              {matchedContact && !destError ? (
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                  {matchedContact.name}
-                </span>
-              ) : <span />}
               {canOpenPicker && (
-                <button
-                  onClick={() => setShowPicker(true)}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}
-                >
-                  PICK DESTINATION ↓
+                <button onClick={() => setShowPicker(true)}
+                  style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
+                  <QrCode size={16} />
                 </button>
               )}
             </div>
           </div>
 
-          <AmountInput
-            value={amountStr}
-            onChange={(qu) => { setAmountStr(qu); setAmountError(""); }}
-            onEnter={goReview}
-            error={amountError}
-            price={stats?.price}
-          />
-
-          <BalanceBar balance={balance} amountStr={amountStr} onMax={balance !== null ? () => { setAmountStr(balance.toString()); setAmountError(""); } : undefined} />
-
-          {watchOnly && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-              [WATCH-ONLY ACCOUNT — SENDING IS DISABLED]
-            </div>
-          )}
-
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            FROM: {accountName} · {truncateId(identity)}
-          </div>
-
-          <Button onClick={goReview} disabled={!wallet}>Review</Button>
-
-          <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-6)", paddingTop: "var(--space-2)" }}>
-            <button onClick={() => navigate("/send-many")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
-              SEND TO MANY →
-            </button>
-            <button onClick={() => navigate("/burn")} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0 }}>
-              BURN QU →
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* ── Review ── */}
-      {step === "review" && (
-        <>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-              {formatQu(amountStr)}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>QU</div>
-          </div>
-
-          <Divider />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            <ReviewRow label="From" value={`${accountName} · ${truncateId(identity)}`} />
-            <ReviewRow label="To" value={matchedContact ? `${matchedContact.name} · ${truncateId(destUpper)}` : truncateId(destUpper)} />
-            <ReviewRow label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
-            <ReviewRow label="Fee" value="None" />
-          </div>
-
-          <Divider />
-
-          {hasPendingTx && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-              [TRANSFER PENDING — WAIT FOR CONFIRMATION]
-            </div>
-          )}
-
-          {needsHighValueConfirmation && !highValueVerified && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-status-warning)", borderRadius: "var(--radius-sharp)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-                [HIGH-VALUE TRANSFER — CONFIRM WITH VAULT PASSWORD]
-              </div>
-              <Input
-                type="password"
-                label="Vault password"
-                value={highValuePassword}
-                onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
-                error={highValuePasswordError}
-                placeholder="••••••••••"
-                autoComplete="current-password"
+          {/* Suggestions overlay */}
+          {destination.trim() && suggestions.filter((s) => s.identity !== destUpper).length > 0 && (
+            <div style={{
+              position: "absolute", top: "100%", left: 8, right: 8, zIndex: 50,
+              marginTop: 4, paddingTop: "var(--space-2)", paddingBottom: "var(--space-2)",
+              background: "var(--color-bg-elevated)",
+              borderRadius: "var(--radius-card)",
+              border: "1px solid var(--color-border-subtle)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+              maxHeight: 240, overflowY: "auto",
+              animation: "slide-down 0.15s ease-out",
+            }}>
+              <AddressSuggestions
+                suggestions={suggestions.filter((s) => s.identity !== destUpper)}
+                onSelect={(id) => { setDestination(id); setDestError(""); }}
               />
-              <Button variant="secondary" shape="sharp" onClick={verifyHighValue} loading={highValueVerifying} disabled={!highValuePassword}>
-                Confirm
-              </Button>
             </div>
           )}
-          {needsHighValueConfirmation && highValueVerified && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-              [HIGH-VALUE TRANSFER CONFIRMED ✓]
-            </div>
+          {matchedContact && !destError && (
+            <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "0.75rem", paddingLeft: 4, marginTop: 4, display: "block" }}>{matchedContact.name}</span>
           )}
-
-          <Button onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
-          <Button variant="secondary" shape="sharp" onClick={() => setStep("input")}>Edit</Button>
-        </>
-      )}
-
-      {/* ── Sending ── */}
-      {step === "sending" && <TxSending />}
-
-      {/* ── Done ── */}
-      {step === "done" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          <div style={{ textAlign: "center" }}>
-            <Tag variant="success">SENT</Tag>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-              Transaction hash
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
-              {txHash}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              TARGET TICK {savedTargetTick} · [PENDING]
-            </div>
-          </div>
-
-          {/* Save-contact prompt */}
-          {!destIsKnownContact && !saved && (
-            <div style={{ borderTop: "1px solid var(--color-border-strong)", paddingTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                SAVE {truncateId(destUpper)} TO CONTACTS?
-              </div>
-              <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                <input
-                  autoComplete="off"
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && doSaveContact()}
-                  placeholder="Contact name"
-                  className="glyph-input"
-                  style={{
-                    flex: 1,
-                    background: "var(--color-bg-subtle)",
-                    borderRadius: "var(--radius-sharp)",
-                    padding: "var(--space-2) var(--space-3)",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body)",
-                    color: "var(--color-text-display)",
-                  }}
-                />
-                <Button
-                  variant="secondary"
-                  shape="sharp"
-                  size="sm"
-                  style={{ width: "auto" }}
-                  onClick={doSaveContact}
-                  disabled={!saveName.trim()}
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
+          {destError && (
+            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "0.75rem", paddingLeft: 4, marginTop: 4, display: "block" }}>{destError}</span>
           )}
-          {saved && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-              [CONTACT SAVED]
-            </div>
-          )}
+        </div>
 
-          {/* Watch confirmation opt-in */}
-          <div
-            role="checkbox"
-            aria-checked={watchConfirmation}
-            tabIndex={0}
-            onClick={() => { setWatchConfirmation((v) => !v); setWatchResult("pending"); }}
-            onKeyDown={(e) => e.key === " " && (setWatchConfirmation((v) => !v), setWatchResult("pending"))}
-            style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
-          >
-            <div style={{
-              width: 14, height: 14, flexShrink: 0,
-              border: `1px solid ${watchConfirmation ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-              borderRadius: 2,
-              background: watchConfirmation ? "var(--color-text-display)" : "none",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              {watchConfirmation && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
-            </div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              WATCH FOR CONFIRMATION
+        {/* Available balance */}
+        {balance !== null && (
+          <div style={{ flex: "0 0 auto", textAlign: "center", paddingBottom: "var(--space-1)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.6875rem", color: "var(--color-text-disabled)" }}>
+              {formatQu(balance)} available
             </span>
           </div>
+        )}
 
-          {watchConfirmation && (
-            <div style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--text-mono-sm)",
-              letterSpacing: "0.05em",
-              color: watchResult === "confirmed" ? "var(--color-status-success)"
-                : watchResult === "failed" ? "var(--color-status-error)"
-                : "var(--color-text-disabled)",
-            }}>
-              {watchResult === "pending" && "[WAITING FOR CONFIRMATION...]"}
-              {watchResult === "confirmed" && "[CONFIRMED — MONEY FLEW ✓]"}
-              {watchResult === "failed" && "[FAILED — MONEY DID NOT FLY]"}
-            </div>
-          )}
+        {/* Numpad */}
+        <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "flex-end", paddingTop: 0 }}>
+          <Numpad onPress={handleNumpad} onMax={balance !== null ? () => { setAmountStr(balance.toString()); setAmountError(""); if (price) setUsdStr((Number(balance) * price).toFixed(2)); } : undefined} />
+        </div>
 
-          <TxMemoField hash={txHash} />
-          <Button onClick={() => navigate("/dashboard")}>Done</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => navigate("/history")}>
-            View history
+        {/* Actions */}
+        <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <Button onClick={goReview} disabled={!wallet}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+              Review <ArrowRightUp size={16} weight="Bold" />
+            </span>
           </Button>
-        </div>
-      )}
-
-      {/* ── Error ── */}
-      {step === "error" && <TxError message={txError} onRetry={() => setStep("review")} onCancel={() => navigate("/dashboard")} />}
-
-      <ContactPicker
-        open={showPicker}
-        onClose={() => setShowPicker(false)}
-        onSelect={(identity) => { setDestination(identity); setDestError(""); setShowPicker(false); }}
-        contacts={contacts}
-        accounts={vaultAccountTargets}
-      />
-
-    </AppShell>
-  );
-}
-
-function AmountInput({
-  value,
-  onChange,
-  onEnter,
-  error,
-  price,
-}: {
-  value: string;
-  onChange: (qu: string) => void;
-  onEnter?: () => void;
-  error?: string;
-  price?: number;
-}) {
-  const [mode, setMode] = useState<"QU" | "USD">("QU");
-  const [usdStr, setUsdStr] = useState("");
-  const [customPriceBq, setCustomPriceBq] = useState<number | null>(null);
-  const [priceOpen, setPriceOpen] = useState(false);
-  const [draftBq, setDraftBq] = useState("");
-
-  const marketPriceBq = price !== undefined ? price * 1e9 : undefined;
-  const effectivePriceBq = customPriceBq ?? marketPriceBq;
-  const effectivePrice = effectivePriceBq !== undefined ? effectivePriceBq / 1e9 : undefined;
-  const isOverridden = customPriceBq !== null;
-
-  function formatWholeQu(n: number): string {
-    if (!Number.isFinite(n) || n <= 0) return "";
-    return Math.floor(n).toLocaleString("fullwide", { useGrouping: false, maximumFractionDigits: 0 });
-  }
-
-  function openPriceSheet() {
-    setDraftBq(effectivePriceBq !== undefined ? effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "");
-    setPriceOpen(true);
-  }
-
-  function applyPrice() {
-    const n = parseFloat(draftBq.replace(/,/g, ""));
-    if (!isNaN(n) && n > 0) setCustomPriceBq(n);
-    setPriceOpen(false);
-  }
-
-  function resetPrice() {
-    setCustomPriceBq(null);
-    setPriceOpen(false);
-  }
-
-  function switchMode(next: "QU" | "USD") {
-    if (next === mode) return;
-    if (next === "USD" && effectivePrice) {
-      const n = Number(value);
-      setUsdStr(n > 0 ? (n * effectivePrice).toFixed(4) : "");
-    }
-    if (next === "QU" && effectivePrice && usdStr) {
-      const n = parseFloat(usdStr);
-      if (!isNaN(n) && n > 0) onChange(formatWholeQu(n / effectivePrice));
-    }
-    setMode(next);
-  }
-
-  function handleQu(raw: string) {
-    const qu = raw.replace(/[^0-9]/g, "");
-    onChange(qu);
-    if (effectivePrice && qu) {
-      const n = Number(qu);
-      if (n > 0) setUsdStr((n * effectivePrice).toFixed(4));
-    }
-  }
-
-  function handleUsd(raw: string) {
-    const v = raw.replace(/[^0-9.]/g, "");
-    setUsdStr(v);
-    if (effectivePrice) {
-      const n = parseFloat(v);
-      onChange(!isNaN(n) && n > 0 ? formatWholeQu(n / effectivePrice) : "");
-    }
-  }
-
-  const hasPrice = effectivePrice !== undefined;
-  const quNum = Number(value);
-  const usdEquiv = hasPrice && quNum > 0 ? quNum * effectivePrice! : null;
-  const quEquiv = hasPrice && usdStr ? Number(formatWholeQu(parseFloat(usdStr) / effectivePrice!)) : null;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-      {/* Label row */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Amount
-        </span>
-        {hasPrice && (
-          <div style={{ display: "flex", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", overflow: "hidden" }}>
-            {(["QU", "USD"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => switchMode(m)}
-                style={{
-                  padding: "2px var(--space-3)",
-                  background: mode === m ? "var(--color-text-display)" : "none",
-                  border: "none",
-                  borderLeft: m === "USD" ? "1px solid var(--color-border-strong)" : "none",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em",
-                  color: mode === m ? "var(--color-bg-base)" : "var(--color-text-disabled)",
-                  transition: "background 0.1s, color 0.1s",
-                }}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Main input */}
-      <div style={{ position: "relative" }}>
-        <input
-          autoComplete="off"
-          inputMode={mode === "USD" ? "decimal" : "numeric"}
-          value={mode === "QU" ? value : usdStr}
-          onChange={(e) => mode === "QU" ? handleQu(e.target.value) : handleUsd(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
-          placeholder="0"
-          className="glyph-input"
-          style={{
-            width: "100%",
-            background: "var(--color-bg-surface)",
-            border: `1px solid ${error ? "var(--color-status-error)" : "var(--color-border-strong)"}`,
-            borderRadius: "var(--radius-sharp)",
-            padding: "var(--space-3) var(--space-3)",
-            paddingRight: `calc(var(--space-3) + ${mode === "QU" ? "1.5rem" : "2rem"})`,
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-display)",
-            fontWeight: 300,
-            color: "var(--color-text-display)",
-            textAlign: "right",
-            letterSpacing: "-0.01em",
-          }}
-        />
-        <span style={{
-          position: "absolute",
-          right: "var(--space-3)",
-          top: "50%",
-          transform: "translateY(-50%)",
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-lg)",
-          color: "var(--color-text-disabled)",
-          letterSpacing: "0.05em",
-          pointerEvents: "none",
-        }}>
-          {mode === "QU" ? "QU" : "USD"}
-        </span>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {error}
-        </span>
-      )}
-
-      {/* Equivalent + rate */}
-      {hasPrice && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {mode === "QU" && usdEquiv !== null
-              ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USD`
-              : mode === "USD" && quEquiv !== null && quEquiv > 0
-              ? `≈ ${quEquiv.toLocaleString()} QU`
-              : null}
-          </span>
-          {effectivePriceBq !== undefined && (
-            <button
-              type="button"
-              onClick={openPriceSheet}
-              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-            >
-              <Pen size={10} color={isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)"} weight="Bold" />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", color: isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)", opacity: isOverridden ? 1 : 0.6 }}>
-                ${effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU{isOverridden ? " *" : ""}
-              </span>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "var(--space-3)" }}>
+            <button onClick={() => navigate("/send-many")}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "0.75rem" }}>
+              Send to many
             </button>
-          )}
-        </div>
-      )}
-
-      <Sheet
-        open={priceOpen}
-        onClose={applyPrice}
-        title="Price per billion QU"
-        footer={
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            {isOverridden
-              ? <button type="button" onClick={resetPrice} style={PRICE_GHOST_BTN}>RESET TO MARKET</button>
-              : <span />}
-            <button type="button" onClick={applyPrice} style={PRICE_APPLY_BTN}>APPLY</button>
+            <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-text-disabled)", opacity: 0.5, flexShrink: 0 }} />
+            <button onClick={() => navigate("/burn")}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "0.75rem" }}>
+              Burn QU
+            </button>
           </div>
-        }
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <Input
-            label="$ / bQU"
-            value={draftBq}
-            onChange={(e) => setDraftBq(e.target.value.replace(/[^0-9.,]/g, ""))}
-            onKeyDown={(e) => e.key === "Enter" && applyPrice()}
-            placeholder={marketPriceBq?.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) ?? ""}
-            inputMode="decimal"
-            autoFocus
-          />
-          {marketPriceBq !== undefined && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              MARKET PRICE: ${marketPriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU
-            </span>
-          )}
         </div>
-      </Sheet>
+
+        <ContactPicker
+          open={showPicker}
+          onClose={() => setShowPicker(false)}
+          onSelect={(id) => { setDestination(id); setDestError(""); setShowPicker(false); }}
+          contacts={contacts}
+          accounts={vaultAccountTargets}
+        />
+        </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Review step ──────────────────────────────────────────────────────────
+
+  const header = (
+    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
+      <button type="button" onClick={() => step === "review" ? setStep("input") : navigate("/dashboard")}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "8px 0", display: "flex", alignItems: "center" }}>
+        <AltArrowLeft size={20} />
+      </button>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "0.875rem", fontWeight: 500, color: "var(--color-text-display)" }}>
+        {step === "review" ? "Review" : step === "done" ? "Sent" : step === "sending" ? "Sending" : "Error"}
+      </span>
     </div>
   );
-}
 
-const PRICE_GHOST_BTN: React.CSSProperties = {
-  background: "none", border: "none", cursor: "pointer",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0,
-};
+  if (step === "review") {
+    const cardStyle: React.CSSProperties = {
+      background: "var(--color-bg-surface)",
+      borderRadius: "var(--radius-card)",
+      padding: "4px 16px",
+      animation: "fade-in-up 0.25s ease-out both",
+    };
+    const divider: React.CSSProperties = {
+      height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+    };
+    const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—";
 
-const PRICE_APPLY_BTN: React.CSSProperties = {
-  background: "var(--color-text-primary)", border: "none",
-  borderRadius: "var(--radius-sharp)", cursor: "pointer",
-  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-bg-base)", letterSpacing: "0.05em",
-  padding: "var(--space-2) var(--space-4)",
-};
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
-function BalanceBar({ balance, amountStr, onMax }: { balance: bigint | null; amountStr: string; onMax?: () => void }) {
-  if (balance === null) return null;
-  const n = amountStr.trim();
-  let entered = 0n;
-  try { entered = n ? BigInt(n) : 0n; } catch { /* non-integer input — treat as 0 */ }
-  const remaining = balance - entered;
-  const over = remaining < 0n;
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-        AVAILABLE
-      </span>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-        {onMax && (
-          <button
-            type="button"
-            onClick={onMax}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: 0, textDecoration: "underline" }}
-          >
-            MAX
-          </button>
+        {/* Amount */}
+        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            {formatQu(amountStr)}
+          </div>
+          {price && amountStr && (
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+              ≈ ${(Number(amountStr) * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          )}
+        </div>
+
+        {/* Parties card */}
+        <div style={cardStyle}>
+          <DetailRow
+            icon={<UserId size={16} />}
+            label="To"
+            value={matchedContact ? matchedContact.name : truncateId(destUpper)}
+            mono={!matchedContact}
+            valueColor={matchedContact ? "var(--color-accent)" : undefined}
+          />
+          <div style={divider} />
+          <DetailRow
+            icon={<Wallet size={16} />}
+            label="From"
+            value={`${accountName} · ${truncateId(identity)}`}
+            mono={false}
+          />
+        </div>
+
+        {/* Details card */}
+        <div style={cardStyle}>
+          <DetailRow
+            icon={<ClockCircle size={16} />}
+            label="Target tick"
+            value={targetTick}
+          />
+          <div style={divider} />
+          <DetailRow
+            icon={<Bolt size={16} />}
+            label="Fee"
+            value="None"
+            mono={false}
+          />
+        </div>
+
+        {/* Pending warning */}
+        {hasPendingTx && (
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "12px 16px", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
+          </div>
         )}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", color: over ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
-          {formatQu(remaining)} QU
-        </span>
+
+        {/* High value confirmation */}
+        {needsHighValueConfirmation && !highValueVerified && (
+          <div style={{ background: "rgba(245, 158, 11, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — confirm with vault password</span>
+            <Input type="password" label="Vault password" value={highValuePassword}
+              onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
+              error={highValuePasswordError} placeholder="••••••••••" autoComplete="current-password" />
+            <Button variant="secondary" onClick={verifyHighValue} loading={highValueVerifying} disabled={!highValuePassword}>Confirm</Button>
+          </div>
+        )}
+        {needsHighValueConfirmation && highValueVerified && (
+          <div style={{ ...labelStyle, color: "var(--color-accent)", textAlign: "center" }}>High-value transfer confirmed ✓</div>
+        )}
+
+        <div style={{ flex: 1 }} />
+
+        {/* Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
+          <Button onClick={send} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
+          <button type="button" onClick={() => setStep("input")}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            Edit
+          </button>
+        </div>
+        </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Sending ──────────────────────────────────────────────────────────────
+
+  if (step === "sending") {
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
+        <div style={{
+          width: 48, height: 48, position: "relative",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{
+            position: "absolute", inset: 0,
+            border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)",
+            borderRadius: "50%", animation: "spin 0.7s linear infinite",
+          }} />
+          <ArrowRightUp size={18} style={{ color: "var(--color-accent)" }} />
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4 }}>
+            {formatQu(amountStr)} to {matchedContact?.name ?? truncateId(destUpper)}
+          </div>
+        </div>
+        </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Done ─────────────────────────────────────────────────────────────────
+
+  if (step === "done") {
+    const cardStyle: React.CSSProperties = {
+      background: "var(--color-bg-surface)",
+      borderRadius: "var(--radius-card)",
+      padding: "4px 16px",
+    };
+    const divider: React.CSSProperties = {
+      height: 1, background: "var(--color-border-subtle)", margin: "0 -16px",
+    };
+
+    const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-disabled)";
+
+    return (
+      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
+
+        {/* Amount */}
+        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "3rem", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            {formatQu(amountStr)}
+          </div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+            <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-accent)" }}>Sent</span>
+          </div>
+        </div>
+
+        {/* Details card */}
+        <div style={cardStyle}>
+          <DetailRow
+            icon={<UserId size={16} />}
+            label="To"
+            value={matchedContact ? matchedContact.name : truncateId(destUpper)}
+            mono={!matchedContact}
+            valueColor={matchedContact ? "var(--color-accent)" : undefined}
+          />
+          <div style={divider} />
+          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
+          <div style={divider} />
+          <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
+          <div style={divider} />
+          <DetailRow
+            icon={watchResult === "confirmed" ? <ShieldCheck size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldWarning size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+            label="Status"
+            value={watchResult === "confirmed" ? "Confirmed" : watchResult === "failed" ? "Failed" : "Watching…"}
+            mono={false}
+            valueColor={statusColor}
+          />
+        </div>
+
+        {/* Save contact — card-based */}
+        {!destIsKnownContact && !saved && (
+          <div style={{
+            background: "var(--color-bg-surface)",
+            borderRadius: "var(--radius-card)",
+            padding: "14px 16px",
+            display: "flex", alignItems: "center", gap: "var(--space-3)",
+          }}>
+            <Bookmark size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
+            <input autoComplete="off" value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doSaveContact()}
+              placeholder="Save as contact"
+              style={{
+                flex: 1, background: "none", border: "none", outline: "none",
+                fontFamily: "var(--font-sans)", fontSize: "0.8125rem",
+                color: "var(--color-text-display)", padding: 0, minWidth: 0,
+              }}
+            />
+            <button type="button" onClick={doSaveContact} disabled={!saveName.trim()}
+              style={{
+                background: "none", border: "none", cursor: saveName.trim() ? "pointer" : "default",
+                fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500,
+                color: saveName.trim() ? "var(--color-accent)" : "var(--color-text-disabled)",
+                padding: 0, flexShrink: 0,
+              }}>
+              Save
+            </button>
+          </div>
+        )}
+        {saved && (
+          <div style={{
+            background: "var(--color-bg-surface)",
+            borderRadius: "var(--radius-card)",
+            padding: "14px 16px",
+            display: "flex", alignItems: "center", gap: "var(--space-3)",
+          }}>
+            <CheckCircle size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", fontWeight: 500, color: "var(--color-accent)" }}>Contact saved</span>
+          </div>
+        )}
+
+        {/* Notes */}
+        <TxMemoField hash={txHash} />
+
+        <div style={{ flex: 1 }} />
+
+        {/* Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
+          <Button onClick={() => navigate("/dashboard")}>Done</Button>
+          <button type="button" onClick={() => navigate("/history")}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+            View history
+          </button>
+        </div>
+        </motion.div>
+      </AppShell>
+    );
+  }
+
+  // ── Error ────────────────────────────────────────────────────────────────
+
+  return (
+    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%",
+        background: "rgba(255, 59, 48, 0.1)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
-    </div>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.9375rem", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", marginTop: 4, maxWidth: 280 }}>
+          {txError || "The transaction could not be broadcast."}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
+        <Button onClick={() => setStep("review")}>Try again</Button>
+        <button type="button" onClick={() => navigate("/dashboard")}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "0.8125rem", color: "var(--color-text-disabled)", padding: "8px 0", alignSelf: "center" }}>
+          Cancel
+        </button>
+      </div>
+      </motion.div>
+    </AppShell>
   );
 }

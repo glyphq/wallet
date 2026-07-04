@@ -89,7 +89,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
           )}
           {!hasResults && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "var(--space-4)", textAlign: "center" }}>
-              [NO RESULTS]
+              No results
             </div>
           )}
         </div>
