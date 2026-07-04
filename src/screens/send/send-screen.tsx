@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { Pen } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
@@ -710,7 +710,7 @@ function AmountInput({
               onClick={openPriceSheet}
               style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
-              <Pencil size={10} color={isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)"} strokeWidth={2} />
+              <Pen size={10} color={isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)"} weight="Bold" />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", color: isOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)", opacity: isOverridden ? 1 : 0.6 }}>
                 ${effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU{isOverridden ? " *" : ""}
               </span>

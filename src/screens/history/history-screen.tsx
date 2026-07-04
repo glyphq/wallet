@@ -10,7 +10,7 @@ import { Input } from "@/components/input";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore, type PendingTx, type AppSettings, type PriceSnapshot } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { Download, SlidersHorizontal, RotateCw, BarChart2 } from "lucide-react";
+import { Download, Filters, Refresh, Chart } from "@solar-icons/react";
 import {
   useTxHistory,
   type TxHistoryItem,
@@ -225,20 +225,20 @@ export default function HistoryScreen() {
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
               {hasMemos && (
                 <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
-                  <Download size={15} />
+                  <Download size={15} weight="Linear" />
                 </button>
               )}
               <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
-                <BarChart2 size={15} strokeWidth={1.5} />
+                <Chart size={15} weight="Linear" />
               </button>
               {!wideLayout && (
                 <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
-                  <SlidersHorizontal size={15} />
+                  <Filters size={15} weight="Linear" />
                   {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
                 </button>
               )}
               <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
-                <RotateCw size={15} />
+                <Refresh size={15} weight="Linear" />
               </button>
             </div>
           }

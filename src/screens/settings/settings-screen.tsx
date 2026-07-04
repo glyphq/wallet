@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { AltArrowRight } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { useUpdater } from "@/hooks/use-updater";
@@ -64,7 +64,7 @@ export default function SettingsScreen() {
               {row.description}
             </div>
           </div>
-          <ChevronRight size={14} color="var(--color-text-secondary)" strokeWidth={1.5} style={{ flexShrink: 0 }} />
+          <AltArrowRight size={14} color="var(--color-text-secondary)" weight="Linear" style={{ flexShrink: 0 }} />
         </button>
       ))}
 
