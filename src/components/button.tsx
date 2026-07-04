@@ -67,6 +67,7 @@ export function Button({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
+        gap: "var(--space-2)",
         fontFamily: "var(--font-sans)",
         fontWeight: 500,
         letterSpacing: "0.08em",

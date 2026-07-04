@@ -6,7 +6,6 @@ import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { ContactPicker } from "@/components/contact-picker";
-import { Identicon } from "@/components/identicon";
 import { AddressSuggestions } from "@/components/address-suggestions";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -446,13 +445,8 @@ export default function SendScreen() {
               />
             </div>
           )}
-          {!destError && isValidIdentity(destUpper) && (
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)" }}>
-              <Identicon seed={destUpper} size={20} radius={4} />
-              {matchedContact && (
-                <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)" }}>{matchedContact.name}</span>
-              )}
-            </div>
+          {!destError && matchedContact && (
+            <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{matchedContact.name}</span>
           )}
           {destError && (
             <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{destError}</span>
@@ -552,7 +546,7 @@ export default function SendScreen() {
         {/* Parties card */}
         <div style={cardStyle}>
           <DetailRow
-            icon={<Identicon seed={destUpper} size={16} radius={3} />}
+            icon={<UserId size={16} />}
             label="To"
             value={matchedContact ? matchedContact.name : truncateId(destUpper)}
             mono={!matchedContact}
@@ -683,7 +677,7 @@ export default function SendScreen() {
         {/* Details card */}
         <div style={cardStyle}>
           <DetailRow
-            icon={<Identicon seed={destUpper} size={16} radius={3} />}
+            icon={<UserId size={16} />}
             label="To"
             value={matchedContact ? matchedContact.name : truncateId(destUpper)}
             mono={!matchedContact}

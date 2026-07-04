@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AltArrowLeft, Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { Identicon } from "@/components/identicon";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
@@ -98,7 +97,7 @@ const TX_TYPE_ICONS: Record<string, typeof ArrowRightUp> = {
 
 // ── Activity item ─────────────────────────────────────────────────────────────
 
-function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className, identity, txType }: {
+function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className, txType }: {
   onClick: () => void;
   label: string;
   labelColor: string;
@@ -108,7 +107,6 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
   amountUsd?: string;
   amountColor: string;
   className?: string;
-  identity?: string;
   txType?: "sent" | "received" | "sc" | "failed" | "pending";
 }) {
   const TypeIcon = txType ? TX_TYPE_ICONS[txType] : null;
@@ -122,30 +120,12 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
-      {/* Identicon with type icon badge, or fallback icon circle */}
-      <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
-        {identity ? (
-          <Identicon seed={identity} size={28} radius={6} />
-        ) : (
-          <div style={{
-            width: 28, height: 28, borderRadius: 6,
-            background: "var(--color-bg-surface)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {TypeIcon && <TypeIcon size={14} weight="Bold" />}
-          </div>
-        )}
-        {identity && TypeIcon && (
-          <div style={{
-            position: "absolute", bottom: -2, right: -2,
-            width: 14, height: 14, borderRadius: "50%",
-            background: "var(--color-bg-base)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: "1px solid var(--color-border-subtle)",
-          }}>
-            <TypeIcon size={9} weight="Bold" color={txType === "failed" ? "var(--color-status-error)" : txType === "pending" ? "var(--color-status-warning)" : "currentColor"} />
-          </div>
-        )}
+      <div style={{
+        width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+        background: "var(--color-bg-surface)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {TypeIcon && <TypeIcon size={14} weight="Bold" />}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
@@ -460,7 +440,6 @@ export default function HistoryScreen() {
                 amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
                 amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
                 amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
-                identity={isIn ? p.source : p.destination}
                 txType={expired ? "failed" : "pending"}
               />
             );
@@ -499,7 +478,6 @@ export default function HistoryScreen() {
                   ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
                   : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
                 const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
-                const counterparty = isIn ? (tx.source ?? undefined) : (tx.destination ?? undefined);
                 const txType = !flew ? "failed" as const : isSc ? "sc" as const : isIn ? "received" as const : "sent" as const;
 
                 return (
@@ -514,7 +492,6 @@ export default function HistoryScreen() {
                     amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
                     amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
                     amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
-                    identity={counterparty}
                     txType={txType}
                   />
                 );
@@ -767,7 +744,6 @@ function GroupedTxs({
                 amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
                 amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
                 amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
-                identity={isIn ? (tx.source ?? undefined) : (tx.destination ?? undefined)}
                 txType={!flew ? "failed" : isIn ? "received" : "sent"}
               />
             );

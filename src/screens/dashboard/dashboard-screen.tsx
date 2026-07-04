@@ -162,7 +162,7 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
 
 // ── Recent transactions ──────────────────────────────────────────────────────
 
-function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, identiconSeed }: {
+function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor }: {
   onClick: () => void;
   label: string;
   labelColor: string;
@@ -171,7 +171,6 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
   amount: string;
   amountUsd?: string;
   amountColor: string;
-  identiconSeed?: string;
 }) {
   return (
     <button
@@ -182,8 +181,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
-      {identiconSeed && <Identicon seed={identiconSeed} size={32} radius={6} />}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
           {label}
         </span>
@@ -194,7 +192,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
           {time}
         </span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, marginLeft: "var(--space-2)" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor }}>
           {amount}
         </span>
@@ -285,7 +283,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         time={formatDate(p.broadcastAt) || `Target tick ${p.targetTick}`}
         amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(p.amount ?? "0")} QU`}
         amountColor={amountColor}
-        identiconSeed={isIn ? p.source : p.destination}
       />,
     );
   });
@@ -327,7 +324,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         amount={amount}
         amountUsd={amountUsd}
         amountColor={amountColor}
-        identiconSeed={isIn ? (tx.source ?? "") : (tx.destination ?? "")}
       />,
     );
   });
@@ -535,7 +531,7 @@ export default function DashboardScreen() {
         {/* Recent activity card */}
         <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.02em", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Activity
             </span>
             <button
