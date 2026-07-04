@@ -9,23 +9,31 @@ pub struct NotificationPayload {
     pub duration: Option<u64>,
 }
 
+// Embedded Geist font (latin, 400 + 600 weight)
+const GEIST_400: &[u8] = include_bytes!("../fonts/geist-latin-400-normal.woff2");
+const GEIST_600: &[u8] = include_bytes!("../fonts/geist-latin-600-normal.woff2");
+
 fn build_html(kind: &str, title: &str, body: &str, duration: u64) -> String {
     let colors = [
-        ("received", "#4ade80"), ("sent", "#60a5fa"), ("confirmed", "#ccfcfb"),
-        ("failed", "#f87171"), ("expired", "#fbbf24"), ("deep_link", "#60a5fa"),
-        ("price_alert", "#c084fc"),
+        ("received", "#4ade80", "#052e16"),
+        ("sent", "#60a5fa", "#0c1a3d"),
+        ("confirmed", "#ccfcfb", "#0a2020"),
+        ("failed", "#f87171", "#2a0a0a"),
+        ("expired", "#fbbf24", "#2a1a05"),
+        ("deep_link", "#60a5fa", "#0c1a3d"),
+        ("price_alert", "#c084fc", "#1a0a2e"),
     ];
     let icons = [
-        ("received", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="2" fill="none"/><path d="M8 12l3 3 5-5" stroke="C" stroke-width="2" stroke-linecap="round" fill="none"/>"#),
-        ("sent", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="2" fill="none"/><path d="M12 16V8m0 0l-3 3m3-3l3 3" stroke="C" stroke-width="2" stroke-linecap="round" fill="none"/>"#),
-        ("confirmed", r#"<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="C" stroke-width="2" fill="none"/><path d="M9 12l2 2 4-4" stroke="C" stroke-width="2" stroke-linecap="round" fill="none"/>"#),
-        ("failed", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="2" fill="none"/><path d="M12 8v4m0 4h.01" stroke="C" stroke-width="2" stroke-linecap="round"/>"#),
-        ("expired", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="2" fill="none"/><path d="M12 6v6l4 2" stroke="C" stroke-width="2" stroke-linecap="round" fill="none"/>"#),
-        ("deep_link", r#"<circle cx="10" cy="14" r="3.5" stroke="C" stroke-width="2" fill="none"/><path d="M15 2s-1.5 4-4.5 6c-3 2-3 6 0 8s6.5 2 8-1" stroke="C" stroke-width="2" stroke-linecap="round" fill="none"/>"#),
-        ("price_alert", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="2" fill="none"/><path d="M13 2s-1.5 4-4.5 6c-3 2-3 6 0 8s6.5 2 8-1" stroke="C" stroke-width="2" stroke-linecap="round" fill="none"/>"#),
+        ("received", r#"<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="C" stroke-width="1.8" fill="none"/><path d="M9 12l2 2 4-4" stroke="C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>"#),
+        ("sent", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="1.8" fill="none"/><path d="M12 16V8m0 0l-3 3m3-3l3 3" stroke="C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>"#),
+        ("confirmed", r#"<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="C" stroke-width="1.8" fill="none"/><path d="M9 12l2 2 4-4" stroke="C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>"#),
+        ("failed", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="1.8" fill="none"/><path d="M12 8v4m0 4h.01" stroke="C" stroke-width="1.8" stroke-linecap="round"/>"#),
+        ("expired", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="1.8" fill="none"/><path d="M12 6v6l4 2" stroke="C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>"#),
+        ("deep_link", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="1.8" fill="none"/><path d="M10 14a3.5 3.5 0 0 1 0-5l5-5a3.5 3.5 0 0 1 5 5L17 9" stroke="C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>"#),
+        ("price_alert", r#"<circle cx="12" cy="12" r="10" stroke="C" stroke-width="1.8" fill="none"/><path d="M13 2s-1.5 4-4.5 6c-3 2-3 6 0 8s6.5 2 8-1" stroke="C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>"#),
     ];
 
-    let color = colors.iter().find(|(k, _)| *k == kind).map(|(_, c)| *c).unwrap_or("#4ade80");
+    let (color, bg) = colors.iter().find(|(k, _, _)| *k == kind).map(|(_, c, b)| (*c, *b)).unwrap_or(("#4ade80", "#052e16"));
     let icon = icons.iter().find(|(k, _)| *k == kind).map(|(_, i)| *i).unwrap_or(icons[0].1);
     let icon_svg = icon.replace('C', color);
 
@@ -33,37 +41,42 @@ fn build_html(kind: &str, title: &str, body: &str, duration: u64) -> String {
     let title = esc(title);
     let body = esc(body);
 
+    let font400 = base64_encode(GEIST_400);
+    let font600 = base64_encode(GEIST_600);
+
     format!(r##"<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
+@font-face{{font-family:'Geist';src:url(data:font/woff2;base64,{font400}) format('woff2');font-weight:400;font-style:normal;font-display:swap}}
+@font-face{{font-family:'Geist';src:url(data:font/woff2;base64,{font600}) format('woff2');font-weight:600;font-style:normal;font-display:swap}}
 *{{margin:0;padding:0;box-sizing:border-box}}
 html,body{{width:100%;height:100%;background:#161618;overflow:hidden;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  font-family:'Geist',system-ui,-apple-system,sans-serif;
   user-select:none;-webkit-user-select:none}}
-.n{{display:flex;align-items:center;gap:12px;padding:16px 18px;
+.n{{display:flex;align-items:center;gap:14px;padding:18px 20px;
   width:100%;height:100%;
   background:#161618;
   cursor:pointer;position:relative}}
-.ic{{flex-shrink:0;width:34px;height:34px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;background:{color}14}}
-.ic svg{{width:18px;height:18px}}
+.ic{{flex-shrink:0;width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;background:{bg}}}
+.ic svg{{width:20px;height:20px}}
 .c{{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}}
-.c h{{font-size:14px;font-weight:600;color:rgba(255,255,255,.92);line-height:1.25;letter-spacing:-.01em}}
-.c b{{font-size:12.5px;color:rgba(255,255,255,.42);font-weight:400;line-height:1.35;
+.c h{{font-size:14px;font-weight:600;color:rgba(255,255,255,.93);line-height:1.3;letter-spacing:-.015em}}
+.c b{{font-size:13px;color:rgba(255,255,255,.40);font-weight:400;line-height:1.4;letter-spacing:-.01em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .x{{flex-shrink:0;background:none;border:none;padding:6px;cursor:pointer;
-  display:flex;align-items:center;border-radius:6px;
+  display:flex;align-items:center;border-radius:8px;
   opacity:0;transition:opacity .15s}}
-.n:hover .x{{opacity:.35}}
-.x:hover{{opacity:.8;background:rgba(255,255,255,.06)}}
-.p{{position:absolute;bottom:0;left:12px;right:12px;height:2px;border-radius:1px;
-  opacity:.25;transform-origin:left;animation:shrink {duration}ms linear forwards}}
+.n:hover .x{{opacity:.3}}
+.x:hover{{opacity:.7;background:rgba(255,255,255,.06)}}
+.p{{position:absolute;bottom:0;left:14px;right:14px;height:2px;border-radius:1px;
+  opacity:.2;transform-origin:left;animation:shrink {duration}ms linear forwards}}
 @keyframes shrink{{from{{transform:scaleX(1)}}to{{transform:scaleX(0)}}}}
 </style></head><body>
 <div class="n" id="n">
   <div class="ic"><svg viewBox="0 0 24 24" fill="none">{icon_svg}</svg></div>
   <div class="c"><h>{title}</h><b>{body}</b></div>
   <button class="x" id="x"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round">
+    stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <div class="p" style="background:{color}"></div>
 </div>
@@ -86,11 +99,11 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
         if let Ok(Some(m)) = w.primary_monitor() {
             let (px, py, sw, sh, sc) = (m.position().x as f64, m.position().y as f64,
                 m.size().width as f64, m.size().height as f64, m.scale_factor());
-            (px + sw / sc - 380.0 - 16.0, py + sh / sc - 88.0 - 56.0)
+            (px + sw / sc - 400.0 - 16.0, py + sh / sc - 92.0 - 56.0)
         } else { (100.0, 100.0) }
     } else { (100.0, 100.0) };
 
-    // Base64 encode — avoids all escaping issues with </script>, quotes, etc.
+    // Base64 encode the full HTML (includes embedded fonts + script)
     let b64 = base64_encode(html.as_bytes());
     let eval_js = format!("document.open();document.write(atob('{}'));document.close();", b64);
 
@@ -104,7 +117,7 @@ pub async fn show_notification_window(app: tauri::AppHandle, payload: Notificati
 
         let url = "about:blank".parse::<url::Url>().unwrap();
         let _window = match WebviewWindowBuilder::new(&app2, &label, WebviewUrl::External(url))
-            .inner_size(380.0, 88.0)
+            .inner_size(400.0, 92.0)
             .position(x, y)
             .decorations(false)
             .always_on_top(true)
