@@ -66,7 +66,7 @@ export function useNotificationTriggers() {
           } else if (enabled && onReceived) {
             publishNotificationEvent(createNotificationEvent({
               kind: "received",
-              title: "QU received",
+              title: "Funds received",
               body: `${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}`,
               identity: id,
             })).catch(() => {});
@@ -102,8 +102,8 @@ export function useNotificationTriggers() {
           if (tx.contractName) {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
-              title: "Contract broadcast",
-              body: `${tx.contractName} submitted, awaiting confirmation`,
+              title: "Contract submitted",
+              body: `${tx.contractName} broadcast to the network`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
@@ -111,7 +111,7 @@ export function useNotificationTriggers() {
           } else {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
-              title: "QU sent",
+              title: "Funds sent",
               body: `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination, 8, 4)}`,
               identity: tx.source,
               txHash: tx.hash,
@@ -183,8 +183,8 @@ export function useNotificationTriggers() {
         if (enabled && onConfirmed) {
           publishNotificationEvent(createNotificationEvent({
             kind: "confirmed",
-            title: "Confirmed",
-            body: `${label} landed on chain`,
+            title: "Transaction confirmed",
+            body: `${label} confirmed on chain`,
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:confirmed`,
@@ -195,8 +195,8 @@ export function useNotificationTriggers() {
         if (enabled && onMissedConfirmations) {
           publishNotificationEvent(createNotificationEvent({
             kind: "failed",
-            title: "Failed",
-            body: `${label} didn't complete — check alerts`,
+            title: "Transaction failed",
+            body: `${label} could not be completed`,
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:failed`,
@@ -220,8 +220,8 @@ export function useNotificationTriggers() {
         if (enabled && onMissedConfirmations) {
           publishNotificationEvent(createNotificationEvent({
             kind: "expired",
-            title: "Expired",
-            body: `${label} missed its window and was dropped`,
+            title: "Transaction expired",
+            body: `${label} timed out and was dropped`,
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:expired`,
