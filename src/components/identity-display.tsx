@@ -99,7 +99,7 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
               textTransform: "uppercase",
             }}
           >
-            [CLIPBOARD CLEARS IN {countdown}s]
+            Clipboard clears in {countdown}s
           </span>
           <button
             onClick={clearNow}

@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
               textAlign: "center",
             }}
           >
-            [RENDER ERROR]
+            Render error
           </span>
           <span
             style={{
@@ -92,9 +92,9 @@ export class ErrorBoundary extends Component<Props, State> {
               }}
             >
               {this.state.componentStack
-                ? `[COMPONENT STACK]\n${this.state.componentStack.trim()}`
-                : "[COMPONENT STACK UNAVAILABLE]"}
-              {this.state.error?.stack ? `\n\n[JS STACK]\n${this.state.error.stack}` : ""}
+                ? `Component Stack\n${this.state.componentStack.trim()}`
+                : "Component stack unavailable"}
+              {this.state.error?.stack ? `\n\nJS Stack\n${this.state.error.stack}` : ""}
             </pre>
           </div>
           <button

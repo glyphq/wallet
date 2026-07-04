@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { NotesMinimalistic } from "@solar-icons/react";
 import { usePersistedStore } from "@/store/persisted";
 
 export function TxMemoField({ hash }: { hash: string }) {
@@ -14,29 +15,32 @@ export function TxMemoField({ hash }: { hash: string }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", borderTop: "1px solid var(--color-border-strong)", paddingTop: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        Note
-      </span>
+    <div style={{
+      background: "var(--color-bg-surface)",
+      borderRadius: "var(--radius-card)",
+      padding: "14px 16px",
+      display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
+    }}>
+      <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
       <textarea
         value={memo}
         onChange={(e) => setMemo(e.target.value)}
         onBlur={save}
-        placeholder="Add a private note to this transaction..."
-        rows={3}
+        placeholder="Add a note"
+        rows={2}
         style={{
-          width: "100%",
-          background: "var(--color-bg-elevated)",
-          border: "1px solid var(--color-border-strong)",
-          borderRadius: "var(--radius-sharp)",
-          color: "var(--color-text-primary)",
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          letterSpacing: "0.04em",
-          lineHeight: 1.6,
-          padding: "var(--space-2) var(--space-3)",
+          flex: 1,
+          background: "none",
+          border: "none",
+          outline: "none",
+          color: "var(--color-text-display)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "0.8125rem",
+          lineHeight: 1.5,
+          padding: 0,
           resize: "none",
           boxSizing: "border-box",
+          minWidth: 0,
         }}
       />
     </div>

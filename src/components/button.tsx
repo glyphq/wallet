@@ -36,9 +36,9 @@ const VARIANT: Record<Variant, CSSProperties> = {
 };
 
 const SIZE: Record<Size, CSSProperties> = {
-  lg: { height: 48, padding: "0 24px", fontSize: "13px", width: "100%" },
-  md: { height: 40, padding: "0 16px", fontSize: "13px" },
-  sm: { height: 32, padding: "0 12px", fontSize: "11px" },
+  lg: { height: 48, padding: "0 24px", width: "100%" },
+  md: { height: 40, padding: "0 16px" },
+  sm: { height: 32, padding: "0 12px", fontSize: "0.75rem" },
 };
 
 const SHAPE: Record<Shape, CSSProperties> = {
@@ -67,10 +67,11 @@ export function Button({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "var(--font-mono)",
-        fontWeight: 400,
+        fontFamily: "var(--font-sans)",
+        fontWeight: 500,
         textTransform: "uppercase",
-        letterSpacing: "0.06em",
+        letterSpacing: "0.08em",
+        fontSize: "0.8125rem",
         border: "1px solid",
         cursor: disabled || loading ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
@@ -81,9 +82,15 @@ export function Button({
       }}
     >
       {loading ? (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}>
-          [PROCESSING...]
-        </span>
+        <span
+          style={{
+            width: 16, height: 16,
+            border: "2px solid currentColor",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 0.6s linear infinite",
+          }}
+        />
       ) : (
         children
       )}
