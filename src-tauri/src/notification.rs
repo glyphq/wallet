@@ -102,6 +102,10 @@ pub fn show_notification_window(app: tauri::AppHandle, payload: NotificationPayl
 
     eprintln!("[notif] window '{label}' created successfully");
 
+    // Force-open devtools so we can see what's going on
+    _window.open_devtools();
+    eprintln!("[notif] devtools opened for '{label}'");
+
     // Auto-close after duration
     let destroy_label = close_label.clone();
     std::thread::spawn(move || {
