@@ -10,24 +10,17 @@ import { extractMessage } from "@/lib/format";
 import { isWatchOnlyVault } from "@/lib/accounts";
 
 const TIMEOUT_OPTIONS = [
-  { label: "1m", value: 1 },
-  { label: "5m", value: 5 },
-  { label: "15m", value: 15 },
-  { label: "30m", value: 30 },
-  { label: "1h", value: 60 },
-  { label: "Never", value: 0 },
+  { label: "1m", value: 1 }, { label: "5m", value: 5 }, { label: "15m", value: 15 },
+  { label: "30m", value: 30 }, { label: "1h", value: 60 }, { label: "Never", value: 0 },
 ];
 
 const CLIPBOARD_OPTIONS = [
-  { label: "15s", value: 15 },
-  { label: "30s", value: 30 },
-  { label: "1m", value: 60 },
-  { label: "Never", value: 0 },
+  { label: "15s", value: 15 }, { label: "30s", value: 30 },
+  { label: "1m", value: 60 }, { label: "Never", value: 0 },
 ];
 
 export default function SecurityScreen() {
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
-
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
   const vaults = usePersistedStore((s) => s.vaults);
@@ -58,22 +51,15 @@ export default function SecurityScreen() {
     if (!vault) return;
     setEnableLoading(true); setEnableError("");
     if (!vault.encryptedData) { setEnableError("Vault data missing"); setEnableLoading(false); return; }
-    try {
-      await unlockVault(vault.encryptedData, enablePw);
-    } catch {
-      setEnableError("Wrong password"); setEnableLoading(false); return;
-    }
-    const pw = enablePw;
-    setEnablePw("");
+    try { await unlockVault(vault.encryptedData, enablePw); }
+    catch { setEnableError("Wrong password"); setEnableLoading(false); return; }
+    const pw = enablePw; setEnablePw("");
     try {
       await invoke("enable_biometric", { vaultId: vault.id, vaultData: vault.encryptedData, password: pw });
       updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
       setEnabling(false);
-    } catch (e) {
-      setEnableError(`Secure storage failed: ${extractMessage(e)}`);
-    } finally {
-      setEnableLoading(false);
-    }
+    } catch (e) { setEnableError(`Secure storage failed: ${extractMessage(e)}`); }
+    finally { setEnableLoading(false); }
   }
 
   async function handleDisable() {
@@ -89,34 +75,82 @@ export default function SecurityScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", paddingBottom: "calc(var(--space-4) + 76px)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <SettingsPageHeader title="Security" />
 
-        {/* Lock */}
-        <Card>
-          <CardHeader>Lock</CardHeader>
-          <PillGroup options={TIMEOUT_OPTIONS} selected={autoLockMinutes} onSelect={setLockTimeout} label="Auto-lock timeout" />
+        {/* Auto-lock */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <SectionLabel>Auto-lock timeout</SectionLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+            {TIMEOUT_OPTIONS.map((opt) => (
+              <motion.button
+                key={opt.value}
+                {...gesture.pressSubtle}
+                onClick={() => setLockTimeout(opt.value)}
+                style={{
+                  padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-pill)",
+                  border: "none", cursor: "pointer",
+                  background: opt.value === autoLockMinutes ? "var(--color-accent)" : "var(--color-bg-surface)",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+                  color: opt.value === autoLockMinutes ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+                }}
+              >
+                {opt.label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Lock toggles */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <Toggle label="Lock on sleep" description="Lock when the screen locks or machine sleeps" enabled={lockOnSleep} onToggle={() => updateSettings({ lockOnSleep: !lockOnSleep })} />
+          <Divider />
           <Toggle label="Lock on window blur" description="Lock when the app loses focus" enabled={lockOnWindowBlur} onToggle={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })} />
-        </Card>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
 
         {/* Clipboard */}
-        <Card>
-          <CardHeader>Clipboard</CardHeader>
-          <PillGroup options={CLIPBOARD_OPTIONS} selected={clipboardClearSeconds} onSelect={(v) => updateSettings({ clipboardClearSeconds: v })} label="Clear copied addresses after" />
-        </Card>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <SectionLabel>Clear clipboard after</SectionLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+            {CLIPBOARD_OPTIONS.map((opt) => (
+              <motion.button
+                key={opt.value}
+                {...gesture.pressSubtle}
+                onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
+                style={{
+                  padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-pill)",
+                  border: "none", cursor: "pointer",
+                  background: opt.value === clipboardClearSeconds ? "var(--color-accent)" : "var(--color-bg-surface)",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
+                  color: opt.value === clipboardClearSeconds ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+                }}
+              >
+                {opt.label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
 
-        {/* Approval */}
-        <Card>
-          <CardHeader>Approval</CardHeader>
+        {/* Divider */}
+        <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
+
+        {/* Approval toggles */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <Toggle label="Password for burn" description="Require password before burning QU" enabled={requirePasswordForBurn} onToggle={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })} />
+          <Divider />
           <Toggle label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} enabled={requireBiometricForSeedReveal} onToggle={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
-        </Card>
+        </div>
 
-        {/* Biometric */}
+        {/* Biometric setup — only card, only when relevant */}
         {!watchOnly && bioAvailable && vault && (
-          <Card>
-            <CardHeader>{isLinux ? "Quick unlock" : "Biometric unlock"}</CardHeader>
+          <div style={{
+            background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
+            padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)",
+          }}>
+            <SectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SectionLabel>
             {bioEnabled ? (
               <>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-success)" }}>
@@ -141,9 +175,7 @@ export default function SecurityScreen() {
                   Enter your password to enable
                 </span>
                 <input
-                  ref={pwRef}
-                  type="password"
-                  value={enablePw}
+                  ref={pwRef} type="password" value={enablePw}
                   onChange={(e) => { setEnablePw(e.target.value); setEnableError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleEnable()}
                   placeholder="Password"
@@ -161,9 +193,7 @@ export default function SecurityScreen() {
                 )}
                 <div style={{ display: "flex", gap: "var(--space-2)" }}>
                   <motion.button
-                    {...gesture.press}
-                    onClick={handleEnable}
-                    disabled={enableLoading}
+                    {...gesture.press} onClick={handleEnable} disabled={enableLoading}
                     style={{
                       flex: 1, padding: "var(--space-3)", background: "var(--color-accent)",
                       border: "none", borderRadius: "var(--radius-sharp)", cursor: "pointer",
@@ -200,7 +230,7 @@ export default function SecurityScreen() {
                 Enable for {vault.name}
               </motion.button>
             )}
-          </Card>
+          </div>
         )}
       </motion.div>
     </AppShell>
@@ -209,19 +239,7 @@ export default function SecurityScreen() {
 
 /* ── Sub-components ─────────────────────────────────────────── */
 
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column", gap: "var(--space-3)",
-      background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
-      padding: "var(--space-4)",
-    }}>
-      {children}
-    </div>
-  );
-}
-
-function CardHeader({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span style={{
       fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
@@ -241,7 +259,7 @@ function Toggle({ label, description, enabled, onToggle }: {
       onClick={onToggle}
       style={{
         display: "flex", alignItems: "center", gap: "var(--space-3)",
-        padding: "var(--space-2) 0", width: "100%", background: "none",
+        padding: "var(--space-3) 0", width: "100%", background: "none",
         border: "none", cursor: "pointer", textAlign: "left",
       }}
     >
@@ -268,38 +286,6 @@ function Toggle({ label, description, enabled, onToggle }: {
   );
 }
 
-function PillGroup({ options, selected, onSelect, label }: {
-  options: { label: string; value: number }[];
-  selected: number;
-  onSelect: (v: number) => void;
-  label: string;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-        {label}
-      </span>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-        {options.map((opt) => {
-          const active = opt.value === selected;
-          return (
-            <motion.button
-              key={opt.value}
-              {...gesture.pressSubtle}
-              onClick={() => onSelect(opt.value)}
-              style={{
-                padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-pill)",
-                border: "none", cursor: "pointer",
-                background: active ? "var(--color-accent)" : "var(--color-bg-elevated)",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-              }}
-            >
-              {opt.label}
-            </motion.button>
-          );
-        })}
-      </div>
-    </div>
-  );
+function Divider() {
+  return <div style={{ height: 1, background: "var(--color-border-subtle)" }} />;
 }

@@ -9,7 +9,7 @@ import { truncateId } from "@/lib/format";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
-import { AltArrowRight, TrashBinMinimalistic } from "@solar-icons/react";
+import { TrashBinMinimalistic } from "@solar-icons/react";
 
 export default function SettingsContactsScreen() {
   const contacts = usePersistedStore((s) => s.contacts);
@@ -71,7 +71,10 @@ export default function SettingsContactsScreen() {
 
         {/* Add / Edit form */}
         {formOpen && (
-          <Card>
+          <div style={{
+            display: "flex", flexDirection: "column", gap: "var(--space-3)",
+            background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)",
+          }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
               {editing ? "Edit contact" : "New contact"}
             </span>
@@ -89,7 +92,23 @@ export default function SettingsContactsScreen() {
                 Cancel
               </button>
             </div>
-          </Card>
+            {editing && (
+              <motion.button
+                {...gesture.pressSubtle}
+                onClick={() => { removeContact(editing.id); closeForm(); }}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  gap: "var(--space-2)", width: "100%", padding: "var(--space-2)",
+                  background: "none", border: "none", cursor: "pointer",
+                  fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
+                  fontWeight: 500, color: "var(--color-status-error)",
+                }}
+              >
+                <TrashBinMinimalistic size={12} weight="Outline" />
+                Delete contact
+              </motion.button>
+            )}
+          </div>
         )}
 
         {/* Search + add button */}
@@ -116,40 +135,41 @@ export default function SettingsContactsScreen() {
           </div>
         )}
 
-        {/* Contact list */}
+        {/* Contact list — flat rows with dividers */}
         {filtered.length > 0 && (
-          <Card>
+          <div style={{
+            background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
+            overflow: "hidden",
+          }}>
             {filtered.map((contact, i) => (
-              <div key={contact.id}>
-                {i > 0 && <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />}
-                <motion.button
-                  {...gesture.pressSubtle}
-                  onClick={() => openEdit(contact)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "var(--space-3)",
-                    width: "100%", padding: "var(--space-3) 0", background: "none",
-                    border: "none", cursor: "pointer", textAlign: "left",
-                  }}
-                >
-                  <Identicon seed={contact.identity} size={32} radius={6} style={{ flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                      {contact.name}
-                    </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
-                      {truncateId(contact.identity, 10, 6)}
-                    </div>
-                    {contact.note && (
-                      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: 2 }}>
-                        {contact.note}
-                      </div>
-                    )}
+              <motion.button
+                key={contact.id}
+                {...gesture.pressSubtle}
+                onClick={() => openEdit(contact)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "var(--space-3)",
+                  width: "100%", padding: "var(--space-3) var(--space-4)", background: "none",
+                  border: "none", cursor: "pointer", textAlign: "left",
+                  borderTop: i > 0 ? "1px solid var(--color-border-subtle)" : "none",
+                }}
+              >
+                <Identicon seed={contact.identity} size={32} radius={6} style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                    {contact.name}
                   </div>
-                  <AltArrowRight size={14} weight="Outline" style={{ color: "var(--color-text-disabled)", flexShrink: 0 }} />
-                </motion.button>
-              </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
+                    {truncateId(contact.identity, 10, 6)}
+                  </div>
+                </div>
+                {contact.note && (
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", flexShrink: 0 }}>
+                    {contact.note}
+                  </span>
+                )}
+              </motion.button>
             ))}
-          </Card>
+          </div>
         )}
 
         {/* Empty state */}
@@ -164,37 +184,7 @@ export default function SettingsContactsScreen() {
             <Button onClick={openAdd}>Add your first contact</Button>
           </div>
         )}
-
-        {/* Delete (when editing) */}
-        {editing && formOpen && (
-          <motion.button
-            {...gesture.pressSubtle}
-            onClick={() => { removeContact(editing.id); closeForm(); }}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
-              background: "transparent", border: "none", cursor: "pointer",
-              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-              fontWeight: 500, color: "var(--color-status-error)",
-            }}
-          >
-            <TrashBinMinimalistic size={14} weight="Outline" />
-            Delete contact
-          </motion.button>
-        )}
       </motion.div>
     </AppShell>
-  );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column", gap: "var(--space-3)",
-      background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
-      padding: "var(--space-4)",
-    }}>
-      {children}
-    </div>
   );
 }

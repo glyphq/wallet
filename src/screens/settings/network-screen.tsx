@@ -7,9 +7,7 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
 
-const CURRENCIES = ["USD", "EUR", "BTC"] as const;
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
-
 type TestStatus = "idle" | "testing" | "ok" | "error";
 
 export default function NetworkScreen() {
@@ -59,10 +57,8 @@ export default function NetworkScreen() {
   function resetToDefaults() {
     const defaultLive = "https://rpc.qubic.org/live/v1";
     const defaultQuery = "https://rpc.qubic.org/query/v1";
-    setLiveUrl(defaultLive);
-    setQueryUrl(defaultQuery);
-    setTestStatus("idle");
-    setTestError("");
+    setLiveUrl(defaultLive); setQueryUrl(defaultQuery);
+    setTestStatus("idle"); setTestError("");
     configureRpc(defaultLive, defaultQuery);
     updateSettings({ network: { liveApiUrl: defaultLive, queryApiUrl: defaultQuery, name: "mainnet" } });
     queryClient.invalidateQueries();
@@ -70,18 +66,20 @@ export default function NetworkScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", paddingBottom: "calc(var(--space-4) + 76px)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <SettingsPageHeader title="Network" />
 
         {/* RPC endpoints */}
-        <Card>
-          <CardHeader>RPC endpoints</CardHeader>
-          <Field label="Live API">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <SectionLabel>RPC endpoints</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <span style={labelStyle}>Live API</span>
             <input value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" style={inputStyle} />
-          </Field>
-          <Field label="Archive API">
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <span style={labelStyle}>Archive API</span>
             <input value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" style={inputStyle} />
-          </Field>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <motion.button
               {...gesture.press}
@@ -96,15 +94,11 @@ export default function NetworkScreen() {
             >
               {testStatus === "testing" ? "Testing..." : "Test & save"}
             </motion.button>
-            <motion.button
-              {...gesture.pressSubtle}
-              onClick={resetToDefaults}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                color: "var(--color-text-disabled)", padding: 0,
-              }}
-            >
+            <motion.button {...gesture.pressSubtle} onClick={resetToDefaults} style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+              color: "var(--color-text-disabled)", padding: 0,
+            }}>
               Reset
             </motion.button>
             {testStatus === "ok" && testTick !== null && (
@@ -121,37 +115,19 @@ export default function NetworkScreen() {
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
             Custom endpoints must use HTTPS
           </span>
-        </Card>
+        </div>
 
-        {/* Display currency */}
-        <Card>
-          <CardHeader>Display currency</CardHeader>
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
-            {CURRENCIES.map((c) => (
-              <motion.button
-                key={c}
-                {...gesture.pressSubtle}
-                onClick={() => updateSettings({ currency: c })}
-                style={{
-                  padding: "var(--space-2) var(--space-4)",
-                  background: c === settings.currency ? "var(--color-accent)" : "var(--color-bg-elevated)",
-                  color: c === settings.currency ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  border: "none", borderRadius: "var(--radius-pill)", cursor: "pointer",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                }}
-              >
-                {c}
-              </motion.button>
-            ))}
-          </div>
-        </Card>
+        {/* Divider */}
+        <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
 
         {/* Tick offset */}
-        <Card>
-          <CardHeader>Transaction tick offset</CardHeader>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: "-var(--space-1)" }}>
-            Target tick = current + offset. Higher values give more time to confirm.
-          </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <div>
+            <SectionLabel>Transaction tick offset</SectionLabel>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+              Target tick = current + offset. Higher values give more time to confirm.
+            </span>
+          </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
             {TICK_PRESETS.map((v) => (
               <motion.button
@@ -160,7 +136,7 @@ export default function NetworkScreen() {
                 onClick={() => updateSettings({ tickOffset: v })}
                 style={{
                   padding: "var(--space-2) var(--space-4)",
-                  background: v === settings.tickOffset ? "var(--color-accent)" : "var(--color-bg-elevated)",
+                  background: v === settings.tickOffset ? "var(--color-accent)" : "var(--color-bg-surface)",
                   color: v === settings.tickOffset ? "var(--color-bg-base)" : "var(--color-text-secondary)",
                   border: "none", borderRadius: "var(--radius-pill)", cursor: "pointer",
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
@@ -170,27 +146,25 @@ export default function NetworkScreen() {
               </motion.button>
             ))}
           </div>
-        </Card>
+        </div>
       </motion.div>
     </AppShell>
   );
 }
 
-/* ── Sub-components ─────────────────────────────────────────── */
+const labelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
+  fontWeight: 500, color: "var(--color-text-secondary)",
+};
 
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column", gap: "var(--space-3)",
-      background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
-      padding: "var(--space-4)",
-    }}>
-      {children}
-    </div>
-  );
-}
+const inputStyle: React.CSSProperties = {
+  background: "transparent", border: "none",
+  borderBottom: "1px solid var(--color-border-subtle)",
+  padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
+  fontSize: "var(--text-body)", color: "var(--color-text-primary)", outline: "none", width: "100%",
+};
 
-function CardHeader({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span style={{
       fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
@@ -201,21 +175,3 @@ function CardHeader({ children }: { children: React.ReactNode }) {
     </span>
   );
 }
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  background: "transparent", border: "none",
-  borderBottom: "1px solid var(--color-border-subtle)",
-  padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-label)", color: "var(--color-text-primary)", outline: "none", width: "100%",
-};
