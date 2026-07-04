@@ -6,7 +6,7 @@ import { router } from "@/router";
 import { useDeepLink } from "@/hooks/use-deep-link";
 import { usePayLink } from "@/hooks/use-pay-link";
 import { usePersistedStore } from "@/store/persisted";
-import { FONT_PAIRS, ACCENT_COLORS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
+import { FONT_PAIRS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
@@ -27,10 +27,9 @@ const queryClient = new QueryClient({
 });
 
 function useAppearance() {
-  const { fontPair, accentColor, customScheme } = usePersistedStore(
+  const { fontPair, customScheme } = usePersistedStore(
     useShallow((s) => ({
       fontPair: s.settings.fontPair,
-      accentColor: s.settings.accentColor,
       customScheme: s.settings.customScheme,
     }))
   );
@@ -44,10 +43,8 @@ function useAppearance() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const accent = ACCENT_COLORS.find((a) => a.id === accentColor) ?? ACCENT_COLORS[0];
-
     if (customScheme) {
-      const vars = deriveCustomScheme(customScheme.bg, customScheme.text, accent.hex);
+      const vars = deriveCustomScheme(customScheme.bg, customScheme.text);
       for (const [key, val] of Object.entries(vars)) {
         root.style.setProperty(key, val);
       }
@@ -55,10 +52,8 @@ function useAppearance() {
       for (const v of CUSTOM_SCHEME_VARS) {
         root.style.removeProperty(v);
       }
-      root.style.setProperty("--color-status-success", accent.hex);
-      root.style.setProperty("--color-accent", accent.hex);
     }
-  }, [accentColor, customScheme]);
+  }, [customScheme]);
 }
 
 function useRpcSync() {

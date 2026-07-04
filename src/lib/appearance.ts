@@ -120,13 +120,13 @@ export const CUSTOM_SCHEME_VARS = [
   "--color-status-error",
 ];
 
-/** Derives the full CSS variable map for a custom color scheme from `bg` and `text` base colors plus an accent hex. */
+/** Derives the full CSS variable map for a custom color scheme from `bg` and `text` base colors. */
 export function deriveCustomScheme(
   bg: string,
   text: string,
-  accentHex: string,
 ): Record<string, string> {
   const dark = isDarkColor(bg);
+  const accentHex = "#ccfcfb";
   return {
     "--color-bg-base":        bg,
     "--color-bg-surface":     mix(bg, text, 0.06),
