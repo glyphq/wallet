@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { Pen } from "@solar-icons/react";
 import { buildPayload, type PayloadField } from "@qubic.org/tx";
 import type { Identity } from "@qubic.org/types";
 import { AppShell } from "@/layouts/app-shell";
@@ -416,7 +416,7 @@ export default function SendManyScreen() {
           {effectivePriceBq !== undefined && (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button type="button" onClick={openPriceSheet} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                <Pencil size={10} color={isPriceOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)"} strokeWidth={2} />
+                <Pen size={10} color={isPriceOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)"} weight="Bold" />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", color: isPriceOverridden ? "var(--color-text-secondary)" : "var(--color-text-disabled)", opacity: isPriceOverridden ? 1 : 0.6 }}>
                   ${effectivePriceBq.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / bQU{isPriceOverridden ? " *" : ""}
                 </span>

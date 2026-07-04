@@ -6,7 +6,7 @@ import { Input } from "@/components/input";
 import { Modal } from "@/components/modal";
 import { usePersistedStore, type VaultColor, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { AlertTriangle } from "lucide-react";
+import { DangerTriangle } from "@solar-icons/react";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { parseAccountTags } from "@/lib/accounts";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -208,7 +208,7 @@ export default function WelcomeScreen() {
               borderRadius: "var(--radius-sharp)",
             }}
           >
-            <AlertTriangle size={14} color="var(--color-status-warning)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <DangerTriangle size={14} color="var(--color-status-warning)" weight="Linear" style={{ flexShrink: 0, marginTop: 2 }} />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.5 }}>
               A DAPP REQUEST IS WAITING. CREATE OR IMPORT A WALLET TO PROCEED.
             </span>
