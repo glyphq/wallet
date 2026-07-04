@@ -62,7 +62,7 @@ export default function SplashScreen() {
       >
         {/* Logo + wordmark */}
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "var(--space-3)" }}>
-          <img src="/icon.png" width={36} height={36} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
+          <img src="/icon.png" width={48} height={48} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
           <span style={{
             fontFamily: "var(--font-sans)",
             fontSize: "1.5rem",

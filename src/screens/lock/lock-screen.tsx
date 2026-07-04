@@ -307,7 +307,7 @@ export default function LockScreen() {
             {/* Logo */}
             <div style={{ textAlign: "center", marginBottom: "var(--space-2)" }}>
               <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-                <img src="/icon.png" width={24} height={24} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
+                <img src="/icon.png" width={32} height={32} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
                 <span style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "var(--text-headline)",
