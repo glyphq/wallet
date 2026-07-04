@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "@/styles/global.css";
 
-document.documentElement.setAttribute("data-theme", "dark");
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 window.addEventListener("error", (event) => {
   console.error("[glyph] window error:", event.error ?? event.message);
