@@ -106,11 +106,35 @@ Use [`@glyph-ecosystem/connect`](https://github.com/glyph-ecosystem/glyph.connec
 
 ## Build Locally
 
-**Requirements:** [Rust stable](https://rustup.rs/) · [Bun](https://bun.sh/) · [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/)
+**Requirements:** [rustup](https://rustup.rs/) · Bun 1.3.14 · platform webview/build tools
+
+The repository pins Rust 1.88.0. The pin is honored only when `cargo` and `rustc`
+come from rustup (`~/.cargo/bin`), not from an older distribution package.
+
+Ubuntu/Debian developers need only the native headers used by this project:
+
+```sh
+sudo apt update
+sudo apt install build-essential libwebkit2gtk-4.1-dev libdbus-1-dev
+```
+
+Building Debian, RPM, or AppImage release artifacts additionally requires
+`libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf`, `rpm`, and
+`xdg-utils`. The appindicator and librsvg headers are not needed by Glyph's
+Cargo feature graph, but Tauri's Linux bundler and GTK AppImage plugin consume
+their `pkg-config` metadata. The AppImage bundler also invokes `xdg-mime` from
+`xdg-utils`. `libssl-dev` and `libxdo-dev` are not required.
+
+The release workflow builds AppImage first, then deb/rpm with
+`configs/tauri-linux-packages.json`. It clears Tauri's generated AppDir before
+the AppImage build together with the intermediate `appimage_deb` staging tree.
+This prevents package-only file maps from leaking into the AppImage.
+The canonical patcher then installs AppStream metadata into the final AppImage
+before validation.
 
 ```sh
 git clone https://github.com/glyph-ecosystem/wallet
-cd glyph.app
+cd wallet
 bun install
 bun tauri dev        # dev server
 bun tauri build      # production bundle → src-tauri/target/release/bundle/
@@ -120,8 +144,45 @@ bun tauri build      # production bundle → src-tauri/target/release/bundle/
 ```sh
 bun run typecheck
 bun run test
-cargo check --manifest-path src-tauri/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml --locked
+bun run release:check
 ```
+
+### Linux runtime notes
+
+- Install `.deb` packages with `apt install ./Glyph_*.deb` so WebKitGTK, GTK,
+  D-Bus, and appindicator runtime dependencies are resolved automatically.
+- The AppImage bundles its WebKitGTK/GTK stack and WebKit subprocesses, while
+  deliberately using the host's GL/EGL drivers for graphics compatibility.
+- The main window does not depend on the system tray. On GNOME, displaying the
+  tray icon may require an AppIndicator extension.
+- Linux biometric unlock requires a working Secret Service provider such as
+  GNOME Keyring or KWallet. Without one, Glyph continues to start, disables
+  biometric availability, and uses a permission-restricted (`0600`) metadata
+  key file fallback.
+- WSLg is detected at startup and WebKit hardware compositing is disabled only
+  in that environment to avoid blank-window EGL failures.
+
+### Release pipeline
+
+Changesets creates the version PR and tag, then dispatches the isolated
+`Release` workflow. Platform artifacts upload to a draft release, Linux bundles
+are structurally validated, updater signatures are cross-checked against their
+artifacts, and the release is published only after the complete asset set and
+`latest.json` pass validation. The workflow can be retried manually for an
+existing tag while its release remains a draft, without moving the tag. A
+published release is treated as immutable. Tauri's Linux bundler helpers and
+the AppImage repacking tools are preseeded from immutable source revisions or
+release asset IDs and checksum-verified, so upstream changes cannot silently
+alter a release build.
+
+Publishing requires repository secrets for the Tauri updater key
+(`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`), Apple code
+signing and notarization (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
+`APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`), and Windows Authenticode
+(`WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`). Missing credentials,
+invalid native signatures, absent timestamps/notarization tickets, or invalid
+updater signatures stop the draft before publication.
 
 ## Stack
 
