@@ -75,9 +75,7 @@ fn store_key_file(secret: &str) -> Result<(), String> {
 fn legacy_dev_fallback_key_path() -> Result<PathBuf, String> {
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share"))
-        })
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share")))
         .ok_or_else(|| "HOME is not set".to_string())?;
     Ok(base.join("glyph").join("dev-store-key"))
 }
@@ -94,12 +92,12 @@ fn load_legacy_dev_fallback_key() -> Result<Option<String>, String> {
 
 #[cfg(target_os = "windows")]
 mod secret_store {
+    use windows::core::{PCWSTR, PWSTR};
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::Security::Credentials::{
         CredReadW, CredWriteW, CREDENTIALW, CRED_FLAGS, CRED_PERSIST_LOCAL_MACHINE,
         CRED_TYPE_GENERIC,
     };
-    use windows::core::{PCWSTR, PWSTR};
 
     fn to_wide(s: &str) -> Vec<u16> {
         s.encode_utf16().chain(std::iter::once(0)).collect()
@@ -141,10 +139,8 @@ mod secret_store {
             .map_err(|e| format!("CredReadW: {e}"))?;
 
             let cred = &*pcred;
-            let blob = std::slice::from_raw_parts(
-                cred.CredentialBlob,
-                cred.CredentialBlobSize as usize,
-            );
+            let blob =
+                std::slice::from_raw_parts(cred.CredentialBlob, cred.CredentialBlobSize as usize);
             let result = std::str::from_utf8(blob)
                 .map(|s| s.to_string())
                 .map_err(|e| format!("utf8: {e}"));
@@ -180,7 +176,6 @@ mod secret_store {
             .map_err(|e| format!("stored but unreadable: {e}"))?;
         Ok(())
     }
-
 }
 
 fn decode_store_key(encoded: &str, label: &str) -> Result<Key<Aes256Gcm>, String> {
@@ -230,7 +225,7 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
     }
 
     #[cfg(not(target_os = "windows"))]
-    match secret_store::load_optional(STORE_KEY_TARGET) {
+    let secure_store_available = match secret_store::load_optional(STORE_KEY_TARGET) {
         Ok(Some(encoded)) => {
             // Ensure file backup exists — the keyring may be volatile (mock backend,
             // session keyring, or secret-service daemon not persistent across reboots).
@@ -241,23 +236,49 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
             }
             return decode_store_key(&encoded, "stored metadata key");
         }
-        Ok(None) => {}
+        Ok(None) => true,
         Err(err) => {
-            eprintln!("[glyph] keyring read failed — falling back to file key (existing data may be unreadable if a new key is generated): {err}");
+            eprintln!(
+                "[glyph] platform credential store unavailable; using the permission-restricted file-key fallback: {err}"
+            );
+            false
         }
-    }
+    };
 
     if let Some(encoded) = load_store_key_file()? {
+        #[cfg(target_os = "windows")]
         return migrate_file_key_to_secure_store(&encoded);
+
+        #[cfg(not(target_os = "windows"))]
+        return if secure_store_available {
+            migrate_file_key_to_secure_store(&encoded)
+        } else {
+            decode_store_key(&encoded, "stored metadata key file")
+        };
     }
 
     #[cfg(all(debug_assertions, not(target_os = "windows")))]
     if let Some(encoded) = load_legacy_dev_fallback_key()? {
-        return migrate_file_key_to_secure_store(&encoded);
+        return if secure_store_available {
+            migrate_file_key_to_secure_store(&encoded)
+        } else {
+            store_key_file(&encoded)?;
+            decode_store_key(&encoded, "legacy metadata key file")
+        };
     }
 
     let key = generate_store_key();
     let encoded = URL_SAFE_NO_PAD.encode(key.as_slice());
+
+    #[cfg(not(target_os = "windows"))]
+    if !secure_store_available {
+        store_key_file(&encoded)?;
+        let mut bytes = [0u8; 32];
+        bytes.copy_from_slice(key.as_slice());
+        let _ = STORE_KEY_CACHE.set(bytes);
+        return Ok(key);
+    }
+
     match secret_store::store(STORE_KEY_TARGET, &encoded) {
         Ok(()) => {
             // On Windows the credential store is reliably persistent; clean up any leftover file.
@@ -294,7 +315,10 @@ fn encrypt_value(value: &str) -> Result<String, String> {
     payload.extend_from_slice(nonce.as_slice());
     payload.extend_from_slice(&ciphertext);
 
-    Ok(format!("{STORE_VALUE_PREFIX}{}", URL_SAFE_NO_PAD.encode(payload)))
+    Ok(format!(
+        "{STORE_VALUE_PREFIX}{}",
+        URL_SAFE_NO_PAD.encode(payload)
+    ))
 }
 
 fn decrypt_value(value: &str) -> Result<String, String> {

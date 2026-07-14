@@ -61,13 +61,27 @@ elif [ -n "${_APPIMAGE_PATH}" ]; then
 fi
 
 if [ "${_NEEDS_REGISTER}" = "1" ]; then
+  if [ "$(printf '%s' "${_APPIMAGE_PATH}" | wc -l)" -ne 0 ]; then
+    echo "[glyph] AppImage path contains a newline; skipping desktop registration" >&2
+    _NEEDS_REGISTER=0
+  fi
+fi
+
+if [ "${_NEEDS_REGISTER}" = "1" ]; then
   mkdir -p "${_APPS}"
   _SRC=$(find "${APPDIR}" -maxdepth 1 -name "*.desktop" | head -1)
   if [ -n "${_SRC}" ]; then
+    _ICON_NAME=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_SRC}")
+    [ -n "${_ICON_NAME}" ] || _ICON_NAME="Glyph"
     if [ -n "${_APPIMAGE_PATH}" ]; then
       # Rewrite Exec= to the AppImage file itself so the URL scheme handler
       # and app-menu launcher both work after the image is moved or renamed.
-      sed "s|^Exec=.*|Exec=\"${_APPIMAGE_PATH}\" %u|" "${_SRC}" > "${_DESKTOP}"
+      # The sed program must keep $ and backticks literal.
+      # shellcheck disable=SC2016
+      _DESKTOP_PATH=$(printf '%s' "${_APPIMAGE_PATH}" | sed 's/\\/\\\\/g; s/"/\\"/g; s/`/\\`/g; s/\$/\\$/g')
+      GLYPH_DESKTOP_EXEC="Exec=\"${_DESKTOP_PATH}\" %u" \
+        awk '/^Exec=/ { print ENVIRON["GLYPH_DESKTOP_EXEC"]; next } { print }' \
+        "${_SRC}" > "${_DESKTOP}"
     else
       cp "${_SRC}" "${_DESKTOP}"
     fi
@@ -76,7 +90,7 @@ if [ "${_NEEDS_REGISTER}" = "1" ]; then
     _ICON=$(find "${APPDIR}/usr/share/icons" -name "*.png" -path "*/${_SIZE}/*" 2>/dev/null | head -1)
     if [ -n "${_ICON}" ]; then
       mkdir -p "${HOME}/.local/share/icons/hicolor/${_SIZE}/apps"
-      cp "${_ICON}" "${HOME}/.local/share/icons/hicolor/${_SIZE}/apps/glyph.png"
+      cp "${_ICON}" "${HOME}/.local/share/icons/hicolor/${_SIZE}/apps/${_ICON_NAME}.png"
     fi
   done
   update-desktop-database "${_APPS}" 2>/dev/null || true
@@ -90,6 +104,8 @@ fi
 # GDK_PIXBUF_MODULE_FILE, GIO_EXTRA_MODULES, GSETTINGS_SCHEMA_DIR, etc.
 # Skipping them causes pixbuf loaders to fail, GTK themes to break, and
 # Wayland EGL crashes. They must run before the app binary is exec'd.
+# Hook paths are generated dynamically by linuxdeploy.
+# shellcheck disable=SC1090
 for _hook in "${APPDIR}/apprun-hooks/"*.sh; do
   [ -f "${_hook}" ] && source "${_hook}"
 done
