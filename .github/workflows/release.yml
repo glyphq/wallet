@@ -227,7 +227,8 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      - name: Validate macOS signing and notarization credentials
+      - name: Determine macOS signing mode
+        id: macos-signing
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -238,12 +239,24 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
-          for name in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD \
-            APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+          for name in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
             [[ -n "${!name}" ]] || { echo "$name is required" >&2; exit 1; }
           done
+          missing=()
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            [[ -n "${!name}" ]] || missing+=("$name")
+          done
+          if [[ ${#missing[@]} -eq 0 ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "MACOS_CODE_SIGNING_ENABLED=1" >> "$GITHUB_ENV"
+            echo "macOS code signing and notarization are enabled."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "MACOS_CODE_SIGNING_ENABLED=0" >> "$GITHUB_ENV"
+            printf '::notice::Skipping macOS code signing and notarization because these secrets are missing: %s\n' "${missing[*]}"
+          fi
 
-      - name: Build signed universal macOS bundles
+      - name: Build universal macOS bundles
         env:
           RUSTC_WRAPPER: sccache
           SCCACHE_GHA_ENABLED: "true"
@@ -254,7 +267,14 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: bun tauri build --target universal-apple-darwin --ci
+        run: |
+          set -euo pipefail
+          if [[ "$MACOS_CODE_SIGNING_ENABLED" == "1" ]]; then
+            bun tauri build --target universal-apple-darwin --ci
+          else
+            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
+            bun tauri build --target universal-apple-darwin --ci --config '{"bundle":{"macOS":{"signingIdentity":null}}}'
+          fi
 
       - name: Normalize versioned macOS updater artifact names
         env:
@@ -284,10 +304,14 @@ jobs:
           binary="${apps[0]}/Contents/MacOS/glyph-wallet"
           [[ -x "$binary" ]]
           lipo -verify_arch x86_64 arm64 "$binary"
-          codesign --verify --deep --strict --verbose=2 "${apps[0]}"
-          codesign --verify --deep --strict --verbose=2 "${images[0]}"
-          xcrun stapler validate "${images[0]}"
-          spctl --assess --type open --context context:primary-signature --verbose=4 "${images[0]}"
+          if [[ "$MACOS_CODE_SIGNING_ENABLED" == "1" ]]; then
+            codesign --verify --deep --strict --verbose=2 "${apps[0]}"
+            codesign --verify --deep --strict --verbose=2 "${images[0]}"
+            xcrun stapler validate "${images[0]}"
+            spctl --assess --type open --context context:primary-signature --verbose=4 "${images[0]}"
+          else
+            echo "::notice::Skipping macOS codesign, notarization, and Gatekeeper validation for unsigned release artifacts."
+          fi
           shasum -a 256 "${archives[0]}" "${images[0]}" | sed -E 's#  .*/#  #' > SHA256SUMS-macos.txt
 
       - name: Upload macOS assets to draft release
@@ -337,7 +361,8 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      - name: Import Windows code-signing certificate
+      - name: Determine Windows signing mode
+        id: windows-signing
         shell: pwsh
         env:
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
@@ -346,8 +371,18 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           $ErrorActionPreference = "Stop"
-          foreach ($name in @("WINDOWS_CERTIFICATE", "WINDOWS_CERTIFICATE_PASSWORD", "TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD")) {
-            if ([string]::IsNullOrWhiteSpace((Get-Item "Env:$name").Value)) { throw "$name is required" }
+          foreach ($name in @("TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD")) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "$name is required" }
+          }
+          $missing = @()
+          foreach ($name in @("WINDOWS_CERTIFICATE", "WINDOWS_CERTIFICATE_PASSWORD")) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { $missing += $name }
+          }
+          if ($missing.Count -gt 0) {
+            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "WINDOWS_CODE_SIGNING_ENABLED=0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "::notice::Skipping Windows Authenticode signing because these secrets are missing: $($missing -join ', ')"
+            exit 0
           }
           $pfxPath = Join-Path $env:RUNNER_TEMP "glyph-signing-certificate.pfx"
           [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
@@ -356,8 +391,10 @@ jobs:
           $certificate = $certificates | Where-Object HasPrivateKey | Select-Object -First 1
           if ($null -eq $certificate) { throw "Imported Windows certificate has no private key" }
           "WINDOWS_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WINDOWS_CODE_SIGNING_ENABLED=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Build signed NSIS installer
+      - name: Build NSIS installer
         shell: pwsh
         env:
           RUSTC_WRAPPER: sccache
@@ -366,16 +403,20 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           $ErrorActionPreference = "Stop"
-          $config = @{
-            bundle = @{
-              windows = @{
-                certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
-                digestAlgorithm = "sha256"
-                timestampUrl = "http://timestamp.digicert.com"
+          if ($env:WINDOWS_CODE_SIGNING_ENABLED -eq "1") {
+            $config = @{
+              bundle = @{
+                windows = @{
+                  certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
+                  digestAlgorithm = "sha256"
+                  timestampUrl = "http://timestamp.digicert.com"
+                }
               }
-            }
-          } | ConvertTo-Json -Compress -Depth 4
-          bun tauri build --bundles nsis --ci --config $config
+            } | ConvertTo-Json -Compress -Depth 4
+            bun tauri build --bundles nsis --ci --config $config
+          } else {
+            bun tauri build --bundles nsis --ci
+          }
 
       - name: Validate and upload Windows assets
         shell: pwsh
@@ -390,8 +431,12 @@ jobs:
           $signature = Get-Item "$($installer.FullName).sig"
           if ($installer.Length -le 0 -or $signature.Length -le 0) { throw "Installer or updater signature is empty" }
           $authenticode = Get-AuthenticodeSignature $installer.FullName
-          if ($authenticode.Status -ne "Valid") { throw "Installer Authenticode status is $($authenticode.Status): $($authenticode.StatusMessage)" }
-          if ($null -eq $authenticode.TimeStamperCertificate) { throw "Installer signature is not timestamped" }
+          if ($env:WINDOWS_CODE_SIGNING_ENABLED -eq "1") {
+            if ($authenticode.Status -ne "Valid") { throw "Installer Authenticode status is $($authenticode.Status): $($authenticode.StatusMessage)" }
+            if ($null -eq $authenticode.TimeStamperCertificate) { throw "Installer signature is not timestamped" }
+          } else {
+            Write-Host "::notice::Skipping Windows Authenticode validation for unsigned installer. Status: $($authenticode.Status)"
+          }
           $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
           "$hash  $($installer.Name)" | Set-Content -NoNewline SHA256SUMS-windows.txt
           gh release upload $env:RELEASE_TAG $installer.FullName $signature.FullName SHA256SUMS-windows.txt --clobber
