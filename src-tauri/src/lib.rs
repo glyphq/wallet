@@ -17,8 +17,31 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::Manager;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+#[cfg(target_os = "linux")]
+fn configure_linux_runtime() {
+    let is_wsl = std::env::var_os("WSL_DISTRO_NAME").is_some()
+        || std::fs::read_to_string("/proc/sys/kernel/osrelease")
+            .map(|release| release.to_ascii_lowercase().contains("microsoft"))
+            .unwrap_or(false);
+
+    if is_wsl {
+        // WSLg's virtual GPU can expose EGL while failing WebKitGTK's accelerated
+        // compositor initialization, producing a window with no rendered content.
+        // Keep this scoped to WSL so normal Linux desktops retain acceleration.
+        if std::env::var_os("WEBKIT_DISABLE_COMPOSITING_MODE").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        }
+        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    configure_linux_runtime();
+
     // When running as an AppImage, point TMPDIR at the AppImage's own directory so the
     // updater downloads to the same filesystem — avoids cross-device rename failures and
     // noexec-tmpfs permission errors that block in-place AppImage replacement.
@@ -62,7 +85,7 @@ pub fn run() {
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
             if let Some(icon) = app.default_window_icon().cloned() {
-                TrayIconBuilder::new()
+                if let Err(err) = TrayIconBuilder::new()
                     .icon(icon)
                     .menu(&menu)
                     .show_menu_on_left_click(false)
@@ -90,7 +113,14 @@ pub fn run() {
                             }
                         }
                     })
-                    .build(app)?;
+                    .build(app)
+                {
+                    // A missing appindicator host or tray implementation must not
+                    // prevent the primary wallet window from opening.
+                    eprintln!(
+                        "[glyph] tray icon unavailable; continuing without tray support: {err}"
+                    );
+                }
             } else {
                 eprintln!("[glyph] tray icon disabled: default window icon unavailable");
             }
