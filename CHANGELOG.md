@@ -1,5 +1,11 @@
 # glyph
 
+## 0.14.3
+
+### Patch Changes
+
+- 3076560: Harden Linux startup and packaging, preserve exact USD formatting for large balances, and make releases pinned, rerunnable, and artifact-validated before publication.
+
 ## 0.14.2
 
 ### Patch Changes
