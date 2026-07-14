@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.qubic.glyph</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>Glyph</name>
+  <summary>Self-custodial Qubic wallet with dApp deep linking</summary>
+  <developer id="com.qubic.glyph">
+    <name>Glyph Ecosystem</name>
+  </developer>
+  <description>
+    <p>
+      Glyph is a self-custodial desktop wallet for managing Qubic accounts,
+      signing transactions, and connecting securely to decentralized applications.
+    </p>
+  </description>
+  <launchable type="desktop-id">Glyph.desktop</launchable>
+  <provides>
+    <binary>glyph-wallet</binary>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <url type="homepage">https://github.com/glyph-ecosystem/wallet</url>
+  <url type="bugtracker">https://github.com/glyph-ecosystem/wallet/issues</url>
+</component>

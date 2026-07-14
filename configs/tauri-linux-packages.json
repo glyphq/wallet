@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/icons/hicolor/128x128/apps/Glyph.png": "icons/128x128.png",
+          "/usr/share/metainfo/com.qubic.glyph.metainfo.xml": "../packaging/linux/com.qubic.glyph.metainfo.xml"
+        }
+      },
+      "rpm": {
+        "files": {
+          "/usr/share/icons/hicolor/128x128/apps/Glyph.png": "icons/128x128.png",
+          "/usr/share/metainfo/com.qubic.glyph.metainfo.xml": "../packaging/linux/com.qubic.glyph.metainfo.xml"
+        }
+      }
+    }
+  }
+}

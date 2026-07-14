@@ -52,7 +52,15 @@
       }
     },
     "linux": {
+      "appimage": {
+        "files": {
+          "/usr/share/icons/hicolor/128x128/apps/Glyph.png": "icons/128x128.png"
+        }
+      },
       "deb": {
+        "depends": [
+          "libdbus-1-3"
+        ],
         "desktopTemplate": "linux/glyph.desktop.hbs"
       },
       "rpm": {
