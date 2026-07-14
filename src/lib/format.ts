@@ -49,14 +49,23 @@ export function formatQuCompact(amount: bigint | string | number): string {
 export function formatUsdFromQu(amount: bigint | string | number, price: number): string {
   try {
     if (!Number.isFinite(price) || price < 0) return "—";
-    // QU max supply (~2×10¹⁵) is well under Number.MAX_SAFE_INTEGER so the
-    // cast to float is lossless. BigInt integer-cents math loses all precision
-    // when price < $0.01 (e.g. QU at ~$4×10⁻⁷ rounds priceCents to 0).
-    const qu = Number(amount);
-    const usd = qu * price;
-    if (!Number.isFinite(usd)) return "—";
-    const decimals = usd < 1 ? 4 : 2;
-    return usd.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    const qu = typeof amount === "number" ? BigInt(Math.round(amount)) : BigInt(amount);
+    const [coefficient, exponentText = "0"] = price.toString().toLowerCase().split("e");
+    const [whole, fraction = ""] = coefficient.split(".");
+    const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/, "");
+    const exponent = Number(exponentText) - fraction.length;
+    const priceNumerator = BigInt(digits || "0") * (exponent > 0 ? 10n ** BigInt(exponent) : 1n);
+    const priceDenominator = exponent < 0 ? 10n ** BigInt(-exponent) : 1n;
+    const usdNumerator = qu * priceNumerator;
+    const sign = usdNumerator < 0n ? "-" : "";
+    const absoluteNumerator = usdNumerator < 0n ? -usdNumerator : usdNumerator;
+    const decimals = absoluteNumerator < priceDenominator ? 4 : 2;
+    const decimalScale = 10n ** BigInt(decimals);
+    const rounded = (absoluteNumerator * decimalScale + priceDenominator / 2n) / priceDenominator;
+    const usdWhole = rounded / decimalScale;
+    const usdFraction = (rounded % decimalScale).toString().padStart(decimals, "0");
+    const groupedWhole = usdWhole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return `${sign}${groupedWhole}.${usdFraction}`;
   } catch { return "—"; }
 }
 
