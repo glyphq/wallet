@@ -227,7 +227,8 @@ export default function WelcomeScreen() {
         encryptedData: finalEncryptedData,
       });
       setActiveVault(newVaultId);
-      unlock(newVaultId, unlockSecureSession(finalSeeds));
+      const wallets = await unlockSecureSession(finalSeeds);
+      unlock(newVaultId, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
       setImportError("Wrong password. Please check and try again.");

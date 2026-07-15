@@ -5,6 +5,7 @@ mod commands;
 mod deep_link;
 mod store_crypto;
 mod vault_crypto;
+mod session_crypto;
 
 use std::sync::atomic::Ordering;
 
@@ -12,6 +13,7 @@ use auto_lock::AutoLockState;
 use clipboard::ClipboardState;
 use commands::HideToTrayState;
 use deep_link::DeepLinkState;
+use session_crypto::NativeSessionState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
@@ -75,6 +77,7 @@ pub fn run() {
         .manage(DeepLinkState::default())
         .manage(ClipboardState::default())
         .manage(HideToTrayState::default())
+        .manage(NativeSessionState::default())
         .setup(|app| {
             deep_link::register_handler(&app.handle().clone());
             auto_lock::spawn_lock_watcher(app.handle().clone());
@@ -172,6 +175,9 @@ pub fn run() {
             store_crypto::decrypt_store_value,
             vault_crypto::encrypt_vault,
             vault_crypto::decrypt_vault,
+            session_crypto::store_session_seeds,
+            session_crypto::clear_session_seeds,
+            session_crypto::get_session_seed_for_signing,
             biometric::check_biometric_available,
             biometric::enable_biometric,
             biometric::biometric_unlock,

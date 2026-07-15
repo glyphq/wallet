@@ -107,7 +107,7 @@ export default function VaultsScreen() {
     setSwitchError("");
     try {
       const seeds = await unlockVault(switchingVault.encryptedData!, switchPassword);
-      const wallets = unlockSecureSession(seeds);
+      const wallets = await unlockSecureSession(seeds);
       unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
       touchVaultUnlocked(switchingVault.id);

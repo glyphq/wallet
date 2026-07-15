@@ -148,7 +148,8 @@ export default function CreateVaultScreen() {
       };
       addVault(vault);
       setActiveVault(vault.id);
-      unlock(vault.id, unlockSecureSession([seed]));
+      const wallets = await unlockSecureSession([seed]);
+      unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
       setLoading(false);

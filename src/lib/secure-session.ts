@@ -1,12 +1,11 @@
+import { invoke } from "@tauri-apps/api/core";
 import { deriveIdentityFromSeed, publicKeyFromSeed } from "@/lib/crypto";
 import type { Seed } from "@/lib/crypto";
 import type { SessionWallet } from "@/lib/session-wallet";
 
 const encoder = new TextEncoder();
 
-type SecretSeed = Uint8Array;
-
-export interface BuildTxParams {
+interface BuildTxParams {
   accountIndex: number;
   destination: string;
   amount: bigint;
@@ -20,8 +19,6 @@ export interface SignedTxResult {
   encoded: string;
   hash: string;
 }
-
-let activeSeeds: SecretSeed[] = [];
 
 // ── Worker management ──────────────────────────────────────────────────────────
 
@@ -59,9 +56,9 @@ function workerRequest<T>(message: Record<string, unknown>, transfer: Transferab
   });
 }
 
-// ── Seed management ────────────────────────────────────────────────────────────
+// ── Native session seed management ─────────────────────────────────────────────
 
-function seedToBytes(seed: Seed): SecretSeed {
+function seedToBytes(seed: Seed): Uint8Array {
   return encoder.encode(seed);
 }
 
@@ -69,28 +66,25 @@ function zeroBytes(bytes: Uint8Array) {
   bytes.fill(0);
 }
 
-function requireSeed(index: number): SecretSeed {
-  const seed = activeSeeds[index];
-  if (!seed) throw new Error("Unlocked account not available");
-  return seed;
+async function getSeedForSigning(accountIndex: number): Promise<Uint8Array> {
+  const seed = await invoke<string>("get_session_seed_for_signing", { accountIndex });
+  return seedToBytes(seed as Seed);
 }
 
-export function clearSecureSession() {
-  for (const seed of activeSeeds) zeroBytes(seed);
-  activeSeeds = [];
+export async function clearSecureSession() {
+  await invoke("clear_session_seeds").catch(() => {});
 }
 
-export function unlockSecureSession(seeds: Seed[]): SessionWallet[] {
-  clearSecureSession();
-  return seeds.map((seed) => {
-    const publicKey = publicKeyFromSeed(seed);
-    const identity = deriveIdentityFromSeed(seed);
-    activeSeeds.push(seedToBytes(seed));
-    return { identity, publicKey };
-  });
+export async function unlockSecureSession(seeds: Seed[]): Promise<SessionWallet[]> {
+  const wallets = seeds.map((seed) => ({
+    identity: deriveIdentityFromSeed(seed),
+    publicKey: publicKeyFromSeed(seed),
+  }));
+  await invoke("store_session_seeds", { seeds: seeds.map(String) });
+  return wallets;
 }
 
-// ── Signing — dispatched to the worker thread ──────────────────────────────────
+// ── Signing — seed material is fetched one-shot from native session ─────────────
 
 async function buildSignedTransaction({
   accountIndex,
@@ -101,17 +95,21 @@ async function buildSignedTransaction({
   inputType,
   payload,
 }: BuildTxParams): Promise<SignedTxResult> {
-  const seedCopy = requireSeed(accountIndex).slice(); // clone — don't detach activeSeeds entry
-  return workerRequest<SignedTxResult>({
-    type: "sign_tx",
-    seed: seedCopy,
-    destination,
-    amount: amount.toString(),
-    targetTick,
-    currentTick,
-    inputType,
-    payload,
-  }, [seedCopy.buffer]);
+  const seedCopy = await getSeedForSigning(accountIndex);
+  try {
+    return await workerRequest<SignedTxResult>({
+      type: "sign_tx",
+      seed: seedCopy,
+      destination,
+      amount: amount.toString(),
+      targetTick,
+      currentTick,
+      inputType,
+      payload,
+    }, [seedCopy.buffer, payload.buffer]);
+  } finally {
+    zeroBytes(seedCopy);
+  }
 }
 
 export function buildTransferFromSession(params: Omit<BuildTxParams, "inputType" | "payload">) {
@@ -123,15 +121,19 @@ export function buildScTransactionFromSession(params: BuildTxParams) {
 }
 
 export async function signMessageFromSession(accountIndex: number, messageBytes: Uint8Array) {
-  const seedCopy = requireSeed(accountIndex).slice(); // clone — don't detach activeSeeds entry
-  const result = await workerRequest<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>({
-    type: "sign_message",
-    seed: seedCopy,
-    messageBytes,
-  }, [seedCopy.buffer]);
-  return {
-    signature: new Uint8Array(result.signature),
-    publicKey: new Uint8Array(result.publicKey),
-    identity: result.identity,
-  };
+  const seedCopy = await getSeedForSigning(accountIndex);
+  try {
+    const result = await workerRequest<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>({
+      type: "sign_message",
+      seed: seedCopy,
+      messageBytes,
+    }, [seedCopy.buffer, messageBytes.buffer]);
+    return {
+      signature: new Uint8Array(result.signature),
+      publicKey: new Uint8Array(result.publicKey),
+      identity: result.identity,
+    };
+  } finally {
+    zeroBytes(seedCopy);
+  }
 }

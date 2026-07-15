@@ -163,7 +163,7 @@ export default function LockScreen() {
   async function finishUnlock(seeds: Seed[]) {
     if (!selected) return;
     setActiveVault(selected.id);
-    const wallets = unlockSecureSession(seeds);
+    const wallets = await unlockSecureSession(seeds);
     unlock(selected.id, wallets);
     touchVaultUnlocked(selected.id);
     recordAuditEvent({
