@@ -9,7 +9,6 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { truncateId, formatQu } from "@/lib/format";
-import { qk } from "@/lib/query-keys";
 
 /** Fires desktop notifications on balance increases, tx broadcast, confirmation, and expiry. Also removes resolved pending txs. */
 export function useNotificationTriggers() {
@@ -81,8 +80,8 @@ export function useNotificationTriggers() {
         if (changedIds.has(pending.source)) affected.add(pending.source);
         if (changedIds.has(pending.destination)) affected.add(pending.destination);
       }
-      for (const affectedIdentity of affected) {
-        queryClient.invalidateQueries({ queryKey: qk.txHistory(affectedIdentity) });
+      if (affected.size > 0) {
+        queryClient.invalidateQueries({ queryKey: ["tx-history"] });
       }
     }
 
@@ -146,7 +145,7 @@ export function useNotificationTriggers() {
   useEffect(() => {
     if (!lastProcessedTick || !identity) return;
     const hasReady = pendingTxs.some((p) => lastProcessedTick >= p.targetTick);
-    if (hasReady) queryClient.invalidateQueries({ queryKey: qk.txHistory(identity) });
+    if (hasReady) queryClient.invalidateQueries({ queryKey: ["tx-history"] });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
 
   // Confirmed: tx appeared in history — always remove; notify if enabled.

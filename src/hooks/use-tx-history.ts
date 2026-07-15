@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { qk } from "@/lib/query-keys";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import {
   dedupeTxRecords,
   isKnownContract,
@@ -43,10 +44,11 @@ export function useTxHistory(
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
   const pollingIntervalMs = usePollingIntervalMs();
+  const rpcIdentity = useRpcCacheIdentity("archive");
   const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo } = queryFilters;
 
   return useInfiniteQuery({
-    queryKey: [...qk.txHistory(identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo],
+    queryKey: [...qk.txHistory(rpcIdentity, identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo],
     queryFn: async ({ pageParam }) => {
       const offset = pageParam;
 

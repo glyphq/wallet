@@ -4,6 +4,7 @@ import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
+import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick, getRpcClient } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
@@ -135,9 +136,10 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const { data: tickInfo } = useTickInfo();
+  const rpcIdentity = useRpcCacheIdentity("live");
   const { data: balanceData } = useBalance(wallet?.identity ?? null);
   const { data: sendToManyFeeData } = useQuery({
-    queryKey: qk.qutilSendManyFee(),
+    queryKey: qk.qutilSendManyFee(rpcIdentity),
     queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
     staleTime: 60_000,
     enabled: request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,

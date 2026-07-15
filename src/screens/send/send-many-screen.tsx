@@ -15,6 +15,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
@@ -86,8 +87,9 @@ export default function SendManyScreen() {
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
   const watchOnly = isWatchOnlyVault(vault);
+  const rpcIdentity = useRpcCacheIdentity("live");
   const { data: feeData } = useQuery({
-    queryKey: qk.qutilSendManyFee(),
+    queryKey: qk.qutilSendManyFee(rpcIdentity),
     queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
     staleTime: 60_000,
   });

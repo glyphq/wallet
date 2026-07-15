@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { DONATION_IDENTITY, SPONSOR_NAMES, type SponsorTransparencyData } from "@/data/sponsors";
+import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { truncateId } from "@/lib/format";
 
 export const SPONSORS_QUERY_KEY = ["sponsors"] as const;
+export const sponsorsQueryKey = (rpcIdentity: string) => [...SPONSORS_QUERY_KEY, rpcIdentity] as const;
 
 const PAGE_SIZE = 100;
 
@@ -86,8 +88,10 @@ async function fetchSponsors(): Promise<SponsorTransparencyData> {
 }
 
 export function useSponsors() {
+  const rpcIdentity = useRpcCacheIdentity("archive");
+
   return useQuery({
-    queryKey: SPONSORS_QUERY_KEY,
+    queryKey: sponsorsQueryKey(rpcIdentity),
     queryFn: fetchSponsors,
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,

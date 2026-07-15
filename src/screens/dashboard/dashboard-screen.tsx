@@ -18,7 +18,6 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { Button } from "@/components/button";
 import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
-import { qk } from "@/lib/query-keys";
 import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 
@@ -230,7 +229,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
     const hasReady = pendingTxs.some(
       (p) => (p.source === identity || p.destination === identity) && lastProcessedTick >= p.targetTick,
     );
-    if (hasReady) queryClient.invalidateQueries({ queryKey: qk.txHistory(identity) });
+    if (hasReady) queryClient.invalidateQueries({ queryKey: ["tx-history"] });
   }, [lastProcessedTick, pendingTxs, identity, queryClient]);
 
   const myPending = pendingTxs
