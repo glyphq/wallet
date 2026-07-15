@@ -1,5 +1,6 @@
 use sha2::{Digest, Sha256};
-use tauri::command;
+use tauri::{command, State};
+use crate::session_crypto::NativeSessionState;
 use crate::vault_crypto::{decrypt_vault_data, VaultData};
 
 fn sha256_hex(data: &str) -> String {
@@ -301,8 +302,12 @@ pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password:
 }
 
 #[command]
-pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result<Vec<String>, String> {
-    tokio::task::spawn_blocking(move || {
+pub async fn biometric_unlock(
+    vault_id: String,
+    vault_data: VaultData,
+    session: State<'_, NativeSessionState>,
+) -> Result<usize, String> {
+    let seeds = tokio::task::spawn_blocking(move || {
         validate_vault_id(&vault_id)?;
         platform::authenticate("Unlock Glyph vault")?;
         let stored = cred_store::load(&vault_id)?;
@@ -319,7 +324,41 @@ pub async fn biometric_unlock(vault_id: String, vault_data: VaultData) -> Result
         decrypt_vault_data(&vault_data, &password)
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())??;
+
+    let count = seeds.len();
+    session.replace_seeds(seeds);
+    Ok(count)
+}
+
+#[command]
+pub async fn reveal_seed_with_biometric(
+    vault_id: String,
+    vault_data: VaultData,
+    account_index: usize,
+) -> Result<String, String> {
+    let seeds = tokio::task::spawn_blocking(move || {
+        validate_vault_id(&vault_id)?;
+        platform::authenticate("Reveal Glyph seed")?;
+        let stored = cred_store::load(&vault_id)?;
+        let (password, expected_hash) = match stored.split_once('\n') {
+            Some((pw, hash)) => (pw.to_string(), Some(hash.to_string())),
+            None => (stored, None),
+        };
+        if let Some(expected) = expected_hash {
+            if sha256_hex(&vault_data.ciphertext) != expected {
+                return Err("vault data integrity check failed".into());
+            }
+        }
+        decrypt_vault_data(&vault_data, &password)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    seeds
+        .get(account_index)
+        .cloned()
+        .ok_or_else(|| "missing seed".to_string())
 }
 
 #[command]

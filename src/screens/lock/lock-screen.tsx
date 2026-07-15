@@ -7,8 +7,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { presets, gesture } from "@/lib/animations";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault, toSeed } from "@/lib/vault";
+import { restoreSessionWalletsFromIdentities, unlockSecureSession } from "@/lib/secure-session";
+import { unlockVault } from "@/lib/vault";
 import { extractMessage, timeAgo } from "@/lib/format";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
@@ -231,11 +231,29 @@ export default function LockScreen() {
     setError("");
     if (!selected.encryptedData) { setError("Vault data missing. Try re-importing your vault."); setLoading(false); return; }
     try {
-      const seeds = await invoke<string[]>("biometric_unlock", {
+      const seedCount = await invoke<number>("biometric_unlock", {
         vaultId: selected.id,
         vaultData: selected.encryptedData,
       });
-      await finishUnlock(seeds.map(toSeed));
+      const identities = selected.accounts
+        .slice(0, seedCount)
+        .map((account) => account.identity)
+        .filter((identity): identity is string => !!identity);
+      unlock(selected.id, restoreSessionWalletsFromIdentities(identities));
+      setActiveVault(selected.id);
+      touchVaultUnlocked(selected.id);
+      recordAuditEvent({
+        kind: "unlock_succeeded",
+        status: "success",
+        title: "Vault unlocked",
+        detail: selected.name,
+        vaultId: selected.id,
+      });
+      _bioFailures = 0;
+      setPasswordAttempts(0);
+      setUnlocking(true);
+      await new Promise<void>((r) => setTimeout(r, 600));
+      navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
     } catch (e) {
       recordAuditEvent({
         kind: "unlock_failed",

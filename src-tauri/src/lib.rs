@@ -181,6 +181,7 @@ pub fn run() {
             biometric::check_biometric_available,
             biometric::enable_biometric,
             biometric::biometric_unlock,
+            biometric::reveal_seed_with_biometric,
             biometric::disable_biometric,
         ])
         .run(tauri::generate_context!())

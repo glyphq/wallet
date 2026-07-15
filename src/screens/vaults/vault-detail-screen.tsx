@@ -365,10 +365,13 @@ export default function VaultDetailScreen() {
           return;
         }
         const { invoke } = await import("@tauri-apps/api/core");
-        seeds = (await invoke<string[]>("biometric_unlock", {
+        const seed = await invoke<string>("reveal_seed_with_biometric", {
           vaultId: currentVault.id,
           vaultData: currentVault.encryptedData!,
-        })).map(toSeed);
+          accountIndex: revealingAccount.index,
+        });
+        seeds = [];
+        seeds[revealingAccount.index] = toSeed(seed);
       } else {
         seeds = await unlockVault(currentVault.encryptedData!, revealPassword);
       }
