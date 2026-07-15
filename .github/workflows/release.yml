@@ -303,7 +303,7 @@ jobs:
           [[ -s "${archives[0]}" && -s "${signatures[0]}" && -s "${images[0]}" ]]
           binary="${apps[0]}/Contents/MacOS/glyph-wallet"
           [[ -x "$binary" ]]
-          lipo -verify_arch x86_64 arm64 "$binary"
+          lipo "$binary" -verify_arch x86_64 arm64
           if [[ "$MACOS_CODE_SIGNING_ENABLED" == "1" ]]; then
             codesign --verify --deep --strict --verbose=2 "${apps[0]}"
             codesign --verify --deep --strict --verbose=2 "${images[0]}"
