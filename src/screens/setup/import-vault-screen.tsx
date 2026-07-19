@@ -43,7 +43,7 @@ const inputField: React.CSSProperties = {
   borderBottom: "1px solid var(--color-border-strong)",
   borderRadius: 0, padding: "var(--space-3) 0",
   fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-  color: "var(--color-text-display)", width: "100%", outline: "none",
+  color: "var(--color-text-display)", width: "100%",
 };
 
 const labelStyle: React.CSSProperties = {
