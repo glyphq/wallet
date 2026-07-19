@@ -16,6 +16,7 @@ import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { ScreenHeader } from "@/components/screen-header";
 import { recordAuditEvent } from "@/lib/audit-log";
+import { copyToClipboard } from "@/lib/clipboard";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { parseGlyphEnvelope, REQUEST_TYPE_LABEL } from "@/lib/request-schema";
 import {
@@ -41,12 +42,28 @@ export default function RequestScreen() {
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<RequestSuccessState | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle");
   const [expirySecsLeft, setExpirySecsLeft] = useState<number | null>(null);
   const expiryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const copyResetTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
   }, [pendingRequest, success, navigate]);
+
+  useEffect(() => {
+    setCopyStatus("idle");
+    if (copyResetTimeoutRef.current !== null) {
+      clearTimeout(copyResetTimeoutRef.current);
+      copyResetTimeoutRef.current = null;
+    }
+  }, [success?.callbackBody]);
+
+  useEffect(() => () => {
+    if (copyResetTimeoutRef.current !== null) {
+      clearTimeout(copyResetTimeoutRef.current);
+    }
+  }, []);
 
 
   // Auto-dismiss when the request's exp timestamp passes so the approval
@@ -140,6 +157,18 @@ export default function RequestScreen() {
     await saveFileDialog(`glyph-request-result-${Date.now()}.json`, successState.callbackBody);
   }
 
+  async function copyResult(text: string) {
+    const copied = await copyToClipboard(text);
+    setCopyStatus(copied ? "success" : "error");
+    if (copyResetTimeoutRef.current !== null) {
+      clearTimeout(copyResetTimeoutRef.current);
+    }
+    copyResetTimeoutRef.current = window.setTimeout(() => {
+      setCopyStatus("idle");
+      copyResetTimeoutRef.current = null;
+    }, 1500);
+  }
+
   // ── Success screen ──
   if (success) {
     const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Identity";
@@ -175,9 +204,9 @@ export default function RequestScreen() {
               shape="sharp"
               size="sm"
               style={{ width: "auto" }}
-              onClick={() => navigator.clipboard.writeText(success.callbackBody).catch(() => {})}
+              onClick={() => void copyResult(success.callbackBody)}
             >
-              Copy result
+              {copyStatus === "success" ? "Copied result" : copyStatus === "error" ? "Copy failed" : "Copy result"}
             </Button>
           ) : success.callbackStatus === "pending" ? (
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
@@ -199,8 +228,8 @@ export default function RequestScreen() {
                 <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => saveResult(success)}>
                   Save JSON
                 </Button>
-                <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => navigator.clipboard.writeText(success.callbackBody).catch(() => {})}>
-                  Copy JSON
+                <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => void copyResult(success.callbackBody)}>
+                  {copyStatus === "success" ? "Copied JSON" : copyStatus === "error" ? "Copy failed" : "Copy JSON"}
                 </Button>
               </div>
             </div>
