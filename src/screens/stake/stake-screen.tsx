@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import {
-  AltArrowLeft,
   AltArrowDown,
   ShieldWarning,
   MoneyBag,
@@ -298,32 +297,6 @@ export default function StakeScreen() {
     }
   }
 
-  function handleBack() {
-    if (step === "main" || step === "done" || step === "error") {
-      navigate("/dashboard");
-    } else {
-      setStep("main");
-      setUnlockTarget(null);
-    }
-  }
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button
-        type="button"
-        onClick={handleBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}
-      >
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Stake
-      </span>
-    </div>
-  );
-
   const entered = amountStr.trim() && /^\d+$/.test(amountStr.trim()) ? BigInt(amountStr.trim()) : 0n;
   const remaining = balance !== null ? balance - entered : null;
   const balanceOver = remaining !== null && remaining < 0n;
@@ -386,7 +359,7 @@ export default function StakeScreen() {
 
   if (step === "main") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           <TabBar />
@@ -726,7 +699,7 @@ export default function StakeScreen() {
 
   if (step === "confirm" && tab === "lock") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
@@ -794,7 +767,7 @@ export default function StakeScreen() {
     const epochsLeft = isEarly ? unlockEpoch - (currentEpoch ?? 0) : 0;
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
@@ -864,7 +837,7 @@ export default function StakeScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
           <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
@@ -889,7 +862,7 @@ export default function StakeScreen() {
 
   if (step === "done") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           {/* Status */}
@@ -932,7 +905,7 @@ export default function StakeScreen() {
   // ── Error ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />

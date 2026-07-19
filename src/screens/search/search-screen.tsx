@@ -3,7 +3,6 @@ import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { UserRounded, UsersGroupRounded, TransferHorizontal, Document, Magnifier } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Input } from "@/components/input";
 import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
@@ -187,10 +186,8 @@ export default function SearchScreen() {
     contracts: results.filter((result) => result.section === "contracts"),
   }), [results]);
 
-  const statusBar = <ScreenHeader title="Search" onBack={() => navigate("/dashboard")} />;
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <div style={{ position: "relative" }}>
         <Magnifier size={18} weight="Linear" style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
         <Input

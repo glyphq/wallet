@@ -5,6 +5,7 @@ import { pageTransition } from "@/lib/animations";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
+import { ScreenHeader } from "@/components/screen-header";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 
@@ -28,6 +29,25 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/settings", "settings"],
 ];
 
+const HEADER_TITLES: [string, string][] = [
+  ["/dashboard", "Dashboard"],
+  ["/vaults", "Vaults"],
+  ["/vaults/", "Vault details"],
+  ["/send/scheduled", "Scheduled transfers"],
+  ["/send-many", "Send many"],
+  ["/send", "Send"],
+  ["/burn", "Burn"],
+  ["/stake", "Stake"],
+  ["/payment-link", "Payment link"],
+  ["/receive", "Receive"],
+  ["/tx/", "Transaction"],
+  ["/analytics", "Analytics"],
+  ["/history", "History"],
+  ["/contacts", "Contacts"],
+  ["/search", "Search"],
+  ["/settings", "Settings"],
+];
+
 /** Instant transition — no animation for lateral navigation within a section. */
 const instantTransition = {
   initial: { opacity: 0 },
@@ -49,6 +69,15 @@ function activeTabFromPath(pathname: string): BottomNavTab {
   return "home";
 }
 
+function headerTitleFromPath(pathname: string): string | null {
+  for (const [prefix, title] of HEADER_TITLES) {
+    if (prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix || pathname.startsWith(prefix + "/")) {
+      return title;
+    }
+  }
+  return null;
+}
+
 /** Returns true when both paths are within the same top-level section. */
 function isSameSection(a: string, b: string): boolean {
   if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
@@ -68,6 +97,8 @@ function LayoutShell() {
   const show = showChrome(cur);
   const showNav = show;
   const sheetsOpen = useSheetsOpen();
+  const routeTitle = headerTitleFromPath(cur);
+  const resolvedHeader = header ?? (routeTitle ? <ScreenHeader title={routeTitle} /> : null);
 
   const prevRef = useRef(cur);
   const prev = prevRef.current;
@@ -79,7 +110,7 @@ function LayoutShell() {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* ── Static header ── */}
-      {show && header && (
+      {show && resolvedHeader && (
         <header
           style={{
             flexShrink: 0,
@@ -90,7 +121,7 @@ function LayoutShell() {
             background: "var(--color-bg-base)",
           }}
         >
-          {header}
+          {resolvedHeader}
         </header>
       )}
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowRightUp, QrCode, AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic } from "@solar-icons/react";
+import { ArrowRightUp, QrCode, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
@@ -300,21 +300,13 @@ export default function SendScreen() {
   // ── Input step (numpad layout) ───────────────────────────────────────────
 
   if (step === "input") {
-    const header = (
-      <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-        <button type="button" onClick={() => navigate("/dashboard")}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-          <AltArrowLeft size={20} />
-        </button>
-        <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-          Send from {accountName}
-        </span>
-      </div>
-    );
-
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "hidden" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "hidden" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+
+        <div style={{ display: "flex", justifyContent: "center", paddingTop: "var(--space-3)" }}>
+          <span style={{ ...labelStyle, color: "var(--color-text-tertiary)" }}>From {accountName}</span>
+        </div>
 
         {/* Amount display */}
         <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: "var(--space-1)", position: "relative", overflow: "hidden", width: "100%" }}>
@@ -481,18 +473,6 @@ export default function SendScreen() {
 
   // ── Review step ──────────────────────────────────────────────────────────
 
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => step === "review" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-        {step === "review" ? "Review" : step === "done" ? "Sent" : step === "sending" ? "Sending" : "Error"}
-      </span>
-    </div>
-  );
-
   if (step === "review") {
     const cardStyle: React.CSSProperties = {
       background: "var(--color-bg-surface)",
@@ -506,7 +486,7 @@ export default function SendScreen() {
     const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—";
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Amount */}
@@ -621,7 +601,7 @@ export default function SendScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
         <div style={{
           width: 48, height: 48, position: "relative",
@@ -660,7 +640,7 @@ export default function SendScreen() {
     const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-disabled)";
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
@@ -762,7 +742,7 @@ export default function SendScreen() {
   // ── Error ────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{
         width: 48, height: 48, borderRadius: "50%",

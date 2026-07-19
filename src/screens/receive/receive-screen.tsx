@@ -3,8 +3,9 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { AltArrowLeft, Copy, CheckCircle, LinkRound } from "@solar-icons/react";
+import { Copy, CheckCircle, LinkRound } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
@@ -39,45 +40,36 @@ export default function ReceiveScreen() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Your address
-      </span>
-      <button type="button" onClick={() => navigate("/payment-link")}
-        aria-label="Payment link"
-        style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <LinkRound size={20} />
-      </button>
-    </div>
-  );
-
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div
         {...stepMotion}
-        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}
+        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-5)" }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          {identity && <Identicon seed={identity} size={36} radius={6} />}
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>
-              {accountName}
-            </span>
-            {identity && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {truncateId(identity, 10, 10)}
-              </span>
-            )}
-          </div>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button variant="secondary" size="sm" shape="sharp" onClick={() => navigate("/payment-link")}>
+            <LinkRound size={16} aria-hidden="true" />
+            Payment link
+          </Button>
         </div>
 
-        {identity ? (
-          <>
+        <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            {identity && <Identicon seed={identity} size={36} radius={6} />}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>
+                {accountName}
+              </span>
+              {identity && (
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
+                  {truncateId(identity, 10, 10)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {identity ? (
+            <>
             <div
               role={hideBalances ? "button" : undefined}
               tabIndex={hideBalances ? 0 : undefined}
@@ -145,17 +137,18 @@ export default function ReceiveScreen() {
                 </>
               )}
             </button>
-          </>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-              No account selected
-            </span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-              Select an account from the dashboard to view your receive address
-            </span>
-          </div>
-        )}
+            </>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
+                No account selected
+              </span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+                Select an account from the dashboard to view your receive address
+              </span>
+            </div>
+          )}
+        </div>
       </motion.div>
     </AppShell>
   );

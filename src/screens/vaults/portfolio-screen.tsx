@@ -23,7 +23,7 @@ export default function PortfolioScreen() {
 
   if (!vault) {
     return (
-      <AppShell statusBar={<ScreenHeader title="Portfolio" onBack={() => navigate("/vaults")} />}>
+      <AppShell>
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
           [vault not found]
         </div>

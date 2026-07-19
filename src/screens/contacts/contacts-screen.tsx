@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
@@ -14,8 +13,6 @@ import { Identicon } from "@/components/identicon";
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-
   const contacts = usePersistedStore((s) => s.contacts);
   const addContact = usePersistedStore((s) => s.addContact);
   const updateContact = usePersistedStore((s) => s.updateContact);
@@ -100,22 +97,20 @@ export default function ContactsScreen() {
     [contacts, search],
   );
 
-  const statusBar = (
-    <ScreenHeader
-      title="Contacts"
-      onBack={() => navigate(pathname === "/settings/contacts" ? "/settings" : "/dashboard")}
-      action={<button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", padding: 0 }}>+ Add</button>}
-    />
-  );
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name or identity"
-        style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}
-      />
+    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end" }}>
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or identity"
+          style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}
+          containerStyle={{ flex: 1 }}
+        />
+        <Button variant="secondary" shape="sharp" size="sm" onClick={openAdd} style={{ flexShrink: 0 }}>
+          Add contact
+        </Button>
+      </div>
 
       {filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>

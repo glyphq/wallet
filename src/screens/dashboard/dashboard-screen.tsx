@@ -6,7 +6,6 @@ import { AltArrowDown, Eye, EyeClosed, Bell, MenuDots, ArrowRightUp, QrCode, Shi
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
-import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -401,11 +400,11 @@ export default function DashboardScreen() {
 
   const hasAlerts = txAlerts.length > 0;
 
-  const statusBar = (
-    <ScreenHeader
-      title="Dashboard"
-      action={
-        <>
+  return (
+    <AppShell contentStyle={{ padding: "var(--space-4)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-1)" }}>
           <IconButton
             label={settings.hideBalances ? "Show balances" : "Hide balances"}
             onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
@@ -418,14 +417,7 @@ export default function DashboardScreen() {
           <IconButton onClick={() => navigate("/settings/notifications")} label="Notifications" badge={hasAlerts}>
             <Bell size={18} weight="Linear" />
           </IconButton>
-        </>
-      }
-    />
-  );
-
-  return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        </div>
 
         {/* Hero: account + balance */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>

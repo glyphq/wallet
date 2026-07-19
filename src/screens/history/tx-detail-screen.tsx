@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning } from "@solar-icons/react";
+import { UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
@@ -98,18 +98,9 @@ export default function TxDetailScreen() {
 
   const isPendingTx = (d: TxHistoryItem | PendingTx): d is PendingTx => "broadcastAt" in d;
 
-  const statusBar = (
-    <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => navigate(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "var(--space-2) 0", display: "flex", alignItems: "center", flexShrink: 0 }}>
-        <AltArrowLeft size={20} style={{ color: "var(--color-text-primary)" }} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)", whiteSpace: "nowrap", pointerEvents: "none" }}>Transaction</span>
-    </div>
-  );
-
   if (!detail || !hash) {
     return (
-      <AppShell statusBar={statusBar} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-12) 0", gap: "var(--space-3)" }}>
           <ShieldWarning size={32} style={{ color: "var(--color-text-disabled)" }} />
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
@@ -136,7 +127,7 @@ export default function TxDetailScreen() {
       : truncateId(detail.destination ?? "—");
 
     return (
-      <AppShell statusBar={statusBar} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {/* Amount + Status */}
           <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
@@ -200,7 +191,7 @@ export default function TxDetailScreen() {
     : truncateId(detail.destination ?? "—");
 
   return (
-    <AppShell statusBar={statusBar} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
       <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         {/* Amount + Status */}
         <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
