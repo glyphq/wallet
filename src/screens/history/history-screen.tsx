@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
@@ -26,6 +26,9 @@ import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 type TxFilters = TxQueryFilters;
 
 const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS };
+
+const INITIAL_VISIBLE_HISTORY_ROWS = 150;
+const HISTORY_RENDER_PAGE = 100;
 
 // Draft state for text inputs — committed on APPLY
 type DraftInputs = {
@@ -178,6 +181,7 @@ export default function HistoryScreen() {
   const [memoDateFrom, setMemoDateFrom] = useState("");
   const [memoDateTo, setMemoDateTo] = useState("");
   const [memoMinAmount, setMemoMinAmount] = useState("");
+  const [visibleConfirmedCount, setVisibleConfirmedCount] = useState(INITIAL_VISIBLE_HISTORY_ROWS);
 
   function exportMemos() {
     let entries = Object.entries(txMemos).filter(([, v]) => v.trim());
@@ -219,17 +223,9 @@ export default function HistoryScreen() {
   // Sync draft when sheet opens so edits start from current values
   useEffect(() => { if (filterOpen) setDraft(toDraft(filters)); }, [filterOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Infinite scroll sentinel
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
-      { rootMargin: "100px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    setVisibleConfirmedCount(INITIAL_VISIBLE_HISTORY_ROWS);
+  }, [identity, filters.direction, filters.type, filters.minAmount, filters.maxAmount, filters.dateFrom, filters.dateTo, filters.tickFrom, filters.tickTo, groupByCounterparty]);
 
   function applyAndClose() {
     setFilters((f) => ({
@@ -244,21 +240,58 @@ export default function HistoryScreen() {
     setFilterOpen(false);
   }
 
-  const allTxs = data?.pages.flat() ?? [];
-  const fetchedHashes = new Set(allTxs.map((t) => t.hash));
-  const myPending = pendingTxs.filter((p) => p.source === identity || p.destination === identity);
-  const visiblePending = myPending.filter((p) => !fetchedHashes.has(p.hash));
+  const allTxs = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const fetchedHashes = useMemo(() => new Set(allTxs.map((t) => t.hash)), [allTxs]);
+  const myPending = useMemo(
+    () => pendingTxs.filter((p) => p.source === identity || p.destination === identity),
+    [identity, pendingTxs],
+  );
+  const visiblePending = useMemo(
+    () => myPending.filter((p) => !fetchedHashes.has(p.hash)),
+    [fetchedHashes, myPending],
+  );
 
-  const filteredPending = visiblePending.filter((p) => {
-    if (filters.direction === "in") return p.destination === identity;
-    if (filters.direction === "out") return p.source === identity;
-    return true;
-  });
+  const filteredPending = useMemo(
+    () => visiblePending.filter((p) => {
+      if (filters.direction === "in") return p.destination === identity;
+      if (filters.direction === "out") return p.source === identity;
+      return true;
+    }),
+    [filters.direction, identity, visiblePending],
+  );
 
   const filteredTxs = allTxs;
-  const pendingHashes = new Set(pendingTxs.map((p) => p.hash));
+  const pendingHashes = useMemo(() => new Set(pendingTxs.map((p) => p.hash)), [pendingTxs]);
+  const visibleConfirmedTxs = useMemo(
+    () => filteredTxs.slice(0, visibleConfirmedCount),
+    [filteredTxs, visibleConfirmedCount],
+  );
+  const visibleSections = useMemo(
+    () => groupTxsByDate(visibleConfirmedTxs),
+    [visibleConfirmedTxs],
+  );
+  const hasHiddenLoadedTxs = filteredTxs.length > visibleConfirmedCount;
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
+
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || hasHiddenLoadedTxs || !hasNextPage || isFetchingNextPage) return;
+        fetchNextPage();
+      },
+      { rootMargin: "100px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasHiddenLoadedTxs, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  function showOlderLoadedTxs() {
+    setVisibleConfirmedCount((count) => Math.min(filteredTxs.length, count + HISTORY_RENDER_PAGE));
+  }
 
   // ── Active filter chips ───────────────────────────────────────────────────
   const chips: { label: string; clear: () => void }[] = [];
@@ -407,7 +440,7 @@ export default function HistoryScreen() {
 
       {/* Transaction rows */}
       {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={filteredTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
+        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
       {!isLoading && !isError && !groupByCounterparty && (
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -440,7 +473,7 @@ export default function HistoryScreen() {
             );
           })}
 
-          {groupTxsByDate(filteredTxs).map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label}>
               <div style={{
                 fontFamily: "var(--font-sans)",
@@ -496,6 +529,17 @@ export default function HistoryScreen() {
         </div>
       )}
 
+      {!isLoading && !isError && hasHiddenLoadedTxs && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-5) 0" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+            Showing {visibleConfirmedTxs.length} of {filteredTxs.length} loaded transactions
+          </div>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={showOlderLoadedTxs}>
+            Show older activity
+          </Button>
+        </div>
+      )}
+
       {/* Infinite scroll */}
       <div ref={sentinelRef} style={{ height: 1 }} />
       {isFetchingNextPage && (
@@ -511,7 +555,7 @@ export default function HistoryScreen() {
           ))}
         </div>
       )}
-      {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
+      {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
 
       </motion.div>
       </div>{/* end main content column */}
