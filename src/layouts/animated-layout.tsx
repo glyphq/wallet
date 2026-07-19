@@ -12,9 +12,8 @@ import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 
 const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
 
-const HIDDEN_NAV_ROUTES = new Set(["/send", "/send-many", "/burn", "/earn"]);
-
 const NAV_PREFIXES: [string, BottomNavTab][] = [
+
   ["/dashboard", "home"],
   ["/send", "send"],
   ["/send-many", "send"],
@@ -69,7 +68,7 @@ function LayoutShell() {
   const countdown = useLockCountdown();
   const cur = location.pathname;
   const show = showChrome(cur);
-  const showNav = show && !HIDDEN_NAV_ROUTES.has(cur);
+  const showNav = show;
   const sheetsOpen = useSheetsOpen();
 
   const prevRef = useRef(cur);
@@ -138,8 +137,7 @@ function LayoutShell() {
             flexShrink: 0,
             display: "flex",
             justifyContent: "center",
-            padding: `0 var(--screen-padding) var(--safe-bottom-space)`,
-            borderTop: "1px solid var(--color-border-subtle)",
+            padding: `var(--space-2) var(--screen-padding) var(--safe-bottom-space)`,
             background: "var(--color-bg-base)",
             zIndex: "var(--z-nav)",
           }}

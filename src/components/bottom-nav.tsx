@@ -21,12 +21,12 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "var(--space-2)",
+        gap: "var(--space-1)",
         width: "100%",
         maxWidth: 420,
         minHeight: "var(--height-nav)",
         boxSizing: "border-box",
-        padding: "var(--space-2) 0 0",
+        padding: 0,
         background: "var(--color-bg-base)",
       }}
     >
@@ -47,33 +47,45 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
               alignItems: "center",
               justifyContent: "center",
               gap: "var(--space-1)",
-              minHeight: 52,
-              padding: "var(--space-2) var(--space-1)",
-              background: isActive ? "var(--color-accent-muted)" : "transparent",
+              minHeight: 58,
+              padding: "var(--space-3) var(--space-1)",
+              background: "transparent",
               borderRadius: "var(--radius-control)",
               border: "none",
               cursor: "pointer",
-              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out)",
+              color: isActive ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+              transition: "color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out)",
               minWidth: 44,
             }}
             onMouseEnter={(e) => {
               if (!isActive) {
                 e.currentTarget.style.color = "var(--color-text-primary)";
-                e.currentTarget.style.background = "var(--color-bg-surface)";
+                e.currentTarget.style.transform = "translateY(-1px)";
               }
             }}
             onMouseLeave={(e) => {
               if (!isActive) {
                 e.currentTarget.style.color = "var(--color-text-secondary)";
-                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.transform = "translateY(0)";
               }
             }}
           >
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 0,
+                width: 24,
+                height: 2,
+                borderRadius: 999,
+                background: isActive ? "var(--color-accent)" : "transparent",
+                transition: "background-color var(--duration-fast) var(--ease-out)",
+              }}
+            />
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon size={22} weight={isActive ? "BoldDuotone" : "Linear"} aria-hidden="true" />
+              <Icon size={24} weight={isActive ? "BoldDuotone" : "Linear"} aria-hidden="true" />
             </span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: isActive ? 600 : 500, lineHeight: 1, whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: isActive ? 600 : 500, lineHeight: 1.1, whiteSpace: "nowrap" }}>
               {label}
             </span>
           </button>
