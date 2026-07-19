@@ -31,6 +31,7 @@ export default function VaultsScreen() {
   const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
   const unlock = useSessionStore((s) => s.unlock);
   const sessionLock = useSessionStore((s) => s.lock);
+  const resetSessionForSetup = useSessionStore((s) => s.resetForSetup);
 
   // Action sheet
   const [actionVault, setActionVault] = useState<VaultMeta | null>(null);
@@ -168,7 +169,7 @@ export default function VaultsScreen() {
       const remaining = usePersistedStore.getState().vaults;
       if (remaining.length === 0) {
         setDeletingVault(null);
-        sessionLock();
+        resetSessionForSetup();
         navigate("/setup", { replace: true });
         return;
       }
