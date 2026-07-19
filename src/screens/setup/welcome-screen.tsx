@@ -111,6 +111,7 @@ export default function WelcomeScreen() {
   const [importData, setImportData] = useState<ImportFileData | null>(null);
   const [importPw, setImportPw] = useState("");
   const [importError, setImportError] = useState("");
+  const [importFileError, setImportFileError] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [watchOpen, setWatchOpen] = useState(false);
@@ -142,6 +143,7 @@ export default function WelcomeScreen() {
   }
 
   function openFilePicker() {
+    setImportFileError("");
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json,application/json";
@@ -178,7 +180,10 @@ export default function WelcomeScreen() {
         setImportPw("");
         setImportError("");
       } catch {
-        // malformed or wrong file type — ignore
+        setImportData(null);
+        setImportPw("");
+        setImportError("");
+        setImportFileError("Invalid or unsupported vault file. Choose a Glyph export and try again.");
       }
     };
     input.click();
@@ -215,6 +220,8 @@ export default function WelcomeScreen() {
         finalEncryptedData = await createVault(importPw, finalSeeds);
       }
 
+      const wallets = await unlockSecureSession(finalSeeds);
+
       const newVaultId = newId();
       addVault({
         id: newVaultId,
@@ -227,11 +234,10 @@ export default function WelcomeScreen() {
         encryptedData: finalEncryptedData,
       });
       setActiveVault(newVaultId);
-      const wallets = await unlockSecureSession(finalSeeds);
       unlock(newVaultId, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setImportError("Wrong password. Please check and try again.");
+      setImportError("Could not import this vault. Check the password and try again.");
     } finally {
       setImportLoading(false);
     }
@@ -329,6 +335,19 @@ export default function WelcomeScreen() {
             <Document size={16} weight="Outline" />
             Import vault file
           </motion.button>
+          {importFileError && (
+            <div
+              role="alert"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-caption)",
+                color: "var(--color-status-error)",
+                lineHeight: 1.5,
+              }}
+            >
+              {importFileError}
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -405,7 +424,7 @@ export default function WelcomeScreen() {
               style={inputField}
             />
             {importError && (
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
+              <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
                 {importError}
               </span>
             )}
