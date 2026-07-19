@@ -89,7 +89,6 @@ function LayoutShell() {
             display: "flex",
             alignItems: "center",
             padding: "0 var(--screen-padding)",
-            borderBottom: "1px solid var(--color-border-default)",
             background: "var(--color-bg-base)",
           }}
         >

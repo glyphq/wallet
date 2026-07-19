@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
 import { animate } from "motion/react";
-import { gesture } from "@/lib/animations";
 import { AltArrowDown, Eye, EyeClosed, Bell, MenuDots, ArrowRightUp, QrCode, ShieldCheck, ShieldWarning, ShieldCross } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
+import { IconButton } from "@/components/icon-button";
 import { Identicon } from "@/components/identicon";
+import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -350,50 +350,7 @@ const HEALTH_CONFIG: Record<string, { color: string; Icon: typeof ShieldCheck }>
 
 function HealthBadge({ health }: { health: string }) {
   const cfg = HEALTH_CONFIG[health] ?? HEALTH_CONFIG.offline;
-  return (
-    <div title={health} style={{ display: "flex" }}>
-      <cfg.Icon size={12} color={cfg.color} />
-    </div>
-  );
-}
-
-// ── Header icon button ───────────────────────────────────────────────────────
-
-function HeaderIcon({ onClick, label, children, badge }: {
-  onClick: () => void;
-  label: string;
-  children: React.ReactNode;
-  badge?: boolean;
-}) {
-  return (
-    <motion.button
-      {...gesture.pressSubtle}
-      onClick={onClick}
-      aria-label={label}
-      style={{
-        position: "relative",
-        width: 32,
-        height: 32,
-        borderRadius: "50%",
-        background: "var(--color-bg-surface)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "none",
-        cursor: "pointer",
-        color: "var(--color-text-secondary)",
-      }}
-    >
-      {children}
-      {badge && (
-        <span style={{
-          position: "absolute", top: 5, right: 5,
-          width: 6, height: 6, borderRadius: "50%",
-          background: "var(--color-status-error)",
-        }} />
-      )}
-    </motion.button>
-  );
+  return <cfg.Icon size={16} color={cfg.color} aria-hidden="true" />;
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
@@ -446,47 +403,40 @@ export default function DashboardScreen() {
   const hasAlerts = txAlerts.length > 0;
 
   const statusBar = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "var(--space-2)" }}>
-      {/* Left: vault identicon + name */}
-      <button
-        onClick={() => navigate("/vaults")}
-        aria-label={`Switch vault — ${vault?.name ?? "none"}`}
-        style={{
-          display: "flex", alignItems: "center", gap: "var(--space-2)",
-          background: "none", border: "none", cursor: "pointer", padding: 0,
-        }}
-      >
-        {vault ? (
-          <Identicon seed={`${vault.id}:${vault.color}`} size={26} radius={13} />
-        ) : (
-          <div style={{ width: 26, height: 26, borderRadius: 13, background: "var(--color-bg-elevated)" }} />
-        )}
-        <span style={{
-          fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-          color: "var(--color-text-secondary)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        }}>
-          {vault?.name ?? "No vault"}
-        </span>
-        <HealthBadge health={health} />
-      </button>
-
-      {/* Right: eye + bell */}
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginLeft: "auto" }}>
-        <HeaderIcon
-          onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
-          label={settings.hideBalances ? "Show balances" : "Hide balances"}
+    <ScreenHeader
+      title="Dashboard"
+      eyebrow={vault?.name ?? "No vault"}
+      leading={
+        <button
+          type="button"
+          onClick={() => navigate("/vaults")}
+          aria-label={`Open vaults. Current vault: ${vault?.name ?? "none"}`}
+          style={{ background: "transparent", border: "none", padding: 0, display: "flex", cursor: "pointer" }}
         >
-          {settings.hideBalances ? <EyeClosed size={15} weight="Linear" /> : <Eye size={15} weight="Linear" />}
-        </HeaderIcon>
-        <HeaderIcon
-          onClick={() => navigate("/settings/notifications")}
-          label="Notifications"
-          badge={hasAlerts}
-        >
-          <Bell size={15} weight="Linear" />
-        </HeaderIcon>
-      </div>
-    </div>
+          {vault ? (
+            <Identicon seed={`${vault.id}:${vault.color}`} size={30} radius={9} />
+          ) : (
+            <div style={{ width: 30, height: 30, borderRadius: 9, background: "var(--color-bg-elevated)" }} />
+          )}
+        </button>
+      }
+      action={
+        <>
+          <IconButton label={`Network health: ${health}`} onClick={() => navigate("/settings/network")}>
+            <HealthBadge health={health} />
+          </IconButton>
+          <IconButton
+            label={settings.hideBalances ? "Show balances" : "Hide balances"}
+            onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
+          >
+            {settings.hideBalances ? <EyeClosed size={18} weight="Linear" /> : <Eye size={18} weight="Linear" />}
+          </IconButton>
+          <IconButton onClick={() => navigate("/settings/notifications")} label="Notifications" badge={hasAlerts}>
+            <Bell size={18} weight="Linear" />
+          </IconButton>
+        </>
+      }
+    />
   );
 
   return (

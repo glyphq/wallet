@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FolderOpen, Eye, AddCircle, Settings } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
@@ -308,18 +309,20 @@ export default function VaultsScreen() {
       statusBar={
         <ScreenHeader
           title="Vaults"
+          eyebrow={vaults.find((vault) => vault.id === settings.activeVaultId)?.name ?? undefined}
+          leading={settings.activeVaultId ? <Identicon seed={`${settings.activeVaultId}:${vaults.find((vault) => vault.id === settings.activeVaultId)?.color ?? "slate"}`} size={28} radius={8} /> : null}
           onBack={() => navigate("/dashboard")}
           action={
             <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
-              <button type="button" onClick={openImportPicker} aria-label="Import vault" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2)", display: "flex", alignItems: "center" }}>
-                <FolderOpen size={15} weight="Linear" />
-              </button>
-              <button type="button" onClick={() => setWatchOpen(true)} aria-label="Watch-only vault" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2)", display: "flex", alignItems: "center" }}>
-                <Eye size={15} weight="Linear" />
-              </button>
-              <button type="button" onClick={() => navigate("/setup/create")} aria-label="New vault" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2)", display: "flex", alignItems: "center" }}>
-                <AddCircle size={15} weight="Linear" />
-              </button>
+              <IconButton label="Import vault" onClick={openImportPicker}>
+                <FolderOpen size={18} weight="Linear" />
+              </IconButton>
+              <IconButton label="Create watch-only vault" onClick={() => setWatchOpen(true)}>
+                <Eye size={18} weight="Linear" />
+              </IconButton>
+              <IconButton label="Create new vault" onClick={() => navigate("/setup/create")}>
+                <AddCircle size={18} weight="Linear" />
+              </IconButton>
             </div>
           }
         />
