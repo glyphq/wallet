@@ -435,6 +435,7 @@ export default function VaultDetailScreen() {
           isCurrent={isActive && settings.activeAccountIndex === account.index}
           flashSuccess={newlyAddedIndex === account.index}
           balance={isActive && vaultBalances ? vaultBalances[getAccountIdentity(account, sessionWallets[account.index] ?? null) ?? ""] ?? null : null}
+          hideBalances={settings.hideBalances}
           onManage={() => openAccountMenu(account)}
         />
       ))}
@@ -466,6 +467,7 @@ export default function VaultDetailScreen() {
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           dimmed
           isCurrent={false}
+          hideBalances={settings.hideBalances}
           onManage={() => openAccountMenu(account)}
         />
       ))}
@@ -754,7 +756,7 @@ export default function VaultDetailScreen() {
                 const bal = id ? vaultBalances[id] ?? null : null;
                 return bal !== null ? (
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
-                    {formatQu(bal)} QU
+                    {settings.hideBalances ? "••••••" : `${formatQu(bal)} QU`}
                   </span>
                 ) : null;
               })()}
@@ -844,10 +846,11 @@ interface AccountRowProps {
   dimmed?: boolean;
   flashSuccess?: boolean;
   balance?: bigint | null;
+  hideBalances: boolean;
   onManage: () => void;
 }
 
-function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, onManage }: AccountRowProps) {
+function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, hideBalances, onManage }: AccountRowProps) {
   const tags = account.tags ?? [];
   const note = account.note?.trim() ?? "";
   const [hovered, setHovered] = useState(false);
@@ -886,7 +889,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
           </div>
           {balance !== null && balance !== undefined ? (
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
-              {formatQu(balance)}
+              {hideBalances ? "••••••" : formatQu(balance)}
             </span>
           ) : (
             <button
