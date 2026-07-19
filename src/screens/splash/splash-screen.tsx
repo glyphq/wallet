@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
+import { Button } from "@/components/button";
+
+const MIN_SPLASH_MS = 3000;
+const HYDRATION_TIMEOUT_MS = 8000;
 
 const FACTS = [
   "Qubic is founded by Sergey Ivancheglo — the original creator of NXT and co-founder of IOTA.",
@@ -17,18 +21,34 @@ const FACTS = [
 export default function SplashScreen() {
   const navigate = useNavigate();
   const [hydrated, setHydrated] = useState(() => usePersistedStore.persist.hasHydrated());
+  const [hydrationStatus, setHydrationStatus] = useState<"loading" | "stalled" | "error">("loading");
+  const [hydrationAttempt, setHydrationAttempt] = useState(0);
   const vaults = usePersistedStore((s) => s.vaults);
   const isLocked = useSessionStore((s) => s.isLocked);
   const [factIdx, setFactIdx] = useState(0);
 
   useEffect(() => {
     const unsub = usePersistedStore.persist.onFinishHydration(() => {
-      setHydrated((prev) => (prev ? prev : true));
+      setHydrated(true);
     });
+    const handleReadError = () => setHydrationStatus("error");
+    window.addEventListener("glyph:disk-read-error", handleReadError);
     if (usePersistedStore.persist.hasHydrated()) setHydrated(true);
-    const timer = setTimeout(() => setHydrated((prev) => (prev ? prev : true)), 3000);
-    return () => { unsub(); clearTimeout(timer); };
+    return () => {
+      unsub();
+      window.removeEventListener("glyph:disk-read-error", handleReadError);
+    };
   }, []);
+
+  useEffect(() => {
+    if (hydrated) return;
+    const timer = setTimeout(() => {
+      if (!usePersistedStore.persist.hasHydrated()) {
+        setHydrationStatus((status) => status === "error" ? status : "stalled");
+      }
+    }, HYDRATION_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [hydrated, hydrationAttempt]);
 
   useEffect(() => {
     const id = setInterval(() => setFactIdx((i) => (i + 1) % FACTS.length), 4000);
@@ -37,10 +57,16 @@ export default function SplashScreen() {
 
   const mountedAt = useRef(Date.now());
 
+  function retryHydration() {
+    setHydrationStatus("loading");
+    setHydrationAttempt((attempt) => attempt + 1);
+    void usePersistedStore.persist.rehydrate();
+  }
+
   useEffect(() => {
     if (!hydrated) return;
     const elapsed = Date.now() - mountedAt.current;
-    const remaining = Math.max(0, 3000 - elapsed);
+    const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
     const timer = setTimeout(() => {
       if (vaults.length === 0) navigate("/setup", { replace: true });
       else if (isLocked) navigate("/lock", { replace: true });
@@ -78,20 +104,33 @@ export default function SplashScreen() {
           </span>
         </div>
 
-        {/* Pulsing dot loader */}
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              animate={{ opacity: [0.2, 1, 0.2] }}
-              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-              style={{
-                width: 5, height: 5, borderRadius: "50%",
-                background: "var(--color-text-disabled)",
-              }}
-            />
-          ))}
-        </div>
+        {hydrationStatus === "loading" ? (
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ opacity: [0.2, 1, 0.2] }}
+                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
+                style={{
+                  width: 5, height: 5, borderRadius: "50%",
+                  background: "var(--color-text-disabled)",
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", maxWidth: 280, textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
+              {hydrationStatus === "error" ? "Wallet data could not be read" : "Wallet data is taking longer than expected"}
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+              Your encrypted wallet data has not been changed. Try loading it again.
+            </div>
+            <Button variant="secondary" size="lg" shape="sharp" style={{ width: "auto" }} onClick={retryHydration}>
+              Try again
+            </Button>
+          </div>
+        )}
       </motion.div>
 
       {/* Bottom: cycling fact */}
