@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { AltArrowLeft, UserId, AddCircle, TrashBinMinimalistic, Clipboard, Document, ClockCircle, Bolt, Wallet, ArrowRightUp, ShieldCheck, ShieldWarning, CheckCircle } from "@solar-icons/react";
+import { UserId, AddCircle, TrashBinMinimalistic, Clipboard, Document, ClockCircle, Bolt, Wallet, ArrowRightUp, ShieldCheck, ShieldWarning, CheckCircle } from "@solar-icons/react";
 import { buildPayload, type PayloadField } from "@qubic.org/tx";
 import type { Identity } from "@qubic.org/types";
 import { AppShell } from "@/layouts/app-shell";
@@ -98,8 +98,6 @@ export default function SendManyScreen() {
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const identityRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-
-  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
 
   const vaultAccountTargets = (vault?.accounts ?? [])
     .filter((a) => !a.hidden)
@@ -230,20 +228,6 @@ export default function SendManyScreen() {
     }
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────────
-
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => step === "input" ? navigate("/send") : step === "review" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        {step === "input" ? `Send to many · ${accountName}` : step === "review" ? "Review" : step === "done" ? "Sent" : step === "sending" ? "Sending" : "Error"}
-      </span>
-    </div>
-  );
-
   // ── Input step ─────────────────────────────────────────────────────────────
 
   if (step === "input") {
@@ -253,7 +237,7 @@ export default function SendManyScreen() {
     const overBalance = remaining !== null && remaining < 0n;
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Import links */}
@@ -506,7 +490,7 @@ export default function SendManyScreen() {
     const totalWithFee = fee !== null ? totalAmount + Number(fee) : totalAmount;
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
@@ -598,7 +582,7 @@ export default function SendManyScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
         <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
@@ -621,7 +605,7 @@ export default function SendManyScreen() {
     const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-disabled)";
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
@@ -669,7 +653,7 @@ export default function SendManyScreen() {
   // ── Error ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />

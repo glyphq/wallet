@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { AltArrowLeft, Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
+import { Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
@@ -107,20 +107,6 @@ export default function BurnScreen() {
     }
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────────
-
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => step === "input" ? navigate("/send") : step === "confirm" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        {step === "input" ? `Burn · ${accountName}` : step === "confirm" ? "Confirm burn" : step === "done" ? "Burned" : step === "sending" ? "Burning" : "Error"}
-      </span>
-    </div>
-  );
-
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-surface)",
     borderRadius: "var(--radius-card)",
@@ -134,7 +120,7 @@ export default function BurnScreen() {
 
   if (step === "input") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Warning */}
@@ -196,7 +182,7 @@ export default function BurnScreen() {
 
   if (step === "confirm") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Amount */}
@@ -280,7 +266,7 @@ export default function BurnScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
         <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-status-error)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
@@ -301,7 +287,7 @@ export default function BurnScreen() {
 
   if (step === "done") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
@@ -343,7 +329,7 @@ export default function BurnScreen() {
   // ── Error ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />

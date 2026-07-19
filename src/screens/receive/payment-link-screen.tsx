@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { QRCodeSVG } from "qrcode.react";
-import { AltArrowLeft, Copy, CheckCircle, LinkRound, QrCode } from "@solar-icons/react";
+import { Copy, CheckCircle, LinkRound, QrCode } from "@solar-icons/react";
 import { copyToClipboard } from "@/lib/clipboard";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -29,7 +28,6 @@ function buildLinks(to: string, amount: string, label: string) {
 }
 
 export default function PaymentLinkScreen() {
-  const navigate = useNavigate();
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) =>
     s.vaults.find((v) => v.id === s.settings.activeVaultId),
@@ -78,27 +76,10 @@ export default function PaymentLinkScreen() {
       .filter((a) => a.identity.length === 60);
   }, [vault, wallets]);
 
-  // ── Header ──────────────────────────────────────────────────────────────────
-
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button
-        type="button"
-        onClick={() => navigate("/receive")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}
-      >
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Payment link
-      </span>
-    </div>
-  );
-
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* ── Account selector ── */}

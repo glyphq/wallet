@@ -15,7 +15,6 @@ import {
   LockKeyhole,
 } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { SettingsPageHeader } from "@/components/settings-page-header";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -55,7 +54,7 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <AppShell statusBar={<SettingsPageHeader title="Settings" backTo="/dashboard" />} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
       <motion.div
         {...stepMotion}
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minHeight: 0 }}

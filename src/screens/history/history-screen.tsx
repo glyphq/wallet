@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { AltArrowLeft, Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
+import { Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
@@ -317,41 +317,8 @@ export default function HistoryScreen() {
   }
   if (groupByCounterparty) chips.push({ label: "Grouped", clear: () => setGroupByCounterparty(false) });
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => navigate("/dashboard")}
-        style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <h1 style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap", margin: 0 }}>
-        Transactions
-      </h1>
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-        {hasMemos && (
-          <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
-            <Download size={15} weight="Linear" />
-          </button>
-        )}
-        <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
-          <Chart size={15} weight="Linear" />
-        </button>
-        {!wideLayout && (
-          <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
-            <Filters size={15} weight="Linear" />
-            {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
-          </button>
-        )}
-        <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
-          <Refresh size={15} weight="Linear" />
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <AppShell
-      statusBar={header}
       fullBleed
       contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1, padding: 0 }}
     >
@@ -402,6 +369,35 @@ export default function HistoryScreen() {
         {...presets.fadeIn}
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
+
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/analytics")}>
+            <Chart size={16} aria-hidden="true" />
+            Analytics
+          </Button>
+          {!wideLayout && (
+            <Button variant="secondary" shape="sharp" size="sm" onClick={() => setFilterOpen(true)}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <Filters size={16} aria-hidden="true" />
+                Filters
+                {hasActive && <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 999, background: "var(--color-status-success)" }} />}
+              </span>
+            </Button>
+          )}
+          {hasMemos && (
+            <Button variant="secondary" shape="sharp" size="sm" onClick={() => setMemoExportOpen(true)}>
+              <Download size={16} aria-hidden="true" />
+              Export memos
+            </Button>
+          )}
+        </div>
+
+        <Button variant="ghost" shape="sharp" size="sm" onClick={() => refetch()}>
+          <Refresh size={16} aria-hidden="true" />
+          Refresh
+        </Button>
+      </div>
 
       {/* Active filter chips */}
       {chips.length > 0 && (
@@ -650,13 +646,6 @@ export default function HistoryScreen() {
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
-
-const ICON_BTN: React.CSSProperties = {
-  width: 44, height: 44,
-  background: "none", border: "none", cursor: "pointer", padding: 0,
-  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-  color: "var(--color-text-secondary)",
-};
 
 const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
 

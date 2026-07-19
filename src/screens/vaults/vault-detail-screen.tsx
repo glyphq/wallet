@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
-import { IconButton } from "@/components/icon-button";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
@@ -401,22 +399,20 @@ export default function VaultDetailScreen() {
     setSeedCopied(true);
   }
 
-  const statusBar = (
-    <ScreenHeader
-      title="Vault details"
-      onBack={() => navigate("/vaults")}
-      action={
-        currentVault.accounts.length < MAX_VAULT_ACCOUNTS
-          ? <IconButton label="Add account" onClick={openAdd}>
-              <AddCircle size={18} weight="Linear" />
-            </IconButton>
-          : <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>16 MAX</span>
-      }
-    />
-  );
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        {currentVault.accounts.length < MAX_VAULT_ACCOUNTS ? (
+          <Button variant="secondary" shape="sharp" size="sm" onClick={openAdd} style={{ width: "auto" }}>
+            <AddCircle size={16} weight="Linear" aria-hidden="true" />
+            Add account
+          </Button>
+        ) : (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em", alignSelf: "center" }}>
+            16 MAX
+          </span>
+        )}
+      </div>
       {visible.length === 0 && hidden.length === 0 && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
