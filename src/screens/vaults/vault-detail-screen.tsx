@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
@@ -402,14 +403,16 @@ export default function VaultDetailScreen() {
 
   const statusBar = (
     <ScreenHeader
-      title={currentVault.name}
+      title="Vault details"
+      eyebrow={currentVault.name}
+      leading={<Identicon seed={`${currentVault.id}:${currentVault.color}`} size={28} radius={8} />}
       onBack={() => navigate("/vaults")}
       action={
         currentVault.accounts.length < MAX_VAULT_ACCOUNTS
-          ? <button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>
-              <AddCircle size={15} weight="Linear" />
-            </button>
-          : <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>16 MAX</span>
+          ? <IconButton label="Add account" onClick={openAdd}>
+              <AddCircle size={18} weight="Linear" />
+            </IconButton>
+          : <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>16 MAX</span>
       }
     />
   );
