@@ -321,13 +321,13 @@ export default function HistoryScreen() {
   const header = (
     <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
       <button type="button" onClick={() => navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
+        style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <AltArrowLeft size={20} />
       </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
+      <h1 style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap", margin: 0 }}>
         Transactions
-      </span>
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+      </h1>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
         {hasMemos && (
           <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
             <Download size={15} weight="Linear" />
@@ -652,8 +652,10 @@ export default function HistoryScreen() {
 // ── Shared styles ─────────────────────────────────────────────────────────────
 
 const ICON_BTN: React.CSSProperties = {
+  width: 44, height: 44,
   background: "none", border: "none", cursor: "pointer", padding: 0,
-  display: "flex", alignItems: "center", color: "var(--color-text-secondary)",
+  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  color: "var(--color-text-secondary)",
 };
 
 const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
