@@ -243,6 +243,8 @@ export default function SendManyScreen() {
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
+    } finally {
+      setSending(false);
     }
   }
 

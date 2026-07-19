@@ -121,6 +121,8 @@ export default function BurnScreen() {
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
+    } finally {
+      setSending(false);
     }
   }
 

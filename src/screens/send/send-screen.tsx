@@ -306,6 +306,8 @@ export default function SendScreen() {
       setTxError(extractMessage(e, "Broadcast failed."));
       saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
       setStep("error");
+    } finally {
+      setSending(false);
     }
   }
 
