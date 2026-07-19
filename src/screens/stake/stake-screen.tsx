@@ -409,7 +409,7 @@ export default function StakeScreen() {
                 {epochProgress !== null && (
                   <div style={{ marginBottom: "var(--space-3)" }}>
                     <div style={{ width: "100%", height: 4, borderRadius: 2, background: "var(--color-bg-base)", overflow: "hidden" }}>
-                      <div style={{ width: `${epochProgress * 100}%`, height: "100%", borderRadius: 2, background: "var(--color-accent)", transition: "width 0.3s ease" }} />
+                      <div style={{ width: "100%", height: "100%", borderRadius: 2, background: "var(--color-accent)", transform: `scaleX(${epochProgress})`, transformOrigin: "left", transition: "transform 0.3s ease" }} />
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-1)" }}>
                       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>

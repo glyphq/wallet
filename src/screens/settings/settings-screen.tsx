@@ -161,7 +161,7 @@ export default function SettingsScreen() {
               </div>
               {installing && progress > 0 && (
                 <div style={{ height: 3, borderRadius: 2, background: "var(--color-border-subtle)", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${progress}%`, background: "var(--color-status-success)", borderRadius: 2, transition: "width 0.3s ease" }} />
+                  <div style={{ height: "100%", width: "100%", background: "var(--color-status-success)", borderRadius: 2, transform: `scaleX(${progress / 100})`, transformOrigin: "left", transition: "transform 0.3s ease" }} />
                 </div>
               )}
             </button>

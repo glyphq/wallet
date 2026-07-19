@@ -145,7 +145,7 @@ function DistributionBar({ accounts, total }: {
             <div
               key={account.index}
               title={`${account.name}: ${pct}%`}
-              style={{ width: `${pct}%`, height: "100%", background: COLORS[i % COLORS.length], transition: "width 0.3s ease-out" }}
+              style={{ width: `${pct}%`, height: "100%", background: COLORS[i % COLORS.length] }}
             />
           );
         })}

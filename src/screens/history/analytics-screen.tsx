@@ -175,7 +175,7 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {/* Proportional bar */}
       <div style={{ height: 8, display: "flex", overflow: "hidden", borderRadius: 0, background: "var(--color-border-strong)" }}>
-        <div style={{ width: `${inPct}%`, background: "var(--color-accent)", transition: "width 0.3s ease-out" }} />
+        <div style={{ width: "100%", background: "var(--color-accent)", transform: `scaleX(${inPct / 100})`, transformOrigin: "left", transition: "transform 0.3s ease-out" }} />
       </div>
       {/* Labels */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>
