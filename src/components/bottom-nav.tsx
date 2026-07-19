@@ -1,6 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
-import { transition } from "@/lib/animations";
 import { HomeSmile, CardSend, CardReceive, MoneyBag, ClockCircle, Settings } from "@solar-icons/react";
 
 export type BottomNavTab = "home" | "send" | "receive" | "earn" | "history" | "settings";
@@ -23,16 +21,13 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "var(--space-1)",
+        gap: "var(--space-2)",
         width: "100%",
         maxWidth: 420,
+        minHeight: "var(--height-nav)",
         boxSizing: "border-box",
-        padding: "var(--space-2)",
-        background: "rgba(28, 28, 30, 0.85)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderRadius: "var(--radius-pill)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        padding: "var(--space-2) 0 0",
+        background: "var(--color-bg-base)",
       }}
     >
       {TABS.map(({ id, label, icon: Icon, path }) => {
@@ -51,34 +46,35 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
               flex: "1 1 0",
               alignItems: "center",
               justifyContent: "center",
-              gap: "1px",
-              height: 46,
-              padding: isActive ? "0 10px" : "0 8px",
-              background: "none",
-              borderRadius: "var(--radius-pill)",
+              gap: "var(--space-1)",
+              minHeight: 52,
+              padding: "var(--space-2) var(--space-1)",
+              background: isActive ? "var(--color-accent-muted)" : "transparent",
+              borderRadius: "var(--radius-control)",
               border: "none",
               cursor: "pointer",
               color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "color 200ms ease-in-out",
+              transition: "background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out)",
               minWidth: 44,
             }}
-            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = "var(--color-text-display)"; }}
-            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = "var(--color-text-primary)";
+                e.currentTarget.style.background = "var(--color-bg-surface)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = "var(--color-text-secondary)";
+                e.currentTarget.style.background = "transparent";
+              }
+            }}
           >
-            {isActive && (
-              <motion.span
-                layoutId="nav-pill"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "rgba(204, 252, 251, 0.1)",
-                  borderRadius: "var(--radius-pill)",
-                }}
-                transition={transition.navPill}
-              />
-            )}
-            <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon size={22} weight={isActive ? "BoldDuotone" : "Linear"} aria-hidden="true" />
+            </span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: isActive ? 600 : 500, lineHeight: 1, whiteSpace: "nowrap" }}>
+              {label}
             </span>
           </button>
         );

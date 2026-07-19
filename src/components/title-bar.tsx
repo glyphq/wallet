@@ -22,7 +22,7 @@ function WinBtn({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        width: 46,
+        width: 44,
         height: "100%",
         display: "flex",
         alignItems: "center",
@@ -34,8 +34,8 @@ function WinBtn({
           : "transparent",
         border: "none",
         cursor: "pointer",
-        color: hovered && danger ? "var(--color-text-display)" : "var(--color-text-disabled)",
-        transition: "background 80ms, color 80ms",
+        color: hovered && danger ? "var(--color-text-inverse)" : hovered ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+        transition: "background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out)",
         flexShrink: 0,
       }}
     >
@@ -46,27 +46,29 @@ function WinBtn({
 
 export function TitleBar() {
   const win = useMemo(() => getCurrentWindow(), []);
-  const [maximized, setMaximized] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [version, setVersion] = useState("");
 
-  useEffect(() => { getVersion().then(setVersion).catch(() => {}); }, []);
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
 
   useEffect(() => {
-    win.isMaximized().then(setMaximized).catch(() => {});
     win.isFullscreen().then(setFullscreen).catch(() => {});
     let unlisten: (() => void) | undefined;
     let active = true;
     win.listen("tauri://resize", async () => {
       try {
-        setMaximized(await win.isMaximized());
         setFullscreen(await win.isFullscreen());
       } catch {}
     }).then((u) => {
       if (!active) u();
       else unlisten = u;
     }).catch(() => {});
-    return () => { active = false; unlisten?.(); };
+    return () => {
+      active = false;
+      unlisten?.();
+    };
   }, [win]);
 
   if (fullscreen) return null;
@@ -75,67 +77,61 @@ export function TitleBar() {
     <div
       data-tauri-drag-region
       style={{
-        height: 36,
+        height: "var(--height-titlebar)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        background: "var(--color-bg-base)",
+        background: "var(--color-bg-surface)",
         borderBottom: "1px solid var(--color-border-subtle)",
         flexShrink: 0,
         userSelect: "none",
       }}
     >
-      {/* Identity — drag region, not interactive */}
       <div
         data-tauri-drag-region
         style={{
           display: "flex",
           alignItems: "center",
           gap: "var(--space-2)",
-          padding: "0 var(--space-3)",
+          padding: "0 var(--screen-padding)",
           pointerEvents: "none",
         }}
       >
         <span
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-display)",
             fontSize: "var(--text-caption)",
-            letterSpacing: "0.15em",
-            color: "var(--color-text-secondary)",
+            fontWeight: 500,
+            letterSpacing: "0.08em",
+            color: "var(--color-text-primary)",
+            textTransform: "lowercase",
           }}
         >
           glyph
         </span>
         {version && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: "var(--color-text-disabled)" }}>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-caption)",
+              letterSpacing: "0.08em",
+              color: "var(--color-text-tertiary)",
+            }}
+          >
             v{version}
           </span>
         )}
       </div>
 
-      {/* Window controls */}
       <div style={{ display: "flex", height: "100%" }}>
         <WinBtn onClick={() => win.minimize()} label="Minimize">
-          <svg width="10" height="2" viewBox="0 0 10 2">
+          <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
             <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
           </svg>
         </WinBtn>
 
-        <WinBtn onClick={() => win.toggleMaximize()} label={maximized ? "Restore" : "Maximize"}>
-          {maximized ? (
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <rect x="2.5" y="0.6" width="6.9" height="6.9" stroke="currentColor" strokeWidth="1.2" />
-              <polyline points="0.6,2.5 0.6,9.4 7.5,9.4" stroke="currentColor" strokeWidth="1.2" fill="none" />
-            </svg>
-          ) : (
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <rect x="0.6" y="0.6" width="8.8" height="8.8" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-          )}
-        </WinBtn>
-
         <WinBtn onClick={() => win.close()} label="Close" danger>
-          <svg width="10" height="10" viewBox="0 0 10 10">
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
             <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
             <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
           </svg>

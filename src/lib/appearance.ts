@@ -51,6 +51,11 @@ function rgbToHex(r: number, g: number, b: number): string {
   );
 }
 
+function withAlpha(hex: string, alpha: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
+}
+
 function mix(a: string, b: string, t: number): string {
   const [ar, ag, ab] = hexToRgb(a);
   const [br, bg, bb] = hexToRgb(b);
@@ -104,20 +109,38 @@ function clampAccentLightness(hex: string, dark: boolean): string {
 }
 
 export const CUSTOM_SCHEME_VARS = [
+  "--color-bg-canvas",
   "--color-bg-base",
   "--color-bg-surface",
+  "--color-bg-surface-2",
   "--color-bg-elevated",
   "--color-bg-subtle",
+  "--color-bg-inset",
+  "--color-bg-overlay",
+  "--color-scrim",
   "--color-text-display",
   "--color-text-primary",
   "--color-text-secondary",
+  "--color-text-tertiary",
   "--color-text-disabled",
+  "--color-text-inverse",
+  "--color-border-default",
   "--color-border-strong",
   "--color-border-subtle",
   "--color-accent",
+  "--color-accent-hover",
+  "--color-accent-muted",
+  "--color-accent-contrast",
+  "--color-focus-ring",
+  "--color-focus-ring-soft",
   "--color-status-success",
   "--color-status-warning",
   "--color-status-error",
+  "--color-status-info",
+  "--color-skeleton",
+  "--color-chart-primary",
+  "--color-chart-secondary",
+  "--color-chart-grid",
 ];
 
 /** Derives the full CSS variable map for a custom color scheme from `bg` and `text` base colors. */
@@ -127,21 +150,40 @@ export function deriveCustomScheme(
 ): Record<string, string> {
   const dark = isDarkColor(bg);
   const accentHex = "#ccfcfb";
+  const accent = clampAccentLightness(accentHex, dark);
   return {
+    "--color-bg-canvas":      bg,
     "--color-bg-base":        bg,
     "--color-bg-surface":     mix(bg, text, 0.06),
-    "--color-bg-elevated":    mix(bg, text, 0.13),
-    "--color-bg-subtle":      mix(bg, text, 0.20),
+    "--color-bg-surface-2":   mix(bg, text, 0.10),
+    "--color-bg-elevated":    mix(bg, text, 0.16),
+    "--color-bg-subtle":      mix(bg, text, 0.12),
+    "--color-bg-inset":       mix(bg, text, 0.04),
+    "--color-bg-overlay":     mix(bg, text, 0.08),
+    "--color-scrim":          dark ? "rgba(0, 0, 0, 0.68)" : "rgba(0, 0, 0, 0.36)",
     "--color-text-display":   text,
-    "--color-text-primary":   mix(text, bg, 0.10),
-    "--color-text-secondary": mix(text, bg, 0.44),
-    "--color-text-disabled":  mix(text, bg, 0.72),
-    "--color-border-strong":  mix(bg, text, 0.20),
-    "--color-border-subtle":  mix(bg, text, 0.10),
-    "--color-status-success": clampAccentLightness(accentHex, dark),
-    "--color-accent":          clampAccentLightness(accentHex, dark),
+    "--color-text-primary":   mix(text, bg, 0.06),
+    "--color-text-secondary": mix(text, bg, 0.34),
+    "--color-text-tertiary":  mix(text, bg, 0.52),
+    "--color-text-disabled":  mix(text, bg, 0.70),
+    "--color-text-inverse":   dark ? "#0b0c0d" : "#f4f6f7",
+    "--color-border-subtle":  mix(bg, text, 0.08),
+    "--color-border-default": mix(bg, text, 0.12),
+    "--color-border-strong":  mix(bg, text, 0.18),
+    "--color-status-success": "#34c759",
+    "--color-accent":         accent,
+    "--color-accent-hover":   mix(accent, text, dark ? 0.16 : 0.06),
+    "--color-accent-muted":   withAlpha(accent, 0.12),
+    "--color-accent-contrast": dark ? "#081112" : "#f4f6f7",
+    "--color-focus-ring":      accent,
+    "--color-focus-ring-soft": withAlpha(accent, 0.24),
     "--color-status-warning": "#f59e0b",
     "--color-status-error":   dark ? "#d71921" : "#b91c1c",
+    "--color-status-info":    dark ? "#8cb8ff" : "#3559c7",
+    "--color-skeleton":       withAlpha(text, dark ? 0.08 : 0.10),
+    "--color-chart-primary":  accent,
+    "--color-chart-secondary": withAlpha(text, 0.28),
+    "--color-chart-grid":      withAlpha(text, 0.08),
     "color-scheme":           dark ? "dark" : "light",
   };
 }

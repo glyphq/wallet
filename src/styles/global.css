@@ -24,14 +24,10 @@
 @import "@fontsource/jetbrains-mono/latin-400.css";
 @import "./tokens.css";
 
-/* ── Reset ───────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
-/* ── Base ────────────────────────────────────────────────────────── */
 html {
   height: 100%;
   -webkit-font-smoothing: antialiased;
@@ -40,25 +36,49 @@ html {
 }
 
 body {
+  margin: 0;
   height: 100%;
   font-family: var(--font-sans);
   font-size: var(--text-body);
   font-weight: 400;
-  line-height: 1.5;
+  line-height: var(--leading-body);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
-  overflow: hidden; /* wallet window — no scroll on body */
+  overflow: hidden;
 }
 
 #root {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--color-bg-base);
 }
 
-/* ── Typography helpers ──────────────────────────────────────────── */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+label,
+nav {
+  user-select: none;
+}
+
+button {
+  margin: 0;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
 .font-mono {
   font-family: var(--font-mono);
 }
@@ -67,15 +87,19 @@ body {
   font-family: var(--font-display);
 }
 
-/* ── Focus ring (keyboard nav) ───────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--color-text-display);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 
-/* ── Scrollbar (for lists inside the app) ────────────────────────── */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -83,49 +107,65 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong);
+  background: var(--color-border-default);
   border-radius: var(--radius-pill);
 }
 
-/* ── Selection ───────────────────────────────────────────────────── */
-::selection {
-  background: var(--color-text-display);
-  color: var(--color-bg-base);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
 }
 
-/* ── No user-select on UI chrome ─────────────────────────────────── */
-button, label, nav {
-  user-select: none;
+a {
+  color: var(--color-accent);
+  text-decoration: none;
 }
 
-/* ── Button active animation ─────────────────────────────────────── */
+a:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
 .glyph-btn {
-  transition: opacity var(--duration-fast) var(--ease-out),
-              transform var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
 }
 
 .glyph-btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
-/* ── Input border states ─────────────────────────────────────────── */
 .glyph-input {
-  border: 1px solid var(--color-border-strong);
-  transition: border-color var(--duration-fast) var(--ease-out);
+  min-height: var(--height-input);
+  border: 1px solid var(--color-border-default);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-input:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
 }
 
 .glyph-input:focus {
   outline: none;
-  border-color: var(--color-text-display);
+  border-color: var(--color-focus-ring);
+  box-shadow: 0 0 0 3px var(--color-focus-ring-soft);
 }
 
 .glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 8px rgba(255, 59, 48, 0.2);
+  box-shadow: 0 0 0 3px rgba(255, 95, 87, 0.12);
 }
 
 .glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
+  box-shadow: 0 0 0 3px rgba(255, 95, 87, 0.18);
 }
 
 @keyframes shake {
@@ -138,90 +178,82 @@ button, label, nav {
   animation: shake 0.4s ease-in-out;
 }
 
-/* ── Spinner animation ──────────────────────────────────────────── */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* ── Entrance animations ────────────────────────────────────────── */
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in {
   from { opacity: 0; }
-  to   { opacity: 1; }
+  to { opacity: 1; }
 }
 
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-/* ── Skeleton loading ──────────────────────────────────────────── */
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.06; }
-  50%      { opacity: 0.12; }
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 .skeleton {
-  background: var(--color-text-primary);
+  background: var(--color-skeleton);
   border-radius: var(--radius-sharp);
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
-/* ── Stagger entrance for list items ───────────────────────────── */
 .stagger-item {
-  animation: fade-in-up 0.25s var(--ease-out) both;
+  animation: fade-in-up 0.22s var(--ease-out) both;
 }
 
 .stagger-item:nth-child(1)  { animation-delay: 0ms; }
-.stagger-item:nth-child(2)  { animation-delay: 30ms; }
-.stagger-item:nth-child(3)  { animation-delay: 60ms; }
-.stagger-item:nth-child(4)  { animation-delay: 90ms; }
-.stagger-item:nth-child(5)  { animation-delay: 120ms; }
-.stagger-item:nth-child(6)  { animation-delay: 150ms; }
-.stagger-item:nth-child(7)  { animation-delay: 180ms; }
-.stagger-item:nth-child(8)  { animation-delay: 210ms; }
-.stagger-item:nth-child(9)  { animation-delay: 240ms; }
-.stagger-item:nth-child(10) { animation-delay: 270ms; }
+.stagger-item:nth-child(2)  { animation-delay: 25ms; }
+.stagger-item:nth-child(3)  { animation-delay: 50ms; }
+.stagger-item:nth-child(4)  { animation-delay: 75ms; }
+.stagger-item:nth-child(5)  { animation-delay: 100ms; }
+.stagger-item:nth-child(6)  { animation-delay: 125ms; }
+.stagger-item:nth-child(7)  { animation-delay: 150ms; }
+.stagger-item:nth-child(8)  { animation-delay: 175ms; }
+.stagger-item:nth-child(9)  { animation-delay: 200ms; }
+.stagger-item:nth-child(10) { animation-delay: 225ms; }
 
-/* ── Success flash ─────────────────────────────────────────────── */
 @keyframes success-flash {
-  0%   { background-color: transparent; }
-  30%  { background-color: rgba(52, 199, 89, 0.08); }
+  0% { background-color: transparent; }
+  30% { background-color: rgba(52, 199, 89, 0.08); }
   100% { background-color: transparent; }
 }
 
 .flash-success {
-  animation: success-flash 0.8s ease-out;
+  animation: success-flash 0.75s ease-out;
 }
 
-/* ── Reduced motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+
   .skeleton {
     animation: none;
-    opacity: 0.08;
+    opacity: 1;
   }
-}
 
-/* ── Link reset ────────────────────────────────────────────────── */
-a {
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
+  .stagger-item,
+  .flash-success,
+  .lock-shake {
+    animation: none !important;
+  }
 }

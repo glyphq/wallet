@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AltArrowLeft } from "@solar-icons/react";
 
 export interface ScreenHeaderProps {
   title: string;
@@ -9,19 +10,19 @@ export interface ScreenHeaderProps {
 
 export function ScreenHeader({ title, onBack, backAriaLabel, action }: ScreenHeaderProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%" }}>
+    <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%", minHeight: 44 }}>
       <button
         type="button"
         onClick={onBack}
         aria-label={backAriaLabel ?? "Go back"}
-        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.06em", padding: 0, minWidth: 44, minHeight: 44, flexShrink: 0 }}
+        style={{ width: 44, height: 44, background: "none", border: "none", cursor: "pointer", color: "var(--color-text-primary)", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
       >
-        ← back
+        <AltArrowLeft size={20} aria-hidden="true" />
       </button>
-      <h1 style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 400, color: "var(--color-text-primary)", letterSpacing: "0.08em", whiteSpace: "nowrap", pointerEvents: "none", margin: 0 }}>
+      <h1 style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", letterSpacing: "-0.01em", whiteSpace: "nowrap", pointerEvents: "none", margin: 0, maxWidth: "calc(100% - 112px)", overflow: "hidden", textOverflow: "ellipsis" }}>
         {title}
       </h1>
-      <div style={{ marginLeft: "auto", flexShrink: 0 }}>
+      <div style={{ marginLeft: "auto", minWidth: 44, minHeight: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {action}
       </div>
     </div>

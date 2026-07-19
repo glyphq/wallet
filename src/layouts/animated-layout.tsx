@@ -86,11 +86,11 @@ function LayoutShell() {
         <header
           style={{
             flexShrink: 0,
-            height: 44,
+            height: "var(--height-header)",
             display: "flex",
             alignItems: "center",
-            padding: "0 var(--space-4)",
-            borderBottom: "1px solid var(--color-border-subtle)",
+            padding: "0 var(--screen-padding)",
+            borderBottom: "1px solid var(--color-border-default)",
             background: "var(--color-bg-base)",
           }}
         >
@@ -107,12 +107,12 @@ function LayoutShell() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "var(--space-1) var(--space-4)",
-            background: "var(--color-bg-elevated)",
+            padding: "var(--space-2) var(--screen-padding)",
+            background: "var(--color-bg-surface)",
             borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.04em" }}>
             Locking in {countdown}s
           </span>
         </div>
@@ -131,21 +131,21 @@ function LayoutShell() {
         </AnimatePresence>
       </div>
 
-      {/* ── Floating bottom nav ── */}
+      {/* ── Anchored bottom nav ── */}
       {showNav && !sheetsOpen && (
-        <div
+        <footer
           style={{
-            position: "absolute",
-            bottom: 16,
-            left: 16,
-            right: 16,
-            zIndex: 100,
+            flexShrink: 0,
             display: "flex",
             justifyContent: "center",
+            padding: `0 var(--screen-padding) var(--safe-bottom-space)`,
+            borderTop: "1px solid var(--color-border-subtle)",
+            background: "var(--color-bg-base)",
+            zIndex: "var(--z-nav)",
           }}
         >
           <BottomNav active={activeTabFromPath(cur)} />
-        </div>
+        </footer>
       )}
     </div>
   );

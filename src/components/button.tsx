@@ -14,14 +14,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT: Record<Variant, CSSProperties> = {
   primary: {
-    background: "var(--color-text-display)",
-    color: "var(--color-bg-base)",
-    borderColor: "transparent",
+    background: "var(--color-accent)",
+    color: "var(--color-accent-contrast)",
+    borderColor: "var(--color-accent)",
   },
   secondary: {
-    background: "transparent",
+    background: "var(--color-bg-surface)",
     color: "var(--color-text-primary)",
-    borderColor: "var(--color-border-strong)",
+    borderColor: "var(--color-border-default)",
   },
   ghost: {
     background: "transparent",
@@ -36,20 +36,20 @@ const VARIANT: Record<Variant, CSSProperties> = {
 };
 
 const SIZE: Record<Size, CSSProperties> = {
-  lg: { height: 48, padding: "0 var(--space-6)", width: "100%" },
-  md: { height: 40, padding: "0 var(--space-4)" },
-  sm: { height: 32, padding: "0 var(--space-3)", fontSize: "var(--text-label)" },
+  lg: { minHeight: "var(--height-button-lg)", padding: "0 var(--space-5)", width: "100%" },
+  md: { minHeight: "var(--height-button-md)", padding: "0 var(--space-4)" },
+  sm: { minHeight: "var(--height-button-sm)", padding: "0 var(--space-3)", fontSize: "var(--text-label)" },
 };
 
 const SHAPE: Record<Shape, CSSProperties> = {
   pill: { borderRadius: "var(--radius-pill)" },
-  sharp: { borderRadius: "var(--radius-sharp)" },
+  sharp: { borderRadius: "var(--radius-control)" },
 };
 
 export function Button({
   variant = "primary",
   size = "lg",
-  shape = "pill",
+  shape = "sharp",
   loading = false,
   children,
   style,
@@ -68,22 +68,25 @@ export function Button({
         alignItems: "center",
         justifyContent: "center",
         gap: "var(--space-2)",
+        position: "relative",
         fontFamily: "var(--font-sans)",
         fontWeight: 500,
-        letterSpacing: "0.08em",
+        letterSpacing: "0.01em",
         fontSize: "var(--text-body)",
         border: "1px solid",
         cursor: disabled || loading ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.4 : 1,
+        opacity: disabled ? 0.45 : 1,
+        lineHeight: 1,
         ...VARIANT[variant],
         ...SIZE[size],
         ...SHAPE[shape],
         ...style,
       }}
     >
-      {loading ? (
+      {loading && (
         <span
           style={{
+            position: "absolute",
             width: 16, height: 16,
             border: "2px solid currentColor",
             borderTopColor: "transparent",
@@ -91,9 +94,10 @@ export function Button({
             animation: "spin 0.6s linear infinite",
           }}
         />
-      ) : (
-        children
       )}
+      <span style={{ visibility: loading ? "hidden" : "visible", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+        {children}
+      </span>
     </button>
   );
 }

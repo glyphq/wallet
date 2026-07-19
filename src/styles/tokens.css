@@ -3,68 +3,126 @@
 @theme {
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Courier New", monospace;
-  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-display: "Geist", system-ui, sans-serif;
 }
 
-/* ── Tokens ─────────────────────────────────────────────────────── */
 :root {
   color-scheme: dark;
 
   /* Backgrounds */
-  --color-bg-base:     #0F0F0F;
-  --color-bg-surface:  #282828;
-  --color-bg-elevated: #161618;
-  --color-bg-subtle:   #2c2c2e;
+  --color-bg-canvas: #0b0c0d;
+  --color-bg-base: var(--color-bg-canvas);
+  --color-bg-surface: #101214;
+  --color-bg-surface-2: #16181b;
+  --color-bg-elevated: #1d2024;
+  --color-bg-subtle: #14171a;
+  --color-bg-inset: #0e1012;
+  --color-bg-overlay: #101214;
+  --color-scrim: rgba(0, 0, 0, 0.68);
 
   /* Text */
-  --color-text-display:   #ffffff;
-  --color-text-primary:   #ffffff;
-  --color-text-secondary: #a8a8ac;
-  --color-text-disabled:  #949499;
+  --color-text-display: #f4f6f7;
+  --color-text-primary: #eef1f3;
+  --color-text-secondary: #a9afb6;
+  --color-text-tertiary: #747b84;
+  --color-text-disabled: #4d5157;
+  --color-text-inverse: #0b0c0d;
 
   /* Borders */
-  --color-border-strong: #2c2c2e;
-  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-default: rgba(255, 255, 255, 0.12);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
 
-  /* Status — data encoding only, never decoration */
-  /* ── Accent ────────────────────────────────────────────────────────────── */
+  /* Accent */
   --color-accent: #ccfcfb;
+  --color-accent-hover: #e8ffff;
+  --color-accent-muted: rgba(204, 252, 251, 0.12);
+  --color-accent-contrast: #081112;
+  --color-focus-ring: var(--color-accent);
+  --color-focus-ring-soft: rgba(204, 252, 251, 0.24);
 
-  /* ── Status (alerts only — not for accents) ────────────────────────────── */
+  /* Status */
   --color-status-success: #34c759;
-  --color-status-warning: #f59e0b;
-  --color-status-error:   #ff3b30;
+  --color-status-warning: #ffb020;
+  --color-status-error: #ff5f57;
+  --color-status-info: #8cb8ff;
 
-  /* Type scale */
-  --text-display:  3rem;
+  /* Derived surfaces */
+  --color-skeleton: rgba(255, 255, 255, 0.08);
+  --color-chart-primary: var(--color-accent);
+  --color-chart-secondary: rgba(255, 255, 255, 0.28);
+  --color-chart-grid: rgba(255, 255, 255, 0.08);
+
+  /* Typography */
+  --text-display: 2.375rem;
   --text-headline: 1.5rem;
-  --text-body:     0.9375rem;
-  --text-label:    0.75rem;
-  --text-mono-lg:  1rem;
-  --text-mono-sm:  0.6875rem;
-  --text-caption:  0.6875rem;
+  --text-title: 1.375rem;
+  --text-section: 1rem;
+  --text-body: 0.875rem;
+  --text-body-compact: 0.8125rem;
+  --text-label: 0.75rem;
+  --text-caption: 0.6875rem;
+  --text-mono-lg: 0.8125rem;
+  --text-mono-sm: 0.75rem;
+  --leading-display: 1.08;
+  --leading-title: 1.25;
+  --leading-body: 1.4286;
+  --leading-compact: 1.3846;
 
   /* Spacing */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  20px;
-  --space-6:  24px;
-  --space-8:  32px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
-  --space-24: 96px;
 
   /* Radius */
   --radius-sharp: 4px;
-  --radius-card:  16px;
-  --radius-pill:  9999px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-sheet: 16px;
+  --radius-pill: 9999px;
+
+  /* Control heights */
+  --height-titlebar: 36px;
+  --height-header: 48px;
+  --height-button-lg: 44px;
+  --height-button-md: 40px;
+  --height-button-sm: 32px;
+  --height-input: 44px;
+  --height-nav: 64px;
+
+  /* Shell metrics */
+  --screen-padding: 16px;
+  --sheet-padding: 20px;
+  --safe-bottom-space: 16px;
 
   /* Motion */
-  --duration-fast: 80ms;
-  --duration-base: 160ms;
-  --duration-slow: 200ms;
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast: 110ms;
+  --duration-base: 170ms;
+  --duration-slow: 230ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Layers */
+  --z-nav: 100;
+  --z-sheet: 200;
+  --z-modal: 240;
+  --z-toast: 300;
+}
+
+@media (min-width: 380px) {
+  :root {
+    --screen-padding: 20px;
+  }
+}
+
+@media (min-width: 420px) {
+  :root {
+    --screen-padding: 24px;
+  }
 }

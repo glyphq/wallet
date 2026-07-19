@@ -39,6 +39,7 @@ function useAppearance() {
     const root = document.documentElement;
     root.style.setProperty("--font-sans", pair.sans);
     root.style.setProperty("--font-mono", pair.mono);
+    root.style.setProperty("--font-display", pair.sans);
   }, [fontPair]);
 
   useEffect(() => {
