@@ -129,7 +129,7 @@ export default function TxDetailScreen() {
   if (isPendingTx(detail)) {
     const expired = currentTick > 0 && currentTick > detail.targetTick;
     const statusLabel = expired ? "Failed" : "Pending";
-    const statusColor = expired ? "var(--color-text-error)" : "var(--color-warning)";
+    const statusColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
     const amountColor = expired ? "var(--color-text-disabled)" : "var(--color-accent)";
     const displayTo = detail.contractName
       ? detail.contractName
@@ -179,7 +179,7 @@ export default function TxDetailScreen() {
 
   if (!flew) {
     statusLabel = "Failed";
-    statusColor = "var(--color-text-error)";
+    statusColor = "var(--color-status-error)";
     amountColor = "var(--color-text-disabled)";
   } else if (isSc) {
     statusLabel = procedureName ?? "SC call";
