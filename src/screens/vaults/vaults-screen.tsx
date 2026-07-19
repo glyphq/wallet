@@ -167,6 +167,8 @@ export default function VaultsScreen() {
       removeVault(deletingVault.id);
       const remaining = usePersistedStore.getState().vaults;
       if (remaining.length === 0) {
+        setDeletingVault(null);
+        sessionLock();
         navigate("/setup", { replace: true });
         return;
       }
