@@ -404,8 +404,6 @@ export default function VaultDetailScreen() {
   const statusBar = (
     <ScreenHeader
       title="Vault details"
-      eyebrow={currentVault.name}
-      leading={<Identicon seed={`${currentVault.id}:${currentVault.color}`} size={28} radius={8} />}
       onBack={() => navigate("/vaults")}
       action={
         currentVault.accounts.length < MAX_VAULT_ACCOUNTS

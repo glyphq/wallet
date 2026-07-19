@@ -1,13 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { HomeSmile, CardSend, CardReceive, MoneyBag, ClockCircle, Settings } from "@solar-icons/react";
+import { HomeSmile, CardSend, CardReceive, ClockCircle, Settings } from "@solar-icons/react";
 
-export type BottomNavTab = "home" | "send" | "receive" | "earn" | "history" | "settings";
+export type BottomNavTab = "home" | "send" | "receive" | "history" | "settings";
 
 const TABS = [
   { id: "home" as BottomNavTab,     label: "Home",     icon: HomeSmile,     path: "/dashboard" },
   { id: "send" as BottomNavTab,     label: "Send",     icon: CardSend,      path: "/send" },
   { id: "receive" as BottomNavTab,  label: "Receive",  icon: CardReceive,   path: "/receive" },
-  { id: "earn" as BottomNavTab,     label: "Earn",     icon: MoneyBag,      path: "/earn" },
   { id: "history" as BottomNavTab,  label: "History",  icon: ClockCircle,   path: "/history" },
   { id: "settings" as BottomNavTab, label: "Settings", icon: Settings,      path: "/settings" },
 ];

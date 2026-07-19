@@ -309,8 +309,6 @@ export default function VaultsScreen() {
       statusBar={
         <ScreenHeader
           title="Vaults"
-          eyebrow={vaults.find((vault) => vault.id === settings.activeVaultId)?.name ?? undefined}
-          leading={settings.activeVaultId ? <Identicon seed={`${settings.activeVaultId}:${vaults.find((vault) => vault.id === settings.activeVaultId)?.color ?? "slate"}`} size={28} radius={8} /> : null}
           onBack={() => navigate("/dashboard")}
           action={
             <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>

@@ -6,7 +6,6 @@ import { AltArrowDown, Eye, EyeClosed, Bell, MenuDots, ArrowRightUp, QrCode, Shi
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
-import { Identicon } from "@/components/identicon";
 import { ScreenHeader } from "@/components/screen-header";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -405,31 +404,16 @@ export default function DashboardScreen() {
   const statusBar = (
     <ScreenHeader
       title="Dashboard"
-      eyebrow={vault?.name ?? "No vault"}
-      leading={
-        <button
-          type="button"
-          onClick={() => navigate("/vaults")}
-          aria-label={`Open vaults. Current vault: ${vault?.name ?? "none"}`}
-          style={{ background: "transparent", border: "none", padding: 0, display: "flex", cursor: "pointer" }}
-        >
-          {vault ? (
-            <Identicon seed={`${vault.id}:${vault.color}`} size={30} radius={9} />
-          ) : (
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: "var(--color-bg-elevated)" }} />
-          )}
-        </button>
-      }
       action={
         <>
-          <IconButton label={`Network health: ${health}`} onClick={() => navigate("/settings/network")}>
-            <HealthBadge health={health} />
-          </IconButton>
           <IconButton
             label={settings.hideBalances ? "Show balances" : "Hide balances"}
             onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
           >
             {settings.hideBalances ? <EyeClosed size={18} weight="Linear" /> : <Eye size={18} weight="Linear" />}
+          </IconButton>
+          <IconButton label={`Network health: ${health}`} onClick={() => navigate("/settings/network")}>
+            <HealthBadge health={health} />
           </IconButton>
           <IconButton onClick={() => navigate("/settings/notifications")} label="Notifications" badge={hasAlerts}>
             <Bell size={18} weight="Linear" />

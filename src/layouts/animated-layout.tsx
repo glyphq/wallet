@@ -13,7 +13,6 @@ import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
 
 const NAV_PREFIXES: [string, BottomNavTab][] = [
-
   ["/dashboard", "home"],
   ["/send", "send"],
   ["/send-many", "send"],
@@ -21,7 +20,6 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/stake", "send"],
   ["/receive", "receive"],
   ["/payment-link", "receive"],
-  ["/earn", "earn"],
   ["/history", "history"],
   ["/analytics", "history"],
   ["/contacts", "history"],

@@ -71,7 +71,6 @@ export const router = createHashRouter([
       { path: "/send-many", element: <Screen component={SendManyScreen} /> },
       { path: "/burn", element: <Screen component={BurnScreen} /> },
       { path: "/stake", element: <Screen component={StakeScreen} /> },
-      { path: "/earn", element: <Screen component={StakeScreen} /> },
       { path: "/receive", element: <Screen component={ReceiveScreen} /> },
       { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
       { path: "/history", element: <Screen component={HistoryScreen} /> },

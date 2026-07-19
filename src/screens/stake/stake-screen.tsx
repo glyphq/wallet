@@ -319,7 +319,7 @@ export default function StakeScreen() {
         <AltArrowLeft size={20} />
       </button>
       <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Earn
+        Stake
       </span>
     </div>
   );
@@ -363,7 +363,7 @@ export default function StakeScreen() {
           >
             {tab === key && (
               <motion.span
-                layoutId="earn-tab-pill"
+                layoutId="stake-tab-pill"
                 transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 style={{
                   position: "absolute",
@@ -453,7 +453,7 @@ export default function StakeScreen() {
               <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
                 <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InfoCircle size={16} weight="Linear" /></span>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>
-                  Lock QU for {LOCK_PERIOD_EPOCHS} epochs to earn from the reward pool. Minimum {formatQu(QEARN_MIN_LOCK)} QU. Early unlock is available but rewards may be reduced.
+                  Lock QU for {LOCK_PERIOD_EPOCHS} epochs to participate in the reward pool. Minimum {formatQu(QEARN_MIN_LOCK)} QU. Early unlock is available but rewards may be reduced.
                 </span>
               </div>
 
@@ -621,7 +621,7 @@ export default function StakeScreen() {
                     No active positions
                   </span>
                   <button type="button" onClick={() => setTab("lock")} style={{ ...textBtn, color: "var(--color-accent)" }}>
-                    Lock QU to start earning
+                    Lock QU to start staking
                   </button>
                 </div>
               ) : (
@@ -920,7 +920,7 @@ export default function StakeScreen() {
               Done
             </button>
             <button type="button" onClick={() => { setStep("main"); refetchPositions(); }} style={textBtn}>
-              Back to earn
+              Back to staking
             </button>
           </div>
 

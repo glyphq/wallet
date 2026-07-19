@@ -7,11 +7,9 @@ export interface ScreenHeaderProps {
   onBack?: () => void;
   backAriaLabel?: string;
   action?: ReactNode;
-  leading?: ReactNode;
-  eyebrow?: string;
 }
 
-export function ScreenHeader({ title, onBack, backAriaLabel, action, leading, eyebrow }: ScreenHeaderProps) {
+export function ScreenHeader({ title, onBack, backAriaLabel, action }: ScreenHeaderProps) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%", minHeight: 52 }}>
       {onBack ? (
@@ -19,22 +17,7 @@ export function ScreenHeader({ title, onBack, backAriaLabel, action, leading, ey
           <AltArrowLeft size={22} aria-hidden="true" />
         </IconButton>
       ) : null}
-      {leading ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{leading}</div> : null}
-      <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: eyebrow ? 1 : 0 }}>
-        {eyebrow ? (
-          <span
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-caption)",
-              lineHeight: "var(--leading-compact)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--color-text-tertiary)",
-            }}
-          >
-            {eyebrow}
-          </span>
-        ) : null}
+      <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column" }}>
         <h1
           style={{
             margin: 0,
