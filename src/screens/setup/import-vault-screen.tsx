@@ -65,12 +65,15 @@ export default function ImportVaultScreen() {
   const [name, setName] = useState("");
 
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [seedError, setSeedError] = useState("");
   const [nameError, setNameError] = useState("");
   const [setupError, setSetupError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const strength = passwordStrength(password);
+  const passwordsMatch = password === confirmPassword;
+  const canSubmit = password.length >= 10 && strength.level >= 1 && confirmPassword.length > 0 && passwordsMatch;
 
   function validateAndContinue() {
     try {
@@ -91,7 +94,7 @@ export default function ImportVaultScreen() {
   }
 
   async function finish() {
-    if (!seed || strength.level < 1) return;
+    if (!seed || !canSubmit) return;
     setSetupError("");
     setLoading(true);
     try {
@@ -242,7 +245,7 @@ export default function ImportVaultScreen() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !loading && strength.level >= 1 && finish()}
+                  onKeyDown={(e) => e.key === "Enter" && !loading && canSubmit && finish()}
                   placeholder="••••••••••"
                   autoComplete="new-password"
                   spellCheck={false}
@@ -251,6 +254,28 @@ export default function ImportVaultScreen() {
                   autoFocus
                   style={inputField}
                 />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <label style={labelStyle}>Confirm password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !loading && canSubmit && finish()}
+                  placeholder="••••••••••"
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  aria-label="Confirm password"
+                  aria-invalid={confirmPassword.length > 0 && !passwordsMatch}
+                  aria-describedby={confirmPassword.length > 0 && !passwordsMatch ? "import-password-mismatch" : undefined}
+                  style={inputField}
+                />
+                {confirmPassword.length > 0 && !passwordsMatch && (
+                  <span id="import-password-mismatch" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>
+                    Passwords do not match.
+                  </span>
+                )}
               </div>
               {password.length > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
@@ -279,7 +304,7 @@ export default function ImportVaultScreen() {
               </div>
             )}
 
-            <motion.button type="button" onClick={finish} disabled={loading || strength.level < 1} {...gesture.press} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
+            <motion.button type="button" onClick={finish} disabled={loading || !canSubmit} {...gesture.press} style={{ ...accentPill, opacity: loading || !canSubmit ? 0.4 : 1 }}>
               {loading ? (
                 <span style={{ width: 16, height: 16, border: "2px solid var(--color-bg-base)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
               ) : (
