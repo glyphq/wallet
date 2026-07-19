@@ -76,6 +76,7 @@ export default function CreateVaultScreen() {
   const [seed] = useState<Seed>(() => generateRandomSeed());
   const [password, setPassword] = useState("");
   const [nameError, setNameError] = useState("");
+  const [setupError, setSetupError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -125,6 +126,7 @@ export default function CreateVaultScreen() {
 
   async function finish() {
     if (password.length < 10 || strength.level < 1) return;
+    setSetupError("");
     setLoading(true);
     try {
       const encryptedData = await createVault(password, [seed]);
@@ -146,12 +148,14 @@ export default function CreateVaultScreen() {
         }],
         encryptedData,
       };
+      const wallets = await unlockSecureSession([seed]);
       addVault(vault);
       setActiveVault(vault.id);
-      const wallets = await unlockSecureSession([seed]);
       unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
+      setSetupError("Vault setup could not be completed. Try again.");
+    } finally {
       setLoading(false);
     }
   }
@@ -449,6 +453,12 @@ export default function CreateVaultScreen() {
                 </div>
               )}
             </div>
+
+            {setupError && (
+              <div role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)", lineHeight: 1.5 }}>
+                {setupError}
+              </div>
+            )}
 
             <motion.button type="button" onClick={finish} disabled={loading || strength.level < 1} {...gesture.press} style={{ ...accentPill, opacity: loading || strength.level < 1 ? 0.4 : 1 }}>
               {loading ? (
