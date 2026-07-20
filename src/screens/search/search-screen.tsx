@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { UserRounded, UsersGroupRounded, TransferHorizontal, Document, Magnifier } from "@solar-icons/react";
@@ -36,6 +37,9 @@ interface SearchResult {
   title: string;
   subtitle: string;
   identity?: string;
+  badgeKind?: "account" | "contact" | "contract" | "identity";
+  badgeCode?: string;
+  badgeIcon?: ReactNode;
   onSelect: () => void;
 }
 
@@ -114,6 +118,8 @@ export default function SearchScreen() {
         title: account.accountName,
         subtitle: `${account.vaultName} · ${truncateId(account.identity)}`,
         identity: account.identity,
+        badgeKind: "account",
+        badgeCode: `A${account.accountIndex + 1}`,
         onSelect: () => {
           setActiveVault(account.vaultId);
           setActiveAccountIndex(account.accountIndex);
@@ -129,6 +135,7 @@ export default function SearchScreen() {
         title: contact.name,
         subtitle: contact.note ? `${truncateId(contact.identity)} · ${contact.note}` : truncateId(contact.identity),
         identity: contact.identity,
+        badgeKind: "contact",
         onSelect: () => navigate(`/send?to=${contact.identity}`),
       }));
 
@@ -173,6 +180,8 @@ export default function SearchScreen() {
         title: name,
         subtitle: truncateId(identity),
         identity,
+        badgeKind: "contract",
+        badgeIcon: <Document size={16} weight="Linear" aria-hidden="true" />,
         onSelect: () => navigate(`/send?to=${identity}`),
       }));
 
@@ -241,7 +250,7 @@ export default function SearchScreen() {
                   onClick={result.onSelect}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
                 >
-                  <Identicon seed={result.identity ?? result.key} size={32} radius={5} style={{ flexShrink: 0 }} />
+                  <Identicon kind={result.badgeKind ?? "identity"} code={result.badgeCode} icon={result.badgeIcon} seed={result.identity ?? result.key} label={result.title} size={32} radius={8} style={{ flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                       {result.title}

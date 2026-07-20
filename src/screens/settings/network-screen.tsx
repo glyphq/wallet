@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { stepMotion, gesture } from "@/lib/animations";
+import { stepMotion } from "@/lib/animations";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
+import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
 
@@ -73,37 +76,15 @@ export default function NetworkScreen() {
         {/* RPC endpoints */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <SettingsSectionLabel>RPC endpoints</SettingsSectionLabel>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <label htmlFor="live-api-url" style={labelStyle}>Live API</label>
-            <input id="live-api-url" type="url" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} aria-describedby="rpc-endpoint-help" value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" style={inputStyle} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <label htmlFor="archive-api-url" style={labelStyle}>Archive API</label>
-            <input id="archive-api-url" type="url" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" style={inputStyle} />
-          </div>
+          <Input id="live-api-url" label="Live API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" />
+          <Input id="archive-api-url" label="Archive API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" />
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <motion.button
-              {...gesture.press}
-              type="button"
-              onClick={testAndSave}
-              disabled={!liveUrl.trim() || !queryUrl.trim() || testStatus === "testing"}
-              aria-busy={testStatus === "testing"}
-              style={{
-                minHeight: 44, padding: "var(--space-2) var(--space-4)", background: "var(--color-accent)",
-                border: "none", borderRadius: "var(--radius-sharp)", cursor: "pointer",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                color: "var(--color-bg-base)", opacity: testStatus === "testing" ? 0.6 : 1,
-              }}
-            >
+            <Button size="md" style={{ width: "auto" }} onClick={testAndSave} disabled={!liveUrl.trim() || !queryUrl.trim() || testStatus === "testing"} aria-busy={testStatus === "testing"}>
               {testStatus === "testing" ? "Testing..." : "Test & save"}
-            </motion.button>
-            <motion.button type="button" {...gesture.pressSubtle} onClick={resetToDefaults} style={{
-              background: "none", border: "none", cursor: "pointer",
-              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-              color: "var(--color-text-disabled)", minHeight: 44, padding: "0 var(--space-2)",
-            }}>
+            </Button>
+            <TextButton onClick={resetToDefaults} tone="muted" style={{ minHeight: 44, padding: "0 var(--space-2)" }}>
               Reset
-            </motion.button>
+            </TextButton>
             {testStatus === "ok" && testTick !== null && (
               <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-success)" }}>
                 Tick #{testTick}
@@ -133,20 +114,9 @@ export default function NetworkScreen() {
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
             {TICK_PRESETS.map((v) => (
-              <motion.button
-                key={v}
-                {...gesture.pressSubtle}
-                onClick={() => updateSettings({ tickOffset: v })}
-                style={{
-                  padding: "var(--space-2) var(--space-4)",
-                  background: v === settings.tickOffset ? "var(--color-accent)" : "var(--color-bg-surface)",
-                  color: v === settings.tickOffset ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  border: "none", borderRadius: "var(--radius-pill)", cursor: "pointer",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                }}
-              >
+              <Button key={v} size="sm" variant={v === settings.tickOffset ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => updateSettings({ tickOffset: v })}>
                 +{v}
-              </motion.button>
+              </Button>
             ))}
           </div>
         </div>
@@ -154,15 +124,3 @@ export default function NetworkScreen() {
     </AppShell>
   );
 }
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-  fontWeight: 500, color: "var(--color-text-secondary)",
-};
-
-const inputStyle: React.CSSProperties = {
-  background: "transparent", border: "none",
-  borderBottom: "1px solid var(--color-border-subtle)",
-  padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-body)", color: "var(--color-text-primary)", width: "100%",
-};

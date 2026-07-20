@@ -136,7 +136,7 @@ export default function ContactsScreen() {
               onClick={() => navigate(`/send?to=${contact.identity}`)}
               style={{ flex: 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
             >
-              <Identicon seed={contact.identity} size={36} radius={6} style={{ marginTop: 2, flexShrink: 0 }} />
+              <Identicon kind="contact" seed={contact.identity} label={contact.name} size={36} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
               <div>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
                   {contact.name}

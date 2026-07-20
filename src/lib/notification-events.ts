@@ -46,7 +46,7 @@ export async function publishNotificationEvent(
     return null;
   }
   if (isLocked && !notifyWhenLocked) {
-    return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the vault is locked." };
+    return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the wallet is locked." };
   }
   const result = await notify(event.title, event.body);
   if (!result.ok) {

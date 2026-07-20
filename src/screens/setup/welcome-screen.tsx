@@ -16,13 +16,15 @@ import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
 import { Textarea } from "@/components/textarea";
+import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { parseAccountTags } from "@/lib/accounts";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { parseSignedExportEnvelope } from "@/lib/export-format";
+import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault, type VaultData, unlockVault } from "@/lib/vault";
-import { usePersistedStore, type AccountMeta, type VaultColor } from "@/store/persisted";
+import { usePersistedStore, type AccountMeta, type VaultColor, type WalletIconId } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
 const noticeStyle: Record<"warning" | "error", React.CSSProperties> = {
@@ -48,6 +50,7 @@ const cardStyle: React.CSSProperties = {
 interface ImportFileData {
   name: string;
   color: VaultColor;
+  icon?: WalletIconId;
   accounts: AccountMeta[];
   vault: VaultData;
   formatVersion: number;
@@ -114,10 +117,14 @@ export default function WelcomeScreen() {
   const [importFileError, setImportFileError] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [importWalletIcon, setImportWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
+  const [importWalletColor, setImportWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
   const [watchOpen, setWatchOpen] = useState(false);
   const [watchName, setWatchName] = useState("");
   const [watchInput, setWatchInput] = useState("");
   const [watchError, setWatchError] = useState("");
+  const [watchWalletIcon, setWatchWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
+  const [watchWalletColor, setWatchWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
 
   function parseWatchOnlyAccounts(raw: string): AccountMeta[] {
     return raw
@@ -154,6 +161,7 @@ export default function WelcomeScreen() {
           glyph: number;
           name: string;
           color: VaultColor;
+          icon?: WalletIconId;
           accounts: AccountMeta[];
           vault: VaultData;
         }>(text, "vault");
@@ -164,7 +172,8 @@ export default function WelcomeScreen() {
         const accounts: AccountMeta[] = envelopePayload.accounts ?? [];
         setImportData({
           name: envelopePayload.name,
-          color: envelopePayload.color ?? "slate",
+          color: envelopePayload.color ?? DEFAULT_WALLET_COLOR,
+          icon: envelopePayload.icon ?? DEFAULT_WALLET_ICON,
           accounts,
           vault: envelopePayload.vault as VaultData,
           formatVersion: parsed.version,
@@ -179,11 +188,13 @@ export default function WelcomeScreen() {
         }
         setImportPw("");
         setImportError("");
+        setImportWalletColor(envelopePayload.color ?? DEFAULT_WALLET_COLOR);
+        setImportWalletIcon(envelopePayload.icon ?? DEFAULT_WALLET_ICON);
       } catch {
         setImportData(null);
         setImportPw("");
         setImportError("");
-        setImportFileError("Invalid or unsupported vault file. Choose a Glyph export and try again.");
+        setImportFileError("Invalid or unsupported wallet file. Choose a Glyph export and try again.");
       }
     };
     input.click();
@@ -225,7 +236,8 @@ export default function WelcomeScreen() {
       addVault({
         id: newVaultId,
         name: importData.name,
-        color: importData.color,
+        color: importWalletColor,
+        icon: importWalletIcon,
         kind: "seeded",
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -236,7 +248,7 @@ export default function WelcomeScreen() {
       unlock(newVaultId, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setImportError("Could not import this vault. Check the password and try again.");
+      setImportError("Could not import this wallet. Check the password and try again.");
     } finally {
       setImportLoading(false);
     }
@@ -245,7 +257,7 @@ export default function WelcomeScreen() {
   function createWatchOnlyVault() {
     const name = watchName.trim();
     if (!name) {
-      setWatchError("Please enter a vault name");
+      setWatchError("Please enter a wallet name");
       return;
     }
     const accounts = parseWatchOnlyAccounts(watchInput);
@@ -262,7 +274,8 @@ export default function WelcomeScreen() {
     addVault({
       id: newVaultId,
       name,
-      color: "slate",
+      color: watchWalletColor,
+      icon: watchWalletIcon,
       kind: "watch_only",
       createdAt: Date.now(),
       lastUnlockedAt: Date.now(),
@@ -288,58 +301,55 @@ export default function WelcomeScreen() {
           width: "100%",
           maxWidth: 340,
           margin: "0 auto",
+          height: "100%",
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          gap: "var(--space-6)",
+          gap: "var(--space-8)",
         }}
       >
-        <BrandLockup subtitle="Independent software for Qubic" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+          <BrandLockup align="center" subtitle="Glyph Wallet" />
 
-        <FlowHeader
-          eyebrow="Setup"
-          title="Bring a vault under local control"
-          description="Create a new vault, import an existing seed, or open a watch-only workspace without changing wallet logic or request handling."
-        />
+          <FlowHeader
+            align="center"
+            title="Set up your wallet"
+          />
 
-        {hasPendingRequest ? (
-          <Notice tone="warning">
-            A dApp request is waiting. Create or import a wallet to review it.
-          </Notice>
-        ) : null}
+          {hasPendingRequest ? (
+            <Notice tone="warning">
+              A request is waiting.
+            </Notice>
+          ) : null}
 
-        <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <Button onClick={() => navigate("/setup/create")}>
-            <Wallet size={18} weight="Bold" />
-            Create vault
-          </Button>
-          <Button variant="secondary" onClick={() => navigate("/setup/import")}>
-            <DownloadMinimalistic size={16} weight="Linear" />
-            Import seed
-          </Button>
-          <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setWatchOpen(true)}>
-            <Eye size={16} weight="Linear" />
-            Create watch-only vault
-          </Button>
-          <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
-            <Document size={16} weight="Outline" />
-            Import vault file
-          </Button>
+          {importFileError ? <Notice tone="error">{importFileError}</Notice> : null}
         </div>
 
-        {importFileError ? <Notice tone="error">{importFileError}</Notice> : null}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <Button onClick={() => navigate("/setup/create")}>
+              <Wallet size={18} weight="Bold" />
+              Create wallet
+            </Button>
+            <Button variant="secondary" onClick={() => navigate("/setup/import")}>
+              <DownloadMinimalistic size={16} weight="Linear" />
+              Import seed
+            </Button>
+          </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-caption)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--color-text-tertiary)",
-            }}
-          >
-            Security boundary
-          </span>
+          <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setWatchOpen(true)}>
+              <Eye size={16} weight="Linear" />
+              Create watch-only wallet
+            </Button>
+            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
+              <Document size={16} weight="Outline" />
+              Import wallet file
+            </Button>
+          </div>
+
           <p
             style={{
               margin: 0,
@@ -347,21 +357,29 @@ export default function WelcomeScreen() {
               fontSize: "var(--text-body-compact)",
               lineHeight: "var(--leading-body)",
               color: "var(--color-text-secondary)",
+              textAlign: "center",
             }}
           >
-            Keys remain encrypted on this device. Signing occurs in the native wallet process after you unlock a vault.
+            Keys stay encrypted on this device.
           </p>
         </div>
       </motion.div>
 
-      <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? "vault"}`}>
+      <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? "wallet"}`}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
           <FlowHeader
             eyebrow="Import file"
-            title={importData?.name ?? "Import vault"}
+            title={importData?.name ?? "Import wallet"}
             description={importData && importData.accounts.length > MAX_VAULT_ACCOUNTS
               ? `${selectedIndices.size} of ${MAX_VAULT_ACCOUNTS} account slots selected.`
               : `${importData?.accounts.length ?? 0} ${(importData?.accounts.length ?? 0) === 1 ? "account" : "accounts"} in this export.`}
+          />
+
+          <WalletAppearancePicker
+            icon={importWalletIcon}
+            color={importWalletColor}
+            onIconChange={setImportWalletIcon}
+            onColorChange={setImportWalletColor}
           />
 
           <div
@@ -459,7 +477,7 @@ export default function WelcomeScreen() {
           ) : null}
 
           <Input
-            label="Vault password"
+            label="Wallet password"
             type="password"
             value={importPw}
             onChange={(event) => {
@@ -475,21 +493,21 @@ export default function WelcomeScreen() {
 
           <Button onClick={doImport} disabled={importDisabled} loading={importLoading}>
             {importLoading ? <Spinner /> : null}
-            Import vault
+            Import wallet
           </Button>
         </div>
       </Sheet>
 
-      <Sheet open={watchOpen} onClose={() => setWatchOpen(false)} title="Create watch-only vault">
+      <Sheet open={watchOpen} onClose={() => setWatchOpen(false)} title="Create watch-only wallet">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
           <FlowHeader
             eyebrow="Watch only"
-            title="Create a read-only vault"
+            title="Create a read-only wallet"
             description="Add one identity per line. You can include an optional label after a comma."
           />
 
           <Input
-            label="Vault name"
+            label="Wallet name"
             value={watchName}
             onChange={(event) => {
               setWatchName(event.target.value);
@@ -497,6 +515,13 @@ export default function WelcomeScreen() {
             }}
             placeholder="Treasury, validators, cold wallet"
             autoFocus
+          />
+
+          <WalletAppearancePicker
+            icon={watchWalletIcon}
+            color={watchWalletColor}
+            onIconChange={setWatchWalletIcon}
+            onColorChange={setWatchWalletColor}
           />
 
           <Textarea
@@ -513,7 +538,7 @@ export default function WelcomeScreen() {
             error={watchError}
           />
 
-          <Button onClick={createWatchOnlyVault}>Create watch-only vault</Button>
+          <Button onClick={createWatchOnlyVault}>Create watch-only wallet</Button>
         </div>
       </Sheet>
     </FullPage>

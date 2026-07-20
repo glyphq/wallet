@@ -44,7 +44,7 @@ body {
   line-height: var(--leading-body);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
-  background-color: var(--color-bg-base);
+  background: transparent;
   color: var(--color-text-primary);
   overflow: hidden;
 }
@@ -54,6 +54,8 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--color-bg-base);
+  border-radius: var(--radius-window);
+  overflow: hidden;
 }
 
 button,
@@ -131,12 +133,37 @@ a:hover {
     border-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out);
 }
 
+.glyph-btn:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.glyph-btn[data-variant="primary"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-text-inverse) 8%, transparent);
+}
+
+.glyph-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: var(--color-text-display);
+  border-color: var(--color-text-display);
+}
+
+.glyph-btn[data-variant="secondary"]:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.glyph-btn[data-variant="ghost"]:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.glyph-btn[data-variant="danger"]:hover:not(:disabled) {
+  background: var(--color-status-error-soft);
+}
+
 .glyph-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  background-color: var(--color-bg-press);
 }
 
 .glyph-input {
@@ -150,22 +177,54 @@ a:hover {
 
 .glyph-input:hover:not(:disabled) {
   border-color: var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-bg-input) 88%, white 12%);
 }
 
 .glyph-input:focus {
   outline: none;
   border-color: var(--color-focus-ring);
-  box-shadow: 0 0 0 3px var(--color-focus-ring-soft);
+  box-shadow: var(--shadow-focus);
 }
 
 .glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 0 3px rgba(255, 95, 87, 0.12);
+  box-shadow: 0 0 0 3px var(--color-status-error-soft);
 }
 
 .glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 0 3px rgba(255, 95, 87, 0.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-status-error) 18%, transparent);
+}
+
+.glyph-icon-btn {
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.glyph-icon-btn:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.glyph-icon-btn:active:not(:disabled) {
+  background: var(--color-bg-press);
+}
+
+.glyph-surface {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.glyph-panel {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-elevated);
 }
 
 @keyframes shake {

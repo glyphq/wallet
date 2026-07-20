@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, Eye, EyeClosed, Bell, MenuDots, ArrowRightUp, QrCode, ShieldCheck, ShieldWarning, ShieldCross } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
-import { IconButton } from "@/components/icon-button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
-import { useNetworkHealth } from "@/hooks/use-network-health";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
@@ -125,7 +123,7 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
           style={{
             position: "absolute", top: "calc(100% + var(--space-2))", left: 0, zIndex: 100,
             minWidth: 200, background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "var(--shadow-floating)",
           }}
         >
           {visibleAccounts.map((account) => {
@@ -338,19 +336,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   );
 }
 
-// ── Health badge ─────────────────────────────────────────────────────────────
-
-const HEALTH_CONFIG: Record<string, { color: string; Icon: typeof ShieldCheck }> = {
-  healthy: { color: "var(--color-status-success)", Icon: ShieldCheck },
-  degraded: { color: "var(--color-status-warning)", Icon: ShieldWarning },
-  offline: { color: "var(--color-status-error)", Icon: ShieldCross },
-};
-
-function HealthBadge({ health }: { health: string }) {
-  const cfg = HEALTH_CONFIG[health] ?? HEALTH_CONFIG.offline;
-  return <cfg.Icon size={16} color={cfg.color} aria-hidden="true" />;
-}
-
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
@@ -359,7 +344,6 @@ export default function DashboardScreen() {
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
-  const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const isLocked = useSessionStore((s) => s.isLocked);
   const wallets = useSessionStore((s) => s.wallets);
@@ -370,10 +354,8 @@ export default function DashboardScreen() {
   const watchOnly = isWatchOnlyVault(vault);
 
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
-  const health = useNetworkHealth();
   const { data: stats } = useLatestStats();
   const { data: ownedAssets } = useOwnedAssets(identity);
-  const txAlerts = useSessionStore((s) => s.txAlerts);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
   // Compute 24h price change from snapshots
@@ -398,26 +380,9 @@ export default function DashboardScreen() {
     if (isLocked) navigate("/lock", { replace: true });
   }, [isLocked, navigate]);
 
-  const hasAlerts = txAlerts.length > 0;
-
   return (
     <AppShell contentStyle={{ padding: "var(--space-4)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-1)" }}>
-          <IconButton
-            label={settings.hideBalances ? "Show balances" : "Hide balances"}
-            onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
-          >
-            {settings.hideBalances ? <EyeClosed size={18} weight="Linear" /> : <Eye size={18} weight="Linear" />}
-          </IconButton>
-          <IconButton label={`Network health: ${health}`} onClick={() => navigate("/settings/network")}>
-            <HealthBadge health={health} />
-          </IconButton>
-          <IconButton onClick={() => navigate("/settings/notifications")} label="Notifications" badge={hasAlerts}>
-            <Bell size={18} weight="Linear" />
-          </IconButton>
-        </div>
 
         {/* Hero: account + balance */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>
@@ -451,7 +416,7 @@ export default function DashboardScreen() {
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500,
                   color: priceChange24h >= 0 ? "var(--color-status-success)" : "var(--color-status-error)",
                   padding: "1px var(--space-2)", borderRadius: "var(--radius-pill)",
-                  background: priceChange24h >= 0 ? "rgba(52,199,89,0.1)" : "rgba(255,59,48,0.1)",
+                  background: priceChange24h >= 0 ? "var(--color-status-success-soft)" : "var(--color-status-error-soft)",
                 }}>
                   {priceChange24h >= 0 ? "+" : ""}{priceChange24h.toFixed(1)}%
                 </span>

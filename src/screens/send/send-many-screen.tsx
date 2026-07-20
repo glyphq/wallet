@@ -10,6 +10,9 @@ import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
 import { AddressSuggestions } from "@/components/address-suggestions";
+import { EmbeddedInput } from "@/components/embedded-input";
+import { TextButton } from "@/components/text-button";
+import { Textarea } from "@/components/textarea";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore } from "@/store/persisted";
@@ -242,12 +245,12 @@ export default function SendManyScreen() {
 
         {/* Import links */}
         <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)" }}>
-          <motion.button {...gesture.pressSubtle} onClick={() => setImportOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          <TextButton onClick={() => setImportOpen(true)} tone="muted">
             <Clipboard size={12} /> Paste list
-          </motion.button>
-          <motion.button {...gesture.pressSubtle} onClick={openImportFile} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          </TextButton>
+          <TextButton onClick={openImportFile} tone="muted">
             <Document size={12} /> Import CSV
-          </motion.button>
+          </TextButton>
         </div>
 
         {/* Recipient rows */}
@@ -267,7 +270,7 @@ export default function SendManyScreen() {
                 {/* Identity row */}
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-                  <input
+                  <EmbeddedInput
                     ref={(el) => { if (el) identityRefs.current.set(i, el); else identityRefs.current.delete(i); }}
                     autoComplete="off"
                     value={r.identity}
@@ -276,11 +279,7 @@ export default function SendManyScreen() {
                     onBlur={() => setTimeout(() => setFocusIndex(null), 150)}
                     onKeyDown={(e) => e.key === "Enter" && goReview()}
                     placeholder={recipients.length > 1 ? `Recipient ${i + 1}` : "Identity or contact"}
-                    style={{
-                      flex: 1, background: "none", border: "none", outline: "none",
-                      fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                      color: "var(--color-text-display)", padding: 0, minWidth: 0,
-                    }}
+                    style={{ flex: 1 }}
                   />
                   {canOpenPicker && (
                     <button onClick={() => setPickerIndex(i)}
@@ -299,18 +298,15 @@ export default function SendManyScreen() {
                 {/* Amount row */}
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", flexShrink: 0, width: 20, textAlign: "center" }}>QU</span>
-                  <input
+                  <EmbeddedInput
                     autoComplete="off"
                     value={r.amount}
                     onChange={(e) => setField(i, { amount: e.target.value.replace(/[^0-9]/g, ""), amountError: "" })}
                     onKeyDown={(e) => e.key === "Enter" && goReview()}
                     placeholder="Amount"
                     inputMode="numeric"
-                    style={{
-                      flex: 1, background: "none", border: "none", outline: "none",
-                      fontFamily: "var(--font-mono)", fontSize: "var(--text-body)",
-                      color: "var(--color-text-display)", padding: 0, minWidth: 0,
-                    }}
+                    technical
+                    style={{ flex: 1 }}
                   />
                   {price && r.amount && Number(r.amount) > 0 && (
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", flexShrink: 0 }}>
@@ -340,7 +336,7 @@ export default function SendManyScreen() {
                   background: "var(--color-bg-elevated)",
                   borderRadius: "var(--radius-card)",
                   border: "1px solid var(--color-border-subtle)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  boxShadow: "var(--shadow-overlay)",
                   maxHeight: 200, overflowY: "auto",
 
                 }}>
@@ -356,15 +352,9 @@ export default function SendManyScreen() {
 
         {/* Add recipient */}
         {recipients.length < MAX_RECIPIENTS && (
-          <motion.button {...gesture.pressSubtle} onClick={addRecipient} style={{
-            background: "none", border: "1px dashed var(--color-border-strong)",
-            borderRadius: "var(--radius-card)", padding: "var(--space-3)",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-            fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-            color: "var(--color-text-disabled)", width: "100%",
-          }}>
+          <Button variant="secondary" size="md" onClick={addRecipient}>
             <AddCircle size={14} /> Add recipient ({recipients.length}/{MAX_RECIPIENTS})
-          </motion.button>
+          </Button>
         )}
 
         {/* Summary card */}
@@ -431,19 +421,12 @@ export default function SendManyScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
               CSV: identity, amount, label. JSON arrays with identity and amount.
             </div>
-            <textarea
+            <Textarea
               value={importText}
               onChange={(e) => { setImportText(e.target.value); setImportError(""); }}
               rows={6}
               placeholder={"identity,amount,label\nABC...,1000,Treasury"}
-              style={{
-                width: "100%", resize: "vertical",
-                background: "var(--color-bg-surface)", color: "var(--color-text-primary)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)", padding: "var(--space-3)",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                outline: "none", boxSizing: "border-box",
-              }}
+              style={{ minHeight: 144 }}
             />
             {importError && (
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>{importError}</span>
@@ -536,7 +519,7 @@ export default function SendManyScreen() {
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -544,7 +527,7 @@ export default function SendManyScreen() {
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueConfirmed && (
-          <div style={{ background: "rgba(245, 158, 11, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer", userSelect: "none" }}
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer", userSelect: "none" }}
             role="checkbox" aria-checked={highValueConfirmed} tabIndex={0}
             onClick={() => setHighValueConfirmed(true)}
             onKeyDown={(e) => e.key === "Enter" && setHighValueConfirmed(true)}>
@@ -655,7 +638,7 @@ export default function SendManyScreen() {
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
       <div style={{ textAlign: "center" }}>

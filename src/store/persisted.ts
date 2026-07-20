@@ -36,6 +36,7 @@ export type {
   RuntimeIssue,
   ScheduledTransfer,
   VaultColor,
+  WalletIconId,
   VaultMeta,
 } from "./persisted-types";
 

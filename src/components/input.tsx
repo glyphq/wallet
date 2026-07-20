@@ -1,14 +1,18 @@
-import type { CSSProperties, InputHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   containerStyle?: CSSProperties;
+  labelStyle?: CSSProperties;
   rightElement?: ReactNode;
   technical?: boolean;
 }
 
-export function Input({ label, error, style, id, containerStyle, rightElement, technical = false, ...props }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { label, error, style, id, containerStyle, labelStyle, rightElement, technical = false, ...props },
+  ref,
+) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
   const errorId = inputId ? `${inputId}-error` : undefined;
   const maxLength = props.maxLength ?? (props.type === "password" ? 128 : undefined);
@@ -16,6 +20,7 @@ export function Input({ label, error, style, id, containerStyle, rightElement, t
   const inputEl = (
     <input
       {...props}
+      ref={ref}
       maxLength={maxLength}
       spellCheck={false}
       autoComplete={props.autoComplete ?? "off"}
@@ -25,7 +30,7 @@ export function Input({ label, error, style, id, containerStyle, rightElement, t
       aria-invalid={error ? "true" : undefined}
       aria-describedby={error && errorId ? errorId : undefined}
       style={{
-        background: "var(--color-bg-surface-2)",
+        background: "var(--color-bg-input)",
         borderRadius: "var(--radius-control)",
         padding: rightElement ? "var(--space-3) 40px var(--space-3) var(--space-4)" : "var(--space-3) var(--space-4)",
         fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
@@ -33,6 +38,7 @@ export function Input({ label, error, style, id, containerStyle, rightElement, t
         lineHeight: technical ? "var(--leading-compact)" : "var(--leading-body)",
         color: "var(--color-text-primary)",
         fontVariantNumeric: "tabular-nums",
+        letterSpacing: technical ? "0.01em" : 0,
         width: "100%",
         ...style,
       }}
@@ -48,7 +54,9 @@ export function Input({ label, error, style, id, containerStyle, rightElement, t
             fontFamily: "var(--font-sans)",
             fontSize: "var(--text-label)",
             color: "var(--color-text-secondary)",
-            letterSpacing: "0.02em",
+            fontWeight: 500,
+            letterSpacing: "0.01em",
+            ...labelStyle,
           }}
         >
           {label}
@@ -78,4 +86,4 @@ export function Input({ label, error, style, id, containerStyle, rightElement, t
       )}
     </div>
   );
-}
+});

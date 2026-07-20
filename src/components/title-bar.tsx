@@ -81,8 +81,7 @@ export function TitleBar() {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        background: "var(--color-bg-surface)",
-        borderBottom: "1px solid var(--color-border-subtle)",
+        background: "var(--color-bg-header)",
         flexShrink: 0,
         userSelect: "none",
       }}
@@ -101,20 +100,19 @@ export function TitleBar() {
           style={{
             fontFamily: "var(--font-display)",
             fontSize: "var(--text-caption)",
-            fontWeight: 500,
-            letterSpacing: "0.08em",
+            fontWeight: 600,
+            letterSpacing: "0.04em",
             color: "var(--color-text-primary)",
-            textTransform: "lowercase",
           }}
         >
-          glyph
+          Glyph Wallet
         </span>
         {version && (
           <span
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "var(--text-caption)",
-              letterSpacing: "0.08em",
+              letterSpacing: "0.06em",
               color: "var(--color-text-tertiary)",
             }}
           >

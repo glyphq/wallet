@@ -12,12 +12,17 @@
   /* Backgrounds */
   --color-bg-canvas: #0b0c0d;
   --color-bg-base: var(--color-bg-canvas);
-  --color-bg-surface: #101214;
-  --color-bg-surface-2: #16181b;
-  --color-bg-elevated: #1d2024;
-  --color-bg-subtle: #14171a;
-  --color-bg-inset: #0e1012;
-  --color-bg-overlay: #101214;
+  --color-bg-surface: rgb(40 40 40 / 1);
+  --color-bg-surface-2: #161616;
+  --color-bg-elevated: #1c1c1c;
+  --color-bg-subtle: #141414;
+  --color-bg-inset: #101010;
+  --color-bg-overlay: #191919;
+  --color-bg-header: rgba(11, 12, 13, 0.94);
+  --color-bg-nav: rgba(11, 12, 13, 0.96);
+  --color-bg-input: rgb(40 40 40 / 1);
+  --color-bg-hover: rgb(48 48 48 / 1);
+  --color-bg-press: rgb(56 56 56 / 1);
   --color-scrim: rgba(0, 0, 0, 0.68);
 
   /* Text */
@@ -32,26 +37,47 @@
   --color-border-subtle: rgba(255, 255, 255, 0.08);
   --color-border-default: rgba(255, 255, 255, 0.12);
   --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-border-contrast: rgba(255, 255, 255, 0.24);
 
   /* Accent */
-  --color-accent: #ccfcfb;
-  --color-accent-hover: #e8ffff;
-  --color-accent-muted: rgba(204, 252, 251, 0.12);
-  --color-accent-contrast: #081112;
+  --color-accent: #e6e6e6;
+  --color-accent-hover: #f2f2f2;
+  --color-accent-muted: rgba(230, 230, 230, 0.12);
+  --color-accent-contrast: #0b0c0d;
   --color-focus-ring: var(--color-accent);
-  --color-focus-ring-soft: rgba(204, 252, 251, 0.24);
+  --color-focus-ring-soft: rgba(230, 230, 230, 0.18);
+  --color-wallet-accent-slate: #ccfcfb;
+  --color-wallet-accent-sky: #7dd3fc;
+  --color-wallet-accent-emerald: #6ee7b7;
+  --color-wallet-accent-amber: #fbbf24;
+  --color-wallet-accent-violet: #a78bfa;
+  --color-wallet-accent-red: #f87171;
 
   /* Status */
   --color-status-success: #34c759;
   --color-status-warning: #ffb020;
   --color-status-error: #ff5f57;
   --color-status-info: #8cb8ff;
+  --color-status-success-soft: rgba(52, 199, 89, 0.12);
+  --color-status-warning-soft: rgba(255, 176, 32, 0.12);
+  --color-status-error-soft: rgba(255, 95, 87, 0.12);
+  --color-status-info-soft: rgba(140, 184, 255, 0.12);
 
   /* Derived surfaces */
-  --color-skeleton: rgba(255, 255, 255, 0.08);
+  --color-skeleton: rgba(255, 255, 255, 0.065);
+  --color-qr-surface: #ffffff;
+  --color-qr-ink: #111111;
+  --color-qr-overlay: rgba(255, 255, 255, 0.86);
   --color-chart-primary: var(--color-accent);
   --color-chart-secondary: rgba(255, 255, 255, 0.28);
   --color-chart-grid: rgba(255, 255, 255, 0.08);
+
+  /* Shadows */
+  --shadow-elevated: 0 10px 24px rgba(0, 0, 0, 0.28);
+  --shadow-floating: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-surface: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-focus: 0 0 0 3px var(--color-focus-ring-soft);
 
   /* Typography */
   --text-display: 2.375rem;
@@ -83,23 +109,24 @@
 
   /* Radius */
   --radius-sharp: 4px;
-  --radius-control: 8px;
+  --radius-control: 12px;
   --radius-card: 12px;
   --radius-sheet: 16px;
+  --radius-window: 18px;
   --radius-pill: 9999px;
 
   /* Control heights */
-  --height-titlebar: 36px;
-  --height-header: 56px;
-  --height-button-lg: 44px;
-  --height-button-md: 40px;
-  --height-button-sm: 32px;
+  --height-titlebar: 34px;
+  --height-header: 60px;
+  --height-button-lg: 48px;
+  --height-button-md: 42px;
+  --height-button-sm: 36px;
   --height-input: 44px;
-  --height-nav: 64px;
+  --height-nav: 60px;
 
   /* Shell metrics */
   --screen-padding: 16px;
-  --sheet-padding: 20px;
+  --sheet-padding: 24px;
   --safe-bottom-space: 16px;
 
   /* Motion */

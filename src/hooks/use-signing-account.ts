@@ -41,7 +41,7 @@ export function useSigningAccount(from?: string): SigningAccount {
       return {
         wallet: null,
         accountName: "",
-        fromError: "Identity not in this vault",
+        fromError: "Identity not in this wallet",
         selectedIndex: -1,
         setSelectedIndex,
         showPicker: false,

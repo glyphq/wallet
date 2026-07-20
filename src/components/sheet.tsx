@@ -252,7 +252,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
           onClick={onClose}
           style={{
             position: "fixed", inset: 0,
-            background: "rgba(0,0,0,0.72)",
+            background: "var(--color-scrim)",
             display: "flex", flexDirection: "column", justifyContent: "flex-end",
             zIndex: layer,
           }}
@@ -270,23 +270,24 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
               style={{
                 background: "var(--color-bg-elevated)",
                 borderTop: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-card) var(--radius-card) 0 0",
-                padding: "var(--space-4) var(--space-4) 0",
+                borderRadius: "var(--radius-sheet) var(--radius-sheet) 0 0",
+                padding: "var(--sheet-padding) var(--sheet-padding) 0",
                 maxHeight: "80vh",
                 display: "flex",
                 flexDirection: "column",
+                boxShadow: "var(--shadow-elevated)",
               }}
             >
               {/* Drag handle */}
               <div aria-hidden="true" style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-4)" }}>
-                <div style={{ width: 36, height: 3, background: "var(--color-border-strong)", borderRadius: 2 }} />
+                <div style={{ width: 32, height: 2, background: "var(--color-border-contrast)", borderRadius: 999 }} />
               </div>
 
               {title && (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
                   <h2 id={titleId} style={{
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                    color: "var(--color-text-secondary)", margin: 0,
+                    fontFamily: "var(--font-display)", fontSize: "var(--text-section)", fontWeight: 600,
+                    color: "var(--color-text-primary)", letterSpacing: "-0.02em", margin: 0,
                   }}>
                     {title}
                   </h2>
@@ -301,7 +302,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
                 </div>
               )}
 
-              <div style={{ overflowY: "auto", flex: 1, padding: "0 var(--space-1) var(--space-4)" }}>
+              <div style={{ overflowY: "auto", flex: 1, padding: "0 0 var(--space-4)" }}>
                 {children}
               </div>
 

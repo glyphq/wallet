@@ -499,7 +499,7 @@ export default function StakeScreen() {
                     <div style={{
                       position: "absolute", top: "calc(100% + var(--space-2))", left: 0, zIndex: 100,
                       minWidth: 200, background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
-                      borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+                      borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "var(--shadow-floating)",
                     }}>
                       {visibleAccounts.map((account) => {
                         const isActive = account.index === unlockAccountIdx;
@@ -609,7 +609,7 @@ export default function StakeScreen() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0", gap: "var(--space-3)" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
                             <div style={{ position: "relative" }}>
-                              <Identicon seed={`qearn-pos-${pos.epoch}`} size={40} radius={6} style={{ flexShrink: 0 }} />
+                              <Identicon kind="position" code={`E${pos.epoch}`} seed={`qearn-pos-${pos.epoch}`} label={`Epoch ${pos.epoch}`} size={40} radius={8} style={{ flexShrink: 0 }} />
                               <span style={{
                                 position: "absolute", bottom: -2, right: -2,
                                 width: 12, height: 12, borderRadius: "50%",
@@ -867,7 +867,7 @@ export default function StakeScreen() {
 
           {/* Status */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-4)", gap: "var(--space-2)" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(204, 252, 251, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <MoneyBag size={22} style={{ color: "var(--color-accent)" }} />
             </div>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
@@ -907,7 +907,7 @@ export default function StakeScreen() {
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-        <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
         </div>
         <div style={{ textAlign: "center" }}>

@@ -17,7 +17,7 @@ export function FullPage({ children, centered = true, style }: FullPageProps) {
         justifyContent: centered ? "safe center" : "flex-start",
         padding: "var(--space-8) var(--screen-padding)",
         background: "var(--color-bg-base)",
-        overflowY: "auto",
+        overflow: "hidden",
         ...style,
       }}
     >

@@ -50,7 +50,7 @@ export function Textarea({
           minHeight: 120,
           padding: "var(--space-3) var(--space-4)",
           background: "var(--color-bg-surface-2)",
-          borderRadius: "var(--radius-control)",
+          borderRadius: "var(--radius-pill)",
           color: "var(--color-text-primary)",
           fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
           fontSize: technical ? "var(--text-mono-sm)" : "var(--text-body)",

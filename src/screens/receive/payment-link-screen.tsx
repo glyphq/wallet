@@ -13,7 +13,8 @@ import { getVaultAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
 
 const WEB_BASE = "https://wallet.glyphq.org/pay";
-
+const QR_BG = "var(--color-qr-surface)";
+const QR_FG = "var(--color-qr-ink)";
 
 function buildLinks(to: string, amount: string, label: string) {
   const params = new URLSearchParams({ to });
@@ -167,12 +168,12 @@ export default function PaymentLinkScreen() {
               </div>
 
               {/* QR */}
-              <div style={{ padding: "var(--space-4)", background: "#fff", borderRadius: "var(--radius-card)" }}>
+              <div style={{ padding: "var(--space-4)", background: QR_BG, borderRadius: "var(--radius-card)" }}>
                 <QRCodeSVG
                   value={qrMode === "web" ? links.web : links.deep}
                   size={200}
-                  bgColor="#FFFFFF"
-                  fgColor="#111111"
+                  bgColor={QR_BG}
+                  fgColor={QR_FG}
                   level="M"
                 />
               </div>

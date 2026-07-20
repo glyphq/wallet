@@ -15,12 +15,14 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { StepProgress } from "@/components/step-progress";
+import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { deriveIdentityFromSeed, InvalidSeedError, newId, toSeed, type Seed } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
+import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { passwordStrength } from "@/lib/password-strength";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault } from "@/lib/vault";
-import { usePersistedStore, type VaultColor } from "@/store/persisted";
+import { usePersistedStore, type VaultColor, type WalletIconId } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
 type Step = 1 | 2 | 3;
@@ -103,6 +105,8 @@ export default function ImportVaultScreen() {
   const [seed, setSeed] = useState<Seed | null>(null);
   const [derivedIdentity, setDerivedIdentity] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [walletIcon, setWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
+  const [walletColor, setWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
@@ -129,7 +133,7 @@ export default function ImportVaultScreen() {
 
   function goStep3() {
     if (!name.trim()) {
-      setNameError("Please enter a vault name");
+      setNameError("Please enter a wallet name");
       return;
     }
     setNameError("");
@@ -145,7 +149,8 @@ export default function ImportVaultScreen() {
       const vault = {
         id: newId(),
         name: name.trim(),
-        color: "slate" as VaultColor,
+        color: walletColor,
+        icon: walletIcon,
         kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -166,52 +171,55 @@ export default function ImportVaultScreen() {
       unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setSetupError("Vault setup could not be completed. Try again.");
+      setSetupError("Wallet setup could not be completed. Try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <FullPage centered={false} style={{ justifyContent: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
+    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
       <div
         style={{
           width: "100%",
           maxWidth: 340,
           margin: "0 auto",
+          height: "100%",
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           gap: "var(--space-6)",
         }}
       >
-        <BrandLockup compact subtitle="Import an existing encrypted seed" />
+        <BrandLockup align="center" compact subtitle="Import an existing encrypted seed" />
         <StepProgress current={step} total={3} />
 
         {step === 1 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 1"
-              title="Enter the seed"
-              description="Use the exact 55 lowercase letters. The seed is only used to derive and encrypt local vault data."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Enter your seed"
+              />
 
-            <Input
-              label="Seed phrase"
-              technical
-              type="password"
-              value={seedInput}
-              onChange={(event) => {
-                setSeedInput(event.target.value);
-                if (seedError) setSeedError("");
-              }}
-              onKeyDown={(event) => event.key === "Enter" && validateAndContinue()}
-              placeholder="55 lowercase letters"
-              autoCapitalize="none"
-              autoFocus
-              error={seedError}
-            />
+              <Input
+                label="Seed phrase"
+                technical
+                type="password"
+                value={seedInput}
+                onChange={(event) => {
+                  setSeedInput(event.target.value);
+                  if (seedError) setSeedError("");
+                }}
+                onKeyDown={(event) => event.key === "Enter" && validateAndContinue()}
+                placeholder="55 lowercase letters"
+                autoCapitalize="none"
+                autoFocus
+                error={seedError}
+              />
+            </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
               <Button onClick={validateAndContinue}>
                 Continue
                 <AltArrowRight size={16} weight="Outline" />
@@ -225,15 +233,15 @@ export default function ImportVaultScreen() {
         ) : null}
 
         {step === 2 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 2"
-              title="Name the imported vault"
-              description="The vault name stays local. It helps distinguish this seed from other workspaces."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Name your wallet"
+              />
 
-            {derivedIdentity ? (
-              <div style={cardStyle}>
+              {derivedIdentity ? (
+                <div style={cardStyle}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                   <span
                     style={{
@@ -258,45 +266,55 @@ export default function ImportVaultScreen() {
                     {truncateId(derivedIdentity, 12, 12)}
                   </span>
                 </div>
-              </div>
-            ) : null}
+                </div>
+              ) : null}
 
-            <Input
-              label="Vault name"
-              value={name}
-              onChange={(event) => {
-                setName(event.target.value);
-                setNameError("");
-              }}
-              onKeyDown={(event) => event.key === "Enter" && goStep3()}
-              placeholder="Main, trading, cold storage"
-              autoFocus
-              error={nameError}
-            />
+              <Input
+                label="Wallet name"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setNameError("");
+                }}
+                onKeyDown={(event) => event.key === "Enter" && goStep3()}
+                placeholder="Main, trading, cold storage"
+                autoFocus
+                error={nameError}
+              />
 
-            <Button onClick={goStep3}>
-              Continue
-              <AltArrowRight size={16} weight="Outline" />
-            </Button>
+              <WalletAppearancePicker
+                icon={walletIcon}
+                color={walletColor}
+                onIconChange={setWalletIcon}
+                onColorChange={setWalletColor}
+              />
+            </div>
+
+            <div style={{ flexShrink: 0 }}>
+              <Button onClick={goStep3}>
+                Continue
+                <AltArrowRight size={16} weight="Outline" />
+              </Button>
+            </div>
           </motion.div>
         ) : null}
 
         {step === 3 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 3"
-              title="Set the vault password"
-              description="Use at least 10 characters. The password is required to decrypt local vault data on this device."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Set a password"
+              />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <Input
                 label="Password"
                 type={passwordsVisible ? "text" : "password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 onKeyDown={(event) => event.key === "Enter" && !loading && canSubmit && finish()}
-                placeholder="Enter a vault password"
+                placeholder="Enter a wallet password"
                 autoComplete="new-password"
                 autoFocus
                 rightElement={<PasswordVisibilityButton visible={passwordsVisible} onToggle={() => setPasswordsVisible((visible) => !visible)} />}
@@ -313,31 +331,34 @@ export default function ImportVaultScreen() {
                 error={confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match." : undefined}
               />
 
-              {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
+                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
+              </div>
+
+              {setupError ? (
+                <div
+                  role="alert"
+                  style={{
+                    padding: "var(--space-4)",
+                    border: "1px solid color-mix(in srgb, var(--color-status-error) 45%, transparent)",
+                    borderRadius: "var(--radius-surface)",
+                    background: "color-mix(in srgb, var(--color-status-error) 10%, var(--color-bg-surface))",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-body-compact)",
+                    lineHeight: "var(--leading-body)",
+                    color: "var(--color-status-error)",
+                  }}
+                >
+                  {setupError}
+                </div>
+              ) : null}
             </div>
 
-            {setupError ? (
-              <div
-                role="alert"
-                style={{
-                  padding: "var(--space-4)",
-                  border: "1px solid color-mix(in srgb, var(--color-status-error) 45%, transparent)",
-                  borderRadius: "var(--radius-surface)",
-                  background: "color-mix(in srgb, var(--color-status-error) 10%, var(--color-bg-surface))",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-body-compact)",
-                  lineHeight: "var(--leading-body)",
-                  color: "var(--color-status-error)",
-                }}
-              >
-                {setupError}
-              </div>
-            ) : null}
-
-            <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
-              <LockKeyhole size={16} weight="Outline" />
-              Import vault
-            </Button>
+            <div style={{ flexShrink: 0 }}>
+              <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
+                <LockKeyhole size={16} weight="Outline" />
+                Import wallet
+              </Button>
+            </div>
           </motion.div>
         ) : null}
       </div>

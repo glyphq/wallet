@@ -14,9 +14,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT: Record<Variant, CSSProperties> = {
   primary: {
-    background: "var(--color-accent)",
-    color: "var(--color-accent-contrast)",
-    borderColor: "var(--color-accent)",
+    background: "var(--color-text-primary)",
+    color: "var(--color-text-inverse)",
+    borderColor: "var(--color-text-primary)",
   },
   secondary: {
     background: "var(--color-bg-surface)",
@@ -43,13 +43,13 @@ const SIZE: Record<Size, CSSProperties> = {
 
 const SHAPE: Record<Shape, CSSProperties> = {
   pill: { borderRadius: "var(--radius-pill)" },
-  sharp: { borderRadius: "var(--radius-control)" },
+  sharp: { borderRadius: "var(--radius-pill)" },
 };
 
 export function Button({
   variant = "primary",
   size = "lg",
-  shape = "sharp",
+  shape = "pill",
   loading = false,
   children,
   style,
@@ -63,6 +63,9 @@ export function Button({
       {...props}
       disabled={disabled || loading}
       className={`glyph-btn ${className}`}
+      data-variant={variant}
+      data-size={size}
+      data-shape={shape}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -71,12 +74,13 @@ export function Button({
         position: "relative",
         fontFamily: "var(--font-sans)",
         fontWeight: 500,
-        letterSpacing: "0.01em",
+        letterSpacing: "0.005em",
         fontSize: "var(--text-body)",
         border: "1px solid",
         cursor: disabled || loading ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,
         lineHeight: 1,
+        whiteSpace: "nowrap",
         ...VARIANT[variant],
         ...SIZE[size],
         ...SHAPE[shape],
@@ -95,7 +99,7 @@ export function Button({
           }}
         />
       )}
-      <span style={{ visibility: loading ? "hidden" : "visible", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
+      <span style={{ visibility: loading ? "hidden" : "visible", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", width: "100%" }}>
         {children}
       </span>
     </button>

@@ -6,6 +6,7 @@ import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
 import { ScreenHeader } from "@/components/screen-header";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 
@@ -31,6 +32,7 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
 
 const HEADER_TITLES: [string, string][] = [
   ["/dashboard", "Dashboard"],
+  ["/vaults/:id/portfolio", "Portfolio"],
   ["/vaults", "Vaults"],
   ["/vaults/", "Vault details"],
   ["/send/scheduled", "Scheduled transfers"],
@@ -70,6 +72,8 @@ function activeTabFromPath(pathname: string): BottomNavTab {
 }
 
 function headerTitleFromPath(pathname: string): string | null {
+  if (pathname.endsWith("/portfolio")) return "Portfolio";
+
   for (const [prefix, title] of HEADER_TITLES) {
     if (prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix || pathname.startsWith(prefix + "/")) {
       return title;
@@ -98,7 +102,7 @@ function LayoutShell() {
   const showNav = show;
   const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
-  const resolvedHeader = header ?? (routeTitle ? <ScreenHeader title={routeTitle} /> : null);
+  const resolvedHeader = header ?? (routeTitle ? <ScreenHeader leading={<ShellVaultSwitcher />} title={routeTitle} /> : null);
 
   const prevRef = useRef(cur);
   const prev = prevRef.current;
@@ -108,7 +112,7 @@ function LayoutShell() {
   const transition = isSameSection(prev, cur) ? instantTransition : pageTransition;
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
       {/* ── Static header ── */}
       {show && resolvedHeader && (
         <header
@@ -118,7 +122,7 @@ function LayoutShell() {
             display: "flex",
             alignItems: "center",
             padding: "0 var(--screen-padding)",
-            background: "var(--color-bg-base)",
+            background: "var(--color-bg-header)",
           }}
         >
           {resolvedHeader}
@@ -146,12 +150,12 @@ function LayoutShell() {
       )}
 
       {/* ── Animated page content ── */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden" }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.key}
             {...transition}
-            style={{ height: "100%", position: "absolute", inset: 0 }}
+            style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, minWidth: 0, position: "absolute", inset: 0 }}
           >
             {element}
           </motion.div>

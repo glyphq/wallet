@@ -54,7 +54,7 @@ export default function AuditLogScreen() {
                   <span style={{
                     fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500,
                     padding: "1px var(--space-2)", borderRadius: "var(--radius-pill)",
-                    background: event.status === "failure" ? "rgba(255,59,48,0.1)" : event.status === "success" ? "rgba(52,199,89,0.1)" : "var(--color-bg-elevated)",
+                    background: event.status === "failure" ? "var(--color-status-error-soft)" : event.status === "success" ? "var(--color-status-success-soft)" : "var(--color-bg-elevated)",
                     color: event.status === "failure" ? "var(--color-status-error)" : event.status === "success" ? "var(--color-status-success)" : "var(--color-text-disabled)",
                   }}>
                     {event.status}

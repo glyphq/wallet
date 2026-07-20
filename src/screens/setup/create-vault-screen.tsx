@@ -17,13 +17,15 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { StepProgress } from "@/components/step-progress";
+import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { deriveIdentityFromSeed, generateRandomSeed, newId, type Seed } from "@/lib/crypto";
+import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { passwordStrength } from "@/lib/password-strength";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault } from "@/lib/vault";
-import { usePersistedStore, type VaultColor } from "@/store/persisted";
+import { usePersistedStore, type VaultColor, type WalletIconId } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
 type Step = 1 | 2 | 3 | 4;
@@ -111,6 +113,8 @@ export default function CreateVaultScreen() {
 
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
+  const [walletIcon, setWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
+  const [walletColor, setWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
   const [seed] = useState<Seed>(() => generateRandomSeed());
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -138,7 +142,7 @@ export default function CreateVaultScreen() {
 
   function goStep2() {
     if (!name.trim()) {
-      setNameError("Please enter a vault name");
+      setNameError("Please enter a wallet name");
       return;
     }
     setNameError("");
@@ -176,7 +180,8 @@ export default function CreateVaultScreen() {
       const vault = {
         id: newId(),
         name: name.trim(),
-        color: "slate" as VaultColor,
+        color: walletColor,
+        icon: walletIcon,
         kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -197,49 +202,59 @@ export default function CreateVaultScreen() {
       unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setSetupError("Vault setup could not be completed. Try again.");
+      setSetupError("Wallet setup could not be completed. Try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <FullPage centered={false} style={{ justifyContent: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
+    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
       <div
         style={{
           width: "100%",
           maxWidth: 340,
           margin: "0 auto",
+          height: "100%",
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           gap: "var(--space-6)",
         }}
       >
-        <BrandLockup compact subtitle="Create a new encrypted vault" />
+        <BrandLockup align="center" compact subtitle="Create a new encrypted wallet" />
         <StepProgress current={step} total={4} />
 
         {step === 1 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 1"
-              title="Name the vault"
-              description="Choose a label you will recognize later. This does not affect keys or addresses."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Name your wallet"
+              />
 
-            <Input
-              label="Vault name"
-              value={name}
-              onChange={(event) => {
-                setName(event.target.value);
-                setNameError("");
-              }}
-              onKeyDown={(event) => event.key === "Enter" && goStep2()}
-              placeholder="Main, trading, cold storage"
-              autoFocus
-              error={nameError}
-            />
+              <Input
+                label="Wallet name"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setNameError("");
+                }}
+                onKeyDown={(event) => event.key === "Enter" && goStep2()}
+                placeholder="Main, trading, cold storage"
+                autoFocus
+                error={nameError}
+              />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <WalletAppearancePicker
+                icon={walletIcon}
+                color={walletColor}
+                onIconChange={setWalletIcon}
+                onColorChange={setWalletColor}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
               <Button onClick={goStep2}>
                 Continue
                 <AltArrowRight size={16} weight="Bold" />
@@ -253,14 +268,14 @@ export default function CreateVaultScreen() {
         ) : null}
 
         {step === 2 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 2"
-              title="Back up the seed"
-              description="Write it down exactly. This seed cannot be recovered if it is lost."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Back up your seed"
+              />
 
-            <div style={cardStyle}>
+              <div style={cardStyle}>
               <div
                 style={{
                   display: "flex",
@@ -344,35 +359,38 @@ export default function CreateVaultScreen() {
                   </button>
                 ) : null}
               </div>
+              </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-              <Button variant="secondary" size="md" onClick={copySeed}>
-                <Copy size={14} weight="Outline" />
-                {copied ? "Copied" : "Copy"}
-              </Button>
-              <Button variant="secondary" size="md" onClick={() => setSeedRevealed((visible) => !visible)}>
-                {seedRevealed ? <EyeClosed size={14} weight="Outline" /> : <Eye size={14} weight="Outline" />}
-                {seedRevealed ? "Hide" : "Reveal"}
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <Button variant="secondary" size="md" onClick={copySeed}>
+                  <Copy size={14} weight="Outline" />
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+                <Button variant="secondary" size="md" onClick={() => setSeedRevealed((visible) => !visible)}>
+                  {seedRevealed ? <EyeClosed size={14} weight="Outline" /> : <Eye size={14} weight="Outline" />}
+                  {seedRevealed ? "Hide" : "Reveal"}
+                </Button>
+              </div>
+
+              <Button onClick={() => setStep(3)}>
+                <CheckCircle size={16} weight="Bold" />
+                I have written it down
               </Button>
             </div>
-
-            <Button onClick={() => setStep(3)}>
-              <CheckCircle size={16} weight="Bold" />
-              I have written it down
-            </Button>
           </motion.div>
         ) : null}
 
         {step === 3 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 3"
-              title="Confirm the backup"
-              description="Fill in the highlighted characters to prove the written backup is accurate."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Confirm the backup"
+              />
 
-            <div style={cardStyle}>
+              <div style={cardStyle}>
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -464,31 +482,83 @@ export default function CreateVaultScreen() {
                   </div>
                 );
               })}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "var(--space-3)" }}>
+                {checkPositions.map((position, index) => {
+                  const value = checkInputs[index];
+                  const correct = value ? value === seed[position] : null;
+                  return (
+                    <div key={position} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "var(--text-caption)",
+                          color: "var(--color-text-tertiary)",
+                          textAlign: "center",
+                        }}
+                      >
+                        #{position + 1}
+                      </span>
+                      <input
+                        ref={(element) => {
+                          checkRefs.current[index] = element;
+                        }}
+                        autoComplete="off"
+                        value={value}
+                        onChange={(event) => handleCheckInput(index, event.target.value)}
+                        onKeyDown={(event) => handleCheckKey(index, event)}
+                        maxLength={1}
+                        autoFocus={index === 0}
+                        style={{
+                          width: "100%",
+                          minHeight: "var(--height-button-md)",
+                          textAlign: "center",
+                          background: "var(--color-bg-surface-2)",
+                          border: `1px solid ${
+                            value
+                              ? correct
+                                ? "var(--color-accent)"
+                                : "var(--color-status-error)"
+                              : "var(--color-border-default)"
+                          }`,
+                          borderRadius: "var(--radius-control)",
+                          color: "var(--color-text-primary)",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "var(--text-mono-lg)",
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <Button onClick={() => setStep(4)} disabled={!checkComplete}>
-              Confirm backup
-              <CheckCircle size={16} weight="Bold" />
-            </Button>
+            <div style={{ flexShrink: 0 }}>
+              <Button onClick={() => setStep(4)} disabled={!checkComplete}>
+                Confirm backup
+                <CheckCircle size={16} weight="Bold" />
+              </Button>
+            </div>
           </motion.div>
         ) : null}
 
         {step === 4 ? (
-          <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <FlowHeader
-              eyebrow="Step 4"
-              title="Set the vault password"
-              description="Use at least 10 characters. The password is never stored and is required to decrypt local vault data."
-            />
+          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
+              <FlowHeader
+                align="center"
+                title="Set a password"
+              />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <Input
                 label="Password"
                 type={passwordsVisible ? "text" : "password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 onKeyDown={(event) => event.key === "Enter" && !loading && canSubmit && finish()}
-                placeholder="Enter a vault password"
+                placeholder="Enter a wallet password"
                 autoComplete="new-password"
                 autoFocus
                 rightElement={<PasswordVisibilityButton visible={passwordsVisible} onToggle={() => setPasswordsVisible((visible) => !visible)} />}
@@ -505,31 +575,34 @@ export default function CreateVaultScreen() {
                 error={confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match." : undefined}
               />
 
-              {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
+                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
+              </div>
+
+              {setupError ? (
+                <div
+                  role="alert"
+                  style={{
+                    padding: "var(--space-4)",
+                    border: "1px solid color-mix(in srgb, var(--color-status-error) 45%, transparent)",
+                    borderRadius: "var(--radius-surface)",
+                    background: "color-mix(in srgb, var(--color-status-error) 10%, var(--color-bg-surface))",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-body-compact)",
+                    lineHeight: "var(--leading-body)",
+                    color: "var(--color-status-error)",
+                  }}
+                >
+                  {setupError}
+                </div>
+              ) : null}
             </div>
 
-            {setupError ? (
-              <div
-                role="alert"
-                style={{
-                  padding: "var(--space-4)",
-                  border: "1px solid color-mix(in srgb, var(--color-status-error) 45%, transparent)",
-                  borderRadius: "var(--radius-surface)",
-                  background: "color-mix(in srgb, var(--color-status-error) 10%, var(--color-bg-surface))",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-body-compact)",
-                  lineHeight: "var(--leading-body)",
-                  color: "var(--color-status-error)",
-                }}
-              >
-                {setupError}
-              </div>
-            ) : null}
-
-            <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
-              <LockKeyhole size={16} weight="Bold" />
-              Create vault
-            </Button>
+            <div style={{ flexShrink: 0 }}>
+              <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
+                <LockKeyhole size={16} weight="Bold" />
+                Create wallet
+              </Button>
+            </div>
           </motion.div>
         ) : null}
       </div>

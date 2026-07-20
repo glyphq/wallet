@@ -11,13 +11,14 @@ export function IconButton({ label, children, badge = false, style, ...props }: 
     <button
       type="button"
       aria-label={label}
+      className="glyph-icon-btn"
       {...props}
       style={{
         position: "relative",
         width: 40,
         height: 40,
-        borderRadius: 999,
-        border: "none",
+        borderRadius: "var(--radius-pill)",
+        border: "1px solid transparent",
         background: "transparent",
         display: "inline-flex",
         alignItems: "center",
@@ -25,16 +26,7 @@ export function IconButton({ label, children, badge = false, style, ...props }: 
         color: "var(--color-text-secondary)",
         cursor: props.disabled ? "not-allowed" : "pointer",
         opacity: props.disabled ? 0.45 : 1,
-        transition: "color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out)",
         ...style,
-      }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.color = "var(--color-text-primary)";
-        event.currentTarget.style.transform = "translateY(-1px)";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.color = "var(--color-text-secondary)";
-        event.currentTarget.style.transform = "translateY(0)";
       }}
     >
       {children}

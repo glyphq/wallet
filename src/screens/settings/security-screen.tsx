@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { SettingsSwitch } from "@/components/settings-switch";
@@ -184,79 +186,36 @@ export default function SecurityScreen() {
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-success)" }}>
                   Enabled for {vault.name}
                 </span>
-                <motion.button
-                  {...gesture.pressSubtle}
-                  onClick={handleDisable}
-                  style={{
-                    padding: "var(--space-3)", background: "transparent",
-                    border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
-                    cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                    fontWeight: 500, color: "var(--color-status-error)", width: "100%",
-                  }}
-                >
+                <Button variant="danger" onClick={handleDisable}>
                   Disable
-                </motion.button>
+                </Button>
               </>
             ) : enabling ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
                   Enter your password to enable
                 </span>
-                <input
+                <Input
                   ref={pwRef} type="password" value={enablePw}
+                  label="Password"
                   onChange={(e) => { setEnablePw(e.target.value); setEnableError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleEnable()}
                   placeholder="Password"
-                  style={{
-                    background: "transparent", border: "none",
-                    borderBottom: "1px solid var(--color-border-subtle)",
-                    padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body)", color: "var(--color-text-display)", outline: "none",
-                  }}
+                  error={enableError || undefined}
                 />
-                {enableError && (
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
-                    {enableError}
-                  </span>
-                )}
                 <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                  <motion.button
-                    {...gesture.press} onClick={handleEnable} disabled={enableLoading}
-                    style={{
-                      flex: 1, padding: "var(--space-3)", background: "var(--color-accent)",
-                      border: "none", borderRadius: "var(--radius-sharp)", cursor: "pointer",
-                      fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                      color: "var(--color-bg-base)", opacity: enableLoading ? 0.6 : 1,
-                    }}
-                  >
+                  <Button style={{ flex: 1 }} onClick={handleEnable} loading={enableLoading}>
                     {enableLoading ? "Verifying..." : "Enable"}
-                  </motion.button>
-                  <button
-                    onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
-                    style={{
-                      padding: "var(--space-3) var(--space-4)", background: "transparent",
-                      border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
-                      cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                      fontWeight: 500, color: "var(--color-text-secondary)",
-                    }}
-                  >
+                  </Button>
+                  <Button variant="secondary" style={{ width: "auto" }} onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <motion.button
-                {...gesture.pressSubtle}
-                onClick={() => setEnabling(true)}
-                style={{
-                  padding: "var(--space-3)", background: "transparent",
-                  border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                  fontWeight: 500, color: "var(--color-accent)", width: "100%",
-                }}
-              >
+              <Button variant="secondary" onClick={() => setEnabling(true)}>
                 Enable for {vault.name}
-              </motion.button>
+              </Button>
             )}
           </div>
         )}

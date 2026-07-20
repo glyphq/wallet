@@ -7,6 +7,19 @@ export type VaultColor =
   | "emerald"
   | "sky"
   | "violet";
+export type WalletIconId =
+  | "wallet"
+  | "wallet-money"
+  | "safe"
+  | "shield"
+  | "folder"
+  | "home"
+  | "buildings"
+  | "compass"
+  | "star"
+  | "rocket"
+  | "planet"
+  | "key";
 export type FontPairId =
   | "default"
   | "inter"
@@ -40,6 +53,7 @@ export interface VaultMeta {
   id: string;
   name: string;
   color: VaultColor;
+  icon?: WalletIconId;
   kind?: "seeded" | "watch_only";
   createdAt: number;
   lastUnlockedAt: number;

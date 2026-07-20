@@ -25,8 +25,9 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
         maxWidth: 420,
         minHeight: "var(--height-nav)",
         boxSizing: "border-box",
-        padding: 0,
-        background: "var(--color-bg-base)",
+        padding: "2px var(--space-1)",
+        background: "var(--color-bg-nav)",
+        borderRadius: "var(--radius-card)",
       }}
     >
       {TABS.map(({ id, label, icon: Icon, path }) => {
@@ -41,31 +42,29 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
             style={{
               position: "relative",
               display: "flex",
-              flexDirection: "column",
               flex: "1 1 0",
               alignItems: "center",
               justifyContent: "center",
-              gap: "var(--space-1)",
-              minHeight: 58,
-              padding: "var(--space-3) var(--space-1)",
-              background: "transparent",
+              minHeight: 48,
+              padding: "var(--space-1) var(--space-1)",
+              background: isActive ? "var(--color-bg-subtle)" : "transparent",
               borderRadius: "var(--radius-control)",
               border: "none",
               cursor: "pointer",
               color: isActive ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-              transition: "color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out)",
+              transition: "color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out)",
               minWidth: 44,
             }}
             onMouseEnter={(e) => {
               if (!isActive) {
                 e.currentTarget.style.color = "var(--color-text-primary)";
-                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.background = "var(--color-bg-hover)";
               }
             }}
             onMouseLeave={(e) => {
               if (!isActive) {
                 e.currentTarget.style.color = "var(--color-text-secondary)";
-                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.background = "transparent";
               }
             }}
           >
@@ -73,19 +72,16 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
               aria-hidden="true"
               style={{
                 position: "absolute",
-                top: 0,
-                width: 24,
+                top: 4,
+                width: 18,
                 height: 2,
                 borderRadius: 999,
-                background: isActive ? "var(--color-accent)" : "transparent",
+                background: isActive ? "var(--color-text-primary)" : "transparent",
                 transition: "background-color var(--duration-fast) var(--ease-out)",
               }}
             />
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon size={24} weight={isActive ? "BoldDuotone" : "Linear"} aria-hidden="true" />
-            </span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: isActive ? 600 : 500, lineHeight: 1.1, whiteSpace: "nowrap" }}>
-              {label}
             </span>
           </button>
         );

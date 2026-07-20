@@ -15,8 +15,8 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { truncateId } from "@/lib/format";
 
 // High-contrast pair required for QR readability
-const QR_BG = "#FFFFFF";
-const QR_FG = "#111111";
+const QR_BG = "var(--color-qr-surface)";
+const QR_FG = "var(--color-qr-ink)";
 
 export default function ReceiveScreen() {
   const navigate = useNavigate();
@@ -55,7 +55,7 @@ export default function ReceiveScreen() {
 
         <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            {identity && <Identicon seed={identity} size={36} radius={6} />}
+            {identity && <Identicon kind="account" code={`A${settings.activeAccountIndex + 1}`} seed={identity} label={vault?.accounts[settings.activeAccountIndex]?.name} size={36} radius={8} />}
             <div style={{ display: "flex", flexDirection: "column" }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>
                 {accountName}
@@ -98,7 +98,7 @@ export default function ReceiveScreen() {
                 style={{ display: "block", filter: hideBalances && !qrRevealed ? "blur(12px)" : "none", transition: "filter 0.15s ease" }}
               />
               {hideBalances && !qrRevealed && (
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", borderRadius: "var(--radius-card)" }}>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-qr-overlay)", borderRadius: "var(--radius-card)" }}>
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-bg-base)" }}>
                     Tap or hover to reveal
                   </span>

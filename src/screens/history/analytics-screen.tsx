@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
@@ -24,7 +23,6 @@ export default function AnalyticsScreen() {
 
   return (
     <AppShell
-      statusBar={<ScreenHeader title="Analytics" onBack={() => navigate("/history")} />}
       contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
     >
       {isLoading && !analytics && (

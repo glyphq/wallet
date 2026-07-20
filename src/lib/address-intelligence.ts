@@ -86,7 +86,7 @@ export function buildAddressSuggestions({
       {
         identity: account.identity,
         label: account.name,
-        secondary: [account.note, ...(account.tags ?? []).map((tag) => `#${tag}`)].filter(Boolean).join(" · ") || "Vault account",
+        secondary: [account.note, ...(account.tags ?? []).map((tag) => `#${tag}`)].filter(Boolean).join(" · ") || "Wallet account",
         kind: "account",
       },
       200,

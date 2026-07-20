@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderOpen, Eye, AddCircle, Settings } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
-import { IconButton } from "@/components/icon-button";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
 import { Identicon } from "@/components/identicon";
-import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta } from "@/store/persisted";
+import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta, type WalletIconId } from "@/store/persisted";
+import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, type VaultData } from "@/lib/vault";
@@ -64,6 +63,7 @@ export default function VaultsScreen() {
   interface ImportData {
     name: string;
     color: VaultColor;
+    icon?: WalletIconId;
     accounts: AccountMeta[];
     vault: VaultData;
     formatVersion: number;
@@ -204,6 +204,7 @@ export default function VaultsScreen() {
           glyph: number;
           name: string;
           color: VaultColor;
+          icon?: WalletIconId;
           accounts: unknown[];
           vault: VaultData;
         }>(text, "vault");
@@ -219,7 +220,8 @@ export default function VaultsScreen() {
           }));
         setImportData({
           name: parsed.payload.name,
-          color: parsed.payload.color ?? "slate",
+          color: parsed.payload.color ?? DEFAULT_WALLET_COLOR,
+          icon: parsed.payload.icon ?? DEFAULT_WALLET_ICON,
           accounts: sanitizedAccounts,
           vault: parsed.payload.vault as VaultData,
           formatVersion: parsed.version,
@@ -246,6 +248,7 @@ export default function VaultsScreen() {
         id: newId(),
         name: importData.name,
         color: importData.color,
+        icon: importData.icon ?? DEFAULT_WALLET_ICON,
         kind: "seeded",
         createdAt: Date.now(),
         lastUnlockedAt: 0,
@@ -287,7 +290,8 @@ export default function VaultsScreen() {
     addVault({
       id: newId(),
       name,
-      color: "slate",
+      color: DEFAULT_WALLET_COLOR,
+      icon: DEFAULT_WALLET_ICON,
       kind: "watch_only",
       createdAt: Date.now(),
       lastUnlockedAt: Date.now(),
@@ -305,28 +309,21 @@ export default function VaultsScreen() {
   const sorted = vaults.slice().sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
 
   return (
-    <AppShell
-      statusBar={
-        <ScreenHeader
-          title="Vaults"
-          onBack={() => navigate("/dashboard")}
-          action={
-            <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
-              <IconButton label="Import vault" onClick={openImportPicker}>
-                <FolderOpen size={18} weight="Linear" />
-              </IconButton>
-              <IconButton label="Create watch-only vault" onClick={() => setWatchOpen(true)}>
-                <Eye size={18} weight="Linear" />
-              </IconButton>
-              <IconButton label="Create new vault" onClick={() => navigate("/setup/create")}>
-                <AddCircle size={18} weight="Linear" />
-              </IconButton>
-            </div>
-          }
-        />
-      }
-      contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}
-    >
+    <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+        <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")}>
+          <AddCircle size={18} aria-hidden="true" />
+          New vault
+        </Button>
+        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openImportPicker}>
+          <FolderOpen size={18} aria-hidden="true" />
+          Import vault
+        </Button>
+        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={() => setWatchOpen(true)}>
+          <Eye size={18} aria-hidden="true" />
+          Watch-only
+        </Button>
+      </div>
       {/* Vault list */}
       {sorted.map((vault) => {
         const isActive = vault.id === settings.activeVaultId;
@@ -343,7 +340,7 @@ export default function VaultsScreen() {
               background: isActive ? "var(--color-bg-elevated)" : "transparent",
               borderRadius: "var(--radius-card)",
               border: `1px solid ${isActive ? "var(--color-border-strong)" : "transparent"}`,
-              boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+              boxShadow: "none",
               transition: "background 0.12s, border-color 0.12s, box-shadow 0.12s",
             }}
           >
@@ -356,7 +353,7 @@ export default function VaultsScreen() {
                 flex: 1, minWidth: 0, textAlign: "left", padding: 0,
               }}
             >
-              <Identicon seed={`${vault.id}:${vault.color}`} size={36} radius={8} style={{ flexShrink: 0 }} />
+              <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={10} style={{ flexShrink: 0 }} walletIcon={vault.icon} vaultColor={vault.color} />
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                   <span style={{

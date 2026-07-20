@@ -6,7 +6,9 @@ import { ArrowRightUp, QrCode, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, S
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
+import { EmbeddedInput } from "@/components/embedded-input";
 import { Input } from "@/components/input";
+import { TextButton } from "@/components/text-button";
 import { ContactPicker } from "@/components/contact-picker";
 import { AddressSuggestions } from "@/components/address-suggestions";
 import { usePersistedStore } from "@/store/persisted";
@@ -78,7 +80,7 @@ function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: ()
             }}
             onPointerDown={(e) => {
               if (!isActive) return;
-              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.background = "var(--color-bg-hover)";
               e.currentTarget.style.transform = "scale(0.95)";
             }}
             onPointerUp={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "scale(1)"; }}
@@ -313,7 +315,7 @@ export default function SendScreen() {
 
           {/* Draft notice */}
           {draftRestored && (
-            <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "rgba(245, 158, 11, 0.1)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
               <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "var(--text-label)" }}>Draft restored</span>
               <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-status-warning)", fontSize: "0.625rem", padding: 0 }}>✕</button>
             </div>
@@ -341,8 +343,7 @@ export default function SendScreen() {
             }
           </span>
 
-          <button
-            type="button"
+          <TextButton
             onClick={() => {
               if (!usdMode && price && amountStr) {
                 setUsdStr((Number(amountStr) * price).toFixed(2));
@@ -353,13 +354,13 @@ export default function SendScreen() {
               }
               setUsdMode((v) => !v);
             }}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0 }}
+            tone="muted"
           >
             {usdMode
               ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
               : (usdEquiv !== null && usdEquiv > 0 ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "USD")
             }
-          </button>
+          </TextButton>
 
           {amountError && (
             <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)" }}>{amountError}</span>
@@ -372,11 +373,11 @@ export default function SendScreen() {
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
             padding: "var(--space-4) var(--space-4)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.2), 0 0 1px rgba(255,255,255,0.05)",
+            boxShadow: "var(--shadow-surface)",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-              <input
+              <EmbeddedInput
                 ref={destRef}
                 autoComplete="off"
                 value={destination}
@@ -384,11 +385,7 @@ export default function SendScreen() {
                 placeholder="Enter identity or contact"
                 onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = "var(--color-text-secondary)"; }}
                 onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
-                style={{
-                  flex: 1, background: "none", border: "none", outline: "none",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                  color: "var(--color-text-display)", padding: 0, minWidth: 0,
-                }}
+                style={{ flex: 1 }}
               />
               {canOpenPicker && (
                 <button onClick={() => setShowPicker(true)}
@@ -407,7 +404,7 @@ export default function SendScreen() {
               background: "var(--color-bg-elevated)",
               borderRadius: "var(--radius-card)",
               border: "1px solid var(--color-border-subtle)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+              boxShadow: "var(--shadow-overlay)",
               maxHeight: 240, overflowY: "auto",
               animation: "slide-down 0.15s ease-out",
             }}>
@@ -447,15 +444,13 @@ export default function SendScreen() {
             </span>
           </Button>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "var(--space-3)" }}>
-            <motion.button {...gesture.pressSubtle} onClick={() => navigate("/send-many")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
+            <TextButton onClick={() => navigate("/send-many")} tone="muted">
               Send to many
-            </motion.button>
+            </TextButton>
             <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-text-disabled)", opacity: 0.5, flexShrink: 0 }} />
-            <motion.button {...gesture.pressSubtle} onClick={() => navigate("/burn")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
+            <TextButton onClick={() => navigate("/burn")} tone="muted">
               Burn QU
-            </motion.button>
+            </TextButton>
           </div>
         </div>
 
@@ -539,7 +534,7 @@ export default function SendScreen() {
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -547,9 +542,9 @@ export default function SendScreen() {
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueVerified && (
-          <div style={{ background: "rgba(245, 158, 11, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — confirm with vault password</span>
-            <Input type="password" label="Vault password" value={highValuePassword}
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — confirm with wallet password</span>
+            <Input type="password" label="Wallet password" value={highValuePassword}
               onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
               onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
               error={highValuePasswordError} placeholder="••••••••••" autoComplete="current-password" />
@@ -746,7 +741,7 @@ export default function SendScreen() {
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{
         width: 48, height: 48, borderRadius: "50%",
-        background: "rgba(255, 59, 48, 0.1)",
+        background: "var(--color-status-error-soft)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />

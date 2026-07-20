@@ -737,7 +737,7 @@ export default function VaultDetailScreen() {
                 borderRadius: "var(--radius-sharp)",
               }}
             >
-              <Identicon seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} size={40} radius={6} style={{ flexShrink: 0 }} />
+              <Identicon kind="account" code={`A${selectedAccount.index + 1}`} seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} label={selectedAccount.name} size={40} radius={8} style={{ flexShrink: 0 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                   {selectedAccount.name}
@@ -872,7 +872,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
         transform: hovered ? "translateY(-1px)" : "translateY(0)",
       }}
     >
-      <Identicon seed={identity ?? account.name} size={40} radius={6} style={{ marginTop: 2, flexShrink: 0 }} />
+      <Identicon kind="account" code={`A${account.index + 1}`} seed={identity ?? account.name} label={account.name} size={40} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
           <div style={{ minWidth: 0 }}>
