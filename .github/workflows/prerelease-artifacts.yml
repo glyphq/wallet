@@ -92,7 +92,7 @@ jobs:
           find src-tauri/target/release/bundle/deb -maxdepth 1 -type f -name '*.deb' -exec cp {} prerelease-artifacts/linux/ \;
           find src-tauri/target/release/bundle/rpm -maxdepth 1 -type f -name '*.rpm' -exec cp {} prerelease-artifacts/linux/ \;
           compgen -G 'prerelease-artifacts/linux/*' >/dev/null
-          (cd prerelease-artifacts/linux && sha256sum * > SHA256SUMS.txt)
+          (cd prerelease-artifacts/linux && sha256sum ./* > SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
@@ -179,7 +179,7 @@ jobs:
           find src-tauri/target/universal-apple-darwin/release/bundle/macos -maxdepth 1 -type f \( -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' \) -exec cp {} prerelease-artifacts/macos/ \;
           find src-tauri/target/universal-apple-darwin/release/bundle/dmg -maxdepth 1 -type f -name '*.dmg' -exec cp {} prerelease-artifacts/macos/ \;
           compgen -G 'prerelease-artifacts/macos/*' >/dev/null
-          (cd prerelease-artifacts/macos && shasum -a 256 * > SHA256SUMS.txt)
+          (cd prerelease-artifacts/macos && shasum -a 256 ./* > SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
