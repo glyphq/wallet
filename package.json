@@ -15,6 +15,7 @@
     "tauri": "tauri",
     "changeset": "changeset",
     "version": "changeset version && node scripts/sync-version.mjs",
+    "version:prerelease": "changeset version --snapshot prerelease && node scripts/sync-version.mjs",
     "tag-release": "node scripts/tag-release.mjs"
   },
   "dependencies": {

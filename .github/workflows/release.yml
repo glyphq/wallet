@@ -16,6 +16,8 @@ env:
   BUN_VERSION: "1.3.14"
   RUST_VERSION: "1.88.0"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RELEASE_CHANNEL: ${{ github.ref_name == 'prerelease' && 'prerelease' || 'stable' }}
+  UPDATER_MANIFEST: ${{ github.ref_name == 'prerelease' && 'latest-prerelease.json' || 'latest.json' }}
 
 jobs:
   prepare-release:
@@ -50,22 +52,38 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
           VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_CHANNEL: ${{ env.RELEASE_CHANNEL }}
         run: |
           set -euo pipefail
           node scripts/extract-changelog.mjs "$VERSION" > release-notes.md
+          expected_prerelease=false
+          if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
+            expected_prerelease=true
+          fi
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            is_draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')"
+            release_json="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease)"
+            is_draft="$(jq -r '.isDraft' <<<"$release_json")"
+            is_prerelease="$(jq -r '.isPrerelease' <<<"$release_json")"
             [[ "$is_draft" == "true" ]] || {
               echo "Release $RELEASE_TAG is already published and immutable" >&2
               exit 1
             }
+            [[ "$is_prerelease" == "$expected_prerelease" ]] || {
+              echo "Release $RELEASE_TAG prerelease flag does not match branch channel $RELEASE_CHANNEL" >&2
+              exit 1
+            }
             echo "Draft release $RELEASE_TAG already exists; assets will be replaced idempotently."
           else
-            gh release create "$RELEASE_TAG" \
-              --verify-tag \
-              --draft \
-              --title "Glyph $VERSION" \
+            release_flags=(
+              --verify-tag
+              --draft
+              --title "Glyph $VERSION"
               --notes-file release-notes.md
+            )
+            if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
+              release_flags+=(--prerelease)
+            fi
+            gh release create "$RELEASE_TAG" "${release_flags[@]}"
           fi
 
   release-linux:
@@ -114,6 +132,10 @@ jobs:
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
+
+      - name: Configure prerelease updater channel
+        if: env.RELEASE_CHANNEL == 'prerelease'
+        run: node scripts/set-updater-channel.mjs prerelease
 
       - name: Prepare deterministic Tauri Linux bundler state
         run: |
@@ -226,6 +248,10 @@ jobs:
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
+
+      - name: Configure prerelease updater channel
+        if: env.RELEASE_CHANNEL == 'prerelease'
+        run: node scripts/set-updater-channel.mjs prerelease
 
       - name: Determine macOS signing mode
         id: macos-signing
@@ -361,6 +387,10 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
+      - name: Configure prerelease updater channel
+        if: env.RELEASE_CHANNEL == 'prerelease'
+        run: node scripts/set-updater-channel.mjs prerelease
+
       - name: Determine Windows signing mode
         id: windows-signing
         shell: pwsh
@@ -458,9 +488,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
           GH_REPO: ${{ github.repository }}
+          UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
         run: |
-          scripts/create-updater-manifest.sh "$RELEASE_TAG" "$GH_REPO" latest.json
-          gh release upload "$RELEASE_TAG" latest.json --clobber
+          scripts/create-updater-manifest.sh "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
+          gh release upload "$RELEASE_TAG" "$UPDATER_MANIFEST" --clobber
 
   publish-release:
     name: Validate and publish release
@@ -484,10 +515,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
           GH_REPO: ${{ github.repository }}
-        run: node scripts/validate-release-assets.mjs "$RELEASE_TAG" "$GH_REPO"
+          UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
+        run: node scripts/validate-release-assets.mjs "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
 
       - name: Publish draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
-        run: gh release edit "$RELEASE_TAG" --draft=false --latest
+          RELEASE_CHANNEL: ${{ env.RELEASE_CHANNEL }}
+        run: |
+          set -euo pipefail
+          if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease
+          else
+            gh release edit "$RELEASE_TAG" --draft=false --latest
+          fi

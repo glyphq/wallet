@@ -3,14 +3,19 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
-const [tag, repository] = process.argv.slice(2);
+const [tag, repository, manifestName = "latest.json"] = process.argv.slice(2);
 if (!tag || !repository) {
-  console.error("usage: node scripts/validate-release-assets.mjs <tag> <owner/repo>");
+  console.error("usage: node scripts/validate-release-assets.mjs <tag> <owner/repo> [manifest-name]");
   process.exit(2);
 }
 if (!/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(tag)) {
   throw new Error(`invalid release tag: ${tag}`);
 }
+if (!/^latest(?:-prerelease)?\.json$/.test(manifestName)) {
+  throw new Error(`unsupported updater manifest name: ${manifestName}`);
+}
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const version = tag.slice(1);
 const tauriConfig = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
@@ -19,12 +24,15 @@ if (!updaterPublicKey) throw new Error("Tauri updater public key is not configur
 const release = JSON.parse(
   execFileSync(
     "gh",
-    ["release", "view", tag, "--repo", repository, "--json", "assets,isDraft,tagName"],
+    ["release", "view", tag, "--repo", repository, "--json", "assets,isDraft,isPrerelease,tagName"],
     { encoding: "utf8" },
   ),
 );
 if (release.tagName !== tag) throw new Error(`release tag mismatch: ${release.tagName}`);
 if (!release.isDraft) throw new Error(`release ${tag} is already published; refusing to replace public assets`);
+if ((manifestName === "latest-prerelease.json") !== release.isPrerelease) {
+  throw new Error(`release prerelease flag does not match expected updater manifest ${manifestName}`);
+}
 
 const assets = release.assets;
 for (const asset of assets) {
@@ -41,7 +49,7 @@ const expected = [
   ["macOS disk image", /\.dmg$/],
   ["Windows installer", /\.exe$/],
   ["Windows updater signature", /\.exe\.sig$/],
-  ["updater manifest", /^latest\.json$/],
+  ["updater manifest", new RegExp(`^${escapeRegex(manifestName)}$`)],
   ["Linux checksums", /^SHA256SUMS-linux\.txt$/],
   ["macOS checksums", /^SHA256SUMS-macos\.txt$/],
   ["Windows checksums", /^SHA256SUMS-windows\.txt$/],
@@ -84,8 +92,8 @@ try {
     );
   };
 
-  download("latest.json");
-  const manifest = JSON.parse(readFileSync(join(workdir, "latest.json"), "utf8"));
+  download(manifestName);
+  const manifest = JSON.parse(readFileSync(join(workdir, manifestName), "utf8"));
   if (manifest.version !== version) {
     throw new Error(`updater manifest version is ${manifest.version}, expected ${version}`);
   }
