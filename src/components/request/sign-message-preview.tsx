@@ -4,6 +4,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { signMessageFromSession } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
+import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { SignMessageRequest } from "@/lib/request-schema";
 
 export type { SignMessageRequest } from "@/lib/request-schema";
@@ -63,42 +64,24 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-        [OFF-CHAIN — NO TRANSACTION WILL BE BROADCAST]
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+        This is an off-chain signature. No transaction will be broadcast.
       </div>
 
       <div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-          Message
-        </div>
-        <div style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          color: "var(--color-text-primary)",
-          letterSpacing: "0.05em",
-          lineHeight: 1.7,
-          maxHeight: 180,
-          overflowY: "auto",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          padding: "var(--space-3)",
-          background: "var(--color-bg-surface)",
-          border: "1px solid var(--color-border-strong)",
-          borderRadius: "var(--radius-sharp)",
-        }}>
+        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Message</RequestSectionTitle></div>
+        <RequestTechnicalBlock>
           {request.message.length > 2000
             ? `${request.message.slice(0, 2000)}\n\n[… ${request.message.length.toLocaleString()} chars total]`
             : request.message}
-        </div>
+        </RequestTechnicalBlock>
       </div>
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-            Sign as
-          </div>
+          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
             {vault.accounts.filter((a) => !a.hidden).map((acc) => (
               <button
@@ -123,31 +106,26 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
 
       {fromError ? (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{fromError}]
+          {fromError}
         </div>
       ) : (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-            From
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>
-            {accountName} · {truncateId(wallet?.identity ?? "", 10, 10)}
-          </span>
-        </div>
+        <RequestDetailRow label="From" value={`${accountName} · ${truncateId(wallet?.identity ?? "", 10, 10)}`} />
       )}
 
       {error && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{error}]
+          {error}
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError}>
-        Sign message
-      </Button>
-      <Button variant="danger" shape="sharp" onClick={onReject}>
-        Reject
-      </Button>
+      <RequestActionBar>
+        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+          Reject
+        </Button>
+        <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError} style={{ flex: 1 }}>
+          Sign message
+        </Button>
+      </RequestActionBar>
     </div>
   );
 }
