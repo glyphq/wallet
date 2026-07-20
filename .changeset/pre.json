@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "prerelease",
+  "initialVersions": {
+    "glyph": "0.14.3"
+  },
+  "changesets": [
+    "glyph-wallet-prerelease-ui"
+  ]
+}
