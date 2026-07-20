@@ -37,12 +37,8 @@ jobs:
       - name: Create version PR or release tag
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
-          version: |
-            if [[ "$GITHUB_REF_NAME" == "prerelease" ]]; then
-              bun run version:prerelease
-            else
-              bun run version
-            fi
+          version: >-
+            bash -lc 'if [[ "$GITHUB_REF_NAME" == "prerelease" ]]; then bun run version:prerelease; else bun run version; fi'
           publish: bun run tag-release
           title: "chore: version packages"
           commit: "chore: version packages"
