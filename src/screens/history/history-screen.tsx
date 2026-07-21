@@ -4,6 +4,9 @@ import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
 import { Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
@@ -30,7 +33,7 @@ const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS };
 const INITIAL_VISIBLE_HISTORY_ROWS = 150;
 const HISTORY_RENDER_PAGE = 100;
 
-// Draft state for text inputs — committed on APPLY
+// Draft state for text inputs, committed on Apply
 type DraftInputs = {
   minAmount: string;
   maxAmount: string;
@@ -218,7 +221,7 @@ export default function HistoryScreen() {
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
 
-  // Intentionally not resetting filters on identity change — user keeps their filter context when switching accounts.
+  // Keep filters when the identity changes so the user retains their current context.
 
   // Sync draft when sheet opens so edits start from current values
   useEffect(() => { if (filterOpen) setDraft(toDraft(filters)); }, [filterOpen]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -317,9 +320,30 @@ export default function HistoryScreen() {
   }
   if (groupByCounterparty) chips.push({ label: "Grouped", clear: () => setGroupByCounterparty(false) });
 
+  const historyHeader = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="History"
+      action={
+        <>
+          <IconButton label="View analytics" onClick={() => navigate("/analytics")}>
+            <Chart size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label={hasActive ? "Filter history, filters active" : "Filter history"} onClick={() => setFilterOpen(true)}>
+            <Filters size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Refresh history" onClick={() => void refetch()}>
+            <Refresh size={20} aria-hidden="true" />
+          </IconButton>
+        </>
+      }
+    />
+  ), [hasActive, navigate, refetch]);
+
   return (
     <AppShell
       fullBleed
+      statusBar={historyHeader}
       contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1, padding: 0 }}
     >
       {/* ── Wide-screen sticky filter sidebar ── */}
@@ -370,34 +394,14 @@ export default function HistoryScreen() {
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-          <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/analytics")}>
-            <Chart size={16} aria-hidden="true" />
-            Analytics
+      {hasMemos && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-4)" }}>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={() => setMemoExportOpen(true)}>
+            <Download size={16} aria-hidden="true" />
+            Export memos
           </Button>
-          {!wideLayout && (
-            <Button variant="secondary" shape="sharp" size="sm" onClick={() => setFilterOpen(true)}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)" }}>
-                <Filters size={16} aria-hidden="true" />
-                Filters
-                {hasActive && <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 999, background: "var(--color-status-success)" }} />}
-              </span>
-            </Button>
-          )}
-          {hasMemos && (
-            <Button variant="secondary" shape="sharp" size="sm" onClick={() => setMemoExportOpen(true)}>
-              <Download size={16} aria-hidden="true" />
-              Export memos
-            </Button>
-          )}
         </div>
-
-        <Button variant="ghost" shape="sharp" size="sm" onClick={() => refetch()}>
-          <Refresh size={16} aria-hidden="true" />
-          Refresh
-        </Button>
-      </div>
+      )}
 
       {/* Active filter chips */}
       {chips.length > 0 && (
@@ -499,8 +503,8 @@ export default function HistoryScreen() {
                 const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
                 const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
                 const address = isSc
-                  ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
-                  : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
+                  ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown")))
+                  : truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown"));
                 const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
                 const txType = !flew ? "failed" as const : isSc ? "sc" as const : isIn ? "received" as const : "sent" as const;
 

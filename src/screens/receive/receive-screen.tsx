@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { Copy, CheckCircle, LinkRound } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { Button } from "@/components/button";
+import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
@@ -40,19 +42,28 @@ export default function ReceiveScreen() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const header = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="Receive"
+      action={
+        <IconButton label="Create payment link" onClick={() => navigate("/payment-link")}>
+          <LinkRound size={20} aria-hidden="true" />
+        </IconButton>
+      }
+    />
+  ), [navigate]);
+
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell
+      fullBleed
+      statusBar={header}
+      contentStyle={{ padding: "var(--space-4)", height: "100%" }}
+    >
       <motion.div
         {...stepMotion}
         style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-5)" }}
       >
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="secondary" size="sm" shape="sharp" onClick={() => navigate("/payment-link")}>
-            <LinkRound size={16} aria-hidden="true" />
-            Payment link
-          </Button>
-        </div>
-
         <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             {identity && <Identicon kind="account" code={`A${settings.activeAccountIndex + 1}`} seed={identity} label={vault?.accounts[settings.activeAccountIndex]?.name} size={36} radius={8} />}

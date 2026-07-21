@@ -2,9 +2,12 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowRightUp, QrCode, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic } from "@solar-icons/react";
+import { ArrowRightUp, QrCode, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic, UsersGroupRounded, Fire } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { DetailRow } from "@/components/detail-row";
 import { EmbeddedInput } from "@/components/embedded-input";
 import { Input } from "@/components/input";
@@ -150,6 +153,22 @@ export default function SendScreen() {
     .map((a) => ({ name: a.name, identity: a.identity ?? wallets[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
     .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
+  const sendHeader = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="Send"
+      action={
+        <>
+          <IconButton label="Send to many" onClick={() => navigate("/send-many")}>
+            <UsersGroupRounded size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Burn QU" onClick={() => navigate("/burn")}>
+            <Fire size={20} aria-hidden="true" />
+          </IconButton>
+        </>
+      }
+    />
+  ), [navigate]);
 
   const { data: recentTxsData } = useTxHistory(identity || null);
   const recentTxs = recentTxsData?.pages[0];
@@ -303,8 +322,8 @@ export default function SendScreen() {
 
   if (step === "input") {
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "hidden" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+      <AppShell fullBleed statusBar={sendHeader} contentStyle={{ padding: "var(--space-4)", height: "100%", overflowY: "auto" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: "min-content" }}>
 
         <div style={{ display: "flex", justifyContent: "center", paddingTop: "var(--space-3)" }}>
           <span style={{ ...labelStyle, color: "var(--color-text-tertiary)" }}>From {accountName}</span>
@@ -437,21 +456,12 @@ export default function SendScreen() {
         </div>
 
         {/* Actions */}
-        <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <Button onClick={goReview} disabled={!wallet}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
               Review <ArrowRightUp size={16} weight="Bold" />
             </span>
           </Button>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "var(--space-3)" }}>
-            <TextButton onClick={() => navigate("/send-many")} tone="muted">
-              Send to many
-            </TextButton>
-            <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-text-disabled)", opacity: 0.5, flexShrink: 0 }} />
-            <TextButton onClick={() => navigate("/burn")} tone="muted">
-              Burn QU
-            </TextButton>
-          </div>
         </div>
 
         <ContactPicker
@@ -478,7 +488,7 @@ export default function SendScreen() {
     const divider: React.CSSProperties = {
       height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
     };
-    const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—";
+    const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "Unavailable";
 
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
@@ -536,14 +546,14 @@ export default function SendScreen() {
         {hasPendingTx && (
           <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>A transfer is pending. Wait for confirmation.</span>
           </div>
         )}
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueVerified && (
           <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — confirm with wallet password</span>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Confirm this high-value transfer with your wallet password.</span>
             <Input type="password" label="Wallet password" value={highValuePassword}
               onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
               onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
@@ -674,7 +684,7 @@ export default function SendScreen() {
           />
         </div>
 
-        {/* Save contact — card-based */}
+        {/* Save contact */}
         {!destIsKnownContact && !saved && (
           <div style={{
             background: "var(--color-bg-surface)",

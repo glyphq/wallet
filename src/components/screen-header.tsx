@@ -15,7 +15,7 @@ export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: 
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(52px, auto) minmax(0, 1fr) minmax(52px, auto)",
+        gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
         alignItems: "center",
         gap: "var(--space-3)",
         width: "100%",
