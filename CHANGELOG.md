@@ -1,5 +1,13 @@
 # glyph
 
+## 0.15.0-prerelease.1
+
+### Patch Changes
+
+- 0614ab9: Improve signing reliability after wallet approval.
+
+  - **Reliability:** Prevented transferred signing buffers from causing transaction and message-signing failures in the desktop app.
+
 ## 0.15.0-prerelease.0
 
 ### Minor Changes
