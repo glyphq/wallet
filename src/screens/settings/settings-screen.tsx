@@ -13,6 +13,7 @@ import {
   Bug,
   InfoCircle,
   LockKeyhole,
+  Palette,
 } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { useUpdater } from "@/hooks/use-updater";
@@ -44,6 +45,7 @@ export default function SettingsScreen() {
 
   const ROWS: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: string }> = [
     { label: "Security", description: `Auto-lock: ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheck size={22} weight="Linear" />, section: "General" },
+    { label: "Appearance", description: "Dark or light theme", route: "/settings/appearance", icon: <Palette size={22} weight="Linear" />, section: "General" },
     { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", icon: <WiFiRouterMinimalistic size={22} weight="Linear" />, section: "General" },
     { label: "Contacts", description: contacts.length ? `${contacts.length} contact${contacts.length === 1 ? "" : "s"}` : "No contacts yet", route: "/settings/contacts", icon: <UsersGroupRounded size={22} weight="Linear" />, section: "Manage" },
     { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approved dApps", route: "/settings/dapps", icon: <Earth size={22} weight="Linear" />, section: "Manage" },

@@ -27,6 +27,8 @@ export type FontPairId =
   | "space-grotesk"
   | "fira"
   | "jetbrains";
+export type ThemeMode = "dark" | "light";
+
 export type AccentColorId =
   | "green"
   | "amber"
@@ -92,6 +94,8 @@ export interface AppSettings {
   currency: "USD" | "EUR" | "BTC";
   /** Ticks added to the current tick when estimating targetTick for new transactions. Default 10. */
   tickOffset: number;
+  /** Dark or light theme. */
+  themeMode: ThemeMode;
   debugMode: boolean;
   biometricVaultIds: string[];
   /** @deprecated Kept for migration compat — no longer configurable in UI. */

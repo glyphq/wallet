@@ -35,6 +35,7 @@ export type {
   RequestHistoryItem,
   RuntimeIssue,
   ScheduledTransfer,
+  ThemeMode,
   VaultColor,
   WalletIconId,
   VaultMeta,
