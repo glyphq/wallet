@@ -1,6 +1,10 @@
 import type { CSSProperties, ReactNode } from "react";
+import Avatar from "boring-avatars";
+import { Bolt } from "@solar-icons/react";
 import type { VaultColor, WalletIconId } from "@/store/persisted";
-import { CONTACT_ICON, CONTRACT_ICON, DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON, PERSONA_ICON, getWalletAccent, getWalletIconComponent } from "@/lib/wallet-appearance";
+import { CONTACT_ICON } from "@/lib/wallet-appearance";
+
+const MARBLE_COLORS = ["#ccfcfb", "#7dd3fc", "#6ee7b7", "#fbbf24", "#a78bfa", "#f87171"];
 
 type BadgeKind = "vault" | "account" | "contract" | "contact" | "identity" | "position";
 
@@ -74,8 +78,8 @@ export function Identicon({
   kind = "identity",
   code,
   icon,
-  walletIcon,
-  vaultColor,
+  walletIcon: _walletIcon,
+  vaultColor: _vaultColor,
 }: IdenticonProps) {
   const text = kind === "account" ? accountCode(label, code) : badgeLabel(seed, label);
   const fontSize = Math.max(10, Math.floor((size - padding * 2) * 0.34));
@@ -83,8 +87,6 @@ export function Identicon({
   const innerSize = Math.max(12, size - padding * 2);
 
   if (kind === "vault") {
-    const WalletGlyph = getWalletIconComponent(walletIcon ?? DEFAULT_WALLET_ICON);
-    const accent = getWalletAccent(vaultColor ?? DEFAULT_WALLET_COLOR);
     return (
       <div
         aria-hidden="true"
@@ -94,17 +96,16 @@ export function Identicon({
           borderRadius: radius,
           overflow: "hidden",
           flexShrink: 0,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: `color-mix(in srgb, ${accent} 16%, var(--color-bg-subtle))`,
-          border: `1px solid color-mix(in srgb, ${accent} 46%, var(--color-border-default))`,
-          color: accent,
-          boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${accent} 22%, transparent)`,
           ...style,
         }}
       >
-        <WalletGlyph size={Math.max(12, Math.floor(innerSize * 0.58))} weight="BoldDuotone" aria-hidden="true" />
+        <Avatar
+          size={size}
+          name={seed}
+          variant="marble"
+          colors={MARBLE_COLORS}
+          square={false}
+        />
       </div>
     );
   }
@@ -119,16 +120,16 @@ export function Identicon({
           borderRadius: radius,
           overflow: "hidden",
           flexShrink: 0,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: surface.background,
-          border: `1px solid ${surface.border}`,
-          color: surface.color,
           ...style,
         }}
       >
-        <PERSONA_ICON size={Math.max(12, Math.floor(innerSize * 0.58))} weight="BoldDuotone" aria-hidden="true" />
+        <Avatar
+          size={size}
+          name={seed}
+          variant="marble"
+          colors={MARBLE_COLORS}
+          square={false}
+        />
       </div>
     );
   }
@@ -176,7 +177,7 @@ export function Identicon({
           ...style,
         }}
       >
-        <CONTRACT_ICON size={Math.max(12, Math.floor(innerSize * 0.56))} weight="BoldDuotone" aria-hidden="true" />
+        <Bolt size={Math.max(12, Math.floor(innerSize * 0.56))} weight="BoldDuotone" aria-hidden="true" />
       </div>
     );
   }
