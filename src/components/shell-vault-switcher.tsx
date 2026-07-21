@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/button";
-import { Drawer } from "@/components/drawer";
+import { Sheet } from "@/components/sheet";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { usePersistedStore, type VaultMeta } from "@/store/persisted";
@@ -128,11 +128,10 @@ export function ShellVaultSwitcher() {
         <Identicon kind="vault" seed={`${activeVault.id}:${activeVault.color}`} label={activeVault.name} size={32} radius={10} />
       </button>
 
-      <Drawer
+      <Sheet
         open={open}
         onClose={close}
         title={switchingVault ? `Unlock ${switchingVault.name}` : "Wallets"}
-        width={300}
         footer={
           switchingVault ? (
             <div style={{ display: "flex", gap: "var(--space-3)" }}>
@@ -238,7 +237,7 @@ export function ShellVaultSwitcher() {
             })}
           </div>
         )}
-      </Drawer>
+      </Sheet>
     </>
   );
 }

@@ -3,18 +3,16 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { Copy, CheckCircle, LinkRound } from "@solar-icons/react";
+import { LinkRound } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
 import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { IdentityDisplay } from "@/components/identity-display";
-import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getVaultAccountIdentity } from "@/lib/accounts";
-import { copyToClipboard } from "@/lib/clipboard";
-import { truncateId } from "@/lib/format";
+
 
 // High-contrast pair required for QR readability
 const QR_BG = "var(--color-qr-surface)";
@@ -29,18 +27,9 @@ export default function ReceiveScreen() {
 
   const activeIndex = settings.activeAccountIndex;
   const identity = getVaultAccountIdentity(vault ?? null, activeIndex, wallets);
-  const accountName = vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`;
   const hideBalances = settings.hideBalances;
   const [qrRevealed, setQrRevealed] = useState(false);
-  const [copied, setCopied] = useState(false);
 
-  async function handleCopy() {
-    if (!identity) return;
-    const clearSecs = settings.clipboardClearSeconds;
-    await copyToClipboard(identity, clearSecs);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
 
   const header = useMemo(() => (
     <ScreenHeader
@@ -64,21 +53,7 @@ export default function ReceiveScreen() {
         {...stepMotion}
         style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-5)" }}
       >
-        <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-6)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            {identity && <Identicon kind="account" code={`A${settings.activeAccountIndex + 1}`} seed={identity} label={vault?.accounts[settings.activeAccountIndex]?.name} size={36} radius={8} />}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>
-                {accountName}
-              </span>
-              {identity && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                  {truncateId(identity, 10, 10)}
-                </span>
-              )}
-            </div>
-          </div>
-
+        <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
           {identity ? (
             <>
             <div
@@ -118,36 +93,6 @@ export default function ReceiveScreen() {
             </div>
 
             <IdentityDisplay identity={identity} style={{ textAlign: "center", maxWidth: 300 }} />
-
-            <button
-              type="button"
-              onClick={handleCopy}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-                padding: "var(--space-3) var(--space-6)",
-                background: copied ? "var(--color-status-success)" : "var(--color-bg-surface)",
-                border: `1px solid ${copied ? "var(--color-status-success)" : "var(--color-border-strong)"}`,
-                borderRadius: "var(--radius-pill)",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {copied ? (
-                <>
-                  <CheckCircle size={16} weight="Bold" style={{ color: "var(--color-bg-base)" }} />
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-bg-base)" }}>
-                    Copied!
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Copy size={16} weight="Linear" style={{ color: "var(--color-text-primary)" }} />
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                    Copy address
-                  </span>
-                </>
-              )}
-            </button>
             </>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>
