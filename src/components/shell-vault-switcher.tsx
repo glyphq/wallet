@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/button";
+import { Drawer } from "@/components/drawer";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type VaultMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
 import { isWatchOnlyVault } from "@/lib/accounts";
 import { recordAuditEvent } from "@/lib/audit-log";
+import { Settings, AltArrowRight } from "@solar-icons/react";
 
 export function ShellVaultSwitcher() {
   const navigate = useNavigate();
@@ -124,13 +125,14 @@ export function ShellVaultSwitcher() {
           cursor: "pointer",
         }}
       >
-        <Identicon kind="vault" seed={`${activeVault.id}:${activeVault.color}`} label={activeVault.name} size={32} radius={10} walletIcon={activeVault.icon} vaultColor={activeVault.color} />
+        <Identicon kind="vault" seed={`${activeVault.id}:${activeVault.color}`} label={activeVault.name} size={32} radius={10} />
       </button>
 
-      <Sheet
+      <Drawer
         open={open}
         onClose={close}
-        title={switchingVault ? `Unlock ${switchingVault.name}` : "Switch wallet"}
+        title={switchingVault ? `Unlock ${switchingVault.name}` : "Wallets"}
+        width={300}
         footer={
           switchingVault ? (
             <div style={{ display: "flex", gap: "var(--space-3)" }}>
@@ -138,16 +140,39 @@ export function ShellVaultSwitcher() {
                 Back
               </Button>
               <Button onClick={confirmSwitch} loading={loading} disabled={!password.trim()}>
-                Switch wallet
+                Switch
               </Button>
             </div>
-          ) : undefined
+          ) : (
+            <button
+              type="button"
+              onClick={() => { close(); navigate("/vaults"); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-3)",
+                width: "100%",
+                padding: "var(--space-3) 0",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                textAlign: "left",
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              <Settings size={18} weight="Linear" style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500 }}>
+                Manage wallets
+              </span>
+              <AltArrowRight size={14} weight="Linear" style={{ flexShrink: 0 }} />
+            </button>
+          )
         }
       >
         {switchingVault ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-              <Identicon kind="vault" seed={`${switchingVault.id}:${switchingVault.color}`} label={switchingVault.name} size={40} radius={10} walletIcon={switchingVault.icon} vaultColor={switchingVault.color} />
+              <Identicon kind="vault" seed={`${switchingVault.id}:${switchingVault.color}`} label={switchingVault.name} size={40} radius={10} />
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}>
                   {switchingVault.name}
@@ -177,7 +202,7 @@ export function ShellVaultSwitcher() {
             />
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             {vaults.map((vault) => {
               const isActive = vault.id === activeVault.id;
               return (
@@ -190,21 +215,21 @@ export function ShellVaultSwitcher() {
                     alignItems: "center",
                     gap: "var(--space-3)",
                     width: "100%",
-                    padding: "var(--space-3) 0",
-                    background: "transparent",
+                    padding: "var(--space-3)",
+                    background: isActive ? "var(--color-bg-surface)" : "transparent",
                     border: "none",
-                    borderBottom: "1px solid var(--color-border-subtle)",
+                    borderRadius: "var(--radius-control)",
                     cursor: isActive ? "default" : "pointer",
                     textAlign: "left",
                     color: "inherit",
                   }}
                 >
-                  <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={10} walletIcon={vault.icon} vaultColor={vault.color} />
+                  <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={10} />
                   <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
                       {vault.name}
                     </span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
                       {isActive ? "Current wallet" : isWatchOnlyVault(vault) ? "Watch-only" : "Password required"}
                     </span>
                   </div>
@@ -213,7 +238,7 @@ export function ShellVaultSwitcher() {
             })}
           </div>
         )}
-      </Sheet>
+      </Drawer>
     </>
   );
 }
