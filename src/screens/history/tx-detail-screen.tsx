@@ -51,7 +51,7 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true, copyV
       onClick={copyValue ? handleCopy : undefined}
     >
       {value}
-      {copyValue && !copied && hovered && <Copy size={12} style={{ flexShrink: 0, opacity: 0.5 }} />}
+      {copyValue && !copied && <Copy size={12} style={{ flexShrink: 0, opacity: 0.4 }} />}
       {copyValue && copied && <CheckCircle size={12} style={{ flexShrink: 0, color: "var(--color-status-success)" }} />}
     </span>
   );
