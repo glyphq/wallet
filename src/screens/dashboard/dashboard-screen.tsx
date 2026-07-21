@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, MenuDots, ArrowRightUp, QrCode } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
+import { IconButton } from "@/components/icon-button";
+import { ScreenHeader } from "@/components/screen-header";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -380,8 +383,20 @@ export default function DashboardScreen() {
     if (isLocked) navigate("/lock", { replace: true });
   }, [isLocked, navigate]);
 
+  const dashboardHeader = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="Dashboard"
+      action={
+        <IconButton label="Search" onClick={() => navigate("/search")}>
+          <Magnifier size={20} weight="Linear" aria-hidden="true" />
+        </IconButton>
+      }
+    />
+  ), [navigate]);
+
   return (
-    <AppShell contentStyle={{ padding: "var(--space-4)" }}>
+    <AppShell statusBar={dashboardHeader} contentStyle={{ padding: "var(--space-4)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
         {/* Hero: account + balance */}
