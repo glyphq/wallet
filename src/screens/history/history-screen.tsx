@@ -123,10 +123,25 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
       onClick={onClick}
       className={className}
       style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)",
+        display: "flex", alignItems: "center", gap: "var(--space-3)",
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
+      {TypeIcon && (
+        <div style={{
+          flexShrink: 0,
+          width: 28,
+          height: 28,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "var(--radius-control)",
+          background: "var(--color-bg-surface)",
+          color: txType === "failed" ? "var(--color-status-warning)" : txType === "pending" ? "var(--color-text-disabled)" : "var(--color-text-secondary)",
+        }}>
+          <TypeIcon size={14} />
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
           {label}
@@ -139,12 +154,9 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-          {TypeIcon && <TypeIcon size={14} style={{ color: amountColor, opacity: 0.7 }} />}
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
-            {amount}
-          </span>
-        </div>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
+          {amount}
+        </span>
         {amountUsd && (
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
             {amountUsd}
