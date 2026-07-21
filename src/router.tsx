@@ -34,6 +34,7 @@ const NetworkScreen = lazy(() => import("@/screens/settings/network-screen"));
 const NotificationsScreen = lazy(() => import("@/screens/settings/notifications-screen"));
 const SupportScreen = lazy(() => import("@/screens/settings/support-screen"));
 const DiagnosticsScreen = lazy(() => import("@/screens/settings/diagnostics-screen"));
+const AppearanceScreen = lazy(() => import("@/screens/settings/appearance-screen"));
 
 function RouteFallback() {
   return (
@@ -89,6 +90,7 @@ export const router = createHashRouter([
       { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
       { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
+      { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
     ],
   },
 ]);
