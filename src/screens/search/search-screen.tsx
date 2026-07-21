@@ -243,7 +243,7 @@ export default function SearchScreen() {
               </span>
             </div>
             {sectionResults.map((result, index) => (
-              <div key={result.key} className="stagger-item">
+              <div key={result.key}>
                 {index > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
                 <button
                   type="button"
