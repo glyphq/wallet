@@ -62,7 +62,11 @@ function seedToBytes(seed: Seed): Uint8Array {
   return encoder.encode(seed);
 }
 
-function zeroBytes(bytes: Uint8Array) {
+export function zeroBytes(bytes: Uint8Array) {
+  // Transferring the seed buffer to the signing worker detaches this view in
+  // the window. Detached and out-of-bounds views already expose no bytes and
+  // throw when fill() is called, so only wipe views that still own storage.
+  if (bytes.byteLength === 0) return;
   bytes.fill(0);
 }
 
