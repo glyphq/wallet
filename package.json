@@ -19,6 +19,7 @@
     "tag-release": "node scripts/tag-release.mjs"
   },
   "dependencies": {
+    "@fontsource/boldonse": "^5.3.0",
     "@fontsource/doto": "^5.2.10",
     "@fontsource/fira-code": "^5.2.7",
     "@fontsource/fira-sans": "^5.2.7",
