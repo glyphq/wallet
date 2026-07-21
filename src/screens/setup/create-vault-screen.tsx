@@ -12,7 +12,6 @@ import {
 } from "@solar-icons/react";
 import { stepMotion } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
-import { BrandLockup } from "@/components/brand-lockup";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
@@ -217,7 +216,6 @@ export default function CreateVaultScreen() {
           gap: "var(--space-6)",
         }}
       >
-        <BrandLockup align="center" compact subtitle="Create a new encrypted wallet" />
         <StepProgress current={step} total={4} />
 
         {step === 1 ? (
@@ -473,54 +471,7 @@ export default function CreateVaultScreen() {
               })}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "var(--space-3)" }}>
-                {checkPositions.map((position, index) => {
-                  const value = checkInputs[index];
-                  const correct = value ? value === seed[position] : null;
-                  return (
-                    <div key={position} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          fontSize: "var(--text-caption)",
-                          color: "var(--color-text-tertiary)",
-                          textAlign: "center",
-                        }}
-                      >
-                        #{position + 1}
-                      </span>
-                      <input
-                        ref={(element) => {
-                          checkRefs.current[index] = element;
-                        }}
-                        autoComplete="off"
-                        value={value}
-                        onChange={(event) => handleCheckInput(index, event.target.value)}
-                        onKeyDown={(event) => handleCheckKey(index, event)}
-                        maxLength={1}
-                        autoFocus={index === 0}
-                        style={{
-                          width: "100%",
-                          minHeight: "var(--height-button-md)",
-                          textAlign: "center",
-                          background: "var(--color-bg-surface-2)",
-                          border: `1px solid ${
-                            value
-                              ? correct
-                                ? "var(--color-accent)"
-                                : "var(--color-status-error)"
-                              : "var(--color-border-default)"
-                          }`,
-                          borderRadius: "var(--radius-control)",
-                          color: "var(--color-text-primary)",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--text-mono-lg)",
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+
             </div>
 
             <div style={{ flexShrink: 0 }}>
