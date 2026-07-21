@@ -11,6 +11,47 @@ export interface ScreenHeaderProps {
 }
 
 export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: ScreenHeaderProps) {
+  // When a leading element is provided (e.g. shell identicon), render the
+  // title inline next to it.  When only onBack is provided, keep the
+  // original centered title layout.
+  if (leading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-3)",
+          width: "100%",
+          minHeight: 52,
+        }}
+      >
+        <div style={{ flexShrink: 0 }}>{leading}</div>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--text-section)",
+            lineHeight: "var(--leading-tight)",
+            fontWeight: 600,
+            color: "var(--color-text-primary)",
+            letterSpacing: "-0.02em",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {title}
+        </h1>
+        <div style={{ flex: 1 }} />
+        {action ? (
+          <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+            {action}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -23,7 +64,6 @@ export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: 
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 52 }}>
-        {leading ? <div style={{ flexShrink: 0 }}>{leading}</div> : null}
         {onBack ? (
           <IconButton label={backAriaLabel ?? "Go back"} onClick={onBack} style={{ flexShrink: 0 }}>
             <AltArrowLeft size={22} aria-hidden="true" />
