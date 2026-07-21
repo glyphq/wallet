@@ -17,15 +17,13 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { StepProgress } from "@/components/step-progress";
-import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { deriveIdentityFromSeed, generateRandomSeed, newId, type Seed } from "@/lib/crypto";
-import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { passwordStrength } from "@/lib/password-strength";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault } from "@/lib/vault";
-import { usePersistedStore, type VaultColor, type WalletIconId } from "@/store/persisted";
+import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
 type Step = 1 | 2 | 3 | 4;
@@ -113,8 +111,6 @@ export default function CreateVaultScreen() {
 
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
-  const [walletIcon, setWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
-  const [walletColor, setWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
   const [seed] = useState<Seed>(() => generateRandomSeed());
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -180,8 +176,7 @@ export default function CreateVaultScreen() {
       const vault = {
         id: newId(),
         name: name.trim(),
-        color: walletColor,
-        icon: walletIcon,
+        color: "slate" as const,
         kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -246,12 +241,6 @@ export default function CreateVaultScreen() {
                 error={nameError}
               />
 
-              <WalletAppearancePicker
-                icon={walletIcon}
-                color={walletColor}
-                onIconChange={setWalletIcon}
-                onColorChange={setWalletColor}
-              />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
