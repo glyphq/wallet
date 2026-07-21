@@ -188,16 +188,16 @@ export default function SettingsScreen() {
             marginTop: "var(--space-4)",
             display: "flex", alignItems: "center", justifyContent: "center",
             gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
-            background: "transparent",
-            border: "1px solid var(--color-border-subtle)",
+            background: "var(--color-accent)",
+            border: "none",
             borderRadius: "var(--radius-card)",
             cursor: "pointer",
           }}
         >
-          <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-text-disabled)" }} />
+          <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-accent-contrast)" }} />
           <span style={{
             fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-            fontWeight: 500, color: "var(--color-text-disabled)",
+            fontWeight: 500, color: "var(--color-accent-contrast)",
           }}>
             Lock wallet
           </span>
