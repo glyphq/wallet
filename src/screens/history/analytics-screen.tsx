@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Tag } from "@/components/tag";
 import { Divider } from "@/components/divider";
@@ -24,7 +23,6 @@ export default function AnalyticsScreen() {
 
   return (
     <AppShell
-      statusBar={<ScreenHeader title="Analytics" onBack={() => navigate("/history")} />}
       contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-8)" }}
     >
       {isLoading && !analytics && (
@@ -175,7 +173,7 @@ function FlowBar({ incoming, outgoing }: { incoming: bigint; outgoing: bigint })
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {/* Proportional bar */}
       <div style={{ height: 8, display: "flex", overflow: "hidden", borderRadius: 0, background: "var(--color-border-strong)" }}>
-        <div style={{ width: `${inPct}%`, background: "var(--color-accent)", transition: "width 0.3s ease-out" }} />
+        <div style={{ width: "100%", background: "var(--color-accent)", transform: `scaleX(${inPct / 100})`, transformOrigin: "left", transition: "transform 0.3s ease-out" }} />
       </div>
       {/* Labels */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>

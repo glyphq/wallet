@@ -1,80 +1,91 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
-import { transition } from "@/lib/animations";
-import { HomeSmile, CardSend, CardReceive, MoneyBag, ClockCircle, Settings } from "@solar-icons/react";
+import { HomeSmile, CardSend, CardReceive, ClockCircle, Settings } from "@solar-icons/react";
 
-export type BottomNavTab = "home" | "send" | "receive" | "earn" | "history" | "settings";
+export type BottomNavTab = "home" | "send" | "receive" | "history" | "settings";
 
 const TABS = [
-  { id: "home" as BottomNavTab,     icon: HomeSmile,     path: "/dashboard" },
-  { id: "send" as BottomNavTab,     icon: CardSend,      path: "/send" },
-  { id: "receive" as BottomNavTab,  icon: CardReceive,   path: "/receive" },
-  { id: "earn" as BottomNavTab,     icon: MoneyBag,      path: "/earn" },
-  { id: "history" as BottomNavTab,  icon: ClockCircle,   path: "/history" },
-  { id: "settings" as BottomNavTab, icon: Settings,      path: "/settings" },
+  { id: "home" as BottomNavTab,     label: "Home",     icon: HomeSmile,     path: "/dashboard" },
+  { id: "send" as BottomNavTab,     label: "Send",     icon: CardSend,      path: "/send" },
+  { id: "receive" as BottomNavTab,  label: "Receive",  icon: CardReceive,   path: "/receive" },
+  { id: "history" as BottomNavTab,  label: "History",  icon: ClockCircle,   path: "/history" },
+  { id: "settings" as BottomNavTab, label: "Settings", icon: Settings,      path: "/settings" },
 ];
 
 export function BottomNav({ active }: { active: BottomNavTab }) {
   const navigate = useNavigate();
   return (
-    <div
+    <nav
+      aria-label="Primary"
       style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: "var(--space-1)",
-        padding: "var(--space-3)",
-        background: "rgba(28, 28, 30, 0.85)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderRadius: "var(--radius-pill)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        width: "100%",
+        maxWidth: 420,
+        minHeight: "var(--height-nav)",
+        boxSizing: "border-box",
+        padding: "2px var(--space-1)",
+        background: "var(--color-bg-nav)",
+        borderRadius: "var(--radius-card)",
       }}
     >
-      {TABS.map(({ id, icon: Icon, path }) => {
+      {TABS.map(({ id, label, icon: Icon, path }) => {
         const isActive = id === active;
         return (
           <button
             key={id}
+            type="button"
             onClick={() => { if (!isActive) navigate(path); }}
+            aria-label={label}
             aria-current={isActive ? "page" : undefined}
             style={{
               position: "relative",
               display: "flex",
-              flexDirection: "column",
+              flex: "1 1 0",
               alignItems: "center",
               justifyContent: "center",
-              gap: "1px",
-              height: 48,
-              padding: isActive ? "0 14px" : "0 12px",
-              background: "none",
-              borderRadius: "var(--radius-pill)",
+              minHeight: 48,
+              padding: "var(--space-1) var(--space-1)",
+              background: isActive ? "var(--color-bg-subtle)" : "transparent",
+              borderRadius: "var(--radius-control)",
               border: "none",
               cursor: "pointer",
-              color: isActive ? "var(--color-accent)" : "var(--color-text-secondary)",
-              transition: "color 200ms ease-in-out",
-              minWidth: 48,
+              color: isActive ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+              transition: "color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out)",
+              minWidth: 44,
             }}
-            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = "var(--color-text-display)"; }}
-            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = "var(--color-text-primary)";
+                e.currentTarget.style.background = "var(--color-bg-hover)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = "var(--color-text-secondary)";
+                e.currentTarget.style.background = "transparent";
+              }
+            }}
           >
-            {isActive && (
-              <motion.span
-                layoutId="nav-pill"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "rgba(204, 252, 251, 0.1)",
-                  borderRadius: "var(--radius-pill)",
-                }}
-                transition={transition.navPill}
-              />
-            )}
-            <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon size={22} weight={isActive ? "BoldDuotone" : "Linear"} aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 4,
+                width: 18,
+                height: 2,
+                borderRadius: 999,
+                background: isActive ? "var(--color-text-primary)" : "transparent",
+                transition: "background-color var(--duration-fast) var(--ease-out)",
+              }}
+            />
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon size={24} weight="Linear" aria-hidden="true" />
             </span>
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }

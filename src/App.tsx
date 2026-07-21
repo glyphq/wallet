@@ -6,7 +6,7 @@ import { router } from "@/router";
 import { useDeepLink } from "@/hooks/use-deep-link";
 import { usePayLink } from "@/hooks/use-pay-link";
 import { usePersistedStore } from "@/store/persisted";
-import { FONT_PAIRS, CUSTOM_SCHEME_VARS, deriveCustomScheme } from "@/lib/appearance";
+import { FONT_PAIRS, THEME_VARS, getThemeVars } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
@@ -27,10 +27,10 @@ const queryClient = new QueryClient({
 });
 
 function useAppearance() {
-  const { fontPair, customScheme } = usePersistedStore(
+  const { fontPair, themeMode } = usePersistedStore(
     useShallow((s) => ({
       fontPair: s.settings.fontPair,
-      customScheme: s.settings.customScheme,
+      themeMode: s.settings.themeMode,
     }))
   );
 
@@ -39,21 +39,23 @@ function useAppearance() {
     const root = document.documentElement;
     root.style.setProperty("--font-sans", pair.sans);
     root.style.setProperty("--font-mono", pair.mono);
+    root.style.setProperty("--font-display", pair.sans);
   }, [fontPair]);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (customScheme) {
-      const vars = deriveCustomScheme(customScheme.bg, customScheme.text);
+    const vars = getThemeVars(themeMode);
+    if (Object.keys(vars).length > 0) {
       for (const [key, val] of Object.entries(vars)) {
         root.style.setProperty(key, val);
       }
     } else {
-      for (const v of CUSTOM_SCHEME_VARS) {
+      // Reset to CSS defaults (dark theme lives in :root stylesheet)
+      for (const v of THEME_VARS) {
         root.style.removeProperty(v);
       }
     }
-  }, [customScheme]);
+  }, [themeMode]);
 }
 
 function useRpcSync() {

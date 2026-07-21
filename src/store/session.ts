@@ -30,6 +30,7 @@ interface SessionState {
     options?: { identities?: string[]; watchOnly?: boolean },
   ) => void;
   lock: () => void;
+  resetForSetup: () => void;
   enqueuePendingRequest: (raw: string) => void;
   shiftPendingRequest: () => void;
   addTxAlert: (alert: TxAlert) => void;
@@ -60,6 +61,18 @@ export const useSessionStore = create<SessionState>()((set) => ({
   lock: () => {
     clearSecureSession();
     set({ unlockedVaultId: null, wallets: [], isLocked: true, txAlerts: [], txDraft: null });
+  },
+
+  resetForSetup: () => {
+    clearSecureSession();
+    set({
+      unlockedVaultId: null,
+      wallets: [],
+      cachedIdentities: [],
+      isLocked: true,
+      txAlerts: [],
+      txDraft: null,
+    });
   },
 
   enqueuePendingRequest: (raw) =>

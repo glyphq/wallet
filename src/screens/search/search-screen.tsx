@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { UserRounded, UsersGroupRounded, TransferHorizontal, Document, Magnifier } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Input } from "@/components/input";
 import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
@@ -37,6 +37,9 @@ interface SearchResult {
   title: string;
   subtitle: string;
   identity?: string;
+  badgeKind?: "account" | "contact" | "contract" | "identity";
+  badgeCode?: string;
+  badgeIcon?: ReactNode;
   onSelect: () => void;
 }
 
@@ -72,7 +75,7 @@ export default function SearchScreen() {
   const txQueries = useQueries({
     queries: accountEntries.map((account) => ({
       queryKey: ["search-history", account.identity],
-      enabled: !!account.identity,
+      enabled: !!normalizedQuery && !!account.identity,
       staleTime: 60_000,
       queryFn: async () => {
         const result = await getRpcClient().archive.getTransactionsForIdentity({
@@ -115,6 +118,8 @@ export default function SearchScreen() {
         title: account.accountName,
         subtitle: `${account.vaultName} · ${truncateId(account.identity)}`,
         identity: account.identity,
+        badgeKind: "account",
+        badgeCode: `A${account.accountIndex + 1}`,
         onSelect: () => {
           setActiveVault(account.vaultId);
           setActiveAccountIndex(account.accountIndex);
@@ -130,6 +135,7 @@ export default function SearchScreen() {
         title: contact.name,
         subtitle: contact.note ? `${truncateId(contact.identity)} · ${contact.note}` : truncateId(contact.identity),
         identity: contact.identity,
+        badgeKind: "contact",
         onSelect: () => navigate(`/send?to=${contact.identity}`),
       }));
 
@@ -174,6 +180,8 @@ export default function SearchScreen() {
         title: name,
         subtitle: truncateId(identity),
         identity,
+        badgeKind: "contract",
+        badgeIcon: <Document size={16} weight="Linear" aria-hidden="true" />,
         onSelect: () => navigate(`/send?to=${identity}`),
       }));
 
@@ -187,13 +195,12 @@ export default function SearchScreen() {
     contracts: results.filter((result) => result.section === "contracts"),
   }), [results]);
 
-  const statusBar = <ScreenHeader title="Search" onBack={() => navigate("/dashboard")} />;
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <div style={{ position: "relative" }}>
         <Magnifier size={18} weight="Linear" style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
         <Input
+          aria-label="Search wallet"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search contacts, accounts, transactions, contracts"
@@ -236,14 +243,14 @@ export default function SearchScreen() {
               </span>
             </div>
             {sectionResults.map((result, index) => (
-              <div key={result.key} className="stagger-item">
+              <div key={result.key}>
                 {index > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
                 <button
                   type="button"
                   onClick={result.onSelect}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
                 >
-                  <Identicon seed={result.identity ?? result.key} size={32} radius={5} style={{ flexShrink: 0 }} />
+                  <Identicon kind={result.badgeKind ?? "identity"} code={result.badgeCode} icon={result.badgeIcon} seed={result.identity ?? result.key} label={result.title} size={32} radius={8} style={{ flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                       {result.title}

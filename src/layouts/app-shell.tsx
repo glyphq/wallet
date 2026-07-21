@@ -35,12 +35,17 @@ export function AppShell({ children, statusBar, contentStyle, fullBleed }: AppSh
     <main
       ref={mainRef}
       style={{
+        display: "flex",
+        flex: 1,
+        flexDirection: "column",
         height: "100%",
+        minHeight: 0,
+        minWidth: 0,
         overflowY: "auto",
-        padding: fullBleed ? 0 : "var(--space-4)",
+        padding: fullBleed ? 0 : "var(--screen-padding)",
         background: "var(--color-bg-base)",
         ...contentStyle,
-        paddingBottom: 76,
+        paddingBottom: fullBleed ? 0 : "var(--screen-padding)",
       }}
     >
       {children}

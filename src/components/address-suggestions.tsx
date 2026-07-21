@@ -39,7 +39,7 @@ export function AddressSuggestions({
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-border-subtle)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <Identicon seed={suggestion.identity} size={24} radius={6} style={{ flexShrink: 0 }} />
+          <Identicon kind="identity" seed={suggestion.identity} size={24} radius={6} style={{ flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "1px" }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {suggestion.label}

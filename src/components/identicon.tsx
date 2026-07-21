@@ -1,60 +1,211 @@
-/** FNV-1a 32-bit hash. */
-function fnv1a(str: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
+import type { CSSProperties, ReactNode } from "react";
+import Avatar from "boring-avatars";
+import { Bolt } from "@solar-icons/react";
+import type { VaultColor, WalletIconId } from "@/store/persisted";
+import { CONTACT_ICON } from "@/lib/wallet-appearance";
+
+const MARBLE_COLORS = ["#ccfcfb", "#7dd3fc", "#6ee7b7", "#fbbf24", "#a78bfa", "#f87171"];
+
+type BadgeKind = "vault" | "account" | "contract" | "contact" | "identity" | "position";
 
 interface IdenticonProps {
-  /** Deterministic seed — identity address, vault ID, etc. */
   seed: string;
   size?: number;
   radius?: number;
   padding?: number;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
+  label?: string;
+  kind?: BadgeKind;
+  code?: string;
+  icon?: ReactNode;
+  walletIcon?: WalletIconId;
+  vaultColor?: VaultColor;
 }
 
-/**
- * 5×5 symmetric identicon generated from an FNV-1a hash of `seed`.
- * Columns 0↔4 and 1↔3 are mirrored; column 2 is the centre.
- * Uses 15 bits for the grid, 9 bits for hue — fully deterministic.
- */
-export function Identicon({ seed, size = 32, radius = 4, padding = 2, style }: IdenticonProps) {
-  const gridHash = fnv1a(seed);
-  const colorHash = fnv1a(seed + "\x00");
+function badgeLabel(seed: string, explicitLabel?: string): string {
+  const source = (explicitLabel?.trim() || seed).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  if (!source) return "•";
+  return source.slice(0, source.length > 1 ? 2 : 1);
+}
 
-  const hue = colorHash % 360;
-  const fg = `hsl(${hue}, 60%, 55%)`;
-  const bg = `hsl(${hue}, 30%, 18%)`;
+function accountCode(label?: string, code?: string) {
+  if (code?.trim()) return code.trim().toUpperCase();
+  const match = label?.match(/(\d+)/);
+  if (match) return `A${match[1]}`;
+  return "AC";
+}
 
-  const inner = size - padding * 2;
-  const cs = inner / 5; // cell size
+const SURFACE_BY_KIND: Record<BadgeKind, { background: string; border: string; color: string }> = {
+  vault: {
+    background: "var(--color-bg-subtle)",
+    border: "var(--color-border-default)",
+    color: "var(--color-text-primary)",
+  },
+  account: {
+    background: "var(--color-bg-inset)",
+    border: "var(--color-border-subtle)",
+    color: "var(--color-text-secondary)",
+  },
+  contract: {
+    background: "var(--color-bg-surface-2)",
+    border: "var(--color-border-default)",
+    color: "var(--color-text-primary)",
+  },
+  contact: {
+    background: "var(--color-bg-surface)",
+    border: "var(--color-border-subtle)",
+    color: "var(--color-text-secondary)",
+  },
+  identity: {
+    background: "var(--color-bg-subtle)",
+    border: "var(--color-border-subtle)",
+    color: "var(--color-text-secondary)",
+  },
+  position: {
+    background: "var(--color-bg-surface-2)",
+    border: "var(--color-border-default)",
+    color: "var(--color-text-primary)",
+  },
+};
 
-  const cells: { x: number; y: number }[] = [];
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 3; col++) {
-      if (!((gridHash >>> (row * 3 + col)) & 1)) continue;
-      cells.push({ x: padding + col * cs, y: padding + row * cs });
-      if (col < 2) cells.push({ x: padding + (4 - col) * cs, y: padding + row * cs });
-    }
+export function Identicon({
+  seed,
+  size = 32,
+  radius = 4,
+  padding = 2,
+  style,
+  label,
+  kind = "identity",
+  code,
+  icon,
+  walletIcon: _walletIcon,
+  vaultColor: _vaultColor,
+}: IdenticonProps) {
+  const text = kind === "account" ? accountCode(label, code) : badgeLabel(seed, label);
+  const fontSize = Math.max(10, Math.floor((size - padding * 2) * 0.34));
+  const surface = SURFACE_BY_KIND[kind];
+  const innerSize = Math.max(12, size - padding * 2);
+
+  if (kind === "vault") {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          overflow: "hidden",
+          flexShrink: 0,
+          ...style,
+        }}
+      >
+        <Avatar
+          size={size}
+          name={seed}
+          variant="marble"
+          colors={MARBLE_COLORS}
+          square={false}
+        />
+      </div>
+    );
+  }
+
+  if (kind === "identity") {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          overflow: "hidden",
+          flexShrink: 0,
+          ...style,
+        }}
+      >
+        <Avatar
+          size={size}
+          name={seed}
+          variant="marble"
+          colors={MARBLE_COLORS}
+          square={false}
+        />
+      </div>
+    );
+  }
+
+  if (kind === "contact") {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          overflow: "hidden",
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: surface.background,
+          border: `1px solid ${surface.border}`,
+          color: surface.color,
+          ...style,
+        }}
+      >
+        <CONTACT_ICON size={Math.max(12, Math.floor(innerSize * 0.56))} weight="BoldDuotone" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  if (kind === "contract" && !icon) {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          overflow: "hidden",
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: surface.background,
+          border: `1px solid ${surface.border}`,
+          color: surface.color,
+          ...style,
+        }}
+      >
+        <Bolt size={Math.max(12, Math.floor(innerSize * 0.56))} weight="BoldDuotone" aria-hidden="true" />
+      </div>
+    );
   }
 
   return (
-    <div style={{ width: size, height: size, borderRadius: radius, overflow: "hidden", flexShrink: 0, ...style }}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        style={{ display: "block" }}
-      >
-        <rect width={size} height={size} fill={bg} />
-        {cells.map(({ x, y }, i) => (
-          <rect key={i} x={x} y={y} width={cs} height={cs} fill={fg} />
-        ))}
-      </svg>
+    <div
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        overflow: "hidden",
+        flexShrink: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: surface.background,
+        border: `1px solid ${surface.border}`,
+        color: surface.color,
+        fontFamily: "var(--font-mono)",
+        fontSize,
+        fontWeight: 600,
+        letterSpacing: "0.02em",
+        textTransform: "uppercase",
+        ...style,
+      }}
+    >
+      {icon ?? text}
     </div>
   );
 }

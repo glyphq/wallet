@@ -3,7 +3,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
 import { SettingsPageHeader } from "@/components/settings-page-header";
+import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
+import { SettingsSwitch } from "@/components/settings-switch";
 import { usePersistedStore } from "@/store/persisted";
 import { unlockVault } from "@/lib/vault";
 import { extractMessage } from "@/lib/format";
@@ -80,7 +84,7 @@ export default function SecurityScreen() {
 
         {/* Auto-lock */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <SectionLabel>Auto-lock timeout</SectionLabel>
+          <SettingsSectionLabel>Auto-lock timeout</SettingsSectionLabel>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
             {TIMEOUT_OPTIONS.map((opt) => {
               const isActive = opt.value === autoLockMinutes;
@@ -116,17 +120,17 @@ export default function SecurityScreen() {
 
         {/* Lock toggles */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <Toggle label="Lock on sleep" description="Lock when the screen locks or machine sleeps" enabled={lockOnSleep} onToggle={() => updateSettings({ lockOnSleep: !lockOnSleep })} />
-          <Divider />
-          <Toggle label="Lock on window blur" description="Lock when the app loses focus" enabled={lockOnWindowBlur} onToggle={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })} />
+          <SettingsSwitch label="Lock on sleep" description="Lock when the screen locks or machine sleeps" checked={lockOnSleep} onChange={() => updateSettings({ lockOnSleep: !lockOnSleep })} />
+          <SettingsDivider />
+          <SettingsSwitch label="Lock on window blur" description="Lock when the app loses focus" checked={lockOnWindowBlur} onChange={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })} />
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
+        <SettingsDivider />
 
         {/* Clipboard */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <SectionLabel>Clear clipboard after</SectionLabel>
+          <SettingsSectionLabel>Clear clipboard after</SettingsSectionLabel>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
             {CLIPBOARD_OPTIONS.map((opt) => {
               const isActive = opt.value === clipboardClearSeconds;
@@ -161,13 +165,13 @@ export default function SecurityScreen() {
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
+        <SettingsDivider />
 
         {/* Approval toggles */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <Toggle label="Password for burn" description="Require password before burning QU" enabled={requirePasswordForBurn} onToggle={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })} />
-          <Divider />
-          <Toggle label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} enabled={requireBiometricForSeedReveal} onToggle={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
+          <SettingsSwitch label="Password for burn" description="Require password before burning QU" checked={requirePasswordForBurn} onChange={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })} />
+          <SettingsDivider />
+          <SettingsSwitch label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
         </div>
 
         {/* Biometric setup — only card, only when relevant */}
@@ -176,145 +180,46 @@ export default function SecurityScreen() {
             background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
             padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)",
           }}>
-            <SectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SectionLabel>
+            <SettingsSectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SettingsSectionLabel>
             {bioEnabled ? (
               <>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-success)" }}>
                   Enabled for {vault.name}
                 </span>
-                <motion.button
-                  {...gesture.pressSubtle}
-                  onClick={handleDisable}
-                  style={{
-                    padding: "var(--space-3)", background: "transparent",
-                    border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
-                    cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                    fontWeight: 500, color: "var(--color-status-error)", width: "100%",
-                  }}
-                >
+                <Button variant="danger" onClick={handleDisable}>
                   Disable
-                </motion.button>
+                </Button>
               </>
             ) : enabling ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
                   Enter your password to enable
                 </span>
-                <input
+                <Input
                   ref={pwRef} type="password" value={enablePw}
+                  label="Password"
                   onChange={(e) => { setEnablePw(e.target.value); setEnableError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleEnable()}
                   placeholder="Password"
-                  style={{
-                    background: "transparent", border: "none",
-                    borderBottom: "1px solid var(--color-border-subtle)",
-                    padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body)", color: "var(--color-text-display)", outline: "none",
-                  }}
+                  error={enableError || undefined}
                 />
-                {enableError && (
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
-                    {enableError}
-                  </span>
-                )}
                 <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                  <motion.button
-                    {...gesture.press} onClick={handleEnable} disabled={enableLoading}
-                    style={{
-                      flex: 1, padding: "var(--space-3)", background: "var(--color-accent)",
-                      border: "none", borderRadius: "var(--radius-sharp)", cursor: "pointer",
-                      fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                      color: "var(--color-bg-base)", opacity: enableLoading ? 0.6 : 1,
-                    }}
-                  >
+                  <Button style={{ flex: 1 }} onClick={handleEnable} loading={enableLoading}>
                     {enableLoading ? "Verifying..." : "Enable"}
-                  </motion.button>
-                  <button
-                    onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}
-                    style={{
-                      padding: "var(--space-3) var(--space-4)", background: "transparent",
-                      border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
-                      cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                      fontWeight: 500, color: "var(--color-text-secondary)",
-                    }}
-                  >
+                  </Button>
+                  <Button variant="secondary" style={{ width: "auto" }} onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <motion.button
-                {...gesture.pressSubtle}
-                onClick={() => setEnabling(true)}
-                style={{
-                  padding: "var(--space-3)", background: "transparent",
-                  border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)",
-                  cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                  fontWeight: 500, color: "var(--color-accent)", width: "100%",
-                }}
-              >
+              <Button variant="secondary" onClick={() => setEnabling(true)}>
                 Enable for {vault.name}
-              </motion.button>
+              </Button>
             )}
           </div>
         )}
       </motion.div>
     </AppShell>
   );
-}
-
-/* ── Sub-components ─────────────────────────────────────────── */
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{
-      fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
-      fontWeight: 600, color: "var(--color-text-disabled)",
-      textTransform: "none", letterSpacing: "0.06em",
-    }}>
-      {children}
-    </span>
-  );
-}
-
-function Toggle({ label, description, enabled, onToggle }: {
-  label: string; description: string; enabled: boolean; onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      style={{
-        display: "flex", alignItems: "center", gap: "var(--space-3)",
-        padding: "var(--space-3) 0", width: "100%", background: "none",
-        border: "none", cursor: "pointer", textAlign: "left",
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-          {label}
-        </div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: 2 }}>
-          {description}
-        </div>
-      </div>
-      <div style={{
-        width: 36, height: 20, borderRadius: "var(--radius-pill)", flexShrink: 0, position: "relative",
-        background: enabled ? "var(--color-accent)" : "var(--color-border-strong)",
-      }}>
-        <motion.div
-          animate={{ x: enabled ? 18 : 2 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          style={{
-            width: 16, height: 16, borderRadius: "50%",
-            background: enabled ? "var(--color-bg-base)" : "var(--color-text-disabled)",
-            position: "absolute", top: 2,
-          }}
-        />
-      </div>
-    </button>
-  );
-}
-
-function Divider() {
-  return <div style={{ height: 1, background: "var(--color-border-subtle)" }} />;
 }

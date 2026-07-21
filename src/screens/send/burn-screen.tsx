@@ -2,9 +2,13 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { AltArrowLeft, Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
+import { Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { DetailRow } from "@/components/detail-row";
+import { EmbeddedInput } from "@/components/embedded-input";
+import { Input } from "@/components/input";
+import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -23,26 +27,6 @@ const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
-
-function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
-  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
-      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
-      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
-      <span style={{
-        fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "var(--text-label)", fontWeight: useMono ? 400 : 500,
-        color: valueColor ?? "var(--color-text-display)",
-        textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
-      }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
 
 export default function BurnScreen() {
   const navigate = useNavigate();
@@ -121,22 +105,10 @@ export default function BurnScreen() {
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       setStep("error");
+    } finally {
+      setSending(false);
     }
   }
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => step === "input" ? navigate("/send") : step === "confirm" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        {step === "input" ? `Burn · ${accountName}` : step === "confirm" ? "Confirm burn" : step === "done" ? "Burned" : step === "sending" ? "Burning" : "Error"}
-      </span>
-    </div>
-  );
 
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-surface)",
@@ -151,11 +123,11 @@ export default function BurnScreen() {
 
   if (step === "input") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Warning */}
-        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ background: "var(--color-status-error-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
           <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>
             Burned QU is permanently destroyed. This cannot be undone.
@@ -165,7 +137,7 @@ export default function BurnScreen() {
         {/* Amount */}
         <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
           <div style={{ position: "relative", width: "100%", maxWidth: 280 }}>
-            <input
+            <EmbeddedInput
               ref={amountRef}
               autoComplete="off"
               value={amountStr}
@@ -174,8 +146,7 @@ export default function BurnScreen() {
               placeholder="0"
               autoFocus
               style={{
-                width: "100%", background: "none", border: "none", outline: "none",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700,
+                width: "100%", fontSize: "var(--text-display)", fontWeight: 700,
                 color: amountError ? "var(--color-status-error)" : amountStr ? "var(--color-text-display)" : "var(--color-text-disabled)",
                 letterSpacing: "-0.03em", textAlign: "center", padding: 0,
               }}
@@ -213,7 +184,7 @@ export default function BurnScreen() {
 
   if (step === "confirm") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Amount */}
@@ -225,7 +196,7 @@ export default function BurnScreen() {
         </div>
 
         {/* Warning card */}
-        <div style={{ background: "rgba(255, 59, 48, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div style={{ background: "var(--color-status-error-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
           <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>
             This QU will be permanently destroyed. There is no undo.
@@ -245,30 +216,23 @@ export default function BurnScreen() {
         {needsPassword && (
           <div style={cardStyle}>
             <div style={{ padding: "11px 0", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span style={{ ...labelStyle }}>Vault password required</span>
-              <input
+              <span style={{ ...labelStyle }}>Wallet password required</span>
+              <Input
                 type="password"
                 value={burnPassword}
+                label="Wallet password"
                 onChange={(e) => { setBurnPassword(e.target.value); setBurnPasswordError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 placeholder="••••••••••"
                 autoComplete="current-password"
-                style={{
-                  width: "100%", background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-subtle)",
-                  borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                  color: "var(--color-text-display)", outline: "none", boxSizing: "border-box",
-                }}
+                error={burnPasswordError || undefined}
               />
-              {burnPasswordError && (
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>{burnPasswordError}</span>
-              )}
             </div>
           </div>
         )}
 
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -283,10 +247,9 @@ export default function BurnScreen() {
               <Fire size={16} weight="Bold" /> Burn {formatQu(amountStr)} QU
             </span>
           </Button>
-          <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
+          <TextButton type="button" onClick={() => setStep("input")} tone="muted" style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
             Cancel
-          </motion.button>
+          </TextButton>
         </div>
         </motion.div>
       </AppShell>
@@ -297,7 +260,7 @@ export default function BurnScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
         <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-status-error)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
@@ -318,7 +281,7 @@ export default function BurnScreen() {
 
   if (step === "done") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
@@ -360,9 +323,9 @@ export default function BurnScreen() {
   // ── Error ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
       <div style={{ textAlign: "center" }}>
@@ -382,4 +345,3 @@ export default function BurnScreen() {
     </AppShell>
   );
 }
-

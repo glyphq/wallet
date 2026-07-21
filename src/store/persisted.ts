@@ -35,7 +35,9 @@ export type {
   RequestHistoryItem,
   RuntimeIssue,
   ScheduledTransfer,
+  ThemeMode,
   VaultColor,
+  WalletIconId,
   VaultMeta,
 } from "./persisted-types";
 
@@ -180,15 +182,23 @@ export const usePersistedStore = create<PersistedState>()(
           const approvedDapps = existing
             ? s.settings.approvedDapps.map((d) =>
                 d.origin === dapp.origin
-                  ? {
-                      ...d,
-                      name: dapp.name,
-                      approvedAt: dapp.approvedAt,
-                      lastUsedAt: now,
-                      permissions: [
-                        ...new Set([...d.permissions, ...dapp.permissions]),
-                      ],
-                    }
+                  ? (() => {
+                      const allowedIdentities =
+                        d.allowedIdentities === undefined ||
+                        dapp.allowedIdentities === undefined
+                          ? d.allowedIdentities ?? dapp.allowedIdentities
+                          : [...new Set([...d.allowedIdentities, ...dapp.allowedIdentities])];
+                      return {
+                        ...d,
+                        name: dapp.name,
+                        approvedAt: dapp.approvedAt,
+                        lastUsedAt: now,
+                        permissions: [
+                          ...new Set([...d.permissions, ...dapp.permissions]),
+                        ],
+                        allowedIdentities,
+                      };
+                    })()
                   : d
               )
             : [...s.settings.approvedDapps, { ...dapp, lastUsedAt: now }];
@@ -215,8 +225,7 @@ export const usePersistedStore = create<PersistedState>()(
                     permissions: d.permissions.filter((p) => p !== permission),
                   }
                 : d
-            )
-            .filter((d) => d.permissions.length > 0);
+            );
           return { settings: { ...s.settings, approvedDapps } };
         }),
 

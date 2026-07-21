@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import {
-  AltArrowLeft,
   AltArrowRight,
   ShieldCheck,
   WiFiRouterMinimalistic,
@@ -14,6 +13,7 @@ import {
   Bug,
   InfoCircle,
   LockKeyhole,
+  Palette,
 } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { useUpdater } from "@/hooks/use-updater";
@@ -45,6 +45,7 @@ export default function SettingsScreen() {
 
   const ROWS: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: string }> = [
     { label: "Security", description: `Auto-lock: ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheck size={22} weight="Linear" />, section: "General" },
+    { label: "Appearance", description: "Dark or light theme", route: "/settings/appearance", icon: <Palette size={22} weight="Linear" />, section: "General" },
     { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", icon: <WiFiRouterMinimalistic size={22} weight="Linear" />, section: "General" },
     { label: "Contacts", description: contacts.length ? `${contacts.length} contact${contacts.length === 1 ? "" : "s"}` : "No contacts yet", route: "/settings/contacts", icon: <UsersGroupRounded size={22} weight="Linear" />, section: "Manage" },
     { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approved dApps", route: "/settings/dapps", icon: <Earth size={22} weight="Linear" />, section: "Manage" },
@@ -54,19 +55,8 @@ export default function SettingsScreen() {
     { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug size={22} weight="Linear" />, section: "Info" },
   ];
 
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%", position: "relative", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => navigate("/dashboard")} style={{ position: "absolute", left: "var(--space-4)", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} style={{ color: "var(--color-text-primary)" }} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Settings
-      </span>
-    </div>
-  );
-
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
       <motion.div
         {...stepMotion}
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minHeight: 0 }}
@@ -161,7 +151,7 @@ export default function SettingsScreen() {
               </div>
               {installing && progress > 0 && (
                 <div style={{ height: 3, borderRadius: 2, background: "var(--color-border-subtle)", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${progress}%`, background: "var(--color-status-success)", borderRadius: 2, transition: "width 0.3s ease" }} />
+                  <div style={{ height: "100%", width: "100%", background: "var(--color-status-success)", borderRadius: 2, transform: `scaleX(${progress / 100})`, transformOrigin: "left", transition: "transform 0.3s ease" }} />
                 </div>
               )}
             </button>
@@ -198,16 +188,16 @@ export default function SettingsScreen() {
             marginTop: "var(--space-4)",
             display: "flex", alignItems: "center", justifyContent: "center",
             gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
-            background: "transparent",
-            border: "1px solid var(--color-border-subtle)",
+            background: "var(--color-accent)",
+            border: "none",
             borderRadius: "var(--radius-card)",
             cursor: "pointer",
           }}
         >
-          <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-text-disabled)" }} />
+          <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-accent-contrast)" }} />
           <span style={{
             fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-            fontWeight: 500, color: "var(--color-text-disabled)",
+            fontWeight: 500, color: "var(--color-accent-contrast)",
           }}>
             Lock wallet
           </span>

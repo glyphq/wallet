@@ -1,6 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
+const SHOW_ERROR_DEBUG_DETAILS = import.meta.env.DEV;
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -52,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
               textAlign: "center",
             }}
           >
-            Render error
+            {SHOW_ERROR_DEBUG_DETAILS ? "Render error" : "Something went wrong"}
           </span>
           <span
             style={{
@@ -66,37 +68,41 @@ export class ErrorBoundary extends Component<Props, State> {
               maxWidth: 320,
             }}
           >
-            {this.state.error?.message || "Unknown render failure"}
+            {SHOW_ERROR_DEBUG_DETAILS
+              ? (this.state.error?.message || "Unknown render failure")
+              : "Glyph hit an unexpected render error. Try again to continue."}
           </span>
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 720,
-              maxHeight: "40vh",
-              overflow: "auto",
-              padding: "var(--space-4)",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-sharp)",
-              background: "var(--color-bg-surface)",
-            }}
-          >
-            <pre
+          {SHOW_ERROR_DEBUG_DETAILS && (
+            <div
               style={{
-                margin: 0,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-mono-sm)",
-                color: "var(--color-text-secondary)",
-                lineHeight: 1.5,
+                width: "100%",
+                maxWidth: 720,
+                maxHeight: "40vh",
+                overflow: "auto",
+                padding: "var(--space-4)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                background: "var(--color-bg-surface)",
               }}
             >
-              {this.state.componentStack
-                ? `Component Stack\n${this.state.componentStack.trim()}`
-                : "Component stack unavailable"}
-              {this.state.error?.stack ? `\n\nJS Stack\n${this.state.error.stack}` : ""}
-            </pre>
-          </div>
+              <pre
+                style={{
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-sm)",
+                  color: "var(--color-text-secondary)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {this.state.componentStack
+                  ? `Component Stack\n${this.state.componentStack.trim()}`
+                  : "Component stack unavailable"}
+                {this.state.error?.stack ? `\n\nJS Stack\n${this.state.error.stack}` : ""}
+              </pre>
+            </div>
+          )}
           <button
             onClick={() => this.setState({ error: null, componentStack: "" })}
             style={{

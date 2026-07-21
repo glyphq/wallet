@@ -2,7 +2,9 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
+import { Input } from "@/components/input";
 import { SettingsPageHeader } from "@/components/settings-page-header";
+import { TextButton } from "@/components/text-button";
 import { formatDate } from "@/lib/format";
 import { usePersistedStore, type RequestHistoryItem } from "@/store/persisted";
 
@@ -38,27 +40,15 @@ export default function RequestHistoryScreen() {
         {/* Search + clear */}
         {requestHistory.length > 0 && (
           <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
-            <input
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by dApp, type..."
-              style={{
-                flex: 1, background: "transparent", border: "none",
-                borderBottom: "1px solid var(--color-border-subtle)", borderRadius: 0,
-                padding: "var(--space-2) 0", fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)", color: "var(--color-text-display)", outline: "none",
-              }}
+              containerStyle={{ flex: 1 }}
             />
-            <button
-              onClick={clearRequestHistory}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                color: "var(--color-text-disabled)", padding: 0, flexShrink: 0,
-              }}
-            >
+            <TextButton onClick={clearRequestHistory} tone="muted" style={{ flexShrink: 0 }}>
               Clear all
-            </button>
+            </TextButton>
           </div>
         )}
 

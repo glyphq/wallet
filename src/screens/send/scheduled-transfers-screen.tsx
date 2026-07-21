@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AddCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
@@ -70,24 +70,13 @@ export default function ScheduledTransfersScreen() {
   }
 
   return (
-    <AppShell
-      statusBar={
-        <ScreenHeader
-          title="Scheduled transfers"
-          onBack={() => navigate("/send")}
-          action={
-            <button
-              type="button"
-              onClick={openAdd}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", padding: 0 }}
-            >
-              + New
-            </button>
-          }
-        />
-      }
-      contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
-    >
+    <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <div style={{ display: "flex", justifyContent: "flex-start" }}>
+        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openAdd}>
+          <AddCircle size={18} aria-hidden="true" />
+          New schedule
+        </Button>
+      </div>
       {scheduledTransfers.length === 0 && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
           No scheduled transfers

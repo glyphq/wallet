@@ -18,9 +18,9 @@ import { AltArrowDown, AltArrowUp } from "@solar-icons/react";
 /* ── Types ─────────────────────────────────────────────────────── */
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  healthy: { bg: "rgba(52,199,89,0.12)", color: "#34c759", label: "Connected" },
-  degraded: { bg: "rgba(255,159,10,0.12)", color: "#ff9f0a", label: "Slow" },
-  offline: { bg: "rgba(255,59,48,0.12)", color: "#ff3b30", label: "Offline" },
+  healthy: { bg: "var(--color-status-success-soft)", color: "var(--color-status-success)", label: "Connected" },
+  degraded: { bg: "var(--color-status-warning-soft)", color: "var(--color-status-warning)", label: "Slow" },
+  offline: { bg: "var(--color-status-error-soft)", color: "var(--color-status-error)", label: "Offline" },
 };
 
 function cspModeLabel() {
@@ -263,7 +263,11 @@ export default function DiagnosticsScreen() {
                           <span style={{
                             fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
                             padding: "1px var(--space-2)", borderRadius: "var(--radius-pill)",
-                            background: issue.source === "updater" ? "rgba(255,159,10,0.1)" : issue.source === "storage" ? "rgba(255,59,48,0.1)" : "var(--color-bg-elevated)",
+                            background: issue.source === "updater"
+                              ? "var(--color-status-warning-soft)"
+                              : issue.source === "storage"
+                                ? "var(--color-status-error-soft)"
+                                : "var(--color-bg-elevated)",
                             color: issue.source === "updater" ? "var(--color-status-warning)" : issue.source === "storage" ? "var(--color-status-error)" : "var(--color-text-disabled)",
                           }}>
                             {issue.source}

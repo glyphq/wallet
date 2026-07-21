@@ -10,6 +10,7 @@ import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
 import type { TransferRequest } from "@/lib/request-schema";
 
 export type { TransferRequest } from "@/lib/request-schema";
@@ -96,7 +97,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
       {/* Amount — primary element */}
       <div style={{ textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
@@ -108,9 +109,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-            Sign as
-          </div>
+          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
             {vault.accounts.filter((a) => !a.hidden).map((acc) => (
               <button
@@ -136,53 +135,51 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
       {/* fromError: dApp specified an identity not in this vault */}
       {fromError && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{fromError}]
+          {fromError}
         </div>
       )}
 
       {/* Detail rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {!fromError && <Row label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
-        <Row
+        {!fromError && <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
+        <RequestDetailRow
           label="To"
           value={toContact ? `${toContact.name} · ${truncateId(request.to, 10, 10)}` : truncateId(request.to, 10, 10)}
         />
-        <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
-        <Row label="Fee" value="None" />
+        <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
+        <RequestDetailRow label="Fee" value="None" />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          Preflight
-        </div>
-        <Row label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
-        <Row label="Balance after" value={projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—"} />
-        <Row label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <RequestSectionTitle>Preflight</RequestSectionTitle>
+        <RequestDetailRow label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
+        <RequestDetailRow label="Balance after" value={projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—"} />
+        <RequestDetailRow label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
       </div>
 
       {requestAmount === null && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [INVALID AMOUNT]
+          The request amount is invalid.
         </div>
       )}
       {invalidDestination && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [INVALID DESTINATION IDENTITY]
+          The destination identity is invalid.
         </div>
       )}
       {insufficientBalance && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [INSUFFICIENT BALANCE]
+          The selected account does not have enough balance for this transfer.
         </div>
       )}
       {hasPendingTx && !insufficientBalance && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-          [TRANSFER PENDING — WAIT FOR CONFIRMATION]
+          This account already has a pending transfer. Wait for confirmation before sending another one.
         </div>
       )}
       {txError && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{txError}]
+          {txError}
         </div>
       )}
 
@@ -205,30 +202,19 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
             {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
           </div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            HIGH-VALUE TRANSFER CONFIRMED
+            I understand this is a high-value transfer.
           </span>
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>
-        Sign and send
-      </Button>
-      <Button variant="danger" shape="sharp" onClick={onReject}>
-        Reject
-      </Button>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>
-        {value}
-      </span>
+      <RequestActionBar>
+        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+          Reject
+        </Button>
+        <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
+          Sign and send
+        </Button>
+      </RequestActionBar>
     </div>
   );
 }

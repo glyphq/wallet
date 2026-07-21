@@ -1,17 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
 import { animate } from "motion/react";
-import { gesture } from "@/lib/animations";
-import { AltArrowDown, Eye, EyeClosed, Bell, MenuDots, ArrowRightUp, QrCode, ShieldCheck, ShieldWarning, ShieldCross } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
-import { Identicon } from "@/components/identicon";
+import { IconButton } from "@/components/icon-button";
+import { ScreenHeader } from "@/components/screen-header";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
-import { useNetworkHealth } from "@/hooks/use-network-health";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
@@ -127,7 +126,7 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
           style={{
             position: "absolute", top: "calc(100% + var(--space-2))", left: 0, zIndex: 100,
             minWidth: 200, background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "var(--shadow-floating)",
           }}
         >
           {visibleAccounts.map((account) => {
@@ -340,62 +339,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   );
 }
 
-// ── Health badge ─────────────────────────────────────────────────────────────
-
-const HEALTH_CONFIG: Record<string, { color: string; Icon: typeof ShieldCheck }> = {
-  healthy: { color: "var(--color-status-success)", Icon: ShieldCheck },
-  degraded: { color: "var(--color-status-warning)", Icon: ShieldWarning },
-  offline: { color: "var(--color-status-error)", Icon: ShieldCross },
-};
-
-function HealthBadge({ health }: { health: string }) {
-  const cfg = HEALTH_CONFIG[health] ?? HEALTH_CONFIG.offline;
-  return (
-    <div title={health} style={{ display: "flex" }}>
-      <cfg.Icon size={12} color={cfg.color} />
-    </div>
-  );
-}
-
-// ── Header icon button ───────────────────────────────────────────────────────
-
-function HeaderIcon({ onClick, label, children, badge }: {
-  onClick: () => void;
-  label: string;
-  children: React.ReactNode;
-  badge?: boolean;
-}) {
-  return (
-    <motion.button
-      {...gesture.pressSubtle}
-      onClick={onClick}
-      aria-label={label}
-      style={{
-        position: "relative",
-        width: 32,
-        height: 32,
-        borderRadius: "50%",
-        background: "var(--color-bg-surface)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "none",
-        cursor: "pointer",
-        color: "var(--color-text-secondary)",
-      }}
-    >
-      {children}
-      {badge && (
-        <span style={{
-          position: "absolute", top: 5, right: 5,
-          width: 6, height: 6, borderRadius: "50%",
-          background: "var(--color-status-error)",
-        }} />
-      )}
-    </motion.button>
-  );
-}
-
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
@@ -404,7 +347,6 @@ export default function DashboardScreen() {
   const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
-  const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   const isLocked = useSessionStore((s) => s.isLocked);
   const wallets = useSessionStore((s) => s.wallets);
@@ -415,10 +357,8 @@ export default function DashboardScreen() {
   const watchOnly = isWatchOnlyVault(vault);
 
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
-  const health = useNetworkHealth();
   const { data: stats } = useLatestStats();
   const { data: ownedAssets } = useOwnedAssets(identity);
-  const txAlerts = useSessionStore((s) => s.txAlerts);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
   // Compute 24h price change from snapshots
@@ -443,54 +383,20 @@ export default function DashboardScreen() {
     if (isLocked) navigate("/lock", { replace: true });
   }, [isLocked, navigate]);
 
-  const hasAlerts = txAlerts.length > 0;
-
-  const statusBar = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "var(--space-2)" }}>
-      {/* Left: vault identicon + name */}
-      <button
-        onClick={() => navigate("/vaults")}
-        aria-label={`Switch vault — ${vault?.name ?? "none"}`}
-        style={{
-          display: "flex", alignItems: "center", gap: "var(--space-2)",
-          background: "none", border: "none", cursor: "pointer", padding: 0,
-        }}
-      >
-        {vault ? (
-          <Identicon seed={`${vault.id}:${vault.color}`} size={26} radius={13} />
-        ) : (
-          <div style={{ width: 26, height: 26, borderRadius: 13, background: "var(--color-bg-elevated)" }} />
-        )}
-        <span style={{
-          fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-          color: "var(--color-text-secondary)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        }}>
-          {vault?.name ?? "No vault"}
-        </span>
-        <HealthBadge health={health} />
-      </button>
-
-      {/* Right: eye + bell */}
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginLeft: "auto" }}>
-        <HeaderIcon
-          onClick={() => updateSettings({ hideBalances: !settings.hideBalances })}
-          label={settings.hideBalances ? "Show balances" : "Hide balances"}
-        >
-          {settings.hideBalances ? <EyeClosed size={15} weight="Linear" /> : <Eye size={15} weight="Linear" />}
-        </HeaderIcon>
-        <HeaderIcon
-          onClick={() => navigate("/settings/notifications")}
-          label="Notifications"
-          badge={hasAlerts}
-        >
-          <Bell size={15} weight="Linear" />
-        </HeaderIcon>
-      </div>
-    </div>
-  );
+  const dashboardHeader = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="Dashboard"
+      action={
+        <IconButton label="Search" onClick={() => navigate("/search")}>
+          <Magnifier size={20} weight="Linear" aria-hidden="true" />
+        </IconButton>
+      }
+    />
+  ), [navigate]);
 
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)" }}>
+    <AppShell statusBar={dashboardHeader} contentStyle={{ padding: "var(--space-4)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
         {/* Hero: account + balance */}
@@ -525,7 +431,7 @@ export default function DashboardScreen() {
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500,
                   color: priceChange24h >= 0 ? "var(--color-status-success)" : "var(--color-status-error)",
                   padding: "1px var(--space-2)", borderRadius: "var(--radius-pill)",
-                  background: priceChange24h >= 0 ? "rgba(52,199,89,0.1)" : "rgba(255,59,48,0.1)",
+                  background: priceChange24h >= 0 ? "var(--color-status-success-soft)" : "var(--color-status-error-soft)",
                 }}>
                   {priceChange24h >= 0 ? "+" : ""}{priceChange24h.toFixed(1)}%
                 </span>

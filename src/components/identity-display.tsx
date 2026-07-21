@@ -59,7 +59,7 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
   return (
     <div style={style}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-        {showIdenticon && !expanded && <Identicon seed={identity} size={18} radius={3} style={{ flexShrink: 0 }} />}
+        {showIdenticon && !expanded && <Identicon kind="identity" seed={identity} size={18} radius={3} style={{ flexShrink: 0 }} />}
         <motion.button
           animate={{ opacity: flash ? 0.6 : 1 }}
           className={flash ? "flash-success" : ""}

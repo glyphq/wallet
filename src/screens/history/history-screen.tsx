@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { AltArrowLeft, Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
+import { Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
@@ -27,7 +30,10 @@ type TxFilters = TxQueryFilters;
 
 const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS };
 
-// Draft state for text inputs — committed on APPLY
+const INITIAL_VISIBLE_HISTORY_ROWS = 150;
+const HISTORY_RENDER_PAGE = 100;
+
+// Draft state for text inputs, committed on Apply
 type DraftInputs = {
   minAmount: string;
   maxAmount: string;
@@ -117,10 +123,25 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
       onClick={onClick}
       className={className}
       style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)",
+        display: "flex", alignItems: "center", gap: "var(--space-3)",
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
       }}
     >
+      {TypeIcon && (
+        <div style={{
+          flexShrink: 0,
+          width: 48,
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "var(--radius-control)",
+          background: "var(--color-bg-surface)",
+          color: txType === "failed" ? "var(--color-status-warning)" : txType === "pending" ? "var(--color-text-disabled)" : "var(--color-text-secondary)",
+        }}>
+          <TypeIcon size={20} />
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
           {label}
@@ -133,12 +154,9 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-          {TypeIcon && <TypeIcon size={14} style={{ color: amountColor, opacity: 0.7 }} />}
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
-            {amount}
-          </span>
-        </div>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
+          {amount}
+        </span>
         {amountUsd && (
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
             {amountUsd}
@@ -178,6 +196,7 @@ export default function HistoryScreen() {
   const [memoDateFrom, setMemoDateFrom] = useState("");
   const [memoDateTo, setMemoDateTo] = useState("");
   const [memoMinAmount, setMemoMinAmount] = useState("");
+  const [visibleConfirmedCount, setVisibleConfirmedCount] = useState(INITIAL_VISIBLE_HISTORY_ROWS);
 
   function exportMemos() {
     let entries = Object.entries(txMemos).filter(([, v]) => v.trim());
@@ -214,22 +233,14 @@ export default function HistoryScreen() {
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
 
-  // Intentionally not resetting filters on identity change — user keeps their filter context when switching accounts.
+  // Keep filters when the identity changes so the user retains their current context.
 
   // Sync draft when sheet opens so edits start from current values
   useEffect(() => { if (filterOpen) setDraft(toDraft(filters)); }, [filterOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Infinite scroll sentinel
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
-      { rootMargin: "100px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    setVisibleConfirmedCount(INITIAL_VISIBLE_HISTORY_ROWS);
+  }, [identity, filters.direction, filters.type, filters.minAmount, filters.maxAmount, filters.dateFrom, filters.dateTo, filters.tickFrom, filters.tickTo, groupByCounterparty]);
 
   function applyAndClose() {
     setFilters((f) => ({
@@ -244,21 +255,58 @@ export default function HistoryScreen() {
     setFilterOpen(false);
   }
 
-  const allTxs = data?.pages.flat() ?? [];
-  const fetchedHashes = new Set(allTxs.map((t) => t.hash));
-  const myPending = pendingTxs.filter((p) => p.source === identity || p.destination === identity);
-  const visiblePending = myPending.filter((p) => !fetchedHashes.has(p.hash));
+  const allTxs = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const fetchedHashes = useMemo(() => new Set(allTxs.map((t) => t.hash)), [allTxs]);
+  const myPending = useMemo(
+    () => pendingTxs.filter((p) => p.source === identity || p.destination === identity),
+    [identity, pendingTxs],
+  );
+  const visiblePending = useMemo(
+    () => myPending.filter((p) => !fetchedHashes.has(p.hash)),
+    [fetchedHashes, myPending],
+  );
 
-  const filteredPending = visiblePending.filter((p) => {
-    if (filters.direction === "in") return p.destination === identity;
-    if (filters.direction === "out") return p.source === identity;
-    return true;
-  });
+  const filteredPending = useMemo(
+    () => visiblePending.filter((p) => {
+      if (filters.direction === "in") return p.destination === identity;
+      if (filters.direction === "out") return p.source === identity;
+      return true;
+    }),
+    [filters.direction, identity, visiblePending],
+  );
 
   const filteredTxs = allTxs;
-  const pendingHashes = new Set(pendingTxs.map((p) => p.hash));
+  const pendingHashes = useMemo(() => new Set(pendingTxs.map((p) => p.hash)), [pendingTxs]);
+  const visibleConfirmedTxs = useMemo(
+    () => filteredTxs.slice(0, visibleConfirmedCount),
+    [filteredTxs, visibleConfirmedCount],
+  );
+  const visibleSections = useMemo(
+    () => groupTxsByDate(visibleConfirmedTxs),
+    [visibleConfirmedTxs],
+  );
+  const hasHiddenLoadedTxs = filteredTxs.length > visibleConfirmedCount;
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
+
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || hasHiddenLoadedTxs || !hasNextPage || isFetchingNextPage) return;
+        fetchNextPage();
+      },
+      { rootMargin: "100px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasHiddenLoadedTxs, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  function showOlderLoadedTxs() {
+    setVisibleConfirmedCount((count) => Math.min(filteredTxs.length, count + HISTORY_RENDER_PAGE));
+  }
 
   // ── Active filter chips ───────────────────────────────────────────────────
   const chips: { label: string; clear: () => void }[] = [];
@@ -284,42 +332,30 @@ export default function HistoryScreen() {
   }
   if (groupByCounterparty) chips.push({ label: "Grouped", clear: () => setGroupByCounterparty(false) });
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Transactions
-      </span>
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-        {hasMemos && (
-          <button type="button" onClick={() => setMemoExportOpen(true)} aria-label="Export memos" style={ICON_BTN}>
-            <Download size={15} weight="Linear" />
-          </button>
-        )}
-        <button type="button" onClick={() => navigate("/analytics")} aria-label="Analytics" style={ICON_BTN}>
-          <Chart size={15} weight="Linear" />
-        </button>
-        {!wideLayout && (
-          <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filter" style={{ ...ICON_BTN, color: hasActive ? "var(--color-text-primary)" : "var(--color-text-secondary)", position: "relative" }}>
-            <Filters size={15} weight="Linear" />
-            {hasActive && <span style={{ position: "absolute", top: -2, right: -3, width: 5, height: 5, borderRadius: "50%", background: "var(--color-status-success)" }} />}
-          </button>
-        )}
-        <button type="button" onClick={() => refetch()} aria-label="Refresh" style={ICON_BTN}>
-          <Refresh size={15} weight="Linear" />
-        </button>
-      </div>
-    </div>
-  );
+  const historyHeader = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="History"
+      action={
+        <>
+          <IconButton label="View analytics" onClick={() => navigate("/analytics")}>
+            <Chart size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label={hasActive ? "Filter history, filters active" : "Filter history"} onClick={() => setFilterOpen(true)}>
+            <Filters size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Refresh history" onClick={() => void refetch()}>
+            <Refresh size={20} aria-hidden="true" />
+          </IconButton>
+        </>
+      }
+    />
+  ), [hasActive, navigate, refetch]);
 
   return (
     <AppShell
-      statusBar={header}
       fullBleed
+      statusBar={historyHeader}
       contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1, padding: 0 }}
     >
       {/* ── Wide-screen sticky filter sidebar ── */}
@@ -370,6 +406,15 @@ export default function HistoryScreen() {
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
 
+      {hasMemos && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-4)" }}>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={() => setMemoExportOpen(true)}>
+            <Download size={16} aria-hidden="true" />
+            Export memos
+          </Button>
+        </div>
+      )}
+
       {/* Active filter chips */}
       {chips.length > 0 && (
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
@@ -407,7 +452,7 @@ export default function HistoryScreen() {
 
       {/* Transaction rows */}
       {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={filteredTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
+        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
       {!isLoading && !isError && !groupByCounterparty && (
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -440,7 +485,7 @@ export default function HistoryScreen() {
             );
           })}
 
-          {groupTxsByDate(filteredTxs).map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label}>
               <div style={{
                 fontFamily: "var(--font-sans)",
@@ -470,8 +515,8 @@ export default function HistoryScreen() {
                 const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
                 const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
                 const address = isSc
-                  ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
-                  : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
+                  ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown")))
+                  : truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown"));
                 const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
                 const txType = !flew ? "failed" as const : isSc ? "sc" as const : isIn ? "received" as const : "sent" as const;
 
@@ -496,6 +541,17 @@ export default function HistoryScreen() {
         </div>
       )}
 
+      {!isLoading && !isError && hasHiddenLoadedTxs && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-5) 0" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
+            Showing {visibleConfirmedTxs.length} of {filteredTxs.length} loaded transactions
+          </div>
+          <Button variant="secondary" shape="sharp" size="sm" onClick={showOlderLoadedTxs}>
+            Show older activity
+          </Button>
+        </div>
+      )}
+
       {/* Infinite scroll */}
       <div ref={sentinelRef} style={{ height: 1 }} />
       {isFetchingNextPage && (
@@ -511,7 +567,7 @@ export default function HistoryScreen() {
           ))}
         </div>
       )}
-      {!hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
+      {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
 
       </motion.div>
       </div>{/* end main content column */}
@@ -606,11 +662,6 @@ export default function HistoryScreen() {
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
-
-const ICON_BTN: React.CSSProperties = {
-  background: "none", border: "none", cursor: "pointer", padding: 0,
-  display: "flex", alignItems: "center", color: "var(--color-text-secondary)",
-};
 
 const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
 

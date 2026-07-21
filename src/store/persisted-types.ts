@@ -7,6 +7,19 @@ export type VaultColor =
   | "emerald"
   | "sky"
   | "violet";
+export type WalletIconId =
+  | "wallet"
+  | "wallet-money"
+  | "safe"
+  | "shield"
+  | "folder"
+  | "home"
+  | "buildings"
+  | "compass"
+  | "star"
+  | "rocket"
+  | "planet"
+  | "key";
 export type FontPairId =
   | "default"
   | "inter"
@@ -14,6 +27,8 @@ export type FontPairId =
   | "space-grotesk"
   | "fira"
   | "jetbrains";
+export type ThemeMode = "dark" | "light";
+
 export type AccentColorId =
   | "green"
   | "amber"
@@ -40,6 +55,7 @@ export interface VaultMeta {
   id: string;
   name: string;
   color: VaultColor;
+  icon?: WalletIconId;
   kind?: "seeded" | "watch_only";
   createdAt: number;
   lastUnlockedAt: number;
@@ -78,6 +94,8 @@ export interface AppSettings {
   currency: "USD" | "EUR" | "BTC";
   /** Ticks added to the current tick when estimating targetTick for new transactions. Default 10. */
   tickOffset: number;
+  /** Dark or light theme. */
+  themeMode: ThemeMode;
   debugMode: boolean;
   biometricVaultIds: string[];
   /** @deprecated Kept for migration compat — no longer configurable in UI. */
@@ -265,10 +283,10 @@ export interface PersistedState {
   removeContact: (id: string) => void;
   addPendingTx: (tx: PendingTx) => void;
   removePendingTx: (hash: string) => void;
-  /** Upserts a dApp approval — merges permissions into an existing entry rather than replacing it. */
+  /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
   approveDapp: (dapp: ApprovedDapp) => void;
   revokeDapp: (origin: string) => void;
-  /** Removes a single permission; prunes the dApp entry entirely when no permissions remain. */
+  /** Removes a single permission while leaving the persisted dApp connection entry intact. */
   revokeDappPermission: (
     origin: string,
     permission: ApprovedDapp["permissions"][number]

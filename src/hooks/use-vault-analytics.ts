@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRpcClient } from "@/lib/rpc";
 import { usePersistedStore } from "@/store/persisted";
@@ -46,10 +47,13 @@ export function useVaultAnalytics() {
   const vault = usePersistedStore((s) => s.vaults.find((item) => item.id === s.settings.activeVaultId) ?? null);
   const wallets = useSessionStore((s) => s.wallets);
 
-  const identities = (vault?.accounts ?? [])
-    .filter((account) => !account.hidden)
-    .map((account) => getVaultAccountIdentity(vault, account.index, wallets))
-    .filter((identity): identity is string => !!identity);
+  const identities = useMemo(() => {
+    if (!vault) return [] as string[];
+    return vault.accounts
+      .filter((account) => !account.hidden)
+      .map((account) => getVaultAccountIdentity(vault, account.index, wallets))
+      .filter((identity): identity is string => !!identity);
+  }, [vault, wallets]);
 
   return useQuery({
     queryKey: ["vault-analytics", settings.activeVaultId, identities],

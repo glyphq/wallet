@@ -1,0 +1,23 @@
+{
+  "byte_count": 1471125,
+  "created_at_unix_ms": 1784567157641,
+  "id": "ig_0fbd0cbb53645fc8016a5e552c9d008191bf314233b69a5aaf",
+  "image_path": "/home/alex/github.com/glyphq/wallet/.jcode/generated-images/1784567157641-ig_0fbd0cbb53645fc8016a5e552c9d008191bf314233b69a5aaf.png",
+  "native_tool": "image_generation",
+  "output_format": "png",
+  "provider": "openai",
+  "response_item": {
+    "action": "generate",
+    "background": "opaque",
+    "id": "ig_0fbd0cbb53645fc8016a5e552c9d008191bf314233b69a5aaf",
+    "output_format": "png",
+    "quality": "medium",
+    "revised_prompt": "A premium technical product hero illustration for Glyph Wallet, designed for a dark developer-tool landing page. Composition: widescreen layered UI scene with no device bezel, no fake card frame, just floating interface planes and system diagrams. Visual language: monochrome dark graphite and black with restrained accent cyan (#ccfcfb), precise thin lines, subtle grid, compact transaction review panes, request flow rows, code-like labels, structured wallet/account modules, and a calm systems aesthetic. Feels like a hybrid of an SDK tool UI and a high-end security product. No logos from other brands, no web3 cliches, no neon glow, no gradients beyond subtle depth, no people. Include enough empty negative space around the composition so it can sit in a website hero and be animated later.",
+    "size": "1536x1024",
+    "status": "generating",
+    "type": "image_generation_call"
+  },
+  "revised_prompt": "A premium technical product hero illustration for Glyph Wallet, designed for a dark developer-tool landing page. Composition: widescreen layered UI scene with no device bezel, no fake card frame, just floating interface planes and system diagrams. Visual language: monochrome dark graphite and black with restrained accent cyan (#ccfcfb), precise thin lines, subtle grid, compact transaction review panes, request flow rows, code-like labels, structured wallet/account modules, and a calm systems aesthetic. Feels like a hybrid of an SDK tool UI and a high-end security product. No logos from other brands, no web3 cliches, no neon glow, no gradients beyond subtle depth, no people. Include enough empty negative space around the composition so it can sit in a website hero and be animated later.",
+  "schema_version": 1,
+  "status": "generating"
+}

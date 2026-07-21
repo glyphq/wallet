@@ -5,14 +5,14 @@ import { pageTransition } from "@/lib/animations";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
+import { ScreenHeader } from "@/components/screen-header";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 
 // ── Route helpers ────────────────────────────────────────────────────────────
 
 const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
-
-const HIDDEN_NAV_ROUTES = new Set(["/send", "/send-many", "/burn", "/earn"]);
 
 const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/dashboard", "home"],
@@ -22,13 +22,32 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/stake", "send"],
   ["/receive", "receive"],
   ["/payment-link", "receive"],
-  ["/earn", "earn"],
   ["/history", "history"],
   ["/analytics", "history"],
   ["/contacts", "history"],
   ["/search", "history"],
   ["/vaults", "home"],
   ["/settings", "settings"],
+];
+
+const HEADER_TITLES: [string, string][] = [
+  ["/dashboard", "Dashboard"],
+  ["/vaults/:id/portfolio", "Portfolio"],
+  ["/vaults", "Vaults"],
+  ["/vaults/", "Vault details"],
+  ["/send/scheduled", "Scheduled transfers"],
+  ["/send-many", "Send many"],
+  ["/send", "Send"],
+  ["/burn", "Burn"],
+  ["/stake", "Stake"],
+  ["/payment-link", "Payment link"],
+  ["/receive", "Receive"],
+  ["/tx/", "Transaction"],
+  ["/analytics", "Analytics"],
+  ["/history", "History"],
+  ["/contacts", "Contacts"],
+  ["/search", "Search"],
+  ["/settings", "Settings"],
 ];
 
 /** Instant transition — no animation for lateral navigation within a section. */
@@ -52,6 +71,17 @@ function activeTabFromPath(pathname: string): BottomNavTab {
   return "home";
 }
 
+function headerTitleFromPath(pathname: string): string | null {
+  if (pathname.endsWith("/portfolio")) return "Portfolio";
+
+  for (const [prefix, title] of HEADER_TITLES) {
+    if (prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix || pathname.startsWith(prefix + "/")) {
+      return title;
+    }
+  }
+  return null;
+}
+
 /** Returns true when both paths are within the same top-level section. */
 function isSameSection(a: string, b: string): boolean {
   if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
@@ -69,8 +99,10 @@ function LayoutShell() {
   const countdown = useLockCountdown();
   const cur = location.pathname;
   const show = showChrome(cur);
-  const showNav = show && !HIDDEN_NAV_ROUTES.has(cur);
+  const showNav = show;
   const sheetsOpen = useSheetsOpen();
+  const routeTitle = headerTitleFromPath(cur);
+  const resolvedHeader = header ?? (routeTitle ? <ScreenHeader leading={<ShellVaultSwitcher />} title={routeTitle} /> : null);
 
   const prevRef = useRef(cur);
   const prev = prevRef.current;
@@ -80,21 +112,20 @@ function LayoutShell() {
   const transition = isSameSection(prev, cur) ? instantTransition : pageTransition;
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
       {/* ── Static header ── */}
-      {show && header && (
+      {show && resolvedHeader && (
         <header
           style={{
             flexShrink: 0,
-            height: 44,
+            height: "var(--height-header)",
             display: "flex",
             alignItems: "center",
-            padding: "0 var(--space-4)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-            background: "var(--color-bg-base)",
+            padding: "0 var(--screen-padding)",
+            background: "var(--color-bg-header)",
           }}
         >
-          {header}
+          {resolvedHeader}
         </header>
       )}
 
@@ -107,43 +138,44 @@ function LayoutShell() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "var(--space-1) var(--space-4)",
-            background: "var(--color-bg-elevated)",
+            padding: "var(--space-2) var(--screen-padding)",
+            background: "var(--color-bg-surface)",
             borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.04em" }}>
             Locking in {countdown}s
           </span>
         </div>
       )}
 
       {/* ── Animated page content ── */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden" }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.key}
             {...transition}
-            style={{ height: "100%", position: "absolute", inset: 0 }}
+            style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, minWidth: 0, position: "absolute", inset: 0 }}
           >
             {element}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* ── Floating bottom nav ── */}
+      {/* ── Anchored bottom nav ── */}
       {showNav && !sheetsOpen && (
-        <nav
+        <footer
           style={{
-            position: "absolute",
-            bottom: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 100,
+            flexShrink: 0,
+            display: "flex",
+            justifyContent: "center",
+            padding: `var(--space-2) var(--screen-padding) var(--safe-bottom-space)`,
+            background: "var(--color-bg-base)",
+            zIndex: "var(--z-nav)",
           }}
         >
           <BottomNav active={activeTabFromPath(cur)} />
-        </nav>
+        </footer>
       )}
     </div>
   );

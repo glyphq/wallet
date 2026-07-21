@@ -18,12 +18,18 @@ export default defineConfig(async () => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes("node_modules")) return undefined;
-          if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
-          if (id.includes("@tanstack/react-query") || id.includes("zustand")) return "state-vendor";
-          if (id.includes("@tauri-apps")) return "tauri-vendor";
-          if (id.includes("@qubic.org")) return "qubic-vendor";
-          if (id.includes("motion") || id.includes("lucide-react") || id.includes("qrcode.react")) return "ui-vendor";
+          const moduleId = id.replaceAll("\\", "/");
+          if (!moduleId.includes("/node_modules/")) return undefined;
+
+          const inPackage = (pkg: string) =>
+            moduleId.includes(`/node_modules/${pkg}/`);
+
+          if (inPackage("react") || inPackage("react-dom") || inPackage("scheduler")) return "react-vendor";
+          if (inPackage("react-router") || inPackage("react-router-dom") || inPackage("@remix-run/router")) return "router-vendor";
+          if (inPackage("@tanstack/react-query") || inPackage("zustand") || inPackage("react-hook-form") || inPackage("zod")) return "state-vendor";
+          if (moduleId.includes("/node_modules/@tauri-apps/")) return "tauri-vendor";
+          if (moduleId.includes("/node_modules/@qubic.org/")) return "qubic-vendor";
+          if (inPackage("motion") || inPackage("@solar-icons/react") || inPackage("qrcode.react")) return "ui-vendor";
           return "vendor";
         },
       },

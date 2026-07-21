@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import {
-  AltArrowLeft,
   AltArrowDown,
   ShieldWarning,
   MoneyBag,
@@ -298,32 +297,6 @@ export default function StakeScreen() {
     }
   }
 
-  function handleBack() {
-    if (step === "main" || step === "done" || step === "error") {
-      navigate("/dashboard");
-    } else {
-      setStep("main");
-      setUnlockTarget(null);
-    }
-  }
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button
-        type="button"
-        onClick={handleBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}
-      >
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-        Earn
-      </span>
-    </div>
-  );
-
   const entered = amountStr.trim() && /^\d+$/.test(amountStr.trim()) ? BigInt(amountStr.trim()) : 0n;
   const remaining = balance !== null ? balance - entered : null;
   const balanceOver = remaining !== null && remaining < 0n;
@@ -363,7 +336,7 @@ export default function StakeScreen() {
           >
             {tab === key && (
               <motion.span
-                layoutId="earn-tab-pill"
+                layoutId="stake-tab-pill"
                 transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 style={{
                   position: "absolute",
@@ -386,7 +359,7 @@ export default function StakeScreen() {
 
   if (step === "main") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           <TabBar />
@@ -409,7 +382,7 @@ export default function StakeScreen() {
                 {epochProgress !== null && (
                   <div style={{ marginBottom: "var(--space-3)" }}>
                     <div style={{ width: "100%", height: 4, borderRadius: 2, background: "var(--color-bg-base)", overflow: "hidden" }}>
-                      <div style={{ width: `${epochProgress * 100}%`, height: "100%", borderRadius: 2, background: "var(--color-accent)", transition: "width 0.3s ease" }} />
+                      <div style={{ width: "100%", height: "100%", borderRadius: 2, background: "var(--color-accent)", transform: `scaleX(${epochProgress})`, transformOrigin: "left", transition: "transform 0.3s ease" }} />
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-1)" }}>
                       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
@@ -453,7 +426,7 @@ export default function StakeScreen() {
               <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
                 <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InfoCircle size={16} weight="Linear" /></span>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>
-                  Lock QU for {LOCK_PERIOD_EPOCHS} epochs to earn from the reward pool. Minimum {formatQu(QEARN_MIN_LOCK)} QU. Early unlock is available but rewards may be reduced.
+                  Lock QU for {LOCK_PERIOD_EPOCHS} epochs to participate in the reward pool. Minimum {formatQu(QEARN_MIN_LOCK)} QU. Early unlock is available but rewards may be reduced.
                 </span>
               </div>
 
@@ -526,7 +499,7 @@ export default function StakeScreen() {
                     <div style={{
                       position: "absolute", top: "calc(100% + var(--space-2))", left: 0, zIndex: 100,
                       minWidth: 200, background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
-                      borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+                      borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "var(--shadow-floating)",
                     }}>
                       {visibleAccounts.map((account) => {
                         const isActive = account.index === unlockAccountIdx;
@@ -602,7 +575,7 @@ export default function StakeScreen() {
                         }}
                       >
                         <LockUnlocked size={16} weight="Bold" />
-                        Unlock all {readyPositions.length}
+                        {readyPositions.length === 1 ? "Review unlock" : "Review next unlock"}
                       </button>
                     </>
                   )}
@@ -621,7 +594,7 @@ export default function StakeScreen() {
                     No active positions
                   </span>
                   <button type="button" onClick={() => setTab("lock")} style={{ ...textBtn, color: "var(--color-accent)" }}>
-                    Lock QU to start earning
+                    Lock QU to start staking
                   </button>
                 </div>
               ) : (
@@ -636,7 +609,7 @@ export default function StakeScreen() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0", gap: "var(--space-3)" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
                             <div style={{ position: "relative" }}>
-                              <Identicon seed={`qearn-pos-${pos.epoch}`} size={40} radius={6} style={{ flexShrink: 0 }} />
+                              <Identicon kind="position" code={`E${pos.epoch}`} seed={`qearn-pos-${pos.epoch}`} label={`Epoch ${pos.epoch}`} size={40} radius={8} style={{ flexShrink: 0 }} />
                               <span style={{
                                 position: "absolute", bottom: -2, right: -2,
                                 width: 12, height: 12, borderRadius: "50%",
@@ -726,7 +699,7 @@ export default function StakeScreen() {
 
   if (step === "confirm" && tab === "lock") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
@@ -794,7 +767,7 @@ export default function StakeScreen() {
     const epochsLeft = isEarly ? unlockEpoch - (currentEpoch ?? 0) : 0;
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
@@ -864,7 +837,7 @@ export default function StakeScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
           <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
@@ -889,12 +862,12 @@ export default function StakeScreen() {
 
   if (step === "done") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
           {/* Status */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-4)", gap: "var(--space-2)" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(204, 252, 251, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <MoneyBag size={22} style={{ color: "var(--color-accent)" }} />
             </div>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
@@ -920,7 +893,7 @@ export default function StakeScreen() {
               Done
             </button>
             <button type="button" onClick={() => { setStep("main"); refetchPositions(); }} style={textBtn}>
-              Back to earn
+              Back to staking
             </button>
           </div>
 
@@ -932,9 +905,9 @@ export default function StakeScreen() {
   // ── Error ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-        <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255, 59, 48, 0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
         </div>
         <div style={{ textAlign: "center" }}>

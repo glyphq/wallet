@@ -2,10 +2,16 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowRightUp, QrCode, AltArrowLeft, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic } from "@solar-icons/react";
+import { ArrowRightUp, QrCode, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic, UsersGroupRounded, Fire } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
+import { DetailRow } from "@/components/detail-row";
+import { EmbeddedInput } from "@/components/embedded-input";
 import { Input } from "@/components/input";
+import { TextButton } from "@/components/text-button";
 import { ContactPicker } from "@/components/contact-picker";
 import { AddressSuggestions } from "@/components/address-suggestions";
 import { usePersistedStore } from "@/store/persisted";
@@ -77,7 +83,7 @@ function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: ()
             }}
             onPointerDown={(e) => {
               if (!isActive) return;
-              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.background = "var(--color-bg-hover)";
               e.currentTarget.style.transform = "scale(0.95)";
             }}
             onPointerUp={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "scale(1)"; }}
@@ -87,27 +93,6 @@ function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: ()
           </button>
         );
       })}
-    </div>
-  );
-}
-
-// ── Detail row (for review/done screens) ────────────────────────────────────
-
-function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
-  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
-      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
-      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
-      <span style={{
-        fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "var(--text-label)", fontWeight: useMono ? 400 : 500,
-        color: valueColor ?? "var(--color-text-display)",
-        textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
-      }}>
-        {value}
-      </span>
     </div>
   );
 }
@@ -168,6 +153,22 @@ export default function SendScreen() {
     .map((a) => ({ name: a.name, identity: a.identity ?? wallets[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
     .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
+  const sendHeader = useMemo(() => (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="Send"
+      action={
+        <>
+          <IconButton label="Send to many" onClick={() => navigate("/send-many")}>
+            <UsersGroupRounded size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Burn QU" onClick={() => navigate("/burn")}>
+            <Fire size={20} aria-hidden="true" />
+          </IconButton>
+        </>
+      }
+    />
+  ), [navigate]);
 
   const { data: recentTxsData } = useTxHistory(identity || null);
   const recentTxs = recentTxsData?.pages[0];
@@ -306,6 +307,8 @@ export default function SendScreen() {
       setTxError(extractMessage(e, "Broadcast failed."));
       saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
       setStep("error");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -318,28 +321,20 @@ export default function SendScreen() {
   // ── Input step (numpad layout) ───────────────────────────────────────────
 
   if (step === "input") {
-    const header = (
-      <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-        <button type="button" onClick={() => navigate("/dashboard")}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-          <AltArrowLeft size={20} />
-        </button>
-        <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", whiteSpace: "nowrap" }}>
-          Send from {accountName}
-        </span>
-      </div>
-    );
-
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "hidden" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+      <AppShell fullBleed statusBar={sendHeader} contentStyle={{ padding: "var(--space-4)", height: "100%", overflowY: "auto" }}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: "min-content" }}>
+
+        <div style={{ display: "flex", justifyContent: "center", paddingTop: "var(--space-3)" }}>
+          <span style={{ ...labelStyle, color: "var(--color-text-tertiary)" }}>From {accountName}</span>
+        </div>
 
         {/* Amount display */}
         <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: "var(--space-1)", position: "relative", overflow: "hidden", width: "100%" }}>
 
           {/* Draft notice */}
           {draftRestored && (
-            <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "rgba(245, 158, 11, 0.1)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
               <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "var(--text-label)" }}>Draft restored</span>
               <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-status-warning)", fontSize: "0.625rem", padding: 0 }}>✕</button>
             </div>
@@ -367,8 +362,7 @@ export default function SendScreen() {
             }
           </span>
 
-          <button
-            type="button"
+          <TextButton
             onClick={() => {
               if (!usdMode && price && amountStr) {
                 setUsdStr((Number(amountStr) * price).toFixed(2));
@@ -379,13 +373,13 @@ export default function SendScreen() {
               }
               setUsdMode((v) => !v);
             }}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: 0 }}
+            tone="muted"
           >
             {usdMode
               ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
               : (usdEquiv !== null && usdEquiv > 0 ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "USD")
             }
-          </button>
+          </TextButton>
 
           {amountError && (
             <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)" }}>{amountError}</span>
@@ -398,11 +392,11 @@ export default function SendScreen() {
             background: "var(--color-bg-surface)",
             borderRadius: "var(--radius-card)",
             padding: "var(--space-4) var(--space-4)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.2), 0 0 1px rgba(255,255,255,0.05)",
+            boxShadow: "var(--shadow-surface)",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-              <input
+              <EmbeddedInput
                 ref={destRef}
                 autoComplete="off"
                 value={destination}
@@ -410,11 +404,7 @@ export default function SendScreen() {
                 placeholder="Enter identity or contact"
                 onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = "var(--color-text-secondary)"; }}
                 onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
-                style={{
-                  flex: 1, background: "none", border: "none", outline: "none",
-                  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-                  color: "var(--color-text-display)", padding: 0, minWidth: 0,
-                }}
+                style={{ flex: 1 }}
               />
               {canOpenPicker && (
                 <button onClick={() => setShowPicker(true)}
@@ -433,7 +423,7 @@ export default function SendScreen() {
               background: "var(--color-bg-elevated)",
               borderRadius: "var(--radius-card)",
               border: "1px solid var(--color-border-subtle)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+              boxShadow: "var(--shadow-overlay)",
               maxHeight: 240, overflowY: "auto",
               animation: "slide-down 0.15s ease-out",
             }}>
@@ -466,23 +456,12 @@ export default function SendScreen() {
         </div>
 
         {/* Actions */}
-        <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <Button onClick={goReview} disabled={!wallet}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
               Review <ArrowRightUp size={16} weight="Bold" />
             </span>
           </Button>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "var(--space-3)" }}>
-            <motion.button {...gesture.pressSubtle} onClick={() => navigate("/send-many")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
-              Send to many
-            </motion.button>
-            <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-text-disabled)", opacity: 0.5, flexShrink: 0 }} />
-            <motion.button {...gesture.pressSubtle} onClick={() => navigate("/burn")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--color-text-disabled)", padding: 0, fontSize: "var(--text-label)" }}>
-              Burn QU
-            </motion.button>
-          </div>
         </div>
 
         <ContactPicker
@@ -499,18 +478,6 @@ export default function SendScreen() {
 
   // ── Review step ──────────────────────────────────────────────────────────
 
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", padding: "0 var(--space-4)" }}>
-      <button type="button" onClick={() => step === "review" ? setStep("input") : navigate("/dashboard")}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", padding: "var(--space-2) 0", display: "flex", alignItems: "center" }}>
-        <AltArrowLeft size={20} />
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-        {step === "review" ? "Review" : step === "done" ? "Sent" : step === "sending" ? "Sending" : "Error"}
-      </span>
-    </div>
-  );
-
   if (step === "review") {
     const cardStyle: React.CSSProperties = {
       background: "var(--color-bg-surface)",
@@ -521,10 +488,10 @@ export default function SendScreen() {
     const divider: React.CSSProperties = {
       height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
     };
-    const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—";
+    const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "Unavailable";
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Amount */}
@@ -577,17 +544,17 @@ export default function SendScreen() {
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "rgba(245, 158, 11, 0.08)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>A transfer is pending. Wait for confirmation.</span>
           </div>
         )}
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueVerified && (
-          <div style={{ background: "rgba(245, 158, 11, 0.06)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — confirm with vault password</span>
-            <Input type="password" label="Vault password" value={highValuePassword}
+          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Confirm this high-value transfer with your wallet password.</span>
+            <Input type="password" label="Wallet password" value={highValuePassword}
               onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
               onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
               error={highValuePasswordError} placeholder="••••••••••" autoComplete="current-password" />
@@ -639,7 +606,7 @@ export default function SendScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
         <div style={{
           width: 48, height: 48, position: "relative",
@@ -678,7 +645,7 @@ export default function SendScreen() {
     const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-disabled)";
 
     return (
-      <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
@@ -717,7 +684,7 @@ export default function SendScreen() {
           />
         </div>
 
-        {/* Save contact — card-based */}
+        {/* Save contact */}
         {!destIsKnownContact && !saved && (
           <div style={{
             background: "var(--color-bg-surface)",
@@ -780,11 +747,11 @@ export default function SendScreen() {
   // ── Error ────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell statusBar={header} fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{
         width: 48, height: 48, borderRadius: "50%",
-        background: "rgba(255, 59, 48, 0.1)",
+        background: "var(--color-status-error-soft)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />

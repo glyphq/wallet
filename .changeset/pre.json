@@ -1,0 +1,12 @@
+{
+  "mode": "pre",
+  "tag": "prerelease",
+  "initialVersions": {
+    "glyph": "0.14.3"
+  },
+  "changesets": [
+    "calm-signing-buffers",
+    "glyph-wallet-prerelease-ui",
+    "polish-dashboard-search"
+  ]
+}

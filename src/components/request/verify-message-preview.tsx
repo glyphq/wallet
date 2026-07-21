@@ -3,6 +3,7 @@ import { Button } from "@/components/button";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
 import { truncateId } from "@/lib/format";
 import { useSessionStore } from "@/store/session";
+import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
 
 export type { VerifyMessageRequest } from "@/lib/request-schema";
@@ -64,42 +65,26 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const invalidKey = claimedIdentity === null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-        Off-chain — signature verification only
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+        This verifies a signature locally. No transaction will be broadcast.
       </div>
 
       <div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-          Message
-        </div>
-        <div style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          color: "var(--color-text-primary)",
-          letterSpacing: "0.05em",
-          lineHeight: 1.7,
-          maxHeight: 160,
-          overflowY: "auto",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          padding: "var(--space-3)",
-          background: "var(--color-bg-surface)",
-          border: "1px solid var(--color-border-strong)",
-          borderRadius: "var(--radius-sharp)",
-        }}>
+        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Message</RequestSectionTitle></div>
+        <RequestTechnicalBlock maxHeight={160}>
           {request.message}
-        </div>
+        </RequestTechnicalBlock>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <Row
+        <RequestDetailRow
           label="Claimed signer"
           value={invalidKey ? "Invalid public key" : truncateId(claimedIdentity!, 10, 10)}
           valueColor={invalidKey ? "var(--color-status-error)" : undefined}
           badge={!invalidKey ? (isOwnIdentity ? "Your wallet" : "External") : undefined}
         />
-        <Row label="Signature" value={truncateId(request.signature, 10, 10)} />
+        <RequestDetailRow label="Signature" value={truncateId(request.signature, 10, 10)} />
       </div>
 
       {invalidKey && (
@@ -110,36 +95,18 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
 
       {error && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{error}]
+          {error}
         </div>
       )}
 
-      <Button onClick={handleVerify} loading={processing} disabled={invalidKey}>
-        Verify & respond
-      </Button>
-      <Button variant="danger" shape="sharp" onClick={onReject}>
-        Reject
-      </Button>
-    </div>
-  );
-}
-
-function Row({ label, value, valueColor, badge }: { label: string; value: string; valueColor?: string; badge?: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.05em", flexShrink: 0 }}>
-        {label}
-      </span>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--space-1)" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: valueColor ?? "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>
-          {value}
-        </span>
-        {badge && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            {badge}
-          </span>
-        )}
-      </div>
+      <RequestActionBar>
+        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+          Reject
+        </Button>
+        <Button onClick={handleVerify} loading={processing} disabled={invalidKey} style={{ flex: 1 }}>
+          Verify and respond
+        </Button>
+      </RequestActionBar>
     </div>
   );
 }

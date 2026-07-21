@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
@@ -400,22 +399,20 @@ export default function VaultDetailScreen() {
     setSeedCopied(true);
   }
 
-  const statusBar = (
-    <ScreenHeader
-      title={currentVault.name}
-      onBack={() => navigate("/vaults")}
-      action={
-        currentVault.accounts.length < MAX_VAULT_ACCOUNTS
-          ? <button type="button" onClick={openAdd} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", padding: 0 }}>
-              <AddCircle size={15} weight="Linear" />
-            </button>
-          : <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>16 MAX</span>
-      }
-    />
-  );
-
   return (
-    <AppShell statusBar={statusBar} contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        {currentVault.accounts.length < MAX_VAULT_ACCOUNTS ? (
+          <Button variant="secondary" shape="sharp" size="sm" onClick={openAdd} style={{ width: "auto" }}>
+            <AddCircle size={16} weight="Linear" aria-hidden="true" />
+            Add account
+          </Button>
+        ) : (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em", alignSelf: "center" }}>
+            16 MAX
+          </span>
+        )}
+      </div>
       {visible.length === 0 && hidden.length === 0 && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
@@ -435,6 +432,7 @@ export default function VaultDetailScreen() {
           isCurrent={isActive && settings.activeAccountIndex === account.index}
           flashSuccess={newlyAddedIndex === account.index}
           balance={isActive && vaultBalances ? vaultBalances[getAccountIdentity(account, sessionWallets[account.index] ?? null) ?? ""] ?? null : null}
+          hideBalances={settings.hideBalances}
           onManage={() => openAccountMenu(account)}
         />
       ))}
@@ -466,6 +464,7 @@ export default function VaultDetailScreen() {
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           dimmed
           isCurrent={false}
+          hideBalances={settings.hideBalances}
           onManage={() => openAccountMenu(account)}
         />
       ))}
@@ -738,7 +737,7 @@ export default function VaultDetailScreen() {
                 borderRadius: "var(--radius-sharp)",
               }}
             >
-              <Identicon seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} size={40} radius={6} style={{ flexShrink: 0 }} />
+              <Identicon kind="account" code={`A${selectedAccount.index + 1}`} seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} label={selectedAccount.name} size={40} radius={8} style={{ flexShrink: 0 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                   {selectedAccount.name}
@@ -754,7 +753,7 @@ export default function VaultDetailScreen() {
                 const bal = id ? vaultBalances[id] ?? null : null;
                 return bal !== null ? (
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
-                    {formatQu(bal)} QU
+                    {settings.hideBalances ? "••••••" : `${formatQu(bal)} QU`}
                   </span>
                 ) : null;
               })()}
@@ -844,10 +843,11 @@ interface AccountRowProps {
   dimmed?: boolean;
   flashSuccess?: boolean;
   balance?: bigint | null;
+  hideBalances: boolean;
   onManage: () => void;
 }
 
-function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, onManage }: AccountRowProps) {
+function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, hideBalances, onManage }: AccountRowProps) {
   const tags = account.tags ?? [];
   const note = account.note?.trim() ?? "";
   const [hovered, setHovered] = useState(false);
@@ -862,7 +862,6 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
         opacity: dimmed ? 0.55 : 1,
         background: hovered ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
         border: "1px solid var(--color-border-strong)",
-        borderLeft: "3px solid var(--color-border-subtle)",
         borderRadius: "var(--radius-sharp)",
         padding: "var(--space-3)",
         display: "flex",
@@ -873,7 +872,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
         transform: hovered ? "translateY(-1px)" : "translateY(0)",
       }}
     >
-      <Identicon seed={identity ?? account.name} size={40} radius={6} style={{ marginTop: 2, flexShrink: 0 }} />
+      <Identicon kind="account" code={`A${account.index + 1}`} seed={identity ?? account.name} label={account.name} size={40} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
           <div style={{ minWidth: 0 }}>
@@ -886,7 +885,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
           </div>
           {balance !== null && balance !== undefined ? (
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
-              {formatQu(balance)}
+              {hideBalances ? "••••••" : formatQu(balance)}
             </span>
           ) : (
             <button
