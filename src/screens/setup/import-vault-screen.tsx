@@ -10,7 +10,6 @@ import {
 } from "@solar-icons/react";
 import { stepMotion } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
-import { BrandLockup } from "@/components/brand-lockup";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
@@ -191,7 +190,6 @@ export default function ImportVaultScreen() {
           gap: "var(--space-6)",
         }}
       >
-        <BrandLockup align="center" compact subtitle="Import an existing encrypted seed" />
         <StepProgress current={step} total={3} />
 
         {step === 1 ? (
