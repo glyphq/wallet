@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning } from "@solar-icons/react";
+import { UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning, Copy, CheckCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
@@ -14,25 +14,53 @@ import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } fr
 import { formatQu, formatUsdFromQu, truncateId } from "@/lib/format";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
+import { copyToClipboard } from "@/lib/clipboard";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
   color: "var(--color-text-secondary)",
 };
 
-function DetailRow({ icon, label, value, valueColor, mono: useMono = true }: {
-  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean;
+function DetailRow({ icon, label, value, valueColor, mono: useMono = true, copyValue }: {
+  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean; copyValue?: string;
 }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
-      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
-      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
-      <span style={{
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    if (!copyValue) return;
+    await copyToClipboard(copyValue);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [copyValue]);
+
+  const valueElement = (
+    <span
+      style={{
         fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
         fontSize: "var(--text-body)", fontWeight: useMono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
-      }}>{value}</span>
+        textDecoration: copyValue && hovered ? "underline" : "none",
+        textUnderlineOffset: 3,
+        cursor: copyValue ? "pointer" : "default",
+        display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={copyValue ? handleCopy : undefined}
+    >
+      {value}
+      {copyValue && !copied && hovered && <Copy size={12} style={{ flexShrink: 0, opacity: 0.5 }} />}
+      {copyValue && copied && <CheckCircle size={12} style={{ flexShrink: 0, color: "var(--color-status-success)" }} />}
+    </span>
+  );
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
+      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
+      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
+      {valueElement}
     </div>
   );
 }
@@ -146,13 +174,13 @@ export default function TxDetailScreen() {
 
           {/* Detail card */}
           <div style={CARD_STYLE}>
-            <DetailRow icon={<UserId size={16} />} label="From" value={detail.source ? truncateId(detail.source) : "—"} valueColor="var(--color-text-secondary)" />
+            <DetailRow icon={<UserId size={16} />} label="From" value={detail.source ? truncateId(detail.source) : "—"} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
             <div style={DIVIDER} />
-            <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" />
+            <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
             <div style={DIVIDER} />
             <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={String(detail.targetTick)} mono={false} />
             <div style={DIVIDER} />
-            <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} />
+            <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
           </div>
         </motion.div>
       </AppShell>
@@ -210,13 +238,13 @@ export default function TxDetailScreen() {
 
         {/* Detail card */}
         <div style={CARD_STYLE}>
-          <DetailRow icon={<ArrowRightUp size={16} />} label="From" value={isSc && !isIn ? (fromContract ?? truncateId(detail.source ?? "—")) : truncateId(detail.source ?? "—")} valueColor="var(--color-text-secondary)" />
+          <DetailRow icon={<ArrowRightUp size={16} />} label="From" value={isSc && !isIn ? (fromContract ?? truncateId(detail.source ?? "—")) : truncateId(detail.source ?? "—")} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
           <div style={DIVIDER} />
-          <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" />
+          <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
           <div style={DIVIDER} />
           <DetailRow icon={<ShieldCheck size={16} />} label="Tick" value={detail.tickNumber != null ? String(detail.tickNumber) : "—"} mono={false} />
           <div style={DIVIDER} />
-          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} />
+          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
           {snapshot && !hideBalances && (
             <>
               <div style={DIVIDER} />
