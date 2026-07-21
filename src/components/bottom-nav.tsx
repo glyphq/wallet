@@ -81,7 +81,7 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
               }}
             />
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon size={24} weight={isActive ? "BoldDuotone" : "Linear"} aria-hidden="true" />
+              <Icon size={24} weight="Linear" aria-hidden="true" />
             </span>
           </button>
         );
