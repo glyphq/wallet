@@ -130,8 +130,8 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
       {TypeIcon && (
         <div style={{
           flexShrink: 0,
-          width: 36,
-          height: 36,
+          width: 48,
+          height: 48,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -139,7 +139,7 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
           background: "var(--color-bg-surface)",
           color: txType === "failed" ? "var(--color-status-warning)" : txType === "pending" ? "var(--color-text-disabled)" : "var(--color-text-secondary)",
         }}>
-          <TypeIcon size={18} />
+          <TypeIcon size={20} />
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
