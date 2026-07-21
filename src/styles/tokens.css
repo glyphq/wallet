@@ -3,7 +3,7 @@
 @theme {
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Courier New", monospace;
-  --font-display: "Geist", system-ui, sans-serif;
+  --font-display: "Boldonse", "Geist", system-ui, sans-serif;
 }
 
 :root {

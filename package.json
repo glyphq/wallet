@@ -49,6 +49,7 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-store": "^2.4.3",
     "@tauri-apps/plugin-updater": "^2.10.1",
+    "boring-avatars": "^2.0.4",
     "motion": "^12.39.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
