@@ -164,7 +164,6 @@ export default function LockScreen() {
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [unlocking, setUnlocking] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [capsLockOn, setCapsLockOn] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
 
   const { register, handleSubmit, setValue, setFocus } = useForm<FormValues>();
@@ -176,7 +175,6 @@ export default function LockScreen() {
   useEffect(() => {
     setValue("password", "");
     setError("");
-    setCapsLockOn(false);
   }, [selectedId, setValue]);
 
   useEffect(() => {
@@ -457,25 +455,9 @@ export default function LockScreen() {
                       error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
                       disabled={lockoutSecsLeft > 0}
                       autoFocus
-                      onKeyDown={(event) => setCapsLockOn(event.getModifierState("CapsLock"))}
-                      onKeyUp={(event) => setCapsLockOn(event.getModifierState("CapsLock"))}
-                      onBlur={() => setCapsLockOn(false)}
                       rightElement={<PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />}
                     />
                   </div>
-                  {capsLockOn && !error && lockoutSecsLeft === 0 ? (
-                    <span
-                      role="status"
-                      style={{
-                        marginTop: "calc(var(--space-2) * -1)",
-                        fontFamily: "var(--font-sans)",
-                        fontSize: "var(--text-caption)",
-                        color: "var(--color-status-warning)",
-                      }}
-                    >
-                      Caps Lock is on
-                    </span>
-                  ) : null}
                   <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
                     <LockKeyhole size={16} weight="Linear" aria-hidden="true" />
                     {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
