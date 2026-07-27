@@ -230,6 +230,57 @@ a:hover {
   box-shadow: var(--shadow-elevated);
 }
 
+.vault-shelf-row {
+  background: transparent;
+}
+
+.vault-shelf-row[data-selected="true"] {
+  background: var(--color-bg-surface);
+}
+
+.vault-shelf-row:hover {
+  background: var(--color-bg-hover);
+}
+
+.vault-shelf-row:active {
+  background: var(--color-bg-press);
+}
+
+.vault-shelf-add {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.vault-shelf-add:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-hover);
+}
+
+.vault-shelf-add:active {
+  background: var(--color-bg-press);
+}
+
+.vault-shelf-add-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 50%;
+  color: var(--color-text-tertiary);
+}
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
