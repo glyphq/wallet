@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getVersion } from "@tauri-apps/api/app";
+import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
+import glyphOnLight from "@/assets/brand/glyph-on-light.png";
+import { usePersistedStore } from "@/store/persisted";
 
 function WinBtn({
   onClick,
@@ -47,11 +49,8 @@ function WinBtn({
 export function TitleBar() {
   const win = useMemo(() => getCurrentWindow(), []);
   const [fullscreen, setFullscreen] = useState(false);
-  const [version, setVersion] = useState("");
-
-  useEffect(() => {
-    getVersion().then(setVersion).catch(() => {});
-  }, []);
+  const themeMode = usePersistedStore((state) => state.settings.themeMode);
+  const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
 
   useEffect(() => {
     win.isFullscreen().then(setFullscreen).catch(() => {});
@@ -91,34 +90,32 @@ export function TitleBar() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "var(--space-2)",
-          padding: "0 var(--screen-padding)",
+          gap: "var(--space-3)",
+          padding: "0 calc(var(--screen-padding) + 2px)",
           pointerEvents: "none",
         }}
       >
+        <img
+          src={logo}
+          width={18}
+          height={18}
+          alt=""
+          aria-hidden="true"
+          data-tauri-drag-region
+          style={{ flexShrink: 0 }}
+        />
         <span
+          data-tauri-drag-region
           style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--text-caption)",
-            fontWeight: 600,
-            letterSpacing: "0.04em",
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-label)",
+            fontWeight: 500,
+            letterSpacing: "0.03em",
             color: "var(--color-text-primary)",
           }}
         >
-          Glyph Wallet
+          Wallet
         </span>
-        {version && (
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--text-caption)",
-              letterSpacing: "0.06em",
-              color: "var(--color-text-tertiary)",
-            }}
-          >
-            v{version}
-          </span>
-        )}
       </div>
 
       <div style={{ display: "flex", height: "100%" }}>
