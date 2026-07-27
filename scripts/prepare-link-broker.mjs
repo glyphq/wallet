@@ -15,40 +15,49 @@ if (!/^[A-Za-z0-9_.-]+$/.test(target)) {
   throw new Error(`invalid Rust target triple: ${target}`);
 }
 
-const extension = target.includes("windows") ? ".exe" : "";
-const cargoArgs = [
-  "build",
-  "--manifest-path",
-  join(tauriDir, "Cargo.toml"),
-  "--bin",
-  "glyph-link-broker",
-];
-if (profile === "release") cargoArgs.push("--release");
-if (process.env.TAURI_ENV_TARGET_TRIPLE || process.env.CARGO_BUILD_TARGET) {
-  cargoArgs.push("--target", target);
-}
-
-execFileSync("cargo", cargoArgs, {
-  cwd: repoRoot,
-  stdio: "inherit",
-  env: {
-    ...process.env,
-    TAURI_CONFIG: JSON.stringify({ bundle: { externalBin: [] } }),
-  },
-});
-
 const targetRoot = process.env.CARGO_TARGET_DIR
   ? resolve(repoRoot, process.env.CARGO_TARGET_DIR)
   : join(tauriDir, "target");
-const source = join(
-  targetRoot,
-  process.env.TAURI_ENV_TARGET_TRIPLE || process.env.CARGO_BUILD_TARGET ? target : "",
-  profile,
-  `glyph-link-broker${extension}`,
-);
 const destinationDir = join(tauriDir, "binaries");
+const extension = target.includes("windows") ? ".exe" : "";
 const destination = join(destinationDir, `glyph-link-broker-${target}${extension}`);
 
 mkdirSync(destinationDir, { recursive: true });
-copyFileSync(source, destination);
+
+function buildBroker(buildTarget) {
+  const cargoArgs = [
+    "build",
+    "--manifest-path",
+    join(tauriDir, "Cargo.toml"),
+    "--bin",
+    "glyph-link-broker",
+  ];
+  if (profile === "release") cargoArgs.push("--release");
+  if (buildTarget) cargoArgs.push("--target", buildTarget);
+
+  execFileSync("cargo", cargoArgs, {
+    cwd: repoRoot,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      TAURI_CONFIG: JSON.stringify({ bundle: { externalBin: [] } }),
+    },
+  });
+
+  return join(targetRoot, buildTarget || "", profile, `glyph-link-broker${extension}`);
+}
+
+if (target === "universal-apple-darwin") {
+  const arm64 = buildBroker("aarch64-apple-darwin");
+  const x64 = buildBroker("x86_64-apple-darwin");
+  execFileSync("lipo", ["-create", arm64, x64, "-output", destination], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+} else {
+  const explicitTarget =
+    process.env.TAURI_ENV_TARGET_TRIPLE || process.env.CARGO_BUILD_TARGET ? target : null;
+  copyFileSync(buildBroker(explicitTarget), destination);
+}
+
 console.log(`[glyph] prepared ${destination}`);
