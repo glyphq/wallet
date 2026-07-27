@@ -16,13 +16,15 @@ export function usePayLink() {
 
     const consumePendingPay = async () => {
       try {
-        const payload = await invoke<string | null>("take_pending_pay");
-        if (!payload) return;
-        const pay = JSON.parse(payload) as PayPayload;
-        const params = new URLSearchParams({ to: pay.to });
-        if (pay.amount) params.set("amount", pay.amount);
-        if (pay.label) params.set("label", pay.label);
-        router.navigate(`/send?${params.toString()}`);
+        while (true) {
+          const payload = await invoke<string | null>("take_pending_pay");
+          if (!payload) break;
+          const pay = JSON.parse(payload) as PayPayload;
+          const params = new URLSearchParams({ to: pay.to });
+          if (pay.amount) params.set("amount", pay.amount);
+          if (pay.label) params.set("label", pay.label);
+          router.navigate(`/send?${params.toString()}`);
+        }
       } catch {
         // malformed payload — ignore
       }
