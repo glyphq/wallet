@@ -2,6 +2,7 @@
 <component type="desktop-application">
   <id>com.qubic.glyph</id>
   <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
   <name>Glyph</name>
   <summary>Self-custodial Qubic wallet with dApp deep linking</summary>
   <developer id="com.qubic.glyph">

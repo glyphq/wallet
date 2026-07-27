@@ -2,6 +2,7 @@
   "name": "glyph",
   "private": true,
   "version": "0.15.0-prerelease.1",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

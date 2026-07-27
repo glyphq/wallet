@@ -9,7 +9,7 @@
 
 [![Release](https://img.shields.io/github/v/release/glyph-ecosystem/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-ecosystem/wallet/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/glyph-ecosystem/wallet/changeset.yml?style=flat-square&label=build&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-ecosystem/wallet/actions)
-[![License](https://img.shields.io/badge/license-source--available-0d0d0d?style=flat-square&labelColor=1a1a1a)](./LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-0d0d0d?style=flat-square&labelColor=1a1a1a)](./LICENSE)
 [![Discord](https://img.shields.io/badge/discord-join-0d0d0d?style=flat-square&labelColor=1a1a1a)](https://discord.gg/s5qNRNGu96)
 
 Windows · macOS (Universal) · Linux (AppImage · .deb · .rpm)
