@@ -15,24 +15,38 @@ fn main() {
 fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), String> {
     let mut args = args.into_iter();
     let broker_path = args.next().ok_or("broker executable path is missing")?;
-    let raw = args
-        .next()
-        .ok_or("exactly one glyph link argument is required")?;
+    let raw = args.next();
     if args.next().is_some() {
         return Err("multiple launch arguments are not allowed".into());
     }
 
-    let raw = raw
-        .into_string()
-        .map_err(|_| "link argument is not valid Unicode")?;
-    validate_launch_url(&raw)?;
-
     let wallet = find_wallet_binary(Path::new(&broker_path))?;
-    Command::new(wallet)
-        .arg(raw)
-        .spawn()
-        .map_err(|error| format!("wallet launch failed: {error}"))?;
+    let mut command = Command::new(wallet);
+    if let Some(raw) = raw {
+        let raw = raw
+            .into_string()
+            .map_err(|_| "link argument is not valid Unicode")?;
+        validate_launch_url(&raw)?;
+        command.arg(raw);
+    }
+    launch_wallet(&mut command)?;
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn launch_wallet(command: &mut Command) -> Result<(), String> {
+    command
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("wallet launch failed: {error}"))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn launch_wallet(command: &mut Command) -> Result<(), String> {
+    command
+        .status()
+        .map(|_| ())
+        .map_err(|error| format!("wallet launch failed: {error}"))
 }
 
 fn find_wallet_binary(broker_path: &Path) -> Result<PathBuf, String> {
