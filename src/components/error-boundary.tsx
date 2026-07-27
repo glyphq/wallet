@@ -1,7 +1,9 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
-const SHOW_ERROR_DEBUG_DETAILS = import.meta.env.DEV;
+const SHOW_ERROR_DEBUG_DETAILS =
+  import.meta.env.DEV ||
+  (typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname));
 
 interface Props {
   children: ReactNode;
