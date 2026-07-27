@@ -16,7 +16,7 @@ pub fn validate_launch_url(raw: &str) -> Result<LinkKind, String> {
     if raw.chars().any(|ch| ch.is_control() || ch.is_whitespace()) {
         return Err("link contains control or whitespace characters".into());
     }
-    if raw.contains(['"', '\'', '\\']) {
+    if raw.contains(['"', '\'', '\\', '|']) {
         return Err("link contains unsafe command-line characters".into());
     }
 
@@ -94,6 +94,7 @@ mod tests {
             "glyph://v1/request?d=abc%22%20--inspect",
             "glyph://v1/request?d=abc\\--inspect",
             "glyph://v1/request?d=abc\" --inspect",
+            "glyph://v1/request?d=abc|glyph://pay?to=def",
             "glyph://user@v1/request?d=abc",
             "glyph://v1:80/request?d=abc",
             "glyph://v1/request?d=abc#fragment",

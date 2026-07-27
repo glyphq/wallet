@@ -20,6 +20,14 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::Manager;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+fn single_instance_url(args: &[String]) -> Result<Option<&str>, ()> {
+    match args {
+        [_executable] => Ok(None),
+        [_executable, url] if link_broker::validate_launch_url(url).is_ok() => Ok(Some(url)),
+        _ => Err(()),
+    }
+}
+
 #[cfg(target_os = "linux")]
 fn configure_linux_runtime() {
     let is_wsl = std::env::var_os("WSL_DISTRO_NAME").is_some()
@@ -62,12 +70,16 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            for arg in args {
-                deep_link::process_url(app, &arg);
-            }
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
+            let accepted = match single_instance_url(&args) {
+                Ok(Some(url)) => deep_link::process_url(app, url),
+                Ok(None) => true,
+                Err(()) => false,
+            };
+            if accepted {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
             }
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -166,6 +178,7 @@ pub fn run() {
             commands::force_lock,
             commands::get_pending_request,
             commands::clear_pending_request,
+            commands::take_pending_pay,
             commands::copy_to_clipboard,
             commands::clear_clipboard,
             commands::lock_clipboard,
@@ -187,4 +200,27 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running glyph");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::single_instance_url;
+
+    #[test]
+    fn accepts_only_normal_launch_or_one_valid_link() {
+        let executable = "glyph-wallet".to_string();
+        let valid = "glyph://v1/request?d=YWJjZA".to_string();
+        assert_eq!(single_instance_url(std::slice::from_ref(&executable)), Ok(None));
+        assert_eq!(
+            single_instance_url(&[executable.clone(), valid.clone()]),
+            Ok(Some(valid.as_str()))
+        );
+        assert!(single_instance_url(&[executable.clone(), "--inspect".into()]).is_err());
+        assert!(single_instance_url(&[
+            executable,
+            "glyph://v1/request?d=abc".into(),
+            "glyph://pay?to=abc".into(),
+        ])
+        .is_err());
+    }
 }
