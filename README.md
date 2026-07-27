@@ -72,6 +72,11 @@ flowchart LR
 
 Sensitive operations are isolated to the Rust layer — the renderer only sends signing requests and receives back signed transactions.
 
+On Windows and Linux, operating-system `glyph://` launches first pass through a
+minimal broker process. The broker accepts only one bounded URL argument, rejects
+command-line metacharacters and unknown routes, then starts the wallet without a
+shell. The wallet independently performs full request validation and user review.
+
 | Operation | Layer |
 |---|---|
 | Vault encryption / decryption | Rust (`aes-gcm`) |
