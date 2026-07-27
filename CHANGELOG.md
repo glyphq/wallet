@@ -1,5 +1,12 @@
 # glyph
 
+## 0.15.0-prerelease.4
+
+### Patch Changes
+
+- c117a5d: Fix universal macOS builds by compiling the deep-link broker for both Apple architectures and combining them into the sidecar binary expected by Tauri.
+- 30ebbfc: Improve wallet onboarding with clearer step progress, interactive seed backup, polished form controls, safer navigation behavior, and a reliable return path for existing wallets.
+
 ## 0.15.0-prerelease.3
 
 ### Patch Changes
