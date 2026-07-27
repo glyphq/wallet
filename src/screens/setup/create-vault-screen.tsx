@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import {
-  AltArrowLeft,
-  AltArrowRight,
-  CheckCircle,
-  Copy,
-  Eye,
-  EyeClosed,
-  LockKeyhole,
-} from "@solar-icons/react";
 import { stepMotion } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
@@ -66,12 +57,14 @@ function PasswordVisibilityButton({
         cursor: "pointer",
       }}
     >
-      {visible ? <EyeClosed size={18} weight="Outline" /> : <Eye size={18} weight="Outline" />}
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "inherit" }}>
+        {visible ? "HIDE" : "SHOW"}
+      </span>
     </button>
   );
 }
 
-function PasswordStrengthMeter({ level, label, color }: { level: number; label: string; color: string }) {
+function PasswordStrengthMeter({ level, label }: { level: number; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
       <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }}>
@@ -82,7 +75,7 @@ function PasswordStrengthMeter({ level, label, color }: { level: number; label: 
               flex: 1,
               height: 3,
               borderRadius: 999,
-              background: index <= level ? color : "var(--color-border-default)",
+              background: index <= level ? "var(--color-text-secondary)" : "var(--color-border-default)",
               transition: "background-color var(--duration-fast) var(--ease-standard)",
             }}
           />
@@ -93,7 +86,7 @@ function PasswordStrengthMeter({ level, label, color }: { level: number; label: 
           fontFamily: "var(--font-sans)",
           fontSize: "var(--text-label)",
           fontWeight: 500,
-          color,
+          color: "var(--color-text-secondary)",
         }}
       >
         {label}
@@ -244,10 +237,8 @@ export default function CreateVaultScreen() {
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
               <Button onClick={goStep2}>
                 Continue
-                <AltArrowRight size={16} weight="Bold" />
               </Button>
               <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => navigate("/setup")}>
-                <AltArrowLeft size={16} weight="Bold" />
                 Back
               </Button>
             </div>
@@ -352,17 +343,14 @@ export default function CreateVaultScreen() {
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
                 <Button variant="secondary" size="md" onClick={copySeed}>
-                  <Copy size={14} weight="Outline" />
                   {copied ? "Copied" : "Copy"}
                 </Button>
                 <Button variant="secondary" size="md" onClick={() => setSeedRevealed((visible) => !visible)}>
-                  {seedRevealed ? <EyeClosed size={14} weight="Outline" /> : <Eye size={14} weight="Outline" />}
                   {seedRevealed ? "Hide" : "Reveal"}
                 </Button>
               </div>
 
               <Button onClick={() => setStep(3)}>
-                <CheckCircle size={16} weight="Bold" />
                 I have written it down
               </Button>
             </div>
@@ -403,12 +391,12 @@ export default function CreateVaultScreen() {
                           borderRadius: 4,
                           background: filled
                             ? correct
-                              ? "color-mix(in srgb, var(--color-accent) 16%, transparent)"
+                              ? "var(--color-bg-surface-2)"
                               : "color-mix(in srgb, var(--color-status-error) 18%, transparent)"
                             : "var(--color-bg-elevated)",
                           color: filled
                             ? correct
-                              ? "var(--color-accent)"
+                              ? "var(--color-border-strong)"
                               : "var(--color-status-error)"
                             : "var(--color-text-tertiary)",
                         }}
@@ -456,7 +444,7 @@ export default function CreateVaultScreen() {
                         border: `1px solid ${
                           value
                             ? correct
-                              ? "var(--color-accent)"
+                              ? "var(--color-border-strong)"
                               : "var(--color-status-error)"
                             : "var(--color-border-default)"
                         }`,
@@ -477,7 +465,6 @@ export default function CreateVaultScreen() {
             <div style={{ flexShrink: 0 }}>
               <Button onClick={() => setStep(4)} disabled={!checkComplete}>
                 Confirm backup
-                <CheckCircle size={16} weight="Bold" />
               </Button>
             </div>
           </motion.div>
@@ -515,7 +502,7 @@ export default function CreateVaultScreen() {
                 error={confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match." : undefined}
               />
 
-                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
+                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} /> : null}
               </div>
 
               {setupError ? (
@@ -539,7 +526,6 @@ export default function CreateVaultScreen() {
 
             <div style={{ flexShrink: 0 }}>
               <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
-                <LockKeyhole size={16} weight="Bold" />
                 Create wallet
               </Button>
             </div>

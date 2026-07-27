@@ -309,7 +309,7 @@ export default function WelcomeScreen() {
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
-          <BrandLockup align="center" subtitle="Glyph Wallet" />
+          <BrandLockup align="center" iconOnly />
 
           <FlowHeader
             align="center"

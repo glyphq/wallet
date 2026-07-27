@@ -1,27 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import {
-  AltArrowLeft,
-  AltArrowRight,
-  Eye,
-  EyeClosed,
-  LockKeyhole,
-} from "@solar-icons/react";
 import { stepMotion } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { StepProgress } from "@/components/step-progress";
-import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { deriveIdentityFromSeed, InvalidSeedError, newId, toSeed, type Seed } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { passwordStrength } from "@/lib/password-strength";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault } from "@/lib/vault";
-import { usePersistedStore, type VaultColor, type WalletIconId } from "@/store/persisted";
+import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
 type Step = 1 | 2 | 3;
@@ -57,12 +49,14 @@ function PasswordVisibilityButton({
         cursor: "pointer",
       }}
     >
-      {visible ? <EyeClosed size={18} weight="Outline" /> : <Eye size={18} weight="Outline" />}
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "inherit" }}>
+        {visible ? "HIDE" : "SHOW"}
+      </span>
     </button>
   );
 }
 
-function PasswordStrengthMeter({ level, label, color }: { level: number; label: string; color: string }) {
+function PasswordStrengthMeter({ level, label }: { level: number; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
       <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }}>
@@ -73,7 +67,7 @@ function PasswordStrengthMeter({ level, label, color }: { level: number; label: 
               flex: 1,
               height: 3,
               borderRadius: 999,
-              background: index <= level ? color : "var(--color-border-default)",
+              background: index <= level ? "var(--color-text-secondary)" : "var(--color-border-default)",
               transition: "background-color var(--duration-fast) var(--ease-standard)",
             }}
           />
@@ -84,7 +78,7 @@ function PasswordStrengthMeter({ level, label, color }: { level: number; label: 
           fontFamily: "var(--font-sans)",
           fontSize: "var(--text-label)",
           fontWeight: 500,
-          color,
+          color: "var(--color-text-secondary)",
         }}
       >
         {label}
@@ -104,8 +98,6 @@ export default function ImportVaultScreen() {
   const [seed, setSeed] = useState<Seed | null>(null);
   const [derivedIdentity, setDerivedIdentity] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [walletIcon, setWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
-  const [walletColor, setWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
@@ -148,8 +140,8 @@ export default function ImportVaultScreen() {
       const vault = {
         id: newId(),
         name: name.trim(),
-        color: walletColor,
-        icon: walletIcon,
+        color: DEFAULT_WALLET_COLOR,
+        icon: DEFAULT_WALLET_ICON,
         kind: "seeded" as const,
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -220,10 +212,8 @@ export default function ImportVaultScreen() {
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
               <Button onClick={validateAndContinue}>
                 Continue
-                <AltArrowRight size={16} weight="Outline" />
               </Button>
               <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => navigate("/setup")}>
-                <AltArrowLeft size={16} weight="Outline" />
                 Back
               </Button>
             </div>
@@ -280,18 +270,11 @@ export default function ImportVaultScreen() {
                 error={nameError}
               />
 
-              <WalletAppearancePicker
-                icon={walletIcon}
-                color={walletColor}
-                onIconChange={setWalletIcon}
-                onColorChange={setWalletColor}
-              />
             </div>
 
             <div style={{ flexShrink: 0 }}>
               <Button onClick={goStep3}>
                 Continue
-                <AltArrowRight size={16} weight="Outline" />
               </Button>
             </div>
           </motion.div>
@@ -329,7 +312,7 @@ export default function ImportVaultScreen() {
                 error={confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match." : undefined}
               />
 
-                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
+                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} /> : null}
               </div>
 
               {setupError ? (
@@ -353,7 +336,6 @@ export default function ImportVaultScreen() {
 
             <div style={{ flexShrink: 0 }}>
               <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
-                <LockKeyhole size={16} weight="Outline" />
                 Import wallet
               </Button>
             </div>
