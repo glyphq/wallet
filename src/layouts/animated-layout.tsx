@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useOutlet } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { pageTransition } from "@/lib/animations";
 import { useAutoLock } from "@/hooks/use-auto-lock";
+import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
 import { ScreenHeader } from "@/components/screen-header";
@@ -208,6 +209,7 @@ function LayoutShell() {
 
 export function AnimatedLayout() {
   useAutoLock();
+  useDisableHistoryNavigation();
 
   return (
     <SheetStateProvider>
