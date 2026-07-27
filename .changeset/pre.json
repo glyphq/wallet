@@ -6,8 +6,10 @@
   },
   "changesets": [
     "calm-signing-buffers",
+    "fix-universal-broker",
     "glyph-wallet-prerelease-ui",
     "polish-dashboard-search",
+    "refine-wallet-onboarding",
     "secure-deep-link-broker"
   ]
 }
