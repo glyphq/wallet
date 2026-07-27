@@ -5,6 +5,7 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   error?: string;
   hint?: ReactNode;
   containerStyle?: CSSProperties;
+  leftElement?: ReactNode;
   technical?: boolean;
 }
 
@@ -15,6 +16,7 @@ export function Textarea({
   style,
   id,
   containerStyle,
+  leftElement,
   technical = false,
   ...props
 }: TextareaProps) {
@@ -37,28 +39,54 @@ export function Textarea({
           {label}
         </label>
       ) : null}
-      <textarea
-        {...props}
-        id={fieldId}
-        spellCheck={props.spellCheck ?? false}
-        className="glyph-input"
-        aria-invalid={error ? "true" : undefined}
-        aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
-        style={{
-          width: "100%",
-          resize: "vertical",
-          minHeight: 120,
-          padding: "var(--space-3) var(--space-4)",
-          background: "var(--color-bg-surface-2)",
-          borderRadius: "var(--radius-pill)",
-          color: "var(--color-text-primary)",
-          fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
-          fontSize: technical ? "var(--text-mono-sm)" : "var(--text-body)",
-          lineHeight: technical ? 1.6 : "var(--leading-body)",
-          fontVariantNumeric: "tabular-nums",
-          ...style,
-        }}
-      />
+      <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
+        {leftElement ? (
+          <div
+            className="glyph-field-icon"
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "var(--space-4)",
+              top: "var(--space-4)",
+              display: "flex",
+              color: "var(--color-text-tertiary)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          >
+            {leftElement}
+          </div>
+        ) : null}
+        <textarea
+          {...props}
+          id={fieldId}
+          spellCheck={props.spellCheck ?? false}
+          className="glyph-input"
+          data-has-leading={leftElement ? "true" : undefined}
+          data-error={error ? "true" : undefined}
+          aria-invalid={error ? "true" : undefined}
+          aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+          style={{
+            width: "100%",
+            resize: "vertical",
+            minHeight: 120,
+            paddingTop: "var(--space-3)",
+            paddingRight: "var(--space-4)",
+            paddingBottom: "var(--space-3)",
+            paddingLeft: leftElement ? 48 : "var(--space-4)",
+            background: "var(--color-bg-surface-2)",
+            borderRadius: "var(--radius-control)",
+            color: "var(--color-text-primary)",
+            fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
+            fontSize: technical ? "0.875rem" : "0.9375rem",
+            fontWeight: 400,
+            lineHeight: technical ? 1.7 : "var(--leading-body)",
+            letterSpacing: technical ? "0.015em" : "-0.005em",
+            fontVariantNumeric: "tabular-nums",
+            ...style,
+          }}
+        />
+      </div>
       {hint ? (
         <span
           id={hintId}

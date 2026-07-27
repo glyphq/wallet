@@ -1,4 +1,6 @@
 import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
+import glyphOnLight from "@/assets/brand/glyph-on-light.png";
+import { usePersistedStore } from "@/store/persisted";
 
 interface BrandLockupProps {
   size?: number;
@@ -6,6 +8,7 @@ interface BrandLockupProps {
   subtitle?: string;
   align?: "left" | "center";
   compact?: boolean;
+  iconOnly?: boolean;
 }
 
 export function BrandLockup({
@@ -14,8 +17,11 @@ export function BrandLockup({
   subtitle,
   align = "left",
   compact = false,
+  iconOnly = false,
 }: BrandLockupProps) {
   const centered = align === "center";
+  const themeMode = usePersistedStore((state) => state.settings.themeMode);
+  const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
 
   return (
     <div
@@ -28,17 +34,17 @@ export function BrandLockup({
       }}
     >
       <img
-        src={glyphOnDark}
+        src={logo}
         width={size}
         height={size}
         alt=""
         aria-hidden="true"
-        style={{ borderRadius: "var(--radius-surface)", flexShrink: 0 }}
+        style={{ flexShrink: 0 }}
       />
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+      {!iconOnly ? <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
         <span
           style={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "var(--font-sans)",
             fontSize: compact ? "var(--text-section)" : "var(--text-title)",
             lineHeight: "var(--leading-tight)",
             fontWeight: 600,
@@ -60,7 +66,7 @@ export function BrandLockup({
             {subtitle}
           </span>
         ) : null}
-      </div>
+      </div> : null}
     </div>
   );
 }

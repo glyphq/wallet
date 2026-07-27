@@ -28,7 +28,7 @@ import { unlockVault } from "@/lib/vault";
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
-import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
+import { getVaultAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
@@ -117,7 +117,6 @@ export default function SendScreen() {
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
 
   const wallet = wallets[settings.activeAccountIndex] ?? null;
-  const watchOnly = isWatchOnlyVault(vault);
   const { data: tickInfo } = useTickInfo();
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
   const { data: balanceData } = useBalance(identity || null);
@@ -270,7 +269,7 @@ export default function SendScreen() {
 
   function validateInputs(): boolean {
     let ok = true;
-    if (!wallet) { setDestError(watchOnly ? "Watch-only account" : "Account locked"); destRef.current?.focus(); return false; }
+    if (!wallet) { setDestError("Account locked"); destRef.current?.focus(); return false; }
     if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); destRef.current?.focus(); ok = false; } else setDestError("");
     const amount = amountStr.trim();
     if (!amount || !Number.isInteger(Number(amount)) || Number(amount) <= 0) { setAmountError("Enter an amount"); ok = false; }

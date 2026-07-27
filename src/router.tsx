@@ -1,55 +1,45 @@
-import { lazy, Suspense, type ComponentType } from "react";
+import type { ComponentType } from "react";
 import { createHashRouter } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 import SplashScreen from "@/screens/splash/splash-screen";
-const LockScreen = lazy(() => import("@/screens/lock/lock-screen"));
-const WelcomeScreen = lazy(() => import("@/screens/setup/welcome-screen"));
-const CreateVaultScreen = lazy(() => import("@/screens/setup/create-vault-screen"));
-const ImportVaultScreen = lazy(() => import("@/screens/setup/import-vault-screen"));
-const DashboardScreen = lazy(() => import("@/screens/dashboard/dashboard-screen"));
-const VaultsScreen = lazy(() => import("@/screens/vaults/vaults-screen"));
-const VaultDetailScreen = lazy(() => import("@/screens/vaults/vault-detail-screen"));
-const PortfolioScreen = lazy(() => import("@/screens/vaults/portfolio-screen"));
-const SendScreen = lazy(() => import("@/screens/send/send-screen"));
-const ScheduledTransfersScreen = lazy(() => import("@/screens/send/scheduled-transfers-screen"));
-const SendManyScreen = lazy(() => import("@/screens/send/send-many-screen"));
-const BurnScreen = lazy(() => import("@/screens/send/burn-screen"));
-const StakeScreen = lazy(() => import("@/screens/stake/stake-screen"));
-const ReceiveScreen = lazy(() => import("@/screens/receive/receive-screen"));
-const PaymentLinkScreen = lazy(() => import("@/screens/receive/payment-link-screen"));
-const HistoryScreen = lazy(() => import("@/screens/history/history-screen"));
-const TxDetailScreen = lazy(() => import("@/screens/history/tx-detail-screen"));
-const AnalyticsScreen = lazy(() => import("@/screens/history/analytics-screen"));
-const ContactsScreen = lazy(() => import("@/screens/contacts/contacts-screen"));
-const SearchScreen = lazy(() => import("@/screens/search/search-screen"));
-const RequestScreen = lazy(() => import("@/screens/request/request-screen"));
-const SettingsScreen = lazy(() => import("@/screens/settings/settings-screen"));
-const DappsScreen = lazy(() => import("@/screens/settings/dapps-screen"));
-const RequestHistoryScreen = lazy(() => import("@/screens/settings/request-history-screen"));
-const SecurityScreen = lazy(() => import("@/screens/settings/security-screen"));
-const AuditLogScreen = lazy(() => import("@/screens/settings/audit-log-screen"));
-const NetworkScreen = lazy(() => import("@/screens/settings/network-screen"));
-const NotificationsScreen = lazy(() => import("@/screens/settings/notifications-screen"));
-const SupportScreen = lazy(() => import("@/screens/settings/support-screen"));
-const DiagnosticsScreen = lazy(() => import("@/screens/settings/diagnostics-screen"));
-const AppearanceScreen = lazy(() => import("@/screens/settings/appearance-screen"));
-
-function RouteFallback() {
-  return (
-    <div role="status" aria-live="polite" style={{ height: "100%", display: "grid", placeItems: "center", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-      Loading screen...
-    </div>
-  );
-}
+import LockScreen from "@/screens/lock/lock-screen";
+import WelcomeScreen from "@/screens/setup/welcome-screen";
+import CreateVaultScreen from "@/screens/setup/create-vault-screen";
+import ImportVaultScreen from "@/screens/setup/import-vault-screen";
+import DashboardScreen from "@/screens/dashboard/dashboard-screen";
+import VaultsScreen from "@/screens/vaults/vaults-screen";
+import VaultDetailScreen from "@/screens/vaults/vault-detail-screen";
+import PortfolioScreen from "@/screens/vaults/portfolio-screen";
+import SendScreen from "@/screens/send/send-screen";
+import ScheduledTransfersScreen from "@/screens/send/scheduled-transfers-screen";
+import SendManyScreen from "@/screens/send/send-many-screen";
+import BurnScreen from "@/screens/send/burn-screen";
+import StakeScreen from "@/screens/stake/stake-screen";
+import ReceiveScreen from "@/screens/receive/receive-screen";
+import PaymentLinkScreen from "@/screens/receive/payment-link-screen";
+import HistoryScreen from "@/screens/history/history-screen";
+import TxDetailScreen from "@/screens/history/tx-detail-screen";
+import AnalyticsScreen from "@/screens/history/analytics-screen";
+import ContactsScreen from "@/screens/contacts/contacts-screen";
+import SearchScreen from "@/screens/search/search-screen";
+import RequestScreen from "@/screens/request/request-screen";
+import SettingsScreen from "@/screens/settings/settings-screen";
+import DappsScreen from "@/screens/settings/dapps-screen";
+import RequestHistoryScreen from "@/screens/settings/request-history-screen";
+import SecurityScreen from "@/screens/settings/security-screen";
+import AuditLogScreen from "@/screens/settings/audit-log-screen";
+import NetworkScreen from "@/screens/settings/network-screen";
+import NotificationsScreen from "@/screens/settings/notifications-screen";
+import SupportScreen from "@/screens/settings/support-screen";
+import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
+import AppearanceScreen from "@/screens/settings/appearance-screen";
 
 function Screen({ component: C }: { component: ComponentType }) {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<RouteFallback />}>
-        <C />
-      </Suspense>
+      <C />
     </ErrorBoundary>
   );
 }

@@ -1,19 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { motion } from "motion/react";
-import { BrandLockup } from "@/components/brand-lockup";
 import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-const MIN_SPLASH_MS = 3000;
+const MIN_SPLASH_MS = 4800;
 const HYDRATION_TIMEOUT_MS = 8000;
-
-const LOADING_MESSAGES = [
-  "Checking saved vaults",
-  "Restoring local preferences",
-  "Preparing the local signing session",
-];
 
 export default function SplashScreen() {
   const navigate = useNavigate();
@@ -22,8 +14,9 @@ export default function SplashScreen() {
   const [hydrationAttempt, setHydrationAttempt] = useState(0);
   const vaults = usePersistedStore((s) => s.vaults);
   const isLocked = useSessionStore((s) => s.isLocked);
-  const [messageIdx, setMessageIdx] = useState(0);
+  const [videoFailed, setVideoFailed] = useState(false);
   const mountedAt = useRef(Date.now());
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const unsub = usePersistedStore.persist.onFinishHydration(() => {
@@ -49,9 +42,26 @@ export default function SplashScreen() {
   }, [hydrated, hydrationAttempt]);
 
   useEffect(() => {
-    const id = setInterval(() => setMessageIdx((i) => (i + 1) % LOADING_MESSAGES.length), 1800);
-    return () => clearInterval(id);
-  }, []);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function syncPlayback() {
+      const video = videoRef.current;
+      if (!video) return;
+      if (reducedMotion.matches) {
+        video.pause();
+        video.currentTime = 0;
+      } else {
+        void video.play().catch(() => {
+          // The video element can reject play() briefly while its source is still buffering.
+          // The autoplay attribute retries once media is ready; onError handles real failures.
+        });
+      }
+    }
+
+    syncPlayback();
+    reducedMotion.addEventListener("change", syncPlayback);
+    return () => reducedMotion.removeEventListener("change", syncPlayback);
+  }, [hydrationStatus]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -66,6 +76,7 @@ export default function SplashScreen() {
   }, [hydrated, vaults.length, isLocked, navigate]);
 
   function retryHydration() {
+    setVideoFailed(false);
     setHydrationStatus("loading");
     setHydrationAttempt((attempt) => attempt + 1);
     void usePersistedStore.persist.rehydrate();
@@ -77,51 +88,61 @@ export default function SplashScreen() {
         position: "fixed",
         inset: 0,
         background: "var(--color-bg-canvas)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        padding: "max(var(--space-8), calc(var(--height-titlebar) + var(--space-6))) var(--screen-padding)",
+        overflow: "hidden",
         userSelect: "none",
       }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
-        style={{
-          width: "100%",
-          maxWidth: 320,
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "var(--space-6)",
-          textAlign: "center",
-        }}
-      >
-        <BrandLockup align="center" size={56} subtitle="Local control for Qubic" />
-
+      {hydrationStatus === "loading" ? (
+        videoFailed ? (
+          <div
+            role="status"
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              placeItems: "center",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-body)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            Loading Glyph Wallet
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            loop
+            preload="auto"
+            aria-hidden="true"
+            onError={() => setVideoFailed(true)}
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "cover",
+              background: "var(--color-bg-canvas)",
+            }}
+          >
+            <source src="/splash_loading.webm" type="video/webm" />
+            <source src="/splash_loading.mp4" type="video/mp4" />
+          </video>
+        )
+      ) : (
         <div
           style={{
+            minHeight: "100%",
             display: "flex",
             flexDirection: "column",
+            justifyContent: "center",
             alignItems: "center",
-            gap: "var(--space-4)",
-            width: "100%",
+            gap: "var(--space-6)",
+            padding: "max(var(--space-8), calc(var(--height-titlebar) + var(--space-6))) var(--screen-padding)",
+            textAlign: "center",
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 999,
-              border: "2px solid var(--color-border-default)",
-              borderTopColor: "var(--color-accent)",
-              animation: hydrationStatus === "loading" ? "spin 0.8s linear infinite" : "none",
-            }}
-          />
-
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", alignItems: "center" }}>
             <h1
               style={{
@@ -134,49 +155,37 @@ export default function SplashScreen() {
                 color: "var(--color-text-primary)",
               }}
             >
-              {hydrationStatus === "loading"
-                ? "Loading Glyph Wallet"
-                : hydrationStatus === "error"
-                  ? "Wallet data could not be read"
-                  : "Still loading your wallet"}
+              {hydrationStatus === "error"
+                ? "Wallet data could not be read"
+                : "Still loading your wallet"}
             </h1>
             <p
               style={{
                 margin: 0,
+                maxWidth: 320,
                 fontFamily: "var(--font-sans)",
                 fontSize: "var(--text-body)",
                 lineHeight: "var(--leading-body)",
                 color: "var(--color-text-secondary)",
               }}
             >
-              {hydrationStatus === "loading"
-                ? LOADING_MESSAGES[messageIdx]
-                : "Your encrypted wallet data has not changed. You can try loading it again safely."}
+              Your encrypted wallet data has not changed. You can try loading it again safely.
             </p>
           </div>
 
-          {hydrationStatus === "loading" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", alignItems: "center" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-label)",
-                  lineHeight: "var(--leading-compact)",
-                  color: "var(--color-text-tertiary)",
-                }}
-              >
-                Keys remain encrypted on this device.
-              </span>
-            </div>
-          ) : (
-            <div role="alert" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", alignItems: "center", width: "100%" }}>
-              <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={retryHydration}>
-                Try again
-              </Button>
-            </div>
-          )}
+          <div
+            role="alert"
+            style={{
+              width: "100%",
+              maxWidth: 320,
+            }}
+          >
+            <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={retryHydration}>
+              Try again
+            </Button>
+          </div>
         </div>
-      </motion.div>
+      )}
     </div>
   );
 }

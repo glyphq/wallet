@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
@@ -11,7 +11,6 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { Identicon } from "@/components/identicon";
-import { isWatchOnlyVault } from "@/lib/accounts";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage, timeAgo } from "@/lib/format";
 import { restoreSessionWalletsFromIdentities, unlockSecureSession } from "@/lib/secure-session";
@@ -28,79 +27,77 @@ const PASSWORD_MAX_ATTEMPTS = 5;
 const PASSWORD_LOCKOUT_SECS = 30;
 let biometricFailures = 0;
 
-function BaseChip({ children, style, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      {...props}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "var(--space-2)",
-        maxWidth: "100%",
-        padding: "var(--space-2) var(--space-4)",
-        borderRadius: "var(--radius-pill)",
-        cursor: "pointer",
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-body-sm)",
-        fontWeight: 500,
-        lineHeight: 1,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        ...style,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function VaultChip({
+function VaultShelfRow({
   vault,
   selected,
   onSelect,
+  isLast,
 }: {
   vault: NonNullable<ReturnType<typeof usePersistedStore.getState>["vaults"][number]>;
   selected: boolean;
   onSelect: () => void;
+  isLast: boolean;
 }) {
   const lastOpened = vault.lastUnlockedAt ? `Last opened ${timeAgo(vault.lastUnlockedAt)}` : "Not opened yet";
 
   return (
-    <BaseChip
+    <button
+      type="button"
+      className="vault-shelf-row"
+      data-selected={selected ? "true" : "false"}
       onClick={onSelect}
       aria-pressed={selected}
       aria-label={`${vault.name}. ${lastOpened}`}
-      title={lastOpened}
       style={{
-        border: `1px solid ${selected ? "var(--color-text-primary)" : "var(--color-border-default)"}`,
-        background: selected ? "var(--color-bg-subtle)" : "var(--color-bg-surface-2)",
-        color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+        width: "100%",
+        minHeight: 64,
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-3)",
+        padding: "var(--space-3) var(--space-4)",
+        border: "none",
+        borderBottom: isLast ? "none" : "1px solid var(--color-border-subtle)",
+        color: "var(--color-text-primary)",
+        cursor: "pointer",
+        textAlign: "left",
+        fontFamily: "var(--font-sans)",
+        transition: "background var(--duration-fast) var(--ease-out)",
       }}
     >
-      <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={18} radius={6} padding={1} walletIcon={vault.icon} vaultColor={vault.color} />
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{vault.name}</span>
-    </BaseChip>
-  );
-}
-
-function NewVaultChip({ onClick }: { onClick: () => void }) {
-  return (
-    <BaseChip
-      onClick={onClick}
-      aria-label="Create or import a new wallet"
-      title="Create or import a new wallet"
-      style={{
-        border: "1px dashed var(--color-border-strong)",
-        background: "transparent",
-        color: "var(--color-text-tertiary)",
-      }}
-    >
-      <AddCircle size={16} weight="Linear" aria-hidden="true" />
-      <span>New</span>
-    </BaseChip>
+      <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={9} padding={2} walletIcon={vault.icon} vaultColor={vault.color} />
+      <span style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            fontSize: "var(--text-body)",
+            fontWeight: 600,
+          }}
+        >
+          {vault.name}
+        </span>
+        <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+          {lastOpened}
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 18,
+          height: 18,
+          flexShrink: 0,
+          display: "grid",
+          placeItems: "center",
+          borderRadius: "var(--radius-pill)",
+          border: `1px solid ${selected ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
+        }}
+      >
+        {selected ? (
+          <span style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: "var(--color-text-primary)" }} />
+        ) : null}
+      </span>
+    </button>
   );
 }
 
@@ -149,7 +146,6 @@ export default function LockScreen() {
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
   const lockedVaults = vaults
-    .filter((vault) => !isWatchOnlyVault(vault))
     .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   useEffect(() => {
     if (vaults.length > 0 && lockedVaults.length === 0) {
@@ -159,7 +155,6 @@ export default function LockScreen() {
 
   const [selectedId, setSelectedId] = useState<string>(() => lockedVaults[0]?.id ?? "");
   const selected = lockedVaults.find((vault) => vault.id === selectedId) ?? lockedVaults[0];
-  const watchOnly = selected ? isWatchOnlyVault(selected) : false;
   const biometricEnabled = selected ? (settings.biometricVaultIds ?? []).includes(selected.id) : false;
 
   const [error, setError] = useState("");
@@ -171,7 +166,7 @@ export default function LockScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
 
-  const { register, handleSubmit, setValue } = useForm<FormValues>();
+  const { register, handleSubmit, setValue, setFocus } = useForm<FormValues>();
 
   useEffect(() => () => {
     if (lockoutRef.current) clearInterval(lockoutRef.current);
@@ -231,7 +226,7 @@ export default function LockScreen() {
     biometricFailures = 0;
     setPasswordAttempts(0);
     setUnlocking(true);
-    await new Promise<void>((resolve) => setTimeout(resolve, 600));
+    await new Promise<void>((resolve) => setTimeout(resolve, 180));
     navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
   }
 
@@ -243,16 +238,6 @@ export default function LockScreen() {
 
   async function onSubmit({ password }: FormValues) {
     if (!selected || lockoutSecsLeft > 0) return;
-    if (watchOnly) {
-      unlock(selected.id, [], {
-        watchOnly: true,
-        identities: selected.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
-      });
-      setActiveVault(selected.id);
-      touchVaultUnlocked(selected.id);
-      navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -338,7 +323,7 @@ export default function LockScreen() {
   if (!selected) return null;
 
   return (
-    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
+    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-6)", paddingBottom: "var(--space-6)" }}>
       <AnimatePresence mode="wait">
         {unlocking ? (
           <motion.div
@@ -358,7 +343,7 @@ export default function LockScreen() {
               textAlign: "center",
             }}
           >
-            <BrandLockup align="center" compact subtitle="Opening your local wallet" />
+            <BrandLockup align="center" compact iconOnly />
             <div
               aria-hidden="true"
               style={{
@@ -393,51 +378,77 @@ export default function LockScreen() {
               minHeight: 0,
               display: "flex",
               flexDirection: "column",
-              gap: "var(--space-8)",
+              gap: "var(--space-6)",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flexShrink: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
-              <BrandLockup align="center" compact />
-              <FlowHeader align="center" title="Unlock" description={selected?.name} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0, minHeight: 0 }}>
+              <BrandLockup align="center" compact iconOnly />
+              <FlowHeader
+                align="center"
+                title="Unlock wallet"
+                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a wallet, then enter its password."}
+              />
 
               <div
                 style={{
                   display: "flex",
-                  flexWrap: "wrap",
+                  flexDirection: "column",
                   gap: "var(--space-2)",
-                  justifyContent: "center",
-                  alignItems: "center",
                 }}
               >
-                {lockedVaults.map((vault) => (
-                  <VaultChip
-                    key={vault.id}
-                    vault={vault}
-                    selected={vault.id === selectedId}
-                    onSelect={() => {
-                      setSelectedId(vault.id);
-                    }}
-                  />
-                ))}
-                <NewVaultChip onClick={() => navigate("/setup")} />
+                <div
+                  role="group"
+                  aria-label="Choose a wallet to unlock"
+                  style={{
+                    maxHeight: lockedVaults.length > 3 ? 194 : undefined,
+                    overflowY: lockedVaults.length > 3 ? "auto" : "hidden",
+                    border: "1px solid var(--color-border-default)",
+                    borderRadius: "var(--radius-card)",
+                    background: "var(--color-bg-surface-2)",
+                  }}
+                >
+                  {lockedVaults.map((vault, index) => (
+                    <VaultShelfRow
+                      key={vault.id}
+                      vault={vault}
+                      selected={vault.id === selected.id}
+                      isLast={index === lockedVaults.length - 1}
+                      onSelect={() => {
+                        setSelectedId(vault.id);
+                        window.requestAnimationFrame(() => setFocus("password"));
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="vault-shelf-add"
+                  onClick={() => navigate("/setup")}
+                  aria-label="Add another wallet"
+                >
+                  <span className="vault-shelf-add-icon" aria-hidden="true">
+                    <AddCircle size={17} weight="Linear" />
+                  </span>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                    <span style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
+                      Add another wallet
+                    </span>
+                    <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+                      Create new or import existing
+                    </span>
+                  </span>
+                </button>
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flex: 1, justifyContent: "center", maxWidth: 340, width: "100%", margin: "0 auto" }}>
-              {watchOnly ? (
-                <Button onClick={() => onSubmit({ password: "" })}>
-                  <LockKeyhole size={16} weight="Linear" aria-hidden="true" />
-                  Open wallet
-                </Button>
-              ) : (
-                <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", marginTop: "auto" }}>
+              <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   <div key={shakeKey} className={error ? "lock-shake" : undefined}>
                     <Input
                       {...register("password")}
+                      id="wallet-password"
+                      aria-label="Wallet password"
                       type={showPassword ? "text" : "password"}
-                      label="Password"
-                      labelStyle={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}
-                      containerStyle={{ gap: "var(--space-3)" }}
                       style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) var(--space-4)" }}
                       placeholder="Enter the wallet password"
                       autoComplete="current-password"
@@ -452,16 +463,15 @@ export default function LockScreen() {
                     {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
                   </Button>
                 </form>
-              )}
 
-              {!watchOnly && biometricEnabled && bioFailures < 3 ? (
+              {biometricEnabled && bioFailures < 3 ? (
                 <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBiometric} disabled={loading}>
                   <LockKeyhole size={14} weight="Linear" />
                   {isLinux ? "Quick unlock" : "Use biometrics"}
                 </Button>
               ) : null}
 
-              {!watchOnly && biometricEnabled && bioFailures >= 3 ? (
+              {biometricEnabled && bioFailures >= 3 ? (
                 <p
                   style={{
                     margin: 0,

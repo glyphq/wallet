@@ -233,7 +233,7 @@ Rules:
 
 - use the vault identicon derived from `vault.id` and `vault.color`
 - clicking opens a compact switch sheet
-- watch-only vaults switch immediately
+- seeded vaults require password unlock when switching
 - encrypted vaults prompt for password inside the switch sheet
 - successful switching returns the user to the dashboard to avoid stale route context
 

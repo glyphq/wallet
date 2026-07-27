@@ -182,7 +182,7 @@ export default function SettingsScreen() {
           {...gesture.pressSubtle}
           onClick={() => {
             useSessionStore.getState().lock();
-            navigate("/", { replace: true });
+            navigate("/lock", { replace: true });
           }}
           style={{
             marginTop: "var(--space-4)",

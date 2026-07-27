@@ -17,7 +17,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { Button } from "@/components/button";
 import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
-import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
+import { getVaultAccountIdentity } from "@/lib/accounts";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 
 // ── Animated balance ─────────────────────────────────────────────────────────
@@ -62,12 +62,11 @@ function AnimatedBalance({ value }: { value: bigint }) {
 
 // ── Account selector ─────────────────────────────────────────────────────────
 
-function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onSelect }: {
+function AccountSelector({ vault, activeIndex, wallets, identity, onSelect }: {
   vault: NonNullable<ReturnType<typeof usePersistedStore.getState>["vaults"][number]> | null;
   activeIndex: number;
   wallets: ReturnType<typeof useSessionStore.getState>["wallets"];
   identity: string | null;
-  watchOnly: boolean;
   onSelect: (index: number) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -101,7 +100,6 @@ function AccountSelector({ vault, activeIndex, wallets, identity, watchOnly, onS
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.02em" }}>
           {accountName}
         </span>
-        {watchOnly && <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-warning)" }}>Watch-only</span>}
       </div>
     );
   }
@@ -354,7 +352,6 @@ export default function DashboardScreen() {
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
   const activeIndex = settings.activeAccountIndex;
   const identity = getVaultAccountIdentity(vault, activeIndex, wallets);
-  const watchOnly = isWatchOnlyVault(vault);
 
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
   const { data: stats } = useLatestStats();
@@ -406,7 +403,6 @@ export default function DashboardScreen() {
             activeIndex={activeIndex}
             wallets={wallets}
             identity={identity}
-            watchOnly={watchOnly}
             onSelect={setActiveAccountIndex}
           />
 
@@ -467,7 +463,7 @@ export default function DashboardScreen() {
           )}
 
           {/* CTA buttons */}
-          {!watchOnly && (
+          {(
             <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
               <Button variant="primary" size="md" shape="pill" onClick={() => navigate("/send")}>
                 <ArrowRightUp size={16} weight="Bold" />

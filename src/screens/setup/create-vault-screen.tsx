@@ -1,143 +1,62 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { motion } from "motion/react";
-import {
-  AltArrowLeft,
-  AltArrowRight,
-  CheckCircle,
-  Copy,
-  Eye,
-  EyeClosed,
-  LockKeyhole,
-} from "@solar-icons/react";
-import { stepMotion } from "@/lib/animations";
-import { FullPage } from "@/layouts/full-page";
+import { CheckCircle, KeyMinimalistic, Wallet } from "@solar-icons/react";
 import { Button } from "@/components/button";
-import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
-import { StepProgress } from "@/components/step-progress";
+import { PasswordFields, passwordsAreValid, SeedSurface, SetupFlow } from "@/components/setup-flow";
+import { Textarea } from "@/components/textarea";
+import { FullPage } from "@/layouts/full-page";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_AUTO_HIDE_MS, SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { deriveIdentityFromSeed, generateRandomSeed, newId, type Seed } from "@/lib/crypto";
-import { passwordStrength } from "@/lib/password-strength";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { createVault } from "@/lib/vault";
+import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
 type Step = 1 | 2 | 3 | 4;
 
-function pickCheckPositions(seed: string, count = 4): number[] {
-  const positions = new Set<number>();
-  while (positions.size < count) {
-    positions.add(Math.floor(Math.random() * seed.length));
-  }
-  return Array.from(positions).sort((a, b) => a - b);
-}
-
-const cardStyle: React.CSSProperties = {
-  background: "var(--color-bg-surface)",
-  border: "1px solid var(--color-border-default)",
-  borderRadius: "var(--radius-sheet)",
-  padding: "var(--space-5)",
-};
-
-function PasswordVisibilityButton({
-  visible,
-  onToggle,
-}: {
-  visible: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={visible ? "Hide passwords" : "Show passwords"}
-      aria-pressed={visible}
-      style={{
-        border: "none",
-        background: "transparent",
-        padding: 0,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "var(--color-text-tertiary)",
-        cursor: "pointer",
-      }}
-    >
-      {visible ? <EyeClosed size={18} weight="Outline" /> : <Eye size={18} weight="Outline" />}
-    </button>
-  );
-}
-
-function PasswordStrengthMeter({ level, label, color }: { level: number; label: string; color: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-      <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }}>
-        {[0, 1, 2, 3].map((index) => (
-          <div
-            key={index}
-            style={{
-              flex: 1,
-              height: 3,
-              borderRadius: 999,
-              background: index <= level ? color : "var(--color-border-default)",
-              transition: "background-color var(--duration-fast) var(--ease-standard)",
-            }}
-          />
-        ))}
-      </div>
-      <span
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-label)",
-          fontWeight: 500,
-          color,
-        }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
 export default function CreateVaultScreen() {
   const navigate = useNavigate();
-  const addVault = usePersistedStore((s) => s.addVault);
-  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
-  const unlock = useSessionStore((s) => s.unlock);
+  const addVault = usePersistedStore((state) => state.addVault);
+  const setActiveVault = usePersistedStore((state) => state.setActiveVault);
+  const unlock = useSessionStore((state) => state.unlock);
 
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
   const [seed] = useState<Seed>(() => generateRandomSeed());
+  const [confirmation, setConfirmation] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
+  const [seedRevealed, setSeedRevealed] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [copiedSegment, setCopiedSegment] = useState<number | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [confirmationError, setConfirmationError] = useState("");
   const [setupError, setSetupError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [checkPositions] = useState<number[]>(() => pickCheckPositions(seed));
-  const [checkInputs, setCheckInputs] = useState(["", "", "", ""]);
-  const checkRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [seedRevealed, setSeedRevealed] = useState(true);
 
   useEffect(() => {
     if (step !== 2) return;
     setSeedRevealed(true);
-    const timer = setTimeout(() => setSeedRevealed(false), SEED_AUTO_HIDE_MS);
-    return () => clearTimeout(timer);
+    const timer = window.setTimeout(() => setSeedRevealed(false), SEED_AUTO_HIDE_MS);
+    return () => window.clearTimeout(timer);
   }, [step]);
 
-  const checkComplete = checkPositions.every((pos, index) => checkInputs[index] === seed[pos]);
-  const strength = passwordStrength(password);
-  const passwordsMatch = password === confirmPassword;
-  const canSubmit = password.length >= 10 && strength.level >= 1 && confirmPassword.length > 0 && passwordsMatch;
+  const passwordValid = passwordsAreValid(password, confirmPassword);
+  const normalizedConfirmation = confirmation.trim().toLowerCase();
 
-  function goStep2() {
+  function back() {
+    if (step === 1) navigate("/setup");
+    else setStep((step - 1) as Step);
+  }
+
+  function continueFromName() {
     if (!name.trim()) {
-      setNameError("Please enter a wallet name");
+      setNameError("Enter a wallet name");
       return;
     }
     setNameError("");
@@ -145,44 +64,47 @@ export default function CreateVaultScreen() {
   }
 
   async function copySeed() {
-    await copyToClipboard(seed, SEED_CLIPBOARD_CLEAR_SECS);
+    const didCopy = await copyToClipboard(seed, SEED_CLIPBOARD_CLEAR_SECS);
+    if (!didCopy) return;
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    window.setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleCheckInput(index: number, raw: string) {
-    const value = raw.slice(-1).toLowerCase();
-    setCheckInputs((prev) => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
-    if (value) checkRefs.current[index + 1]?.focus();
+  async function copySeedSegment(segment: string, index: number) {
+    const didCopy = await copyToClipboard(segment, SEED_CLIPBOARD_CLEAR_SECS);
+    if (!didCopy) return;
+    setCopiedSegment(index);
+    window.setTimeout(() => setCopiedSegment((current) => current === index ? null : current), 1500);
   }
 
-  function handleCheckKey(index: number, event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Backspace" && !checkInputs[index]) {
-      checkRefs.current[index - 1]?.focus();
+  function confirmBackup() {
+    if (normalizedConfirmation !== seed) {
+      setConfirmationError("The seed does not match");
+      return;
     }
+    setConfirmationError("");
+    setStep(4);
   }
 
   async function finish() {
-    if (!canSubmit) return;
+    if (!passwordValid || loading) return;
     setSetupError("");
     setLoading(true);
     try {
       const encryptedData = await createVault(password, [seed]);
+      const now = Date.now();
       const vault = {
         id: newId(),
         name: name.trim(),
-        color: "slate" as const,
+        color: DEFAULT_WALLET_COLOR,
+        icon: DEFAULT_WALLET_ICON,
         kind: "seeded" as const,
-        createdAt: Date.now(),
-        lastUnlockedAt: Date.now(),
+        createdAt: now,
+        lastUnlockedAt: now,
         accounts: [{
           index: 0,
           name: "Account 1",
-          addedAt: Date.now(),
+          addedAt: now,
           hidden: false,
           identity: deriveIdentityFromSeed(seed),
           note: "",
@@ -203,349 +125,142 @@ export default function CreateVaultScreen() {
   }
 
   return (
-    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 340,
-          margin: "0 auto",
-          height: "100%",
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-6)",
-        }}
-      >
-        <StepProgress current={step} total={4} />
+    <FullPage centered={false} style={{ paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
+      {step === 1 ? (
+        <SetupFlow current={1} total={4} title="Name your wallet" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
+          <Input
+            leftElement={<Wallet size={18} weight="Linear" />}
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setNameError("");
+            }}
+            onKeyDown={(event) => event.key === "Enter" && continueFromName()}
+            placeholder="Wallet name"
+            aria-label="Wallet name"
+            autoFocus
+            error={nameError}
+          />
+        </SetupFlow>
+      ) : null}
 
-        {step === 1 ? (
-          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
-              <FlowHeader
-                align="center"
-                title="Name your wallet"
-              />
-
-              <Input
-                label="Wallet name"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  setNameError("");
-                }}
-                onKeyDown={(event) => event.key === "Enter" && goStep2()}
-                placeholder="Main, trading, cold storage"
-                autoFocus
-                error={nameError}
-              />
-
+      {step === 2 ? (
+        <SetupFlow
+          current={2}
+          total={4}
+          title="Back up your seed"
+          primaryLabel="Continue"
+          primaryDisabled={!acknowledged}
+          onPrimary={() => setStep(3)}
+          onBack={back}
+          secondaryActions={
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+              <Button variant="secondary" size="md" onClick={copySeed}>{copied ? "Copied" : "Copy seed"}</Button>
+              <Button variant="secondary" size="md" onClick={() => setSeedRevealed((value) => !value)}>{seedRevealed ? "Hide" : "Reveal"}</Button>
             </div>
+          }
+        >
+          <SeedSurface
+            seed={seed}
+            revealed={seedRevealed}
+            copiedIndex={copiedSegment}
+            onCopySegment={copySeedSegment}
+          />
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={acknowledged}
+            onClick={() => setAcknowledged((value) => !value)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-3)",
+              minHeight: 48,
+              padding: "0 var(--space-1)",
+              border: 0,
+              background: "transparent",
+              fontFamily: "var(--font-sans)",
+              fontSize: "0.875rem",
+              color: "var(--color-text-primary)",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 24,
+                height: 24,
+                display: "grid",
+                placeItems: "center",
+                flex: "0 0 auto",
+                border: `1px solid ${acknowledged ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
+                borderRadius: 7,
+                background: acknowledged ? "var(--color-text-primary)" : "var(--color-bg-surface-2)",
+                color: "var(--color-text-inverse)",
+                transition: "background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out)",
+              }}
+            >
+              {acknowledged ? <CheckCircle size={16} weight="Bold" /> : null}
+            </span>
+            I saved this seed safely
+          </button>
+        </SetupFlow>
+      ) : null}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
-              <Button onClick={goStep2}>
-                Continue
-                <AltArrowRight size={16} weight="Bold" />
-              </Button>
-              <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => navigate("/setup")}>
-                <AltArrowLeft size={16} weight="Bold" />
-                Back
-              </Button>
-            </div>
-          </motion.div>
-        ) : null}
+      {step === 3 ? (
+        <SetupFlow
+          current={3}
+          total={4}
+          title="Confirm your backup"
+          primaryLabel="Continue"
+          onPrimary={confirmBackup}
+          onBack={back}
+        >
+          <Textarea
+            leftElement={<KeyMinimalistic size={18} weight="Linear" />}
+            value={confirmation}
+            onChange={(event) => {
+              setConfirmation(event.target.value);
+              setConfirmationError("");
+            }}
+            onKeyDown={(event) => {
+              if ((event.ctrlKey || event.metaKey) && event.key === "Enter") confirmBackup();
+            }}
+            placeholder="Enter the complete seed"
+            aria-label="Complete recovery seed"
+            technical
+            autoFocus
+            error={confirmationError}
+            style={{ resize: "none", minHeight: 136, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
+          />
+        </SetupFlow>
+      ) : null}
 
-        {step === 2 ? (
-          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
-              <FlowHeader
-                align="center"
-                title="Back up your seed"
-              />
-
-              <div style={cardStyle}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "var(--space-3)",
-                  marginBottom: "var(--space-4)",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-caption)",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "var(--color-text-tertiary)",
-                  }}
-                >
-                  Recovery seed
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-caption)",
-                    color: "var(--color-status-warning)",
-                  }}
-                >
-                  Clipboard clears in 30 seconds
-                </span>
-              </div>
-
-              <div
-                style={{
-                  position: "relative",
-                  background: "var(--color-bg-canvas)",
-                  border: "1px solid var(--color-border-subtle)",
-                  borderRadius: "var(--radius-surface)",
-                  padding: "var(--space-4)",
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "var(--text-mono-lg)",
-                    lineHeight: 1.9,
-                    letterSpacing: "0.06em",
-                    color: seedRevealed ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
-                    wordBreak: "break-all",
-                    filter: seedRevealed ? "none" : "blur(6px)",
-                    userSelect: seedRevealed ? "text" : "none",
-                    transition: "filter var(--duration-fast) var(--ease-standard)",
-                  }}
-                  aria-hidden={!seedRevealed}
-                >
-                  {seedRevealed
-                    ? seed.split("").map((char, index) => (
-                        <span key={index}>
-                          {char}
-                          {(index + 1) % 5 === 0 && index < seed.length - 1 ? " " : ""}
-                        </span>
-                      ))
-                    : "•".repeat(Math.max(seed.length + Math.floor(seed.length / 5), 12))}
-                </div>
-                {!seedRevealed ? (
-                  <button
-                    type="button"
-                    onClick={() => setSeedRevealed(true)}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      border: "none",
-                      background: "transparent",
-                      borderRadius: "var(--radius-surface)",
-                      color: "var(--color-text-secondary)",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "var(--text-body)",
-                    }}
-                  >
-                    Reveal seed
-                  </button>
-                ) : null}
-              </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-                <Button variant="secondary" size="md" onClick={copySeed}>
-                  <Copy size={14} weight="Outline" />
-                  {copied ? "Copied" : "Copy"}
-                </Button>
-                <Button variant="secondary" size="md" onClick={() => setSeedRevealed((visible) => !visible)}>
-                  {seedRevealed ? <EyeClosed size={14} weight="Outline" /> : <Eye size={14} weight="Outline" />}
-                  {seedRevealed ? "Hide" : "Reveal"}
-                </Button>
-              </div>
-
-              <Button onClick={() => setStep(3)}>
-                <CheckCircle size={16} weight="Bold" />
-                I have written it down
-              </Button>
-            </div>
-          </motion.div>
-        ) : null}
-
-        {step === 3 ? (
-          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
-              <FlowHeader
-                align="center"
-                title="Confirm the backup"
-              />
-
-              <div style={cardStyle}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-lg)",
-                  lineHeight: 1.9,
-                  letterSpacing: "0.06em",
-                  wordBreak: "break-all",
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                {seed.split("").map((char, index) => {
-                  const blankIndex = checkPositions.indexOf(index);
-                  if (blankIndex !== -1) {
-                    const filled = checkInputs[blankIndex];
-                    const correct = filled === char;
-                    return (
-                      <span
-                        key={index}
-                        style={{
-                          display: "inline-block",
-                          minWidth: "0.8em",
-                          textAlign: "center",
-                          borderRadius: 4,
-                          background: filled
-                            ? correct
-                              ? "color-mix(in srgb, var(--color-accent) 16%, transparent)"
-                              : "color-mix(in srgb, var(--color-status-error) 18%, transparent)"
-                            : "var(--color-bg-elevated)",
-                          color: filled
-                            ? correct
-                              ? "var(--color-accent)"
-                              : "var(--color-status-error)"
-                            : "var(--color-text-tertiary)",
-                        }}
-                      >
-                        {filled || "_"}
-                      </span>
-                    );
-                  }
-                  return <span key={index}>{char}</span>;
-                })}
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "var(--space-3)" }}>
-              {checkPositions.map((position, index) => {
-                const value = checkInputs[index];
-                const correct = value ? value === seed[position] : null;
-                return (
-                  <div key={position} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontSize: "var(--text-caption)",
-                        color: "var(--color-text-tertiary)",
-                        textAlign: "center",
-                      }}
-                    >
-                      #{position + 1}
-                    </span>
-                    <input
-                      ref={(element) => {
-                        checkRefs.current[index] = element;
-                      }}
-                      autoComplete="off"
-                      value={value}
-                      onChange={(event) => handleCheckInput(index, event.target.value)}
-                      onKeyDown={(event) => handleCheckKey(index, event)}
-                      maxLength={1}
-                      autoFocus={index === 0}
-                      style={{
-                        width: "100%",
-                        minHeight: "var(--height-button-md)",
-                        textAlign: "center",
-                        background: "var(--color-bg-surface-2)",
-                        border: `1px solid ${
-                          value
-                            ? correct
-                              ? "var(--color-accent)"
-                              : "var(--color-status-error)"
-                            : "var(--color-border-default)"
-                        }`,
-                        borderRadius: "var(--radius-control)",
-                        color: "var(--color-text-primary)",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--text-mono-lg)",
-                      }}
-                    />
-                  </div>
-                );
-              })}
-              </div>
-
-
-            </div>
-
-            <div style={{ flexShrink: 0 }}>
-              <Button onClick={() => setStep(4)} disabled={!checkComplete}>
-                Confirm backup
-                <CheckCircle size={16} weight="Bold" />
-              </Button>
-            </div>
-          </motion.div>
-        ) : null}
-
-        {step === 4 ? (
-          <motion.div {...stepMotion} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "var(--space-1)" }}>
-              <FlowHeader
-                align="center"
-                title="Set a password"
-              />
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <Input
-                label="Password"
-                type={passwordsVisible ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && !loading && canSubmit && finish()}
-                placeholder="Enter a wallet password"
-                autoComplete="new-password"
-                autoFocus
-                rightElement={<PasswordVisibilityButton visible={passwordsVisible} onToggle={() => setPasswordsVisible((visible) => !visible)} />}
-              />
-
-              <Input
-                label="Confirm password"
-                type={passwordsVisible ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && !loading && canSubmit && finish()}
-                placeholder="Re-enter the password"
-                autoComplete="new-password"
-                error={confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match." : undefined}
-              />
-
-                {password.length > 0 ? <PasswordStrengthMeter level={strength.level} label={strength.label} color={strength.color} /> : null}
-              </div>
-
-              {setupError ? (
-                <div
-                  role="alert"
-                  style={{
-                    padding: "var(--space-4)",
-                    border: "1px solid color-mix(in srgb, var(--color-status-error) 45%, transparent)",
-                    borderRadius: "var(--radius-surface)",
-                    background: "color-mix(in srgb, var(--color-status-error) 10%, var(--color-bg-surface))",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body-compact)",
-                    lineHeight: "var(--leading-body)",
-                    color: "var(--color-status-error)",
-                  }}
-                >
-                  {setupError}
-                </div>
-              ) : null}
-            </div>
-
-            <div style={{ flexShrink: 0 }}>
-              <Button onClick={finish} disabled={loading || !canSubmit} loading={loading}>
-                <LockKeyhole size={16} weight="Bold" />
-                Create wallet
-              </Button>
-            </div>
-          </motion.div>
-        ) : null}
-      </div>
+      {step === 4 ? (
+        <SetupFlow
+          current={4}
+          total={4}
+          title="Set a password"
+          primaryLabel="Create wallet"
+          primaryDisabled={!passwordValid}
+          primaryLoading={loading}
+          onPrimary={finish}
+          onBack={back}
+          error={setupError}
+        >
+          <PasswordFields
+            password={password}
+            confirmPassword={confirmPassword}
+            visible={passwordsVisible}
+            onPasswordChange={setPassword}
+            onConfirmChange={setConfirmPassword}
+            onToggleVisibility={() => setPasswordsVisible((value) => !value)}
+            onSubmit={finish}
+          />
+        </SetupFlow>
+      ) : null}
     </FullPage>
   );
 }

@@ -27,7 +27,7 @@ interface SessionState {
   unlock: (
     vaultId: string,
     wallets: SessionWallet[],
-    options?: { identities?: string[]; watchOnly?: boolean },
+    options?: { identities?: string[] },
   ) => void;
   lock: () => void;
   resetForSetup: () => void;
@@ -49,7 +49,6 @@ export const useSessionStore = create<SessionState>()((set) => ({
   txDraft: null,
 
   unlock: (vaultId, wallets, options) => {
-    if (options?.watchOnly) clearSecureSession();
     set({
       unlockedVaultId: vaultId,
       wallets,

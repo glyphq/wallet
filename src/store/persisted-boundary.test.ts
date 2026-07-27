@@ -133,10 +133,10 @@ describe("persisted boundary helpers", () => {
         },
         vaults: [
           {
-            id: "watch",
-            name: "Watch",
+            id: "seeded",
+            name: "Seeded",
             color: "sky",
-            kind: "watch_only",
+            kind: "seeded",
             createdAt: 1,
             lastUnlockedAt: 2,
             encryptedData: { should: "be removed" },
@@ -169,7 +169,7 @@ describe("persisted boundary helpers", () => {
       DEFAULT_SETTINGS.sponsorAttribution
     );
     expect(merged.settings.allowBlurLockBypass).toBe(true);
-    expect(merged.vaults[0]?.encryptedData).toBeNull();
+    expect(merged.vaults[0]?.encryptedData).toEqual({ should: "be removed" });
     expect(merged.vaults[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);
   });

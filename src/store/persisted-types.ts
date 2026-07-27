@@ -44,7 +44,7 @@ export interface AccountMeta {
   addedAt: number;
   /** When true the account is hidden from the account switcher but remains in the seed array. */
   hidden: boolean;
-  /** Persisted identity for watch-only accounts and seeded-account metadata hydration. */
+  /** Persisted identity used to hydrate seeded-account metadata while locked. */
   identity?: string;
   note?: string;
   tags?: string[];
@@ -56,7 +56,7 @@ export interface VaultMeta {
   name: string;
   color: VaultColor;
   icon?: WalletIconId;
-  kind?: "seeded" | "watch_only";
+  kind?: "seeded";
   createdAt: number;
   lastUnlockedAt: number;
   accounts: AccountMeta[];

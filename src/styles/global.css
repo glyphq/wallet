@@ -172,10 +172,42 @@ a:hover {
 .glyph-input {
   min-height: var(--height-input);
   border: 1px solid var(--color-border-default);
+  caret-color: var(--color-text-primary);
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.glyph-field-icon {
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-field:focus-within .glyph-field-icon {
+  color: var(--color-text-primary) !important;
+}
+
+.glyph-field[data-error="true"] .glyph-field-icon {
+  color: var(--color-status-error) !important;
+}
+
+.glyph-input:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-disabled);
+  background: var(--color-bg-inset);
+}
+
+.glyph-input:-webkit-autofill,
+.glyph-input:-webkit-autofill:hover,
+.glyph-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text-primary);
+  box-shadow: 0 0 0 1000px var(--color-bg-input) inset;
+  transition: background-color 9999s ease-out;
 }
 
 .glyph-input:hover:not(:disabled) {
@@ -185,18 +217,19 @@ a:hover {
 
 .glyph-input:focus {
   outline: none;
-  border-color: var(--color-focus-ring);
-  box-shadow: var(--shadow-focus);
+  border-color: var(--color-border-contrast);
+  box-shadow: none;
 }
 
 .glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 0 3px var(--color-status-error-soft);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--color-status-error) 4%, var(--color-bg-input));
 }
 
 .glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-status-error) 18%, transparent);
+  box-shadow: none;
 }
 
 .glyph-icon-btn {
@@ -228,6 +261,57 @@ a:hover {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-elevated);
+}
+
+.vault-shelf-row {
+  background: transparent;
+}
+
+.vault-shelf-row[data-selected="true"] {
+  background: var(--color-bg-surface);
+}
+
+.vault-shelf-row:hover {
+  background: var(--color-bg-hover);
+}
+
+.vault-shelf-row:active {
+  background: var(--color-bg-press);
+}
+
+.vault-shelf-add {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.vault-shelf-add:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-hover);
+}
+
+.vault-shelf-add:active {
+  background: var(--color-bg-press);
+}
+
+.vault-shelf-add-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 50%;
+  color: var(--color-text-tertiary);
 }
 
 @keyframes shake {
