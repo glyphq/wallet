@@ -72,7 +72,7 @@ PY
 
 validate_deb() {
   local deb="$1"
-  local package version architecture depends workdir binary needed desktop icon_name appstream
+  local package version architecture depends workdir binary broker needed desktop icon_name appstream
 
   package="$(dpkg-deb -f "$deb" Package)"
   version="$(dpkg-deb -f "$deb" Version)"
@@ -91,10 +91,14 @@ validate_deb() {
   dpkg-deb -x "$deb" "$workdir"
   binary="$workdir/usr/bin/glyph-wallet"
   [[ -x "$binary" ]] || die "deb does not contain an executable glyph-wallet binary"
+  broker="$workdir/usr/bin/glyph-link-broker"
+  [[ -x "$broker" ]] || die "deb does not contain an executable glyph-link-broker binary"
   needed="$(readelf -d "$binary" | awk '/NEEDED/ { print $NF }')"
   assert_contains "$needed" 'libwebkit2gtk-4[.]1[.]so[.]0' "deb binary linkage"
   assert_contains "$needed" 'libdbus-1[.]so[.]3' "deb binary linkage"
   desktop="$(find_one 'desktop entry' "$workdir/usr/share/applications" '*.desktop')"
+  grep -Fxq 'Exec=glyph-link-broker %u' "$desktop" \
+    || die "deb desktop entry does not route launches through glyph-link-broker"
   icon_name="$(awk -F= '$1 == "Icon" { print $2; exit }' "$desktop")"
   [[ -n "$icon_name" ]] || die "deb desktop entry has no Icon value"
   find "$workdir/usr/share/icons" -type f -name "${icon_name}.png" -print -quit | grep -q . \
@@ -123,6 +127,7 @@ validate_rpm() {
   assert_contains "$requires" '(webkit2gtk|libwebkit2gtk)' "rpm requirements"
   assert_contains "$requires" '(gtk3|libgtk-3)' "rpm requirements"
   assert_contains "$contents" '/usr/share/metainfo/com[.]qubic[.]glyph[.]metainfo[.]xml' "rpm contents"
+  assert_contains "$contents" '/usr/bin/glyph-link-broker' "rpm broker binary"
 
   log "rpm metadata validated: $(basename "$rpm_file")"
 }
@@ -147,6 +152,10 @@ validate_appimage() {
   cmp -s "$REPO_ROOT/src-tauri/linux/AppRun" "$appdir/AppRun" \
     || die "AppImage does not contain the repository's canonical AppRun"
   desktop="$(find_one 'desktop entry' "$appdir/usr/share/applications" '*.desktop')"
+  [[ -x "$appdir/usr/bin/glyph-link-broker" ]] \
+    || die "AppImage is missing the glyph-link-broker binary"
+  grep -Fxq 'Exec=glyph-link-broker %u' "$desktop" \
+    || die "AppImage desktop entry does not route launches through glyph-link-broker"
   icon_name="$(awk -F= '$1 == "Icon" { print $2; exit }' "$desktop")"
   [[ -f "$appdir/${icon_name}.png" ]] || die "AppImage root icon does not resolve: $icon_name"
   [[ -f "$appdir/usr/share/metainfo/com.qubic.glyph.metainfo.xml" ]] \

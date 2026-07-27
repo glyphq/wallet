@@ -462,6 +462,13 @@ pub fn process_url(app: &AppHandle, raw: &str) {
 
 pub fn register_handler(app: &AppHandle) {
     app.state::<DeepLinkState>().load_seen_nonces(app);
+
+    if let Ok(Some(urls)) = app.deep_link().get_current() {
+        for url in urls {
+            process_url(app, &url.to_string());
+        }
+    }
+
     let handle = app.clone();
     app.deep_link().on_open_url(move |event| {
         for url in event.urls() {
