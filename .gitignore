@@ -14,6 +14,8 @@ src-tauri/binaries/glyph-link-broker-*
 *.local
 planning/
 .codegraph
+.jcode/
+docs/
 
 # Editor directories and files
 .vscode/*
