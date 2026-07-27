@@ -72,6 +72,8 @@ jobs:
 
       - name: Check locked Rust build
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+        env:
+          TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
 
   security-audit:
     name: Security audit
