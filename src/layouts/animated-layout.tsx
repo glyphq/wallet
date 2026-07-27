@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { useLocation, useOutlet } from "react-router";
+import { useLocation, useNavigate, useOutlet } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { pageTransition } from "@/lib/animations";
 import { useAutoLock } from "@/hooks/use-auto-lock";
@@ -58,7 +58,12 @@ const instantTransition = {
   transition: { duration: 0 },
 } as const;
 
-function showChrome(pathname: string): boolean {
+function showHeader(pathname: string): boolean {
+  if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
+  return true;
+}
+
+function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname.startsWith("/settings/")) return false;
   return true;
@@ -82,6 +87,18 @@ function headerTitleFromPath(pathname: string): string | null {
   return null;
 }
 
+function backTargetFromPath(pathname: string): string | null {
+  if (pathname.endsWith("/portfolio") && pathname.startsWith("/vaults/")) {
+    return pathname.slice(0, -"/portfolio".length);
+  }
+  if (pathname.startsWith("/vaults/")) return "/vaults";
+  if (pathname === "/send/scheduled" || pathname === "/send-many" || pathname === "/burn") return "/send";
+  if (pathname === "/payment-link") return "/receive";
+  if (pathname.startsWith("/tx/") || pathname === "/analytics") return "/history";
+  if (pathname === "/search") return "/dashboard";
+  return null;
+}
+
 /** Returns true when both paths are within the same top-level section. */
 function isSameSection(a: string, b: string): boolean {
   if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
@@ -94,15 +111,21 @@ function isSameSection(a: string, b: string): boolean {
 
 function LayoutShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const element = useOutlet();
   const { header } = useHeaderSlot();
   const countdown = useLockCountdown();
   const cur = location.pathname;
-  const show = showChrome(cur);
-  const showNav = show;
+  const show = showHeader(cur);
+  const showNav = showBottomNav(cur);
   const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
-  const resolvedHeader = header ?? (routeTitle ? <ScreenHeader leading={<ShellVaultSwitcher />} title={routeTitle} /> : null);
+  const backTarget = backTargetFromPath(cur);
+  const resolvedHeader = header ?? (routeTitle
+    ? backTarget
+      ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} />
+      : <ScreenHeader leading={<ShellVaultSwitcher />} title={routeTitle} />
+    : null);
 
   const prevRef = useRef(cur);
   const prev = prevRef.current;
