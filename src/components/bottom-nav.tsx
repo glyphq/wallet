@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { HomeSmile, CardSend, CardReceive, ClockCircle, Settings } from "@solar-icons/react";
 
 export type BottomNavTab = "home" | "send" | "receive" | "history" | "settings";

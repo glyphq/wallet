@@ -1,5 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, type CSSProperties, type ReactNode } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import { useHeaderSlot } from "./header-slot";
 
 export interface AppShellProps {

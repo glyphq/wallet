@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
 import { Identicon } from "@/components/identicon";

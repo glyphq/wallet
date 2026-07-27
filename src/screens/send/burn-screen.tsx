@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import { Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";

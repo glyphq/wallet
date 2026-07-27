@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/button";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
