@@ -3,6 +3,7 @@ mod biometric;
 mod clipboard;
 mod commands;
 mod deep_link;
+pub mod link_broker;
 mod store_crypto;
 mod vault_crypto;
 mod session_crypto;
