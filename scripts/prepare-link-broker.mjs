@@ -52,10 +52,14 @@ if (target === "universal-apple-darwin") {
   const x64 = buildBroker("x86_64-apple-darwin");
   copyFileSync(arm64, join(destinationDir, "glyph-link-broker-aarch64-apple-darwin"));
   copyFileSync(x64, join(destinationDir, "glyph-link-broker-x86_64-apple-darwin"));
-  execFileSync("lipo", ["-create", arm64, x64, "-output", destination], {
+  const universalTargetDir = join(targetRoot, target, profile);
+  const universalTargetBinary = join(universalTargetDir, "glyph-link-broker");
+  mkdirSync(universalTargetDir, { recursive: true });
+  execFileSync("lipo", ["-create", arm64, x64, "-output", universalTargetBinary], {
     cwd: repoRoot,
     stdio: "inherit",
   });
+  copyFileSync(universalTargetBinary, destination);
 } else {
   const explicitTarget =
     process.env.TAURI_ENV_TARGET_TRIPLE || process.env.CARGO_BUILD_TARGET ? target : null;
