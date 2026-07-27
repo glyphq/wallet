@@ -5,12 +5,13 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   containerStyle?: CSSProperties;
   labelStyle?: CSSProperties;
+  leftElement?: ReactNode;
   rightElement?: ReactNode;
   technical?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, rightElement, technical = false, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, ...props },
   ref,
 ) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
@@ -29,16 +30,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       data-error={error ? "true" : undefined}
       aria-invalid={error ? "true" : undefined}
       aria-describedby={error && errorId ? errorId : undefined}
+      data-has-leading={leftElement ? "true" : undefined}
       style={{
         background: "var(--color-bg-input)",
         borderRadius: "var(--radius-control)",
-        padding: rightElement ? "var(--space-3) 40px var(--space-3) var(--space-4)" : "var(--space-3) var(--space-4)",
+        paddingTop: "var(--space-3)",
+        paddingRight: rightElement ? 52 : "var(--space-4)",
+        paddingBottom: "var(--space-3)",
+        paddingLeft: leftElement ? 48 : "var(--space-4)",
         fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: technical ? "var(--text-mono-lg)" : "var(--text-body)",
+        fontSize: technical ? "0.875rem" : "0.9375rem",
+        fontWeight: 400,
         lineHeight: technical ? "var(--leading-compact)" : "var(--leading-body)",
         color: "var(--color-text-primary)",
         fontVariantNumeric: "tabular-nums",
-        letterSpacing: technical ? "0.01em" : 0,
+        letterSpacing: technical ? "0.015em" : "-0.005em",
         width: "100%",
         ...style,
       }}
@@ -62,12 +68,34 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {label}
         </label>
       )}
-      {rightElement ? (
-        <div style={{ position: "relative" }}>
+      {leftElement || rightElement ? (
+        <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
+          {leftElement ? (
+            <div
+              className="glyph-field-icon"
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "var(--space-4)",
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-text-tertiary)",
+                pointerEvents: "none",
+                zIndex: 1,
+              }}
+            >
+              {leftElement}
+            </div>
+          ) : null}
           {inputEl}
-          <div style={{ position: "absolute", right: "var(--space-3)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
-            {rightElement}
-          </div>
+          {rightElement ? (
+            <div style={{ position: "absolute", right: "var(--space-2)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
+              {rightElement}
+            </div>
+          ) : null}
         </div>
       ) : inputEl}
       {error && (

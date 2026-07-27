@@ -172,10 +172,42 @@ a:hover {
 .glyph-input {
   min-height: var(--height-input);
   border: 1px solid var(--color-border-default);
+  caret-color: var(--color-text-primary);
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.glyph-field-icon {
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-field:focus-within .glyph-field-icon {
+  color: var(--color-text-primary) !important;
+}
+
+.glyph-field[data-error="true"] .glyph-field-icon {
+  color: var(--color-status-error) !important;
+}
+
+.glyph-input:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-disabled);
+  background: var(--color-bg-inset);
+}
+
+.glyph-input:-webkit-autofill,
+.glyph-input:-webkit-autofill:hover,
+.glyph-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text-primary);
+  box-shadow: 0 0 0 1000px var(--color-bg-input) inset;
+  transition: background-color 9999s ease-out;
 }
 
 .glyph-input:hover:not(:disabled) {
@@ -185,18 +217,19 @@ a:hover {
 
 .glyph-input:focus {
   outline: none;
-  border-color: var(--color-focus-ring);
-  box-shadow: var(--shadow-focus);
+  border-color: var(--color-border-contrast);
+  box-shadow: none;
 }
 
 .glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 0 3px var(--color-status-error-soft);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--color-status-error) 4%, var(--color-bg-input));
 }
 
 .glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-status-error) 18%, transparent);
+  box-shadow: none;
 }
 
 .glyph-icon-btn {

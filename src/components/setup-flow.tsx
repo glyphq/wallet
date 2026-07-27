@@ -1,0 +1,272 @@
+import type { ReactNode } from "react";
+import { motion } from "motion/react";
+import { Eye, EyeClosed, LockKeyhole, ShieldCheck } from "@solar-icons/react";
+import { Button } from "@/components/button";
+import { FlowHeader } from "@/components/flow-header";
+import { Input } from "@/components/input";
+import { StepProgress } from "@/components/step-progress";
+import { stepMotion } from "@/lib/animations";
+import { passwordStrength } from "@/lib/password-strength";
+
+interface SetupFlowProps {
+  current: number;
+  total: number;
+  title: ReactNode;
+  children: ReactNode;
+  primaryLabel: string;
+  onPrimary: () => void;
+  onBack: () => void;
+  primaryDisabled?: boolean;
+  primaryLoading?: boolean;
+  secondaryActions?: ReactNode;
+  error?: string;
+}
+
+export function SetupFlow({
+  current,
+  total,
+  title,
+  children,
+  primaryLabel,
+  onPrimary,
+  onBack,
+  primaryDisabled = false,
+  primaryLoading = false,
+  secondaryActions,
+  error,
+}: SetupFlowProps) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 340,
+        margin: "0 auto",
+        height: "100%",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-6)",
+      }}
+    >
+      <StepProgress current={current} total={total} />
+      <motion.div
+        key={current}
+        {...stepMotion}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-6)",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-6)",
+            paddingRight: "var(--space-1)",
+          }}
+        >
+          <FlowHeader title={title} />
+          {children}
+          {error ? <SetupError>{error}</SetupError> : null}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
+          {secondaryActions}
+          <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
+            {primaryLabel}
+          </Button>
+          <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
+            Back
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export function SetupError({ children }: { children: ReactNode }) {
+  return (
+    <div
+      role="alert"
+      style={{
+        padding: "var(--space-3) var(--space-4)",
+        borderRadius: "var(--radius-control)",
+        background: "var(--color-status-error-soft)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-body-compact)",
+        lineHeight: "var(--leading-body)",
+        color: "var(--color-status-error)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function SeedSurface({
+  seed,
+  revealed = true,
+  copiedIndex,
+  onCopySegment,
+}: {
+  seed: string;
+  revealed?: boolean;
+  copiedIndex?: number | null;
+  onCopySegment?: (segment: string, index: number) => void;
+}) {
+  const segments = seed.match(/.{1,5}/g) ?? [seed];
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        gap: "var(--space-2)",
+      }}
+    >
+      {segments.map((segment, index) => {
+        const copied = copiedIndex === index;
+        return (
+          <button
+            key={index}
+            type="button"
+            disabled={!revealed}
+            onClick={() => onCopySegment?.(segment, index)}
+            aria-label={revealed ? `Copy seed segment ${index + 1}` : `Seed segment ${index + 1} hidden`}
+            style={{
+              minWidth: 0,
+              minHeight: 46,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "var(--space-2) var(--space-3)",
+              border: "1px solid var(--color-border-subtle)",
+              borderRadius: "var(--radius-control)",
+              background: copied ? "var(--color-bg-hover)" : "var(--color-bg-surface-2)",
+              color: "var(--color-text-primary)",
+              cursor: revealed ? "copy" : "default",
+              opacity: 1,
+              textAlign: "center",
+              transition: "background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out)",
+            }}
+          >
+            <code
+              aria-live="polite"
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                fontFamily: "var(--font-mono)",
+                fontSize: copied ? "var(--text-caption)" : "var(--text-body-compact)",
+                letterSpacing: "0.035em",
+                color: "inherit",
+              }}
+            >
+              {copied ? "copied" : revealed ? segment : "•••••"}
+            </code>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PasswordVisibilityButton({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={visible ? "Hide passwords" : "Show passwords"}
+      aria-pressed={visible}
+      style={{
+        width: 44,
+        height: 44,
+        marginRight: "calc(var(--space-3) * -1)",
+        border: 0,
+        background: "transparent",
+        color: "var(--color-text-secondary)",
+        cursor: "pointer",
+      }}
+    >
+      {visible ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+    </button>
+  );
+}
+
+export function PasswordFields({
+  password,
+  confirmPassword,
+  visible,
+  onPasswordChange,
+  onConfirmChange,
+  onToggleVisibility,
+  onSubmit,
+}: {
+  password: string;
+  confirmPassword: string;
+  visible: boolean;
+  onPasswordChange: (value: string) => void;
+  onConfirmChange: (value: string) => void;
+  onToggleVisibility: () => void;
+  onSubmit: () => void;
+}) {
+  const strength = passwordStrength(password);
+  const mismatch = confirmPassword.length > 0 && password !== confirmPassword;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <Input
+        label="Password"
+        leftElement={<LockKeyhole size={18} weight="Linear" />}
+        type={visible ? "text" : "password"}
+        value={password}
+        onChange={(event) => onPasswordChange(event.target.value)}
+        onKeyDown={(event) => event.key === "Enter" && onSubmit()}
+        placeholder="At least 10 characters"
+        autoComplete="new-password"
+        autoFocus
+        rightElement={<PasswordVisibilityButton visible={visible} onToggle={onToggleVisibility} />}
+      />
+      <Input
+        label="Confirm password"
+        leftElement={<ShieldCheck size={18} weight="Linear" />}
+        type={visible ? "text" : "password"}
+        value={confirmPassword}
+        onChange={(event) => onConfirmChange(event.target.value)}
+        onKeyDown={(event) => event.key === "Enter" && onSubmit()}
+        placeholder="Enter it again"
+        autoComplete="new-password"
+        error={mismatch ? "Passwords do not match" : undefined}
+      />
+      {password ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }} aria-label={`Password strength: ${strength.label}`}>
+          <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }} aria-hidden="true">
+            {[0, 1, 2, 3].map((index) => (
+              <span
+                key={index}
+                style={{
+                  flex: 1,
+                  height: 3,
+                  borderRadius: 999,
+                  background: index <= strength.level ? "var(--color-text-secondary)" : "var(--color-border-default)",
+                }}
+              />
+            ))}
+          </div>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+            {strength.label}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function passwordsAreValid(password: string, confirmation: string) {
+  const strength = passwordStrength(password);
+  return password.length >= 10 && strength.level >= 1 && confirmation.length > 0 && password === confirmation;
+}
