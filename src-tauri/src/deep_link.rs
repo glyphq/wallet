@@ -469,3 +469,40 @@ pub fn register_handler(app: &AppHandle) {
         }
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{validate, validate_pay};
+
+    #[test]
+    fn rejects_shell_like_deep_link_paths() {
+        let malicious_urls = [
+            "glyph://path/to/bash&MaliciousCommand",
+            "glyph://path/to/bash?cmd=MaliciousCommand",
+            "glyph:///bin/bash?cmd=MaliciousCommand",
+            "glyph://v1/bin/bash?cmd=MaliciousCommand",
+            "glyph://v1/request/bin/bash?cmd=MaliciousCommand",
+            "glyph://pay/bin/bash?cmd=MaliciousCommand",
+        ];
+
+        for url in malicious_urls {
+            assert!(validate(url).is_err(), "request parser accepted {url}");
+            assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
+        }
+    }
+
+    #[test]
+    fn rejects_encoded_path_and_authority_injection() {
+        let malicious_urls = [
+            "glyph://v1/%2e%2e/%2e%2e/bin/bash?cmd=MaliciousCommand",
+            "glyph://v1/request%2f..%2f..%2fbin%2fbash?cmd=MaliciousCommand",
+            "glyph://v1@evil.example/request?cmd=MaliciousCommand",
+            "glyph://pay@evil.example/?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        ];
+
+        for url in malicious_urls {
+            assert!(validate(url).is_err(), "request parser accepted {url}");
+            assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
+        }
+    }
+}
