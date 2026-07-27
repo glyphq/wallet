@@ -7,7 +7,7 @@ import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS, useVaultBalances } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
-import { deriveIdentityFromSeed, generateRandomSeed, isValidIdentity, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
+import { deriveIdentityFromSeed, generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault, addToVault, removeFromVault, exportVault, createVault } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
@@ -15,7 +15,7 @@ import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
 import { copyToClipboard } from "@/lib/clipboard";
 import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
-import { getAccountIdentity, isWatchOnlyVault, parseAccountTags } from "@/lib/accounts";
+import { getAccountIdentity, parseAccountTags } from "@/lib/accounts";
 import { createSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { formatQu } from "@/lib/format";
@@ -47,7 +47,6 @@ export default function VaultDetailScreen() {
   const [newlyAddedIndex, setNewlyAddedIndex] = useState<number | null>(null);
   const [addMode, setAddMode] = useState<"new" | "import">("new");
   const [addName, setAddName] = useState("");
-  const [addIdentity, setAddIdentity] = useState("");
   const [addSeed, setAddSeed] = useState("");
   const [addSeedError, setAddSeedError] = useState("");
   const [addPassword, setAddPassword] = useState("");
@@ -108,7 +107,6 @@ export default function VaultDetailScreen() {
 
   if (!vault) return null;
   const currentVault = vault;
-  const watchOnly = isWatchOnlyVault(currentVault);
 
   async function doExport() {
     if (!currentVault.encryptedData) return;
@@ -148,9 +146,8 @@ export default function VaultDetailScreen() {
   }
 
   function openAdd() {
-    setAddMode(watchOnly ? "import" : "new");
+    setAddMode("new");
     setAddName("");
-    setAddIdentity("");
     setAddSeed("");
     setAddSeedError("");
     setAddPassword("");
@@ -162,27 +159,6 @@ export default function VaultDetailScreen() {
     if (!addName.trim()) return;
     setAddSeedError("");
     setAddError("");
-
-    if (watchOnly) {
-      const identity = addIdentity.trim().toUpperCase();
-      if (!isValidIdentity(identity)) {
-        setAddError("Invalid identity");
-        return;
-      }
-        const newAccount: AccountMeta = {
-        index: currentVault.accounts.length,
-        name: addName.trim(),
-        addedAt: Date.now(),
-        hidden: false,
-        identity,
-        note: "",
-        tags: parseAccountTags("watch-only"),
-      };
-      updateVault(currentVault.id, { accounts: [...currentVault.accounts, newAccount] });
-      setNewlyAddedIndex(currentVault.accounts.length);
-      setAddingAccount(false);
-      return;
-    }
 
     let seedToAdd: Seed | null = null;
     if (addMode === "import") {
@@ -275,22 +251,6 @@ export default function VaultDetailScreen() {
     setRemoveLoading(true);
     setRemoveError("");
     try {
-      if (watchOnly) {
-        const updatedAccounts = currentVault.accounts
-          .filter((a) => a.index !== removingAccount.index)
-          .map((a) => ({ ...a, index: a.index > removingAccount.index ? a.index - 1 : a.index }));
-        updateVault(currentVault.id, { accounts: updatedAccounts });
-        if (isActive) {
-          const activeIdx = settings.activeAccountIndex;
-          if (removingAccount.index === activeIdx) {
-            setActiveAccountIndex(0);
-          } else if (removingAccount.index < activeIdx) {
-            setActiveAccountIndex(activeIdx - 1);
-          }
-        }
-        setRemovingAccount(null);
-        return;
-      }
       const newEncrypted = await removeFromVault(currentVault.encryptedData!, removePassword, removingAccount.index);
       const updatedAccounts = currentVault.accounts
         .filter((a) => a.index !== removingAccount.index)
@@ -351,7 +311,6 @@ export default function VaultDetailScreen() {
 
   async function doRevealSeed() {
     if (!revealingAccount) return;
-    if (watchOnly) return;
     setRevealLoading(true);
     setRevealError("");
     try {
@@ -473,16 +432,12 @@ export default function VaultDetailScreen() {
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/vaults/${currentVault.id}/portfolio`)}>
           <InfoCircle size={14} weight="Linear" /> Portfolio
         </Button>
-        {!watchOnly && (
-          <>
-            <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => setShowExport(true)}>
-              <DocumentText size={14} weight="Linear" /> Export vault
-            </Button>
-            <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
-              <Key size={14} weight="Linear" /> Change password
-            </Button>
-          </>
-        )}
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => setShowExport(true)}>
+          <DocumentText size={14} weight="Linear" /> Export vault
+        </Button>
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
+          <Key size={14} weight="Linear" /> Change password
+        </Button>
       </div>
 
       <Sheet open={showExport} onClose={() => setShowExport(false)} title={`Export ${currentVault.name}`}>
@@ -495,10 +450,9 @@ export default function VaultDetailScreen() {
       </Sheet>
 
       {/* Add account sheet */}
-      <Sheet open={addingAccount} onClose={() => setAddingAccount(false)} title={watchOnly ? "Add watch-only account" : "Add account"}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          {!watchOnly && (
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+      <Sheet open={addingAccount} onClose={() => setAddingAccount(false)} title="Add account">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               {(["new", "import"] as const).map((mode, i) => (
                 <div key={mode} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   {i > 0 && <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>/</span>}
@@ -511,8 +465,7 @@ export default function VaultDetailScreen() {
                   </button>
                 </div>
               ))}
-            </div>
-          )}
+          </div>
           <div>
             <Input label="Account name" value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. DeFi, Staking" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
             {(() => {
@@ -538,17 +491,7 @@ export default function VaultDetailScreen() {
               );
             })()}
           </div>
-          {watchOnly && (
-            <Input
-              label="Identity"
-              value={addIdentity}
-              onChange={(e) => { setAddIdentity(e.target.value); setAddError(""); }}
-              error={addError}
-              placeholder="Qubic identity"
-              autoComplete="off"
-            />
-          )}
-          {!watchOnly && addMode === "import" && (
+          {addMode === "import" && (
             <Input
               label="Seed (55 lowercase letters)"
               type="password"
@@ -559,10 +502,8 @@ export default function VaultDetailScreen() {
               autoComplete="off"
             />
           )}
-          {!watchOnly && (
-            <Input type="password" label="Vault password" value={addPassword} onChange={(e) => { setAddPassword(e.target.value); setAddError(""); }} onKeyDown={(e) => e.key === "Enter" && !addLoading && doAdd()} error={addError} placeholder="••••••••••" autoComplete="current-password" />
-          )}
-          <Button onClick={doAdd} loading={addLoading} disabled={!addName.trim() || (!watchOnly && !addPassword) || (!watchOnly && addMode === "import" && !addSeed.trim()) || (watchOnly && !addIdentity.trim())}>Add account</Button>
+          <Input type="password" label="Vault password" value={addPassword} onChange={(e) => { setAddPassword(e.target.value); setAddError(""); }} onKeyDown={(e) => e.key === "Enter" && !addLoading && doAdd()} error={addError} placeholder="••••••••••" autoComplete="current-password" />
+          <Button onClick={doAdd} loading={addLoading} disabled={!addName.trim() || !addPassword || (addMode === "import" && !addSeed.trim())}>Add account</Button>
           <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setAddingAccount(false)}>Cancel</Button>
         </div>
       </Sheet>
@@ -623,10 +564,8 @@ export default function VaultDetailScreen() {
       <Sheet open={!!removingAccount} onClose={() => setRemovingAccount(null)} title={removingAccount ? `Remove ${removingAccount.name}?` : "Remove account"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>This cannot be undone.</div>
-          {!watchOnly && (
-            <Input type="password" label="Vault password" value={removePassword} onChange={(e) => { setRemovePassword(e.target.value); setRemoveError(""); }} onKeyDown={(e) => e.key === "Enter" && doRemove()} error={removeError} placeholder="••••••••••" autoComplete="current-password" autoFocus />
-          )}
-          <Button variant="danger" shape="sharp" onClick={doRemove} loading={removeLoading} disabled={!watchOnly && !removePassword}>Remove account</Button>
+          <Input type="password" label="Vault password" value={removePassword} onChange={(e) => { setRemovePassword(e.target.value); setRemoveError(""); }} onKeyDown={(e) => e.key === "Enter" && doRemove()} error={removeError} placeholder="••••••••••" autoComplete="current-password" autoFocus />
+          <Button variant="danger" shape="sharp" onClick={doRemove} loading={removeLoading} disabled={!removePassword}>Remove account</Button>
         </div>
       </Sheet>
 
@@ -784,22 +723,18 @@ export default function VaultDetailScreen() {
               }}
             />
 
-            {!watchOnly && (
-              <>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                  Security
-                </div>
-                <ActionCard
-                  title="Reveal seed"
-                  description="Decrypt and display this account seed for a limited time."
-                  icon={Key}
-                  onClick={() => {
-                    openReveal(selectedAccount);
-                    closeAccountMenu();
-                  }}
-                />
-              </>
-            )}
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+              Security
+            </div>
+            <ActionCard
+              title="Reveal seed"
+              description="Decrypt and display this account seed for a limited time."
+              icon={Key}
+              onClick={() => {
+                openReveal(selectedAccount);
+                closeAccountMenu();
+              }}
+            />
 
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Visibility

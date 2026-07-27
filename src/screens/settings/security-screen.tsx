@@ -11,7 +11,6 @@ import { SettingsSwitch } from "@/components/settings-switch";
 import { usePersistedStore } from "@/store/persisted";
 import { unlockVault } from "@/lib/vault";
 import { extractMessage } from "@/lib/format";
-import { isWatchOnlyVault } from "@/lib/accounts";
 
 const TIMEOUT_OPTIONS = [
   { label: "1m", value: 1 }, { label: "5m", value: 5 }, { label: "15m", value: 15 },
@@ -33,7 +32,6 @@ export default function SecurityScreen() {
     requirePasswordForBurn, requireBiometricForSeedReveal } = settings;
   const biometricVaultIds = settings.biometricVaultIds ?? [];
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
-  const watchOnly = isWatchOnlyVault(vault);
   const bioEnabled = vault ? biometricVaultIds.includes(vault.id) : false;
 
   const [bioAvailable, setBioAvailable] = useState<boolean | null>(null);
@@ -175,7 +173,7 @@ export default function SecurityScreen() {
         </div>
 
         {/* Biometric setup — only card, only when relevant */}
-        {!watchOnly && bioAvailable && vault && (
+        {bioAvailable && vault && (
           <div style={{
             background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
             padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)",

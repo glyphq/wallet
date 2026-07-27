@@ -29,7 +29,7 @@ import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1F
 import { truncateId, formatQu, extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
-import { getVaultAccountIdentity, isWatchOnlyVault } from "@/lib/accounts";
+import { getVaultAccountIdentity } from "@/lib/accounts";
 import { parseRecipientImport } from "@/lib/recipient-import";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 
@@ -71,7 +71,6 @@ export default function SendManyScreen() {
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
-  const watchOnly = isWatchOnlyVault(vault);
   const rpcIdentity = useRpcCacheIdentity("live");
   const { data: feeData } = useQuery({
     queryKey: qk.qutilSendManyFee(rpcIdentity),
@@ -131,7 +130,7 @@ export default function SendManyScreen() {
 
   function validateAll(): boolean {
     let ok = true;
-    if (!wallet) { setFormError(watchOnly ? "Watch-only account" : "Account locked"); return false; }
+    if (!wallet) { setFormError("Account locked"); return false; }
     const updated = recipients.map((r) => {
       const identityError = isValidIdentity(r.identity.trim().toUpperCase()) ? "" : "Invalid identity";
       const amount = Number(r.amount.trim());
@@ -397,9 +396,6 @@ export default function SendManyScreen() {
           )}
         </div>
 
-        {watchOnly && (
-          <span style={{ ...labelStyle, color: "var(--color-status-warning)", textAlign: "center" }}>Watch-only account — send to many is disabled</span>
-        )}
         {formError && (
           <span style={{ ...labelStyle, color: "var(--color-status-error)", textAlign: "center" }}>{formError}</span>
         )}
@@ -408,7 +404,7 @@ export default function SendManyScreen() {
 
         {/* Actions */}
         <div style={{ paddingBottom: "var(--space-6)" }}>
-          <Button onClick={goReview} disabled={recipients.length === 0 || !wallet || watchOnly}>
+          <Button onClick={goReview} disabled={recipients.length === 0 || !wallet}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
               Review <ArrowRightUp size={16} weight="Bold" />
             </span>

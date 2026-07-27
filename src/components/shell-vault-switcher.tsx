@@ -8,7 +8,6 @@ import { usePersistedStore, type VaultMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
-import { isWatchOnlyVault } from "@/lib/accounts";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { Settings, AltArrowRight } from "@solar-icons/react";
 
@@ -41,31 +40,9 @@ export function ShellVaultSwitcher() {
     setError("");
   }
 
-  function activateWatchOnlyVault(vault: VaultMeta) {
-    unlock(vault.id, [], {
-      watchOnly: true,
-      identities: vault.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
-    });
-    setActiveVault(vault.id);
-    touchVaultUnlocked(vault.id);
-    recordAuditEvent({
-      kind: "unlock_succeeded",
-      status: "success",
-      title: "Wallet switched",
-      detail: vault.name,
-      vaultId: vault.id,
-    });
-    close();
-    navigate("/dashboard", { replace: true });
-  }
-
   function selectVault(vault: VaultMeta) {
     if (vault.id === activeVault.id) {
       close();
-      return;
-    }
-    if (isWatchOnlyVault(vault)) {
-      activateWatchOnlyVault(vault);
       return;
     }
     setSwitchingVault(vault);
@@ -229,7 +206,7 @@ export function ShellVaultSwitcher() {
                       {vault.name}
                     </span>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-                      {isActive ? "Current wallet" : isWatchOnlyVault(vault) ? "Watch-only" : "Password required"}
+                      {isActive ? "Current wallet" : "Password required"}
                     </span>
                   </div>
                 </button>

@@ -2,7 +2,6 @@ import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
-import { Tag } from "@/components/tag";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useVaultBalances } from "@/hooks/use-vault-balances";
@@ -89,9 +88,6 @@ export default function PortfolioScreen() {
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
             ≈ ${formatUsdFromQu(totalBalance, stats.price)} USD
           </span>
-        )}
-        {vault.kind === "watch_only" && (
-          <Tag variant="neutral" style={{ alignSelf: "flex-start", marginTop: "var(--space-1)" }}>Watch only</Tag>
         )}
       </div>
 

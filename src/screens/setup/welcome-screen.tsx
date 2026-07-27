@@ -5,7 +5,6 @@ import {
   DangerTriangle,
   Document,
   DownloadMinimalistic,
-  Eye,
   Wallet,
 } from "@solar-icons/react";
 import { presets } from "@/lib/animations";
@@ -15,11 +14,9 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
-import { Textarea } from "@/components/textarea";
 import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
-import { parseAccountTags } from "@/lib/accounts";
-import { isValidIdentity, newId } from "@/lib/crypto";
+import { newId } from "@/lib/crypto";
 import { parseSignedExportEnvelope } from "@/lib/export-format";
 import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -119,33 +116,6 @@ export default function WelcomeScreen() {
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [importWalletIcon, setImportWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
   const [importWalletColor, setImportWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
-  const [watchOpen, setWatchOpen] = useState(false);
-  const [watchName, setWatchName] = useState("");
-  const [watchInput, setWatchInput] = useState("");
-  const [watchError, setWatchError] = useState("");
-  const [watchWalletIcon, setWatchWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
-  const [watchWalletColor, setWatchWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
-
-  function parseWatchOnlyAccounts(raw: string): AccountMeta[] {
-    return raw
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line, index) => {
-        const [identityPart, ...labelParts] = line.split(",");
-        const identity = identityPart?.trim().toUpperCase() ?? "";
-        const label = labelParts.join(",").trim();
-        return {
-          index,
-          name: label || `Account ${index + 1}`,
-          addedAt: Date.now(),
-          hidden: false,
-          identity,
-          note: "",
-          tags: parseAccountTags("watch-only"),
-        };
-      });
-  }
 
   function openFilePicker() {
     setImportFileError("");
@@ -254,42 +224,6 @@ export default function WelcomeScreen() {
     }
   }
 
-  function createWatchOnlyVault() {
-    const name = watchName.trim();
-    if (!name) {
-      setWatchError("Please enter a wallet name");
-      return;
-    }
-    const accounts = parseWatchOnlyAccounts(watchInput);
-    if (accounts.length === 0) {
-      setWatchError("Add at least one identity");
-      return;
-    }
-    if (accounts.some((account) => !account.identity || !isValidIdentity(account.identity))) {
-      setWatchError("One or more identities are invalid. Check the format and try again.");
-      return;
-    }
-
-    const newVaultId = newId();
-    addVault({
-      id: newVaultId,
-      name,
-      color: watchWalletColor,
-      icon: watchWalletIcon,
-      kind: "watch_only",
-      createdAt: Date.now(),
-      lastUnlockedAt: Date.now(),
-      accounts,
-      encryptedData: null,
-    });
-    setActiveVault(newVaultId);
-    unlock(newVaultId, [], {
-      watchOnly: true,
-      identities: accounts.map((account) => account.identity!).filter(Boolean),
-    });
-    navigate("/dashboard", { replace: true });
-  }
-
   const importNeedsSelection = importData !== null && importData.accounts.length > MAX_VAULT_ACCOUNTS;
   const importDisabled = !importPw || importLoading || (importNeedsSelection && selectedIndices.size === 0);
 
@@ -340,10 +274,6 @@ export default function WelcomeScreen() {
           <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setWatchOpen(true)}>
-              <Eye size={16} weight="Linear" />
-              Create watch-only wallet
-            </Button>
             <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
               <Document size={16} weight="Outline" />
               Import wallet file
@@ -498,49 +428,7 @@ export default function WelcomeScreen() {
         </div>
       </Sheet>
 
-      <Sheet open={watchOpen} onClose={() => setWatchOpen(false)} title="Create watch-only wallet">
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <FlowHeader
-            eyebrow="Watch only"
-            title="Create a read-only wallet"
-            description="Add one identity per line. You can include an optional label after a comma."
-          />
 
-          <Input
-            label="Wallet name"
-            value={watchName}
-            onChange={(event) => {
-              setWatchName(event.target.value);
-              setWatchError("");
-            }}
-            placeholder="Treasury, validators, cold wallet"
-            autoFocus
-          />
-
-          <WalletAppearancePicker
-            icon={watchWalletIcon}
-            color={watchWalletColor}
-            onIconChange={setWatchWalletIcon}
-            onColorChange={setWatchWalletColor}
-          />
-
-          <Textarea
-            label="Identities"
-            technical
-            rows={6}
-            value={watchInput}
-            onChange={(event) => {
-              setWatchInput(event.target.value);
-              setWatchError("");
-            }}
-            placeholder={"IDENTITYONE..., Main\nIDENTITYTWO..., Cold staking"}
-            hint="Each line becomes an account. Labels are optional."
-            error={watchError}
-          />
-
-          <Button onClick={createWatchOnlyVault}>Create watch-only wallet</Button>
-        </div>
-      </Sheet>
     </FullPage>
   );
 }

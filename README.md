@@ -49,7 +49,7 @@ Keys stay encrypted on disk. Signing material lives only in Rust process memory 
 **Desktop**
 - System tray with hide-to-tray
 - Desktop notifications with inbox, per-type filters, and price/balance alerts
-- Multiple vaults with color coding, watch-only support
+- Multiple seeded vaults with color coding
 - Themes, font pairs, accent colors
 
 **Design**

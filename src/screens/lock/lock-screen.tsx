@@ -11,7 +11,6 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { Identicon } from "@/components/identicon";
-import { isWatchOnlyVault } from "@/lib/accounts";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage, timeAgo } from "@/lib/format";
 import { restoreSessionWalletsFromIdentities, unlockSecureSession } from "@/lib/secure-session";
@@ -147,7 +146,6 @@ export default function LockScreen() {
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
   const lockedVaults = vaults
-    .filter((vault) => !isWatchOnlyVault(vault))
     .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   useEffect(() => {
     if (vaults.length > 0 && lockedVaults.length === 0) {
@@ -157,7 +155,6 @@ export default function LockScreen() {
 
   const [selectedId, setSelectedId] = useState<string>(() => lockedVaults[0]?.id ?? "");
   const selected = lockedVaults.find((vault) => vault.id === selectedId) ?? lockedVaults[0];
-  const watchOnly = selected ? isWatchOnlyVault(selected) : false;
   const biometricEnabled = selected ? (settings.biometricVaultIds ?? []).includes(selected.id) : false;
 
   const [error, setError] = useState("");
@@ -243,16 +240,6 @@ export default function LockScreen() {
 
   async function onSubmit({ password }: FormValues) {
     if (!selected || lockoutSecsLeft > 0) return;
-    if (watchOnly) {
-      unlock(selected.id, [], {
-        watchOnly: true,
-        identities: selected.accounts.map((account) => account.identity).filter((identity): identity is string => !!identity),
-      });
-      setActiveVault(selected.id);
-      touchVaultUnlocked(selected.id);
-      navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -457,13 +444,7 @@ export default function LockScreen() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", marginTop: "auto" }}>
-              {watchOnly ? (
-                <Button onClick={() => onSubmit({ password: "" })}>
-                  <LockKeyhole size={16} weight="Linear" aria-hidden="true" />
-                  Open wallet
-                </Button>
-              ) : (
-                <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   <div key={shakeKey} className={error ? "lock-shake" : undefined}>
                     <Input
                       {...register("password")}
@@ -500,16 +481,15 @@ export default function LockScreen() {
                     {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
                   </Button>
                 </form>
-              )}
 
-              {!watchOnly && biometricEnabled && bioFailures < 3 ? (
+              {biometricEnabled && bioFailures < 3 ? (
                 <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBiometric} disabled={loading}>
                   <LockKeyhole size={14} weight="Linear" />
                   {isLinux ? "Quick unlock" : "Use biometrics"}
                 </Button>
               ) : null}
 
-              {!watchOnly && biometricEnabled && bioFailures >= 3 ? (
+              {biometricEnabled && bioFailures >= 3 ? (
                 <p
                   style={{
                     margin: 0,
