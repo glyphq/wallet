@@ -181,7 +181,7 @@ gh workflow run release.yml --ref "$RELEASE_REF" --field "tag=${RELEASE_TAG}"
 
 `.github/workflows/release.yml` accepts one required input, an existing tag, plus an optional `allow_unsigned_native` emergency override that defaults to `false`. Its concurrency group is per tag and in-progress runs are not cancelled.
 
-The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the tag for all release work.
+The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the immutable tag for application builds. Release-only automation that may need to repair an older tagged release, such as the immutable draft-asset uploader, is checked out separately from the exact reviewed workflow commit (`github.sha`) into `.release-automation`; it does not change the tagged application source being built.
 
 ### Prepare the draft
 

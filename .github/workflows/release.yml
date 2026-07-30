@@ -132,6 +132,15 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
+      - name: Check out reviewed release automation
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-automation
+          persist-credentials: false
+          sparse-checkout: scripts/upload-release-assets.mjs
+          sparse-checkout-cone-mode: false
+
       - name: Preload authenticated pinned AppImage tools
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -300,7 +309,7 @@ jobs:
           mapfile -t assets < <(find src-tauri/target/release/bundle/{appimage,deb,rpm} \
             -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.AppImage.sig' -o -name '*.deb' -o -name '*.rpm' \) | sort)
           [[ ${#assets[@]} -eq 4 ]]
-          node scripts/upload-release-assets.mjs "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-linux.txt
+          node .release-automation/scripts/upload-release-assets.mjs "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-linux.txt
 
   release-macos:
     name: Build macOS bundles
@@ -315,6 +324,15 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ inputs.tag }}
+
+      - name: Check out reviewed release automation
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-automation
+          persist-credentials: false
+          sparse-checkout: scripts/upload-release-assets.mjs
+          sparse-checkout-cone-mode: false
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
@@ -454,7 +472,7 @@ jobs:
           bundle_root="src-tauri/target/universal-apple-darwin/release/bundle"
           assets=("$bundle_root"/macos/*.app.tar.gz "$bundle_root"/macos/*.app.tar.gz.sig "$bundle_root"/dmg/*.dmg)
           [[ ${#assets[@]} -eq 3 ]]
-          node scripts/upload-release-assets.mjs "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-macos.txt
+          node .release-automation/scripts/upload-release-assets.mjs "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-macos.txt
 
   release-windows:
     name: Build Windows bundle
@@ -469,6 +487,15 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ inputs.tag }}
+
+      - name: Check out reviewed release automation
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-automation
+          persist-credentials: false
+          sparse-checkout: scripts/upload-release-assets.mjs
+          sparse-checkout-cone-mode: false
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
@@ -595,7 +622,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.exe" | Select-Object -First 1
-          node scripts/upload-release-assets.mjs $env:RELEASE_TAG $installer.FullName "$($installer.FullName).sig" SHA256SUMS-windows.txt
+          node .release-automation/scripts/upload-release-assets.mjs $env:RELEASE_TAG $installer.FullName "$($installer.FullName).sig" SHA256SUMS-windows.txt
 
   create-manifest:
     name: Create updater manifest
@@ -610,6 +637,15 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ inputs.tag }}
+
+      - name: Check out reviewed release automation
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-automation
+          persist-credentials: false
+          sparse-checkout: scripts/upload-release-assets.mjs
+          sparse-checkout-cone-mode: false
 
       - name: Generate updater manifest
         env:
@@ -630,7 +666,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
           UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
-        run: node scripts/upload-release-assets.mjs "$RELEASE_TAG" "$UPDATER_MANIFEST"
+        run: node .release-automation/scripts/upload-release-assets.mjs "$RELEASE_TAG" "$UPDATER_MANIFEST"
 
   publish-release:
     name: Validate and publish release
