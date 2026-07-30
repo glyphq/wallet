@@ -252,11 +252,11 @@ mod platform {
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod platform {
     pub fn available() -> bool {
-        true
+        false
     }
 
     pub fn authenticate(_reason: &str) -> Result<(), String> {
-        Ok(())
+        Err("biometric authentication is not supported on this platform".to_string())
     }
 }
 

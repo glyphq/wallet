@@ -64,7 +64,9 @@ export function encodeCallbackResult(body: string) {
 }
 
 export function buildRedirectUrl(redirectUri: string, callbackBody: string) {
-  return `${redirectUri}?result=${encodeCallbackResult(callbackBody)}`;
+  const url = new URL(redirectUri);
+  url.searchParams.set("result", encodeCallbackResult(callbackBody));
+  return url.toString();
 }
 
 export async function deliverRequestResult(

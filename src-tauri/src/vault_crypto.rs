@@ -8,6 +8,7 @@ use tauri::command;
 const VAULT_VERSION: u32 = 1;
 const PBKDF2_ITERATIONS: u32 = 600_000;
 const MIN_PBKDF2_ITERATIONS: u32 = 100_000;
+const MAX_PBKDF2_ITERATIONS: u32 = 2_000_000;
 const SALT_BYTES: usize = 32;
 const IV_BYTES: usize = 12;
 
@@ -71,6 +72,9 @@ pub fn decrypt_vault_data(vault_data: &VaultData, password: &str) -> Result<Vec<
     if vault_data.iterations < MIN_PBKDF2_ITERATIONS {
         return Err(format!("vault iteration count too low: {}", vault_data.iterations));
     }
+    if vault_data.iterations > MAX_PBKDF2_ITERATIONS {
+        return Err("vault iteration count exceeds the supported maximum".to_string());
+    }
 
     let key = derive_key(password, &salt, vault_data.iterations);
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&key));
@@ -95,4 +99,24 @@ pub async fn decrypt_vault(vault_data: VaultData, password: String) -> Result<Ve
     tokio::task::spawn_blocking(move || decrypt_vault_data(&vault_data, &password))
         .await
         .map_err(|e| e.to_string())?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{decrypt_vault_data, VaultData, MAX_PBKDF2_ITERATIONS};
+
+    #[test]
+    fn rejects_excessive_iteration_counts_before_derivation() {
+        let vault = VaultData {
+            version: 1,
+            iterations: MAX_PBKDF2_ITERATIONS + 1,
+            salt: "00".repeat(32),
+            iv: "00".repeat(12),
+            ciphertext: "00".repeat(16),
+        };
+        assert_eq!(
+            decrypt_vault_data(&vault, "password").unwrap_err(),
+            "vault iteration count exceeds the supported maximum"
+        );
+    }
 }

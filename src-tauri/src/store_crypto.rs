@@ -41,7 +41,6 @@ fn load_store_key_file() -> Result<Option<String>, String> {
     }
 }
 
-#[cfg(target_os = "windows")]
 fn delete_store_key_file() -> Result<(), String> {
     let path = store_key_path()?;
     match std::fs::remove_file(path) {
@@ -56,16 +55,30 @@ fn store_key_file(secret: &str) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "invalid store key path".to_string())?;
-    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    std::fs::write(&path, secret).map_err(|e| e.to_string())?;
-
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
-        let perms = std::fs::Permissions::from_mode(0o600);
-        if let Err(e) = std::fs::set_permissions(&path, perms) {
-            eprintln!("[glyph] warning: could not restrict store-key file permissions (file may be world-readable): {e}");
-        }
+        use std::io::Write;
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))
+            .map_err(|e| format!("failed to secure store-key directory: {e}"))?;
+        let temp = path.with_extension(format!("tmp-{}", std::process::id()));
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&temp)
+            .map_err(|e| format!("failed to create store-key file securely: {e}"))?;
+        file.write_all(secret.as_bytes()).map_err(|e| e.to_string())?;
+        file.sync_all().map_err(|e| e.to_string())?;
+        std::fs::rename(&temp, &path).map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(not(unix))]
+    {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        std::fs::write(&path, secret).map_err(|e| e.to_string())?;
     }
 
     Ok(())
@@ -200,10 +213,9 @@ fn migrate_file_key_to_secure_store(encoded: &str) -> Result<Key<Aes256Gcm>, Str
     let key = decode_store_key(encoded, "stored metadata key file")?;
     match secret_store::store(STORE_KEY_TARGET, encoded) {
         Ok(()) => {
-            // Keep the file — on Linux the keyring backend may be in-memory only
-            // (no features enabled = mock backend) or session-scoped, so the file
-            // is the only guaranteed persistent copy.
-            #[cfg(target_os = "windows")]
+            #[cfg(target_os = "linux")]
+            store_key_file(encoded)?;
+            #[cfg(not(target_os = "linux"))]
             let _ = delete_store_key_file();
         }
         Err(err) => {
@@ -227,13 +239,6 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
     #[cfg(not(target_os = "windows"))]
     let secure_store_available = match secret_store::load_optional(STORE_KEY_TARGET) {
         Ok(Some(encoded)) => {
-            // Ensure file backup exists — the keyring may be volatile (mock backend,
-            // session keyring, or secret-service daemon not persistent across reboots).
-            if matches!(load_store_key_file(), Ok(None)) {
-                if let Err(e) = store_key_file(&encoded) {
-                    eprintln!("[glyph] warning: could not write store-key file backup: {e}");
-                }
-            }
             return decode_store_key(&encoded, "stored metadata key");
         }
         Ok(None) => true,
@@ -281,13 +286,10 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
 
     match secret_store::store(STORE_KEY_TARGET, &encoded) {
         Ok(()) => {
-            // On Windows the credential store is reliably persistent; clean up any leftover file.
-            // On Linux/macOS the keyring backend may be in-memory or session-scoped when no
-            // features are enabled, so always write the file as the authoritative backup.
-            #[cfg(target_os = "windows")]
-            let _ = delete_store_key_file();
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(target_os = "linux")]
             store_key_file(&encoded)?;
+            #[cfg(not(target_os = "linux"))]
+            let _ = delete_store_key_file();
         }
         Err(err) => {
             eprintln!(

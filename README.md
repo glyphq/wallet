@@ -7,20 +7,20 @@
 
 **Self-custodial Qubic desktop wallet**
 
-[![Release](https://img.shields.io/github/v/release/glyph-ecosystem/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-ecosystem/wallet/releases/latest)
-[![CI](https://img.shields.io/github/actions/workflow/status/glyph-ecosystem/wallet/changeset.yml?style=flat-square&label=build&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-ecosystem/wallet/actions)
+[![Release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/glyphq/wallet/changeset.yml?style=flat-square&label=build&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/actions)
 [![License](https://img.shields.io/badge/license-MIT-0d0d0d?style=flat-square&labelColor=1a1a1a)](./LICENSE)
 [![Discord](https://img.shields.io/badge/discord-join-0d0d0d?style=flat-square&labelColor=1a1a1a)](https://discord.gg/s5qNRNGu96)
 
 Windows · macOS (Universal) · Linux (AppImage · .deb · .rpm)
 
-[**Download**](https://github.com/glyph-ecosystem/wallet/releases/latest) · [Website](https://wallet.glyphq.org) · [Discord](https://discord.gg/s5qNRNGu96)
+[**Download**](https://github.com/glyphq/wallet/releases/latest) · [Website](https://wallet.glyphq.org) · [Discord](https://discord.gg/s5qNRNGu96)
 
 </div>
 
 ---
 
-Keys stay encrypted on disk. Signing material lives only in Rust process memory and is wiped immediately on lock. No Glyph backend, no key escrow, no browser extension surface.
+Keys stay encrypted on disk. Unlocked seed material is retained in native process memory and cleared synchronously by native lock paths. The current signing bridge creates a short-lived renderer worker copy during signing, which is zeroed after use. No Glyph backend or key escrow is involved.
 
 ## Features
 
@@ -32,10 +32,10 @@ Keys stay encrypted on disk. Signing material lives only in Rust process memory 
 - Global search across accounts, contacts, tx hashes, and memos
 
 **Security**
-- AES-256-GCM encrypted vaults with Argon2 KDF
+- AES-256-GCM encrypted vaults with PBKDF2-HMAC-SHA256
 - Auto-lock on idle, sleep, or window blur
 - Clipboard auto-clear; immediate wipe on lock
-- Biometric unlock — Windows Hello, macOS Touch ID, Linux secret store
+- Biometric unlock — Windows Hello and macOS Touch ID; unsupported platforms fail closed
 - Local audit log of every signing event
 - Signed update payload verification
 
@@ -61,16 +61,16 @@ Keys stay encrypted on disk. Signing material lives only in Rust process memory 
 
 ## Security Model
 
-Vault data is encrypted before hitting disk. Unlocked keys never leave the Rust process.
+Vault data is encrypted before hitting disk. Long-lived unlocked seeds remain in native memory. Signing currently uses a one-shot worker copy while native signing support is being completed.
 
 ```mermaid
 flowchart LR
-    seed([Seed / private key]) -->|AES-256-GCM · Argon2| vault[(Encrypted vault on disk)]
+    seed([Seed / private key]) -->|AES-256-GCM · PBKDF2-HMAC-SHA256| vault[(Encrypted vault on disk)]
     vault -->|Password unlock| session[/Volatile session keys/]
     session -->|Lock event| wiped([Cleared from memory])
 ```
 
-Sensitive operations are isolated to the Rust layer — the renderer only sends signing requests and receives back signed transactions.
+Vault encryption, decryption, session retention, callback delivery, and lock enforcement are native. Transaction signing currently runs in an isolated short-lived renderer worker.
 
 On Windows and Linux, operating-system `glyph://` launches first pass through a
 minimal broker process. The broker accepts only one bounded URL argument, rejects
@@ -138,7 +138,7 @@ The canonical patcher then installs AppStream metadata into the final AppImage
 before validation.
 
 ```sh
-git clone https://github.com/glyph-ecosystem/wallet
+git clone https://github.com/glyphq/wallet
 cd wallet
 bun install
 bun tauri dev        # dev server
@@ -151,6 +151,9 @@ bun run typecheck
 bun run test
 cargo check --manifest-path src-tauri/Cargo.toml --locked
 bun run release:check
+cargo install cargo-audit --version 0.22.2 --locked
+bun audit --audit-level=high
+(cd src-tauri && cargo audit)
 ```
 
 ### Linux runtime notes
@@ -161,10 +164,9 @@ bun run release:check
   deliberately using the host's GL/EGL drivers for graphics compatibility.
 - The main window does not depend on the system tray. On GNOME, displaying the
   tray icon may require an AppIndicator extension.
-- Linux biometric unlock requires a working Secret Service provider such as
-  GNOME Keyring or KWallet. Without one, Glyph continues to start, disables
-  biometric availability, and uses a permission-restricted (`0600`) metadata
-  key file fallback.
+- Linux biometric unlock is disabled until a user-presence implementation is
+  available. Metadata encryption uses Secret Service plus an atomically created,
+  permission-restricted (`0600`) durability copy of its metadata key.
 - WSLg is detected at startup and WebKit hardware compositing is disabled only
   in that environment to avoid blank-window EGL failures.
 
@@ -214,9 +216,9 @@ updater signatures stop the draft before publication.
 ## Community
 
 - **Discord:** https://discord.gg/s5qNRNGu96
-- **GitHub:** https://github.com/glyph-ecosystem/wallet
+- **GitHub:** https://github.com/glyphq/wallet
 - **Website:** https://wallet.glyphq.org
 
 ## License
 
-Source-available. See repository for current terms.
+MIT. See [`LICENSE`](./LICENSE).
