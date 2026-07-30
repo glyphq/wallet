@@ -114,8 +114,9 @@ mod tests {
             iv: "00".repeat(12),
             ciphertext: "00".repeat(16),
         };
+        let non_secret_test_input = std::process::id().to_string();
         assert_eq!(
-            decrypt_vault_data(&vault, "password").unwrap_err(),
+            decrypt_vault_data(&vault, &non_secret_test_input).unwrap_err(),
             "vault iteration count exceeds the supported maximum"
         );
     }
