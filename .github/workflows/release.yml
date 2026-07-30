@@ -7,6 +7,11 @@ on:
         description: Existing release tag to build, for example v0.14.2
         required: true
         type: string
+      allow_unsigned_native:
+        description: Emergency stable release override for unsigned macOS and Windows artifacts
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: release-${{ inputs.tag }}
@@ -72,9 +77,16 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
           VERSION: ${{ steps.release.outputs.version }}
           RELEASE_CHANNEL: ${{ env.RELEASE_CHANNEL }}
+          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           set -euo pipefail
           node scripts/extract-changelog.mjs "$VERSION" > release-notes.md
+          if [[ "$RELEASE_CHANNEL" == "stable" && "$ALLOW_UNSIGNED_NATIVE" == "true" ]]; then
+            printf '\n%s\n%s\n' \
+              '> [!WARNING]' \
+              '> **Temporary unsigned native release:** the macOS app and DMG are not Apple-signed or notarized, and the Windows installer is not Authenticode-signed. Tauri updater signatures, SHA-256 checksums, and GitHub build-provenance attestations remain required and are validated before publication.' \
+              >> release-notes.md
+          fi
           expected_prerelease=false
           if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
             expected_prerelease=true
@@ -91,7 +103,8 @@ jobs:
               echo "Release $RELEASE_TAG prerelease flag does not match branch channel $RELEASE_CHANNEL" >&2
               exit 1
             }
-            echo "Draft release $RELEASE_TAG already exists; assets will be replaced idempotently."
+            gh release edit "$RELEASE_TAG" --notes-file release-notes.md
+            echo "Draft release $RELEASE_TAG already exists; notes were refreshed and assets will be reused idempotently."
           else
             release_flags=(
               --verify-tag
@@ -340,6 +353,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           set -euo pipefail
           for name in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
@@ -354,13 +368,13 @@ jobs:
             echo "MACOS_CODE_SIGNING_ENABLED=1" >> "$GITHUB_ENV"
             echo "macOS code signing and notarization are enabled."
           else
-            if [[ "$RELEASE_CHANNEL" == "stable" ]]; then
-              printf 'Stable macOS releases require all signing and notarization secrets: %s\n' "${missing[*]}" >&2
+            if [[ "$RELEASE_CHANNEL" == "stable" && "$ALLOW_UNSIGNED_NATIVE" != "true" ]]; then
+              printf 'Stable macOS releases require all signing and notarization secrets unless the emergency unsigned-native override is explicitly enabled: %s\n' "${missing[*]}" >&2
               exit 1
             fi
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "MACOS_CODE_SIGNING_ENABLED=0" >> "$GITHUB_ENV"
-            printf '::notice::Skipping macOS code signing and notarization because these secrets are missing: %s\n' "${missing[*]}"
+            printf '::warning::Publishing macOS artifacts without Apple code signing or notarization because the explicit override is enabled or this is a prerelease. Missing: %s\n' "${missing[*]}"
           fi
 
       - name: Build universal macOS bundles
@@ -490,6 +504,7 @@ jobs:
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           $ErrorActionPreference = "Stop"
           foreach ($name in @("TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD")) {
@@ -500,12 +515,12 @@ jobs:
             if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { $missing += $name }
           }
           if ($missing.Count -gt 0) {
-            if ($env:RELEASE_CHANNEL -eq "stable") {
-              throw "Stable Windows releases require Authenticode signing secrets: $($missing -join ', ')"
+            if ($env:RELEASE_CHANNEL -eq "stable" -and $env:ALLOW_UNSIGNED_NATIVE -ne "true") {
+              throw "Stable Windows releases require Authenticode signing secrets unless the emergency unsigned-native override is explicitly enabled: $($missing -join ', ')"
             }
             "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             "WINDOWS_CODE_SIGNING_ENABLED=0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            Write-Host "::notice::Skipping Windows Authenticode signing because these secrets are missing: $($missing -join ', ')"
+            Write-Host "::warning::Publishing Windows artifacts without Authenticode because the explicit override is enabled or this is a prerelease. Missing: $($missing -join ', ')"
             exit 0
           }
           $pfxPath = Join-Path $env:RUNNER_TEMP "glyph-signing-certificate.pfx"
