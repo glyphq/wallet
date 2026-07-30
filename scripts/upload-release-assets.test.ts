@@ -24,7 +24,7 @@ const args = process.argv.slice(2);
 const remote = process.env.FAKE_REMOTE_DIR;
 const names = fs.readdirSync(remote);
 if (args[0] === "release" && args[1] === "view") {
-  process.stdout.write(JSON.stringify({ assets: names.map((name) => ({ name })) }));
+  process.stdout.write(JSON.stringify({ assets: names.map((name) => ({ name })), isDraft: process.env.FAKE_IS_DRAFT !== "false" }));
 } else if (args[0] === "release" && args[1] === "download") {
   const name = args[args.indexOf("--pattern") + 1];
   const dir = args[args.indexOf("--dir") + 1];
@@ -50,6 +50,7 @@ async function runUploader(bin: string, remote: string, uploadLog: string, asset
       PATH: `${bin}:${process.env.PATH ?? ""}`,
       FAKE_REMOTE_DIR: remote,
       FAKE_UPLOAD_LOG: uploadLog,
+      GITHUB_REPOSITORY: "glyphq/wallet",
     },
     stdout: "pipe",
     stderr: "pipe",
@@ -90,5 +91,28 @@ describe("immutable release asset uploads", () => {
     expect(await process.exited).toBe(0);
     expect(await readFile(join(remote, "artifact.bin"), "utf8")).toBe("new bytes");
     expect(await readFile(uploadLog, "utf8")).toBe("artifact.bin\n");
+  });
+
+  test("refuses to mutate a published release", async () => {
+    const { root, bin, remote, uploadLog } = await fixture();
+    const asset = join(root, "artifact.bin");
+    await writeFile(asset, "new bytes");
+
+    const child = Bun.spawn(["node", "scripts/upload-release-assets.mjs", "v1.2.3", asset], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH ?? ""}`,
+        FAKE_REMOTE_DIR: remote,
+        FAKE_UPLOAD_LOG: uploadLog,
+        FAKE_IS_DRAFT: "false",
+        GITHUB_REPOSITORY: "glyphq/wallet",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    expect(await child.exited).not.toBe(0);
+    expect(await new Response(child.stderr).text()).toContain("already published");
+    expect(await readFile(uploadLog, "utf8").catch(() => "")).toBe("");
   });
 });
