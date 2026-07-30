@@ -234,6 +234,10 @@ export function mergePersistedState(
   const settings = {
     ...settingsBase,
     approvedDapps,
+    autoLockMinutes:
+      typeof settingsBase.autoLockMinutes === "number" && Number.isInteger(settingsBase.autoLockMinutes)
+        ? Math.min(24 * 60, Math.max(1, settingsBase.autoLockMinutes))
+        : currentState.settings.autoLockMinutes,
     highValueSendThreshold:
       typeof settingsBase.highValueSendThreshold === "string"
         ? settingsBase.highValueSendThreshold.replace(/[^\d]/g, "")

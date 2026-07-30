@@ -133,6 +133,7 @@ describe("persisted boundary helpers", () => {
           pollingIntervalActiveMs: 1,
           sponsorAttribution: "invalid",
           allowBlurLockBypass: "yes",
+          autoLockMinutes: 0,
         },
         vaults: [
           {
@@ -172,6 +173,7 @@ describe("persisted boundary helpers", () => {
       DEFAULT_SETTINGS.sponsorAttribution
     );
     expect(merged.settings.allowBlurLockBypass).toBe(true);
+    expect(merged.settings.autoLockMinutes).toBe(1);
     expect(merged.passwordAttempts).toBe(4);
     expect(merged.passwordLockoutUntil).toBe(99_000);
     expect(merged.exportSigningKey).toEqual({ kty: "oct", k: "test-key" });

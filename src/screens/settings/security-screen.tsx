@@ -14,7 +14,7 @@ import { extractMessage } from "@/lib/format";
 
 const TIMEOUT_OPTIONS = [
   { label: "1m", value: 1 }, { label: "5m", value: 5 }, { label: "15m", value: 15 },
-  { label: "30m", value: 30 }, { label: "1h", value: 60 }, { label: "Never", value: 0 },
+  { label: "30m", value: 30 }, { label: "1h", value: 60 },
 ];
 
 const CLIPBOARD_OPTIONS = [
