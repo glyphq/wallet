@@ -5,6 +5,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::session_crypto::NativeSessionState;
 
 pub const MAX_LOCK_TIMEOUT_MINUTES: u64 = 24 * 60;
+pub const MIN_LOCK_TIMEOUT_MINUTES: u64 = 1;
 
 pub struct AutoLockState {
     last_activity: Arc<Mutex<Instant>>,
@@ -34,7 +35,7 @@ impl AutoLockState {
     }
 
     pub fn set_timeout(&self, minutes: u64) {
-        *Self::lock_recover(&self.timeout_minutes) = minutes.min(MAX_LOCK_TIMEOUT_MINUTES);
+        *Self::lock_recover(&self.timeout_minutes) = minutes.clamp(MIN_LOCK_TIMEOUT_MINUTES, MAX_LOCK_TIMEOUT_MINUTES);
     }
 
     pub fn set_lock_on_sleep(&self, enabled: bool) {
@@ -43,9 +44,6 @@ impl AutoLockState {
 
     pub fn seconds_until_lock(&self) -> Option<u64> {
         let minutes = *Self::lock_recover(&self.timeout_minutes);
-        if minutes == 0 {
-            return None;
-        }
         let timeout_secs = minutes.checked_mul(60)?;
         let timeout = Duration::from_secs(timeout_secs);
         let elapsed = Self::lock_recover(&self.last_activity).elapsed();
@@ -83,10 +81,6 @@ pub fn spawn_lock_watcher(app: AppHandle) {
 
         // Idle timeout check
         let minutes = *timeout_minutes.lock().unwrap_or_else(|e| e.into_inner());
-        if minutes == 0 {
-            continue;
-        }
-
         let Some(timeout_secs) = minutes.checked_mul(60) else {
             continue;
         };
@@ -99,4 +93,20 @@ pub fn spawn_lock_watcher(app: AppHandle) {
             *last_activity.lock().unwrap_or_else(|e| e.into_inner()) = Instant::now();
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AutoLockState, MAX_LOCK_TIMEOUT_MINUTES};
+
+    #[test]
+    fn timeout_cannot_be_disabled_or_extended_beyond_policy() {
+        let state = AutoLockState::default();
+        state.set_timeout(0);
+        assert!(state.seconds_until_lock().is_some());
+
+        state.set_timeout(u64::MAX);
+        let seconds = state.seconds_until_lock().expect("timeout must remain enabled");
+        assert!(seconds <= MAX_LOCK_TIMEOUT_MINUTES * 60);
+    }
 }
