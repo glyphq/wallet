@@ -63,6 +63,8 @@ Keys stay encrypted on disk. Unlocked seed material is retained in native proces
 
 Vault data is encrypted before hitting disk. Long-lived unlocked seeds remain in native memory. Signing currently uses a one-shot worker copy while native signing support is being completed.
 
+See [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md) for the current audit scope, remediations, validation evidence, and residual risks.
+
 ```mermaid
 flowchart LR
     seed([Seed / private key]) -->|AES-256-GCM · PBKDF2-HMAC-SHA256| vault[(Encrypted vault on disk)]
