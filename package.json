@@ -11,6 +11,7 @@
     "test": "bun test",
     "check": "bun run lint && bun run test",
     "release:check": "node scripts/sync-version.mjs --check && scripts/lint-workflows.sh",
+    "audit:security": "scripts/security-audit.sh",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
