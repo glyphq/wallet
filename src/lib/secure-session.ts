@@ -3,8 +3,6 @@ import { deriveIdentityFromSeed, identityToPublicKey, publicKeyFromSeed } from "
 import type { Seed } from "@/lib/crypto";
 import type { SessionWallet } from "@/lib/session-wallet";
 
-const encoder = new TextEncoder();
-
 interface BuildTxParams {
   accountIndex: number;
   destination: string;
@@ -20,52 +18,17 @@ export interface SignedTxResult {
   hash: string;
 }
 
-// ── Worker management ──────────────────────────────────────────────────────────
-
-let _nextId = 0;
-
-function workerRequest<T>(message: Record<string, unknown>, transfer: Transferable[] = []): Promise<T> {
-  const id = _nextId++;
-  return new Promise<T>((resolve, reject) => {
-    const worker = new Worker(
-      new URL("../workers/crypto.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    worker.onmessage = ({ data }: MessageEvent) => {
-      worker.terminate();
-      if (data.id !== id) {
-        reject(new Error("Signing worker response mismatch"));
-      } else if (data.ok) {
-        resolve(data);
-      } else {
-        reject(new Error((data.error as string | undefined) ?? "Worker signing failed"));
-      }
-    };
-    worker.onerror = (event) => {
-      worker.terminate();
-      reject(new Error(event.message ?? "Worker error"));
-    };
-    worker.postMessage({ id, ...message }, transfer);
-  });
+interface NativeSignMessageResult {
+  signature: number[];
+  publicKey: number[];
+  identity: string;
 }
 
 // ── Native session seed management ─────────────────────────────────────────────
 
-function seedToBytes(seed: Seed): Uint8Array {
-  return encoder.encode(seed);
-}
-
 export function zeroBytes(bytes: Uint8Array) {
-  // Transferring the seed buffer to the signing worker detaches this view in
-  // the window. Detached and out-of-bounds views already expose no bytes and
-  // throw when fill() is called, so only wipe views that still own storage.
   if (bytes.byteLength === 0) return;
   bytes.fill(0);
-}
-
-async function getSeedForSigning(accountIndex: number): Promise<Uint8Array> {
-  const seed = await invoke<string>("get_session_seed_for_signing", { accountIndex });
-  return seedToBytes(seed as Seed);
 }
 
 export async function clearSecureSession() {
@@ -88,7 +51,7 @@ export function restoreSessionWalletsFromIdentities(identities: string[]): Sessi
   }));
 }
 
-// ── Signing — seed material is fetched one-shot from native session ─────────────
+// ── Signing — seed material remains native-side ────────────────────────────────
 
 async function buildSignedTransaction({
   accountIndex,
@@ -99,21 +62,17 @@ async function buildSignedTransaction({
   inputType,
   payload,
 }: BuildTxParams): Promise<SignedTxResult> {
-  const seedCopy = await getSeedForSigning(accountIndex);
-  try {
-    return await workerRequest<SignedTxResult>({
-      type: "sign_tx",
-      seed: seedCopy,
+  return await invoke<SignedTxResult>("sign_transaction", {
+    request: {
+      accountIndex,
       destination,
       amount: amount.toString(),
       targetTick,
       currentTick,
       inputType,
-      payload,
-    }, [seedCopy.buffer, payload.buffer]);
-  } finally {
-    zeroBytes(seedCopy);
-  }
+      payload: Array.from(payload),
+    },
+  });
 }
 
 export function buildTransferFromSession(params: Omit<BuildTxParams, "inputType" | "payload">) {
@@ -125,19 +84,15 @@ export function buildScTransactionFromSession(params: BuildTxParams) {
 }
 
 export async function signMessageFromSession(accountIndex: number, messageBytes: Uint8Array) {
-  const seedCopy = await getSeedForSigning(accountIndex);
-  try {
-    const result = await workerRequest<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>({
-      type: "sign_message",
-      seed: seedCopy,
-      messageBytes,
-    }, [seedCopy.buffer, messageBytes.buffer]);
-    return {
-      signature: new Uint8Array(result.signature),
-      publicKey: new Uint8Array(result.publicKey),
-      identity: result.identity,
-    };
-  } finally {
-    zeroBytes(seedCopy);
-  }
+  const result = await invoke<NativeSignMessageResult>("sign_message", {
+    request: {
+      accountIndex,
+      messageBytes: Array.from(messageBytes),
+    },
+  });
+  return {
+    signature: new Uint8Array(result.signature),
+    publicKey: new Uint8Array(result.publicKey),
+    identity: result.identity,
+  };
 }
