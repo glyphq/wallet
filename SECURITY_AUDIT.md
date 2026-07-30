@@ -1,7 +1,7 @@
 # Security Audit Report
 
 Date: 2026-07-30
-Branch: `security/comprehensive-hardening`
+Branch: `security/comprehensive-audit-fixes`
 Base: `origin/main` at `31d997a`
 
 ## Scope
@@ -9,7 +9,7 @@ Base: `origin/main` at `31d997a`
 The review covered:
 
 - Rust vault crypto, session retention, biometric storage, auto-lock, clipboard, metadata encryption, callback networking, deep-link parsing, and packaged protocol broker
-- React request parsing, dApp approvals, persistence hydration, worker signing, URL delivery, and Tauri capability grants
+- React request parsing, dApp approvals, persistence hydration, native signing IPC, URL delivery, and Tauri capability grants
 - JavaScript and Rust dependency graphs
 - GitHub Actions CI, release dispatch, release channels, draft assets, native signing, updater manifests, and repository provenance
 - Public RustSec, GitHub Security Advisory, and dependency advisory data available on the audit date
@@ -41,7 +41,8 @@ The audit used independent read-only reviewers for native, renderer, deep-link, 
 
 ### Renderer and persistence
 
-- Signing workers are single-use and terminate after every response or error, reducing the lifetime of worker heap copies of seed material.
+- Transaction and message signing moved to narrow native commands. The seed-returning IPC command and renderer crypto worker were removed.
+- Native session seeds use zeroize-on-drop storage, mutex poison recovery still clears secrets, message sizes are bounded, and signature requests are rate-limited to reduce exposure from the compatibility-first non-constant-time FourQ implementation.
 - Privileged Tauri capabilities are limited to the main window. Wildcard notification-window labels no longer inherit store, updater, filesystem, opener, clipboard, and deep-link permissions.
 - Password attempt counters, lockout timestamps, and export signing keys are restored through the persisted-state boundary instead of silently resetting during hydration.
 
@@ -84,6 +85,8 @@ The audit used independent read-only reviewers for native, renderer, deep-link, 
 Transaction and message signing now execute in Rust through narrow `sign_transaction` and `sign_message` commands. The seed-returning command and renderer signing-worker path were removed. Compatibility tests pin the Qubic SDK's seed-to-key derivation, identity encoding, SchnorrQ message signature, serialized transfer, base64 payload, and transaction hash byte-for-byte.
 
 Vault decryption and initial session hydration still originate in the trusted main WebView, so this change removes repeatable seed retrieval during signing rather than claiming that seed material can never exist in renderer memory. A future defense-in-depth phase can move vault decryption and account derivation entirely behind native commands.
+
+The pure-Rust FourQ compatibility port currently uses variable-time big-integer arithmetic. Native requests are serialized and limited to one signature per 750 ms, which materially constrains timing-trace collection but does not make the primitive constant-time. Replacing it with an independently audited constant-time Qubic-compatible implementation remains a cryptographic follow-up.
 
 ### Linux Tauri stack
 

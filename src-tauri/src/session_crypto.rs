@@ -1,18 +1,22 @@
-use std::sync::Mutex;
+use std::{sync::Mutex, time::{Duration, Instant}};
 
 use serde::{Deserialize, Serialize};
 use tauri::{command, State};
 
 use crate::qubic_native;
+use zeroize::Zeroizing;
 
-#[derive(Default)]
+const MAX_SIGN_MESSAGE_BYTES: usize = 64 * 1024;
+const MIN_SIGN_INTERVAL: Duration = Duration::from_millis(750);
+
 pub struct NativeSessionState {
-    seeds: Mutex<Vec<Vec<u8>>>,
+    seeds: Mutex<Vec<Zeroizing<Vec<u8>>>>,
+    last_signature: Mutex<Option<Instant>>,
 }
 
-fn zeroize(bytes: &mut [u8]) {
-    for b in bytes {
-        *b = 0;
+impl Default for NativeSessionState {
+    fn default() -> Self {
+        Self { seeds: Mutex::new(Vec::new()), last_signature: Mutex::new(None) }
     }
 }
 
@@ -53,19 +57,23 @@ impl NativeSessionState {
     pub fn replace_seeds(&self, seeds: Vec<String>) {
         self.clear();
         let mut guard = self.seeds.lock().expect("native session mutex poisoned");
-        *guard = seeds.into_iter().map(|seed| seed.into_bytes()).collect();
+        *guard = seeds.into_iter().map(|seed| Zeroizing::new(seed.into_bytes())).collect();
     }
 
     pub fn clear(&self) {
-        if let Ok(mut guard) = self.seeds.lock() {
-            for seed in guard.iter_mut() {
-                zeroize(seed);
-            }
-            guard.clear();
-        }
+        let mut guard = self.seeds.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        guard.clear();
+        *self.last_signature.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
     }
 
     fn with_seed_at<T>(&self, account_index: usize, f: impl FnOnce(&str) -> Result<T, String>) -> Result<T, String> {
+        let now = Instant::now();
+        let mut last = self.last_signature.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        if last.is_some_and(|previous| now.duration_since(previous) < MIN_SIGN_INTERVAL) {
+            return Err("signing is temporarily rate limited".to_string());
+        }
+        *last = Some(now);
+        drop(last);
         let guard = self.seeds.lock().map_err(|_| "native session unavailable".to_string())?;
         let seed = guard
             .get(account_index)
@@ -121,6 +129,9 @@ pub async fn sign_message(
     state: State<'_, NativeSessionState>,
     request: SignMessageRequest,
 ) -> Result<SignMessageResult, String> {
+    if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
+        return Err("message exceeds the native signing limit".to_string());
+    }
     state.with_seed_at(request.account_index, |seed| {
         let (signature, public_key, identity) = qubic_native::sign_message(seed, &request.message_bytes)?;
         Ok(SignMessageResult { signature, public_key, identity })
