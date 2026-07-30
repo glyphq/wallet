@@ -233,6 +233,7 @@ export default function LockScreen() {
   async function doUnlock(password: string) {
     if (!selected || !selected.encryptedData) return;
     const seeds = await unlockVault(selected.encryptedData, password);
+    await invoke("disable_biometric", { vaultId: selected.id }).catch(() => {});
     await finishUnlock(seeds);
   }
 

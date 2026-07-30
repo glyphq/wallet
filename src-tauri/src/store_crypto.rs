@@ -41,6 +41,7 @@ fn load_store_key_file() -> Result<Option<String>, String> {
     }
 }
 
+#[cfg(not(target_os = "linux"))]
 fn delete_store_key_file() -> Result<(), String> {
     let path = store_key_path()?;
     match std::fs::remove_file(path) {

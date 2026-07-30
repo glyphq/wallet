@@ -1,11 +1,6 @@
-use sha2::{Digest, Sha256};
 use tauri::{command, State};
 use crate::session_crypto::NativeSessionState;
-use crate::vault_crypto::{decrypt_vault_data, VaultData};
-
-fn sha256_hex(data: &str) -> String {
-    hex::encode(Sha256::digest(data.as_bytes()))
-}
+use crate::vault_crypto::VaultData;
 
 fn validate_vault_id(vault_id: &str) -> Result<(), String> {
     let is_uuid = vault_id.len() == 36
@@ -31,6 +26,7 @@ fn validate_vault_id(vault_id: &str) -> Result<(), String> {
 // CRED_PERSIST_LOCAL_MACHINE to guarantee persistence.
 
 #[cfg(target_os = "windows")]
+#[allow(dead_code)]
 mod cred_store {
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::Security::Credentials::{
@@ -101,6 +97,7 @@ mod cred_store {
 }
 
 #[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
 mod cred_store {
     use keyring::Entry;
 
@@ -143,6 +140,7 @@ mod cred_store {
 // ── macOS: LAContext via objc ──────────────────────────────────────────────
 
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 mod platform {
     use block::ConcreteBlock;
     use objc::runtime::{Object, BOOL, YES};
@@ -209,6 +207,7 @@ mod platform {
 // ── Windows: UserConsentVerifier ───────────────────────────────────────────
 
 #[cfg(target_os = "windows")]
+#[allow(dead_code)]
 mod platform {
     use windows::Security::Credentials::UI::{
         UserConsentVerificationResult, UserConsentVerifier, UserConsentVerifierAvailability,
@@ -250,6 +249,7 @@ mod platform {
 // ── Linux / other: secure storage only ─────────────────────────────────────
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[allow(dead_code)]
 mod platform {
     pub fn available() -> bool {
         false
@@ -264,41 +264,13 @@ mod platform {
 
 #[command]
 pub async fn check_biometric_available() -> bool {
-    tokio::task::spawn_blocking(|| {
-        #[cfg(target_os = "windows")]
-        {
-            platform::available()
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            platform::available()
-        }
-
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-        {
-            platform::available() && cred_store::available()
-        }
-    })
-        .await
-        .unwrap_or(false)
+    false
 }
 
 #[command]
 pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        // Confirm biometric before storing the password to prevent silent enrollment
-        platform::authenticate("Enable biometric unlock for Glyph")?;
-        // Hash the ciphertext hex string — stable across any struct field reordering
-        // or serialization changes that would break a hash over serde_json output.
-        let hash = sha256_hex(&vault_data.ciphertext);
-        // Store as "password\nhash" so unlock can verify the renderer-supplied blob
-        let stored = format!("{}\n{}", password, hash);
-        cred_store::store(&vault_id, &stored)
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    let _ = (vault_id, vault_data, password);
+    Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
@@ -307,28 +279,8 @@ pub async fn biometric_unlock(
     vault_data: VaultData,
     session: State<'_, NativeSessionState>,
 ) -> Result<usize, String> {
-    let seeds = tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        platform::authenticate("Unlock Glyph vault")?;
-        let stored = cred_store::load(&vault_id)?;
-        // Stored format: "password\nhash" (new) or "password" (legacy without hash)
-        let (password, expected_hash) = match stored.split_once('\n') {
-            Some((pw, hash)) => (pw.to_string(), Some(hash.to_string())),
-            None => (stored, None),
-        };
-        if let Some(expected) = expected_hash {
-            if sha256_hex(&vault_data.ciphertext) != expected {
-                return Err("vault data integrity check failed".into());
-            }
-        }
-        decrypt_vault_data(&vault_data, &password)
-    })
-    .await
-    .map_err(|e| e.to_string())??;
-
-    let count = seeds.len();
-    session.replace_seeds(seeds);
-    Ok(count)
+    let _ = (vault_id, vault_data, session);
+    Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
@@ -337,28 +289,8 @@ pub async fn reveal_seed_with_biometric(
     vault_data: VaultData,
     account_index: usize,
 ) -> Result<String, String> {
-    let seeds = tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        platform::authenticate("Reveal Glyph seed")?;
-        let stored = cred_store::load(&vault_id)?;
-        let (password, expected_hash) = match stored.split_once('\n') {
-            Some((pw, hash)) => (pw.to_string(), Some(hash.to_string())),
-            None => (stored, None),
-        };
-        if let Some(expected) = expected_hash {
-            if sha256_hex(&vault_data.ciphertext) != expected {
-                return Err("vault data integrity check failed".into());
-            }
-        }
-        decrypt_vault_data(&vault_data, &password)
-    })
-    .await
-    .map_err(|e| e.to_string())??;
-
-    seeds
-        .get(account_index)
-        .cloned()
-        .ok_or_else(|| "missing seed".to_string())
+    let _ = (vault_id, vault_data, account_index);
+    Err("biometric seed reveal is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
