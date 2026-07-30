@@ -22,37 +22,30 @@ export interface SignedTxResult {
 
 // ── Worker management ──────────────────────────────────────────────────────────
 
-let _worker: Worker | null = null;
 let _nextId = 0;
-const _pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
-
-function getSigningWorker(): Worker {
-  if (!_worker) {
-    _worker = new Worker(
-      new URL("../workers/crypto.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    _worker.onmessage = ({ data }: MessageEvent) => {
-      const cb = _pending.get(data.id as number);
-      if (!cb) return;
-      _pending.delete(data.id as number);
-      if (data.ok) cb.resolve(data);
-      else cb.reject(new Error((data.error as string | undefined) ?? "Worker signing failed"));
-    };
-    _worker.onerror = (e) => {
-      for (const [, cb] of _pending) cb.reject(new Error(e.message ?? "Worker error"));
-      _pending.clear();
-      _worker = null;
-    };
-  }
-  return _worker;
-}
 
 function workerRequest<T>(message: Record<string, unknown>, transfer: Transferable[] = []): Promise<T> {
   const id = _nextId++;
   return new Promise<T>((resolve, reject) => {
-    _pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
-    getSigningWorker().postMessage({ id, ...message }, transfer);
+    const worker = new Worker(
+      new URL("../workers/crypto.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = ({ data }: MessageEvent) => {
+      worker.terminate();
+      if (data.id !== id) {
+        reject(new Error("Signing worker response mismatch"));
+      } else if (data.ok) {
+        resolve(data);
+      } else {
+        reject(new Error((data.error as string | undefined) ?? "Worker signing failed"));
+      }
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(event.message ?? "Worker error"));
+    };
+    worker.postMessage({ id, ...message }, transfer);
   });
 }
 

@@ -35,7 +35,7 @@ Keys stay encrypted on disk. Unlocked seed material is retained in native proces
 - AES-256-GCM encrypted vaults with PBKDF2-HMAC-SHA256
 - Auto-lock on idle, sleep, or window blur
 - Clipboard auto-clear; immediate wipe on lock
-- Biometric unlock — Windows Hello and macOS Touch ID; unsupported platforms fail closed
+- Password-backed biometric quick unlock is disabled pending hardware-bound credential storage
 - Local audit log of every signing event
 - Signed update payload verification
 
