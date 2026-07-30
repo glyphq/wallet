@@ -79,20 +79,20 @@ The audit used independent read-only reviewers for native, renderer, deep-link, 
 
 ## Residual risks and follow-up
 
-### Raw seed signing IPC
+### Native signing boundary
 
-The largest remaining architectural risk is the transitional `get_session_seed_for_signing` command. It creates a one-shot renderer copy because Qubic signing currently lives in TypeScript. The worker copy is transferred, wiped, and the worker is terminated, but a compromised main renderer could still invoke the command while the wallet is unlocked.
+Transaction and message signing now execute in Rust through narrow `sign_transaction` and `sign_message` commands. The seed-returning command and renderer signing-worker path were removed. Compatibility tests pin the Qubic SDK's seed-to-key derivation, identity encoding, SchnorrQ message signature, serialized transfer, base64 payload, and transaction hash byte-for-byte.
 
-The complete fix is to port transaction and message signing into Rust and replace the seed-returning command with narrow native `sign_transaction` and `sign_message` commands. This is a larger compatibility project because it must reproduce the Qubic SDK's serialization, K12 hashing, signature, identity, and transaction-hash behavior byte-for-byte.
+Vault decryption and initial session hydration still originate in the trusted main WebView, so this change removes repeatable seed retrieval during signing rather than claiming that seed material can never exist in renderer memory. A future defense-in-depth phase can move vault decryption and account derivation entirely behind native commands.
 
 ### Linux Tauri stack
 
-RustSec reports unmaintained GTK3 bindings and `RUSTSEC-2024-0429` through Tauri/WebKitGTK. No direct application code uses the affected iterator API. Eliminating the dependency requires an upstream Tauri Linux runtime migration rather than a safe local patch.
+RustSec reports unmaintained GTK3 bindings and `RUSTSEC-2024-0429` through Tauri/WebKitGTK. No direct application code uses the affected iterator API. Tauri 2.11.5, Tao 0.36, and Wry 0.56 still depend on the GTK3/glib 0.18 stack. Eliminating it is blocked on the unreleased GTK4/WebKit6 migrations tracked upstream in tauri-apps/tauri#14684, tauri-apps/wry#1767, and tauri-apps/tao#1258. The audit script keeps these warnings explicit and fails on unapproved advisories.
 
 ### Platform validation
 
-Linux compilation, tests, frontend production build, audits, and static packaged-handler review passed. This environment did not have rustup or macOS/Windows runners, so native packaging, Authenticode, notarization, and the vendored Windows crate should also be exercised by CI before merge. The release workflow itself was not dispatched from this local branch.
+Linux compilation, tests, frontend production build, audits, and static packaged-handler review passed. CI now checks the locked Rust graph on Linux, macOS, and Windows using the repository's Rust 1.88 policy. Native packaging, Authenticode, and notarization remain release-run validations rather than pull-request GUI tests.
 
 ### Release governance
 
-Signed Git tags, repository tag protection, release immutability settings, and GitHub artifact attestations require repository-level policy and signing-key decisions. The workflow now validates provenance and stable native signing, but those governance controls should be enabled separately.
+Release jobs generate GitHub artifact provenance attestations and uploads refuse to replace mismatched draft assets or mutate published releases. Signed Git tag enforcement, repository tag protection, and branch rules still require repository-level policy and signing-key decisions outside the source tree.

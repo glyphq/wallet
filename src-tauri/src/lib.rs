@@ -6,6 +6,7 @@ mod deep_link;
 pub mod link_broker;
 mod store_crypto;
 mod vault_crypto;
+mod qubic_native;
 mod session_crypto;
 
 use std::sync::atomic::Ordering;
@@ -191,7 +192,8 @@ pub fn run() {
             vault_crypto::decrypt_vault,
             session_crypto::store_session_seeds,
             session_crypto::clear_session_seeds,
-            session_crypto::get_session_seed_for_signing,
+            session_crypto::sign_transaction,
+            session_crypto::sign_message,
             biometric::check_biometric_available,
             biometric::enable_biometric,
             biometric::biometric_unlock,

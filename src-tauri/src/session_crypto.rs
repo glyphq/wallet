@@ -1,6 +1,10 @@
 use std::sync::Mutex;
 
+use serde::{Deserialize, Serialize};
 use tauri::{command, State};
+
+use crate::qubic_native;
+
 #[derive(Default)]
 pub struct NativeSessionState {
     seeds: Mutex<Vec<Vec<u8>>>,
@@ -10,6 +14,39 @@ fn zeroize(bytes: &mut [u8]) {
     for b in bytes {
         *b = 0;
     }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignTransactionRequest {
+    account_index: usize,
+    destination: String,
+    amount: String,
+    target_tick: u32,
+    current_tick: Option<u32>,
+    input_type: u16,
+    payload: Vec<u8>,
+}
+
+#[derive(Serialize)]
+pub struct SignedTxResult {
+    encoded: String,
+    hash: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignMessageRequest {
+    account_index: usize,
+    message_bytes: Vec<u8>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignMessageResult {
+    signature: Vec<u8>,
+    public_key: Vec<u8>,
+    identity: String,
 }
 
 impl NativeSessionState {
@@ -28,12 +65,13 @@ impl NativeSessionState {
         }
     }
 
-    fn seed_at(&self, account_index: usize) -> Result<String, String> {
+    fn with_seed_at<T>(&self, account_index: usize, f: impl FnOnce(&str) -> Result<T, String>) -> Result<T, String> {
         let guard = self.seeds.lock().map_err(|_| "native session unavailable".to_string())?;
         let seed = guard
             .get(account_index)
             .ok_or_else(|| "unlocked account not available".to_string())?;
-        String::from_utf8(seed.clone()).map_err(|_| "session seed is invalid UTF-8".to_string())
+        let seed = std::str::from_utf8(seed).map_err(|_| "session seed is invalid UTF-8".to_string())?;
+        f(seed)
     }
 }
 
@@ -53,12 +91,35 @@ pub async fn clear_session_seeds(state: State<'_, NativeSessionState>) -> Result
 }
 
 #[command]
-pub async fn get_session_seed_for_signing(
+pub async fn sign_transaction(
     state: State<'_, NativeSessionState>,
-    account_index: usize,
-) -> Result<String, String> {
-    // The Qubic signing implementation currently lives in TypeScript. Keep the
-    // long-lived unlocked seed set native-side and release only a one-shot clone
-    // for the existing signing worker until signing is ported fully to Rust.
-    state.seed_at(account_index)
+    request: SignTransactionRequest,
+) -> Result<SignedTxResult, String> {
+    let amount = request
+        .amount
+        .parse::<i64>()
+        .map_err(|_| "amount must fit signed 64-bit integer".to_string())?;
+    state.with_seed_at(request.account_index, |seed| {
+        let (encoded, hash) = qubic_native::sign_transaction(
+            seed,
+            &request.destination,
+            amount,
+            request.target_tick,
+            request.current_tick,
+            request.input_type,
+            &request.payload,
+        )?;
+        Ok(SignedTxResult { encoded, hash })
+    })
+}
+
+#[command]
+pub async fn sign_message(
+    state: State<'_, NativeSessionState>,
+    request: SignMessageRequest,
+) -> Result<SignMessageResult, String> {
+    state.with_seed_at(request.account_index, |seed| {
+        let (signature, public_key, identity) = qubic_native::sign_message(seed, &request.message_bytes)?;
+        Ok(SignMessageResult { signature, public_key, identity })
+    })
 }
