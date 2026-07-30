@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::session_crypto::NativeSessionState;
+
 pub const MAX_LOCK_TIMEOUT_MINUTES: u64 = 24 * 60;
 
 pub struct AutoLockState {
@@ -72,6 +74,7 @@ pub fn spawn_lock_watcher(app: AppHandle) {
             *last_wall = now_wall;
 
             if *lock_on_sleep.lock().unwrap_or_else(|e| e.into_inner()) && wall_delta.as_secs() > POLL_SECS + 2 {
+                app.state::<NativeSessionState>().clear();
                 app.emit("glyph:lock", ()).ok();
                 *last_activity.lock().unwrap_or_else(|e| e.into_inner()) = Instant::now();
                 continue;
@@ -91,6 +94,7 @@ pub fn spawn_lock_watcher(app: AppHandle) {
         let elapsed = last_activity.lock().unwrap_or_else(|e| e.into_inner()).elapsed();
 
         if elapsed >= timeout {
+            app.state::<NativeSessionState>().clear();
             app.emit("glyph:lock", ()).ok();
             *last_activity.lock().unwrap_or_else(|e| e.into_inner()) = Instant::now();
         }

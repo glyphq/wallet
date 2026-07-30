@@ -116,6 +116,9 @@ describe("persisted boundary helpers", () => {
   test("merges persisted state with default settings and sanitized boundary fields", () => {
     const merged = mergePersistedState(
       {
+        passwordAttempts: 4,
+        passwordLockoutUntil: 99_000,
+        exportSigningKey: { kty: "oct", k: "test-key" },
         settings: {
           approvedDapps: [
             {
@@ -169,6 +172,9 @@ describe("persisted boundary helpers", () => {
       DEFAULT_SETTINGS.sponsorAttribution
     );
     expect(merged.settings.allowBlurLockBypass).toBe(true);
+    expect(merged.passwordAttempts).toBe(4);
+    expect(merged.passwordLockoutUntil).toBe(99_000);
+    expect(merged.exportSigningKey).toEqual({ kty: "oct", k: "test-key" });
     expect(merged.vaults[0]?.encryptedData).toEqual({ should: "be removed" });
     expect(merged.vaults[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);

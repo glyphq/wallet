@@ -17,12 +17,15 @@ const baseRequestSchema = z.object({
   exp: z.number().int().positive().optional(),
 });
 
-const amountSchema = z.union([z.number(), z.string()]);
+const amountSchema = z.union([
+  z.number().int().safe().nonnegative(),
+  z.string().regex(/^\d+$/, "Amount must be an unsigned integer"),
+]);
 
 export const transferRequestSchema = baseRequestSchema.extend({
   type: z.literal("transfer"),
   to: z.string(),
-  amount: amountSchema,
+  amount: amountSchema.refine((value) => BigInt(value) > 0n, "Transfer amount must be positive"),
   from: z.string().optional(),
   tick_offset: z.number().int().optional(),
 });
@@ -70,7 +73,8 @@ export const glyphEnvelopeSchema = z.object({
   callback: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
   redirect_uri: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
 }).superRefine((envelope, ctx) => {
-  if (!envelope.request.dapp.origin.startsWith("https://")) {
+  const claimedOrigin = normalizedHttpsOrigin(envelope.request.dapp.origin);
+  if (!claimedOrigin) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "dApp origin must be HTTPS",
@@ -81,13 +85,19 @@ export const glyphEnvelopeSchema = z.object({
   if (envelope.callback && !isAllowedCallbackUrl(envelope.callback)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Callback URL must use HTTPS or localhost HTTP",
+      message: "Callback URL must use HTTPS",
       path: ["callback"],
     });
   }
+  if (envelope.callback && claimedOrigin && normalizedHttpsOrigin(envelope.callback) !== claimedOrigin) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Callback origin must match dApp origin", path: ["callback"] });
+  }
 
   if (envelope.redirect_uri && !isAllowedCallbackUrl(envelope.redirect_uri)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri must use HTTPS or localhost HTTP", path: ["redirect_uri"] });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri must use HTTPS", path: ["redirect_uri"] });
+  }
+  if (envelope.redirect_uri && claimedOrigin && normalizedHttpsOrigin(envelope.redirect_uri) !== claimedOrigin) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri origin must match dApp origin", path: ["redirect_uri"] });
   }
 
   if (envelope.request.exp && Math.floor(Date.now() / 1000) > envelope.request.exp) {
@@ -172,14 +182,34 @@ export const REQUEST_TYPE_LABEL: Record<GlyphRequest["type"], string> = {
 };
 
 export function isAllowedCallbackUrl(value: string): boolean {
+  return normalizedHttpsOrigin(value) !== null;
+}
+
+function normalizedHttpsOrigin(value: string): string | null {
   try {
     const url = new URL(value);
-    const host = url.hostname.toLowerCase();
-    const isLocal = host === "localhost" || host === "127.0.0.1";
-    return url.protocol === "https:" || (url.protocol === "http:" && isLocal);
+    if (url.protocol !== "https:" || url.username || url.password || !url.hostname || isNonGlobalLiteral(url.hostname)) return null;
+    return url.origin;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function isNonGlobalLiteral(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (host === "localhost" || host === "::" || host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")) return true;
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!match) return false;
+  const [a, b, c, d] = match.slice(1).map(Number);
+  if ([a, b, c, d].some((part) => part > 255)) return true;
+  return a === 0 || a === 10 || a === 127 || a >= 224
+    || (a === 100 && b >= 64 && b <= 127)
+    || (a === 169 && b === 254)
+    || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 168)
+    || (a === 192 && b === 0 && (c === 0 || c === 2))
+    || (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100)))
+    || (a === 203 && b === 0 && c === 113);
 }
 
 export function parseGlyphEnvelope(raw: string | null): ParsedEnvelopeResult {

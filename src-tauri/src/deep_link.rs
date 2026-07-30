@@ -185,6 +185,21 @@ fn parse_positive_i64(value: &Value) -> Option<i64> {
     value.as_str()?.parse::<i64>().ok()
 }
 
+fn validate_delivery_url(url_str: &str, field: &str, claimed_origin: &str) -> Result<(), String> {
+    let url = Url::parse(url_str).map_err(|_| format!("invalid {field} URL"))?;
+    let host = url.host_str().unwrap_or("");
+    if url.scheme() != "https" || !url.username().is_empty() || url.password().is_some() {
+        return Err(format!("{field} must use HTTPS without embedded credentials"));
+    }
+    if crate::commands::is_private_host(host) {
+        return Err(format!("{field} must not target a non-global address"));
+    }
+    if url.origin().ascii_serialization() != claimed_origin {
+        return Err(format!("{field} origin must match dapp.origin"));
+    }
+    Ok(())
+}
+
 fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
 
@@ -261,9 +276,14 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
         .ok_or("missing 'dapp.origin'")?;
     let parsed_origin =
         Url::parse(dapp_origin).map_err(|_| format!("invalid dapp.origin: {dapp_origin}"))?;
-    if parsed_origin.scheme() != "https" {
+    if parsed_origin.scheme() != "https"
+        || parsed_origin.host_str().is_none()
+        || !parsed_origin.username().is_empty()
+        || parsed_origin.password().is_some()
+    {
         return Err("dapp.origin must use HTTPS".into());
     }
+    let claimed_origin = parsed_origin.origin().ascii_serialization();
 
     // Expiry check: missing exp defaults to 5 minutes from receipt; exp too far in
     // the future is clamped so dApps cannot create permanent requests.
@@ -285,32 +305,13 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
         (None, from_query) => from_query,
     };
 
-    // String-level private-IP check is intentional here. `callback` is also
-    // validated by DNS resolution inside `post_callback` at fetch time (the
-    // authoritative gate against rebinding). `redirect_uri` is opened by the
-    // OS/browser, not fetched by the wallet, so a Rust-side DNS lookup would
-    // be a TOCTOU race with no security benefit — the browser re-resolves
-    // independently and has its own same-origin protections.
-    fn validate_delivery_url(url_str: &str, field: &str) -> Result<(), String> {
-        let url = Url::parse(url_str).map_err(|_| format!("invalid {field} URL"))?;
-        let host = url.host_str().unwrap_or("");
-        let is_local = matches!(host, "localhost" | "127.0.0.1");
-        if url.scheme() != "https" && !(url.scheme() == "http" && is_local) {
-            return Err(format!("{field} must use HTTPS (or http://localhost / http://127.0.0.1 for local dev)"));
-        }
-        if !is_local && crate::commands::is_private_host(host) {
-            return Err(format!("{field} must not target a private or loopback address"));
-        }
-        Ok(())
-    }
-
     if let Some(cb) = &callback {
-        validate_delivery_url(cb, "callback URL")?;
+        validate_delivery_url(cb, "callback URL", &claimed_origin)?;
     }
 
     let redirect_uri = redirect_uri_from_payload;
     if let Some(ru) = &redirect_uri {
-        validate_delivery_url(ru, "redirect_uri")?;
+        validate_delivery_url(ru, "redirect_uri", &claimed_origin)?;
     }
 
     // Type-specific checks
@@ -342,6 +343,13 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
                 .ok_or("sc_call: missing 'input_type'")?;
             if input_type < 0 {
                 return Err("sc_call: 'input_type' must be non-negative".into());
+            }
+            if let Some(amount) = request_value.get("amount") {
+                let amount = parse_positive_i64(amount)
+                    .ok_or("sc_call: 'amount' must be an integer")?;
+                if amount < 0 {
+                    return Err("sc_call: 'amount' must be non-negative".into());
+                }
             }
         }
         "sign_message" => {
@@ -497,7 +505,9 @@ pub fn register_handler(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{validate, validate_pay, DeepLinkState, MAX_PENDING_LINKS};
+    use super::{
+        validate, validate_delivery_url, validate_pay, DeepLinkState, MAX_PENDING_LINKS,
+    };
 
     #[test]
     fn rejects_shell_like_deep_link_paths() {
@@ -541,5 +551,24 @@ mod tests {
 
         assert_eq!(state.take().as_deref(), Some("request-1"));
         assert_eq!(state.take_payment().as_deref(), Some("payment-1"));
+    }
+
+    #[test]
+    fn delivery_urls_require_https_same_origin_and_global_literals() {
+        assert!(validate_delivery_url(
+            "https://demo.app/callback",
+            "callback URL",
+            "https://demo.app",
+        )
+        .is_ok());
+
+        for url in [
+            "http://demo.app/callback",
+            "https://attacker.example/callback",
+            "https://127.0.0.1/callback",
+            "https://[::ffff:127.0.0.1]/callback",
+        ] {
+            assert!(validate_delivery_url(url, "callback URL", "https://demo.app").is_err());
+        }
     }
 }

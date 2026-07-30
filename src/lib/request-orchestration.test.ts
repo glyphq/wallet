@@ -35,6 +35,14 @@ const transferEnvelope: GlyphEnvelope = {
 };
 
 describe("request orchestration", () => {
+  test("redirect result preserves existing query parameters and fragments", () => {
+    const result = buildRedirectUrl("https://demo.app/return?state=abc#done", '{"ok":true}');
+    const url = new URL(result);
+    expect(url.searchParams.get("state")).toBe("abc");
+    expect(url.searchParams.get("result")).toBeTruthy();
+    expect(url.hash).toBe("#done");
+  });
+
   test("approves transfer, records history, delivers callback, and opens redirect", async () => {
     const { deps, added, updates, posts, opened } = makeDeps();
 

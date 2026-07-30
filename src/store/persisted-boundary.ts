@@ -295,8 +295,16 @@ export function mergePersistedState(
     auditEvents,
     requestHistory,
     lastNotificationScanAt,
+    passwordAttempts:
+      typeof ps.passwordAttempts === "number" && Number.isInteger(ps.passwordAttempts)
+        ? Math.min(10, Math.max(0, ps.passwordAttempts))
+        : currentState.passwordAttempts,
     passwordLockoutUntil:
       typeof ps.passwordLockoutUntil === "number" ? ps.passwordLockoutUntil : 0,
+    exportSigningKey:
+      ps.exportSigningKey && typeof ps.exportSigningKey === "object" && !Array.isArray(ps.exportSigningKey)
+        ? ps.exportSigningKey
+        : currentState.exportSigningKey,
     settings,
   };
 }
