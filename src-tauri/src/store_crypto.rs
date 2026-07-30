@@ -34,9 +34,23 @@ fn store_key_path() -> Result<PathBuf, String> {
 
 fn load_store_key_file() -> Result<Option<String>, String> {
     let path = store_key_path()?;
-    match std::fs::read_to_string(path) {
+    let metadata = match std::fs::symlink_metadata(&path) {
+        Ok(metadata) => metadata,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(err.to_string()),
+    };
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err("store-key path must be a regular file, not a symlink".to_string());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if metadata.permissions().mode() & 0o077 != 0 {
+            return Err("store-key file permissions are too broad; expected 0600".to_string());
+        }
+    }
+    match std::fs::read_to_string(&path) {
         Ok(value) => Ok(Some(value.trim().to_string())),
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(err) => Err(err.to_string()),
     }
 }
