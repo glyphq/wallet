@@ -45,6 +45,7 @@ tauri-plugin-fs = "2.5.1"
 tiny-keccak = { version = "2", features = ["k12"] }
 num-bigint = "0.4"
 num-traits = "0.2"
+zeroize = "1.8"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
