@@ -99,6 +99,9 @@ pub async fn sign_transaction(
         .amount
         .parse::<i64>()
         .map_err(|_| "amount must fit signed 64-bit integer".to_string())?;
+    if amount < 0 {
+        return Err("amount must not be negative".to_string());
+    }
     state.with_seed_at(request.account_index, |seed| {
         let (encoded, hash) = qubic_native::sign_transaction(
             seed,
