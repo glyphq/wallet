@@ -96,9 +96,8 @@ export function mergePersistedState(
         .map(
           (vault): VaultMeta => ({
             ...vault,
-            kind: vault.kind === "watch_only" ? "watch_only" : "seeded",
-            encryptedData:
-              vault.kind === "watch_only" ? null : vault.encryptedData ?? null,
+            kind: "seeded",
+            encryptedData: vault.encryptedData ?? null,
             accounts: Array.isArray(vault.accounts)
               ? vault.accounts
                   .filter(

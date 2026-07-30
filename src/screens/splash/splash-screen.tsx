@@ -1,46 +1,72 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { useNavigate } from "react-router";
+import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-const FACTS = [
-  "Qubic is founded by Sergey Ivancheglo — the original creator of NXT and co-founder of IOTA.",
-  "Qubic's Useful Proof-of-Work trains AI models instead of solving arbitrary puzzles.",
-  "CertiK-verified: Qubic peaks at 15.5 million transactions per second.",
-  "Standard QUBIC transfers are completely feeless. Smart contract fees are burned.",
-  "Qubic launched with zero VC funding, no pre-mine, and no ICO.",
-  "Exactly 676 validators called Computors secure the network.",
-  "There is a fixed supply of 1 quadrillion QUBIC — no inflation, ever.",
-];
+const MIN_SPLASH_MS = 4800;
+const HYDRATION_TIMEOUT_MS = 8000;
 
 export default function SplashScreen() {
   const navigate = useNavigate();
   const [hydrated, setHydrated] = useState(() => usePersistedStore.persist.hasHydrated());
+  const [hydrationStatus, setHydrationStatus] = useState<"loading" | "stalled" | "error">("loading");
+  const [hydrationAttempt, setHydrationAttempt] = useState(0);
   const vaults = usePersistedStore((s) => s.vaults);
   const isLocked = useSessionStore((s) => s.isLocked);
-  const [factIdx, setFactIdx] = useState(0);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const mountedAt = useRef(Date.now());
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const unsub = usePersistedStore.persist.onFinishHydration(() => {
-      setHydrated((prev) => (prev ? prev : true));
+      setHydrated(true);
     });
+    const handleReadError = () => setHydrationStatus("error");
+    window.addEventListener("glyph:disk-read-error", handleReadError);
     if (usePersistedStore.persist.hasHydrated()) setHydrated(true);
-    const timer = setTimeout(() => setHydrated((prev) => (prev ? prev : true)), 3000);
-    return () => { unsub(); clearTimeout(timer); };
+    return () => {
+      unsub();
+      window.removeEventListener("glyph:disk-read-error", handleReadError);
+    };
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setFactIdx((i) => (i + 1) % FACTS.length), 4000);
-    return () => clearInterval(id);
-  }, []);
+    if (hydrated) return;
+    const timer = setTimeout(() => {
+      if (!usePersistedStore.persist.hasHydrated()) {
+        setHydrationStatus((status) => status === "error" ? status : "stalled");
+      }
+    }, HYDRATION_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [hydrated, hydrationAttempt]);
 
-  const mountedAt = useRef(Date.now());
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function syncPlayback() {
+      const video = videoRef.current;
+      if (!video) return;
+      if (reducedMotion.matches) {
+        video.pause();
+        video.currentTime = 0;
+      } else {
+        void video.play().catch(() => {
+          // The video element can reject play() briefly while its source is still buffering.
+          // The autoplay attribute retries once media is ready; onError handles real failures.
+        });
+      }
+    }
+
+    syncPlayback();
+    reducedMotion.addEventListener("change", syncPlayback);
+    return () => reducedMotion.removeEventListener("change", syncPlayback);
+  }, [hydrationStatus]);
 
   useEffect(() => {
     if (!hydrated) return;
     const elapsed = Date.now() - mountedAt.current;
-    const remaining = Math.max(0, 3000 - elapsed);
+    const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
     const timer = setTimeout(() => {
       if (vaults.length === 0) navigate("/setup", { replace: true });
       else if (isLocked) navigate("/lock", { replace: true });
@@ -49,78 +75,117 @@ export default function SplashScreen() {
     return () => clearTimeout(timer);
   }, [hydrated, vaults.length, isLocked, navigate]);
 
+  function retryHydration() {
+    setVideoFailed(false);
+    setHydrationStatus("loading");
+    setHydrationAttempt((attempt) => attempt + 1);
+    void usePersistedStore.persist.rehydrate();
+  }
+
   return (
-    <div style={{
-      position: "fixed", inset: 0,
-      background: "var(--color-bg-base)",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      padding: "var(--space-8)",
-      userSelect: "none",
-    }}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)" }}
-      >
-        {/* Logo + wordmark */}
-        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "var(--space-3)" }}>
-          <img src="/icon.png" width={48} height={48} alt="" style={{ borderRadius: "var(--radius-sharp)" }} />
-          <span style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "1.5rem",
-            fontWeight: 600,
-            color: "var(--color-text-display)",
-            letterSpacing: "-0.01em",
-          }}>
-            Glyph Wallet
-          </span>
-        </div>
-
-        {/* Pulsing dot loader */}
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              animate={{ opacity: [0.2, 1, 0.2] }}
-              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-              style={{
-                width: 5, height: 5, borderRadius: "50%",
-                background: "var(--color-text-disabled)",
-              }}
-            />
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Bottom: cycling fact */}
-      <div style={{
-        position: "absolute",
-        bottom: "var(--space-8)",
-        left: "var(--space-8)",
-        right: "var(--space-8)",
-      }}>
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={factIdx}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "var(--color-bg-canvas)",
+        overflow: "hidden",
+        userSelect: "none",
+      }}
+    >
+      {hydrationStatus === "loading" ? (
+        videoFailed ? (
+          <div
+            role="status"
             style={{
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              placeItems: "center",
               fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-caption)",
-              color: "var(--color-text-disabled)",
-              lineHeight: 1.6,
-              textAlign: "center",
-              margin: 0,
+              fontSize: "var(--text-body)",
+              color: "var(--color-text-secondary)",
             }}
           >
-            {FACTS[factIdx]}
-          </motion.p>
-        </AnimatePresence>
-      </div>
+            Loading Glyph Wallet
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            loop
+            preload="auto"
+            aria-hidden="true"
+            onError={() => setVideoFailed(true)}
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "cover",
+              background: "var(--color-bg-canvas)",
+            }}
+          >
+            <source src="/splash_loading.webm" type="video/webm" />
+            <source src="/splash_loading.mp4" type="video/mp4" />
+          </video>
+        )
+      ) : (
+        <div
+          style={{
+            minHeight: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "var(--space-6)",
+            padding: "max(var(--space-8), calc(var(--height-titlebar) + var(--space-6))) var(--screen-padding)",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", alignItems: "center" }}>
+            <h1
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--text-title)",
+                lineHeight: "var(--leading-tight)",
+                letterSpacing: "-0.025em",
+                fontWeight: 600,
+                color: "var(--color-text-primary)",
+              }}
+            >
+              {hydrationStatus === "error"
+                ? "Wallet data could not be read"
+                : "Still loading your wallet"}
+            </h1>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 320,
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-body)",
+                lineHeight: "var(--leading-body)",
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              Your encrypted wallet data has not changed. You can try loading it again safely.
+            </p>
+          </div>
+
+          <div
+            role="alert"
+            style={{
+              width: "100%",
+              maxWidth: 320,
+            }}
+          >
+            <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={retryHydration}>
+              Try again
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

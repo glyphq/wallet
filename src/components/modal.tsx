@@ -77,11 +77,11 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.8)",
+            background: "var(--color-scrim)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
-            zIndex: 50,
+            zIndex: "var(--z-modal)",
           }}
         >
           <motion.div

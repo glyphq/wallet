@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   approvedDapps: [],
   currency: "USD",
   tickOffset: 10,
+  themeMode: "dark",
   debugMode: false,
   biometricVaultIds: [],
   fontPair: "space-grotesk",

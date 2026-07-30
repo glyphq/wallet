@@ -1,28 +1,109 @@
 import type { ReactNode } from "react";
+import { AltArrowLeft } from "@solar-icons/react";
+import { IconButton } from "@/components/icon-button";
 
 export interface ScreenHeaderProps {
-  title: string;
-  onBack: () => void;
+  title: ReactNode;
+  leading?: ReactNode;
+  onBack?: () => void;
   backAriaLabel?: string;
   action?: ReactNode;
 }
 
-export function ScreenHeader({ title, onBack, backAriaLabel, action }: ScreenHeaderProps) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%" }}>
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label={backAriaLabel}
-        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.06em", padding: 0, flexShrink: 0 }}
+export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: ScreenHeaderProps) {
+  // When a leading element is provided (e.g. shell identicon), render the
+  // title inline next to it.  When only onBack is provided, keep the
+  // original centered title layout.
+  if (leading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-3)",
+          width: "100%",
+          minHeight: 52,
+        }}
       >
-        ← back
-      </button>
-      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 400, color: "var(--color-text-primary)", letterSpacing: "0.08em", whiteSpace: "nowrap", pointerEvents: "none" }}>
-        {title}
-      </span>
-      <div style={{ marginLeft: "auto", flexShrink: 0 }}>
-        {action}
+        <div style={{ flexShrink: 0 }}>{leading}</div>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--text-section)",
+            lineHeight: "var(--leading-tight)",
+            fontWeight: 400,
+            color: "var(--color-text-primary)",
+            letterSpacing: "0.04em",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {title}
+        </h1>
+        <div style={{ flex: 1 }} />
+        {action ? (
+          <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+            {action}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
+        alignItems: "center",
+        gap: "var(--space-3)",
+        width: "100%",
+        minHeight: 52,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 52 }}>
+        {onBack ? (
+          <IconButton label={backAriaLabel ?? "Go back"} onClick={onBack} style={{ flexShrink: 0 }}>
+            <AltArrowLeft size={22} aria-hidden="true" />
+          </IconButton>
+        ) : null}
+      </div>
+
+      <div style={{ minWidth: 0, display: "flex", justifyContent: "center" }}>
+        <h1
+          style={{
+            margin: 0,
+            maxWidth: "100%",
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--text-section)",
+            lineHeight: "var(--leading-tight)",
+            fontWeight: 400,
+            color: "var(--color-text-primary)",
+            letterSpacing: "0.04em",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            textAlign: "center",
+          }}
+        >
+          {title}
+        </h1>
+      </div>
+
+      <div
+        style={{
+          minHeight: 40,
+          minWidth: 52,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: "var(--space-1)",
+        }}
+      >
+        {action ?? null}
       </div>
     </div>
   );

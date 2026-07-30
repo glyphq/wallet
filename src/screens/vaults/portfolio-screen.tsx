@@ -1,9 +1,7 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
-import { ScreenHeader } from "@/components/screen-header";
 import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
-import { Tag } from "@/components/tag";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useVaultBalances } from "@/hooks/use-vault-balances";
@@ -23,7 +21,7 @@ export default function PortfolioScreen() {
 
   if (!vault) {
     return (
-      <AppShell statusBar={<ScreenHeader title="Portfolio" onBack={() => navigate("/vaults")} />}>
+      <AppShell>
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
           [vault not found]
         </div>
@@ -47,10 +45,32 @@ export default function PortfolioScreen() {
   const allLoaded = !isLoading && balances !== undefined;
 
   return (
-    <AppShell
-      statusBar={<ScreenHeader title={`${vault.name} · Portfolio`} onBack={() => navigate(`/vaults/${id}`)} />}
-      contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
-    >
+    <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={10} style={{ flexShrink: 0 }} walletIcon={vault.icon} vaultColor={vault.color} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {vault.name}
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate(`/vaults/${id}`)}
+            style={{
+              alignSelf: "flex-start",
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-label)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            View vault details
+          </button>
+        </div>
+      </div>
+
       {/* ── Total balance ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
@@ -68,9 +88,6 @@ export default function PortfolioScreen() {
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
             ≈ ${formatUsdFromQu(totalBalance, stats.price)} USD
           </span>
-        )}
-        {vault.kind === "watch_only" && (
-          <Tag variant="neutral" style={{ alignSelf: "flex-start", marginTop: "var(--space-1)" }}>Watch only</Tag>
         )}
       </div>
 
@@ -95,7 +112,7 @@ export default function PortfolioScreen() {
             <div key={account.index} className="stagger-item">
               {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-                {identity && <Identicon seed={identity} size={36} radius={6} style={{ flexShrink: 0 }} />}
+                {identity && <Identicon kind="account" code={`A${account.index + 1}`} seed={identity} label={account.name} size={36} radius={8} style={{ flexShrink: 0 }} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-2)" }}>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
@@ -145,7 +162,7 @@ function DistributionBar({ accounts, total }: {
             <div
               key={account.index}
               title={`${account.name}: ${pct}%`}
-              style={{ width: `${pct}%`, height: "100%", background: COLORS[i % COLORS.length], transition: "width 0.3s ease-out" }}
+              style={{ width: `${pct}%`, height: "100%", background: COLORS[i % COLORS.length] }}
             />
           );
         })}

@@ -13,9 +13,11 @@ const NONCE_STORE_PATH: &str = "glyph-security.json";
 const NONCE_STORE_KEY: &str = "seen_nonces";
 const MAX_NONCE_AGE_SECS: u64 = 3600;
 const MAX_SIGN_MESSAGE_LEN: usize = 2048;
+const MAX_PENDING_LINKS: usize = 16;
 
 pub struct DeepLinkState {
     pending_requests: Arc<Mutex<VecDeque<String>>>,
+    pending_payments: Arc<Mutex<VecDeque<String>>>,
     /// Maps nonce → unix timestamp of first receipt for time-bounded replay protection.
     seen_nonces: Arc<Mutex<HashMap<String, u64>>>,
 }
@@ -24,6 +26,7 @@ impl Default for DeepLinkState {
     fn default() -> Self {
         Self {
             pending_requests: Arc::new(Mutex::new(VecDeque::new())),
+            pending_payments: Arc::new(Mutex::new(VecDeque::new())),
             seen_nonces: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -31,10 +34,7 @@ impl Default for DeepLinkState {
 
 impl DeepLinkState {
     pub fn store(&self, payload: String) {
-        self.pending_requests
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .push_back(payload);
+        Self::store_bounded(&self.pending_requests, payload);
     }
 
     pub fn take(&self) -> Option<String> {
@@ -50,6 +50,25 @@ impl DeepLinkState {
             .unwrap_or_else(|e| e.into_inner())
             .front()
             .cloned()
+    }
+
+    pub fn store_payment(&self, payload: String) {
+        Self::store_bounded(&self.pending_payments, payload);
+    }
+
+    pub fn take_payment(&self) -> Option<String> {
+        self.pending_payments
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .pop_front()
+    }
+
+    fn store_bounded(queue: &Mutex<VecDeque<String>>, payload: String) {
+        let mut queue = queue.lock().unwrap_or_else(|e| e.into_inner());
+        if queue.len() == MAX_PENDING_LINKS {
+            queue.pop_front();
+        }
+        queue.push_back(payload);
     }
 
     fn prune_seen_nonces(seen: &mut HashMap<String, u64>, now: u64) {
@@ -403,18 +422,16 @@ fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     Ok(PayRequest { to, amount, label })
 }
 
-pub fn process_url(app: &AppHandle, raw: &str) {
-    // Quick scheme check before full parse to skip non-glyph arguments cheaply.
-    let is_glyph_scheme = url::Url::parse(raw)
-        .map(|u| u.scheme() == "glyph")
-        .unwrap_or(false);
-    if !is_glyph_scheme {
-        return;
-    }
+pub fn process_url(app: &AppHandle, raw: &str) -> bool {
+    let kind = match crate::link_broker::validate_launch_url(raw) {
+        Ok(kind) => kind,
+        Err(error) => {
+            eprintln!("[glyph] launch link rejected: {error}");
+            return false;
+        }
+    };
 
-    // Route pay requests separately — no dApp nonce/origin machinery needed.
-    let host = url::Url::parse(raw).ok().and_then(|u| u.host_str().map(|h| h.to_string()));
-    if host.as_deref() == Some("pay") {
+    if kind == crate::link_broker::LinkKind::Pay {
         match validate_pay(raw) {
             Ok(pay) => {
                 let payload = serde_json::json!({
@@ -422,17 +439,16 @@ pub fn process_url(app: &AppHandle, raw: &str) {
                     "amount": pay.amount,
                     "label": pay.label,
                 });
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-                app.emit("glyph:pay", payload.to_string()).ok();
+                let payload = payload.to_string();
+                app.state::<DeepLinkState>().store_payment(payload);
+                app.emit("glyph:pay", ()).ok();
+                return true;
             }
             Err(e) => {
                 eprintln!("[glyph] pay link rejected: {e}");
             }
         }
-        return;
+        return false;
     }
 
     match validate(raw) {
@@ -443,7 +459,7 @@ pub fn process_url(app: &AppHandle, raw: &str) {
                     "[glyph] deep link rejected: duplicate nonce '{}'",
                     parsed.nonce
                 );
-                return;
+                return false;
             }
             let envelope = serde_json::json!({
                 "request": parsed.request,
@@ -453,19 +469,77 @@ pub fn process_url(app: &AppHandle, raw: &str) {
             let payload = envelope.to_string();
             state.store(payload.clone());
             app.emit("glyph:request", payload).ok();
+            true
         }
         Err(e) => {
             eprintln!("[glyph] deep link rejected: {e}");
+            false
         }
     }
 }
 
 pub fn register_handler(app: &AppHandle) {
     app.state::<DeepLinkState>().load_seen_nonces(app);
+
+    if let Ok(Some(urls)) = app.deep_link().get_current() {
+        for url in urls {
+            process_url(app, &url.to_string());
+        }
+    }
+
     let handle = app.clone();
     app.deep_link().on_open_url(move |event| {
         for url in event.urls() {
             process_url(&handle, &url.to_string());
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{validate, validate_pay, DeepLinkState, MAX_PENDING_LINKS};
+
+    #[test]
+    fn rejects_shell_like_deep_link_paths() {
+        let malicious_urls = [
+            "glyph://path/to/bash&MaliciousCommand",
+            "glyph://path/to/bash?cmd=MaliciousCommand",
+            "glyph:///bin/bash?cmd=MaliciousCommand",
+            "glyph://v1/bin/bash?cmd=MaliciousCommand",
+            "glyph://v1/request/bin/bash?cmd=MaliciousCommand",
+            "glyph://pay/bin/bash?cmd=MaliciousCommand",
+        ];
+
+        for url in malicious_urls {
+            assert!(validate(url).is_err(), "request parser accepted {url}");
+            assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
+        }
+    }
+
+    #[test]
+    fn rejects_encoded_path_and_authority_injection() {
+        let malicious_urls = [
+            "glyph://v1/%2e%2e/%2e%2e/bin/bash?cmd=MaliciousCommand",
+            "glyph://v1/request%2f..%2f..%2fbin%2fbash?cmd=MaliciousCommand",
+            "glyph://v1@evil.example/request?cmd=MaliciousCommand",
+            "glyph://pay@evil.example/?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        ];
+
+        for url in malicious_urls {
+            assert!(validate(url).is_err(), "request parser accepted {url}");
+            assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
+        }
+    }
+
+    #[test]
+    fn pending_queues_drop_the_oldest_item_at_the_limit() {
+        let state = DeepLinkState::default();
+        for index in 0..=MAX_PENDING_LINKS {
+            state.store(format!("request-{index}"));
+            state.store_payment(format!("payment-{index}"));
+        }
+
+        assert_eq!(state.take().as_deref(), Some("request-1"));
+        assert_eq!(state.take_payment().as_deref(), Some("payment-1"));
+    }
 }

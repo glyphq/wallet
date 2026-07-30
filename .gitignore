@@ -10,9 +10,12 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+src-tauri/binaries/glyph-link-broker-*
 *.local
 planning/
 .codegraph
+.jcode/
+docs/
 
 # Editor directories and files
 .vscode/*

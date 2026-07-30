@@ -30,6 +30,7 @@ import type { ApproveResult } from "./transfer-preview";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { qk } from "@/lib/query-keys";
+import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
 import type { ScCallRequest } from "@/lib/request-schema";
 
 export type { ScCallRequest } from "@/lib/request-schema";
@@ -256,7 +257,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
       {/* Contract — primary element */}
       <div style={{ textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -275,9 +276,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       {/* ── Decoded: QUtil SendToMany ── */}
       {decodedSendToMany && decodedSendToMany.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            Recipients ({decodedSendToMany.length})
-          </div>
+          <RequestSectionTitle>Recipients ({decodedSendToMany.length})</RequestSectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", maxHeight: 180, overflowY: "auto" }}>
             {decodedSendToMany.map((r) => (
               <div key={r.identity} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
@@ -339,9 +338,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-            Sign as
-          </div>
+          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
             {vault.accounts.filter((a) => !a.hidden).map((acc) => (
               <button
@@ -367,31 +364,29 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       {/* fromError: dApp specified an identity not in this vault */}
       {fromError && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{fromError}]
+          {fromError}
         </div>
       )}
 
       {/* Detail rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {!fromError && <Row label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
-        <Row label="To" value={truncateId(destination as string, 10, 10)} />
-        {hasAmount && <Row label="Amount" value={`${formatQu(requestAmount)} QU`} />}
-        <Row label="Target tick" value={targetTick ? String(targetTick) : "—"} />
+        {!fromError && <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
+        <RequestDetailRow label="To" value={truncateId(destination as string, 10, 10)} />
+        {hasAmount && <RequestDetailRow label="Amount" value={`${formatQu(requestAmount)} QU`} />}
+        <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          Preflight
-        </div>
-        <Row label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
-        <Row label="Balance after" value={balanceAfterDisplay} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <RequestSectionTitle>Preflight</RequestSectionTitle>
+        <RequestDetailRow label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
+        <RequestDetailRow label="Balance after" value={balanceAfterDisplay} />
         {decodedSendToMany && (
           <>
-            <Row label="Recipient total" value={`${formatQu(recipientsTotal)} QU`} />
-            <Row label="Contract fee" value={estimatedContractFeeComponent !== null ? `${formatQu(estimatedContractFeeComponent)} QU` : "Unavailable"} />
+            <RequestDetailRow label="Recipient total" value={`${formatQu(recipientsTotal)} QU`} />
+            <RequestDetailRow label="Contract fee" value={estimatedContractFeeComponent !== null ? `${formatQu(estimatedContractFeeComponent)} QU` : "Unavailable"} />
           </>
         )}
-        <Row label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
+        <RequestDetailRow label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
       </div>
 
       {/* Payload — collapsible raw hex (always available for verification) */}
@@ -402,7 +397,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-2)" }}
           >
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              {showPayload ? "[HIDE PAYLOAD]" : `[SHOW PAYLOAD · ${payloadByteCount}B]`}
+              {showPayload ? "Hide payload" : `Show payload · ${payloadByteCount}B`}
             </span>
           </button>
           {showPayload && (
@@ -415,17 +410,17 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
 
       {insufficientBalance && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [INSUFFICIENT BALANCE]
+          The selected account does not have enough balance for this request.
         </div>
       )}
       {hasPendingTx && !insufficientBalance && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-          [TRANSFER PENDING — WAIT FOR CONFIRMATION]
+          This account already has a pending transfer. Wait for confirmation before sending another one.
         </div>
       )}
       {txError && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          [{txError}]
+          {txError}
         </div>
       )}
 
@@ -448,30 +443,19 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
             {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
           </div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            HIGH-VALUE CALL CONFIRMED
+            I understand this is a high-value contract call.
           </span>
         </div>
       )}
 
-      <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>
-        Sign and send
-      </Button>
-      <Button variant="danger" shape="sharp" onClick={onReject}>
-        Reject
-      </Button>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", textAlign: "right", wordBreak: "break-all" }}>
-        {value}
-      </span>
+      <RequestActionBar>
+        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+          Reject
+        </Button>
+        <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
+          Sign and send
+        </Button>
+      </RequestActionBar>
     </div>
   );
 }

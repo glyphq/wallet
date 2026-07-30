@@ -2,13 +2,17 @@ import { invoke } from "@tauri-apps/api/core";
 
 let fallbackClearTimer: number | null = null;
 
-export async function copyToClipboard(text: string, clearAfterSecs = 0): Promise<void> {
+export async function copyToClipboard(text: string, clearAfterSecs = 0): Promise<boolean> {
   try {
     await invoke("copy_to_clipboard", { text, clearAfterSecs });
-    return;
+    return true;
   } catch {}
 
-  await navigator.clipboard.writeText(text).catch(() => {});
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    return false;
+  }
 
   if (fallbackClearTimer !== null) {
     clearTimeout(fallbackClearTimer);
@@ -21,6 +25,8 @@ export async function copyToClipboard(text: string, clearAfterSecs = 0): Promise
       fallbackClearTimer = null;
     }, clearAfterSecs * 1000);
   }
+
+  return true;
 }
 
 export async function clearClipboard(): Promise<void> {

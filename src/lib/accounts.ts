@@ -29,9 +29,6 @@ export function getVaultAccountIdentity(
   return getAccountIdentity(account ?? { index: accountIndex, name: "", addedAt: 0, hidden: false }, wallets[accountIndex] ?? null);
 }
 
-export function isWatchOnlyVault(vault: VaultMeta | null | undefined): boolean {
-  return vault?.kind === "watch_only";
-}
 
 export function getKnownAddressLabel(identity: string): string | null {
   return KNOWN_CONTRACT_ADDRESSES[identity] ?? null;

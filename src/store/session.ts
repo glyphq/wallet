@@ -27,9 +27,10 @@ interface SessionState {
   unlock: (
     vaultId: string,
     wallets: SessionWallet[],
-    options?: { identities?: string[]; watchOnly?: boolean },
+    options?: { identities?: string[] },
   ) => void;
   lock: () => void;
+  resetForSetup: () => void;
   enqueuePendingRequest: (raw: string) => void;
   shiftPendingRequest: () => void;
   addTxAlert: (alert: TxAlert) => void;
@@ -48,7 +49,6 @@ export const useSessionStore = create<SessionState>()((set) => ({
   txDraft: null,
 
   unlock: (vaultId, wallets, options) => {
-    if (options?.watchOnly) clearSecureSession();
     set({
       unlockedVaultId: vaultId,
       wallets,
@@ -60,6 +60,18 @@ export const useSessionStore = create<SessionState>()((set) => ({
   lock: () => {
     clearSecureSession();
     set({ unlockedVaultId: null, wallets: [], isLocked: true, txAlerts: [], txDraft: null });
+  },
+
+  resetForSetup: () => {
+    clearSecureSession();
+    set({
+      unlockedVaultId: null,
+      wallets: [],
+      cachedIdentities: [],
+      isLocked: true,
+      txAlerts: [],
+      txDraft: null,
+    });
   },
 
   enqueuePendingRequest: (raw) =>

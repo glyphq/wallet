@@ -1,4 +1,5 @@
-import { createHashRouter } from "react-router-dom";
+import type { ComponentType } from "react";
+import { createHashRouter } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -33,8 +34,9 @@ import NetworkScreen from "@/screens/settings/network-screen";
 import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
 import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
+import AppearanceScreen from "@/screens/settings/appearance-screen";
 
-function Screen({ component: C }: { component: React.ComponentType }) {
+function Screen({ component: C }: { component: ComponentType }) {
   return (
     <ErrorBoundary>
       <C />
@@ -60,7 +62,6 @@ export const router = createHashRouter([
       { path: "/send-many", element: <Screen component={SendManyScreen} /> },
       { path: "/burn", element: <Screen component={BurnScreen} /> },
       { path: "/stake", element: <Screen component={StakeScreen} /> },
-      { path: "/earn", element: <Screen component={StakeScreen} /> },
       { path: "/receive", element: <Screen component={ReceiveScreen} /> },
       { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
       { path: "/history", element: <Screen component={HistoryScreen} /> },
@@ -79,6 +80,7 @@ export const router = createHashRouter([
       { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
       { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
+      { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
     ],
   },
 ]);

@@ -52,9 +52,10 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
   const hasResults = filteredAccounts.length > 0 || filteredContacts.length > 0;
 
   return (
-    <Sheet open={open} onClose={handleClose}>
+    <Sheet open={open} onClose={handleClose} title="Choose recipient">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <input
+          aria-label="Search contacts and accounts"
           autoFocus
           autoComplete="off"
           value={search}
@@ -66,7 +67,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", maxHeight: 340, overflowY: "auto" }}>
           {filteredAccounts.length > 0 && (
             <PickerSection
-              title="This vault"
+              title="This wallet"
               entries={filteredAccounts.map((account) => ({
                 key: `account:${account.identity}`,
                 name: account.name,
@@ -123,6 +124,7 @@ function PickerSection({
       {entries.map((entry) => (
         <button
           key={entry.key}
+          type="button"
           onClick={() => onSelect(entry.identity)}
           style={{
             display: "flex",
@@ -138,7 +140,7 @@ function PickerSection({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
-            <Identicon seed={entry.identity} size={28} radius={4} style={{ flexShrink: 0 }} />
+            <Identicon kind={entry.badge ? "account" : "contact"} code={entry.badge ? entry.name : undefined} seed={entry.identity} label={entry.name} size={28} radius={6} style={{ flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>{entry.name}</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>

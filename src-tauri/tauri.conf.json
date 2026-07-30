@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Glyph",
-  "version": "0.14.3",
+  "version": "0.15.0-prerelease.4",
   "identifier": "com.qubic.glyph",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "node scripts/prepare-link-broker.mjs --debug && bun run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run build",
+    "beforeBuildCommand": "node scripts/prepare-link-broker.mjs && bun run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -35,6 +35,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": [
+      "binaries/glyph-link-broker"
+    ],
     "createUpdaterArtifacts": true,
     "publisher": "Glyph Ecosystem",
     "copyright": "© 2025 Glyph Ecosystem",
@@ -48,7 +51,8 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerHooks": "windows/broker-installer-hooks.nsh"
       }
     },
     "linux": {

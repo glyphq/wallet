@@ -14,8 +14,8 @@ import { Heart, Copy, CheckCircle, Code, QrCode } from "@solar-icons/react";
 const GITHUB_URL = "https://github.com/glyph-ecosystem/wallet";
 
 // High-contrast pair required for QR readability
-const QR_BG = "#FFFFFF";
-const QR_FG = "#111111";
+const QR_BG = "var(--color-qr-surface)";
+const QR_FG = "var(--color-qr-ink)";
 
 export default function SupportScreen() {
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
@@ -41,19 +41,11 @@ export default function SupportScreen() {
         <div style={{
           background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
           padding: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-4)",
-          position: "relative", overflow: "hidden",
         }}>
-          {/* Accent glow */}
-          <div style={{
-            position: "absolute", top: -40, right: -40, width: 120, height: 120,
-            background: "radial-gradient(circle, rgba(204,252,251,0.08) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
-
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <div style={{
               width: 40, height: 40, borderRadius: "50%",
-              background: "rgba(204,252,251,0.1)",
+              background: "var(--color-accent-muted)",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }}>
@@ -78,7 +70,7 @@ export default function SupportScreen() {
             <div style={{
               display: "flex", alignItems: "center", gap: "var(--space-2)",
               padding: "var(--space-2) var(--space-3)",
-              background: "rgba(52,199,89,0.08)", borderRadius: "var(--radius-sharp)",
+              background: "var(--color-status-success-soft)", borderRadius: "var(--radius-sharp)",
             }}>
               <CheckCircle size={14} weight="Bold" style={{ color: "var(--color-status-success)", flexShrink: 0 }} />
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-success)" }}>
@@ -133,7 +125,7 @@ export default function SupportScreen() {
                 style={{
                   display: "flex", alignItems: "center", gap: "var(--space-1)",
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
-                  fontWeight: 500, color: copied ? "var(--color-status-success)" : "var(--color-accent)",
+                  fontWeight: 500, color: copied ? "var(--color-status-success)" : "var(--color-text-secondary)",
                 }}
               >
                 {copied ? <CheckCircle size={12} weight="Bold" /> : <Copy size={12} weight="Linear" />}
@@ -205,7 +197,7 @@ export default function SupportScreen() {
           </div>
           <span style={{
             fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-            color: "var(--color-accent)",
+            color: "var(--color-text-secondary)",
           }}>
             Open
           </span>

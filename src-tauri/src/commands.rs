@@ -125,6 +125,11 @@ pub fn clear_pending_request(state: State<'_, DeepLinkState>) {
 }
 
 #[tauri::command]
+pub fn take_pending_pay(state: State<'_, DeepLinkState>) -> Option<String> {
+    state.take_payment()
+}
+
+#[tauri::command]
 pub fn copy_to_clipboard(
     text: String,
     clear_after_secs: u64,

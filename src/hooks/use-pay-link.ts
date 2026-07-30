@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { router } from "@/router";
 
 interface PayPayload {
@@ -13,17 +14,28 @@ export function usePayLink() {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
-    listen<string>("glyph:pay", (event) => {
+    const consumePendingPay = async () => {
       try {
-        const pay = JSON.parse(event.payload) as PayPayload;
-        const params = new URLSearchParams({ to: pay.to });
-        if (pay.amount) params.set("amount", pay.amount);
-        if (pay.label) params.set("label", pay.label);
-        router.navigate(`/send?${params.toString()}`);
+        while (true) {
+          const payload = await invoke<string | null>("take_pending_pay");
+          if (!payload) break;
+          const pay = JSON.parse(payload) as PayPayload;
+          const params = new URLSearchParams({ to: pay.to });
+          if (pay.amount) params.set("amount", pay.amount);
+          if (pay.label) params.set("label", pay.label);
+          router.navigate(`/send?${params.toString()}`);
+        }
       } catch {
         // malformed payload — ignore
       }
-    }).then((fn) => { unlisten = fn; }).catch(() => {});
+    };
+
+    listen("glyph:pay", consumePendingPay)
+      .then((fn) => {
+        unlisten = fn;
+        void consumePendingPay();
+      })
+      .catch(() => {});
 
     return () => { unlisten?.(); };
   }, []);
