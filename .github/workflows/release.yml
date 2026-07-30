@@ -46,6 +46,10 @@ jobs:
           [[ "$(node -p "require('./package.json').version")" == "$version" ]]
           node scripts/sync-version.mjs --check
           git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null
+          [[ "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" == "tag" ]] || {
+            echo "Release tags must be annotated tag objects, not lightweight tags" >&2
+            exit 1
+          }
           tag_commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
           if [[ "$RELEASE_CHANNEL" == "stable" ]]; then
             git fetch origin main --no-tags
@@ -106,7 +110,9 @@ jobs:
     runs-on: ubuntu-22.04
     needs: prepare-release
     permissions:
+      attestations: write
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -216,6 +222,16 @@ jobs:
           [[ ${#artifacts[@]} -eq 3 ]]
           sha256sum "${artifacts[@]}" | sed -E 's#  .*/#  #' > SHA256SUMS-linux.txt
 
+      - name: Attest Linux release assets
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            SHA256SUMS-linux.txt
+
       - name: Upload Linux assets to draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -225,14 +241,16 @@ jobs:
           mapfile -t assets < <(find src-tauri/target/release/bundle/{appimage,deb,rpm} \
             -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.AppImage.sig' -o -name '*.deb' -o -name '*.rpm' \) | sort)
           [[ ${#assets[@]} -eq 4 ]]
-          gh release upload "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-linux.txt --clobber
+          node scripts/upload-release-assets.mjs "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-linux.txt
 
   release-macos:
     name: Build macOS bundles
     runs-on: macos-latest
     needs: prepare-release
     permissions:
+      attestations: write
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -357,6 +375,15 @@ jobs:
           fi
           shasum -a 256 "${archives[0]}" "${images[0]}" | sed -E 's#  .*/#  #' > SHA256SUMS-macos.txt
 
+      - name: Attest macOS release assets
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: |
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            SHA256SUMS-macos.txt
+
       - name: Upload macOS assets to draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -367,14 +394,16 @@ jobs:
           bundle_root="src-tauri/target/universal-apple-darwin/release/bundle"
           assets=("$bundle_root"/macos/*.app.tar.gz "$bundle_root"/macos/*.app.tar.gz.sig "$bundle_root"/dmg/*.dmg)
           [[ ${#assets[@]} -eq 3 ]]
-          gh release upload "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-macos.txt --clobber
+          node scripts/upload-release-assets.mjs "$RELEASE_TAG" "${assets[@]}" SHA256SUMS-macos.txt
 
   release-windows:
     name: Build Windows bundle
     runs-on: windows-latest
     needs: prepare-release
     permissions:
+      attestations: write
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -467,7 +496,7 @@ jobs:
             bun tauri build --bundles nsis --ci
           }
 
-      - name: Validate and upload Windows assets
+      - name: Validate Windows assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -488,21 +517,40 @@ jobs:
           }
           $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
           "$hash  $($installer.Name)" | Set-Content -NoNewline SHA256SUMS-windows.txt
-          gh release upload $env:RELEASE_TAG $installer.FullName $signature.FullName SHA256SUMS-windows.txt --clobber
+
+      - name: Attest Windows release assets
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.exe.sig
+            SHA256SUMS-windows.txt
+
+      - name: Upload Windows assets to draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.exe" | Select-Object -First 1
+          node scripts/upload-release-assets.mjs $env:RELEASE_TAG $installer.FullName "$($installer.FullName).sig" SHA256SUMS-windows.txt
 
   create-manifest:
     name: Create updater manifest
     runs-on: ubuntu-latest
     needs: [prepare-release, release-linux, release-macos, release-windows]
     permissions:
+      attestations: write
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ inputs.tag }}
 
-      - name: Generate and upload latest.json
+      - name: Generate updater manifest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
@@ -510,7 +558,18 @@ jobs:
           UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
         run: |
           scripts/create-updater-manifest.sh "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
-          gh release upload "$RELEASE_TAG" "$UPDATER_MANIFEST" --clobber
+
+      - name: Attest updater manifest
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: ${{ env.UPDATER_MANIFEST }}
+
+      - name: Upload updater manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
+        run: node scripts/upload-release-assets.mjs "$RELEASE_TAG" "$UPDATER_MANIFEST"
 
   publish-release:
     name: Validate and publish release
