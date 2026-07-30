@@ -179,7 +179,7 @@ gh workflow run release.yml --ref "$RELEASE_REF" --field "tag=${RELEASE_TAG}"
 
 ## Release workflow
 
-`.github/workflows/release.yml` accepts one required input: an existing tag. Its concurrency group is per tag and in-progress runs are not cancelled.
+`.github/workflows/release.yml` accepts one required input, an existing tag, plus an optional `allow_unsigned_native` emergency override that defaults to `false`. Its concurrency group is per tag and in-progress runs are not cancelled.
 
 The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the tag for all release work.
 
@@ -203,10 +203,16 @@ The three platform jobs run after draft preparation.
 | Platform | Build output | Native signing policy |
 |---|---|---|
 | Linux | AppImage, deb, rpm | Updater signature required |
-| macOS | universal app archive and DMG | Signing and notarization required for stable; optional for prerelease |
-| Windows | NSIS installer | Authenticode and timestamp required for stable; optional for prerelease |
+| macOS | universal app archive and DMG | Signing and notarization required for stable by default; optional for prerelease or an explicitly authorized emergency stable override |
+| Windows | NSIS installer | Authenticode and timestamp required for stable by default; optional for prerelease or an explicitly authorized emergency stable override |
 
 Prerelease release builds switch the bundled updater endpoint to `latest-prerelease.json` before building.
+
+### Emergency unsigned stable publication
+
+Native signing remains mandatory for stable releases by default. When Apple or Windows certificate provisioning is temporarily unavailable, an authorized maintainer may manually dispatch the workflow with `allow_unsigned_native=true`. This exception affects only Apple code signing/notarization and Windows Authenticode. Tauri updater signatures, SHA-256 checksums, release asset validation, and GitHub build-provenance attestations remain mandatory.
+
+The workflow adds a prominent warning to the GitHub Release notes. Restore the default signed path as soon as the platform credentials are available. Do not use this override for an unattended Changesets dispatch or describe the resulting native installers as platform-signed.
 
 #### Linux
 
@@ -323,7 +329,7 @@ These run artifacts are for testing. They do not create a version tag, GitHub Re
 
 ### Tag exists and the release is missing
 
-Run the Changesets workflow again on the relevant branch, or manually dispatch `release.yml` from `main` or `prerelease` with the existing tag. Do not recreate or move the tag.
+Run the Changesets workflow again on the relevant branch, or manually dispatch `release.yml` from `main` or `prerelease` with the existing tag. For an explicitly approved emergency unsigned stable release, add `--field allow_unsigned_native=true`. Do not recreate or move the tag.
 
 ### Draft release exists
 
