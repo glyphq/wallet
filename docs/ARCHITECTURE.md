@@ -528,7 +528,7 @@ Delivery failure is recorded and the UI can retry, save, or copy the result.
 
 ## 16. Notifications and background behavior
 
-The native layer integrates operating-system notifications and tray behavior. The frontend determines notification events from balances, history, and pending-state transitions.
+The native layer integrates operating-system notifications, tray behavior, and user-controlled startup registration. The frontend determines notification events from balances, history, and pending-state transitions.
 
 - Desktop notifications are off by default.
 - The first delivery requests system permission.
@@ -537,6 +537,8 @@ The native layer integrates operating-system notifications and tray behavior. Th
 - Startup reconciliation can examine up to 24 hours of received activity without replaying old desktop popups.
 
 If hide-to-tray is enabled, a close request hides the main window. Otherwise, it exits. Tray construction failure is nonfatal.
+
+The autostart plugin manages the operating-system registration only after a user enables **Launch at startup** in Settings. The renderer reconciles the displayed setting with the plugin's current registration state when the Notifications settings screen opens.
 
 ## 17. Updater and packaging
 
@@ -588,6 +590,7 @@ The main window receives only the declared Tauri capabilities, including:
 - Deep-link handling
 - Clipboard write
 - Notifications
+- User-controlled startup registration
 - Updater check and install
 - Save dialog
 - File existence and write access scoped to Downloads and Documents

@@ -322,6 +322,12 @@ At startup, Glyph can reconcile received transactions over a lookback of up to 2
 - The tray menu can reopen or quit Glyph.
 - Missing tray support does not prevent the wallet from opening.
 
+### Launch at startup
+
+- **Launch at startup** registers Glyph with the operating system to open when you sign in.
+- The setting is off by default and is available on Windows, macOS, and Linux.
+- Turning it off removes Glyph's operating-system startup registration.
+
 Exiting drops the process-held session data. Lock explicitly clears the native signing session before notifying the renderer.
 
 ## 14. External requests and `glyph://` links

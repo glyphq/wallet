@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pollingIntervalTrayMs: 15_000,
   pollingIntervalLockedMs: 20_000,
   hideToTray: false,
+  autostartEnabled: false,
   sponsorAttribution: "anonymous",
   allowBlurLockBypass: false,
   requirePasswordForBurn: false,
