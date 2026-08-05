@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/button";
+import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-const MIN_SPLASH_MS = 4800;
 const HYDRATION_TIMEOUT_MS = 8000;
 
 export default function SplashScreen() {
@@ -14,9 +15,7 @@ export default function SplashScreen() {
   const [hydrationAttempt, setHydrationAttempt] = useState(0);
   const vaults = usePersistedStore((s) => s.vaults);
   const isLocked = useSessionStore((s) => s.isLocked);
-  const [videoFailed, setVideoFailed] = useState(false);
-  const mountedAt = useRef(Date.now());
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const unsub = usePersistedStore.persist.onFinishHydration(() => {
@@ -42,41 +41,13 @@ export default function SplashScreen() {
   }, [hydrated, hydrationAttempt]);
 
   useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    function syncPlayback() {
-      const video = videoRef.current;
-      if (!video) return;
-      if (reducedMotion.matches) {
-        video.pause();
-        video.currentTime = 0;
-      } else {
-        void video.play().catch(() => {
-          // The video element can reject play() briefly while its source is still buffering.
-          // The autoplay attribute retries once media is ready; onError handles real failures.
-        });
-      }
-    }
-
-    syncPlayback();
-    reducedMotion.addEventListener("change", syncPlayback);
-    return () => reducedMotion.removeEventListener("change", syncPlayback);
-  }, [hydrationStatus]);
-
-  useEffect(() => {
     if (!hydrated) return;
-    const elapsed = Date.now() - mountedAt.current;
-    const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
-    const timer = setTimeout(() => {
-      if (vaults.length === 0) navigate("/setup", { replace: true });
-      else if (isLocked) navigate("/lock", { replace: true });
-      else navigate("/dashboard", { replace: true });
-    }, remaining);
-    return () => clearTimeout(timer);
+    if (vaults.length === 0) navigate("/setup", { replace: true });
+    else if (isLocked) navigate("/lock", { replace: true });
+    else navigate("/dashboard", { replace: true });
   }, [hydrated, vaults.length, isLocked, navigate]);
 
   function retryHydration() {
-    setVideoFailed(false);
     setHydrationStatus("loading");
     setHydrationAttempt((attempt) => attempt + 1);
     void usePersistedStore.persist.rehydrate();
@@ -93,43 +64,16 @@ export default function SplashScreen() {
       }}
     >
       {hydrationStatus === "loading" ? (
-        videoFailed ? (
-          <div
-            role="status"
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "grid",
-              placeItems: "center",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body)",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            Loading Glyph Wallet
-          </div>
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            loop
-            preload="auto"
+        <div role="status" aria-label="Loading Glyph Wallet" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+          <motion.img
+            src={glyphOnDark}
+            alt=""
             aria-hidden="true"
-            onError={() => setVideoFailed(true)}
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "block",
-              objectFit: "cover",
-              background: "var(--color-bg-canvas)",
-            }}
-          >
-            <source src="/splash_loading.webm" type="video/webm" />
-            <source src="/splash_loading.mp4" type="video/mp4" />
-          </video>
-        )
+            animate={reduceMotion ? undefined : { opacity: [0.7, 1, 0.7], scale: [0.96, 1, 0.96] }}
+            transition={reduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            style={{ width: 104, height: 104, objectFit: "contain" }}
+          />
+        </div>
       ) : (
         <div
           style={{
