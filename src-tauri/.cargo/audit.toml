@@ -1,5 +1,10 @@
 [advisories]
 ignore = [
+  # battery 0.7.8, used only for the device-diagnostics battery reading, pins
+  # nix 0.19. Its vulnerable getgrouplist path is not used by battery's Linux
+  # power-supply reader. Remove this exception when battery updates nix.
+  "RUSTSEC-2021-0119",
+
   # glib VariantStrIter unsoundness (RUSTSEC-2024-0429).
   # Fixed in glib >=0.20.0, but libappindicator pins glib ^0.18 and has no
   # newer release. VariantStrIter is not exercised by any code path in this

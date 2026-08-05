@@ -60,6 +60,7 @@
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.83.0",
     "react-router": "8.3.0",
+    "tauri-plugin-device-info-api": "^1.0.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
