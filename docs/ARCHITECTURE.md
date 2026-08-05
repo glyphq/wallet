@@ -681,7 +681,7 @@ Security and architecture reviews should explicitly account for these current be
 11. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
 12. **Smart-contract index validation differs by layer:** native validation is narrower and authoritative.
 13. **Audit history is mutable:** it is local, capped, and clearable.
-14. **Diagnostics contain metadata:** reports omit vault secrets but can disclose identities in scopes, origins, endpoints, and recent security activity.
+14. **Diagnostics contain metadata:** reports omit vault secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
 15. **Network-derived data is trusted for display:** signatures remain local, but malicious RPC data can influence user decisions.
 
 ## 22. Review checklist for sensitive changes

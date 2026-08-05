@@ -14,6 +14,13 @@ import { useUpdater } from "@/hooks/use-updater";
 import { formatDate } from "@/lib/format";
 import { saveFileDialog } from "@/lib/save-file";
 import { AltArrowDown, AltArrowUp } from "@solar-icons/react";
+import {
+  getBatteryInfo,
+  getDeviceInfo,
+  getDisplayInfo,
+  getNetworkInfo,
+  getStorageInfo,
+} from "tauri-plugin-device-info-api";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -22,6 +29,14 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }
   degraded: { bg: "var(--color-status-warning-soft)", color: "var(--color-status-warning)", label: "Slow" },
   offline: { bg: "var(--color-status-error-soft)", color: "var(--color-status-error)", label: "Offline" },
 };
+
+interface DeviceDiagnostics {
+  device: string | null;
+  battery: string | null;
+  network: string | null;
+  storage: string | null;
+  display: string | null;
+}
 
 function cspModeLabel() {
   return import.meta.env.DEV ? "Development" : "Strict";
@@ -53,6 +68,7 @@ export default function DiagnosticsScreen() {
 
   const [storageUsed, setStorageUsed] = useState<number | null>(null);
   const [storageQuota, setStorageQuota] = useState<number | null>(null);
+  const [deviceDiagnostics, setDeviceDiagnostics] = useState<DeviceDiagnostics | null>(null);
   const [showTechnical, setShowTechnical] = useState(false);
 
   useEffect(() => {
@@ -60,6 +76,43 @@ export default function DiagnosticsScreen() {
       setStorageUsed(usage ?? null);
       setStorageQuota(quota ?? null);
     }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void Promise.all([
+      getDeviceInfo(),
+      getBatteryInfo(),
+      getNetworkInfo(),
+      getStorageInfo(),
+      getDisplayInfo(),
+    ]).then(([device, battery, network, storage, display]) => {
+      if (cancelled) return;
+      const deviceLabel = [device.device_name, device.manufacturer, device.model]
+        .filter((value): value is string => Boolean(value))
+        .join(" · ");
+      const batteryLabel = battery.level == null
+        ? null
+        : `${Math.round(battery.level)}%${battery.isCharging ? " · Charging" : ""}`;
+      const storageLabel = storage.totalSpace == null || storage.freeSpace == null
+        ? null
+        : `${formatBytes(storage.freeSpace)} free of ${formatBytes(storage.totalSpace)}`;
+      const displayLabel = display.width == null || display.height == null
+        ? null
+        : `${display.width} × ${display.height}${display.refreshRate == null ? "" : ` · ${display.refreshRate} Hz`}`;
+      setDeviceDiagnostics({
+        device: deviceLabel || null,
+        battery: batteryLabel,
+        network: network.networkType ?? null,
+        storage: storageLabel,
+        display: displayLabel,
+      });
+    }).catch(() => {
+      if (!cancelled) setDeviceDiagnostics(null);
+    });
+
+    return () => { cancelled = true; };
   }, []);
 
   const totalAccounts = useMemo(() => vaults.reduce((sum, v) => sum + v.accounts.length, 0), [vaults]);
@@ -86,6 +139,7 @@ export default function DiagnosticsScreen() {
       lastError: updater.lastError,
     },
     csp: { mode: cspModeLabel(), detail: cspModeDetail() },
+    device: deviceDiagnostics,
     runtime: {
       pendingRequestQueueLength: pendingRequestCount,
       pendingTransactionCount: pendingTxs.length,
@@ -104,7 +158,7 @@ export default function DiagnosticsScreen() {
     counts: { vaults: vaults.length, contacts: contacts.length, accounts: totalAccounts },
     settings: { ...settings, exportSigningPrivateJwk: settings.exportSigningPrivateJwk ? "[redacted]" : null },
     exportSigningKey: usePersistedStore.getState().exportSigningKey ? "[redacted]" : null,
-  }), [auditEvents, contacts.length, lastProcessedTick?.tickNumber, latestStats?.activeAddresses, latestStats?.price, pendingRequestCount, pendingTxs.length, recentIssues, settings, tickInfo?.epoch, tickInfo?.tick, totalAccounts, updater, vaults.length]);
+  }), [auditEvents, contacts.length, deviceDiagnostics, lastProcessedTick?.tickNumber, latestStats?.activeAddresses, latestStats?.price, pendingRequestCount, pendingTxs.length, recentIssues, settings, tickInfo?.epoch, tickInfo?.tick, totalAccounts, updater, vaults.length]);
 
   async function exportBundle() {
     await saveFileDialog(
@@ -190,6 +244,21 @@ export default function DiagnosticsScreen() {
             <Row label="Storage" value={`${formatBytes(storageUsed)} / ${formatBytes(storageQuota)}`} />
           )}
           <Row label="CSP mode" value={cspModeLabel()} />
+        </Card>
+
+        <Card>
+          <CardHeader>Device</CardHeader>
+          {deviceDiagnostics ? (
+            <>
+              <Row label="System" value={deviceDiagnostics.device ?? "Not available"} />
+              <Row label="Battery" value={deviceDiagnostics.battery ?? "Not available"} />
+              <Row label="Connection" value={deviceDiagnostics.network ?? "Not available"} />
+              <Row label="Disk" value={deviceDiagnostics.storage ?? "Not available"} />
+              <Row label="Display" value={deviceDiagnostics.display ?? "Not available"} />
+            </>
+          ) : (
+            <Row label="Status" value="Native device details unavailable" />
+          )}
         </Card>
 
         {/* ── Actions ────────────────────────────────────────────── */}

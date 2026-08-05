@@ -471,8 +471,9 @@ The diagnostics screen can export a JSON report containing information such as:
 - Configured network URLs and request statistics
 - Counts of local records
 - Most application settings
+- Device diagnostics such as battery state, display, available disk space, and connection type
 
-The report excludes vault encrypted data, seeds, and passwords, but it can contain privacy-sensitive metadata such as RPC URLs, dApp origins, account-scope identities, recent security-event descriptions, and configuration choices. Inspect the file before sharing it.
+The report excludes vault encrypted data, seeds, passwords, device identifiers, serial numbers, IP addresses, and MAC addresses. It can still contain privacy-sensitive metadata such as RPC URLs, dApp origins, account-scope identities, recent security-event descriptions, and configuration choices. Inspect the file before sharing it.
 
 Support links open in the system browser. Treat unsolicited support messages, seed requests, and remote-access requests as scams.
 

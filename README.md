@@ -97,7 +97,7 @@ Each release includes platform-specific `SHA256SUMS-*.txt` files. Compare the ch
 - Configurable HTTPS live and archive RPC endpoints plus target-tick offset.
 - Built-in updater for Windows, macOS, and Linux AppImage installations.
 - Local security audit log for unlock attempts, seed reveal, vault exports, and dApp request activity.
-- Diagnostics for network health, sync distance, updater state, runtime issues, storage use, CSP mode, and a downloadable debug bundle.
+- Diagnostics for network health, sync distance, updater state, device status, runtime issues, storage use, CSP mode, and a downloadable debug bundle.
 
 ### dApp requests
 
