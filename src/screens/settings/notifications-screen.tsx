@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { SettingsSwitch } from "@/components/settings-switch";
 import { usePersistedStore } from "@/store/persisted";
+import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
 export default function NotificationsScreen() {
   const enabled = usePersistedStore((s) => s.settings.notificationsEnabled);
@@ -14,7 +17,53 @@ export default function NotificationsScreen() {
   const onMissedConfirmations = usePersistedStore((s) => s.settings.notifyOnMissedConfirmations);
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
+  const autostartEnabled = usePersistedStore((s) => s.settings.autostartEnabled);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
+  const [autostartPending, setAutostartPending] = useState(false);
+  const [autostartReady, setAutostartReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void isEnabled()
+      .then((enabled) => {
+        if (cancelled) return;
+        if (enabled !== autostartEnabled) updateSettings({ autostartEnabled: enabled });
+        setAutostartReady(true);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        recordRuntimeIssue({
+          source: "native",
+          title: "Startup registration unavailable",
+          detail: error instanceof Error ? error.message : String(error),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autostartEnabled, updateSettings]);
+
+  async function toggleAutostart() {
+    setAutostartPending(true);
+    try {
+      if (autostartEnabled) {
+        await disable();
+      } else {
+        await enable();
+      }
+      updateSettings({ autostartEnabled: !autostartEnabled });
+    } catch (error) {
+      recordRuntimeIssue({
+        source: "native",
+        title: "Startup registration could not be updated",
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setAutostartPending(false);
+    }
+  }
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -46,6 +95,8 @@ export default function NotificationsScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSectionLabel>Behavior</SettingsSectionLabel>
           <SettingsSwitch label="Hide to tray on close" description="Keep Glyph running in the system tray" checked={hideToTray} onChange={() => updateSettings({ hideToTray: !hideToTray })} />
+          <SettingsDivider />
+          <SettingsSwitch label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
           <SettingsDivider />
           <SettingsSwitch label="Notify when locked" description="Allow notifications while the vault is locked" checked={notifyWhenLocked} onChange={() => updateSettings({ notifyWhenLocked: !notifyWhenLocked })} disabled={!enabled} />
         </div>

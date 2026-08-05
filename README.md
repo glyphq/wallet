@@ -91,6 +91,7 @@ Each release includes platform-specific `SHA256SUMS-*.txt` files. Compare the ch
 
 - Compact portrait desktop shell built with Tauri v2.
 - System tray with open, quit, and optional hide-on-close behavior. The main window continues to work when a Linux desktop does not expose a tray host.
+- Optional launch-at-sign-in registration for Windows, macOS, and Linux.
 - Desktop notifications for received QU, broadcasts, confirmations, failed or expired transactions, with an option to suppress notifications while locked.
 - Dark and light themes plus selectable font pairs.
 - Configurable HTTPS live and archive RPC endpoints plus target-tick offset.

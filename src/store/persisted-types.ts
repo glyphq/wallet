@@ -120,6 +120,8 @@ export interface AppSettings {
   pollingIntervalTrayMs: number;
   pollingIntervalLockedMs: number;
   hideToTray: boolean;
+  /** Whether Glyph is registered to launch when the user signs in. */
+  autostartEnabled: boolean;
   sponsorAttribution: "anonymous" | "identity" | "custom";
   allowBlurLockBypass: boolean;
   requirePasswordForBurn: boolean;

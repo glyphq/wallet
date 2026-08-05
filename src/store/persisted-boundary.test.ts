@@ -134,6 +134,7 @@ describe("persisted boundary helpers", () => {
           sponsorAttribution: "invalid",
           allowBlurLockBypass: "yes",
           autoLockMinutes: 0,
+          autostartEnabled: true,
         },
         vaults: [
           {
@@ -174,11 +175,18 @@ describe("persisted boundary helpers", () => {
     );
     expect(merged.settings.allowBlurLockBypass).toBe(true);
     expect(merged.settings.autoLockMinutes).toBe(1);
+    expect(merged.settings.autostartEnabled).toBe(true);
     expect(merged.passwordAttempts).toBe(4);
     expect(merged.passwordLockoutUntil).toBe(99_000);
     expect(merged.exportSigningKey).toEqual({ kty: "oct", k: "test-key" });
     expect(merged.vaults[0]?.encryptedData).toEqual({ should: "be removed" });
     expect(merged.vaults[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);
+  });
+
+  test("defaults the startup setting for existing persisted state", () => {
+    const merged = mergePersistedState({ settings: {} }, currentState());
+
+    expect(merged.settings.autostartEnabled).toBe(false);
   });
 });
