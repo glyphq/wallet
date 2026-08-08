@@ -11,6 +11,7 @@ describe("parsePayLink", () => {
       JSON.stringify({ to: identity, amount: "-1" }),
       JSON.stringify({ to: identity, amount: "18446744073709551616" }),
       JSON.stringify({ to: identity, label: "x".repeat(257) }),
+      JSON.stringify({ to: identity, label: "x" }).padEnd(4 * 1024 + 1, " "),
     ]) {
       expect(parsePayLink(payload)).toBeNull();
     }
