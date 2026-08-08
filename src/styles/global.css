@@ -158,9 +158,9 @@ a:hover {
 
 .glyph-btn[data-variant="primary"] {
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-inverse) 16%, transparent),
-    0 2px 0 color-mix(in srgb, var(--color-text-display) 18%, transparent),
-    0 4px 10px rgba(0, 0, 0, 0.14);
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-inverse) 24%, transparent),
+    0 4px 0 color-mix(in srgb, var(--color-text-display) 28%, transparent),
+    0 7px 14px rgba(0, 0, 0, 0.2);
 }
 
 .glyph-btn[data-variant="primary"]:hover:not(:disabled) {
@@ -174,8 +174,9 @@ a:hover {
 
 .glyph-btn[data-variant="secondary"] {
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 8%, transparent),
-    0 2px 0 color-mix(in srgb, var(--color-border-strong) 76%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 3px 0 var(--color-border-strong),
+    0 5px 10px rgba(0, 0, 0, 0.12);
 }
 
 .glyph-btn[data-variant="ghost"]:hover:not(:disabled) {
@@ -188,7 +189,7 @@ a:hover {
 }
 
 .glyph-btn:active:not(:disabled) {
-  transform: translateY(2px);
+  transform: translateY(4px);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
 }
 
@@ -253,21 +254,21 @@ a:hover {
 
 .glyph-input:focus:not(:focus-visible) {
   outline: none;
-  border-color: var(--color-border-contrast);
-  background: color-mix(in srgb, var(--color-bg-input) 82%, white 18%);
+  border-color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-bg-input) 72%, white 28%);
   box-shadow:
-    inset 0 0 0 1px var(--color-border-contrast),
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 9%, transparent);
+    inset 0 0 0 1px var(--color-text-primary),
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent);
 }
 
 /* Inputs communicate keyboard focus through their own border, not a second outer ring. */
 .glyph-input:focus-visible {
   outline: none;
-  border-color: var(--color-border-contrast);
-  background: color-mix(in srgb, var(--color-bg-input) 82%, white 18%);
+  border-color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-bg-input) 72%, white 28%);
   box-shadow:
-    inset 0 0 0 1px var(--color-border-contrast),
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 9%, transparent);
+    inset 0 0 0 1px var(--color-text-primary),
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent);
 }
 
 .glyph-input[data-error="true"] {
