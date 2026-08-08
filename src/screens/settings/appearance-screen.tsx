@@ -59,6 +59,7 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
     <div ref={containerRef} style={{ position: "relative", flex: "0 1 190px" }}>
       <button
         type="button"
+        className="settings-pressable"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls="interface-font-options"
@@ -109,6 +110,7 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
               {index > 0 && <SettingsDivider />}
               <button
                 type="button"
+                className="settings-pressable"
                 role="option"
                 aria-selected={pair.id === value}
                 onClick={() => {
@@ -166,6 +168,7 @@ export default function AppearanceScreen() {
                   {index > 0 && <SettingsDivider />}
                   <button
                     type="button"
+                    className="settings-pressable"
                     role="radio"
                     aria-checked={selected}
                     onClick={() => updateSettings({ themeMode: id })}
@@ -176,9 +179,10 @@ export default function AppearanceScreen() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       gap: "var(--space-3)",
-                      padding: "var(--space-2) 0",
-                      background: "none",
-                      border: "none",
+                      padding: "var(--space-2) var(--space-3)",
+                      background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
+                      border: "1px solid var(--color-border-subtle)",
+                      borderRadius: "var(--radius-control)",
                       cursor: "pointer",
                       fontFamily: "var(--font-sans)",
                       fontSize: "var(--text-body)",

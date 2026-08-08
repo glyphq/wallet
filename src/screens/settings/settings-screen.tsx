@@ -80,7 +80,7 @@ export default function SettingsScreen() {
                 <motion.button
                   {...gesture.pressSubtle}
                   onClick={() => navigate(row.route)}
-                  className="stagger-item"
+                  className="stagger-item settings-pressable"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -114,6 +114,7 @@ export default function SettingsScreen() {
         <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {update && updaterSupported && (
             <button
+              className="settings-pressable"
               onClick={install}
               disabled={installing}
               style={{
