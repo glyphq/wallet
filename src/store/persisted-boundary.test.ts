@@ -6,6 +6,7 @@ import {
   clampNotificationEvents,
   clampTxMemos,
   mergePersistedState,
+  sanitizeCustomPriceFeedUrl,
   sanitizePollingInterval,
 } from "./persisted-boundary";
 import type { NotificationEvent, PersistedState } from "./persisted-types";
@@ -113,6 +114,19 @@ describe("persisted boundary helpers", () => {
     expect(sanitizePollingInterval("fast", 10_000)).toBe(10_000);
   });
 
+  test("sanitizes custom price feed URLs to global HTTPS endpoints", () => {
+    expect(sanitizeCustomPriceFeedUrl(" https://price.example/feed ", "")).toBe("https://price.example/feed");
+    for (const value of [
+      "http://price.example/feed",
+      "https://localhost/feed",
+      "https://127.0.0.1/feed",
+      "https://user:pass@price.example/feed",
+      "https://price.example/" + "x".repeat(2049),
+    ]) {
+      expect(sanitizeCustomPriceFeedUrl(value, "https://safe.example/feed")).toBe("https://safe.example/feed");
+    }
+  });
+
   test("merges persisted state with default settings and sanitized boundary fields", () => {
     const merged = mergePersistedState(
       {
@@ -130,6 +144,7 @@ describe("persisted boundary helpers", () => {
           ],
           highValueSendThreshold: "1,234 qu",
           priceAlertAbove: "$12.34",
+          customPriceFeedUrl: "http://127.0.0.1:8080/latest-stats",
           pollingIntervalActiveMs: 1,
           sponsorAttribution: "invalid",
           allowBlurLockBypass: "yes",
@@ -169,6 +184,7 @@ describe("persisted boundary helpers", () => {
     expect(merged.settings.network).toEqual(DEFAULT_SETTINGS.network);
     expect(merged.settings.highValueSendThreshold).toBe("1234");
     expect(merged.settings.priceAlertAbove).toBe("12.34");
+    expect(merged.settings.customPriceFeedUrl).toBe(DEFAULT_SETTINGS.customPriceFeedUrl);
     expect(merged.settings.pollingIntervalActiveMs).toBe(2_000);
     expect(merged.settings.sponsorAttribution).toBe(
       DEFAULT_SETTINGS.sponsorAttribution

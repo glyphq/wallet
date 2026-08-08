@@ -1,6 +1,7 @@
 import { isValidIdentity } from "@/lib/crypto";
 
 const MAX_PAY_LABEL_CHARS = 256;
+const MAX_PAY_LINK_CHARS = 4 * 1024;
 const MAX_UINT64 = 18_446_744_073_709_551_615n;
 
 export interface PayLink {
@@ -11,6 +12,7 @@ export interface PayLink {
 
 /** Parses native deep-link data before it is reflected into the send route. */
 export function parsePayLink(raw: string): PayLink | null {
+  if (raw.length > MAX_PAY_LINK_CHARS) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
