@@ -97,7 +97,7 @@ export function ShellVaultSwitcher() {
           width: 36,
           height: 36,
           padding: 0,
-          borderRadius: "var(--radius-control)",
+          borderRadius: "var(--radius-pill)",
           cursor: "pointer",
         }}
       >
