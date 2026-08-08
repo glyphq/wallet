@@ -2,12 +2,7 @@ import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { router } from "@/router";
-
-interface PayPayload {
-  to: string;
-  amount?: string | null;
-  label?: string | null;
-}
+import { parsePayLink } from "@/lib/pay-link";
 
 /** Listens for glyph://pay deep links and navigates to the send screen with pre-filled params. */
 export function usePayLink() {
@@ -19,7 +14,8 @@ export function usePayLink() {
         while (true) {
           const payload = await invoke<string | null>("take_pending_pay");
           if (!payload) break;
-          const pay = JSON.parse(payload) as PayPayload;
+          const pay = parsePayLink(payload);
+          if (!pay) continue;
           const params = new URLSearchParams({ to: pay.to });
           if (pay.amount) params.set("amount", pay.amount);
           if (pay.label) params.set("label", pay.label);
