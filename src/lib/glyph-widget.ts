@@ -1,6 +1,4 @@
 import type { WidgetConfig } from "tauri-plugin-widgets-api";
-export { createAccountBalanceWidgetConfig, createVaultBalanceWidgetConfig, formatWidgetQu } from "./glyph-balance-widget";
-export type { AccountBalanceWidgetConfigInput, VaultBalanceWidgetConfigInput } from "./glyph-balance-widget";
 
 export const GLYPH_WIDGET_GROUP = "group.com.qubic.glyph";
 export const GLYPH_OVERVIEW_WIDGET_ID = "wallet-overview";
