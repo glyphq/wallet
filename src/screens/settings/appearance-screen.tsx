@@ -7,9 +7,9 @@ import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { Sun, Moon } from "@solar-icons/react";
 
-const THEMES: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
-  { id: "dark", label: "Dark", Icon: Moon },
-  { id: "light", label: "Light", Icon: Sun },
+const THEMES: { id: ThemeMode; label: string; description: string; Icon: typeof Sun }[] = [
+  { id: "dark", label: "Dark", description: "Low-glare colors for focused, comfortable viewing.", Icon: Moon },
+  { id: "light", label: "Light", description: "A crisp, bright palette for daylight and bright rooms.", Icon: Sun },
 ];
 
 function SettingsSectionLabel({ children }: { children: ReactNode }) {
@@ -124,7 +124,7 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
   }, [open]);
 
   return (
-    <div ref={containerRef} style={{ position: "relative", flex: "0 1 190px" }}>
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
       <button
         type="button"
         className="settings-pressable"
@@ -238,12 +238,11 @@ export default function AppearanceScreen() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <SettingsSectionLabel>Theme</SettingsSectionLabel>
-          <div role="radiogroup" aria-label="Theme" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {THEMES.map(({ id, label, Icon }, index) => {
+          <div role="radiogroup" aria-label="Theme" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {THEMES.map(({ id, label, description, Icon }) => {
               const selected = themeMode === id;
               return (
                 <div key={id}>
-                  {index > 0 && <SettingsDivider />}
                   <button
                     type="button"
                     className="settings-pressable"
@@ -252,12 +251,12 @@ export default function AppearanceScreen() {
                     onClick={() => updateSettings({ themeMode: id })}
                     style={{
                       width: "100%",
-                      minHeight: 44,
+                      minHeight: 64,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
                       gap: "var(--space-3)",
-                      padding: "var(--space-2) var(--space-3)",
+                      padding: "var(--space-3)",
                       background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
                       border: "1px solid var(--color-border-subtle)",
                       borderRadius: "var(--radius-control)",
@@ -269,9 +268,14 @@ export default function AppearanceScreen() {
                       textAlign: "left",
                     }}
                   >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)" }}>
-                      <Icon size={16} weight="Linear" aria-hidden="true" />
-                      {label}
+                    <span style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                      <Icon size={18} weight="Linear" aria-hidden="true" style={{ marginTop: 1, flexShrink: 0 }} />
+                      <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                        <span>{label}</span>
+                        <span style={{ fontSize: "var(--text-caption)", fontWeight: 400, color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
+                          {description}
+                        </span>
+                      </span>
                     </span>
                     <span style={{ fontSize: "var(--text-caption)", color: selected ? "var(--color-text-primary)" : "var(--color-text-tertiary)" }}>
                       {selected ? "Selected" : ""}
