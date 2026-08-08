@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { createHashRouter } from "react-router";
+import { createHashRouter, Navigate } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -81,6 +81,7 @@ export const router = createHashRouter([
       { path: "/settings/support", element: <Screen component={SupportScreen} /> },
       { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
       { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
+      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
 ]);
