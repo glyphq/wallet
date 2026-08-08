@@ -61,11 +61,6 @@ export default function SupportScreen() {
           <SponsorTicker />
         </section>
 
-        <section aria-labelledby="support-heading" style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-5)" }}>
-          <h2 id="support-heading" style={{ margin: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>Built with community support</h2>
-          <p style={{ maxWidth: 460, margin: "var(--space-2) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)" }}>Sponsor commitments and donations help Glyph remain an open, local wallet.</p>
-        </section>
-
         <section aria-label="Your contribution history" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-4)", paddingTop: "var(--space-5)", borderTop: "1px solid var(--color-border-subtle)" }}>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Sent from this wallet</span>
           <strong style={{ color: sentTotal > 0n ? "var(--color-status-success)" : "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", fontWeight: 600 }}>{sentTotal > 0n ? `${formatQu(sentTotal)} QU` : "No donations yet"}</strong>
@@ -99,7 +94,7 @@ function SponsorTickerEntry() {
   return (
     <div className="sponsor-ticker-entry">
       <img className="sponsor-ticker-logo" src={minerLabLogo} alt="" />
-      <strong style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", fontWeight: 600, whiteSpace: "nowrap" }}>2B QU</strong>
+      <strong className="sponsor-ticker-amount">2B QU</strong>
     </div>
   );
 }
