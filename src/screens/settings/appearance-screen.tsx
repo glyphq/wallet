@@ -205,10 +205,7 @@ export default function AppearanceScreen() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <SettingsSectionLabel>Font</SettingsSectionLabel>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", minHeight: 44 }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
-              Interface font
-            </span>
+          <div style={{ display: "flex" }}>
             <FontPicker value={fontPair} onChange={(font) => updateSettings({ fontPair: font })} />
           </div>
         </div>
