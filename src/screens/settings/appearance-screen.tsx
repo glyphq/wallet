@@ -178,7 +178,6 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
               {index > 0 && <SettingsDivider />}
               <button
                 type="button"
-                className="settings-pressable"
                 role="option"
                 aria-selected={pair.id === value}
                 onClick={() => {
