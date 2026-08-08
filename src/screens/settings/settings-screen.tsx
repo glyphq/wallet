@@ -166,11 +166,6 @@ export default function SettingsScreen() {
               {checkError ? " Update check failed" : ""}
             </span>
           </div>
-          {!checking && !updaterSupported && context?.reason && (
-            <span style={{ ...labelStyle, color: "var(--color-text-secondary)" }}>
-              {context.reason}
-            </span>
-          )}
           {lastError && (checkError || installError || !updaterSupported) && (
             <span style={{ ...labelStyle, color: (checkError || installError) ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
               {lastError}
