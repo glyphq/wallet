@@ -18,6 +18,7 @@ export function Textarea({
   containerStyle,
   leftElement,
   technical = false,
+  className,
   ...props
 }: TextareaProps) {
   const generatedId = useId();
@@ -35,8 +36,10 @@ export function Textarea({
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "var(--text-label)",
-            color: "var(--color-text-secondary)",
-            letterSpacing: "0.02em",
+            color: "var(--color-text-tertiary)",
+            fontWeight: 500,
+            lineHeight: "var(--leading-compact)",
+            letterSpacing: "0.015em",
           }}
         >
           {label}
@@ -64,7 +67,7 @@ export function Textarea({
           {...props}
           id={fieldId}
           spellCheck={props.spellCheck ?? false}
-          className="glyph-input"
+          className={["glyph-input", className].filter(Boolean).join(" ")}
           data-has-leading={leftElement ? "true" : undefined}
           data-error={error ? "true" : undefined}
           aria-invalid={error ? "true" : undefined}
@@ -75,11 +78,11 @@ export function Textarea({
             width: "100%",
             resize: "vertical",
             minHeight: 120,
-            paddingTop: "var(--space-3)",
+            paddingTop: "10px",
             paddingRight: "var(--space-4)",
-            paddingBottom: "var(--space-3)",
+            paddingBottom: "10px",
             paddingLeft: leftElement ? 48 : "var(--space-4)",
-            background: "var(--color-bg-surface-2)",
+            background: "var(--color-bg-input)",
             borderRadius: "var(--radius-control)",
             color: "var(--color-text-primary)",
             fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
