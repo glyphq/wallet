@@ -28,6 +28,7 @@ export type FontPairId =
   | "fira"
   | "jetbrains";
 export type ThemeMode = "dark" | "light";
+export type InterfaceDensity = "comfortable" | "compact";
 
 export type AccentColorId =
   | "green"
@@ -96,6 +97,8 @@ export interface AppSettings {
   tickOffset: number;
   /** Dark or light theme. */
   themeMode: ThemeMode;
+  /** Controls app-level spacing and compact text tokens without shrinking touch targets. */
+  interfaceDensity: InterfaceDensity;
   debugMode: boolean;
   biometricVaultIds: string[];
   /** @deprecated Kept for migration compat — no longer configurable in UI. */

@@ -25,6 +25,7 @@ export type {
   AuditEventKind,
   Contact,
   FontPairId,
+  InterfaceDensity,
   NetworkConfig,
   NotificationEvent,
   NotificationEventKind,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { usePersistedStore, type ThemeMode, type FontPairId } from "@/store/persisted";
+import { usePersistedStore, type ThemeMode, type FontPairId, type InterfaceDensity } from "@/store/persisted";
 import { FONT_PAIRS } from "@/lib/appearance";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -10,6 +10,11 @@ import { Sun, Moon } from "@solar-icons/react";
 const THEMES: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
   { id: "dark", label: "Dark", Icon: Moon },
   { id: "light", label: "Light", Icon: Sun },
+];
+
+const DENSITIES: { id: InterfaceDensity; label: string; description: string }[] = [
+  { id: "comfortable", label: "Comfortable", description: "Roomier spacing and standard reading size." },
+  { id: "compact", label: "Compact", description: "Tighter spacing for more wallet detail on screen." },
 ];
 
 function SettingsSectionLabel({ children }: { children: ReactNode }) {
@@ -28,6 +33,122 @@ function SettingsSectionLabel({ children }: { children: ReactNode }) {
 
 function SettingsDivider() {
   return <div style={{ height: 1, background: "var(--color-border-subtle)" }} />;
+}
+
+function SettingsToggleRow({
+  checked,
+  description,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  description: string;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="settings-pressable"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: "100%",
+        minHeight: 44,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "var(--space-3)",
+        padding: "var(--space-3)",
+        background: "var(--color-bg-surface)",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: "var(--radius-control)",
+        color: "var(--color-text-primary)",
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{label}</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
+          {description}
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 38,
+          height: 22,
+          flex: "0 0 auto",
+          padding: 2,
+          borderRadius: "var(--radius-pill)",
+          background: checked ? "var(--color-accent)" : "var(--color-bg-input)",
+          border: "1px solid var(--color-border-default)",
+        }}
+      >
+        <span
+          style={{
+            display: "block",
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            background: checked ? "var(--color-accent-contrast)" : "var(--color-text-tertiary)",
+            transform: checked ? "translateX(16px)" : "translateX(0)",
+            transition: "transform var(--duration-fast) var(--ease-out)",
+          }}
+        />
+      </span>
+    </button>
+  );
+}
+
+function DensityPicker({ value, onChange }: { value: InterfaceDensity; onChange: (density: InterfaceDensity) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Interface density" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {DENSITIES.map((density, index) => {
+        const selected = value === density.id;
+        return (
+          <div key={density.id}>
+            {index > 0 && <SettingsDivider />}
+            <button
+              type="button"
+              className="settings-pressable"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(density.id)}
+              style={{
+                width: "100%",
+                minHeight: 44,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "var(--space-3)",
+                padding: "var(--space-3)",
+                background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
+                border: "1px solid var(--color-border-subtle)",
+                borderRadius: "var(--radius-control)",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: selected ? 600 : 400, color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
+                  {density.label}
+                </span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
+                  {density.description}
+                </span>
+              </span>
+              <span style={{ fontSize: "var(--text-caption)", color: selected ? "var(--color-text-primary)" : "var(--color-text-tertiary)" }}>
+                {selected ? "Selected" : ""}
+              </span>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: FontPairId) => void }) {
@@ -151,6 +272,8 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
 export default function AppearanceScreen() {
   const themeMode = usePersistedStore((s) => s.settings.themeMode);
   const fontPair = usePersistedStore((s) => s.settings.fontPair);
+  const interfaceDensity = usePersistedStore((s) => s.settings.interfaceDensity);
+  const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   return (
@@ -203,6 +326,25 @@ export default function AppearanceScreen() {
               );
             })}
           </div>
+        </div>
+
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <SettingsSectionLabel>Layout</SettingsSectionLabel>
+          <DensityPicker value={interfaceDensity} onChange={(density) => updateSettings({ interfaceDensity: density })} />
+        </div>
+
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <SettingsSectionLabel>Privacy</SettingsSectionLabel>
+          <SettingsToggleRow
+            checked={hideBalances}
+            label="Hide balances"
+            description="Mask wallet amounts until you turn this off."
+            onChange={(checked) => updateSettings({ hideBalances: checked })}
+          />
         </div>
 
         <SettingsDivider />
