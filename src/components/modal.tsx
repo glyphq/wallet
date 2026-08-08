@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { presets } from "@/lib/animations";
@@ -25,6 +25,7 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<Element | null>(null);
   const onCloseRef = useRef(onClose);
+  const titleId = useId();
 
   onCloseRef.current = onClose;
 
@@ -35,8 +36,9 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
 
     // Move focus into modal on next frame (after animation starts)
     const frame = requestAnimationFrame(() => {
-      const first = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE);
-      first?.focus();
+      const panel = panelRef.current;
+      const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
+      (first ?? panel)?.focus();
     });
 
     function onKey(e: KeyboardEvent) {
@@ -88,7 +90,9 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-label={title}
+            aria-labelledby={title ? titleId : undefined}
+            aria-label={title ? undefined : "Dialog"}
+            tabIndex={-1}
             {...presets.fadeIn}
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -101,6 +105,7 @@ export function Modal({ open, onClose, children, style, title }: ModalProps) {
               ...style,
             }}
           >
+            {title ? <h2 id={titleId} style={{ margin: "0 0 var(--space-4)" }}>{title}</h2> : null}
             {children}
           </motion.div>
         </motion.div>

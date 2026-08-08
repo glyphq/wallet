@@ -215,7 +215,7 @@ a:hover {
   background: color-mix(in srgb, var(--color-bg-input) 88%, white 12%);
 }
 
-.glyph-input:focus {
+.glyph-input:focus:not(:focus-visible) {
   outline: none;
   border-color: var(--color-border-contrast);
   box-shadow: none;

@@ -1,4 +1,4 @@
-import { forwardRef, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -14,8 +14,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, ...props },
   ref,
 ) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  const generatedId = useId();
+  const inputId = id ?? (label ? `${label.toLowerCase().replace(/\s+/g, "-")}-${generatedId}` : undefined);
   const errorId = inputId ? `${inputId}-error` : undefined;
+  const describedBy = [props["aria-describedby"], error && errorId].filter(Boolean).join(" ") || undefined;
   const maxLength = props.maxLength ?? (props.type === "password" ? 128 : undefined);
 
   const inputEl = (
@@ -29,7 +31,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       className="glyph-input"
       data-error={error ? "true" : undefined}
       aria-invalid={error ? "true" : undefined}
-      aria-describedby={error && errorId ? errorId : undefined}
+      aria-describedby={describedBy}
+      aria-errormessage={error && errorId ? errorId : undefined}
       data-has-leading={leftElement ? "true" : undefined}
       style={{
         background: "var(--color-bg-input)",

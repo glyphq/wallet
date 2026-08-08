@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, TextareaHTMLAttributes } from "react";
+import { useId, type CSSProperties, type ReactNode, type TextareaHTMLAttributes } from "react";
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -20,9 +20,11 @@ export function Textarea({
   technical = false,
   ...props
 }: TextareaProps) {
-  const fieldId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  const generatedId = useId();
+  const fieldId = id ?? (label ? `${label.toLowerCase().replace(/\s+/g, "-")}-${generatedId}` : undefined);
   const errorId = error && fieldId ? `${fieldId}-error` : undefined;
   const hintId = hint && fieldId ? `${fieldId}-hint` : undefined;
+  const describedBy = [props["aria-describedby"], hintId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
@@ -65,7 +67,8 @@ export function Textarea({
           data-has-leading={leftElement ? "true" : undefined}
           data-error={error ? "true" : undefined}
           aria-invalid={error ? "true" : undefined}
-          aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+          aria-describedby={describedBy}
+          aria-errormessage={errorId}
           style={{
             width: "100%",
             resize: "vertical",
