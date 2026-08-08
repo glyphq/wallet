@@ -101,7 +101,7 @@ export function ShellVaultSwitcher() {
           cursor: "pointer",
         }}
       >
-        <Identicon kind="vault" seed={`${activeVault.id}:${activeVault.color}`} label={activeVault.name} size={32} radius={10} />
+        <Identicon kind="vault" seed={`${activeVault.id}:${activeVault.color}`} label={activeVault.name} size={32} radius={12} />
       </button>
 
       <Sheet
