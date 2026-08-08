@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { AddCircle, ArrowRightUp, PenNewSquare, UsersGroupRounded } from "@solar-icons/react";
+import { AddCircle, ArrowRightUp, Magnifier, PenNewSquare, UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
@@ -11,7 +11,7 @@ import { Sheet } from "@/components/sheet";
 import { Identicon } from "@/components/identicon";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { truncateId, timeAgo } from "@/lib/format";
+import { truncateId } from "@/lib/format";
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
@@ -132,8 +132,6 @@ export default function ContactsScreen() {
       contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}
     >
       <main style={{ width: "min(100%, 760px)", margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <p style={{ margin: 0, paddingBottom: "var(--space-4)", color: "var(--color-text-secondary)", fontSize: "var(--text-label)", borderBottom: "1px solid var(--color-border-subtle)" }}>Trusted recipients for faster sends.</p>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <Input
             label="Search contacts"
@@ -142,6 +140,7 @@ export default function ContactsScreen() {
             placeholder="Name, identity, note, or tag"
             containerStyle={{ width: "100%" }}
             style={{ fontFamily: "var(--font-sans)" }}
+            leftElement={<Magnifier size={18} weight="Linear" />}
           />
           <span aria-live="polite" style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{searchDescription}</span>
         </div>
@@ -232,8 +231,8 @@ function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact
         <div style={{ minWidth: 0 }}>
           <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{contact.name}</strong>
           <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em" }}>{truncateId(contact.identity)}</span>
-          {(contact.note || contact.lastUsedAt) && <span style={{ display: "block", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{contact.note || `Last used ${timeAgo(contact.lastUsedAt)}`}</span>}
-          {(contact.tags ?? []).length > 0 && <span style={{ display: "block", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-disabled)", fontSize: "var(--text-caption)" }}>{(contact.tags ?? []).map((tag) => `#${tag}`).join(" · ")}</span>}
+          {contact.note && <span style={{ display: "block", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{contact.note}</span>}
+          {(contact.tags ?? []).length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: "var(--space-2)" }}>{(contact.tags ?? []).map((tag) => <span key={tag} style={{ padding: "2px var(--space-2)", border: "1px solid var(--color-accent)", borderRadius: "var(--radius-pill)", color: "var(--color-accent)", fontSize: "var(--text-caption)", lineHeight: 1.2 }}>#{tag}</span>)}</div>}
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexShrink: 0 }}>
