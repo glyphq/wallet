@@ -219,10 +219,9 @@ fn validate_dapp_origin(origin: &str) -> Result<String, String> {
 fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
 
-    if url.scheme() != "glyph" {
-        return Err("not a glyph:// URI".into());
-    }
-    if url.host_str() != Some("v1") || url.path() != "/request" {
+    if crate::link_broker::validate_launch_url(uri_str)
+        != Ok(crate::link_broker::LinkKind::Request)
+    {
         return Err("expected glyph://v1/request".into());
     }
 
@@ -230,8 +229,9 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let mut cb_param: Option<String> = None;
     for (k, v) in url.query_pairs() {
         match k.as_ref() {
-            "d" => d_param = Some(v.into_owned()),
-            "cb" => cb_param = Some(v.into_owned()),
+            "d" if d_param.is_none() => d_param = Some(v.into_owned()),
+            "cb" if cb_param.is_none() => cb_param = Some(v.into_owned()),
+            "d" | "cb" => return Err("duplicate query parameters are not allowed".into()),
             _ => {}
         }
     }
@@ -404,10 +404,7 @@ struct PayRequest {
 
 fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
-    if url.scheme() != "glyph" {
-        return Err("not a glyph:// URI".into());
-    }
-    if url.host_str() != Some("pay") {
+    if crate::link_broker::validate_launch_url(uri_str) != Ok(crate::link_broker::LinkKind::Pay) {
         return Err("not a glyph://pay URI".into());
     }
 
@@ -416,9 +413,12 @@ fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     let mut label: Option<String> = None;
     for (k, v) in url.query_pairs() {
         match k.as_ref() {
-            "to" => to = Some(v.into_owned()),
-            "amount" => amount = Some(v.into_owned()),
-            "label" => label = Some(v.into_owned().chars().take(200).collect()),
+            "to" if to.is_none() => to = Some(v.into_owned()),
+            "amount" if amount.is_none() => amount = Some(v.into_owned()),
+            "label" if label.is_none() => label = Some(v.into_owned().chars().take(200).collect()),
+            "to" | "amount" | "label" => {
+                return Err("duplicate query parameters are not allowed".into())
+            }
             _ => {}
         }
     }
@@ -544,6 +544,36 @@ mod tests {
         ];
 
         for url in malicious_urls {
+            assert!(validate(url).is_err(), "request parser accepted {url}");
+            assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
+        }
+    }
+
+    #[test]
+    fn parsers_reject_duplicate_query_parameters_directly() {
+        assert!(validate("glyph://v1/request?d=YWJjZA&d=ZGVm").is_err());
+        assert!(validate(
+            "glyph://v1/request?d=YWJjZA&cb=https%3A%2F%2Fdemo.app%2Fcb&cb=https%3A%2F%2Fdemo.app%2Fother"
+        )
+        .is_err());
+        assert!(validate_pay(
+            "glyph://pay?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&to=BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+        )
+        .is_err());
+        assert!(validate_pay(
+            "glyph://pay?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&amount=1&amount=2"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn parsers_reject_raw_links_that_bypass_public_broker_rules() {
+        for url in [
+            "glyph://v1/request?d=YWJjZA#fragment",
+            "glyph://v1/request?d=YWJjZA&extra=value",
+            "glyph://pay?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&extra=value",
+            "glyph://pay/path?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        ] {
             assert!(validate(url).is_err(), "request parser accepted {url}");
             assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
         }
