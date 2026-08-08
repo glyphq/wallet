@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
@@ -10,6 +11,24 @@ const PERMISSION_LABELS: Record<string, string> = {
   sc_call: "Contract calls",
   sign_message: "Sign messages",
 };
+
+function SettingsSectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <span style={{
+      fontFamily: "var(--font-sans)",
+      fontSize: "var(--text-caption)",
+      fontWeight: 600,
+      color: "var(--color-text-disabled)",
+      letterSpacing: "0.06em",
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function SettingsDivider() {
+  return <div style={{ height: 1, background: "var(--color-border-subtle)" }} />;
+}
 
 export default function DappsScreen() {
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
@@ -43,140 +62,143 @@ export default function DappsScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <SettingsPageHeader title="Approved dApps" />
 
         {sortedDapps.length === 0 ? (
           <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", padding: "var(--space-8) 0",
-            fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
-            color: "var(--color-text-disabled)",
+            padding: "var(--space-8) 0",
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-body)",
+            color: "var(--color-text-secondary)",
           }}>
             No approved dApps
           </div>
         ) : (
-          <div style={{
-            background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", overflow: "hidden",
-          }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {sortedDapps.map((dapp, i) => (
-              <div key={dapp.origin} style={{
-                padding: "var(--space-4)",
-                borderTop: i > 0 ? "1px solid var(--color-border-subtle)" : "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-3)",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                      {dapp.name}
+              <div key={dapp.origin}>
+                {i > 0 && <SettingsDivider />}
+                <section style={{ padding: "var(--space-4) 0", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}>
+                        {dapp.name}
+                      </div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", marginTop: "var(--space-1)", wordBreak: "break-all" }}>
+                        {dapp.origin}
+                      </div>
                     </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2, wordBreak: "break-all" }}>
-                      {dapp.origin}
-                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Revoke ${dapp.name}`}
+                      onClick={() => revokeDapp(dapp.origin)}
+                      style={{
+                        minHeight: 44,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "var(--text-label)",
+                        fontWeight: 600,
+                        color: "var(--color-status-error)",
+                        padding: 0,
+                        flexShrink: 0,
+                      }}
+                    >
+                      Revoke
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => revokeDapp(dapp.origin)}
-                    style={{
-                      minHeight: 44,
-                      background: "none", border: "none", cursor: "pointer",
-                      fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                      fontWeight: 500, color: "var(--color-status-error)", padding: 0, flexShrink: 0,
-                    }}
-                  >
-                    Revoke
-                  </button>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-                    Approved {formatDate(dapp.approvedAt)}
-                  </span>
-                  {dapp.lastUsedAt && (
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
-                      Last used {formatDate(dapp.lastUsedAt)}
-                    </span>
-                  )}
-                </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)" }}>
-                    Shared accounts
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+                      Approved {formatDate(dapp.approvedAt)}
+                    </span>
+                    {dapp.lastUsedAt && (
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+                        Last used {formatDate(dapp.lastUsedAt)}
+                      </span>
+                    )}
                   </div>
-                  {dapp.allowedIdentities && dapp.allowedIdentities.length > 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                      {dapp.allowedIdentities.map((identity) => (
-                        <div key={identity} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-                          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                            {getIdentityLabel(identity)}
-                          </span>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                    <SettingsSectionLabel>Shared accounts</SettingsSectionLabel>
+                    {dapp.allowedIdentities && dapp.allowedIdentities.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        {dapp.allowedIdentities.map((identity, identityIndex) => (
+                          <div key={identity}>
+                            {identityIndex > 0 && <SettingsDivider />}
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", minHeight: 44 }}>
+                              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", minWidth: 0 }}>
+                                {getIdentityLabel(identity)}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label={`Remove ${getIdentityLabel(identity)} from ${dapp.name}`}
+                                onClick={() => revokeIdentityScope(dapp.origin, identity, dapp.allowedIdentities)}
+                                style={{
+                                  minHeight: 44,
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  color: "var(--color-status-error)",
+                                  fontFamily: "var(--font-sans)",
+                                  fontSize: "var(--text-label)",
+                                  fontWeight: 600,
+                                  padding: 0,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+                        All accounts in this wallet
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                    <SettingsSectionLabel>Permissions</SettingsSectionLabel>
+                    {dapp.permissions.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", columnGap: "var(--space-4)", rowGap: "var(--space-2)" }}>
+                        {dapp.permissions.map((permission) => (
                           <button
+                            key={permission}
                             type="button"
-                            onClick={() => revokeIdentityScope(dapp.origin, identity, dapp.allowedIdentities)}
+                            aria-label={`Remove ${PERMISSION_LABELS[permission] ?? permission} permission from ${dapp.name}`}
+                            onClick={() => revokeDappPermission(dapp.origin, permission)}
                             style={{
-                              minHeight: 40,
+                              minHeight: 44,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "var(--space-2)",
+                              padding: 0,
                               background: "none",
                               border: "none",
+                              color: "var(--color-text-secondary)",
                               cursor: "pointer",
-                              color: "var(--color-status-error)",
                               fontFamily: "var(--font-sans)",
                               fontSize: "var(--text-label)",
                               fontWeight: 500,
-                              padding: 0,
-                              flexShrink: 0,
                             }}
                           >
-                            Remove
+                            <span>{PERMISSION_LABELS[permission] ?? permission}</span>
+                            <span aria-hidden="true" style={{ color: "var(--color-status-error)" }}>Remove</span>
                           </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                      All accounts in this wallet
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)" }}>
-                    Permissions
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+                        No extra permissions granted
+                      </span>
+                    )}
                   </div>
-                  {dapp.permissions.length > 0 ? (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-                      {dapp.permissions.map((permission) => (
-                        <button
-                          key={permission}
-                          type="button"
-                          onClick={() => revokeDappPermission(dapp.origin, permission)}
-                          style={{
-                            minHeight: 40,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "var(--space-2)",
-                            padding: "0 var(--space-3)",
-                            background: "var(--color-bg-base)",
-                            border: "1px solid var(--color-border-subtle)",
-                            borderRadius: "var(--radius-pill)",
-                            color: "var(--color-text-secondary)",
-                            cursor: "pointer",
-                            fontFamily: "var(--font-sans)",
-                            fontSize: "var(--text-label)",
-                            fontWeight: 500,
-                          }}
-                        >
-                          <span>{PERMISSION_LABELS[permission] ?? permission}</span>
-                          <span aria-hidden="true" style={{ color: "var(--color-status-error)" }}>×</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                      No extra permissions granted
-                    </span>
-                  )}
-                </div>
+                </section>
               </div>
             ))}
           </div>
