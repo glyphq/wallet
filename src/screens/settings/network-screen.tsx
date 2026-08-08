@@ -14,6 +14,18 @@ import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
 type TestStatus = "idle" | "testing" | "ok" | "error";
 
+const sectionStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--space-3)",
+} as const;
+
+const helperStyle = {
+  fontFamily: "var(--font-sans)",
+  fontSize: "var(--text-caption)",
+  color: "var(--color-text-secondary)",
+} as const;
+
 export default function NetworkScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
@@ -70,56 +82,55 @@ export default function NetworkScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <SettingsPageHeader title="Network" />
 
-        {/* RPC endpoints */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <SettingsSectionLabel>RPC endpoints</SettingsSectionLabel>
+        <section style={sectionStyle} aria-label="RPC endpoints">
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <SettingsSectionLabel>RPC endpoints</SettingsSectionLabel>
+            <span id="rpc-endpoint-help" style={helperStyle}>
+              Custom endpoints must use HTTPS. Test before saving to verify the live endpoint.
+            </span>
+          </div>
           <Input id="live-api-url" label="Live API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" />
           <Input id="archive-api-url" label="Archive API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" />
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
             <Button size="md" style={{ width: "auto" }} onClick={testAndSave} disabled={!liveUrl.trim() || !queryUrl.trim() || testStatus === "testing"} aria-busy={testStatus === "testing"}>
               {testStatus === "testing" ? "Testing..." : "Test & save"}
             </Button>
             <TextButton onClick={resetToDefaults} tone="muted" style={{ minHeight: 44, padding: "0 var(--space-2)" }}>
               Reset
             </TextButton>
-            {testStatus === "ok" && testTick !== null && (
-              <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-success)" }}>
-                Tick #{testTick}
-              </span>
-            )}
-            {testStatus === "error" && (
-              <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
-                {testError || "Unreachable"}
-              </span>
-            )}
           </div>
-          <span id="rpc-endpoint-help" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-            Custom endpoints must use HTTPS
-          </span>
-        </div>
+          {testStatus === "ok" && testTick !== null && (
+            <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-success)" }}>
+              Connected. Current tick #{testTick}.
+            </span>
+          )}
+          {testStatus === "error" && (
+            <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
+              {testError || "Unreachable"}
+            </span>
+          )}
+        </section>
 
-        {/* Divider */}
         <SettingsDivider />
 
-        {/* Tick offset */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <div>
+        <section style={sectionStyle} aria-label="Transaction tick offset">
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <SettingsSectionLabel>Transaction tick offset</SettingsSectionLabel>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+            <span style={helperStyle}>
               Target tick = current + offset. Higher values give more time to confirm.
             </span>
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
             {TICK_PRESETS.map((v) => (
-              <Button key={v} size="sm" variant={v === settings.tickOffset ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => updateSettings({ tickOffset: v })}>
+              <Button key={v} size="sm" variant={v === settings.tickOffset ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => updateSettings({ tickOffset: v })} aria-pressed={v === settings.tickOffset}>
                 +{v}
               </Button>
             ))}
           </div>
-        </div>
+        </section>
       </motion.div>
     </AppShell>
   );
