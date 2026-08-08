@@ -11,7 +11,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, className, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -29,7 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       spellCheck={false}
       autoComplete={props.autoComplete ?? "off"}
       id={inputId}
-      className="glyph-input"
+      className={["glyph-input", className].filter(Boolean).join(" ")}
       data-error={error ? "true" : undefined}
       aria-invalid={error ? "true" : undefined}
       aria-label={ariaLabel}
@@ -39,9 +39,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       style={{
         background: "var(--color-bg-input)",
         borderRadius: "var(--radius-control)",
-        paddingTop: "var(--space-3)",
+        paddingTop: "10px",
         paddingRight: rightElement ? 52 : "var(--space-4)",
-        paddingBottom: "var(--space-3)",
+        paddingBottom: "10px",
         paddingLeft: leftElement ? 48 : "var(--space-4)",
         fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
         fontSize: technical ? "0.875rem" : "0.9375rem",
@@ -64,9 +64,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "var(--text-label)",
-            color: "var(--color-text-secondary)",
+            color: "var(--color-text-tertiary)",
             fontWeight: 500,
-            letterSpacing: "0.01em",
+            lineHeight: "var(--leading-compact)",
+            letterSpacing: "0.015em",
             ...labelStyle,
           }}
         >
