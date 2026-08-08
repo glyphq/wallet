@@ -292,11 +292,6 @@ export function mergePersistedState(
       settingsBase.sponsorAttribution === "custom"
         ? settingsBase.sponsorAttribution
         : currentState.settings.sponsorAttribution,
-    interfaceDensity:
-      settingsBase.interfaceDensity === "compact" ||
-      settingsBase.interfaceDensity === "comfortable"
-        ? settingsBase.interfaceDensity
-        : currentState.settings.interfaceDensity,
     allowBlurLockBypass: !!settingsBase.allowBlurLockBypass,
   };
   return {

@@ -27,10 +27,9 @@ const queryClient = new QueryClient({
 });
 
 function useAppearance() {
-  const { fontPair, interfaceDensity, themeMode } = usePersistedStore(
+  const { fontPair, themeMode } = usePersistedStore(
     useShallow((s) => ({
       fontPair: s.settings.fontPair,
-      interfaceDensity: s.settings.interfaceDensity,
       themeMode: s.settings.themeMode,
     }))
   );
@@ -58,23 +57,6 @@ function useAppearance() {
     }
   }, [themeMode]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (interfaceDensity === "compact") {
-      root.style.setProperty("--screen-padding", "16px");
-      root.style.setProperty("--sheet-padding", "20px");
-      root.style.setProperty("--text-body", "0.8125rem");
-      root.style.setProperty("--leading-body", "1.3846");
-      root.dataset.interfaceDensity = "compact";
-      return;
-    }
-
-    root.style.removeProperty("--screen-padding");
-    root.style.removeProperty("--sheet-padding");
-    root.style.removeProperty("--text-body");
-    root.style.removeProperty("--leading-body");
-    delete root.dataset.interfaceDensity;
-  }, [interfaceDensity]);
 }
 
 function useRpcSync() {

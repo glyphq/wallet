@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { usePersistedStore, type ThemeMode, type FontPairId, type InterfaceDensity } from "@/store/persisted";
+import { usePersistedStore, type ThemeMode, type FontPairId } from "@/store/persisted";
 import { FONT_PAIRS } from "@/lib/appearance";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -10,11 +10,6 @@ import { Sun, Moon } from "@solar-icons/react";
 const THEMES: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
   { id: "dark", label: "Dark", Icon: Moon },
   { id: "light", label: "Light", Icon: Sun },
-];
-
-const DENSITIES: { id: InterfaceDensity; label: string; description: string }[] = [
-  { id: "comfortable", label: "Comfortable", description: "Roomier spacing and standard reading size." },
-  { id: "compact", label: "Compact", description: "Tighter spacing for more wallet detail on screen." },
 ];
 
 function SettingsSectionLabel({ children }: { children: ReactNode }) {
@@ -100,54 +95,6 @@ function SettingsToggleRow({
         />
       </span>
     </button>
-  );
-}
-
-function DensityPicker({ value, onChange }: { value: InterfaceDensity; onChange: (density: InterfaceDensity) => void }) {
-  return (
-    <div role="radiogroup" aria-label="Interface density" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {DENSITIES.map((density, index) => {
-        const selected = value === density.id;
-        return (
-          <div key={density.id}>
-            {index > 0 && <SettingsDivider />}
-            <button
-              type="button"
-              className="settings-pressable"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => onChange(density.id)}
-              style={{
-                width: "100%",
-                minHeight: 44,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "var(--space-3)",
-                padding: "var(--space-3)",
-                background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
-                border: "1px solid var(--color-border-subtle)",
-                borderRadius: "var(--radius-control)",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: selected ? 600 : 400, color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
-                  {density.label}
-                </span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
-                  {density.description}
-                </span>
-              </span>
-              <span style={{ fontSize: "var(--text-caption)", color: selected ? "var(--color-text-primary)" : "var(--color-text-tertiary)" }}>
-                {selected ? "Selected" : ""}
-              </span>
-            </button>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -272,16 +219,24 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
 export default function AppearanceScreen() {
   const themeMode = usePersistedStore((s) => s.settings.themeMode);
   const fontPair = usePersistedStore((s) => s.settings.fontPair);
-  const interfaceDensity = usePersistedStore((s) => s.settings.interfaceDensity);
   const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", minHeight: 0 }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-5) var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", minHeight: 0 }}>
         <SettingsPageHeader title="Appearance" />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <SettingsSectionLabel>Font</SettingsSectionLabel>
+          <div style={{ display: "flex" }}>
+            <FontPicker value={fontPair} onChange={(font) => updateSettings({ fontPair: font })} />
+          </div>
+        </div>
+
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <SettingsSectionLabel>Theme</SettingsSectionLabel>
           <div role="radiogroup" aria-label="Theme" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {THEMES.map(({ id, label, Icon }, index) => {
@@ -330,14 +285,7 @@ export default function AppearanceScreen() {
 
         <SettingsDivider />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <SettingsSectionLabel>Layout</SettingsSectionLabel>
-          <DensityPicker value={interfaceDensity} onChange={(density) => updateSettings({ interfaceDensity: density })} />
-        </div>
-
-        <SettingsDivider />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <SettingsSectionLabel>Privacy</SettingsSectionLabel>
           <SettingsToggleRow
             checked={hideBalances}
@@ -345,15 +293,6 @@ export default function AppearanceScreen() {
             description="Mask wallet amounts until you turn this off."
             onChange={(checked) => updateSettings({ hideBalances: checked })}
           />
-        </div>
-
-        <SettingsDivider />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <SettingsSectionLabel>Font</SettingsSectionLabel>
-          <div style={{ display: "flex" }}>
-            <FontPicker value={fontPair} onChange={(font) => updateSettings({ fontPair: font })} />
-          </div>
         </div>
       </motion.div>
     </AppShell>
