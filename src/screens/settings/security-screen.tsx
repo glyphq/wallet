@@ -49,6 +49,7 @@ function ChoiceButton({
     <motion.button
       {...gesture.pressSubtle}
       type="button"
+      className="settings-pressable settings-chip"
       aria-label={ariaLabel}
       aria-pressed={active}
       onClick={onClick}
