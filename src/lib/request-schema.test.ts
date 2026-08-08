@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildRequestNotification, parseGlyphEnvelope } from "@/lib/request-schema";
+import { buildRequestNotification, MAX_REQUEST_CHARS, parseGlyphEnvelope } from "@/lib/request-schema";
 
 describe("parseGlyphEnvelope", () => {
   test("accepts HTTPS callbacks bound to the dApp origin", () => {
@@ -59,6 +59,28 @@ describe("parseGlyphEnvelope", () => {
       }));
       expect(result.envelope).toBeNull();
     }
+  });
+
+  test("rejects oversized, unsafe, and malformed binary request fields", () => {
+    const base = {
+      type: "sc_call",
+      dapp: { name: "Demo", origin: "https://demo.app" },
+      nonce: "n1",
+      contract_index: 1,
+      input_type: 1,
+    };
+    for (const request of [
+      { ...base, amount: "18446744073709551616" },
+      { ...base, tick_offset: -1 },
+      { ...base, payload: "not base64!" },
+      { ...base, payload: "A".repeat(87_384 + 1) },
+    ]) {
+      expect(parseGlyphEnvelope(JSON.stringify({ request })).envelope).toBeNull();
+    }
+    expect(parseGlyphEnvelope(" ".repeat(MAX_REQUEST_CHARS + 1))).toEqual({
+      envelope: null,
+      error: "Request is too large",
+    });
   });
 });
 

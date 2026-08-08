@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { clearSecureSession } from "@/lib/secure-session";
 import type { SessionWallet } from "@/lib/session-wallet";
 
+export const MAX_PENDING_REQUESTS = 20;
+
 export interface TxAlert {
   id: string;
   label: string;
@@ -75,7 +77,7 @@ export const useSessionStore = create<SessionState>()((set) => ({
   },
 
   enqueuePendingRequest: (raw) =>
-    set((s) => ({ pendingRequests: [...s.pendingRequests, raw] })),
+    set((s) => ({ pendingRequests: [...s.pendingRequests, raw].slice(-MAX_PENDING_REQUESTS) })),
 
   shiftPendingRequest: () =>
     set((s) => ({ pendingRequests: s.pendingRequests.slice(1) })),
