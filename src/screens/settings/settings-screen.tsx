@@ -180,12 +180,13 @@ export default function SettingsScreen() {
             useSessionStore.getState().lock();
             navigate("/lock", { replace: true });
           }}
+          className="settings-pressable settings-pressable-accent"
           style={{
             marginTop: "var(--space-4)",
             display: "flex", alignItems: "center", justifyContent: "center",
             gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
             background: "var(--color-accent)",
-            border: "none",
+            border: "1px solid var(--color-accent)",
             borderRadius: "var(--radius-card)",
             cursor: "pointer",
           }}
