@@ -89,6 +89,7 @@ export function ShellVaultSwitcher() {
         type="button"
         aria-label={`Switch wallet. Current wallet: ${activeVault.name}`}
         onClick={() => setOpen(true)}
+        className="glyph-avatar-btn"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -96,8 +97,6 @@ export function ShellVaultSwitcher() {
           width: 36,
           height: 36,
           padding: 0,
-          background: "transparent",
-          border: "none",
           borderRadius: "var(--radius-control)",
           cursor: "pointer",
         }}
