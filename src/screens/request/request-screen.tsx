@@ -176,34 +176,18 @@ export default function RequestScreen() {
     }, 1500);
   }
 
-  // ── Success screen ──
   if (success) {
     const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Identity";
     const tagLabel = success.kind === "tx" ? "Sent" : success.kind === "message" ? "Signed" : success.kind === "verify" ? (success.detail === "VALID" ? "Valid" : "Invalid") : "Connected";
 
     return (
-      <SheetLayout
-        statusBar={
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-              Request complete
-            </span>
-          </div>
-        }
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-          <div style={{ textAlign: "center" }}>
+      <SheetLayout statusBar={<ScreenHeader title="Request complete" onBack={() => navigate("/dashboard")} backAriaLabel="Return to app" />}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
+          <div>
             <Tag variant={success.kind === "verify" && success.detail !== "VALID" ? "error" : "success"}>{tagLabel}</Tag>
           </div>
 
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "var(--space-2)" }}>
-              {detailLabel}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
-              {success.detail}
-            </div>
-          </div>
+          <DetailBlock label={detailLabel}>{success.detail}</DetailBlock>
 
           <div>
             {!success.hasCallback ? (
@@ -217,18 +201,12 @@ export default function RequestScreen() {
                 {copyStatus === "success" ? "Copied result" : copyStatus === "error" ? "Copy failed" : "Copy result"}
               </Button>
             ) : success.callbackStatus === "pending" ? (
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-                Sending callback...
-              </div>
+              <StatusLine tone="muted">Sending callback...</StatusLine>
             ) : success.callbackStatus === "ok" ? (
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-success)" }}>
-                Callback delivered
-              </div>
+              <StatusLine tone="success">Callback delivered</StatusLine>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>
-                  Callback failed
-                </div>
+                <StatusLine tone="error">Callback failed</StatusLine>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
                   <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={retryCallbackFromSuccess}>
                     Retry callback
@@ -244,9 +222,9 @@ export default function RequestScreen() {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>
+          <ActionFooter>
             <Button onClick={() => navigate("/dashboard")} style={{ flex: 1 }}>Return to app</Button>
-          </div>
+          </ActionFooter>
         </div>
       </SheetLayout>
     );
@@ -257,12 +235,10 @@ export default function RequestScreen() {
       <SheetLayout statusBar={<ScreenHeader title="Request" onBack={() => navigate("/dashboard")} />}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: "100%" }}>
           <Tag variant="error">Invalid request</Tag>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>
-            {parseError}
-          </div>
-          <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>
+          <StatusLine tone="error">{parseError}</StatusLine>
+          <ActionFooter>
             <Button variant="secondary" shape="sharp" onClick={() => { shiftPendingRequest(); navigate("/dashboard"); }} style={{ flex: 1 }}>Back to app</Button>
-          </div>
+          </ActionFooter>
         </div>
       </SheetLayout>
     );
@@ -277,9 +253,9 @@ export default function RequestScreen() {
     <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>
       <RequestHeader dapp={request.dapp} />
       {pendingRequestCount > 1 && (
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-warning)" }}>
+        <StatusLine tone="warning">
           {pendingRequestCount - 1} more request{pendingRequestCount > 2 ? "s" : ""} queued
-        </div>
+        </StatusLine>
       )}
 
       {request.type === "transfer" ? (
@@ -328,6 +304,7 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
           alignItems: "center",
           minHeight: 48,
           padding: "var(--space-3) var(--screen-padding)",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {statusBar}
@@ -341,7 +318,8 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "0 var(--screen-padding) var(--space-2)",
+            padding: "var(--space-2) var(--screen-padding)",
+            borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-warning)" }}>
@@ -358,7 +336,8 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "0 var(--screen-padding) var(--space-2)",
+            padding: "var(--space-2) var(--screen-padding)",
+            borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: expirySecsLeft <= 10 ? "var(--color-status-error)" : "var(--color-text-disabled)" }}>
@@ -372,7 +351,7 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: "var(--space-2) var(--screen-padding) var(--space-6)",
+          padding: "var(--space-5) var(--screen-padding) var(--space-6)",
           display: "flex",
           flexDirection: "column",
           gap: "var(--space-6)",
@@ -380,6 +359,36 @@ function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: React
       >
         {children}
       </main>
+    </div>
+  );
+}
+
+function DetailBlock({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function StatusLine({ tone, children }: { tone: "muted" | "success" | "warning" | "error"; children: ReactNode }) {
+  const color = tone === "success" ? "var(--color-status-success)" : tone === "warning" ? "var(--color-status-warning)" : tone === "error" ? "var(--color-status-error)" : "var(--color-text-disabled)";
+  return (
+    <div role={tone === "error" || tone === "warning" ? "alert" : "status"} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color }}>
+      {children}
+    </div>
+  );
+}
+
+function ActionFooter({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-5)", borderTop: "1px solid var(--color-border-subtle)" }}>
+      {children}
     </div>
   );
 }
