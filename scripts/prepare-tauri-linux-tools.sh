@@ -32,6 +32,7 @@ install_verified() {
   fi
 
   temporary="$(mktemp "$TOOL_DIR/.${name}.XXXXXX")"
+  trap 'rm -f -- "$temporary"' RETURN
   curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
     --header "Accept: application/octet-stream" \
     --header "X-GitHub-Api-Version: 2022-11-28" \
@@ -41,6 +42,7 @@ install_verified() {
     || die "checksum mismatch for $name: expected $expected_sha, got $actual_sha"
   chmod +x "$temporary"
   mv -f "$temporary" "$destination"
+  trap - RETURN
   log "installed verified $name"
 }
 

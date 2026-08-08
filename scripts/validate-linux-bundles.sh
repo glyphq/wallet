@@ -49,8 +49,12 @@ assert_contains() {
 
 validate_signature() {
   local artifact="$1"
+  local signature="${artifact}.sig"
+
   if [[ "$REQUIRE_SIGNATURES" == "1" ]]; then
-    [[ -s "${artifact}.sig" ]] || die "missing or empty updater signature: ${artifact}.sig"
+    [[ -s "$signature" ]] || die "missing or empty updater signature: $signature"
+  elif [[ -e "$signature" && ! -s "$signature" ]]; then
+    die "empty updater signature exists but signatures are not required: $signature"
   fi
 }
 
@@ -88,6 +92,7 @@ validate_deb() {
   assert_contains "$depends" 'libdbus-1-3' "deb dependencies"
 
   workdir="$(mktemp -d)"
+  trap 'rm -rf -- "$workdir"' RETURN
   dpkg-deb -x "$deb" "$workdir"
   binary="$workdir/usr/bin/glyph-wallet"
   [[ -x "$binary" ]] || die "deb does not contain an executable glyph-wallet binary"
@@ -107,6 +112,7 @@ validate_deb() {
   [[ -f "$appstream" ]] || die "deb is missing AppStream metadata"
   cmp -s "$REPO_ROOT/packaging/linux/com.qubic.glyph.metainfo.xml" "$appstream" \
     || die "deb AppStream metadata differs from the repository source"
+  trap - RETURN
   rm -rf "$workdir"
 
   log "deb metadata and linkage validated: $(basename "$deb")"
@@ -139,6 +145,7 @@ validate_appimage() {
   appimage="$(realpath "$1")"
 
   workdir="$(mktemp -d)"
+  trap 'rm -rf -- "$workdir"' RETURN
   (
     cd "$workdir"
     APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --appimage-extract >/dev/null
@@ -179,6 +186,7 @@ validate_appimage() {
     fi
   done
 
+  trap - RETURN
   rm -rf "$workdir"
   validate_signature "$appimage"
   log "AppImage contents validated: $(basename "$appimage")"

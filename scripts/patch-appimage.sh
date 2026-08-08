@@ -73,6 +73,7 @@ download_verified() {
   fi
 
   temporary="$(mktemp "${destination}.download.XXXXXX")"
+  trap 'rm -f -- "$temporary"' RETURN
   log "Downloading $(basename "$destination")"
   curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
     --header "Accept: application/octet-stream" \
@@ -82,6 +83,7 @@ download_verified() {
     || die "checksum mismatch for downloaded tool: $url"
   chmod +x "$temporary"
   mv -f "$temporary" "$destination"
+  trap - RETURN
 }
 
 find_single_appimage() {
@@ -107,6 +109,7 @@ prepare_runtime() {
   fi
 
   extract_dir="$(mktemp -d)"
+  trap 'rm -rf -- "$extract_dir"' RETURN
   (
     cd "$extract_dir"
     "$go_tool" --appimage-extract >/dev/null
@@ -116,6 +119,7 @@ prepare_runtime() {
   rm -rf "$runtime_dir"
   mkdir -p "$(dirname "$runtime_dir")"
   mv "$extract_dir/squashfs-root" "$runtime_dir"
+  trap - RETURN
   rm -rf "$extract_dir"
   printf '%s\n' "$runtime"
 }
@@ -210,7 +214,7 @@ validate_appdir() {
   done
 
   for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so; do
-    if find "$appdir/usr/lib" -maxdepth 1 -type f -name "${library}*" -print -quit | grep -q .; then
+    if find "$appdir/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${library}*" -print -quit | grep -q .; then
       die "host graphics library must not be bundled: $library"
     fi
   done
