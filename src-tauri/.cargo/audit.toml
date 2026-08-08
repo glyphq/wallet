@@ -11,10 +11,33 @@ ignore = [
   # app; upgrade when libappindicator supports glib 0.20+.
   "RUSTSEC-2024-0429",
 
-  # quick-xml quadratic run time / namespace-declaration allocation
-  # (RUSTSEC-2026-0194, RUSTSEC-2026-0195). Fixed in >=0.41.0, but pinned
-  # by tauri-utils via plist 1.9.0 (quick-xml ^0.39) and
-  # tauri-winrt-notification (quick-xml ^0.37). Upgrade when Tauri bumps.
-  "RUSTSEC-2026-0194",
-  "RUSTSEC-2026-0195",
+  # The following warnings are inherited from Tauri's platform runtime. They
+  # are all unmaintained-package notices rather than known exploitable
+  # vulnerabilities. Keep these explicit because scripts/security-audit.sh
+  # denies every warning not listed here.
+  #
+  # GTK3/WebKitGTK runtime used on Linux. These are blocked on Tauri's GTK4 /
+  # WebKit6 migration. See SECURITY_AUDIT.md#linux-tauri-stack.
+  "RUSTSEC-2024-0411",
+  "RUSTSEC-2024-0412",
+  "RUSTSEC-2024-0413",
+  "RUSTSEC-2024-0414",
+  "RUSTSEC-2024-0415",
+  "RUSTSEC-2024-0416",
+  "RUSTSEC-2024-0417",
+  "RUSTSEC-2024-0418",
+  "RUSTSEC-2024-0419",
+  "RUSTSEC-2024-0420",
+  "RUSTSEC-2024-0370",
+
+  # Build-time dependency of Tauri's urlpattern parser.
+  "RUSTSEC-2025-0075",
+  "RUSTSEC-2025-0080",
+  "RUSTSEC-2025-0081",
+  "RUSTSEC-2025-0098",
+  "RUSTSEC-2025-0100",
+
+  # Target-specific dependencies that are not built on Linux.
+  "RUSTSEC-2020-0168",
+  "RUSTSEC-2024-0436",
 ]

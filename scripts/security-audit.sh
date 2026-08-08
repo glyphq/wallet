@@ -13,7 +13,7 @@ bun audit --audit-level=high
 echo "[security] auditing Rust dependencies"
 (
   cd src-tauri
-  cargo audit || {
+  cargo audit --deny warnings || {
     echo "cargo-audit is required. Install it with:" >&2
     echo "  cargo install cargo-audit --version 0.22.2 --locked" >&2
     exit 1
