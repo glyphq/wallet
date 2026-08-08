@@ -223,7 +223,7 @@ Read [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md) for the current review scope, fi
 - Platform WebView and native build dependencies from the [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/)
 - `cargo-audit` 0.22.2 for the full security check
 
-Use `cargo` and `rustc` from rustup, normally under `~/.cargo/bin`. An older distribution Rust package can bypass `rust-toolchain.toml` and fail the build.
+Both `rust-toolchain.toml` files pin Rust 1.88.0. Use `cargo` and `rustc` from rustup, normally under `~/.cargo/bin`. An older distribution Rust package can bypass the pin and fail the build.
 
 On Ubuntu or Debian, the development build needs:
 
@@ -260,12 +260,20 @@ Bundles are written below `src-tauri/target/release/bundle/`. Platform signing c
 ```sh
 bun run check
 bun run build
-cargo check --manifest-path src-tauri/Cargo.toml --locked
-cargo test --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo check --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo test --manifest-path src-tauri/Cargo.toml --locked
 bun run release:check
 cargo install cargo-audit --version 0.22.2 --locked
-bun run audit:security
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' bun run audit:security
 ```
+
+The `TAURI_CONFIG` override lets direct Cargo checks work in a fresh checkout,
+before the generated link-broker sidecar exists. After `bun tauri dev` or `bun
+tauri build` has prepared that sidecar, the same Cargo commands can run without
+the override. See [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) for PowerShell
+equivalents and focused test commands.
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) before changing vault crypto, signing, Tauri capabilities, the `glyph://` handler, callback delivery, dependencies, or release workflows.
 

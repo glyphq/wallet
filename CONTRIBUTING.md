@@ -83,8 +83,10 @@ Run the checks that apply to the change and list them in the pull request.
 ```sh
 bun run check
 bun run build
-cargo check --manifest-path src-tauri/Cargo.toml --locked
-cargo test --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo check --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
 `bun run check` runs TypeScript checking and the Bun test suite. `bun run build` performs a TypeScript build followed by a production Vite build.
@@ -100,10 +102,10 @@ This verifies that `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo
 ### Dependency or security-sensitive changes
 
 ```sh
-bun run audit:security
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' bun run audit:security
 ```
 
-This runs the JavaScript audit at high severity, the RustSec audit, and a locked Rust check. It requires `cargo-audit` `0.22.2`.
+This runs the JavaScript audit at high severity, the RustSec audit, and a locked Rust check. It requires `cargo-audit` `0.22.2`. The `TAURI_CONFIG` override lets the direct Rust checks work before `bun tauri dev` or `bun tauri build` has generated the required link-broker sidecar; see [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for details and PowerShell equivalents.
 
 If a check cannot run on your platform, say exactly which check was skipped and why. Do not describe an untested packaging path as verified.
 

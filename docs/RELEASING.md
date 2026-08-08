@@ -78,13 +78,15 @@ Useful local checks are:
 bun install --frozen-lockfile
 bun run check
 bun run build
-cargo check --manifest-path src-tauri/Cargo.toml --locked
-cargo test --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo check --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo test --manifest-path src-tauri/Cargo.toml --locked
 bun run release:check
-bun run audit:security
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' bun run audit:security
 ```
 
-`bun run release:check` verifies synchronized versions and lints workflow and release scripts. It does not replace frontend, Rust, packaging, or security checks.
+`bun run release:check` verifies synchronized versions and lints workflow and release scripts. It does not replace frontend, Rust, packaging, or security checks. The `TAURI_CONFIG` override allows these direct Rust commands to run before the generated link-broker sidecar exists. See [DEVELOPMENT.md](./DEVELOPMENT.md) for the equivalent PowerShell commands.
 
 ## Changesets automation
 
@@ -142,8 +144,10 @@ bun run changeset -- pre exit
 bun run version
 bun run release:check
 bun run check
-cargo check --manifest-path src-tauri/Cargo.toml --locked
-cargo test --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo check --manifest-path src-tauri/Cargo.toml --locked
+TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
+  cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
 Review the generated diff carefully. It should:
