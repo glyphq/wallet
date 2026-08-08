@@ -302,7 +302,6 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) before changing vault crypto, signing
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Runtime boundaries, state ownership, cryptography, IPC, networking, and platform integration |
 | [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Toolchains, local workflows, testing, packaging, and security-sensitive engineering rules |
 | [`docs/RELEASING.md`](./docs/RELEASING.md) | Changesets, channels, tags, signing, artifact validation, and release recovery |
-| [`docs/WIDGETS.md`](./docs/WIDGETS.md) | Custom native widget JSON, privacy constraints, Bun commands, and platform setup |
 | [`SECURITY.md`](./SECURITY.md) | Supported versions and private vulnerability reporting |
 | [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md) | Security review scope, remediations, validation, and residual risks |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Development prerequisites, required checks, and review expectations |
