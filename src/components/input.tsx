@@ -39,9 +39,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       style={{
         background: "var(--color-bg-input)",
         borderRadius: "var(--radius-control)",
-        paddingTop: "10px",
+        paddingTop: "var(--space-3)",
         paddingRight: rightElement ? 52 : "var(--space-4)",
-        paddingBottom: "10px",
+        paddingBottom: "var(--space-3)",
         paddingLeft: leftElement ? 48 : "var(--space-4)",
         fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
         fontSize: technical ? "0.875rem" : "0.9375rem",
