@@ -4,6 +4,7 @@ import { AddCircle, UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
+import { ScreenHeader } from "@/components/screen-header";
 import { Input } from "@/components/input";
 import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
@@ -114,16 +115,24 @@ export default function ContactsScreen() {
     : `${contacts.length} contact${contacts.length === 1 ? "" : "s"}`;
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}>
+    <AppShell
+      fullBleed
+      statusBar={
+        <ScreenHeader
+          title="Contacts"
+          onBack={() => navigate("/history")}
+          backAriaLabel="Back to history"
+          action={
+            <IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}>
+              <AddCircle size={21} weight="Linear" aria-hidden="true" />
+            </IconButton>
+          }
+        />
+      }
+      contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}
+    >
       <main style={{ width: "min(100%, 760px)", margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", paddingBottom: "var(--space-4)", borderBottom: "1px solid var(--color-border-subtle)" }}>
-          <div>
-            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Trusted recipients for faster sends.</p>
-          </div>
-          <IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ flexShrink: 0, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}>
-            <AddCircle size={21} weight="Linear" aria-hidden="true" />
-          </IconButton>
-        </header>
+        <p style={{ margin: 0, paddingBottom: "var(--space-4)", color: "var(--color-text-secondary)", fontSize: "var(--text-label)", borderBottom: "1px solid var(--color-border-subtle)" }}>Trusted recipients for faster sends.</p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <Input
