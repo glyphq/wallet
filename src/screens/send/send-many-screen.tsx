@@ -15,6 +15,7 @@ import { TextButton } from "@/components/text-button";
 import { Textarea } from "@/components/textarea";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { Sheet } from "@/components/sheet";
+import { Divider } from "@/components/divider";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -455,14 +456,24 @@ export default function SendManyScreen() {
 
   // ── Review ─────────────────────────────────────────────────────────────────
 
-  const cardStyle: React.CSSProperties = {
-    background: "var(--color-bg-surface)",
-    borderRadius: "var(--radius-card)",
-    padding: "var(--space-1) var(--space-4)",
-
+  const linearGroupStyle: React.CSSProperties = { display: "flex", flexDirection: "column" };
+  const sectionLabelStyle: React.CSSProperties = {
+    ...labelStyle,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    fontSize: "var(--text-caption)",
   };
-  const divider: React.CSSProperties = {
-    height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
+  const noticeStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    minHeight: 44,
+    padding: "var(--space-3) 0",
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
+    textAlign: "left",
+    width: "100%",
   };
 
   if (step === "review") {
@@ -482,18 +493,23 @@ export default function SendManyScreen() {
           </div>
         </div>
 
-        {/* Recipients card */}
-        <div style={cardStyle}>
+        <div style={linearGroupStyle} aria-labelledby="send-many-review-recipients">
+          <span id="send-many-review-recipients" style={sectionLabelStyle}>Recipients</span>
           {recipients.map((r, i) => {
             const id = r.identity.trim().toUpperCase();
             const contact = contacts.find((c) => c.identity === id);
             return (
               <div key={r.id}>
-                {i > 0 && <div style={divider} />}
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
+                {i > 0 && <Divider />}
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 44, padding: "var(--space-2) 0" }}>
                   <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><UserId size={16} /></span>
-                  <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: contact ? "var(--color-accent)" : "var(--color-text-display)" }}>
-                    {contact ? contact.name : truncateId(id)}
+                  <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: contact ? "var(--color-accent)" : "var(--color-text-display)" }}>
+                      {contact ? contact.name : truncateId(id)}
+                    </span>
+                    {contact && (
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(id)}</span>
+                    )}
                   </span>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)", flexShrink: 0 }}>
                     {Number(r.amount).toLocaleString()} QU
@@ -504,18 +520,18 @@ export default function SendManyScreen() {
           })}
         </div>
 
-        {/* Totals card */}
-        <div style={cardStyle}>
+        <div style={linearGroupStyle} aria-labelledby="send-many-review-totals">
+          <span id="send-many-review-totals" style={sectionLabelStyle}>Transaction</span>
           <DetailRow icon={<ArrowRightUp size={16} />} label="Transfers" value={`${totalAmount.toLocaleString()} QU`} />
-          <div style={divider} />
+          <Divider />
           <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={fee !== null ? `${Number(fee).toLocaleString()} QU` : "Loading…"} mono={false} />
-          <div style={divider} />
+          <Divider />
           <DetailRow icon={<Wallet size={16} />} label="Total" value={`${totalWithFee.toLocaleString()} QU`} mono={false} valueColor="var(--color-text-display)" />
         </div>
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div role="status" style={noticeStyle}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
@@ -523,16 +539,16 @@ export default function SendManyScreen() {
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueConfirmed && (
-          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer", userSelect: "none" }}
-            role="checkbox" aria-checked={highValueConfirmed} tabIndex={0}
+          <button type="button" style={{ ...noticeStyle, cursor: "pointer", userSelect: "none" }}
+            aria-pressed={highValueConfirmed}
             onClick={() => setHighValueConfirmed(true)}
-            onKeyDown={(e) => e.key === "Enter" && setHighValueConfirmed(true)}>
+          >
             <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — tap to confirm</span>
-          </div>
+          </button>
         )}
         {needsHighValueConfirmation && highValueConfirmed && (
-          <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <div role="status" style={noticeStyle}>
             <ShieldCheck size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
           </div>
@@ -562,17 +578,18 @@ export default function SendManyScreen() {
   if (step === "sending") {
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
-        <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-          <ArrowRightUp size={18} style={{ color: "var(--color-accent)" }} />
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-            {totalAmount.toLocaleString()} QU to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
+        <motion.div {...stepMotion} role="status" aria-live="polite" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-4)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <span aria-hidden="true" style={{ display: "inline-block", width: 18, height: 18, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />
+          <div>
+            <h2 style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting transaction</h2>
+            <p style={{ margin: "var(--space-1) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+              {totalAmount.toLocaleString()} QU to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
+            </p>
           </div>
         </div>
+        <Divider />
+        <DetailRow icon={<ArrowRightUp size={16} />} label="Contract" value="QUtil · Send to Many" mono={false} />
         </motion.div>
       </AppShell>
     );
@@ -598,12 +615,12 @@ export default function SendManyScreen() {
           </div>
         </div>
 
-        {/* Details card */}
-        <div style={cardStyle}>
+        <div style={linearGroupStyle} aria-labelledby="send-many-completion-details">
+          <span id="send-many-completion-details" style={sectionLabelStyle}>Broadcast details</span>
           <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
-          <div style={divider} />
+          <Divider />
           <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
-          <div style={divider} />
+          <Divider />
           <DetailRow
             icon={watchResult === "confirmed" ? <ShieldCheck size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldWarning size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
             label="Status"
@@ -633,17 +650,18 @@ export default function SendManyScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
-      </div>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
-          {txError || "The transaction could not be broadcast."}
+      <motion.div {...stepMotion} role="alert" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-4)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+        <ShieldWarning size={18} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
+        <div>
+          <h2 style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcast failed</h2>
+          <p style={{ margin: "var(--space-1) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+            {txError || "The transaction could not be broadcast."}
+          </p>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
+      <Divider />
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", paddingTop: "var(--space-2)" }}>
         <Button onClick={() => setStep("review")}>Try again</Button>
         <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/send")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
