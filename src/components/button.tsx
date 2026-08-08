@@ -63,6 +63,7 @@ export function Button({
       {...props}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      aria-live={loading ? "polite" : undefined}
       className={`glyph-btn ${className}`}
       data-variant={variant}
       data-size={size}
@@ -101,6 +102,7 @@ export function Button({
           }}
         />
       )}
+      {loading ? <span className="sr-only">Loading</span> : null}
       <span style={{ visibility: loading ? "hidden" : "visible", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", width: "100%" }}>
         {children}
       </span>

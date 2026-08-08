@@ -18,6 +18,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const inputId = id ?? (label ? `${label.toLowerCase().replace(/\s+/g, "-")}-${generatedId}` : undefined);
   const errorId = inputId ? `${inputId}-error` : undefined;
   const describedBy = [props["aria-describedby"], error && errorId].filter(Boolean).join(" ") || undefined;
+  const ariaLabel = props["aria-label"] ?? (!label && typeof props.placeholder === "string" ? props.placeholder : undefined);
   const maxLength = props.maxLength ?? (props.type === "password" ? 128 : undefined);
 
   const inputEl = (
@@ -31,6 +32,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       className="glyph-input"
       data-error={error ? "true" : undefined}
       aria-invalid={error ? "true" : undefined}
+      aria-label={ariaLabel}
       aria-describedby={describedBy}
       aria-errormessage={error && errorId ? errorId : undefined}
       data-has-leading={leftElement ? "true" : undefined}

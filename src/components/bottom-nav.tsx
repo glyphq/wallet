@@ -39,6 +39,7 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
             onClick={() => { if (!isActive) navigate(path); }}
             aria-label={label}
             aria-current={isActive ? "page" : undefined}
+            title={label}
             style={{
               position: "relative",
               display: "flex",
@@ -83,6 +84,7 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon size={24} weight="Linear" aria-hidden="true" />
             </span>
+            <span className="sr-only">{label}</span>
           </button>
         );
       })}

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { motion } from "motion/react";
 
 interface SettingsSwitchProps {
@@ -9,11 +10,15 @@ interface SettingsSwitchProps {
 }
 
 export function SettingsSwitch({ label, description, checked, onChange, disabled = false }: SettingsSwitchProps) {
+  const labelId = useId();
+  const descriptionId = useId();
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-labelledby={labelId}
+      aria-describedby={descriptionId}
       disabled={disabled}
       onClick={onChange}
       style={{
@@ -25,10 +30,10 @@ export function SettingsSwitch({ label, description, checked, onChange, disabled
       }}
     >
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+        <span id={labelId} style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
           {label}
         </span>
-        <span style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: 2 }}>
+        <span id={descriptionId} style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)", marginTop: 2 }}>
           {description}
         </span>
       </span>

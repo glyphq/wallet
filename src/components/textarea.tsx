@@ -25,6 +25,7 @@ export function Textarea({
   const errorId = error && fieldId ? `${fieldId}-error` : undefined;
   const hintId = hint && fieldId ? `${fieldId}-hint` : undefined;
   const describedBy = [props["aria-describedby"], hintId, errorId].filter(Boolean).join(" ") || undefined;
+  const ariaLabel = props["aria-label"] ?? (!label && typeof props.placeholder === "string" ? props.placeholder : undefined);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
@@ -67,8 +68,9 @@ export function Textarea({
           data-has-leading={leftElement ? "true" : undefined}
           data-error={error ? "true" : undefined}
           aria-invalid={error ? "true" : undefined}
+          aria-label={ariaLabel}
           aria-describedby={describedBy}
-          aria-errormessage={errorId}
+          aria-errormessage={error ? errorId : undefined}
           style={{
             width: "100%",
             resize: "vertical",
