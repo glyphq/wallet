@@ -8,10 +8,10 @@ on:
         required: true
         type: string
       allow_unsigned_native:
-        description: Emergency stable release override for unsigned macOS and Windows artifacts
+        description: Keep macOS and Windows artifacts unsigned. Disable only after native signing is intentionally restored.
         required: false
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: release-${{ inputs.tag }}
@@ -84,10 +84,10 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/extract-changelog.mjs "$VERSION" > release-notes.md
-          if [[ "$RELEASE_CHANNEL" == "stable" && "$ALLOW_UNSIGNED_NATIVE" == "true" ]]; then
+          if [[ "$ALLOW_UNSIGNED_NATIVE" == "true" ]]; then
             printf '\n%s\n%s\n' \
               '> [!WARNING]' \
-              '> **Temporary unsigned native release:** the macOS app and DMG are not Apple-signed or notarized, and the Windows installer is not Authenticode-signed. Tauri updater signatures, SHA-256 checksums, and GitHub build-provenance attestations remain required and are validated before publication.' \
+              '> **Unsigned native release:** the macOS app and DMG are not Apple-signed or notarized, and the Windows installer is not Authenticode-signed. Tauri updater signatures, SHA-256 checksums, and GitHub build-provenance attestations remain required and are validated before publication.' \
               >> release-notes.md
           fi
           expected_prerelease=false
@@ -380,6 +380,12 @@ jobs:
           for name in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
             [[ -n "${!name}" ]] || { echo "$name is required" >&2; exit 1; }
           done
+          if [[ "$ALLOW_UNSIGNED_NATIVE" == "true" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "MACOS_CODE_SIGNING_ENABLED=0" >> "$GITHUB_ENV"
+            echo '::warning::Publishing macOS artifacts without Apple code signing or notarization because unsigned native artifacts are enabled.'
+            exit 0
+          fi
           missing=()
           for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
             [[ -n "${!name}" ]] || missing+=("$name")
@@ -389,13 +395,8 @@ jobs:
             echo "MACOS_CODE_SIGNING_ENABLED=1" >> "$GITHUB_ENV"
             echo "macOS code signing and notarization are enabled."
           else
-            if [[ "$RELEASE_CHANNEL" == "stable" && "$ALLOW_UNSIGNED_NATIVE" != "true" ]]; then
-              printf 'Stable macOS releases require all signing and notarization secrets unless the emergency unsigned-native override is explicitly enabled: %s\n' "${missing[*]}" >&2
-              exit 1
-            fi
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "MACOS_CODE_SIGNING_ENABLED=0" >> "$GITHUB_ENV"
-            printf '::warning::Publishing macOS artifacts without Apple code signing or notarization because the explicit override is enabled or this is a prerelease. Missing: %s\n' "${missing[*]}"
+            printf 'macOS releases require all signing and notarization secrets unless unsigned native artifacts are explicitly allowed: %s\n' "${missing[*]}" >&2
+            exit 1
           fi
 
       - name: Build universal macOS bundles
@@ -540,18 +541,18 @@ jobs:
           foreach ($name in @("TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD")) {
             if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "$name is required" }
           }
+          if ($env:ALLOW_UNSIGNED_NATIVE -eq "true") {
+            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "WINDOWS_CODE_SIGNING_ENABLED=0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "::warning::Publishing Windows artifacts without Authenticode because unsigned native artifacts are enabled."
+            exit 0
+          }
           $missing = @()
           foreach ($name in @("WINDOWS_CERTIFICATE", "WINDOWS_CERTIFICATE_PASSWORD")) {
             if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { $missing += $name }
           }
           if ($missing.Count -gt 0) {
-            if ($env:RELEASE_CHANNEL -eq "stable" -and $env:ALLOW_UNSIGNED_NATIVE -ne "true") {
-              throw "Stable Windows releases require Authenticode signing secrets unless the emergency unsigned-native override is explicitly enabled: $($missing -join ', ')"
-            }
-            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-            "WINDOWS_CODE_SIGNING_ENABLED=0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            Write-Host "::warning::Publishing Windows artifacts without Authenticode because the explicit override is enabled or this is a prerelease. Missing: $($missing -join ', ')"
-            exit 0
+            throw "Windows releases require Authenticode signing secrets unless unsigned native artifacts are explicitly allowed: $($missing -join ', ')"
           }
           $pfxPath = Join-Path $env:RUNNER_TEMP "glyph-signing-certificate.pfx"
           [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
@@ -647,7 +648,9 @@ jobs:
           ref: ${{ github.sha }}
           path: .release-automation
           persist-credentials: false
-          sparse-checkout: scripts/upload-release-assets.mjs
+          sparse-checkout: |
+            scripts/create-updater-manifest.sh
+            scripts/upload-release-assets.mjs
           sparse-checkout-cone-mode: false
 
       - name: Generate updater manifest
@@ -657,7 +660,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
         run: |
-          scripts/create-updater-manifest.sh "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
+          .release-automation/scripts/create-updater-manifest.sh "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
 
       - name: Attest updater manifest
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
@@ -683,6 +686,15 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
+      - name: Check out reviewed release validation
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-automation
+          persist-credentials: false
+          sparse-checkout: scripts/validate-release-assets.mjs
+          sparse-checkout-cone-mode: false
+
       - name: Install updater signature verifier
         run: |
           sudo apt-get update
@@ -694,7 +706,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
           GH_REPO: ${{ github.repository }}
           UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
-        run: node scripts/validate-release-assets.mjs "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
+        run: node .release-automation/scripts/validate-release-assets.mjs "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
 
       - name: Publish draft release
         env:

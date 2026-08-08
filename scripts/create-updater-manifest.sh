@@ -71,7 +71,7 @@ main() {
   command -v jq >/dev/null 2>&1 || die "jq is required"
   [[ "$TAG" == v* ]] || die "tag must start with v: $TAG"
   version="${TAG#v}"
-  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] \
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] \
     || die "tag is not a supported semantic version: $TAG"
 
   MANIFEST_WORKDIR="$(mktemp -d)"

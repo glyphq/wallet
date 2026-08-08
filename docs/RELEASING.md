@@ -47,15 +47,15 @@ Repository secrets used by release builds are:
 |---|---|---|---|
 | `TAURI_SIGNING_PRIVATE_KEY` | Required | Required | Sign updater payloads |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Required | Required | Unlock updater signing key |
-| `APPLE_CERTIFICATE` | Required | Optional | macOS code signing certificate |
-| `APPLE_CERTIFICATE_PASSWORD` | Required | Optional | Unlock Apple certificate |
-| `APPLE_ID` | Required | Optional | Apple notarization account |
-| `APPLE_PASSWORD` | Required | Optional | Apple app-specific password |
-| `APPLE_TEAM_ID` | Required | Optional | Apple signing team |
-| `WINDOWS_CERTIFICATE` | Required | Optional | Base64-encoded Authenticode PFX |
-| `WINDOWS_CERTIFICATE_PASSWORD` | Required | Optional | Unlock Windows certificate |
+| `APPLE_CERTIFICATE` | Optional | Optional | macOS code signing certificate, unused while native artifacts remain unsigned |
+| `APPLE_CERTIFICATE_PASSWORD` | Optional | Optional | Unlock Apple certificate, unused while native artifacts remain unsigned |
+| `APPLE_ID` | Optional | Optional | Apple notarization account, unused while native artifacts remain unsigned |
+| `APPLE_PASSWORD` | Optional | Optional | Apple app-specific password, unused while native artifacts remain unsigned |
+| `APPLE_TEAM_ID` | Optional | Optional | Apple signing team, unused while native artifacts remain unsigned |
+| `WINDOWS_CERTIFICATE` | Optional | Optional | Base64-encoded Authenticode PFX, unused while native artifacts remain unsigned |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Optional | Optional | Unlock Windows certificate, unused while native artifacts remain unsigned |
 
-Stable macOS and Windows jobs fail when their native signing credentials are incomplete. Prerelease macOS and Windows jobs may produce artifacts without native platform signing when those optional credentials are absent. Updater signing credentials remain required by the release workflow for every channel.
+macOS and Windows releases are intentionally unsigned for now unless `allow_unsigned_native=false` is explicitly set and all native signing credentials are configured. Updater signing credentials remain required by the release workflow for every channel.
 
 `TAURI_UPDATER_PUBLIC_KEY` may override the public key used by the final validator; otherwise the validator reads the configured key from `src-tauri/tauri.conf.json`.
 
@@ -183,7 +183,7 @@ gh workflow run release.yml --ref "$RELEASE_REF" --field "tag=${RELEASE_TAG}"
 
 ## Release workflow
 
-`.github/workflows/release.yml` accepts one required input, an existing tag, plus an optional `allow_unsigned_native` emergency override that defaults to `false`. Its concurrency group is per tag and in-progress runs are not cancelled.
+`.github/workflows/release.yml` accepts one required input, an existing tag, plus an optional `allow_unsigned_native` switch that defaults to `true` while Windows and Apple releases are intentionally unsigned. Its concurrency group is per tag and in-progress runs are not cancelled.
 
 The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the immutable tag for application builds. Release-only automation that may need to repair an older tagged release, such as the immutable draft-asset uploader, is checked out separately from the exact reviewed workflow commit (`github.sha`) into `.release-automation`; it does not change the tagged application source being built.
 
@@ -207,16 +207,16 @@ The three platform jobs run after draft preparation.
 | Platform | Build output | Native signing policy |
 |---|---|---|
 | Linux | AppImage, deb, rpm | Updater signature required |
-| macOS | universal app archive and DMG | Signing and notarization required for stable by default; optional for prerelease or an explicitly authorized emergency stable override |
-| Windows | NSIS installer | Authenticode and timestamp required for stable by default; optional for prerelease or an explicitly authorized emergency stable override |
+| macOS | universal app archive and DMG | Unsigned by default for now; signing and notarization run only when `allow_unsigned_native=false` and credentials are complete |
+| Windows | NSIS installer | Unsigned by default for now; Authenticode and timestamp validation run only when `allow_unsigned_native=false` and credentials are complete |
 
 Prerelease release builds switch the bundled updater endpoint to `latest-prerelease.json` before building.
 
-### Emergency unsigned stable publication
+### Unsigned native publication
 
-Native signing remains mandatory for stable releases by default. When Apple or Windows certificate provisioning is temporarily unavailable, an authorized maintainer may manually dispatch the workflow with `allow_unsigned_native=true`. This exception affects only Apple code signing/notarization and Windows Authenticode. Tauri updater signatures, SHA-256 checksums, release asset validation, and GitHub build-provenance attestations remain mandatory.
+Native macOS and Windows signing is intentionally disabled by default for current releases. This affects only Apple code signing/notarization and Windows Authenticode. Tauri updater signatures, SHA-256 checksums, release asset validation, and GitHub build-provenance attestations remain mandatory.
 
-The workflow adds a prominent warning to the GitHub Release notes. Restore the default signed path as soon as the platform credentials are available. Do not use this override for an unattended Changesets dispatch or describe the resulting native installers as platform-signed.
+The workflow adds a prominent warning to the GitHub Release notes whenever unsigned native artifacts are allowed. Do not describe the resulting macOS or Windows artifacts as platform-signed. When native signing is intentionally restored, first configure the credentials, then dispatch with `allow_unsigned_native=false` and verify the signing validation paths before making that the default.
 
 #### Linux
 
@@ -258,7 +258,7 @@ The workflow does not currently perform a silent install and uninstall smoke tes
 
 ### Updater manifest
 
-After all platform jobs succeed, `scripts/create-updater-manifest.sh` downloads the draft updater signatures and requires exactly one signature for each updater payload:
+After all platform jobs succeed, the reviewed `scripts/create-updater-manifest.sh` from the workflow commit downloads the draft updater signatures and requires exactly one signature for each updater payload:
 
 - Windows `*.exe.sig`
 - macOS `*.app.tar.gz.sig`
@@ -275,7 +275,7 @@ Both macOS entries reference the universal archive. The workflow also creates a 
 
 ### Final validation and publication
 
-Before publication, `scripts/validate-release-assets.mjs` verifies that the release is still a draft and contains exactly one of every required asset. It also verifies:
+Before publication, the reviewed `scripts/validate-release-assets.mjs` from the workflow commit verifies that the release is still a draft and contains exactly one of every required asset. It also verifies:
 
 - non-empty assets
 - release version in every versioned payload filename

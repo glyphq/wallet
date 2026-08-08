@@ -21,7 +21,7 @@ if (!tag || paths.length === 0) {
   console.error("usage: node scripts/upload-release-assets.mjs <tag> <asset> [asset ...]");
   process.exit(2);
 }
-if (!/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(tag)) {
+if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag)) {
   throw new Error(`invalid release tag: ${tag}`);
 }
 
