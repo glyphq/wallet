@@ -1,29 +1,28 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
+import { Identicon } from "@/components/identicon";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { truncateId, timeAgo } from "@/lib/format";
-import { Identicon } from "@/components/identicon";
-
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
-  const contacts = usePersistedStore((s) => s.contacts);
-  const addContact = usePersistedStore((s) => s.addContact);
-  const updateContact = usePersistedStore((s) => s.updateContact);
-  const removeContact = usePersistedStore((s) => s.removeContact);
+  const contacts = usePersistedStore((state) => state.contacts);
+  const addContact = usePersistedStore((state) => state.addContact);
+  const updateContact = usePersistedStore((state) => state.updateContact);
+  const removeContact = usePersistedStore((state) => state.removeContact);
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState<Contact | null>(null);
   const [recentlySavedId, setRecentlySavedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-
   const [formName, setFormName] = useState("");
   const [formIdentity, setFormIdentity] = useState("");
   const [formNote, setFormNote] = useState("");
@@ -31,11 +30,19 @@ export default function ContactsScreen() {
   const [identityError, setIdentityError] = useState("");
 
   function parseTags(raw: string): string[] {
-    return raw.split(/[,\s]+/).map((t) => t.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean);
+    return raw.split(/[,\s]+/).map((tag) => tag.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean);
+  }
+
+  function resetForm() {
+    setFormName("");
+    setFormIdentity("");
+    setFormNote("");
+    setFormTags("");
+    setIdentityError("");
   }
 
   function openAdd() {
-    setFormName(""); setFormIdentity(""); setFormNote(""); setFormTags(""); setIdentityError("");
+    resetForm();
     setAdding(true);
   }
 
@@ -48,8 +55,11 @@ export default function ContactsScreen() {
     setEditing(contact);
   }
 
-  function validateIdentity(id: string): boolean {
-    if (!isValidIdentity(id)) { setIdentityError("Invalid identity"); return false; }
+  function validateIdentity(identity: string): boolean {
+    if (!isValidIdentity(identity)) {
+      setIdentityError("Enter a valid Qubic identity.");
+      return false;
+    }
     setIdentityError("");
     return true;
   }
@@ -72,166 +82,202 @@ export default function ContactsScreen() {
 
   function doEdit() {
     if (!editing || !formName.trim() || !validateIdentity(formIdentity.trim())) return;
-    updateContact(editing.id, { name: formName.trim(), identity: formIdentity.trim(), note: formNote.trim(), tags: parseTags(formTags) });
+    updateContact(editing.id, {
+      name: formName.trim(),
+      identity: formIdentity.trim(),
+      note: formNote.trim(),
+      tags: parseTags(formTags),
+    });
     setRecentlySavedId(editing.id);
     setEditing(null);
   }
 
-  const filtered = useMemo(() =>
-    contacts
-      .filter((c) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        return (
-          c.name.toLowerCase().includes(q) ||
-          c.identity.toLowerCase().includes(q) ||
-          (c.tags ?? []).some((t) => t.includes(q))
-        );
-      })
-      .sort((a, b) => {
-        if (a.lastUsedAt && b.lastUsedAt) return b.lastUsedAt - a.lastUsedAt;
-        if (a.lastUsedAt) return -1;
-        if (b.lastUsedAt) return 1;
-        return a.name.localeCompare(b.name);
-      }),
-    [contacts, search],
-  );
+  const filtered = useMemo(() => contacts
+    .filter((contact) => {
+      if (!search.trim()) return true;
+      const query = search.trim().toLowerCase();
+      return contact.name.toLowerCase().includes(query)
+        || contact.identity.toLowerCase().includes(query)
+        || contact.note.toLowerCase().includes(query)
+        || (contact.tags ?? []).some((tag) => tag.includes(query));
+    })
+    .sort((left, right) => {
+      if (left.lastUsedAt && right.lastUsedAt) return right.lastUsedAt - left.lastUsedAt;
+      if (left.lastUsedAt) return -1;
+      if (right.lastUsedAt) return 1;
+      return left.name.localeCompare(right.name);
+    }), [contacts, search]);
+
+  const searchDescription = search.trim()
+    ? `${filtered.length} matching contact${filtered.length === 1 ? "" : "s"}`
+    : `${contacts.length} contact${contacts.length === 1 ? "" : "s"}`;
 
   return (
-    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end" }}>
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or identity"
-          style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}
-          containerStyle={{ flex: 1 }}
-        />
-        <Button variant="secondary" shape="sharp" size="sm" onClick={openAdd} style={{ flexShrink: 0 }}>
-          Add contact
-        </Button>
-      </div>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}>
+      <main style={{ width: "min(100%, 760px)", margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+        <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "var(--space-4)", paddingBottom: "var(--space-4)", borderBottom: "1px solid var(--color-border-subtle)" }}>
+          <div>
+            <h1 style={{ margin: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-display)", fontSize: "var(--text-section)", letterSpacing: "-0.02em" }}>Contacts</h1>
+            <p style={{ margin: "var(--space-1) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Trusted recipients for faster sends.</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={openAdd} style={{ flexShrink: 0 }}>Add contact</Button>
+        </header>
 
-      {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-          <UsersGroupRounded size={48} weight="Linear" style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-            {contacts.length === 0 ? "No contacts yet" : "No results"}
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", opacity: 0.7 }}>
-            {contacts.length === 0 ? "Add contacts to quickly send to people you know" : "Try a different search term"}
-          </div>
-          {contacts.length === 0 && (
-            <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={openAdd}>
-              Add your first contact
-            </Button>
-          )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <Input
+            label="Search contacts"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Name, identity, note, or tag"
+            containerStyle={{ width: "100%" }}
+            style={{ fontFamily: "var(--font-sans)" }}
+          />
+          <span aria-live="polite" style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{searchDescription}</span>
         </div>
-      )}
 
-      {filtered.map((contact) => (
-        <div key={contact.id} className={`stagger-item${recentlySavedId === contact.id ? " flash-success" : ""}`}>
-          <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-4)" }}>
-            <button
-              onClick={() => navigate(`/send?to=${contact.identity}`)}
-              style={{ flex: 1, display: "flex", gap: "var(--space-3)", alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
-            >
-              <Identicon kind="contact" seed={contact.identity} label={contact.name} size={36} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
-                  {contact.name}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                    {truncateId(contact.identity)}
-                  </span>
-                  {contact.lastUsedAt ? (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                      {timeAgo(contact.lastUsedAt)}
-                    </span>
-                  ) : null}
-                </div>
-                {(contact.tags ?? []).length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: 2 }}>
-                    {(contact.tags ?? []).map((tag) => (
-                      <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>#{tag}</span>
-                    ))}
-                  </div>
-                )}
-                {contact.note && (
-                  <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: 2 }}>
-                    {contact.note}
-                  </div>
-                )}
-              </div>
-            </button>
-            <div style={{ display: "flex", gap: "var(--space-2)", flexShrink: 0 }}>
-              <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => openEdit(contact)}>Edit</Button>
-              <Button variant="danger" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => setDeleting(contact)}>Remove</Button>
-            </div>
-          </div>
-        </div>
-      ))}
+        {filtered.length === 0 ? (
+          <EmptyState hasContacts={contacts.length > 0} onAdd={openAdd} />
+        ) : (
+          <section aria-label="Saved contacts" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
+            {filtered.map((contact) => (
+              <ContactRow
+                key={contact.id}
+                contact={contact}
+                highlighted={recentlySavedId === contact.id}
+                onSend={() => navigate(`/send?to=${contact.identity}`)}
+                onEdit={() => openEdit(contact)}
+              />
+            ))}
+          </section>
+        )}
+      </main>
 
-      {/* Add contact sheet */}
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add contact">
+      <Sheet
+        open={adding}
+        onClose={() => setAdding(false)}
+        title="Add contact"
+        footer={<ContactFormActions formId="add-contact-form" submitLabel="Add contact" disabled={!formName.trim() || !formIdentity.trim()} onCancel={() => setAdding(false)} />}
+      >
         <ContactForm
-          name={formName} onName={setFormName}
-          identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
-          note={formNote} onNote={setFormNote}
-          tags={formTags} onTags={setFormTags}
+          formId="add-contact-form"
+          name={formName}
+          onName={setFormName}
+          identity={formIdentity}
+          onIdentity={(value) => { setFormIdentity(value); setIdentityError(""); }}
+          note={formNote}
+          onNote={setFormNote}
+          tags={formTags}
+          onTags={setFormTags}
           identityError={identityError}
           onSubmit={doAdd}
-          onCancel={() => setAdding(false)}
-          submitLabel="Add contact"
         />
       </Sheet>
 
-      {/* Edit contact sheet */}
-      <Sheet open={!!editing} onClose={() => setEditing(null)} title="Edit contact">
+      <Sheet
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title="Edit contact"
+        footer={
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <ContactFormActions formId="edit-contact-form" submitLabel="Save changes" disabled={!formName.trim() || !formIdentity.trim()} onCancel={() => setEditing(null)} />
+            {editing && <button type="button" onClick={() => { setDeleting(editing); setEditing(null); }} style={{ alignSelf: "center", padding: "var(--space-2)", border: "none", background: "transparent", color: "var(--color-status-error)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)" }}>Remove contact</button>}
+          </div>
+        }
+      >
         <ContactForm
-          name={formName} onName={setFormName}
-          identity={formIdentity} onIdentity={(v) => { setFormIdentity(v); setIdentityError(""); }}
-          note={formNote} onNote={setFormNote}
-          tags={formTags} onTags={setFormTags}
+          formId="edit-contact-form"
+          name={formName}
+          onName={setFormName}
+          identity={formIdentity}
+          onIdentity={(value) => { setFormIdentity(value); setIdentityError(""); }}
+          note={formNote}
+          onNote={setFormNote}
+          tags={formTags}
+          onTags={setFormTags}
           identityError={identityError}
           onSubmit={doEdit}
-          onCancel={() => setEditing(null)}
-          submitLabel="Save"
         />
       </Sheet>
 
-      {/* Delete contact sheet */}
-      <Sheet open={!!deleting} onClose={() => setDeleting(null)} title={deleting ? `Remove ${deleting.name}?` : "Remove contact?"}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <Button variant="danger" shape="sharp" onClick={() => { if (deleting) { removeContact(deleting.id); setDeleting(null); } }}>Remove</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setDeleting(null)}>Cancel</Button>
-        </div>
+      <Sheet
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Remove contact"
+        footer={<div style={{ display: "flex", gap: "var(--space-3)" }}><Button variant="ghost" size="md" style={{ flex: 1 }} onClick={() => setDeleting(null)}>Keep contact</Button><Button variant="danger" size="md" style={{ flex: 1 }} onClick={() => { if (deleting) removeContact(deleting.id); setDeleting(null); }}>Remove</Button></div>}
+      >
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", lineHeight: 1.5 }}>
+          Remove <strong style={{ color: "var(--color-text-primary)" }}>{deleting?.name}</strong> from your saved recipients? This does not affect activity already recorded in Glyph.
+        </p>
       </Sheet>
     </AppShell>
   );
 }
 
-interface ContactFormProps {
-  name: string; onName: (v: string) => void;
-  identity: string; onIdentity: (v: string) => void;
-  note: string; onNote: (v: string) => void;
-  tags: string; onTags: (v: string) => void;
-  identityError: string;
-  onSubmit: () => void;
-  onCancel: () => void;
-  submitLabel: string;
+function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact; highlighted: boolean; onSend: () => void; onEdit: () => void }) {
+  return (
+    <article className={highlighted ? "flash-success" : undefined} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", padding: "var(--space-4) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", minWidth: 0, flex: "1 1 180px" }}>
+        <Identicon kind="contact" seed={contact.identity} label={contact.name} size={40} radius={10} style={{ flexShrink: 0 }} />
+        <div style={{ minWidth: 0 }}>
+          <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{contact.name}</strong>
+          <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em" }}>{truncateId(contact.identity)}</span>
+          {(contact.note || contact.lastUsedAt) && <span style={{ display: "block", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{contact.note || `Last used ${timeAgo(contact.lastUsedAt)}`}</span>}
+          {(contact.tags ?? []).length > 0 && <span style={{ display: "block", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-disabled)", fontSize: "var(--text-caption)" }}>{(contact.tags ?? []).map((tag) => `#${tag}`).join(" · ")}</span>}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexShrink: 0 }}>
+        <Button variant="ghost" size="sm" onClick={onEdit}>Edit</Button>
+        <Button variant="secondary" size="sm" onClick={onSend}>Send</Button>
+      </div>
+    </article>
+  );
 }
 
-function ContactForm({ name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit, onCancel, submitLabel }: ContactFormProps) {
+function EmptyState({ hasContacts, onAdd }: { hasContacts: boolean; onAdd: () => void }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <Input label="Name" value={name} onChange={(e) => onName(e.target.value)} placeholder="e.g. Alice" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
-      <Input label="Identity" value={identity} onChange={(e) => onIdentity(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSubmit()} error={identityError} placeholder="60 uppercase letters" />
-      <Input label="Tags (optional)" value={tags} onChange={(e) => onTags(e.target.value)} placeholder="exchange, friend, dao" style={{ fontFamily: "var(--font-sans)" }} />
-      <Input label="Note (optional)" value={note} onChange={(e) => onNote(e.target.value)} placeholder="e.g. Friend, exchange" style={{ fontFamily: "var(--font-sans)" }} />
-      <Button onClick={onSubmit} disabled={!name.trim() || !identity.trim()}>{submitLabel}</Button>
-      <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={onCancel}>Cancel</Button>
+    <section style={{ minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)" }}>
+      <UsersGroupRounded size={38} weight="Linear" aria-hidden="true" style={{ color: "var(--color-text-disabled)" }} />
+      <strong style={{ color: "var(--color-text-primary)", fontSize: "var(--text-body)", fontWeight: 600 }}>{hasContacts ? "No contacts found" : "No contacts yet"}</strong>
+      <span style={{ maxWidth: 300, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>{hasContacts ? "Try a name, identity, note, or tag." : "Save trusted recipients so sending stays quick and accurate."}</span>
+      {!hasContacts && <Button variant="secondary" size="sm" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: "auto" }}>Add your first contact</Button>}
+    </section>
+  );
+}
+
+interface ContactFormProps {
+  formId: string;
+  name: string;
+  onName: (value: string) => void;
+  identity: string;
+  onIdentity: (value: string) => void;
+  note: string;
+  onNote: (value: string) => void;
+  tags: string;
+  onTags: (value: string) => void;
+  identityError: string;
+  onSubmit: () => void;
+}
+
+function ContactForm({ formId, name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit }: ContactFormProps) {
+  return (
+    <form id={formId} onSubmit={(event) => { event.preventDefault(); onSubmit(); }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>Use a clear name and verify the identity before saving. You can add private notes and tags to help organize recipients.</p>
+      <Input label="Name" value={name} onChange={(event) => onName(event.target.value)} placeholder="e.g. Alice" autoFocus autoComplete="name" maxLength={80} />
+      <Input label="Qubic identity" value={identity} onChange={(event) => onIdentity(event.target.value)} error={identityError} placeholder="60 uppercase letters" technical autoCapitalize="characters" autoCorrect="off" maxLength={60} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+        <Input label="Tags" value={tags} onChange={(event) => onTags(event.target.value)} placeholder="friend, exchange, work" maxLength={160} />
+        <span style={{ color: "var(--color-text-tertiary)", fontSize: "var(--text-caption)" }}>Optional. Separate tags with commas.</span>
+      </div>
+      <Textarea label="Private note" value={note} onChange={(event) => onNote(event.target.value)} placeholder="Optional context that stays in Glyph" rows={3} maxLength={500} style={{ minHeight: 96 }} />
+    </form>
+  );
+}
+
+function ContactFormActions({ formId, submitLabel, disabled, onCancel }: { formId: string; submitLabel: string; disabled: boolean; onCancel: () => void }) {
+  return (
+    <div style={{ display: "flex", gap: "var(--space-3)" }}>
+      <Button type="button" variant="ghost" size="md" style={{ flex: 1 }} onClick={onCancel}>Cancel</Button>
+      <Button type="submit" form={formId} size="md" style={{ flex: 1 }} disabled={disabled}>{submitLabel}</Button>
     </div>
   );
 }
