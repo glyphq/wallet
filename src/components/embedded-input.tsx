@@ -18,7 +18,6 @@ export const EmbeddedInput = forwardRef<HTMLInputElement, EmbeddedInputProps>(fu
       style={{
         background: "none",
         border: "none",
-        outline: "none",
         width: "100%",
         minWidth: 0,
         padding: 0,

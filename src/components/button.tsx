@@ -62,6 +62,7 @@ export function Button({
       type="button"
       {...props}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={`glyph-btn ${className}`}
       data-variant={variant}
       data-size={size}
@@ -89,6 +90,7 @@ export function Button({
     >
       {loading && (
         <span
+          aria-hidden="true"
           style={{
             position: "absolute",
             width: 16, height: 16,
