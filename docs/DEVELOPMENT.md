@@ -15,7 +15,7 @@ Glyph currently uses:
 - TypeScript 5.8
 - Vite 7
 
-The Rust toolchain is declared in `src-tauri/rust-toolchain.toml`, not at the repository root. Use the `cargo` and `rustc` installed by rustup. Distribution-provided Rust commands can ignore the pin or be too old.
+The root `rust-toolchain.toml` and `src-tauri/rust-toolchain.toml` both pin Rust 1.88.0. Use the `cargo` and `rustc` installed by rustup. Distribution-provided Rust commands can ignore the pin or be too old.
 
 Install the required Rust toolchain:
 
