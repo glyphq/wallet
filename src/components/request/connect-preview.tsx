@@ -95,7 +95,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   {isSelected ? (
-                    <CheckCircle size={16} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                    <CheckCircle size={16} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                   ) : null}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
                     {truncateId(w.identity, 10, 10)}

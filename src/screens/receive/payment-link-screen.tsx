@@ -151,7 +151,7 @@ export default function PaymentLinkScreen() {
                       </span>
                     </span>
                     {selected ? (
-                      <CheckCircle size={18} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                      <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                     ) : (
                       <span style={{ color: "var(--color-text-disabled)", fontSize: "var(--text-label)", fontWeight: 600 }}>Use</span>
                     )}
