@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+import { isGlobalHttpsUrl } from "@/lib/url-security";
 
 interface LatestStats {
   price: number;
@@ -17,6 +18,7 @@ function buildStatsUrl(liveApiUrl: string): string {
 }
 
 async function fetchLatestStats(url: string): Promise<LatestStats> {
+  if (!isGlobalHttpsUrl(url)) throw new Error("stats URL is not an allowed HTTPS endpoint");
   const res = await fetch(url);
   if (!res.ok) throw new Error("stats fetch failed");
   const json = (await res.json()) as { data: LatestStats };

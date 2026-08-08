@@ -10,6 +10,7 @@ import type {
   ScheduledTransfer,
   VaultMeta,
 } from "./persisted-types";
+import { isGlobalHttpsUrl } from "@/lib/url-security";
 
 export const MAX_PENDING_TXS = 50;
 export const MAX_TX_MEMOS = 500;
@@ -81,6 +82,14 @@ export function sanitizePollingInterval(
   return typeof value === "number" && Number.isFinite(value)
     ? Math.min(60_000, Math.max(2_000, Math.round(value)))
     : fallback;
+}
+
+export function sanitizeCustomPriceFeedUrl(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.length > 2048 || !isGlobalHttpsUrl(trimmed)) return fallback;
+  return trimmed;
 }
 
 export function mergePersistedState(
@@ -246,10 +255,10 @@ export function mergePersistedState(
       typeof settingsBase.lowBalanceThreshold === "string"
         ? settingsBase.lowBalanceThreshold.replace(/[^\d]/g, "")
         : currentState.settings.lowBalanceThreshold,
-    customPriceFeedUrl:
-      typeof settingsBase.customPriceFeedUrl === "string"
-        ? settingsBase.customPriceFeedUrl
-        : currentState.settings.customPriceFeedUrl,
+    customPriceFeedUrl: sanitizeCustomPriceFeedUrl(
+      settingsBase.customPriceFeedUrl,
+      currentState.settings.customPriceFeedUrl
+    ),
     largeIncomingThreshold:
       typeof settingsBase.largeIncomingThreshold === "string"
         ? settingsBase.largeIncomingThreshold.replace(/[^\d]/g, "")
