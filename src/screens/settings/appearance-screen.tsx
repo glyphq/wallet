@@ -204,7 +204,7 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
               >
                 <span>{pair.name}</span>
                 {pair.id === value && (
-                  <CheckCircle size={16} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                  <CheckCircle size={16} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                 )}
               </button>
             </div>
@@ -276,7 +276,7 @@ export default function AppearanceScreen() {
                         </span>
                       </span>
                     </span>
-                    {selected ? <CheckCircle size={18} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
+                    {selected ? <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
                   </button>
                 </div>
               );
