@@ -233,10 +233,6 @@ export function mergePersistedState(
     : currentState.settings.approvedDapps;
   const settings = {
     ...settingsBase,
-    widgetConfigJson:
-      typeof settingsBase.widgetConfigJson === "string" && settingsBase.widgetConfigJson.length <= 128 * 1024
-        ? settingsBase.widgetConfigJson
-        : currentState.settings.widgetConfigJson,
     approvedDapps,
     autoLockMinutes:
       typeof settingsBase.autoLockMinutes === "number" && Number.isInteger(settingsBase.autoLockMinutes)
