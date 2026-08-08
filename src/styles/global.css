@@ -365,6 +365,47 @@ a:hover {
   50% { opacity: 1; }
 }
 
+@keyframes sponsor-ticker-scroll {
+  to { transform: translateX(-50%); }
+}
+
+.sponsor-ticker {
+  overflow: hidden;
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.sponsor-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: sponsor-ticker-scroll 24s linear infinite;
+}
+
+.sponsor-ticker:hover .sponsor-ticker-track {
+  animation-play-state: paused;
+}
+
+.sponsor-ticker-group {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.sponsor-ticker-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 280px;
+  padding: var(--space-4) var(--space-5);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.sponsor-ticker-logo {
+  width: 112px;
+  height: 28px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .skeleton {
   background: var(--color-skeleton);
   border-radius: var(--radius-sharp);
