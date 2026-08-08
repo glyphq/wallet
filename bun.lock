@@ -45,6 +45,7 @@
         "react-hook-form": "^7.83.0",
         "react-router": "8.3.0",
         "tauri-plugin-device-info-api": "^1.0.1",
+        "tauri-plugin-widgets-api": "0.5.0",
         "zod": "^4.4.3",
         "zustand": "^5.0.14",
       },
@@ -435,6 +436,8 @@
 
     "chardet": ["chardet@2.1.1", "", {}, "sha512-PsezH1rqdV9VvyNhxxOW32/d75r01NY7TQCmOqomRo15ZSOKbpTFVsfjghxo6JloQUCGnH4k1LGu0R4yCLlWQQ=="],
 
+    "citty": ["citty@0.2.2", "", {}, "sha512-+6vJA3L98yv+IdfKGZHBNiGW5KHn22e/JwID0Strsz8h4S/csAu/OuICwxrg44k5MRiZHWIo8XXuJgQTriRP4w=="],
+
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 
     "cookie-es": ["cookie-es@3.1.1", "", {}, "sha512-UaXxwISYJPTr9hwQxMFYZ7kNhSXboMXP+Z3TRX6f1/NyaGPfuNUZOWP1pUEb75B2HjfklIYLVRfWiFZJyC6Npg=="],
@@ -658,6 +661,8 @@
     "tapable": ["tapable@2.3.3", "", {}, "sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A=="],
 
     "tauri-plugin-device-info-api": ["tauri-plugin-device-info-api@1.0.1", "", { "dependencies": { "@tauri-apps/api": "^2.0.0" } }, "sha512-d2QoatWeQ6X09fdEDdWSKzBVSZv9x8LpksJP/gfv4WeRmZwJRsLLMf1++qOw7PdOmQlNoKHFcKXPZlr2n4irdg=="],
+
+    "tauri-plugin-widgets-api": ["tauri-plugin-widgets-api@0.5.0", "", { "dependencies": { "@tauri-apps/api": ">=2.0.0", "citty": "^0.2.1" }, "bin": { "tauri-plugin-widgets-api": "dist-cli/cli.mjs", "tauri-widgets": "dist-cli/cli.mjs" } }, "sha512-NPk+SK0+zo1eaAs8vyUqXC2f8afBTT8aN7ntPhNyOYfif8bS8GaeOM5Zi3C6zRW0uLYTrq8NbsidHFWavI+RRg=="],
 
     "term-size": ["term-size@2.2.1", "", {}, "sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg=="],
 

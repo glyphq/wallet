@@ -133,6 +133,8 @@ export interface AppSettings {
   lowBalanceThreshold: string;
   /** Custom price feed URL; when set, useLatestStats fetches from this endpoint instead of the default. */
   customPriceFeedUrl: string;
+  /** User-owned declarative native-widget JSON. It never receives wallet secrets automatically. */
+  widgetConfigJson: string | null;
 }
 
 export interface Contact {
