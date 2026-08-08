@@ -22,6 +22,54 @@ const CLIPBOARD_OPTIONS = [
   { label: "1m", value: 60 }, { label: "Never", value: 0 },
 ];
 
+const optionGroupStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "var(--space-2)",
+} as const;
+
+const sectionStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--space-3)",
+} as const;
+
+function ChoiceButton({
+  active,
+  children,
+  onClick,
+  ariaLabel,
+}: {
+  active: boolean;
+  children: string;
+  onClick: () => void;
+  ariaLabel: string;
+}) {
+  return (
+    <motion.button
+      {...gesture.pressSubtle}
+      type="button"
+      aria-label={ariaLabel}
+      aria-pressed={active}
+      onClick={onClick}
+      style={{
+        minHeight: 36,
+        padding: "0 var(--space-3)",
+        borderRadius: "var(--radius-control)",
+        border: "1px solid var(--color-border-subtle)",
+        cursor: "pointer",
+        background: active ? "var(--color-bg-elevated)" : "transparent",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-label)",
+        fontWeight: active ? 650 : 500,
+        color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+      }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
 export default function SecurityScreen() {
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
   const settings = usePersistedStore((s) => s.settings);
@@ -77,145 +125,99 @@ export default function SecurityScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <SettingsPageHeader title="Security" />
 
-        {/* Auto-lock */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <section style={sectionStyle} aria-label="Auto-lock timeout">
           <SettingsSectionLabel>Auto-lock timeout</SettingsSectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {TIMEOUT_OPTIONS.map((opt) => {
-              const isActive = opt.value === autoLockMinutes;
-              return (
-                <motion.button
-                  key={opt.value}
-                  {...gesture.pressSubtle}
-                  onClick={() => setLockTimeout(opt.value)}
-                  style={{
-                    position: "relative", padding: "var(--space-2) var(--space-4)",
-                    borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
-                    background: "transparent",
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                    color: isActive ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  }}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="autoLock-pill"
-                      style={{
-                        position: "absolute", inset: 0,
-                        background: "var(--color-accent)", borderRadius: "var(--radius-pill)",
-                      }}
-                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                    />
-                  )}
-                  <span style={{ position: "relative", zIndex: 1 }}>{opt.label}</span>
-                </motion.button>
-              );
-            })}
+          <div style={optionGroupStyle}>
+            {TIMEOUT_OPTIONS.map((opt) => (
+              <ChoiceButton
+                key={opt.value}
+                active={opt.value === autoLockMinutes}
+                onClick={() => setLockTimeout(opt.value)}
+                ariaLabel={`Set auto-lock timeout to ${opt.label}`}
+              >
+                {opt.label}
+              </ChoiceButton>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* Lock toggles */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <SettingsDivider />
+
+        <section style={{ display: "flex", flexDirection: "column", gap: 0 }} aria-label="Lock triggers">
           <SettingsSwitch label="Lock on sleep" description="Lock when the screen locks or machine sleeps" checked={lockOnSleep} onChange={() => updateSettings({ lockOnSleep: !lockOnSleep })} />
           <SettingsDivider />
           <SettingsSwitch label="Lock on window blur" description="Lock when the app loses focus" checked={lockOnWindowBlur} onChange={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })} />
-        </div>
+        </section>
 
-        {/* Divider */}
         <SettingsDivider />
 
-        {/* Clipboard */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <section style={sectionStyle} aria-label="Clear clipboard after">
           <SettingsSectionLabel>Clear clipboard after</SettingsSectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {CLIPBOARD_OPTIONS.map((opt) => {
-              const isActive = opt.value === clipboardClearSeconds;
-              return (
-                <motion.button
-                  key={opt.value}
-                  {...gesture.pressSubtle}
-                  onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
-                  style={{
-                    position: "relative", padding: "var(--space-2) var(--space-4)",
-                    borderRadius: "var(--radius-pill)", border: "none", cursor: "pointer",
-                    background: "transparent",
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                    color: isActive ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  }}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="clipboard-pill"
-                      style={{
-                        position: "absolute", inset: 0,
-                        background: "var(--color-accent)", borderRadius: "var(--radius-pill)",
-                      }}
-                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                    />
-                  )}
-                  <span style={{ position: "relative", zIndex: 1 }}>{opt.label}</span>
-                </motion.button>
-              );
-            })}
+          <div style={optionGroupStyle}>
+            {CLIPBOARD_OPTIONS.map((opt) => (
+              <ChoiceButton
+                key={opt.value}
+                active={opt.value === clipboardClearSeconds}
+                onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
+                ariaLabel={`Clear clipboard after ${opt.label}`}
+              >
+                {opt.label}
+              </ChoiceButton>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* Divider */}
         <SettingsDivider />
 
-        {/* Approval toggles */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <section style={{ display: "flex", flexDirection: "column", gap: 0 }} aria-label="Approval requirements">
           <SettingsSwitch label="Password for burn" description="Require password before burning QU" checked={requirePasswordForBurn} onChange={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })} />
           <SettingsDivider />
           <SettingsSwitch label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
-        </div>
+        </section>
 
-        {/* Biometric setup — only card, only when relevant */}
         {bioAvailable && vault && (
-          <div style={{
-            background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)",
-            padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)",
-          }}>
-            <SettingsSectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SettingsSectionLabel>
-            {bioEnabled ? (
-              <>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-success)" }}>
-                  Enabled for {vault.name}
+          <>
+            <SettingsDivider />
+            <section style={sectionStyle} aria-label="Biometric unlock">
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                <SettingsSectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SettingsSectionLabel>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+                  {bioEnabled ? `Enabled for ${vault.name}` : `Enable faster unlock for ${vault.name}`}
                 </span>
-                <Button variant="danger" onClick={handleDisable}>
+              </div>
+              {bioEnabled ? (
+                <Button variant="danger" size="md" style={{ width: "100%" }} onClick={handleDisable}>
                   Disable
                 </Button>
-              </>
-            ) : enabling ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                  Enter your password to enable
-                </span>
-                <Input
-                  ref={pwRef} type="password" value={enablePw}
-                  label="Password"
-                  onChange={(e) => { setEnablePw(e.target.value); setEnableError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleEnable()}
-                  placeholder="Password"
-                  error={enableError || undefined}
-                />
-                <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                  <Button style={{ flex: 1 }} onClick={handleEnable} loading={enableLoading}>
-                    {enableLoading ? "Verifying..." : "Enable"}
-                  </Button>
-                  <Button variant="secondary" style={{ width: "auto" }} onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}>
-                    Cancel
-                  </Button>
+              ) : enabling ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <Input
+                    ref={pwRef} type="password" value={enablePw}
+                    label="Password"
+                    onChange={(e) => { setEnablePw(e.target.value); setEnableError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleEnable()}
+                    placeholder="Password"
+                    error={enableError || undefined}
+                  />
+                  <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                    <Button style={{ flex: 1 }} onClick={handleEnable} loading={enableLoading}>
+                      {enableLoading ? "Verifying..." : "Enable"}
+                    </Button>
+                    <Button variant="secondary" style={{ width: "auto" }} onClick={() => { setEnabling(false); setEnablePw(""); setEnableError(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Button variant="secondary" onClick={() => setEnabling(true)}>
-                Enable for {vault.name}
-              </Button>
-            )}
-          </div>
+              ) : (
+                <Button variant="secondary" size="md" onClick={() => setEnabling(true)}>
+                  Enable for {vault.name}
+                </Button>
+              )}
+            </section>
+          </>
         )}
       </motion.div>
     </AppShell>
