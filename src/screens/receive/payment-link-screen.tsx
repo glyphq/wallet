@@ -28,6 +28,22 @@ function buildLinks(to: string, amount: string, label: string) {
   };
 }
 
+const sectionStyle = {
+  borderTop: "1px solid var(--color-border-default)",
+  paddingTop: "var(--space-4)",
+} as const;
+
+const eyebrowStyle = {
+  display: "block",
+  marginBottom: "var(--space-3)",
+  color: "var(--color-text-tertiary)",
+  fontFamily: "var(--font-sans)",
+  fontSize: "var(--text-label)",
+  fontWeight: 600,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+} as const;
+
 export default function PaymentLinkScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) =>
@@ -77,98 +93,136 @@ export default function PaymentLinkScreen() {
       .filter((a) => a.identity.length === 60);
   }, [vault, wallets]);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-5)" }}>
+        <section aria-labelledby="payment-link-intro">
+          <h2
+            id="payment-link-intro"
+            style={{
+              margin: 0,
+              color: "var(--color-text-primary)",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-title)",
+              fontWeight: 600,
+              lineHeight: 1.2,
+            }}
+          >
+            Create a payment link
+          </h2>
+          <p style={{ margin: "var(--space-2) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-body)", lineHeight: 1.45 }}>
+            Share a web link or app link that resolves to your visible receiving identity.
+          </p>
+        </section>
 
-        {/* ── Account selector ── */}
         {accountOptions.length > 1 && (
-          <div>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em", display: "block", marginBottom: "var(--space-2)" }}>
-              Receive to
-            </span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-              {accountOptions.map((a) => (
-                <button
-                  key={a.identity}
-                  type="button"
-                  onClick={() => setTo(a.identity)}
-                  style={{
-                    background: to === a.identity ? "var(--color-text-primary)" : "none",
-                    border: `1px solid ${to === a.identity ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-                    borderRadius: "var(--radius-sharp)",
-                    cursor: "pointer",
-                    padding: "var(--space-1) var(--space-3)",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-label)",
-                    fontWeight: 500,
-                    color: to === a.identity ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  }}
-                >
-                  {a.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Form card ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <Input
-            label="Amount (QU)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
-            placeholder="Leave blank to let sender choose"
-            inputMode="numeric"
-            autoComplete="off"
-          />
-          <Input
-            label="Label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value.slice(0, 100))}
-            placeholder="e.g. Coffee, Invoice #42"
-            autoComplete="off"
-          />
-        </div>
-
-        {/* ── QR + links (only when valid) ── */}
-        {links ? (
-          <>
-            {/* QR code */}
-            <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
-              {/* Mode toggle */}
-              <div style={{ display: "flex", gap: "var(--space-1)", background: "var(--color-bg-elevated)", borderRadius: "var(--radius-sharp)", padding: 2 }}>
-                {(["web", "deep"] as const).map((mode) => (
+          <section aria-labelledby="receive-to-heading" style={sectionStyle}>
+            <span id="receive-to-heading" style={eyebrowStyle}>Receive to</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 0, borderBottom: "1px solid var(--color-border-subtle)" }}>
+              {accountOptions.map((a) => {
+                const selected = to === a.identity;
+                return (
                   <button
-                    key={mode}
+                    key={a.identity}
                     type="button"
-                    onClick={() => setQrMode(mode)}
+                    aria-pressed={selected}
+                    onClick={() => setTo(a.identity)}
                     style={{
-                      background: qrMode === mode ? "var(--color-bg-surface)" : "transparent",
-                      border: "none",
-                      borderRadius: "var(--radius-sharp)",
-                      cursor: "pointer",
-                      padding: "var(--space-1) var(--space-3)",
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "var(--text-label)",
-                      fontWeight: 500,
-                      color: qrMode === mode ? "var(--color-text-primary)" : "var(--color-text-disabled)",
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "1fr auto",
+                      gap: "var(--space-3)",
                       alignItems: "center",
-                      gap: "var(--space-1)",
-                      transition: "background 0.15s, color 0.15s",
+                      minHeight: 44,
+                      width: "100%",
+                      padding: "var(--space-3) 0",
+                      background: "transparent",
+                      border: 0,
+                      borderTop: "1px solid var(--color-border-subtle)",
+                      color: "var(--color-text-primary)",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-sans)",
+                      textAlign: "left",
                     }}
                   >
-                    {mode === "web" ? <LinkRound size={12} /> : <QrCode size={12} />}
-                    {mode === "web" ? "Web" : "App"}
+                    <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
+                      <span style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{a.name}</span>
+                      <span style={{ color: "var(--color-text-tertiary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)" }}>
+                        {truncateId(a.identity, 8, 6)}
+                      </span>
+                    </span>
+                    <span style={{ color: selected ? "var(--color-accent)" : "var(--color-text-disabled)", fontSize: "var(--text-label)", fontWeight: 600 }}>
+                      {selected ? "Selected" : "Use"}
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-              {/* QR */}
-              <div style={{ padding: "var(--space-4)", background: QR_BG, borderRadius: "var(--radius-card)" }}>
+        <section aria-labelledby="payment-details-heading" style={sectionStyle}>
+          <span id="payment-details-heading" style={eyebrowStyle}>Optional details</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <Input
+              label="Amount (QU)"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+              placeholder="Leave blank to let sender choose"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <Input
+              label="Label"
+              value={label}
+              onChange={(e) => setLabel(e.target.value.slice(0, 100))}
+              placeholder="e.g. Coffee, Invoice #42"
+              autoComplete="off"
+            />
+          </div>
+        </section>
+
+        {links ? (
+          <>
+            <section aria-labelledby="link-type-heading" style={sectionStyle}>
+              <span id="link-type-heading" style={eyebrowStyle}>Link type</span>
+              <div role="tablist" aria-label="QR link type" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid var(--color-border-default)" }}>
+                {(["web", "deep"] as const).map((mode) => {
+                  const selected = qrMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() => setQrMode(mode)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "var(--space-2)",
+                        minHeight: 44,
+                        padding: "0 var(--space-3)",
+                        background: "transparent",
+                        border: 0,
+                        borderBottom: selected ? "1px solid var(--color-text-primary)" : "1px solid transparent",
+                        color: selected ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+                        cursor: "pointer",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "var(--text-label)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {mode === "web" ? <LinkRound size={14} /> : <QrCode size={14} />}
+                      {mode === "web" ? "Web link" : "App link"}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section aria-labelledby="qr-preview-heading" style={{ ...sectionStyle, display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
+              <span id="qr-preview-heading" style={{ ...eyebrowStyle, alignSelf: "stretch", marginBottom: 0 }}>QR and link preview</span>
+              <div style={{ padding: "var(--space-3)", background: QR_BG, borderRadius: "var(--radius-card)" }} aria-label={`${qrMode === "web" ? "Web" : "App"} payment link QR code`}>
                 <QRCodeSVG
                   value={qrMode === "web" ? links.web : links.deep}
                   size={200}
@@ -177,15 +231,13 @@ export default function PaymentLinkScreen() {
                   level="M"
                 />
               </div>
-
-              {/* Link preview */}
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", wordBreak: "break-all", textAlign: "center", maxWidth: 280 }}>
+              <span style={{ alignSelf: "stretch", color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", lineHeight: 1.45, textAlign: "center", wordBreak: "break-all" }}>
                 {qrMode === "web" ? links.web : links.deep}
               </span>
-            </div>
+            </section>
 
-            {/* Copy buttons */}
-            <div style={{ display: "flex", gap: "var(--space-3)" }}>
+            <section aria-labelledby="copy-actions-heading" style={{ ...sectionStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+              <span id="copy-actions-heading" className="sr-only">Copy actions</span>
               <CopyButton
                 label="Copy web link"
                 copied={copiedWeb}
@@ -196,44 +248,45 @@ export default function PaymentLinkScreen() {
                 copied={copiedDeep}
                 onCopy={() => copy(links.deep, "deep")}
               />
-            </div>
+            </section>
 
-            {/* Receiving identity */}
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", textAlign: "center", display: "block" }}>
-              Receiving to {truncateId(to, 8, 6)}
-            </span>
+            <section aria-labelledby="receive-identity-heading" style={sectionStyle}>
+              <span id="receive-identity-heading" style={eyebrowStyle}>Receiving identity</span>
+              <p style={{ margin: 0, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", lineHeight: 1.5, wordBreak: "break-all" }}>
+                {to.trim().toUpperCase()}
+              </p>
+            </section>
           </>
         ) : (
-          /* ── Empty state ── */
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-8) 0", textAlign: "center" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-bg-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <LinkRound size={22} style={{ color: "var(--color-text-disabled)" }} />
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-                Select an account to generate a link
+          <section aria-labelledby="payment-link-empty-heading" style={{ ...sectionStyle, display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
+            <span id="payment-link-empty-heading" style={eyebrowStyle}>Link unavailable</span>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+              <LinkRound size={18} style={{ flex: "0 0 auto", marginTop: 2, color: "var(--color-text-tertiary)" }} />
+              <div>
+                <p style={{ margin: 0, color: "var(--color-text-primary)", fontSize: "var(--text-body)", lineHeight: 1.45 }}>
+                  Select an account with a valid receiving identity to generate a payment link.
+                </p>
+                <p style={{ margin: "var(--space-2) 0 0", color: "var(--color-text-tertiary)", fontSize: "var(--text-caption)", lineHeight: 1.45 }}>
+                  Amount and label remain optional and only pre-fill the sender's payment.
+                </p>
               </div>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-                Add an amount or label to pre-fill the payment
-              </div>
             </div>
-          </div>
+          </section>
         )}
       </motion.div>
     </AppShell>
   );
 }
 
-// ── CopyButton ──────────────────────────────────────────────────────────────
-
 function CopyButton({ label, copied, onCopy }: { label: string; copied: boolean; onCopy: () => void }) {
   return (
     <Button
-      variant={copied ? "secondary" : "secondary"}
+      variant="secondary"
       size="sm"
       shape="sharp"
       onClick={onCopy}
-      style={{ flex: 1, color: copied ? "var(--color-accent)" : undefined }}
+      style={{ width: "100%", color: copied ? "var(--color-accent)" : undefined }}
+      aria-live="polite"
     >
       {copied ? (
         <>
