@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { CheckCircle, Code, Copy, QrCode, Star } from "@solar-icons/react";
+import { CheckCircle, Code, Copy, QrCode } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -36,38 +36,34 @@ export default function SupportScreen() {
       <motion.main {...stepMotion} style={{ width: "min(100%, 760px)", margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-6)", paddingBottom: "var(--space-8)" }}>
         <SettingsPageHeader title="Support" />
 
-        <section aria-labelledby="support-heading" style={{ paddingBottom: "var(--space-5)", borderBottom: "1px solid var(--color-border-subtle)" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)", color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", fontWeight: 700, letterSpacing: "0.08em" }}>
-            <Star size={13} weight="Bold" aria-hidden="true" /> COMMUNITY SUPPORT
-          </span>
-          <h1 id="support-heading" style={{ margin: "var(--space-3) 0 var(--space-2)", color: "var(--color-text-display)", fontFamily: "var(--font-display)", fontSize: "var(--text-headline)", fontWeight: 400, lineHeight: "var(--leading-title)" }}>Keep Glyph independent.</h1>
-          <p style={{ maxWidth: 480, margin: 0, color: "var(--color-text-secondary)", fontSize: "var(--text-body)", lineHeight: "var(--leading-body)" }}>Glyph is maintained by the community. Sponsor support and contributions help keep it independent.</p>
+        <section aria-labelledby="support-heading">
+          <h1 id="support-heading" style={{ margin: 0, color: "var(--color-text-display)", fontFamily: "var(--font-display)", fontSize: "var(--text-headline)", fontWeight: 400, lineHeight: "var(--leading-title)" }}>Back independent software.</h1>
+          <p style={{ maxWidth: 450, margin: "var(--space-3) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-body)", lineHeight: "var(--leading-body)" }}>Glyph is supported by people and teams who want a wallet that remains open, local, and community-led.</p>
         </section>
 
-        <section aria-labelledby="sponsor-heading" style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "var(--space-5)" }}>
-          <SectionHeading title="Current sponsor" description="This contribution marks a meaningful milestone for the project." id="sponsor-heading" />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
-            <img src={minerLabLogo} alt="MinerLab" style={{ display: "block", width: "min(58%, 255px)", height: "auto", objectFit: "contain", objectPosition: "left center" }} />
-            <div style={{ flexShrink: 0, textAlign: "right" }}>
-              <strong style={{ display: "block", color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-title)", fontWeight: 600 }}>2B QU</strong>
-              <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>sponsored by MinerLab</span>
+        <section aria-labelledby="sponsors-heading">
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-4)", marginBottom: "var(--space-3)" }}>
+            <div>
+              <h2 id="sponsors-heading" style={{ margin: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>Sponsors</h2>
+              <p style={{ margin: "var(--space-1) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Current project backers</p>
             </div>
+            <span style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)" }}>2B QU committed</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-4)", color: "var(--color-status-success)", fontSize: "var(--text-label)" }}>
-            <CheckCircle size={15} weight="Bold" aria-hidden="true" />
-            Sponsor milestone reached
-          </div>
+          <SponsorTicker />
         </section>
 
-        <section aria-labelledby="contribute-heading" style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "var(--space-5)" }}>
-          <SectionHeading title="Contribute" description="Send QU to support ongoing development." id="contribute-heading" />
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", marginTop: "var(--space-4)", padding: "var(--space-3) 0", borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)" }}>
+        <section aria-labelledby="contribute-heading" style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-5)" }}>
+          <h2 id="contribute-heading" style={{ margin: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>Contribute</h2>
+          <p style={{ margin: "var(--space-1) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)" }}>Send QU to keep development moving. Your address is copied exactly as displayed.</p>
+
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", marginTop: "var(--space-4)", padding: "var(--space-3) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
             <code style={{ flex: 1, minWidth: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", lineHeight: 1.5, overflowWrap: "anywhere" }}>{DONATION_IDENTITY}</code>
             <Button size="sm" variant="secondary" onClick={() => void copyAddress()} style={{ flexShrink: 0, width: "auto" }}>
               {copied ? <CheckCircle size={15} weight="Bold" aria-hidden="true" /> : <Copy size={15} weight="Linear" aria-hidden="true" />}
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
+
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
             <Button size="sm" variant="ghost" onClick={() => setShowQr((visible) => !visible)} style={{ width: "auto" }}>
               <QrCode size={16} weight="Linear" aria-hidden="true" />
@@ -75,29 +71,46 @@ export default function SupportScreen() {
             </Button>
             <Button size="sm" variant="ghost" onClick={() => void openUrl(GITHUB_URL)} style={{ width: "auto" }}>
               <Code size={16} weight="Linear" aria-hidden="true" />
-              Open GitHub
+              View on GitHub
             </Button>
           </div>
           {showQr && <div style={{ display: "flex", justifyContent: "center", marginTop: "var(--space-4)", padding: "var(--space-5)", background: QR_BG }}><QRCodeSVG value={DONATION_IDENTITY} size={184} bgColor={QR_BG} fgColor={QR_FG} level="L" title="Glyph donation address QR code" /></div>}
         </section>
 
-        <section aria-labelledby="your-support-heading" style={{ paddingBottom: "var(--space-6)" }}>
-          <SectionHeading title="Your support" description="Contributions sent from this wallet." id="your-support-heading" />
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-4)", marginTop: "var(--space-4)", paddingBottom: "var(--space-3)", borderBottom: "1px solid var(--color-border-subtle)" }}>
-            <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Total donated</span>
-            <strong style={{ color: sentTotal > 0n ? "var(--color-status-success)" : "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", fontWeight: 600 }}>{sentTotal > 0n ? `${formatQu(sentTotal)} QU` : "No donations yet"}</strong>
-          </div>
+        <section aria-label="Your contribution history" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-4)", paddingTop: "var(--space-5)", borderTop: "1px solid var(--color-border-subtle)" }}>
+          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Sent from this wallet</span>
+          <strong style={{ color: sentTotal > 0n ? "var(--color-status-success)" : "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", fontWeight: 600 }}>{sentTotal > 0n ? `${formatQu(sentTotal)} QU` : "No donations yet"}</strong>
         </section>
       </motion.main>
     </AppShell>
   );
 }
 
-function SectionHeading({ id, title, description }: { id: string; title: string; description: string }) {
+function SponsorTicker() {
   return (
-    <>
-      <h2 id={id} style={{ margin: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{title}</h2>
-      <p style={{ margin: "var(--space-1) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)" }}>{description}</p>
-    </>
+    <div className="sponsor-ticker" aria-label="Current sponsors. MinerLab has committed 2B QU.">
+      <div className="sponsor-ticker-track">
+        <SponsorTickerGroup />
+        <SponsorTickerGroup hidden />
+      </div>
+    </div>
+  );
+}
+
+function SponsorTickerGroup({ hidden = false }: { hidden?: boolean }) {
+  return (
+    <div className="sponsor-ticker-group" aria-hidden={hidden || undefined}>
+      <SponsorTickerEntry />
+      <SponsorTickerEntry />
+    </div>
+  );
+}
+
+function SponsorTickerEntry() {
+  return (
+    <div className="sponsor-ticker-entry">
+      <img className="sponsor-ticker-logo" src={minerLabLogo} alt="" />
+      <span style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", whiteSpace: "nowrap" }}>CURRENT SPONSOR · 2B QU</span>
+    </div>
   );
 }
