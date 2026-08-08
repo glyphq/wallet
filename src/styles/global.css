@@ -307,6 +307,36 @@ a:hover {
   box-shadow: inset 0 -1px 0 var(--color-border-contrast);
 }
 
+.glyph-avatar-btn {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-strong);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 3px 0 var(--color-border-strong),
+    0 5px 10px rgba(0, 0, 0, 0.12);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.glyph-avatar-btn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-contrast);
+}
+
+.glyph-avatar-btn:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
+}
+
+.glyph-avatar-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px var(--color-text-primary);
+}
+
 .glyph-icon-btn {
   transition:
     background-color var(--duration-fast) var(--ease-out),
