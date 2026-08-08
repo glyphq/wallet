@@ -131,8 +131,8 @@ interface PressableProps {
 }
 
 /**
- * Animated pressable element with scale feedback on tap.
- * Wraps a motion.button with spring-based press animation.
+ * Animated pressable element with stable-size tap feedback.
+ * Wraps a motion.button with spring-based opacity feedback.
  */
 export function Pressable({
   children,
@@ -144,7 +144,7 @@ export function Pressable({
   ariaLabel,
   type = "button",
 }: PressableProps) {
-  const scale = intensity === "strong" ? 0.95 : intensity === "subtle" ? 0.98 : 0.97;
+  const tapOpacity = intensity === "strong" ? 0.84 : intensity === "subtle" ? 0.92 : 0.88;
   return (
     <motion.button
       type={type}
@@ -152,7 +152,7 @@ export function Pressable({
       disabled={disabled}
       aria-label={ariaLabel}
       whileHover={disabled ? undefined : { scale: 1.015 }}
-      whileTap={disabled ? undefined : { scale }}
+      whileTap={disabled ? undefined : { opacity: tapOpacity }}
       transition={transition.springStiff}
       style={style}
       className={className}

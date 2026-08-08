@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
@@ -347,6 +347,7 @@ export default function DashboardScreen() {
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const isLocked = useSessionStore((s) => s.isLocked);
+  const lock = useSessionStore((s) => s.lock);
   const wallets = useSessionStore((s) => s.wallets);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
@@ -385,12 +386,23 @@ export default function DashboardScreen() {
       leading={<ShellVaultSwitcher />}
       title="Dashboard"
       action={
-        <IconButton label="Search" onClick={() => navigate("/search")}>
-          <Magnifier size={20} weight="Linear" aria-hidden="true" />
-        </IconButton>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          <IconButton
+            label="Lock wallet"
+            onClick={() => {
+              lock();
+              navigate("/lock", { replace: true });
+            }}
+          >
+            <LockKeyhole size={19} weight="Linear" aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Search" onClick={() => navigate("/search")}>
+            <Magnifier size={20} weight="Linear" aria-hidden="true" />
+          </IconButton>
+        </div>
       }
     />
-  ), [navigate]);
+  ), [lock, navigate]);
 
   return (
     <AppShell statusBar={dashboardHeader} contentStyle={{ padding: "var(--space-4)" }}>

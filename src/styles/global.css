@@ -148,7 +148,6 @@ a:hover {
     border-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out);
 }
 
@@ -189,7 +188,6 @@ a:hover {
 }
 
 .glyph-btn:active:not(:disabled) {
-  transform: translateY(4px);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
 }
 
@@ -203,7 +201,6 @@ a:hover {
     border-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out);
 }
 
@@ -212,8 +209,12 @@ a:hover {
   background: var(--color-bg-hover) !important;
 }
 
+.settings-pressable.settings-pressable-accent:hover:not(:disabled) {
+  border-color: var(--color-accent-hover) !important;
+  background: var(--color-accent-hover) !important;
+}
+
 .settings-pressable:active:not(:disabled) {
-  transform: translateY(2px);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
 }
 
@@ -368,7 +369,6 @@ a:hover {
 }
 
 .glyph-avatar-btn:active {
-  transform: translateY(3px);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
 }
 
