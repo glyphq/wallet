@@ -30,12 +30,21 @@ jobs:
   frontend-and-release-quality:
     name: Frontend, tests, and workflow quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache Bun package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-${{ env.BUN_VERSION }}-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -55,6 +64,7 @@ jobs:
   rust-linux:
     name: Rust check (Linux)
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -70,6 +80,13 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
+      - name: Cache Rust registry and sources
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: src-tauri
+          cache-targets: "false"
+          cache-on-failure: "true"
+
       - name: Check locked Rust build
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
@@ -78,6 +95,7 @@ jobs:
   rust-desktop-platforms:
     name: Rust check (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +108,13 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
+      - name: Cache Rust registry and sources
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: src-tauri
+          cache-targets: "false"
+          cache-on-failure: "true"
+
       - name: Check locked native build
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
@@ -98,12 +123,21 @@ jobs:
   security-audit:
     name: Security audit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache Bun package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-${{ env.BUN_VERSION }}-
 
       - name: Install JS dependencies
         run: bun install --frozen-lockfile
