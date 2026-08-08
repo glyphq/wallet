@@ -233,6 +233,13 @@ a:hover {
   box-shadow: none;
 }
 
+/* Inputs communicate keyboard focus through their own border, not a second outer ring. */
+.glyph-input:focus-visible {
+  outline: none;
+  border-color: var(--color-border-contrast);
+  box-shadow: none;
+}
+
 .glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
   box-shadow: none;
