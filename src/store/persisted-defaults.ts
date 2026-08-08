@@ -47,4 +47,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   exportSigningPrivateJwk: null,
   lowBalanceThreshold: "",
   customPriceFeedUrl: "",
+  widgetConfigJson: null,
 };

@@ -88,6 +88,10 @@
       "endpoints": [
         "https://github.com/glyphq/wallet/releases/latest/download/latest.json"
       ]
+    },
+    "widgets": {
+      "appGroup": "group.com.qubic.glyph",
+      "transport": "widgetContainer"
     }
   }
 }
