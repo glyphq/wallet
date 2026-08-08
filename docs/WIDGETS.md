@@ -5,11 +5,11 @@ Glyph uses [`tauri-plugin-widgets` 0.5](https://s00d.github.io/tauri-plugin-widg
 ## Customize a widget
 
 1. Open **Settings → Widgets**.
-2. Choose one of the standard privacy-safe widgets. It syncs and opens a desktop preview immediately.
-3. Select **Advanced customization** only when you need to edit the full declarative JSON.
-4. Use **Open selected widget** to re-sync edited JSON, or **Close** to close the desktop preview.
+2. Start with the private default, or edit the JSON directly. The widget API accepts `small`, `medium`, and `large` layouts and the full plugin element set.
+3. Select **Save & sync** to write the configuration to the platform widget transport.
+4. On desktop, select **Open desktop widget** to preview the built-in renderer. The window is frameless, not shown in the taskbar, and can be closed from Settings.
 
-The standard presets contain no wallet-derived values. The optional advanced editor accepts up to 128 KB of valid JSON and exposes the full plugin configuration, including `small`, `medium`, and `large` layouts plus every supported element and style property.
+The editor accepts up to 128 KB of valid JSON. It is intentionally a full declarative configuration, rather than a restricted theme form, so every supported plugin layout, text, image, shape, chart, and style property can be customized.
 
 ## Privacy
 
