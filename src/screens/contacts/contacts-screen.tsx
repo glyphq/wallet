@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { AddCircle, UsersGroupRounded } from "@solar-icons/react";
+import { AddCircle, ArrowRightUp, PenNewSquare, UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
@@ -228,7 +228,7 @@ function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact
   return (
     <article className={highlighted ? "flash-success" : undefined} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", padding: "var(--space-4) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", minWidth: 0, flex: "1 1 180px" }}>
-        <Identicon kind="contact" seed={contact.identity} label={contact.name} size={40} radius={10} style={{ flexShrink: 0 }} />
+        <Identicon kind="identity" seed={contact.identity} label={contact.name} size={40} radius={10} style={{ flexShrink: 0 }} />
         <div style={{ minWidth: 0 }}>
           <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{contact.name}</strong>
           <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em" }}>{truncateId(contact.identity)}</span>
@@ -237,8 +237,8 @@ function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexShrink: 0 }}>
-        <Button variant="ghost" size="sm" onClick={onEdit}>Edit</Button>
-        <Button variant="secondary" size="sm" onClick={onSend}>Send</Button>
+        <Button variant="ghost" size="sm" onClick={onEdit}><PenNewSquare size={16} weight="Linear" aria-hidden="true" />Edit</Button>
+        <Button variant="secondary" size="sm" onClick={onSend}>Send<ArrowRightUp size={16} weight="Bold" aria-hidden="true" /></Button>
       </div>
     </article>
   );
