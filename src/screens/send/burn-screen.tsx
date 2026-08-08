@@ -110,13 +110,21 @@ export default function BurnScreen() {
     }
   }
 
-  const cardStyle: React.CSSProperties = {
-    background: "var(--color-bg-surface)",
-    borderRadius: "var(--radius-card)",
-    padding: "var(--space-1) var(--space-4)",
+  const sectionStyle: React.CSSProperties = {
+    borderTop: "1px solid var(--color-border-subtle)",
+    borderBottom: "1px solid var(--color-border-subtle)",
   };
   const divider: React.CSSProperties = {
-    height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
+    height: 1, background: "var(--color-border-subtle)",
+  };
+  const noticeStyle: React.CSSProperties = {
+    borderLeft: "2px solid var(--color-status-error)",
+    padding: "var(--space-2) 0 var(--space-2) var(--space-3)",
+    display: "flex", alignItems: "flex-start", gap: "var(--space-2)",
+  };
+  const statusCopyStyle: React.CSSProperties = {
+    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", lineHeight: 1.45,
+    color: "var(--color-text-secondary)",
   };
 
   // ── Input ──────────────────────────────────────────────────────────────────
@@ -127,10 +135,10 @@ export default function BurnScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Warning */}
-        <div style={{ background: "var(--color-status-error-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>
-            Burned QU is permanently destroyed. This cannot be undone.
+        <div role="alert" style={noticeStyle}>
+          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
+          <span style={{ ...statusCopyStyle, fontWeight: 600, color: "var(--color-status-error)" }}>
+            Burning is irreversible. Burned QU is permanently destroyed and cannot be recovered by Glyph or the network.
           </span>
         </div>
 
@@ -195,16 +203,16 @@ export default function BurnScreen() {
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)", marginTop: "var(--space-1)", opacity: 0.7 }}>QU to burn</div>
         </div>
 
-        {/* Warning card */}
-        <div style={{ background: "var(--color-status-error-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)" }}>
-            This QU will be permanently destroyed. There is no undo.
+        {/* Warning */}
+        <div role="alert" style={noticeStyle}>
+          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
+          <span style={{ ...statusCopyStyle, fontWeight: 600, color: "var(--color-status-error)" }}>
+            Review carefully. Confirming broadcasts an irreversible burn. This QU will be permanently destroyed with no undo path.
           </span>
         </div>
 
-        {/* Details card */}
-        <div style={cardStyle}>
+        {/* Details */}
+        <div aria-label="Burn review details" style={sectionStyle}>
           <DetailRow icon={<Wallet size={16} />} label="From" value={`${accountName} · ${truncateId(identity)}`} valueColor="var(--color-text-secondary)" />
           <div style={divider} />
           <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
@@ -214,8 +222,8 @@ export default function BurnScreen() {
 
         {/* Password confirmation (inline) */}
         {needsPassword && (
-          <div style={cardStyle}>
-            <div style={{ padding: "11px 0", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <div style={sectionStyle}>
+            <div style={{ padding: "var(--space-3) 0", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <span style={{ ...labelStyle }}>Wallet password required</span>
               <Input
                 type="password"
@@ -232,9 +240,9 @@ export default function BurnScreen() {
         )}
 
         {hasPendingTx && (
-          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
+          <div role="status" style={{ borderLeft: "2px solid var(--color-status-warning)", padding: "var(--space-2) 0 var(--space-2) var(--space-3)", display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)", marginTop: 2 }} />
+            <span style={{ ...statusCopyStyle, color: "var(--color-status-warning)" }}>Transfer pending. Wait for confirmation before broadcasting another transaction from this account.</span>
           </div>
         )}
 
@@ -266,10 +274,13 @@ export default function BurnScreen() {
           <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-status-error)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
           <Fire size={18} style={{ color: "var(--color-status-error)" }} />
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Burning</div>
+        <div role="status" aria-live="polite" style={{ textAlign: "center", maxWidth: 280 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting burn</div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
             {formatQu(amountStr)} QU
+          </div>
+          <div style={{ ...statusCopyStyle, marginTop: "var(--space-3)" }}>
+            Keep Glyph open. If broadcasting fails, the burn is not recorded here and you can safely review before retrying.
           </div>
         </div>
         </motion.div>
@@ -297,8 +308,12 @@ export default function BurnScreen() {
           </div>
         </div>
 
-        {/* Details card */}
-        <div style={cardStyle}>
+        <div role="status" aria-live="polite" style={{ ...statusCopyStyle, color: "var(--color-text-primary)", borderLeft: "2px solid var(--color-status-success)", padding: "var(--space-2) 0 var(--space-2) var(--space-3)" }}>
+          Broadcast accepted. The burn is now pending network confirmation and appears in history.
+        </div>
+
+        {/* Details */}
+        <div aria-label="Broadcast details" style={sectionStyle}>
           <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
           <div style={divider} />
           <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
@@ -328,10 +343,13 @@ export default function BurnScreen() {
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Burn failed</div>
+      <div role="alert" style={{ textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Burn not broadcast</div>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
           {txError || "The burn transaction could not be broadcast."}
+        </div>
+        <div style={{ ...statusCopyStyle, marginTop: "var(--space-3)", maxWidth: 280 }}>
+          No pending burn was added by this screen. Check the message, confirm the amount again, then retry only if you still intend to destroy the QU.
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
