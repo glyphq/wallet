@@ -160,21 +160,21 @@ export const stepMotion = {
 
 /** Hover scale up, tap scale down. For buttons and cards. */
 export const gesture = {
-  /** Standard press feedback — scale to 0.97. */
+  /** Standard press feedback without resizing the control. */
   press: {
     whileHover: { scale: 1.015 },
-    whileTap: { scale: 0.97 },
+    whileTap: { opacity: 0.88 },
     transition: transition.springStiff,
   },
-  /** Subtle press feedback — scale to 0.98. */
+  /** Subtle press feedback without resizing the control. */
   pressSubtle: {
     whileHover: { scale: 1.008 },
-    whileTap: { scale: 0.98 },
+    whileTap: { opacity: 0.92 },
     transition: transition.spring,
   },
-  /** Button press — scale to 0.95 (strong feedback). */
+  /** Strong button feedback without resizing the control. */
   buttonPress: {
-    whileTap: { scale: 0.95 },
+    whileTap: { opacity: 0.84 },
     transition: transition.springStiff,
   },
   /** Lift on hover — scale up slightly. */
