@@ -5,6 +5,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
 import { RequestActionBar, RequestSectionTitle } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
+import { CheckCircle } from "@solar-icons/react";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
@@ -72,6 +73,8 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
             return (
               <button
                 key={i}
+                type="button"
+                aria-pressed={isSelected}
                 onClick={() => setSelectedIndex(i)}
                 style={{
                   display: "flex",
@@ -92,9 +95,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   {isSelected ? (
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
-                      Selected
-                    </span>
+                    <CheckCircle size={16} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                   ) : null}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
                     {truncateId(w.identity, 10, 10)}

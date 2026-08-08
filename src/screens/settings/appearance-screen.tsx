@@ -5,7 +5,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { Sun, Moon } from "@solar-icons/react";
+import { Sun, Moon, CheckCircle } from "@solar-icons/react";
 
 const THEMES: { id: ThemeMode; label: string; description: string; Icon: typeof Sun }[] = [
   { id: "dark", label: "Dark", description: "Low-glare colors for focused, comfortable viewing.", Icon: Moon },
@@ -204,7 +204,7 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
               >
                 <span>{pair.name}</span>
                 {pair.id === value && (
-                  <span aria-hidden="true" style={{ color: "var(--color-accent)", fontFamily: "var(--font-sans)" }}>Selected</span>
+                  <CheckCircle size={16} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                 )}
               </button>
             </div>
@@ -276,9 +276,7 @@ export default function AppearanceScreen() {
                         </span>
                       </span>
                     </span>
-                    <span style={{ fontSize: "var(--text-caption)", color: selected ? "var(--color-text-primary)" : "var(--color-text-tertiary)" }}>
-                      {selected ? "Selected" : ""}
-                    </span>
+                    {selected ? <CheckCircle size={18} weight="Bold" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
                   </button>
                 </div>
               );
