@@ -200,6 +200,22 @@ fn validate_delivery_url(url_str: &str, field: &str, claimed_origin: &str) -> Re
     Ok(())
 }
 
+fn validate_dapp_origin(origin: &str) -> Result<String, String> {
+    let parsed = Url::parse(origin).map_err(|_| format!("invalid dapp.origin: {origin}"))?;
+    if parsed.scheme() != "https"
+        || parsed.host_str().is_none()
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.path() != "/"
+        || parsed.query().is_some()
+        || parsed.fragment().is_some()
+    {
+        return Err("dapp.origin must be a credential-free HTTPS origin".into());
+    }
+
+    Ok(parsed.origin().ascii_serialization())
+}
+
 fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
 
@@ -274,16 +290,7 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let dapp_origin = request_value["dapp"]["origin"]
         .as_str()
         .ok_or("missing 'dapp.origin'")?;
-    let parsed_origin =
-        Url::parse(dapp_origin).map_err(|_| format!("invalid dapp.origin: {dapp_origin}"))?;
-    if parsed_origin.scheme() != "https"
-        || parsed_origin.host_str().is_none()
-        || !parsed_origin.username().is_empty()
-        || parsed_origin.password().is_some()
-    {
-        return Err("dapp.origin must use HTTPS".into());
-    }
-    let claimed_origin = parsed_origin.origin().ascii_serialization();
+    let claimed_origin = validate_dapp_origin(dapp_origin)?;
 
     // Expiry check: missing exp defaults to 5 minutes from receipt; exp too far in
     // the future is clamped so dApps cannot create permanent requests.
@@ -506,7 +513,8 @@ pub fn register_handler(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::{
-        validate, validate_delivery_url, validate_pay, DeepLinkState, MAX_PENDING_LINKS,
+        validate, validate_dapp_origin, validate_delivery_url, validate_pay, DeepLinkState,
+        MAX_PENDING_LINKS,
     };
 
     #[test]
@@ -569,6 +577,24 @@ mod tests {
             "https://[::ffff:127.0.0.1]/callback",
         ] {
             assert!(validate_delivery_url(url, "callback URL", "https://demo.app").is_err());
+        }
+    }
+
+    #[test]
+    fn dapp_origin_must_not_contain_non_origin_components() {
+        assert_eq!(
+            validate_dapp_origin("https://demo.app/"),
+            Ok("https://demo.app".into())
+        );
+
+        for origin in [
+            "http://demo.app/",
+            "https://user@demo.app/",
+            "https://demo.app/path",
+            "https://demo.app/?query=value",
+            "https://demo.app/#fragment",
+        ] {
+            assert!(validate_dapp_origin(origin).is_err(), "accepted {origin}");
         }
     }
 }

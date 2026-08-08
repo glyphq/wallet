@@ -218,6 +218,28 @@ async fn resolve_public_host(host: String, port: u16) -> Result<SocketAddr, Stri
 
 const MAX_CALLBACK_BODY: usize = 4 * 1024; // 4 KB
 
+fn validate_callback_target(parsed: &url::Url) -> Result<(String, u16), String> {
+    let host = parsed
+        .host_str()
+        .ok_or("callback URL has no host")?
+        .to_string();
+
+    if parsed.scheme() != "https" {
+        return Err("callback URL must use HTTPS".into());
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("callback URL must not include credentials".into());
+    }
+    if is_private_host(&host) {
+        return Err("callback URL must not target a non-global address".into());
+    }
+    let port = parsed
+        .port_or_known_default()
+        .ok_or("callback URL has no usable port")?;
+
+    Ok((host, port))
+}
+
 fn sanitize_reqwest_error(error: reqwest::Error) -> String {
     if let Some(status) = error.status() {
         return format!("callback server returned HTTP {}", status.as_u16());
@@ -241,20 +263,12 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
     }
 
     let parsed = url::Url::parse(&url).map_err(|_| "invalid callback URL".to_string())?;
-    let host = parsed.host_str().ok_or("callback URL has no host")?;
-
-    if parsed.scheme() != "https" {
-        return Err("callback URL must use HTTPS".into());
-    }
-    if is_private_host(host) {
-        return Err("callback URL must not target a non-global address".into());
-    }
-    let port = parsed.port_or_known_default().ok_or("callback URL has no usable port")?;
-    let validated_addr = resolve_public_host(host.to_string(), port).await?;
+    let (host, port) = validate_callback_target(&parsed)?;
+    let validated_addr = resolve_public_host(host.clone(), port).await?;
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::none())
-        .resolve(host, validated_addr)
+        .resolve(&host, validated_addr)
         .build()
         .map_err(|_| "failed to prepare callback request".to_string())?;
 
@@ -273,7 +287,7 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::is_private_host;
+    use super::{is_private_host, validate_callback_target};
 
     #[test]
     fn rejects_non_global_and_mapped_ip_literals() {
@@ -294,5 +308,14 @@ mod tests {
             assert!(is_private_host(host), "expected {host} to be rejected");
         }
         assert!(!is_private_host("8.8.8.8"));
+    }
+
+    #[test]
+    fn callback_target_rejects_embedded_credentials() {
+        let url = url::Url::parse("https://token@8.8.8.8/callback").unwrap();
+        assert_eq!(
+            validate_callback_target(&url),
+            Err("callback URL must not include credentials".into())
+        );
     }
 }
