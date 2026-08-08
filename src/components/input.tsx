@@ -37,7 +37,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       aria-errormessage={error && errorId ? errorId : undefined}
       data-has-leading={leftElement ? "true" : undefined}
       style={{
-        background: "var(--color-bg-input)",
         borderRadius: "var(--radius-control)",
         paddingTop: "var(--space-3)",
         paddingRight: rightElement ? 52 : "var(--space-4)",

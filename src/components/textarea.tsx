@@ -82,7 +82,6 @@ export function Textarea({
             paddingRight: "var(--space-4)",
             paddingBottom: "var(--space-3)",
             paddingLeft: leftElement ? 48 : "var(--space-4)",
-            background: "var(--color-bg-input)",
             borderRadius: "var(--radius-control)",
             color: "var(--color-text-primary)",
             fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
