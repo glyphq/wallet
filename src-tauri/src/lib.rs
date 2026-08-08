@@ -89,6 +89,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_device_info::init())
+        .plugin(tauri_plugin_widgets::init())
         .manage(AutoLockState::default())
         .manage(DeepLinkState::default())
         .manage(ClipboardState::default())
