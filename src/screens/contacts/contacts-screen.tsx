@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { UsersGroupRounded } from "@solar-icons/react";
+import { AddCircle, UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
 import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
@@ -115,12 +116,13 @@ export default function ContactsScreen() {
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}>
       <main style={{ width: "min(100%, 760px)", margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "var(--space-4)", paddingBottom: "var(--space-4)", borderBottom: "1px solid var(--color-border-subtle)" }}>
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", paddingBottom: "var(--space-4)", borderBottom: "1px solid var(--color-border-subtle)" }}>
           <div>
-            <h1 style={{ margin: 0, color: "var(--color-text-primary)", fontFamily: "var(--font-display)", fontSize: "var(--text-section)", letterSpacing: "-0.02em" }}>Contacts</h1>
-            <p style={{ margin: "var(--space-1) 0 0", color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Trusted recipients for faster sends.</p>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Trusted recipients for faster sends.</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={openAdd} style={{ flexShrink: 0 }}>Add contact</Button>
+          <IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ flexShrink: 0, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}>
+            <AddCircle size={21} weight="Linear" aria-hidden="true" />
+          </IconButton>
         </header>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -239,7 +241,7 @@ function EmptyState({ hasContacts, onAdd }: { hasContacts: boolean; onAdd: () =>
       <UsersGroupRounded size={38} weight="Linear" aria-hidden="true" style={{ color: "var(--color-text-disabled)" }} />
       <strong style={{ color: "var(--color-text-primary)", fontSize: "var(--text-body)", fontWeight: 600 }}>{hasContacts ? "No contacts found" : "No contacts yet"}</strong>
       <span style={{ maxWidth: 300, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>{hasContacts ? "Try a name, identity, note, or tag." : "Save trusted recipients so sending stays quick and accurate."}</span>
-      {!hasContacts && <Button variant="secondary" size="sm" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: "auto" }}>Add your first contact</Button>}
+      {!hasContacts && <IconButton label="Add your first contact" title="Add your first contact" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: 44, height: 44, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={22} weight="Linear" aria-hidden="true" /></IconButton>}
     </section>
   );
 }
