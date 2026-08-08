@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
@@ -360,42 +360,22 @@ export default function HistoryScreen() {
     >
       {/* ── Wide-screen sticky filter sidebar ── */}
       {wideLayout && (
-        <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--color-border-subtle)", overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
-            Filter
-            {hasActive && (
-              <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }} style={{ marginLeft: "var(--space-3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", padding: 0 }}>
-                Reset
-              </button>
-            )}
-          </div>
-          <FilterSection label="Direction">
-            {(["all", "in", "out"] as const).map((v) => (
-              <Pill key={v} label={v === "all" ? "All" : v === "in" ? "In" : "Out"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
-            ))}
-          </FilterSection>
-          <FilterSection label="Type">
-            {(["all", "transfer", "sc"] as const).map((v) => (
-              <Pill key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
-            ))}
-          </FilterSection>
-          <FilterSection label="Group by">
-            <Pill label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-            <Pill label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
-          </FilterSection>
-          <FilterSection label="Date from">
-            <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateFrom: draft.dateFrom }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-          <FilterSection label="Date to">
-            <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateTo: draft.dateTo }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-          <FilterSection label="Min QU">
-            <Input value={draft.minAmount} onChange={(e) => setDraft((d) => ({ ...d, minAmount: e.target.value.replace(/\D/g, "") }))} onBlur={() => setFilters((f) => ({ ...f, minAmount: sanitize(draft.minAmount) }))} placeholder="0" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-          <FilterSection label="Max QU">
-            <Input value={draft.maxAmount} onChange={(e) => setDraft((d) => ({ ...d, maxAmount: e.target.value.replace(/\D/g, "") }))} onBlur={() => setFilters((f) => ({ ...f, maxAmount: sanitize(draft.maxAmount) }))} placeholder="∞" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-        </div>
+        <aside style={FILTER_SIDEBAR} aria-label="History filters">
+          <FilterHeader
+            title="Filters"
+            active={hasActive}
+            onReset={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }}
+          />
+          <HistoryFilterControls
+            filters={filters}
+            draft={draft}
+            groupByCounterparty={groupByCounterparty}
+            commitOnFieldBlur
+            setFilters={setFilters}
+            setDraft={setDraft}
+            setGroupByCounterparty={setGroupByCounterparty}
+          />
+        </aside>
       )}
 
       {/* ── Main content column ── */}
@@ -576,9 +556,9 @@ export default function HistoryScreen() {
       <Sheet
         open={filterOpen}
         onClose={applyAndClose}
-        title="Filter"
+        title="Filter history"
         footer={
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={FILTER_FOOTER}>
             {hasActive ? (
               <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); setFilterOpen(false); }} style={GHOST_BTN}>
                 Reset all
@@ -588,50 +568,16 @@ export default function HistoryScreen() {
           </div>
         }
       >
-
-        <FilterSection label="Direction">
-          {(["all", "in", "out"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "All" : v === "in" ? "In" : "Out"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
-          ))}
-        </FilterSection>
-
-        <FilterSection label="Type">
-          {(["all", "transfer", "sc"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
-          ))}
-        </FilterSection>
-
-        <FilterSection label="Date range">
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
-            <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
-            <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
-          </div>
-        </FilterSection>
-
-        <FilterSection label="Amount (QU)">
-          <RangeInputs
-            fromValue={draft.minAmount} fromPlaceholder="Min"
-            toValue={draft.maxAmount} toPlaceholder="Max"
-            onFromChange={(v) => setDraft((d) => ({ ...d, minAmount: v }))}
-            onToChange={(v) => setDraft((d) => ({ ...d, maxAmount: v }))}
+        <div style={FILTER_SHEET_BODY}>
+          <HistoryFilterControls
+            filters={filters}
+            draft={draft}
+            groupByCounterparty={groupByCounterparty}
+            setFilters={setFilters}
+            setDraft={setDraft}
+            setGroupByCounterparty={setGroupByCounterparty}
           />
-        </FilterSection>
-
-        <FilterSection label="Tick range">
-          <RangeInputs
-            fromValue={draft.tickFrom} fromPlaceholder="From"
-            toValue={draft.tickTo} toPlaceholder="To"
-            onFromChange={(v) => setDraft((d) => ({ ...d, tickFrom: v }))}
-            onToChange={(v) => setDraft((d) => ({ ...d, tickTo: v }))}
-          />
-        </FilterSection>
-
-        <FilterSection label="Group by">
-          <Pill label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-          <Pill label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
-        </FilterSection>
-
+        </div>
       </Sheet>
 
       {/* Memo export filter sheet */}
@@ -665,6 +611,18 @@ export default function HistoryScreen() {
 
 const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
 
+const FILTER_SIDEBAR: React.CSSProperties = {
+  width: 212,
+  flexShrink: 0,
+  borderRight: "1px solid var(--color-border-subtle)",
+  overflowY: "auto",
+  padding: "var(--space-4) var(--space-3)",
+};
+
+const FILTER_SHEET_BODY: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "var(--space-1)" };
+
+const FILTER_FOOTER: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center" };
+
 const GHOST_BTN: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer",
   fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
@@ -681,37 +639,88 @@ const APPLY_BTN: React.CSSProperties = {
 
 function FilterSection({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: "var(--space-6)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
+    <section style={{ padding: "var(--space-3) 0", borderTop: "1px solid var(--color-border-subtle)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
         {label}
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>{children}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)" }}>{children}</div>
+    </section>
+  );
+}
+
+function FilterHeader({ title, active, onReset }: { title: string; active: boolean; onReset: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)", paddingBottom: "var(--space-3)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{title}</div>
+      {active && <button type="button" onClick={onReset} style={GHOST_BTN}>Reset</button>}
     </div>
   );
 }
 
-function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, onFromChange, onToChange }: {
+function HistoryFilterControls({
+  filters, draft, groupByCounterparty, commitOnFieldBlur = false, setFilters, setDraft, setGroupByCounterparty,
+}: {
+  filters: TxFilters;
+  draft: DraftInputs;
+  groupByCounterparty: boolean;
+  commitOnFieldBlur?: boolean;
+  setFilters: Dispatch<SetStateAction<TxFilters>>;
+  setDraft: Dispatch<SetStateAction<DraftInputs>>;
+  setGroupByCounterparty: Dispatch<SetStateAction<boolean>>;
+}) {
+  const fieldBlur = (key: keyof DraftInputs) => commitOnFieldBlur ? () => setFilters((f) => ({ ...f, [key]: key.includes("Amount") || key.includes("tick") ? sanitize(draft[key]) : draft[key] })) : undefined;
+  return (
+    <>
+      <FilterSection label="Direction">
+        {(["all", "in", "out"] as const).map((v) => (
+          <FilterChoice key={v} label={v === "all" ? "All" : v === "in" ? "Incoming" : "Outgoing"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
+        ))}
+      </FilterSection>
+      <FilterSection label="Type">
+        {(["all", "transfer", "sc"] as const).map((v) => (
+          <FilterChoice key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
+        ))}
+      </FilterSection>
+      <FilterSection label="Date range">
+        <RangeInputs fromValue={draft.dateFrom} fromPlaceholder="From" toValue={draft.dateTo} toPlaceholder="To" type="date" onFromBlur={fieldBlur("dateFrom")} onToBlur={fieldBlur("dateTo")} onFromChange={(v) => setDraft((d) => ({ ...d, dateFrom: v }))} onToChange={(v) => setDraft((d) => ({ ...d, dateTo: v }))} />
+      </FilterSection>
+      <FilterSection label="Amount (QU)">
+        <RangeInputs fromValue={draft.minAmount} fromPlaceholder="Min" toValue={draft.maxAmount} toPlaceholder="Max" onFromBlur={fieldBlur("minAmount")} onToBlur={fieldBlur("maxAmount")} onFromChange={(v) => setDraft((d) => ({ ...d, minAmount: v.replace(/\D/g, "") }))} onToChange={(v) => setDraft((d) => ({ ...d, maxAmount: v.replace(/\D/g, "") }))} />
+      </FilterSection>
+      <FilterSection label="Tick range">
+        <RangeInputs fromValue={draft.tickFrom} fromPlaceholder="From" toValue={draft.tickTo} toPlaceholder="To" onFromBlur={fieldBlur("tickFrom")} onToBlur={fieldBlur("tickTo")} onFromChange={(v) => setDraft((d) => ({ ...d, tickFrom: v.replace(/\D/g, "") }))} onToChange={(v) => setDraft((d) => ({ ...d, tickTo: v.replace(/\D/g, "") }))} />
+      </FilterSection>
+      <FilterSection label="Group by">
+        <FilterChoice label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
+        <FilterChoice label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
+      </FilterSection>
+    </>
+  );
+}
+
+function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, type, onFromChange, onToChange, onFromBlur, onToBlur }: {
   fromValue: string; toValue: string; fromPlaceholder: string; toPlaceholder: string;
-  onFromChange: (v: string) => void; onToChange: (v: string) => void;
+  type?: "date"; onFromChange: (v: string) => void; onToChange: (v: string) => void; onFromBlur?: () => void; onToBlur?: () => void;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
-      <Input value={fromValue} onChange={(e) => onFromChange(e.target.value)} placeholder={fromPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
+      <Input type={type} value={fromValue} onChange={(e) => onFromChange(e.target.value)} onBlur={onFromBlur} placeholder={fromPlaceholder} inputMode={type === "date" ? undefined : "numeric"} style={INPUT_SM} containerStyle={{ flex: 1, minWidth: 0 }} />
       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
-      <Input value={toValue} onChange={(e) => onToChange(e.target.value)} placeholder={toPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
+      <Input type={type} value={toValue} onChange={(e) => onToChange(e.target.value)} onBlur={onToBlur} placeholder={toPlaceholder} inputMode={type === "date" ? undefined : "numeric"} style={INPUT_SM} containerStyle={{ flex: 1, minWidth: 0 }} />
     </div>
   );
 }
 
-function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function FilterChoice({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} style={{
-      background: active ? "var(--color-text-primary)" : "none",
-      border: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+      background: "none",
+      border: "none",
+      borderBottom: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-subtle)"}`,
+      cursor: "pointer",
       fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
-      color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-      padding: "var(--space-1) var(--space-3)",
+      color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+      padding: "var(--space-2) var(--space-2) var(--space-1)",
     }}>
       {label}
     </button>
@@ -721,11 +730,10 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
 function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <button type="button" onClick={onRemove} style={{
-      background: "none", border: "1px solid var(--color-text-primary)",
-      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+      background: "none", border: "none", borderBottom: "1px solid var(--color-text-primary)", cursor: "pointer",
       fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
       color: "var(--color-text-primary)",
-      padding: "var(--space-1) var(--space-2)",
+      padding: "var(--space-1) 0",
       display: "flex", alignItems: "center", gap: "var(--space-1)",
     }}>
       {label} <span style={{ fontSize: "var(--text-caption)", lineHeight: 1 }}>✕</span>
