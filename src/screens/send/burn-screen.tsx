@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { stepMotion, gesture } from "@/lib/animations";
+import { stepMotion } from "@/lib/animations";
 import { Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -59,10 +59,10 @@ export default function BurnScreen() {
   function goConfirm() {
     const trimmed = amountStr.trim();
     if (!trimmed || !/^\d+$/.test(trimmed) || BigInt(trimmed) <= 0n) {
-      setAmountError("Invalid amount"); amountRef.current?.focus(); return;
+      setAmountError("Enter a whole QU amount greater than 0"); amountRef.current?.focus(); return;
     }
     if (balance !== null && BigInt(trimmed) > balance) {
-      setAmountError("Insufficient balance"); amountRef.current?.focus(); return;
+      setAmountError("Amount is higher than your available balance"); amountRef.current?.focus(); return;
     }
     setAmountError("");
     if (settings.requirePasswordForBurn && vault?.encryptedData) {
@@ -78,7 +78,7 @@ export default function BurnScreen() {
       try {
         await unlockVault(vault.encryptedData, burnPassword);
       } catch {
-        setBurnPasswordError("Wrong password");
+        setBurnPasswordError("Password did not unlock this wallet");
         setSending(false);
         return;
       }
@@ -138,7 +138,7 @@ export default function BurnScreen() {
         <div role="alert" style={noticeStyle}>
           <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
           <span style={{ ...statusCopyStyle, fontWeight: 600, color: "var(--color-status-error)" }}>
-            Burning is irreversible. Burned QU is permanently destroyed and cannot be recovered by Glyph or the network.
+            Burning permanently destroys QU. Review the amount carefully before continuing.
           </span>
         </div>
 
@@ -179,7 +179,7 @@ export default function BurnScreen() {
         <div style={{ paddingBottom: "var(--space-6)" }}>
           <Button variant="danger" onClick={goConfirm} disabled={!amountStr.trim() || !wallet || !tickInfo}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              <Fire size={16} weight="Bold" /> Continue
+              <Fire size={16} /> Review burn
             </span>
           </Button>
         </div>
@@ -207,7 +207,7 @@ export default function BurnScreen() {
         <div role="alert" style={noticeStyle}>
           <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
           <span style={{ ...statusCopyStyle, fontWeight: 600, color: "var(--color-status-error)" }}>
-            Review carefully. Confirming broadcasts an irreversible burn. This QU will be permanently destroyed with no undo path.
+            Final review. Once broadcast is accepted, this burn cannot be reversed by Glyph or the network.
           </span>
         </div>
 
@@ -242,7 +242,7 @@ export default function BurnScreen() {
         {hasPendingTx && (
           <div role="status" style={{ borderLeft: "2px solid var(--color-status-warning)", padding: "var(--space-2) 0 var(--space-2) var(--space-3)", display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
             <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)", marginTop: 2 }} />
-            <span style={{ ...statusCopyStyle, color: "var(--color-status-warning)" }}>Transfer pending. Wait for confirmation before broadcasting another transaction from this account.</span>
+            <span style={{ ...statusCopyStyle, color: "var(--color-status-warning)" }}>Another transaction is pending from this account. Wait for it to confirm before broadcasting this burn.</span>
           </div>
         )}
 
@@ -252,7 +252,7 @@ export default function BurnScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button variant="danger" onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsPassword && !burnPassword)}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              <Fire size={16} weight="Bold" /> Burn {formatQu(amountStr)} QU
+              <Fire size={16} /> Broadcast burn
             </span>
           </Button>
           <TextButton type="button" onClick={() => setStep("input")} tone="muted" style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
@@ -280,7 +280,7 @@ export default function BurnScreen() {
             {formatQu(amountStr)} QU
           </div>
           <div style={{ ...statusCopyStyle, marginTop: "var(--space-3)" }}>
-            Keep Glyph open. If broadcasting fails, the burn is not recorded here and you can safely review before retrying.
+            Keep Glyph open while the network receives the transaction. If this fails, no pending burn is added here.
           </div>
         </div>
         </motion.div>
@@ -309,7 +309,7 @@ export default function BurnScreen() {
         </div>
 
         <div role="status" aria-live="polite" style={{ ...statusCopyStyle, color: "var(--color-text-primary)", borderLeft: "2px solid var(--color-status-success)", padding: "var(--space-2) 0 var(--space-2) var(--space-3)" }}>
-          Broadcast accepted. The burn is now pending network confirmation and appears in history.
+          Broadcast accepted. The burn is pending network confirmation and has been added to history.
         </div>
 
         {/* Details */}
@@ -325,10 +325,10 @@ export default function BurnScreen() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={() => navigate("/dashboard")}>Done</Button>
-          <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/history")}
+          <button type="button" onClick={() => navigate("/history")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
             View history
-          </motion.button>
+          </button>
         </div>
         </motion.div>
       </AppShell>
@@ -349,15 +349,15 @@ export default function BurnScreen() {
           {txError || "The burn transaction could not be broadcast."}
         </div>
         <div style={{ ...statusCopyStyle, marginTop: "var(--space-3)", maxWidth: 280 }}>
-          No pending burn was added by this screen. Check the message, confirm the amount again, then retry only if you still intend to destroy the QU.
+          No pending burn was added by this screen. Review the message and retry only if you still intend to destroy this QU.
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
         <Button variant="danger" onClick={() => setStep("confirm")}>Try again</Button>
-        <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/send")}
+        <button type="button" onClick={() => navigate("/send")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel
-        </motion.button>
+        </button>
       </div>
         </motion.div>
     </AppShell>
