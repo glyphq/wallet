@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.3
+
+### Patch Changes
+
+- 2c8e988: Allow the in-app updater to restart Glyph after a successful update install.
+
 ## 0.16.2
 
 ### Patch Changes
