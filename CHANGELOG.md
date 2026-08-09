@@ -1,5 +1,12 @@
 # glyph
 
+## 0.16.1
+
+### Patch Changes
+
+- 772727e: Fix AppImage startup on Wayland desktops.
+- f8e19e6: Update Rust dependencies to resolve open Dependabot alerts.
+
 ## 0.16.0
 
 ### Minor Changes
