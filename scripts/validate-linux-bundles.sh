@@ -180,7 +180,7 @@ validate_appimage() {
       || die "AppImage is missing bundled library: $library"
   done
 
-  for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so; do
+  for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so libwayland-client.so libwayland-cursor.so libwayland-egl.so libwayland-server.so; do
     if find "$appdir/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${library}*" -print -quit | grep -q .; then
       die "AppImage incorrectly bundles host graphics library: $library"
     fi
