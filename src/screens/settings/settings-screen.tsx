@@ -173,7 +173,7 @@ export default function SettingsScreen() {
             </span>
           )}
         </div>
-        {/* Lock wallet */}
+        {/* Lock Vault */}
         <motion.button
           {...gesture.pressSubtle}
           onClick={() => {
@@ -196,7 +196,7 @@ export default function SettingsScreen() {
             fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
             fontWeight: 500, color: "var(--color-accent-contrast)",
           }}>
-            Lock wallet
+            Lock Vault
           </span>
         </motion.button>
       </motion.div>

@@ -200,7 +200,7 @@ export default function SearchScreen() {
       <div style={{ position: "relative" }}>
         <Magnifier size={18} weight="Linear" style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
         <Input
-          aria-label="Search wallet"
+          aria-label="Search Vault"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search contacts, accounts, transactions, contracts"

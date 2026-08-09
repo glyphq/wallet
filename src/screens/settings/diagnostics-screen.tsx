@@ -160,7 +160,7 @@ export default function DiagnosticsScreen() {
           <DiagnosticRow label="Archive RPC" value={settings.network.queryApiUrl} technical />
         </DiagnosticSection>
 
-        <DiagnosticSection title="Wallet" description="Local wallet activity. No wallet secrets are included here.">
+        <DiagnosticSection title="Vault" description="Local Vault activity. No wallet secrets are included here.">
           <DiagnosticRow label="Vaults" value={String(vaults.length)} />
           <DiagnosticRow label="Accounts" value={String(totalAccounts)} />
           <DiagnosticRow label="Contacts" value={String(contacts.length)} />

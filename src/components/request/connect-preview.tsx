@@ -55,7 +55,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
       <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
-        This app wants to connect to your wallet.
+        This app wants to connect to your Vault.
       </div>
 
       <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>

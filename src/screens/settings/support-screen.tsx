@@ -61,7 +61,7 @@ export default function SupportScreen() {
         </section>
 
         <section aria-label="Your contribution history" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-4)", paddingTop: "var(--space-5)", borderTop: "1px solid var(--color-border-subtle)" }}>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Sent from this wallet</span>
+          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Sent from this Vault</span>
           <strong style={{ color: sentTotal > 0n ? "var(--color-status-success)" : "var(--color-text-primary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", fontWeight: 600 }}>{sentTotal > 0n ? `${formatQu(sentTotal)} QU` : "No donations yet"}</strong>
         </section>
       </motion.main>

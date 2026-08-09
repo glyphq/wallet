@@ -100,8 +100,8 @@ export default function SplashScreen() {
               }}
             >
               {hydrationStatus === "error"
-                ? "Wallet data could not be read"
-                : "Still loading your wallet"}
+                ? "Vault data could not be read"
+                : "Still loading your Vault"}
             </h1>
             <p
               style={{
@@ -113,7 +113,7 @@ export default function SplashScreen() {
                 color: "var(--color-text-secondary)",
               }}
             >
-              Your encrypted wallet data has not changed. You can try loading it again safely.
+              Your encrypted Vault data has not changed. You can try loading it again safely.
             </p>
           </div>
 

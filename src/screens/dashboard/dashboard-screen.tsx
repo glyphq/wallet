@@ -388,7 +388,7 @@ export default function DashboardScreen() {
       action={
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
           <IconButton
-            label="Lock wallet"
+            label="Lock Vault"
             onClick={() => {
               lock();
               navigate("/lock", { replace: true });

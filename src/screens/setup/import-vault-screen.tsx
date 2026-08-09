@@ -56,7 +56,7 @@ export default function ImportVaultScreen() {
 
   function continueFromName() {
     if (!name.trim()) {
-      setNameError("Enter a wallet name");
+      setNameError("Enter a Vault name");
       return;
     }
     setNameError("");
@@ -95,7 +95,7 @@ export default function ImportVaultScreen() {
       unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setSetupError("Wallet setup could not be completed. Try again.");
+      setSetupError("Vault setup could not be completed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ export default function ImportVaultScreen() {
       ) : null}
 
       {step === 2 ? (
-        <SetupFlow current={2} total={3} title="Name your wallet" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
+        <SetupFlow current={2} total={3} title="Name your Vault" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
           {identity ? (
             <div
               style={{
@@ -153,8 +153,8 @@ export default function ImportVaultScreen() {
               setNameError("");
             }}
             onKeyDown={(event) => event.key === "Enter" && continueFromName()}
-            placeholder="Wallet name"
-            aria-label="Wallet name"
+            placeholder="Vault name"
+            aria-label="Vault name"
             autoFocus
             error={nameError}
           />
@@ -166,7 +166,7 @@ export default function ImportVaultScreen() {
           current={3}
           total={3}
           title="Set a password"
-          primaryLabel="Restore wallet"
+          primaryLabel="Restore Vault"
           primaryDisabled={!passwordValid}
           primaryLoading={loading}
           onPrimary={finish}

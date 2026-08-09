@@ -99,7 +99,7 @@ export function WalletAppearancePicker({ icon, color, onIconChange, onColorChang
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <span style={labelStyle}>Wallet appearance</span>
+            <span style={labelStyle}>Vault appearance</span>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
               {iconLabel} in {colorOption.label.toLowerCase()}
             </span>
@@ -169,7 +169,7 @@ export function WalletAppearancePicker({ icon, color, onIconChange, onColorChang
         />
       </div>
 
-      <Sheet open={iconSheetOpen} onClose={() => setIconSheetOpen(false)} title="Choose wallet icon">
+      <Sheet open={iconSheetOpen} onClose={() => setIconSheetOpen(false)} title="Choose Vault icon">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           {WALLET_ICON_OPTIONS.map((option) => {
             const OptionIcon = option.Icon;
