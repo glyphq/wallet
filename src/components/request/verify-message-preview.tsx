@@ -66,8 +66,8 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-        This verifies a signature locally. No transaction will be broadcast.
+	      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+	        Verification runs locally.
       </div>
 
       <div>
@@ -79,17 +79,17 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <RequestDetailRow
-          label="Claimed signer"
+	          label="Signer"
           value={invalidKey ? "Invalid public key" : truncateId(claimedIdentity!, 10, 10)}
           valueColor={invalidKey ? "var(--color-status-error)" : undefined}
-          badge={!invalidKey ? (isOwnIdentity ? "Your wallet" : "External") : undefined}
+	          badge={!invalidKey ? (isOwnIdentity ? "Your Vault" : "Other identity") : undefined}
         />
         <RequestDetailRow label="Signature" value={truncateId(request.signature, 10, 10)} />
       </div>
 
       {invalidKey && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          Cannot verify — invalid public key
+	          Invalid public key
         </div>
       )}
 
