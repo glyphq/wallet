@@ -219,7 +219,7 @@ export default function LockScreen() {
     recordAuditEvent({
       kind: "unlock_succeeded",
       status: "success",
-      title: "Wallet unlocked",
+      title: "Vault unlocked",
       detail: selected.name,
       vaultId: selected.id,
     });
@@ -272,7 +272,7 @@ export default function LockScreen() {
     setLoading(true);
     setError("");
     if (!selected.encryptedData) {
-      setError("Wallet data is missing. Re-import the wallet and try again.");
+      setError("Vault data is missing. Re-import the Vault and try again.");
       setLoading(false);
       return;
     }
@@ -291,7 +291,7 @@ export default function LockScreen() {
       recordAuditEvent({
         kind: "unlock_succeeded",
         status: "success",
-        title: "Wallet unlocked",
+        title: "Vault unlocked",
         detail: selected.name,
         vaultId: selected.id,
       });
@@ -386,8 +386,8 @@ export default function LockScreen() {
               <BrandLockup align="center" compact iconOnly />
               <FlowHeader
                 align="center"
-                title="Unlock wallet"
-                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a wallet, then enter its password."}
+                title="Unlock Vault"
+                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a Vault, then enter its password."}
               />
 
               <div
@@ -399,7 +399,7 @@ export default function LockScreen() {
               >
                 <div
                   role="group"
-                  aria-label="Choose a wallet to unlock"
+                  aria-label="Choose a Vault to unlock"
                   style={{
                     maxHeight: lockedVaults.length > 3 ? 194 : undefined,
                     overflowY: lockedVaults.length > 3 ? "auto" : "hidden",
@@ -425,14 +425,14 @@ export default function LockScreen() {
                   type="button"
                   className="vault-shelf-add"
                   onClick={() => navigate("/setup")}
-                  aria-label="Add another wallet"
+                  aria-label="Add another Vault"
                 >
                   <span className="vault-shelf-add-icon" aria-hidden="true">
                     <AddCircle size={17} weight="Linear" />
                   </span>
                   <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
                     <span style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
-                      Add another wallet
+                      Add another Vault
                     </span>
                     <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
                       Create new or import existing
@@ -448,10 +448,10 @@ export default function LockScreen() {
                     <Input
                       {...register("password")}
                       id="wallet-password"
-                      aria-label="Wallet password"
+                      aria-label="Vault password"
                       type={showPassword ? "text" : "password"}
                       style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) var(--space-4)" }}
-                      placeholder="Enter the wallet password"
+                      placeholder="Enter the Vault password"
                       autoComplete="current-password"
                       error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
                       disabled={lockoutSecsLeft > 0}
@@ -461,7 +461,7 @@ export default function LockScreen() {
                   </div>
                   <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
                     <LockKeyhole size={16} weight="Linear" aria-hidden="true" />
-                    {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
+                    {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock Vault"}
                   </Button>
                 </form>
 

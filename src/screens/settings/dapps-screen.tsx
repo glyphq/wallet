@@ -157,7 +157,7 @@ export default function DappsScreen() {
                       </div>
                     ) : (
                       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                        All accounts in this wallet
+                        All accounts in this Vault
                       </span>
                     )}
                   </div>

@@ -56,7 +56,7 @@ export default function CreateVaultScreen() {
 
   function continueFromName() {
     if (!name.trim()) {
-      setNameError("Enter a wallet name");
+      setNameError("Enter a Vault name");
       return;
     }
     setNameError("");
@@ -118,7 +118,7 @@ export default function CreateVaultScreen() {
       unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setSetupError("Wallet setup could not be completed. Try again.");
+      setSetupError("Vault setup could not be completed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ export default function CreateVaultScreen() {
   return (
     <FullPage centered={false} style={{ paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
       {step === 1 ? (
-        <SetupFlow current={1} total={4} title="Name your wallet" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
+        <SetupFlow current={1} total={4} title="Name your Vault" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
           <Input
             leftElement={<Wallet size={18} weight="Linear" />}
             value={name}
@@ -136,8 +136,8 @@ export default function CreateVaultScreen() {
               setNameError("");
             }}
             onKeyDown={(event) => event.key === "Enter" && continueFromName()}
-            placeholder="Wallet name"
-            aria-label="Wallet name"
+            placeholder="Vault name"
+            aria-label="Vault name"
             autoFocus
             error={nameError}
           />
@@ -243,7 +243,7 @@ export default function CreateVaultScreen() {
           current={4}
           total={4}
           title="Set a password"
-          primaryLabel="Create wallet"
+          primaryLabel="Create Vault"
           primaryDisabled={!passwordValid}
           primaryLoading={loading}
           onPrimary={finish}
