@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -670,16 +670,14 @@ export default function VaultDetailScreen() {
         }
       >
         {selectedAccount && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "var(--space-3)",
-                padding: "var(--space-3)",
-                background: "var(--color-bg-surface)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
+                paddingBottom: "var(--space-4)",
+                borderBottom: "1px solid var(--color-border-subtle)",
               }}
             >
               <Identicon kind="account" code={`A${selectedAccount.index + 1}`} seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} label={selectedAccount.name} size={40} radius={8} style={{ flexShrink: 0 }} />
@@ -704,80 +702,79 @@ export default function VaultDetailScreen() {
               })()}
             </div>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Identity
-            </div>
-            {isActive && !selectedAccount.hidden && settings.activeAccountIndex !== selectedAccount.index && (
-              <ActionCard
-                title="Use this account"
-                description="Make this the active account for sending, receiving, and signing."
+            <ActionSection title="Selection">
+              <ActionRow
+                title={isActive && settings.activeAccountIndex === selectedAccount.index ? "Active account" : "Use this account"}
+                description={selectedAccount.hidden ? "Hidden accounts cannot be made active." : "Use for sending, receiving, and signing."}
                 icon={CheckCircle}
+                selected={isActive && settings.activeAccountIndex === selectedAccount.index}
+                disabled={!isActive || selectedAccount.hidden || settings.activeAccountIndex === selectedAccount.index}
                 onClick={() => makeActive(selectedAccount)}
               />
-            )}
-            <ActionCard
-              title="Rename"
-              description="Change the label shown in the vault and account switcher."
-              icon={Pen2}
-              onClick={() => {
-                setRenamingAccount(selectedAccount);
-                setRenameValue(selectedAccount.name);
-                closeAccountMenu();
-              }}
-            />
-            <ActionCard
-              title="Notes and tags"
-              description="Add labels like staking, cold, or trading and keep a short note."
-              icon={DocumentText}
-              onClick={() => {
-                setEditingMeta(selectedAccount);
-                setMetaNote(selectedAccount.note ?? "");
-                setMetaTags((selectedAccount.tags ?? []).join(", "));
-                closeAccountMenu();
-              }}
-            />
+            </ActionSection>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Security
-            </div>
-            <ActionCard
-              title="Reveal seed"
-              description="Decrypt and display this account seed for a limited time."
-              icon={Key}
-              onClick={() => {
-                openReveal(selectedAccount);
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Details">
+              <ActionRow
+                title="Rename"
+                description="Change the label shown in the vault and switcher."
+                icon={Pen2}
+                onClick={() => {
+                  setRenamingAccount(selectedAccount);
+                  setRenameValue(selectedAccount.name);
+                  closeAccountMenu();
+                }}
+              />
+              <ActionRow
+                title="Notes and tags"
+                description="Keep metadata such as staking, cold, or treasury."
+                icon={DocumentText}
+                onClick={() => {
+                  setEditingMeta(selectedAccount);
+                  setMetaNote(selectedAccount.note ?? "");
+                  setMetaTags((selectedAccount.tags ?? []).join(", "));
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Visibility
-            </div>
-            <ActionCard
-              title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
-              description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove this account from the switcher without deleting it."}
-              icon={selectedAccount.hidden ? Eye : EyeClosed}
-              onClick={() => {
-                toggleHide(selectedAccount);
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Security">
+              <ActionRow
+                title="Reveal seed"
+                description="Decrypt and display this account seed for a limited time."
+                icon={Key}
+                onClick={() => {
+                  openReveal(selectedAccount);
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-error)", letterSpacing: "0.05em", marginTop: "var(--space-2)" }}>
-              Danger zone
-            </div>
-            <ActionCard
-              title="Remove account"
-              description="Delete this account from the vault. This cannot be undone."
-              icon={TrashBinMinimalistic}
-              danger
-              onClick={() => {
-                setRemovingAccount(selectedAccount);
-                setRemovePassword("");
-                setRemoveError("");
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Visibility">
+              <ActionRow
+                title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
+                description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove from the switcher without deleting it."}
+                icon={selectedAccount.hidden ? Eye : EyeClosed}
+                onClick={() => {
+                  toggleHide(selectedAccount);
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
+
+            <ActionSection title="Danger zone" danger>
+              <ActionRow
+                title="Remove account"
+                description="Delete this account from the vault. This cannot be undone."
+                icon={TrashBinMinimalistic}
+                danger
+                onClick={() => {
+                  setRemovingAccount(selectedAccount);
+                  setRemovePassword("");
+                  setRemoveError("");
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
           </div>
         )}
       </Sheet>
@@ -885,38 +882,68 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
   );
 }
 
-function ActionCard({
+function ActionSection({
+  title,
+  danger,
+  children,
+}: {
+  title: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+        {title}
+      </div>
+      <div style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ActionRow({
   title,
   description,
   icon: Icon,
+  selected,
+  disabled,
   danger,
   onClick,
 }: {
   title: string;
   description: string;
   icon?: typeof Pen2;
+  selected?: boolean;
+  disabled?: boolean;
   danger?: boolean;
   onClick: () => void;
 }) {
+  const muted = disabled && !selected;
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         display: "flex",
         alignItems: "center",
         gap: "var(--space-3)",
         width: "100%",
         textAlign: "left",
-        background: danger ? "color-mix(in srgb, var(--color-status-error) 8%, var(--color-bg-surface))" : "var(--color-bg-surface)",
-        border: `1px solid ${danger ? "color-mix(in srgb, var(--color-status-error) 40%, var(--color-border-strong))" : "var(--color-border-strong)"}`,
-        borderRadius: "var(--radius-sharp)",
-        cursor: "pointer",
-        padding: "var(--space-3) var(--space-4)",
+        background: "transparent",
+        border: "none",
+        borderBottom: "1px solid var(--color-border-subtle)",
+        borderRadius: 0,
+        cursor: disabled ? "default" : "pointer",
+        opacity: muted ? 0.55 : 1,
+        padding: "var(--space-3) 0",
+        transform: "none",
       }}
     >
       {Icon && (
-        <Icon size={18} weight="Linear" />
+        <Icon size={18} weight="Outline" color={danger ? "var(--color-status-error)" : "var(--color-text-secondary)"} aria-hidden="true" />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-display)" }}>
@@ -926,9 +953,11 @@ function ActionCard({
           {description}
         </div>
       </div>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: danger ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-        →
-      </span>
+      {selected ? (
+        <CheckCircle size={18} weight="Outline" color="var(--color-accent)" aria-label="Selected" />
+      ) : (
+        <span style={{ width: 18, height: 18, border: "1px solid var(--color-border-strong)", borderRadius: "999px", flexShrink: 0 }} aria-hidden="true" />
+      )}
     </button>
   );
 }
