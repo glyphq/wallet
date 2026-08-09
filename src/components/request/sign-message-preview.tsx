@@ -65,8 +65,8 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-        This is an off-chain signature. No transaction will be broadcast.
+	      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+	        This signature stays off-chain.
       </div>
 
       <div>

@@ -54,17 +54,17 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
-        This app wants to connect to your Vault.
-      </div>
+	      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
+	        Connect this app to your Vault.
+	      </div>
 
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-        Glyph stores the connection so you can review or revoke it later. Each requested action still needs your approval.
+	      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+	        Manage this connection in Settings at any time.
       </div>
 
       {/* Account picker */}
       <div>
-          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Reveal account</RequestSectionTitle></div>
+	          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Account</RequestSectionTitle></div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {wallets.map((w, i) => {
             const account = vault?.accounts[i];
@@ -111,7 +111,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
       {requestedPerms.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <div>
-            <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Permissions requested</RequestSectionTitle></div>
+	            <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Permissions</RequestSectionTitle></div>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               {requestedPerms.map((p) => {
                 const granted = grantedPerms.has(p);
@@ -133,7 +133,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
             </div>
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            Each action will show a confirmation screen. Nothing is signed without your approval.
+	            Each action still asks for your approval.
           </div>
         </div>
       )}
