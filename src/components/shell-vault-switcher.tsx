@@ -9,7 +9,7 @@ import { useSessionStore } from "@/store/session";
 import { unlockSecureSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { Settings, AltArrowRight } from "@solar-icons/react";
+import { Settings, AltArrowRight, CheckCircle } from "@solar-icons/react";
 
 export function ShellVaultSwitcher() {
   const navigate = useNavigate();
@@ -87,7 +87,7 @@ export function ShellVaultSwitcher() {
     <>
       <button
         type="button"
-        aria-label={`Switch wallet. Current wallet: ${activeVault.name}`}
+        aria-label={`Switch vault. Current vault: ${activeVault.name}`}
         onClick={() => setOpen(true)}
         className="glyph-avatar-btn"
         style={{
@@ -107,7 +107,7 @@ export function ShellVaultSwitcher() {
       <Sheet
         open={open}
         onClose={close}
-        title={switchingVault ? `Unlock ${switchingVault.name}` : "Wallets"}
+        title={switchingVault ? `Unlock ${switchingVault.name}` : "Vaults"}
         footer={
           switchingVault ? (
             <div style={{ display: "flex", gap: "var(--space-3)" }}>
@@ -115,7 +115,7 @@ export function ShellVaultSwitcher() {
                 Back
               </Button>
               <Button onClick={confirmSwitch} loading={loading} disabled={!password.trim()}>
-                Switch
+                Switch Vault
               </Button>
             </div>
           ) : (
@@ -127,19 +127,21 @@ export function ShellVaultSwitcher() {
                 alignItems: "center",
                 gap: "var(--space-3)",
                 width: "100%",
-                padding: "var(--space-3) 0",
-                background: "transparent",
-                border: "none",
+                padding: "var(--space-3)",
+                background: "var(--color-bg-elevated)",
+                border: "1px solid var(--color-border-subtle)",
+                borderRadius: "var(--radius-control)",
+                boxShadow: "var(--shadow-surface)",
                 cursor: "pointer",
                 textAlign: "left",
                 color: "var(--color-text-secondary)",
               }}
             >
-              <Settings size={18} weight="Linear" style={{ flexShrink: 0 }} />
+              <Settings size={18} weight="Outline" style={{ flexShrink: 0 }} />
               <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500 }}>
-                Manage wallets
+                Manage vaults
               </span>
-              <AltArrowRight size={14} weight="Linear" style={{ flexShrink: 0 }} />
+              <AltArrowRight size={14} weight="Outline" style={{ flexShrink: 0 }} />
             </button>
           )
         }
@@ -153,12 +155,12 @@ export function ShellVaultSwitcher() {
                   {switchingVault.name}
                 </span>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-                  Enter the wallet password to switch.
+                  Enter the vault password to switch.
                 </span>
               </div>
             </div>
             <Input
-              label="Wallet password"
+              label="Vault password"
               type="password"
               autoComplete="current-password"
               value={password}
@@ -177,7 +179,7 @@ export function ShellVaultSwitcher() {
             />
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             {vaults.map((vault) => {
               const isActive = vault.id === activeVault.id;
               return (
@@ -185,15 +187,17 @@ export function ShellVaultSwitcher() {
                   key={vault.id}
                   type="button"
                   onClick={() => selectVault(vault)}
+                  aria-current={isActive ? "true" : undefined}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "var(--space-3)",
                     width: "100%",
-                    padding: "var(--space-3)",
-                    background: isActive ? "var(--color-bg-surface)" : "transparent",
-                    border: "none",
+                    padding: "var(--space-4)",
+                    background: isActive ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
+                    border: `1px solid ${isActive ? "var(--color-accent)" : "var(--color-border-subtle)"}`,
                     borderRadius: "var(--radius-control)",
+                    boxShadow: isActive ? "var(--shadow-elevated)" : "var(--shadow-surface)",
                     cursor: isActive ? "default" : "pointer",
                     textAlign: "left",
                     color: "inherit",
@@ -205,9 +209,10 @@ export function ShellVaultSwitcher() {
                       {vault.name}
                     </span>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-                      {isActive ? "Current wallet" : "Password required"}
+                      {isActive ? "Current vault" : "Password required"}
                     </span>
                   </div>
+                  {isActive ? <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
                 </button>
               );
             })}
