@@ -59,4 +59,6 @@ windows = { version = "0.58", features = ["Security_Credentials_UI", "Win32_Secu
 [patch.crates-io]
 # Temporary security backports until crates.io releases include quick-xml >= 0.41.
 tauri-winrt-notification = { path = "vendor/tauri-winrt-notification" }
+# battery 0.7.8 is the latest published release; patch its target-only nix constraint to the fixed release.
+battery = { path = "vendor/battery" }
 wayland-scanner = { git = "https://github.com/Smithay/wayland-rs", rev = "05196740da57e41b60a9e9f8e35079e9bd29b89a" }
