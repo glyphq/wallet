@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { FolderOpen, AddCircle, Settings } from "@solar-icons/react";
+import { FolderOpen, AddCircle, Settings, CheckCircle } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -246,8 +246,12 @@ export default function VaultsScreen() {
   const sorted = vaults.slice().sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
 
   return (
-    <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+    <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <section aria-labelledby="vault-actions" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div id="vault-actions" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.04em" }}>
+          Vault management
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
         <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")}>
           <AddCircle size={18} aria-hidden="true" />
           New vault
@@ -256,7 +260,12 @@ export default function VaultsScreen() {
           <FolderOpen size={18} aria-hidden="true" />
           Import vault
         </Button>
-      </div>
+        </div>
+      </section>
+      <section aria-labelledby="vault-list" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-3)" }}>
+        <div id="vault-list" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.04em" }}>
+          Vaults
+        </div>
       {/* Vault list */}
       {sorted.map((vault) => {
         const isActive = vault.id === settings.activeVaultId;
@@ -315,10 +324,9 @@ export default function VaultsScreen() {
                 </span>
               </div>
               {isActive && (
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                  background: "var(--color-accent)",
-                }} />
+                <span aria-label="Selected vault" title="Selected vault" style={{ display: "inline-flex", color: "var(--color-accent)", flexShrink: 0 }}>
+                  <CheckCircle size={18} weight="Outline" aria-hidden="true" />
+                </span>
               )}
             </button>
 
@@ -347,6 +355,7 @@ export default function VaultsScreen() {
           No vaults yet
         </div>
       )}
+      </section>
 
       {/* ─── Action sheet ─── */}
       <Sheet open={!!actionVault} onClose={() => setActionVault(null)} title={actionVault?.name ?? ""}>
