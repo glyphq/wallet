@@ -304,17 +304,6 @@ export default function VaultsScreen() {
                   }}>
                     {vault.name}
                   </span>
-                  <span style={{
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
-                    color: "var(--color-accent)",
-                    padding: "1px var(--space-1)",
-                    border: "1px solid color-mix(in srgb, var(--color-accent) 40%, transparent)",
-                    borderRadius: "var(--radius-pill)",
-                    lineHeight: "16px",
-                    letterSpacing: "0.02em",
-                  }}>
-                    Standard
-                  </span>
                 </div>
                 <span style={{
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
