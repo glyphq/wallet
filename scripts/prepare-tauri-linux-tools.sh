@@ -69,8 +69,8 @@ main() {
     "c107b49d84edbffc6ab226ed1007e0626a4f7aa2c3a36b7782bef62351d49e94"
   install_verified \
     "linuxdeploy-plugin-appimage.AppImage" \
-    "https://api.github.com/repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/462804774" \
-    "1da16a46fa5e058ae740e7c35ed0d36d86cb869ac9cc8a5fd9a1847d7978d99a"
+    "https://api.github.com/repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/228937581" \
+    "992d502a248e14ab185448ddf6f6e7d25558cb84d4623c354c3af350c25fccb3"
 }
 
 main "$@"

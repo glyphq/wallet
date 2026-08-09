@@ -178,8 +178,8 @@ jobs:
             e762bea85c8eb0d4b3508d46e5c1f037f717d0f9303ae3b4aafc8b04991fa1ef \
             "$tauri_cache/linuxdeploy-x86_64.AppImage"
           download_asset \
-            repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/462804774 \
-            1da16a46fa5e058ae740e7c35ed0d36d86cb869ac9cc8a5fd9a1847d7978d99a \
+            repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/228937581 \
+            992d502a248e14ab185448ddf6f6e7d25558cb84d4623c354c3af350c25fccb3 \
             "$tauri_cache/linuxdeploy-plugin-appimage.AppImage"
           download_asset \
             repos/AppImage/AppImageKit/releases/assets/98605504 \

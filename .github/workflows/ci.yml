@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, prerelease]
+    branches: ['**']
     paths-ignore:
       - '**.md'
       - 'sponsors.json'
@@ -91,6 +91,49 @@ jobs:
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
           TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
+
+  linux-package-smoke:
+    name: Linux packages start from a clean profile
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Linux package build and smoke-test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            dbus-x11 \
+            libayatana-appindicator3-dev \
+            libdbus-1-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf \
+            rpm \
+            squashfs-tools \
+            xdg-utils \
+            xvfb
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Preseed pinned AppImage tools
+        run: scripts/prepare-tauri-linux-tools.sh
+
+      - name: Build unsigned local Linux packages
+        run: bun tauri build --bundles appimage,deb --no-sign
+
+      - name: Validate package payloads and fresh-profile launch
+        run: scripts/smoke-linux-bundles.sh
 
   rust-desktop-platforms:
     name: Rust check (${{ matrix.os }})
