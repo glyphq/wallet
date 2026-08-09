@@ -21,7 +21,7 @@ import { recordAuditEvent } from "@/lib/audit-log";
 import { formatQu } from "@/lib/format";
 import {
   Pen2, DocumentText, Key, EyeClosed, Eye, TrashBinMinimalistic,
-  AddCircle, InfoCircle,
+  AddCircle, InfoCircle, CheckCircle,
 } from "@solar-icons/react";
 
 const ACCOUNT_NAME_SUGGESTIONS = [
@@ -222,6 +222,12 @@ export default function VaultDetailScreen() {
       ),
     });
     setEditingMeta(null);
+  }
+
+  function makeActive(account: AccountMeta) {
+    if (!isActive || account.hidden) return;
+    setActiveAccountIndex(account.index);
+    closeAccountMenu();
   }
 
   function toggleHide(account: AccountMeta) {
@@ -701,6 +707,14 @@ export default function VaultDetailScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
               Identity
             </div>
+            {isActive && !selectedAccount.hidden && settings.activeAccountIndex !== selectedAccount.index && (
+              <ActionCard
+                title="Use this account"
+                description="Make this the active account for sending, receiving, and signing."
+                icon={CheckCircle}
+                onClick={() => makeActive(selectedAccount)}
+              />
+            )}
             <ActionCard
               title="Rename"
               description="Change the label shown in the vault and account switcher."
@@ -788,7 +802,8 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div
+    <button
+      type="button"
       className={`stagger-item${flashSuccess ? " flash-success" : ""}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -803,8 +818,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
         gap: "var(--space-3)",
         alignItems: "flex-start",
         cursor: "pointer",
-        transition: "background 0.12s ease, transform 0.12s ease",
-        transform: hovered ? "translateY(-1px)" : "translateY(0)",
+        transition: "background 0.12s ease, border-color 0.12s ease",
       }}
     >
       <Identicon kind="account" code={`A${account.index + 1}`} seed={identity ?? account.name} label={account.name} size={40} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -823,14 +837,10 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
               {hideBalances ? "••••••" : formatQu(balance)}
             </span>
           ) : (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onManage(); }}
+            <span
               style={{
-                background: "none",
                 border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sharp)",
-                cursor: "pointer",
                 fontFamily: "var(--font-sans)",
                 fontSize: "var(--text-mono-sm)",
                 color: "var(--color-text-secondary)",
@@ -840,13 +850,13 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
               }}
             >
               Manage
-            </button>
+            </span>
           )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              Active
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-accent)", letterSpacing: "0.05em" }}>
+              <CheckCircle size={14} weight="Outline" aria-hidden="true" /> Active
             </span>
           )}
           {account.hidden && (
@@ -871,7 +881,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
           </div>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
