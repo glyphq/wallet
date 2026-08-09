@@ -18,8 +18,30 @@ describe("parseGlyphEnvelope", () => {
     expect(result.envelope?.request.type).toBe("transfer");
   });
 
-  test("rejects localhost and cross-origin callbacks", () => {
-    for (const callback of ["http://localhost:3000/callback", "https://localhost/callback", "https://127.0.0.1/callback", "https://attacker.example/callback"]) {
+  test("accepts the official relay callback with a bounded nonce", () => {
+    const result = parseGlyphEnvelope(JSON.stringify({
+      request: {
+        type: "connect",
+        dapp: { name: "Glyph Support", origin: "https://glyphq.org" },
+        nonce: "n1",
+      },
+      callback: "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+    }));
+
+    expect(result.error).toBeNull();
+    expect(result.envelope?.request.type).toBe("connect");
+  });
+
+  test("rejects localhost and untrusted callback origins", () => {
+    for (const callback of [
+      "http://localhost:3000/callback",
+      "https://localhost/callback",
+      "https://127.0.0.1/callback",
+      "https://attacker.example/callback",
+      "https://relay.glyphq.org/v1/stream/3dd2842cbb7f42a79354df9ddf6542ae",
+      "https://relay.glyphq.org/v1/callback/short",
+      "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae?extra=1",
+    ]) {
       const result = parseGlyphEnvelope(JSON.stringify({
         request: {
           type: "connect",

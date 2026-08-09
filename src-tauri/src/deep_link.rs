@@ -14,6 +14,9 @@ const NONCE_STORE_KEY: &str = "seen_nonces";
 const MAX_NONCE_AGE_SECS: u64 = 3600;
 const MAX_SIGN_MESSAGE_LEN: usize = 2048;
 const MAX_PENDING_LINKS: usize = 16;
+// The relay is the only trusted cross-origin callback transport. Its exact
+// origin and callback route remain constrained below, including a bounded nonce.
+const OFFICIAL_RELAY_ORIGIN: &str = "https://relay.glyphq.org";
 
 pub struct DeepLinkState {
     pending_requests: Arc<Mutex<VecDeque<String>>>,
@@ -185,7 +188,30 @@ fn parse_positive_i64(value: &Value) -> Option<i64> {
     value.as_str()?.parse::<i64>().ok()
 }
 
-fn validate_delivery_url(url_str: &str, field: &str, claimed_origin: &str) -> Result<(), String> {
+fn is_official_relay_callback(url: &Url) -> bool {
+    if url.origin().ascii_serialization() != OFFICIAL_RELAY_ORIGIN
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return false;
+    }
+
+    let Some(nonce) = url.path().strip_prefix("/v1/callback/") else {
+        return false;
+    };
+    nonce.len() >= 16
+        && nonce.len() <= 128
+        && nonce
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+}
+
+fn validate_delivery_url(
+    url_str: &str,
+    field: &str,
+    claimed_origin: &str,
+    allow_official_relay: bool,
+) -> Result<(), String> {
     let url = Url::parse(url_str).map_err(|_| format!("invalid {field} URL"))?;
     let host = url.host_str().unwrap_or("");
     if url.scheme() != "https" || !url.username().is_empty() || url.password().is_some() {
@@ -194,7 +220,9 @@ fn validate_delivery_url(url_str: &str, field: &str, claimed_origin: &str) -> Re
     if crate::commands::is_private_host(host) {
         return Err(format!("{field} must not target a non-global address"));
     }
-    if url.origin().ascii_serialization() != claimed_origin {
+    if url.origin().ascii_serialization() != claimed_origin
+        && !(allow_official_relay && is_official_relay_callback(&url))
+    {
         return Err(format!("{field} origin must match dapp.origin"));
     }
     Ok(())
@@ -313,12 +341,12 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     };
 
     if let Some(cb) = &callback {
-        validate_delivery_url(cb, "callback URL", &claimed_origin)?;
+        validate_delivery_url(cb, "callback URL", &claimed_origin, true)?;
     }
 
     let redirect_uri = redirect_uri_from_payload;
     if let Some(ru) = &redirect_uri {
-        validate_delivery_url(ru, "redirect_uri", &claimed_origin)?;
+        validate_delivery_url(ru, "redirect_uri", &claimed_origin, false)?;
     }
 
     // Type-specific checks
@@ -513,7 +541,7 @@ pub fn register_handler(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::{
-        validate, validate_dapp_origin, validate_delivery_url, validate_pay, DeepLinkState,
+        now_secs, validate, validate_dapp_origin, validate_delivery_url, validate_pay, DeepLinkState,
         MAX_PENDING_LINKS,
     };
 
@@ -597,6 +625,14 @@ mod tests {
             "https://demo.app/callback",
             "callback URL",
             "https://demo.app",
+            false,
+        )
+        .is_ok());
+        assert!(validate_delivery_url(
+            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "callback URL",
+            "https://glyphq.org",
+            true,
         )
         .is_ok());
 
@@ -605,9 +641,43 @@ mod tests {
             "https://attacker.example/callback",
             "https://127.0.0.1/callback",
             "https://[::ffff:127.0.0.1]/callback",
+            "https://relay.glyphq.org/v1/stream/3dd2842cbb7f42a79354df9ddf6542ae",
+            "https://relay.glyphq.org/v1/callback/short",
+            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae?extra=1",
         ] {
-            assert!(validate_delivery_url(url, "callback URL", "https://demo.app").is_err());
+            assert!(validate_delivery_url(url, "callback URL", "https://demo.app", true).is_err());
         }
+
+        assert!(validate_delivery_url(
+            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "redirect_uri",
+            "https://glyphq.org",
+            false,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn accepts_a_valid_request_with_an_official_relay_callback() {
+        use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+
+        let envelope = serde_json::json!({
+            "request": {
+                "type": "connect",
+                "dapp": { "name": "Glyph Support", "origin": "https://glyphq.org" },
+                "permissions": ["transfer"],
+                "nonce": "5b4bf4a7a53f4f29892892520dcaeffb",
+                "exp": now_secs() + 300,
+            },
+            "callback": "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "redirect_uri": null,
+        });
+        let url = format!(
+            "glyph://v1/request?d={}",
+            URL_SAFE_NO_PAD.encode(envelope.to_string())
+        );
+
+        assert!(validate(&url).is_ok());
     }
 
     #[test]

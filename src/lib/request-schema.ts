@@ -7,6 +7,7 @@ import { isGlobalHttpsUrl, normalizedGlobalHttpsOrigin } from "@/lib/url-securit
 export const MAX_REQUEST_CHARS = 128 * 1024;
 export const MAX_REQUEST_MESSAGE_CHARS = 64 * 1024;
 export const MAX_REQUEST_BINARY_BYTES = 64 * 1024;
+const OFFICIAL_RELAY_ORIGIN = "https://relay.glyphq.org";
 
 const MAX_UINT64 = 18_446_744_073_709_551_615n;
 const MAX_BASE64_CHARS = Math.ceil(MAX_REQUEST_BINARY_BYTES / 3) * 4;
@@ -38,6 +39,16 @@ const binaryDataSchema = z.string()
   .max(MAX_BASE64_CHARS, "Binary data is too large")
   .refine(isBase64, "Binary data must be valid base64");
 const tickOffsetSchema = z.number().int().min(1).max(60);
+
+function isOfficialRelayCallback(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const nonce = url.pathname.match(/^\/v1\/callback\/([A-Za-z0-9_-]{16,128})$/)?.[1];
+    return url.origin === OFFICIAL_RELAY_ORIGIN && !url.search && !url.hash && Boolean(nonce);
+  } catch {
+    return false;
+  }
+}
 
 export const transferRequestSchema = baseRequestSchema.extend({
   type: z.literal("transfer"),
@@ -106,7 +117,9 @@ export const glyphEnvelopeSchema = z.object({
       path: ["callback"],
     });
   }
-  if (envelope.callback && claimedOrigin && normalizedGlobalHttpsOrigin(envelope.callback) !== claimedOrigin) {
+  if (envelope.callback && claimedOrigin
+    && normalizedGlobalHttpsOrigin(envelope.callback) !== claimedOrigin
+    && !isOfficialRelayCallback(envelope.callback)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Callback origin must match dApp origin", path: ["callback"] });
   }
 
