@@ -80,16 +80,9 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
           VERSION: ${{ steps.release.outputs.version }}
           RELEASE_CHANNEL: ${{ env.RELEASE_CHANNEL }}
-          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           set -euo pipefail
           node scripts/extract-changelog.mjs "$VERSION" > release-notes.md
-          if [[ "$ALLOW_UNSIGNED_NATIVE" == "true" ]]; then
-            printf '\n%s\n%s\n' \
-              '> [!WARNING]' \
-              '> **Unsigned native release:** the macOS app and DMG are not Apple-signed or notarized, and the Windows installer is not Authenticode-signed. Tauri updater signatures, SHA-256 checksums, and GitHub build-provenance attestations remain required and are validated before publication.' \
-              >> release-notes.md
-          fi
           expected_prerelease=false
           if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
             expected_prerelease=true
