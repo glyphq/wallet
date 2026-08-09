@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { CheckCircle, KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { CheckCircle, Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SeedSurface, SetupFlow } from "@/components/setup-flow";
@@ -30,9 +30,11 @@ export default function CreateVaultScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
-  const [seedRevealed, setSeedRevealed] = useState(true);
+  const [backupSeedRevealed, setBackupSeedRevealed] = useState(false);
+  const [confirmationSeedRevealed, setConfirmationSeedRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedSegment, setCopiedSegment] = useState<number | null>(null);
+  const [seedViewed, setSeedViewed] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [nameError, setNameError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
@@ -40,11 +42,16 @@ export default function CreateVaultScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (step !== 2) return;
-    setSeedRevealed(true);
-    const timer = window.setTimeout(() => setSeedRevealed(false), SEED_AUTO_HIDE_MS);
+    if (step !== 2 || !backupSeedRevealed) return;
+    const timer = window.setTimeout(() => setBackupSeedRevealed(false), SEED_AUTO_HIDE_MS);
     return () => window.clearTimeout(timer);
-  }, [step]);
+  }, [backupSeedRevealed, step]);
+
+  useEffect(() => {
+    if (step !== 3 || !confirmationSeedRevealed) return;
+    const timer = window.setTimeout(() => setConfirmationSeedRevealed(false), SEED_AUTO_HIDE_MS);
+    return () => window.clearTimeout(timer);
+  }, [confirmationSeedRevealed, step]);
 
   const passwordValid = passwordsAreValid(password, confirmPassword);
   const normalizedConfirmation = confirmation.trim().toLowerCase();
@@ -60,7 +67,16 @@ export default function CreateVaultScreen() {
       return;
     }
     setNameError("");
+    setBackupSeedRevealed(false);
+    setSeedViewed(false);
     setStep(2);
+  }
+
+  function toggleBackupSeed() {
+    setBackupSeedRevealed((revealed) => {
+      if (!revealed) setSeedViewed(true);
+      return !revealed;
+    });
   }
 
   async function copySeed() {
@@ -84,6 +100,12 @@ export default function CreateVaultScreen() {
     }
     setConfirmationError("");
     setStep(4);
+  }
+
+  function continueFromBackup() {
+    setBackupSeedRevealed(false);
+    setConfirmationSeedRevealed(false);
+    setStep(3);
   }
 
   async function finish() {
@@ -150,19 +172,25 @@ export default function CreateVaultScreen() {
           total={4}
           title="Back up your seed"
           primaryLabel="Continue"
-          primaryDisabled={!acknowledged}
-          onPrimary={() => setStep(3)}
+          primaryDisabled={!acknowledged || !seedViewed}
+          onPrimary={continueFromBackup}
           onBack={back}
           secondaryActions={
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-              <Button variant="secondary" size="md" onClick={copySeed}>{copied ? "Copied" : "Copy seed"}</Button>
-              <Button variant="secondary" size="md" onClick={() => setSeedRevealed((value) => !value)}>{seedRevealed ? "Hide" : "Reveal"}</Button>
+              <Button variant="secondary" size="md" onClick={copySeed} disabled={!backupSeedRevealed}>{copied ? "Copied" : "Copy seed"}</Button>
+              <Button variant="secondary" size="md" onClick={toggleBackupSeed} aria-pressed={backupSeedRevealed}>
+                {backupSeedRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+                {backupSeedRevealed ? "Hide seed" : "Reveal seed"}
+              </Button>
             </div>
           }
         >
+          <p style={{ margin: 0, fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
+            Your seed stays hidden until you choose to reveal it. Write it down offline, then confirm it on the next step.
+          </p>
           <SeedSurface
             seed={seed}
-            revealed={seedRevealed}
+            revealed={backupSeedRevealed}
             copiedIndex={copiedSegment}
             onCopySegment={copySeedSegment}
           />
@@ -204,7 +232,7 @@ export default function CreateVaultScreen() {
             >
               {acknowledged ? <CheckCircle size={16} weight="Bold" /> : null}
             </span>
-            I saved this seed safely
+            I wrote this seed down and stored it safely
           </button>
         </SetupFlow>
       ) : null}
@@ -215,9 +243,20 @@ export default function CreateVaultScreen() {
           total={4}
           title="Confirm your backup"
           primaryLabel="Continue"
+          primaryDisabled={!confirmation.trim()}
           onPrimary={confirmBackup}
           onBack={back}
+          secondaryActions={
+            <Button variant="secondary" size="md" onClick={() => setConfirmationSeedRevealed((value) => !value)} style={{ width: "100%" }}>
+              {confirmationSeedRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+              {confirmationSeedRevealed ? "Hide seed" : "Reveal seed"}
+            </Button>
+          }
         >
+          <p style={{ margin: 0, fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
+            Type the complete seed exactly as saved. The reference stays blurred unless you deliberately reveal it.
+          </p>
+          <SeedSurface seed={seed} revealed={confirmationSeedRevealed} copiedIndex={copiedSegment} onCopySegment={copySeedSegment} />
           <Textarea
             leftElement={<KeyMinimalistic size={18} weight="Linear" />}
             value={confirmation}
