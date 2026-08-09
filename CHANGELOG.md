@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.2
+
+### Patch Changes
+
+- e764b0d: Accept valid requests that use the official relay callback so Connect reviews open correctly on Linux.
+
 ## 0.16.1
 
 ### Patch Changes
