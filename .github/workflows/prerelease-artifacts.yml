@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: prerelease-artifacts-${{ github.ref }}
+  group: prerelease-artifacts-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -66,6 +66,12 @@ jobs:
           restore-keys: |
             bun-${{ runner.os }}-${{ env.BUN_VERSION }}-
 
+      - name: Cache verified Linux bundler tools
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/tauri
+          key: tauri-linux-tools-${{ runner.os }}-${{ hashFiles('scripts/prepare-tauri-linux-tools.sh') }}
+
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
@@ -91,7 +97,7 @@ jobs:
             src-tauri/target/release/bundle/appimage/*.AppDir \
             src-tauri/target/release/bundle/appimage_deb
           bun tauri build --bundles appimage --ci
-          bun tauri build --bundles deb,rpm --ci --config configs/tauri-linux-packages.json
+          bun tauri build --bundles deb,rpm --ci --config configs/tauri-linux-packages.json --config '{"build":{"beforeBuildCommand":""}}'
 
       - name: Stage Linux artifacts
         run: |

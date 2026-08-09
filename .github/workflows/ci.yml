@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: [main, prerelease]
     paths-ignore:
       - '**.md'
       - 'sponsors.json'
@@ -13,9 +13,10 @@ on:
       - '**.md'
       - 'sponsors.json'
       - '.changeset/**'
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -33,6 +34,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Cache actionlint
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/glyph
+          key: actionlint-${{ runner.os }}-${{ hashFiles('scripts/lint-workflows.sh') }}
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -80,6 +87,9 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
+      - name: Configure sccache
+        uses: mozilla/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
+
       - name: Cache Rust registry and sources
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
@@ -91,6 +101,8 @@ jobs:
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
           TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
+          RUSTC_WRAPPER: sccache
+          SCCACHE_GHA_ENABLED: "true"
 
   linux-package-smoke:
     name: Linux packages start from a clean profile
@@ -119,9 +131,33 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
+      - name: Configure sccache
+        uses: mozilla/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
+
+      - name: Cache Rust registry and sources
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: src-tauri
+          cache-targets: "false"
+          cache-on-failure: "true"
+
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache Bun package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-${{ env.BUN_VERSION }}-
+
+      - name: Cache verified Linux bundler tools
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/tauri
+          key: tauri-linux-tools-${{ runner.os }}-${{ hashFiles('scripts/prepare-tauri-linux-tools.sh') }}
 
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
@@ -130,6 +166,9 @@ jobs:
         run: scripts/prepare-tauri-linux-tools.sh
 
       - name: Build unsigned local Linux packages
+        env:
+          RUSTC_WRAPPER: sccache
+          SCCACHE_GHA_ENABLED: "true"
         run: bun tauri build --bundles appimage,deb --no-sign
 
       - name: Validate package payloads and fresh-profile launch
@@ -151,6 +190,9 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
+      - name: Configure sccache
+        uses: mozilla/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
+
       - name: Cache Rust registry and sources
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
@@ -162,6 +204,8 @@ jobs:
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
           TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
+          RUSTC_WRAPPER: sccache
+          SCCACHE_GHA_ENABLED: "true"
 
   security-audit:
     name: Security audit
