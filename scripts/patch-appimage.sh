@@ -182,7 +182,8 @@ strip_host_graphics_libraries() {
   local library
   local -a libraries=(
     libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so
-    libGLX_mesa.so libgbm.so libdrm.so
+    libGLX_mesa.so libgbm.so libdrm.so libwayland-client.so
+    libwayland-cursor.so libwayland-egl.so libwayland-server.so
   )
 
   for library in "${libraries[@]}"; do
@@ -213,7 +214,7 @@ validate_appdir() {
       || die "required bundled library is missing: $library"
   done
 
-  for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so; do
+  for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so libwayland-client.so libwayland-cursor.so libwayland-egl.so libwayland-server.so; do
     if find "$appdir/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${library}*" -print -quit | grep -q .; then
       die "host graphics library must not be bundled: $library"
     fi
