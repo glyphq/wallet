@@ -271,7 +271,7 @@ export default function AppearanceScreen() {
                       <Icon size={18} weight="Linear" aria-hidden="true" style={{ marginTop: 1, flexShrink: 0 }} />
                       <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                         <span>{label}</span>
-                        <span style={{ fontSize: "var(--text-caption)", fontWeight: 400, color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
+                        <span style={{ maxWidth: "75%", fontSize: "var(--text-caption)", fontWeight: 400, color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
                           {description}
                         </span>
                       </span>
