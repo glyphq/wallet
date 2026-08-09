@@ -146,7 +146,7 @@ export default function WelcomeScreen() {
         setImportData(null);
         setImportPw("");
         setImportError("");
-        setImportFileError("Invalid or unsupported wallet file. Choose a Glyph export and try again.");
+        setImportFileError("Invalid or unsupported Vault file. Choose a Glyph export and try again.");
       }
     };
     input.click();
@@ -200,7 +200,7 @@ export default function WelcomeScreen() {
       unlock(newVaultId, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setImportError("Could not import this wallet. Check the password and try again.");
+      setImportError("Could not import this Vault. Check the password and try again.");
     } finally {
       setImportLoading(false);
     }
@@ -246,14 +246,14 @@ export default function WelcomeScreen() {
               }}
             >
               <AltArrowLeft size={17} weight="Linear" aria-hidden="true" />
-              Back to wallet
+              Back to Vault
             </button>
           ) : null}
           <BrandLockup align="center" iconOnly />
 
           <FlowHeader
             align="center"
-            title="Set up your wallet"
+            title="Set up your Vault"
           />
 
           {hasPendingRequest ? (
@@ -268,7 +268,7 @@ export default function WelcomeScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button onClick={() => navigate("/setup/create")}>
-              Create wallet
+              Create Vault
             </Button>
             <Button variant="secondary" onClick={() => navigate("/setup/import")}>
               Restore from seed
@@ -279,7 +279,7 @@ export default function WelcomeScreen() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
-              Import wallet file
+              Import Vault file
             </Button>
           </div>
 
@@ -298,14 +298,14 @@ export default function WelcomeScreen() {
         </div>
       </motion.div>
 
-      <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? "wallet"}`}>
+      <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? "Vault"}`}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
           <StepProgress current={2} total={2} />
           <FlowHeader
-            title="Unlock wallet file"
+            title="Unlock Vault file"
             description={importData && importData.accounts.length > MAX_VAULT_ACCOUNTS
               ? `${selectedIndices.size} of ${MAX_VAULT_ACCOUNTS} accounts selected`
-              : `${importData?.accounts.length ?? 0} ${(importData?.accounts.length ?? 0) === 1 ? "account" : "accounts"} · ${importData?.name ?? "wallet"}`}
+              : `${importData?.accounts.length ?? 0} ${(importData?.accounts.length ?? 0) === 1 ? "account" : "accounts"} · ${importData?.name ?? "Vault"}`}
           />
 
           <WalletAppearancePicker
@@ -410,7 +410,7 @@ export default function WelcomeScreen() {
           ) : null}
 
           <Input
-            label="Wallet password"
+            label="Vault password"
             leftElement={<LockKeyhole size={18} weight="Linear" />}
             type="password"
             value={importPw}
@@ -426,7 +426,7 @@ export default function WelcomeScreen() {
           />
 
           <Button onClick={doImport} disabled={importDisabled} loading={importLoading}>
-            Import wallet
+            Import Vault
           </Button>
         </div>
       </Sheet>

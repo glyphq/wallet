@@ -72,7 +72,7 @@ export default function NotificationsScreen() {
 
         {/* Master toggle */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <SettingsSwitch label="Notifications" description="Show desktop notifications for wallet events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
+          <SettingsSwitch label="Notifications" description="Show desktop notifications for Vault events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
         </div>
 
         <SettingsDivider />
