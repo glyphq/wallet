@@ -1,5 +1,19 @@
 # glyph
 
+## 0.16.0
+
+### Minor Changes
+
+- 3c604f3: Restore back navigation on settings detail screens and add device status to Diagnostics without exporting unique device or network identifiers.
+- 521b908: Add a Launch at startup setting that can register or remove Glyph from operating-system startup on Windows, macOS, and Linux.
+
+### Patch Changes
+
+- 49ffef7: Improve seed backup safety and Linux package reliability.
+
+  - **Security:** Seed backup stays concealed until you choose to view it, while Copy seed works without exposing the words on screen. Seed confirmation no longer displays seed words.
+  - **Packaging:** Fixed AppImage launches from desktop entries and verify AppImage and Debian startup with clean application profiles.
+
 ## 0.15.0
 
 ### Minor Changes
