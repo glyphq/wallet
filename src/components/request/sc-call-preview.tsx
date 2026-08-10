@@ -270,7 +270,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         contractName: `${contractName} · ${inputTypeLabel}`,
       });
 
-      onApprove({ txHash: hash, targetTick: tick, identity });
+      onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");
       setProcessing(false);

@@ -17,6 +17,11 @@ function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
     addRequestHistoryItem: (item) => { added.push(item); },
     updateRequestHistoryItem: (id, patch) => { updates.push({ id, patch }); },
     recordAuditEvent: (event) => { audits.push(event); },
+    signMessage: async (accountIndex, messageBytes) => ({
+      signature: new Uint8Array([accountIndex, messageBytes.length]),
+      publicKey: new Uint8Array([7, 8, 9]),
+      identity: "ID1",
+    }),
     ...overrides,
   };
   return { deps, added, updates, audits, posts, opened };
@@ -48,7 +53,7 @@ describe("request orchestration", () => {
 
     const success = await approveRequest(deps, {
       envelope: transferEnvelope,
-      approval: { kind: "tx", approve: { txHash: "tx-1", targetTick: 42, identity: "ID1" } },
+      approval: { kind: "tx", approve: { txHash: "tx-1", targetTick: 42, identity: "ID1", accountIndex: 0 } },
       vaults: [{ id: "v1", name: "Vault", accounts: [{ index: 0, name: "Main", identity: "ID1" }] }],
     });
 
@@ -63,7 +68,20 @@ describe("request orchestration", () => {
       resultDetail: "tx-1",
       callbackStatus: "pending",
     });
-    expect(JSON.parse(added[0].callbackBody ?? "{}")).toMatchObject({ status: "signed", tx_hash: "tx-1", target_tick: 42 });
+    const callbackEnvelope = JSON.parse(added[0].callbackBody ?? "{}");
+    expect(callbackEnvelope).toMatchObject({
+      version: "glyph-connect-callback-envelope/1",
+      result: { status: "signed", tx_hash: "tx-1", target_tick: 42 },
+      payload: {
+        nonce: "nonce-1",
+        dapp_origin: "https://demo.app",
+        request_type: "transfer",
+        exp: null,
+        relay: { callback_url: "https://demo.app/callback", official_relay: false, route: "unknown", v1_nonce: null, session_id: null, callback_capability_fingerprint: null },
+      },
+      proof: { algorithm: "qubic-schnorrq-sha256", identity: "ID1", public_key: "BwgJ" },
+    });
+    expect(callbackEnvelope.proof.signed_payload).toContain('"result_hash"');
     expect(posts).toEqual([{ url: "https://demo.app/callback", body: added[0].callbackBody! }]);
     expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "ok", callbackUpdatedAt: 1234 } }]);
     expect(opened[0]).toBe(buildRedirectUrl("https://demo.app/return", added[0].callbackBody!));

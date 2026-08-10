@@ -2,6 +2,8 @@ import type { ApproveResult } from "@/components/request/transfer-preview";
 import type { SignMessageApproveResult } from "@/components/request/sign-message-preview";
 import type { ConnectApproveResult } from "@/components/request/connect-preview";
 import type { VerifyMessageResult } from "@/components/request/verify-message-preview";
+import { buildSignedCallbackEnvelope } from "@/lib/callback-envelope";
+import { signMessageFromSession } from "@/lib/secure-session";
 import type { GlyphCallbackResponse, GlyphEnvelope } from "@/lib/request-schema";
 import type { RequestHistoryItem, VaultMeta } from "@/store/persisted";
 
@@ -39,6 +41,7 @@ export interface RequestOrchestrationDeps {
   addRequestHistoryItem: (item: RequestHistoryItem) => void;
   updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>) => void;
   recordAuditEvent: (event: RequestAuditEvent) => void;
+  signMessage?: typeof signMessageFromSession;
 }
 
 export type RequestApprovalResult =
@@ -168,8 +171,14 @@ export async function approveRequest(
   const callbackUrl = input.envelope.callback;
   const redirectUri = input.envelope.redirect_uri ?? null;
   const { response, success, history, auditTitle, auditDetail } = buildApprovalArtifacts(input.envelope, input.approval);
-  const callbackBody = JSON.stringify(response);
   const identity = getApprovalIdentity(input.approval);
+  const callbackBody = JSON.stringify(await buildSignedCallbackEnvelope({
+    envelope: input.envelope,
+    result: response,
+    identity,
+    accountIndex: getApprovalAccountIndex(input.approval),
+    signMessage: deps.signMessage ?? signMessageFromSession,
+  }));
 
   deps.recordAuditEvent({
     kind: "request_approved",
@@ -284,4 +293,8 @@ function buildApprovalArtifacts(envelope: GlyphEnvelope, approval: RequestApprov
 
 function getApprovalIdentity(approval: RequestApprovalResult) {
   return approval.approve.identity;
+}
+
+function getApprovalAccountIndex(approval: RequestApprovalResult) {
+  return "accountIndex" in approval.approve ? approval.approve.accountIndex : 0;
 }

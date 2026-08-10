@@ -13,6 +13,7 @@ export type { ConnectRequest } from "@/lib/request-schema";
 
 export interface ConnectApproveResult {
   identity: string;
+  accountIndex: number;
   permissions: GlyphPermission[];
   transferLimitQu?: string;
   expiryDurationMs?: number;
@@ -59,6 +60,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
     const sanitizedLimit = sanitizeTransferLimitQu(transferLimitQu);
     onApprove({
       identity: selectedWallet.identity,
+      accountIndex: selectedIndex,
       permissions,
       transferLimitQu: sanitizedLimit,
       expiryDurationMs,
