@@ -4,6 +4,7 @@ import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { useSessionStore } from "@/store/session";
+import { usePersistedStore } from "@/store/persisted";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
 
@@ -12,6 +13,7 @@ export type { VerifyMessageRequest } from "@/lib/request-schema";
 export interface VerifyMessageResult {
   valid: boolean;
   identity: string;
+  accountIndex: number;
 }
 
 interface VerifyMessagePreviewProps {
@@ -24,6 +26,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const wallets = useSessionStore((s) => s.wallets);
+  const activeAccountIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
 
   const publicKeyBytes = useMemo(() => base64ToBytes(request.public_key), [request.public_key]);
 
@@ -47,7 +50,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
       const digest = k12(messageBytes, 32);
       const signatureBytes = base64ToBytes(request.signature);
       const valid = verify(digest, signatureBytes, publicKeyBytes);
-      onApprove({ valid, identity: claimedIdentity ?? "" });
+      onApprove({ valid, identity: claimedIdentity ?? "", accountIndex: activeAccountIndex });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Verification failed.");
       setProcessing(false);
