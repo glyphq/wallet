@@ -228,7 +228,7 @@ export default function TxDetailScreen() {
           </div>
           {snapshot && !hideBalances && (
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              ≈ $${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}
+              ≈ ${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}
             </div>
           )}
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
