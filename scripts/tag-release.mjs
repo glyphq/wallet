@@ -4,7 +4,7 @@ import { execFileSync, spawnSync } from "child_process";
 import { readFileSync, rmSync, writeFileSync } from "fs";
 
 const { version } = JSON.parse(readFileSync("package.json", "utf8"));
-if (!/^\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(version)) {
+if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
   throw new Error(`refusing to tag invalid semantic version: ${version}`);
 }
 const tag = `v${version}`;

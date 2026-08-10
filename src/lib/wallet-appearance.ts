@@ -3,7 +3,6 @@ import type { IconProps } from "@solar-icons/react";
 import {
   Buildings,
   Compass,
-  Document,
   FolderOpen,
   HomeSmile,
   Key,
@@ -12,7 +11,6 @@ import {
   Safe2,
   ShieldCheck,
   Star,
-  UserRounded,
   UsersGroupRounded,
   Wallet,
   WalletMoney,
@@ -64,6 +62,4 @@ export function getWalletAccent(color?: VaultColor) {
   return WALLET_COLOR_OPTIONS.find((option) => option.id === color)?.accent ?? "var(--color-wallet-accent-slate)";
 }
 
-export const PERSONA_ICON = UserRounded;
 export const CONTACT_ICON = UsersGroupRounded;
-export const CONTRACT_ICON = Document;

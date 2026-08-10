@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/button";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
 import { truncateId } from "@/lib/format";
+import { base64ToBytes } from "@/lib/base64";
 import { useSessionStore } from "@/store/session";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
@@ -17,15 +18,6 @@ interface VerifyMessagePreviewProps {
   request: VerifyMessageRequest;
   onApprove: (result: VerifyMessageResult) => void;
   onReject: () => void;
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  try {
-    const binary = atob(b64);
-    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
-    return new Uint8Array(0);
-  }
 }
 
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
