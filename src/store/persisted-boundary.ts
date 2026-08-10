@@ -1,6 +1,7 @@
 import type {
   AccountMeta,
   AuditEvent,
+  ExternalSignerRequest,
   NotificationEvent,
   PersistedState,
   PriceSnapshot,
@@ -13,6 +14,7 @@ import { isGlobalHttpsUrl } from "@/lib/url-security";
 import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
 
 export const MAX_PENDING_TXS = 50;
+export const MAX_EXTERNAL_SIGNER_REQUESTS = 25;
 export const MAX_TX_MEMOS = 500;
 export const MAX_SCHEDULED_TRANSFERS = 50;
 export const MAX_NOTIFICATION_EVENTS = 200;
@@ -37,6 +39,16 @@ export function clampNotificationEvents(
     .slice()
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, MAX_NOTIFICATION_EVENTS);
+}
+
+export function clampExternalSignerRequests(
+  requests: ExternalSignerRequest[]
+): ExternalSignerRequest[] {
+  if (requests.length <= MAX_EXTERNAL_SIGNER_REQUESTS) return requests;
+  return requests
+    .slice()
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, MAX_EXTERNAL_SIGNER_REQUESTS);
 }
 
 export function clampAuditEvents(events: AuditEvent[]): AuditEvent[] {
@@ -136,6 +148,27 @@ export function mergePersistedState(
   const pendingTxs = Array.isArray(ps.pendingTxs)
     ? ps.pendingTxs
     : currentState.pendingTxs;
+  const externalSignerRequests = Array.isArray(ps.externalSignerRequests)
+    ? clampExternalSignerRequests(
+        ps.externalSignerRequests.filter(
+          (request): request is ExternalSignerRequest =>
+            !!request &&
+            typeof request === "object" &&
+            typeof request.id === "string" &&
+            typeof request.createdAt === "number" &&
+            typeof request.sourceIdentity === "string" &&
+            typeof request.destinationIdentity === "string" &&
+            typeof request.amount === "string" &&
+            typeof request.targetTick === "number" &&
+            request.inputType === 0 &&
+            request.payloadBase64 === "" &&
+            typeof request.unsignedTxBase64 === "string" &&
+            (request.status === "exported" ||
+              request.status === "signed" ||
+              request.status === "broadcasted")
+        )
+      )
+    : currentState.externalSignerRequests;
   const txMemos =
     ps.txMemos && typeof ps.txMemos === "object" && !Array.isArray(ps.txMemos)
       ? clampTxMemos(ps.txMemos as Record<string, string>)
@@ -293,6 +326,7 @@ export function mergePersistedState(
     vaults,
     contacts,
     pendingTxs,
+    externalSignerRequests,
     txMemos,
     txTags,
     scheduledTransfers,

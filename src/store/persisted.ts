@@ -6,6 +6,7 @@ import type { StateStorage } from "zustand/middleware";
 import { DEFAULT_SETTINGS } from "./persisted-defaults";
 import {
   MAX_PENDING_TXS,
+  clampExternalSignerRequests,
   MAX_SCHEDULED_TRANSFERS,
   clampAuditEvents,
   clampNotificationEvents,
@@ -25,6 +26,8 @@ export type {
   AuditEvent,
   AuditEventKind,
   Contact,
+  ExternalSignerRequest,
+  ExternalSignerRequestStatus,
   FontPairId,
   NetworkConfig,
   NotificationEvent,
@@ -98,6 +101,7 @@ export const usePersistedStore = create<PersistedState>()(
       settings: DEFAULT_SETTINGS,
       contacts: [],
       pendingTxs: [],
+      externalSignerRequests: [],
       txMemos: {},
       txTags: {},
       scheduledTransfers: [],
@@ -173,6 +177,25 @@ export const usePersistedStore = create<PersistedState>()(
         set((s) => ({
           pendingTxs: s.pendingTxs.filter((t) => t.hash !== hash),
         })),
+
+      addExternalSignerRequest: (request) =>
+        set((s) => ({
+          externalSignerRequests: clampExternalSignerRequests([
+            request,
+            ...s.externalSignerRequests,
+          ]),
+        })),
+
+      updateExternalSignerRequest: (id, updates) =>
+        set((s) => ({
+          externalSignerRequests: clampExternalSignerRequests(
+            s.externalSignerRequests.map((request) =>
+              request.id === id ? { ...request, ...updates } : request
+            )
+          ),
+        })),
+
+      clearExternalSignerRequests: () => set({ externalSignerRequests: [] }),
 
       approveDapp: (dapp) =>
         set((s) => {

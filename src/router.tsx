@@ -36,6 +36,7 @@ import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
 import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
 import AppearanceScreen from "@/screens/settings/appearance-screen";
+import ExternalSignerScreen from "@/screens/settings/external-signer-screen";
 
 function Screen({ component: C }: { component: ComponentType }) {
   return (
@@ -74,6 +75,7 @@ export const router = createHashRouter([
       { path: "/request", element: <Screen component={RequestScreen} /> },
       { path: "/settings", element: <Screen component={SettingsScreen} /> },
       { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
+      { path: "/settings/external-signer", element: <Screen component={ExternalSignerScreen} /> },
       { path: "/settings/request-history", element: <Screen component={RequestHistoryScreen} /> },
       { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
       { path: "/settings/security/audit-log", element: <Screen component={AuditLogScreen} /> },

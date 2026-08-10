@@ -176,6 +176,26 @@ export interface PendingTx {
   contractName?: string;
 }
 
+export type ExternalSignerRequestStatus = "exported" | "signed" | "broadcasted";
+
+/** Persisted unsigned-transfer export and matching signed import metadata. Contains no seed material. */
+export interface ExternalSignerRequest {
+  id: string;
+  createdAt: number;
+  sourceIdentity: string;
+  destinationIdentity: string;
+  amount: string;
+  targetTick: number;
+  inputType: 0;
+  payloadBase64: "";
+  unsignedTxBase64: string;
+  status: ExternalSignerRequestStatus;
+  signedTxBase64?: string;
+  txHash?: string;
+  signedAt?: number;
+  broadcastAt?: number;
+}
+
 export type NotificationEventKind =
   | "received"
   | "sent"
@@ -257,6 +277,7 @@ export interface PersistedState {
   settings: AppSettings;
   contacts: Contact[];
   pendingTxs: PendingTx[];
+  externalSignerRequests: ExternalSignerRequest[];
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
   /** @deprecated Kept for migration compat only — no longer used in UI. */
@@ -291,6 +312,12 @@ export interface PersistedState {
   removeContact: (id: string) => void;
   addPendingTx: (tx: PendingTx) => void;
   removePendingTx: (hash: string) => void;
+  addExternalSignerRequest: (request: ExternalSignerRequest) => void;
+  updateExternalSignerRequest: (
+    id: string,
+    updates: Partial<Omit<ExternalSignerRequest, "id" | "createdAt">>
+  ) => void;
+  clearExternalSignerRequests: () => void;
   /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
   approveDapp: (dapp: ApprovedDapp) => void;
   revokeDapp: (origin: string) => void;
