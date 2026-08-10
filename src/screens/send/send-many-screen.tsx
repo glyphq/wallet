@@ -20,6 +20,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
@@ -27,7 +28,7 @@ import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
-import { truncateId, formatQu, extractMessage } from "@/lib/format";
+import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity } from "@/lib/accounts";
@@ -83,6 +84,7 @@ export default function SendManyScreen() {
   const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
+  const quote = usePreferredCurrencyQuote();
   const price = stats?.price;
   const { data: recentTxsData } = useTxHistory(identity || null);
   const recentTxs = recentTxsData?.pages[0];
@@ -310,7 +312,7 @@ export default function SendManyScreen() {
                   />
                   {price && r.amount && Number(r.amount) > 0 && (
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", flexShrink: 0 }}>
-                      ≈ ${(Number(r.amount) * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {price ? formatPreferredCurrencyFromQu(r.amount, { usdPrice: price, ...quote }).text : null}
                     </span>
                   )}
                 </div>
@@ -372,7 +374,7 @@ export default function SendManyScreen() {
               </span>
               {price && totalAmount > 0 && (
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-                  ≈ ${(totalAmount * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {price ? formatPreferredCurrencyFromQu(totalAmount, { usdPrice: price, ...quote }).text : null}
                 </div>
               )}
             </div>

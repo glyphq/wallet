@@ -20,12 +20,13 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
-import { truncateId, formatQu, extractMessage } from "@/lib/format";
+import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity } from "@/lib/accounts";
@@ -122,6 +123,7 @@ export default function SendScreen() {
   const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
+  const quote = usePreferredCurrencyQuote();
 
   const [step, setStep] = useState<Step>("input");
   const [draftRestored, setDraftRestored] = useState(false);
@@ -184,7 +186,7 @@ export default function SendScreen() {
   );
 
   const price = stats?.price;
-  const usdEquiv = price && amountStr ? Number(amountStr) * price : null;
+  const fiatEquiv = price && amountStr ? formatPreferredCurrencyFromQu(amountStr, { usdPrice: price, ...quote }).text : null;
 
   // Sync from URL
   const prevSearchRef = useRef(searchParams.toString());
@@ -376,7 +378,7 @@ export default function SendScreen() {
           >
             {usdMode
               ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
-              : (usdEquiv !== null && usdEquiv > 0 ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "USD")
+              : (fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : quote.currency)
             }
           </TextButton>
 
@@ -505,7 +507,7 @@ export default function SendScreen() {
           </div>
           {price && amountStr && (
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-              ≈ ${(Number(amountStr) * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : null}
             </div>
           )}
         </header>

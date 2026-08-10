@@ -14,9 +14,10 @@ import { useBalance } from "@/hooks/use-balance";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { Button } from "@/components/button";
-import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
+import { truncateId, formatQu, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 
@@ -217,6 +218,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   const { data: lastProcessedTickData } = useLastProcessedTick();
   const queryClient = useQueryClient();
   const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
+  const quote = usePreferredCurrencyQuote();
 
   const isExpired = (p: { targetTick: number }) =>
     lastProcessedTick > 0 && lastProcessedTick >= p.targetTick;
@@ -306,7 +308,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
       ? isIn ? "var(--color-accent)" : "var(--color-text-display)"
       : "var(--color-text-disabled)";
     const amount = hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount ?? "0")} QU`;
-    const amountUsd = !hideBalances && price ? `$${formatUsdFromQu(tx.amount ?? "0", price)}` : undefined;
+    const amountUsd = !hideBalances && price ? formatPreferredCurrencyFromQu(tx.amount ?? "0", { usdPrice: price, ...quote }).text : undefined;
     const address = isSc
       ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
       : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
@@ -357,6 +359,8 @@ export default function DashboardScreen() {
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
   const { data: stats } = useLatestStats();
   const { data: ownedAssets } = useOwnedAssets(identity);
+  const quote = usePreferredCurrencyQuote();
+  const balanceFiat = balance && stats?.price ? formatPreferredCurrencyFromQu(balance.balance, { usdPrice: stats.price, ...quote }).text : "—";
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
   // Compute 24h price change from snapshots
@@ -432,7 +436,7 @@ export default function DashboardScreen() {
           {balance && !balanceLoading && !settings.hideBalances && stats?.price && (
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
+                {balanceFiat}
               </span>
               {priceChange24h !== null && (
                 <span style={{
