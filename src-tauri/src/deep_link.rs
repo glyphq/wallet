@@ -150,14 +150,27 @@ fn is_official_relay_callback(url: &Url) -> bool {
         return false;
     }
 
-    let Some(nonce) = url.path().strip_prefix("/v1/callback/") else {
+    let Some(path) = url.path().strip_prefix("/v2/callback/") else {
         return false;
     };
-    nonce.len() >= 16
-        && nonce.len() <= 128
-        && nonce
+    let mut segments = path.split('/');
+    let (Some(session), Some(callback_cap), None) =
+        (segments.next(), segments.next(), segments.next())
+    else {
+        return false;
+    };
+    let is_base64url = |value: &str| {
+        value
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    };
+    session.len() >= 22
+        && session.len() <= 128
+        && is_base64url(session)
+        && callback_cap.starts_with("c_")
+        && callback_cap.len() >= 24
+        && callback_cap.len() <= 128
+        && is_base64url(&callback_cap[2..])
 }
 
 fn validate_delivery_url(
@@ -583,7 +596,7 @@ mod tests {
         )
         .is_ok());
         assert!(validate_delivery_url(
-            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
             "callback URL",
             "https://glyphq.org",
             true,
@@ -595,15 +608,17 @@ mod tests {
             "https://attacker.example/callback",
             "https://127.0.0.1/callback",
             "https://[::ffff:127.0.0.1]/callback",
-            "https://relay.glyphq.org/v1/stream/3dd2842cbb7f42a79354df9ddf6542ae",
-            "https://relay.glyphq.org/v1/callback/short",
-            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae?extra=1",
+            "https://relay.glyphq.org/v2/stream/3dd2842cbb7f42a79354df9ddf6542/r_3dd2842cbb7f42a79354df9ddf6542",
+            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "https://relay.glyphq.org/v2/callback/short/c_3dd2842cbb7f42a79354df9ddf6542",
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/r_3dd2842cbb7f42a79354df9ddf6542",
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542?extra=1",
         ] {
             assert!(validate_delivery_url(url, "callback URL", "https://demo.app", true).is_err());
         }
 
         assert!(validate_delivery_url(
-            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
             "redirect_uri",
             "https://glyphq.org",
             false,
@@ -623,7 +638,7 @@ mod tests {
                 "nonce": "5b4bf4a7a53f4f29892892520dcaeffb",
                 "exp": now_secs() + 300,
             },
-            "callback": "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "callback": "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
             "redirect_uri": null,
         });
         let url = format!(

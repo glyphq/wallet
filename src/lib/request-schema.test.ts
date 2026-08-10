@@ -18,14 +18,14 @@ describe("parseGlyphEnvelope", () => {
     expect(result.envelope?.request.type).toBe("transfer");
   });
 
-  test("accepts the official relay callback with a bounded nonce", () => {
+  test("accepts the official relay v2 callback with separate session and callback capability", () => {
     const result = parseGlyphEnvelope(JSON.stringify({
       request: {
         type: "connect",
         dapp: { name: "Glyph Support", origin: "https://glyphq.org" },
         nonce: "n1",
       },
-      callback: "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+      callback: "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
     }));
 
     expect(result.error).toBeNull();
@@ -38,9 +38,11 @@ describe("parseGlyphEnvelope", () => {
       "https://localhost/callback",
       "https://127.0.0.1/callback",
       "https://attacker.example/callback",
-      "https://relay.glyphq.org/v1/stream/3dd2842cbb7f42a79354df9ddf6542ae",
-      "https://relay.glyphq.org/v1/callback/short",
-      "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae?extra=1",
+      "https://relay.glyphq.org/v2/stream/3dd2842cbb7f42a79354df9ddf6542/r_3dd2842cbb7f42a79354df9ddf6542",
+      "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+      "https://relay.glyphq.org/v2/callback/short/c_3dd2842cbb7f42a79354df9ddf6542",
+      "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/r_3dd2842cbb7f42a79354df9ddf6542",
+      "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542?extra=1",
     ]) {
       const result = parseGlyphEnvelope(JSON.stringify({
         request: {
