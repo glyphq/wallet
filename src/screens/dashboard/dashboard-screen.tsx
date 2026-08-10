@@ -18,8 +18,9 @@ import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote"
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { Button } from "@/components/button";
 import { truncateId, formatQu, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
+import { formatAssetUnits } from "@/lib/asset-transfer";
 import { getVaultAccountIdentity } from "@/lib/accounts";
-import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
+import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES, QX_CONTRACT_INDEX } from "@/lib/contracts";
 
 // ── Animated balance ─────────────────────────────────────────────────────────
 
@@ -363,6 +364,16 @@ export default function DashboardScreen() {
   const balanceFiat = balance && stats?.price ? formatPreferredCurrencyFromQu(balance.balance, { usdPrice: stats.price, ...quote }).text : "—";
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
+  function assetSendPath(asset: { name: string; issuerIdentity: string; issuanceIndex: number; managingContractIndex: number }) {
+    const params = new URLSearchParams({
+      name: asset.name,
+      issuer: asset.issuerIdentity,
+      issuanceIndex: String(asset.issuanceIndex),
+      managingContractIndex: String(asset.managingContractIndex),
+    });
+    return `/assets/send?${params.toString()}`;
+  }
+
   // Compute 24h price change from snapshots
   const priceChange24h = (() => {
     if (!stats?.price || priceSnapshots.length < 2) return null;
@@ -455,23 +466,29 @@ export default function DashboardScreen() {
           {ownedAssets && ownedAssets.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
               {ownedAssets.map((asset) => {
-                const amount = Number(asset.numberOfUnits);
-                const decimals = asset.numberOfDecimalPlaces;
-                const displayAmount = decimals > 0
-                  ? (amount / Math.pow(10, decimals)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: decimals })
-                  : amount.toLocaleString();
-                return (
-                  <span
+                const displayAmount = settings.hideBalances ? "•••" : formatAssetUnits(asset.numberOfUnits, asset.numberOfDecimalPlaces);
+                const transferable = asset.managingContractIndex === QX_CONTRACT_INDEX;
+                const chipStyle: React.CSSProperties = {
+                  display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
+                  padding: "var(--space-1) var(--space-3)",
+                  background: "var(--color-bg-surface)",
+                  border: transferable ? "1px solid var(--color-border-subtle)" : "1px solid transparent",
+                  borderRadius: "var(--radius-pill)",
+                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em",
+                };
+                return transferable ? (
+                  <button
+                    type="button"
                     key={`${asset.issuanceIndex}-${asset.managingContractIndex}`}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
-                      padding: "var(--space-1) var(--space-3)",
-                      background: "var(--color-bg-surface)",
-                      borderRadius: "var(--radius-pill)",
-                      fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em",
-                    }}
+                    onClick={() => navigate(assetSendPath(asset))}
+                    style={{ ...chipStyle, cursor: "pointer" }}
+                    aria-label={`Send ${asset.name}`}
                   >
-                    {settings.hideBalances ? "•••" : displayAmount} {asset.name}
+                    <ArrowRightUp size={12} weight="Linear" aria-hidden="true" /> {displayAmount} {asset.name}
+                  </button>
+                ) : (
+                  <span key={`${asset.issuanceIndex}-${asset.managingContractIndex}`} style={chipStyle}>
+                    {displayAmount} {asset.name}
                   </span>
                 );
               })}
