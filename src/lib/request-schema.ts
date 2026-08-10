@@ -43,8 +43,8 @@ const tickOffsetSchema = z.number().int().min(1).max(60);
 function isOfficialRelayCallback(value: string): boolean {
   try {
     const url = new URL(value);
-    const nonce = url.pathname.match(/^\/v1\/callback\/([A-Za-z0-9_-]{16,128})$/)?.[1];
-    return url.origin === OFFICIAL_RELAY_ORIGIN && !url.search && !url.hash && Boolean(nonce);
+    const match = url.pathname.match(/^\/v2\/callback\/([A-Za-z0-9_-]{22,128})\/(c_[A-Za-z0-9_-]{22,126})$/);
+    return url.origin === OFFICIAL_RELAY_ORIGIN && !url.search && !url.hash && Boolean(match);
   } catch {
     return false;
   }
