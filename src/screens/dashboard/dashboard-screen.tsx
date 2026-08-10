@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole, WalletMoney } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
@@ -490,7 +490,8 @@ export default function DashboardScreen() {
                 Receive
               </Button>
               <Button variant="secondary" size="md" shape="pill" onClick={() => navigate("/stake")}>
-                QEarn
+                <WalletMoney size={16} weight="Linear" aria-hidden="true" />
+                Earn
               </Button>
             </div>
           )}
