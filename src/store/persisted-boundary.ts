@@ -1,6 +1,5 @@
 import type {
   AccountMeta,
-  ApprovedDapp,
   AuditEvent,
   NotificationEvent,
   PersistedState,
@@ -11,6 +10,7 @@ import type {
   VaultMeta,
 } from "./persisted-types";
 import { isGlobalHttpsUrl } from "@/lib/url-security";
+import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
 
 export const MAX_PENDING_TXS = 50;
 export const MAX_TX_MEMOS = 500;
@@ -230,15 +230,9 @@ export function mergePersistedState(
       ? { ...currentState.settings, ...ps.settings }
       : currentState.settings;
   const approvedDapps = Array.isArray(settingsBase.approvedDapps)
-    ? settingsBase.approvedDapps.filter(
-        (dapp): dapp is ApprovedDapp =>
-          !!dapp &&
-          typeof dapp === "object" &&
-          typeof dapp.origin === "string" &&
-          typeof dapp.name === "string" &&
-          typeof dapp.approvedAt === "number" &&
-          Array.isArray(dapp.permissions)
-      )
+    ? settingsBase.approvedDapps
+        .map(sanitizeApprovedDapp)
+        .filter((dapp): dapp is NonNullable<typeof dapp> => dapp !== null)
     : currentState.settings.approvedDapps;
   const settings = {
     ...settingsBase,

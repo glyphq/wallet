@@ -79,6 +79,12 @@ export interface ApprovedDapp {
   permissions: ("transfer" | "sc_call" | "sign_message")[];
   /** When set, restricts this dApp's permissions to these specific account identities only. */
   allowedIdentities?: string[];
+  /** Optional per-request QU ceiling for transfer-like requests from this dApp. */
+  transferLimitQu?: string;
+  /** User-selected approval lifetime, persisted so Settings can refresh the expiry with the same duration. */
+  expiryDurationMs?: number;
+  /** Unix ms timestamp after which this approval cannot be exercised. Undefined means no expiry. */
+  expiresAt?: number;
 }
 
 export interface AppSettings {
@@ -296,6 +302,10 @@ export interface PersistedState {
   setDappAllowedIdentities: (
     origin: string,
     identities: string[] | undefined
+  ) => void;
+  setDappPolicy: (
+    origin: string,
+    policy: Pick<ApprovedDapp, "transferLimitQu" | "expiryDurationMs" | "expiresAt">
   ) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;

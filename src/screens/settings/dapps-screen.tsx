@@ -5,6 +5,8 @@ import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { usePersistedStore } from "@/store/persisted";
 import { formatDate, truncateId } from "@/lib/format";
+import { DappPolicyControls, dappPolicySummary } from "@/components/dapp-policy-controls";
+import { makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
 const PERMISSION_LABELS: Record<string, string> = {
   transfer: "Transfer",
@@ -135,6 +137,7 @@ export default function DappsScreen() {
   const revokeDapp = usePersistedStore((s) => s.revokeDapp);
   const revokeDappPermission = usePersistedStore((s) => s.revokeDappPermission);
   const setDappAllowedIdentities = usePersistedStore((s) => s.setDappAllowedIdentities);
+  const setDappPolicy = usePersistedStore((s) => s.setDappPolicy);
 
   const sortedDapps = approvedDapps
     .slice()
@@ -178,9 +181,12 @@ export default function DappsScreen() {
             {sortedDapps.map((dapp, i) => {
               const accountCount = dapp.allowedIdentities?.length;
               const accountSummary = accountCount ? `${accountCount} shared ${accountCount === 1 ? "account" : "accounts"}` : "All accounts";
-              const permissionSummary = dapp.permissions.length === 0
-                ? "No extra permissions"
-                : `${dapp.permissions.length} ${dapp.permissions.length === 1 ? "permission" : "permissions"}`;
+	              const permissionSummary = dapp.permissions.length === 0
+	                ? "No extra permissions"
+	                : `${dapp.permissions.length} ${dapp.permissions.length === 1 ? "permission" : "permissions"}`;
+	              const policySummary = dappPolicySummary(dapp);
+	              const hasTransferLikePermission = dapp.permissions.some((permission) => permission === "transfer" || permission === "sc_call");
+	              const policyIdPrefix = `dapp-policy-${encodeURIComponent(dapp.origin).replace(/%/g, "")}`;
 
               return (
                 <div key={dapp.origin}>
@@ -211,11 +217,12 @@ export default function DappsScreen() {
                             {dapp.origin}
                           </div>
                           <div style={{ display: "flex", flexWrap: "wrap", columnGap: "var(--space-3)", rowGap: "var(--space-1)", marginTop: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
-                            <span>{accountSummary}</span>
-                            <span>{permissionSummary}</span>
-                            <span>Approved {formatDate(dapp.approvedAt)}</span>
-                            {dapp.lastUsedAt && <span>Last used {formatDate(dapp.lastUsedAt)}</span>}
-                          </div>
+	                            <span>{accountSummary}</span>
+	                            <span>{permissionSummary}</span>
+	                            <span>{policySummary}</span>
+	                            <span>Approved {formatDate(dapp.approvedAt)}</span>
+	                            {dapp.lastUsedAt && <span>Last used {formatDate(dapp.lastUsedAt)}</span>}
+	                          </div>
                         </div>
                       </div>
                     </summary>
@@ -255,8 +262,8 @@ export default function DappsScreen() {
                         )}
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                        <SettingsSectionLabel>Permissions</SettingsSectionLabel>
+	                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+	                        <SettingsSectionLabel>Permissions</SettingsSectionLabel>
                         {dapp.permissions.length > 0 ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                             {dapp.permissions.map((permission, permissionIndex) => (
@@ -283,9 +290,32 @@ export default function DappsScreen() {
                             No extra permissions granted
                           </span>
                         )}
-                      </div>
+	                      </div>
 
-                      <div style={{ paddingTop: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)" }}>
+	                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+	                        <SettingsSectionLabel>Limits</SettingsSectionLabel>
+	                        <DappPolicyControls
+	                          transferLimitQu={dapp.transferLimitQu ?? ""}
+	                          expiryDurationMs={dapp.expiryDurationMs}
+	                          onTransferLimitChange={(value) => setDappPolicy(dapp.origin, {
+	                            transferLimitQu: sanitizeTransferLimitQu(value),
+	                            expiryDurationMs: dapp.expiryDurationMs,
+	                            expiresAt: dapp.expiresAt,
+	                          })}
+	                          onExpiryDurationChange={(durationMs) => setDappPolicy(dapp.origin, {
+	                            transferLimitQu: dapp.transferLimitQu,
+	                            expiryDurationMs: durationMs,
+	                            expiresAt: makeDappExpiresAt(durationMs),
+	                          })}
+	                          showLimit={hasTransferLikePermission}
+	                          idPrefix={policyIdPrefix}
+	                        />
+	                        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+	                          {hasTransferLikePermission ? "Limit caps each transfer-like request." : "Expiry controls this connection."}
+	                        </span>
+	                      </div>
+
+	                      <div style={{ paddingTop: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)" }}>
                         <SmallActionButton ariaLabel={`Revoke ${dapp.name}`} onClick={() => revokeDapp(dapp.origin)}>
                           <SlashIcon />
                           Revoke access
