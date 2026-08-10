@@ -465,9 +465,6 @@ export default function VaultDetailScreen() {
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => setShowExport(true)}>
           <DocumentText size={14} weight="Linear" /> Export vault
         </Button>
-        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={openBackupVerification}>
-          <CheckCircle size={14} weight="Linear" /> Verify backup
-        </Button>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
           <Key size={14} weight="Linear" /> Change password
         </Button>
@@ -639,7 +636,7 @@ export default function VaultDetailScreen() {
           ) : (
             <>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-                [{seedVisible ? "SEED VISIBLE" : "SEED HIDDEN"} FOR {seedSecsLeft}s]
+                {seedVisible ? "Shown" : "Hidden"}. Closes in {seedSecsLeft}s.
               </div>
               <SeedSurface seed={revealedSeed} revealed={seedVisible} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
@@ -779,6 +776,15 @@ export default function VaultDetailScreen() {
             </ActionSection>
 
             <ActionSection title="Security">
+              <ActionRow
+                title="Verify backup"
+                description="Check your saved seed against this vault. Hidden by default."
+                icon={CheckCircle}
+                onClick={() => {
+                  openBackupVerification();
+                  closeAccountMenu();
+                }}
+              />
               <ActionRow
                 title="Reveal seed"
                 description="Decrypt and display this account seed for a limited time."
