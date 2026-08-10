@@ -30,6 +30,7 @@ import {
   qearnGetUserLockStatus,
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
+  qearnGetEndedStatus,
 } from "@/lib/contracts";
 import { qk } from "@/lib/query-keys";
 import { formatQu, truncateId, extractMessage } from "@/lib/format";
@@ -87,6 +88,13 @@ const labelStyle: React.CSSProperties = {
   fontSize: "var(--text-label)",
   fontWeight: 500,
   color: "var(--color-text-disabled)",
+};
+
+const valueStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: "var(--text-label)",
+  color: "var(--color-text-primary)",
+  textAlign: "right",
 };
 
 const cardStyle: React.CSSProperties = {
@@ -201,6 +209,21 @@ export default function StakeScreen() {
 
   const totalUserLocked = positions?.reduce((sum, p) => sum + p.lockedAmount, 0n) ?? 0n;
   const readyPositions = positions?.filter((p) => currentEpoch !== null && currentEpoch >= p.epoch + LOCK_PERIOD_EPOCHS) ?? [];
+  const readyAmount = readyPositions.reduce((sum, p) => sum + p.lockedAmount, 0n);
+  const nextMaturityEpoch = positions
+    ?.filter((p) => currentEpoch !== null && currentEpoch < p.epoch + LOCK_PERIOD_EPOCHS)
+    .map((p) => p.epoch + LOCK_PERIOD_EPOCHS)
+    .sort((a, b) => a - b)[0] ?? null;
+
+  const { data: endedStatusResult } = useQuery({
+    queryKey: ["qearn", "ended-status", rpcIdentity, unlockIdentity],
+    queryFn: () => qearnGetEndedStatus(getRpcClient().live, { user: unlockIdentity! }, SC_OPTS),
+    enabled: !!unlockIdentity,
+    staleTime: 60_000,
+  });
+  const endedStatus = endedStatusResult?.ok ? endedStatusResult.value : null;
+  const historicalRewards = endedStatus ? endedStatus.fullyRewardedAmount + endedStatus.earlyRewardedAmount : 0n;
+  const historicalUnlocked = endedStatus ? endedStatus.fullyUnlockedAmount + endedStatus.earlyUnlockedAmount : 0n;
 
   function goLockConfirm() {
     const trimmed = amountStr.trim();
@@ -422,11 +445,10 @@ export default function StakeScreen() {
                 )}
               </div>
 
-              {/* How it works */}
               <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
                 <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InfoCircle size={16} weight="Linear" /></span>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>
-                  Lock QU for {LOCK_PERIOD_EPOCHS} epochs to participate in the reward pool. Minimum {formatQu(QEARN_MIN_LOCK)} QU. Early unlock is available but rewards may be reduced.
+                  Minimum {formatQu(QEARN_MIN_LOCK)} QU. Mature after {LOCK_PERIOD_EPOCHS} epochs.
                 </span>
               </div>
 
@@ -533,25 +555,46 @@ export default function StakeScreen() {
               )}
 
               {/* Summary card */}
-              {positions && positions.length > 0 && (
+              {((positions && positions.length > 0) || historicalUnlocked > 0n) && (
                 <div style={cardStyle}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
                     <span style={{ color: "var(--color-accent)" }}><Lock size={22} weight="Bold" /></span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                      Your positions
-                    </span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>Positions</span>
                   </div>
                   <div style={{ padding: "var(--space-2) 0 var(--space-3)" }}>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700, color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
                       {formatQu(totalUserLocked)}
                     </span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginLeft: "var(--space-2)" }}>QU locked</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginLeft: "var(--space-2)" }}>QU locked balance</span>
                   </div>
                   <div style={rowDivider} />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
                     <span style={labelStyle}>Active positions</span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)" }}>{positions.length}</span>
+                    <span style={valueStyle}>{positions?.length ?? 0}</span>
                   </div>
+                  <div style={rowDivider} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                    <span style={labelStyle}>Ready amount</span>
+                    <span style={valueStyle}>{formatQu(readyAmount)} QU</span>
+                  </div>
+                  {nextMaturityEpoch !== null && (
+                    <>
+                      <div style={rowDivider} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                        <span style={labelStyle}>Next maturity</span>
+                        <span style={valueStyle}>Epoch {nextMaturityEpoch}</span>
+                      </div>
+                    </>
+                  )}
+                  {historicalUnlocked > 0n && (
+                    <>
+                      <div style={rowDivider} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                        <span style={labelStyle}>Historical rewards</span>
+                        <span style={valueStyle}>{formatQu(historicalRewards)} QU</span>
+                      </div>
+                    </>
+                  )}
                   {readyPositions.length > 0 && (
                     <>
                       <div style={rowDivider} />
@@ -623,7 +666,7 @@ export default function StakeScreen() {
                               </span>
                               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-                                  Epoch {pos.epoch}
+                                  Epoch {pos.epoch} → {unlockEpoch}
                                 </span>
                                 {isEarly ? (
                                   <span style={{
