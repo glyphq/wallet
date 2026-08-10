@@ -38,6 +38,7 @@ describe("callback envelope", () => {
       dapp_origin: "https://demo.app",
       request_type: "connect",
       exp: 1_900_000_000,
+      issued_at: 1_899_996_400,
       relay: {
         callback_url: "https://relay.glyphq.org/v2/callback/session_1234567890abcdef/I3hmpEKOFd_adnSpDzj6BYkCc7h9VKbNL4NLsgSShEs",
         official_relay: true,
@@ -47,7 +48,7 @@ describe("callback envelope", () => {
         callback_capability_fingerprint: "I3hmpEKOFd_adnSpDzj6BYkCc7h9VKbNL4NLsgSShEs",
       },
     });
-    expect(payload.result_hash).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(payload.result_hash).toMatch(/^sha256:[A-Za-z0-9_-]{43}$/);
     expect(canonicalCallbackPayload(payload)).not.toContain("callbackCapabilitySecret_1234567890abcdef");
   });
 

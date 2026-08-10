@@ -8,6 +8,7 @@ import { createNotificationEvent, publishNotificationEvent } from "@/lib/notific
 import { recordAuditEvent } from "@/lib/audit-log";
 import { buildRequestNotification, parseGlyphEnvelopeAsync } from "@/lib/request-schema";
 import { activeNetworkBinding } from "@/lib/network-binding";
+import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptance";
 
 /** Listens for `glyph:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
@@ -27,8 +28,13 @@ export function useDeepLink() {
     let unlisten: (() => void) | undefined;
 
     async function applyPayload(payload: string) {
-      const network = await activeNetworkBinding(usePersistedStore.getState().settings.network);
-      const parsed = await parseGlyphEnvelopeAsync(payload, network);
+      const { accepted } = await acceptDeepLinkPayloadAfterNetworkMatch({
+        payload,
+        networkSetting: usePersistedStore.getState().settings.network,
+        invokeNative: invoke,
+      });
+      if (!accepted) return;
+      const parsed = await parseGlyphEnvelopeAsync(payload, await activeNetworkBinding(usePersistedStore.getState().settings.network));
       if (!parsed.envelope) return;
       enqueuePendingRequestRef.current(payload);
       recordAuditEvent({
@@ -55,7 +61,6 @@ export function useDeepLink() {
 
     listen<string>("glyph:request", (event) => {
       void applyPayload(event.payload);
-      invoke("clear_pending_request").catch(() => {});
     }).then((fn) => { unlisten = fn; }).catch(() => {});
 
     // Cold start: wait for the persisted store to hydrate before reading the Rust-side stored
@@ -66,10 +71,9 @@ export function useDeepLink() {
         while (true) {
           const payload = await invoke<string | null>("get_pending_request");
           if (!payload) break;
-          // Clear before applyPayload so a failure in applyPayload doesn't re-process
-          // the same payload on the next loop iteration.
-          await invoke("clear_pending_request");
           await applyPayload(payload);
+          // Wrong-network payloads remain queued so they can be accepted after a network switch.
+          if ((await invoke<string | null>("get_pending_request")) === payload) break;
         }
       } catch {
         // non-fatal

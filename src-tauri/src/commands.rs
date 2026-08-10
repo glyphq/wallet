@@ -119,6 +119,21 @@ pub fn clear_pending_request(state: State<'_, DeepLinkState>) {
 }
 
 #[tauri::command]
+pub fn accept_pending_request(
+    app: AppHandle,
+    state: State<'_, DeepLinkState>,
+    payload: String,
+    active_network_id: String,
+) -> Result<bool, String> {
+    let [network_id, dapp_origin, nonce, request_hash] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
+    if network_id != active_network_id {
+        return Ok(false);
+    }
+    let replay_key = format!("v2|{network_id}|{dapp_origin}|{nonce}|{request_hash}");
+    Ok(state.record_nonce(&app, &replay_key))
+}
+
+#[tauri::command]
 pub fn take_pending_pay(state: State<'_, DeepLinkState>) -> Option<String> {
     state.take_payment()
 }

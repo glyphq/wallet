@@ -181,6 +181,7 @@ pub fn run() {
             commands::force_lock,
             commands::get_pending_request,
             commands::clear_pending_request,
+            commands::accept_pending_request,
             commands::take_pending_pay,
             commands::copy_to_clipboard,
             commands::clear_clipboard,
