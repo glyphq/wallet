@@ -10,6 +10,7 @@ import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-sec
 import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
+import { identifyNetworkPreset, NETWORK_PRESETS, type NetworkPresetId } from "@/lib/network-presets";
 
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
 type TestStatus = "idle" | "testing" | "ok" | "error";
@@ -33,6 +34,7 @@ export default function NetworkScreen() {
 
   const [liveUrl, setLiveUrl] = useState(settings.network.liveApiUrl);
   const [queryUrl, setQueryUrl] = useState(settings.network.queryApiUrl);
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkPresetId>(settings.network.name);
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testTick, setTestTick] = useState<number | null>(null);
   const [testError, setTestError] = useState("");
@@ -60,7 +62,7 @@ export default function NetworkScreen() {
           ...settings.network,
           liveApiUrl: live,
           queryApiUrl: archive,
-          name: live === "https://rpc.qubic.org/live/v1" && archive === "https://rpc.qubic.org/query/v1" ? "mainnet" : "custom",
+          name: identifyNetworkPreset(live, archive, selectedNetwork),
         },
       });
       queryClient.invalidateQueries();
@@ -71,14 +73,29 @@ export default function NetworkScreen() {
   }
 
   function resetToDefaults() {
-    const defaultLive = "https://rpc.qubic.org/live/v1";
-    const defaultQuery = "https://rpc.qubic.org/query/v1";
-    setLiveUrl(defaultLive); setQueryUrl(defaultQuery);
+    const mainnet = NETWORK_PRESETS[0];
+    const defaultLive = mainnet.liveApiUrl ?? "";
+    const defaultQuery = mainnet.queryApiUrl ?? "";
+    setLiveUrl(defaultLive); setQueryUrl(defaultQuery); setSelectedNetwork("mainnet");
     setTestStatus("idle"); setTestError("");
     configureRpc(defaultLive, defaultQuery);
     updateSettings({ network: { liveApiUrl: defaultLive, queryApiUrl: defaultQuery, name: "mainnet" } });
     queryClient.invalidateQueries();
   }
+
+  function choosePreset(preset: (typeof NETWORK_PRESETS)[number]) {
+    setSelectedNetwork(preset.id);
+    setTestStatus("idle"); setTestError("");
+    if (preset.liveApiUrl && preset.queryApiUrl) {
+      setLiveUrl(preset.liveApiUrl);
+      setQueryUrl(preset.queryApiUrl);
+    } else if (preset.id === "testnet") {
+      setLiveUrl("");
+      setQueryUrl("");
+    }
+  }
+
+  const activeNetwork = identifyNetworkPreset(liveUrl, queryUrl, selectedNetwork);
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -87,10 +104,17 @@ export default function NetworkScreen() {
 
         <section style={sectionStyle} aria-label="RPC endpoints">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <SettingsSectionLabel>RPC endpoints</SettingsSectionLabel>
+            <SettingsSectionLabel>Network</SettingsSectionLabel>
             <span id="rpc-endpoint-help" style={helperStyle}>
-              Custom endpoints must use HTTPS. Test before saving to verify the live endpoint.
+              Mainnet uses bundled endpoints. Testnet and custom require verified HTTPS RPC URLs.
             </span>
+          </div>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            {NETWORK_PRESETS.map((preset) => (
+              <Button key={preset.id} size="sm" variant={activeNetwork === preset.id ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => choosePreset(preset)} aria-pressed={activeNetwork === preset.id}>
+                {preset.label}
+              </Button>
+            ))}
           </div>
           <Input id="live-api-url" label="Live API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" />
           <Input id="archive-api-url" label="Archive API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" />
