@@ -14,6 +14,7 @@ import { Input } from "@/components/input";
 import { TextButton } from "@/components/text-button";
 import { ContactPicker } from "@/components/contact-picker";
 import { AddressSuggestions } from "@/components/address-suggestions";
+import { QrIntakeSheet } from "@/components/qr-intake-sheet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -31,6 +32,7 @@ import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import { parseScannedSendPayload } from "@/lib/scan-payload";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
 
@@ -141,6 +143,8 @@ export default function SendScreen() {
   const [highValueVerifying, setHighValueVerifying] = useState(false);
   const [memo, setMemo] = useState("");
   const [showPicker, setShowPicker] = useState(false);
+  const [showQrIntake, setShowQrIntake] = useState(false);
+  const [qrIntakeError, setQrIntakeError] = useState("");
   const [saveName, setSaveName] = useState("");
   const [saved, setSaved] = useState(false);
   const [usdMode, setUsdMode] = useState(false);
@@ -162,6 +166,9 @@ export default function SendScreen() {
         <>
           <IconButton label="Send to many" onClick={() => navigate("/send-many")}>
             <UsersGroupRounded size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Scan QR" onClick={() => { setQrIntakeError(""); setShowQrIntake(true); }}>
+            <QrCode size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label="Burn QU" onClick={() => navigate("/burn")}>
             <Fire size={20} aria-hidden="true" />
@@ -289,6 +296,27 @@ export default function SendScreen() {
   }
 
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
+
+  function applyScannedPayload(raw: string) {
+    const parsed = parseScannedSendPayload(raw);
+    if (!parsed) {
+      setQrIntakeError("Unsupported QR. Use a Glyph payment link or a Qubic identity.");
+      return;
+    }
+
+    if (parsed.kind === "identity") {
+      setDestination(parsed.identity);
+    } else {
+      setDestination(parsed.to);
+      setAmountStr(parsed.amount ?? "");
+      setUsdMode(false);
+      setUsdStr("");
+    }
+    setDestError("");
+    setAmountError("");
+    setQrIntakeError("");
+    setShowQrIntake(false);
+  }
 
   async function send() {
     if (!wallet) return;
@@ -471,6 +499,12 @@ export default function SendScreen() {
           onSelect={(id) => { setDestination(id); setDestError(""); setShowPicker(false); }}
           contacts={contacts}
           accounts={vaultAccountTargets}
+        />
+        <QrIntakeSheet
+          open={showQrIntake}
+          onClose={() => { setShowQrIntake(false); setQrIntakeError(""); }}
+          onScan={applyScannedPayload}
+          errorMessage={qrIntakeError}
         />
         </motion.div>
       </AppShell>
