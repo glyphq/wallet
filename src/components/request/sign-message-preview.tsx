@@ -4,6 +4,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { signMessageFromSession } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
+import { base64ToBytes } from "@/lib/base64";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { SignMessageRequest } from "@/lib/request-schema";
 
@@ -19,15 +20,6 @@ interface SignMessagePreviewProps {
   request: SignMessageRequest;
   onApprove: (result: SignMessageApproveResult) => void;
   onReject: () => void;
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  try {
-    const binary = atob(b64);
-    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
-    return new Uint8Array(0);
-  }
 }
 
 function bytesToBase64(bytes: Uint8Array): string {

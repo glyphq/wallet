@@ -4,10 +4,6 @@ import {
   sendNotification as tauriSend,
 } from "@tauri-apps/plugin-notification";
 
-export type NotificationPermissionResult =
-  | { granted: true; state: "granted" }
-  | { granted: false; state: "denied" | "unavailable" | "error"; message: string };
-
 export type NotificationDeliveryResult =
   | { ok: true; state: "sent" }
   | { ok: false; state: "locked" | "denied" | "error"; message: string };
@@ -27,17 +23,6 @@ function permissionDeniedMessage(): string {
       return "Desktop notifications are unavailable. On Linux this is often caused by an unpackaged app without a registered desktop entry.";
     default:
       return "Notifications are blocked in the OS settings.";
-  }
-}
-
-function permissionErrorMessage(): string {
-  switch (notificationPlatform()) {
-    case "macos":
-      return "Glyph could not verify macOS notification authorization.";
-    case "linux":
-      return "Glyph could not reach the Linux desktop notification service.";
-    default:
-      return "Glyph could not verify notification availability.";
   }
 }
 
@@ -87,16 +72,5 @@ export async function notify(title: string, body: string): Promise<NotificationD
     return { ok: true, state: "sent" };
   } catch (error) {
     return { ok: false, state: "error", message: deliveryErrorMessage(error) };
-  }
-}
-
-export async function requestNotificationPermission(): Promise<NotificationPermissionResult> {
-  try {
-    if (await isPermissionGranted()) return { granted: true, state: "granted" };
-    const res = await requestPermission();
-    if (res === "granted") return { granted: true, state: "granted" };
-    return { granted: false, state: "denied", message: permissionDeniedMessage() };
-  } catch {
-    return { granted: false, state: "error", message: permissionErrorMessage() };
   }
 }

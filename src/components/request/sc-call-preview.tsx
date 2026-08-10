@@ -29,6 +29,7 @@ import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
 import type { ApproveResult } from "./transfer-preview";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import { base64ToBytes } from "@/lib/base64";
 import { qk } from "@/lib/query-keys";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
 import type { ScCallRequest } from "@/lib/request-schema";
@@ -48,15 +49,6 @@ function base64ToHex(b64: string): string {
     return Array.from(binary, (c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join(" ");
   } catch {
     return "[invalid payload]";
-  }
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  try {
-    const binary = atob(b64);
-    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
-    return new Uint8Array(0);
   }
 }
 

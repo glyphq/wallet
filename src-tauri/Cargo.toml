@@ -49,10 +49,6 @@ zeroize = "1.8"
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-device-info = "1.0.1"
 
-[target.'cfg(target_os = "macos")'.dependencies]
-objc = "0.2"
-block = "0.1"
-
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = ["Security_Credentials_UI", "Win32_Security_Credentials", "Win32_Foundation"] }
 

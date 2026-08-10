@@ -6,7 +6,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_store::StoreExt;
-use tiny_keccak::{Hasher, KangarooTwelve};
 use url::Url;
 
 const NONCE_STORE_PATH: &str = "glyph-security.json";
@@ -134,51 +133,6 @@ fn now_secs() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0)
-}
-
-fn encode_identity_checksum(public_key: &[u8; 32]) -> [u8; 4] {
-    let mut hasher = KangarooTwelve::new(b"");
-    hasher.update(public_key);
-
-    let mut digest = [0u8; 3];
-    hasher.finalize(&mut digest);
-
-    let mut checksum = (digest[0] as u32) | ((digest[1] as u32) << 8) | ((digest[2] as u32) << 16);
-    checksum &= 0x3ffff;
-
-    let mut output = [0u8; 4];
-    for ch in &mut output {
-        *ch = (checksum % 26) as u8 + b'A';
-        checksum /= 26;
-    }
-    output
-}
-
-fn is_valid_qubic_identity(identity: &str) -> bool {
-    if identity.len() != 60 || !identity.bytes().all(|b| b.is_ascii_uppercase()) {
-        return false;
-    }
-
-    let mut public_key = [0u8; 32];
-    for fragment_index in 0..4 {
-        let mut fragment = 0u64;
-        for digit_index in (0..14).rev() {
-            let idx = fragment_index * 14 + digit_index;
-            let digit = (identity.as_bytes()[idx] - b'A') as u64;
-            fragment = match fragment
-                .checked_mul(26)
-                .and_then(|value| value.checked_add(digit))
-            {
-                Some(value) => value,
-                None => return false,
-            };
-        }
-        public_key[fragment_index * 8..(fragment_index + 1) * 8]
-            .copy_from_slice(&fragment.to_le_bytes());
-    }
-
-    let expected_checksum = encode_identity_checksum(&public_key);
-    identity.as_bytes()[56..60] == expected_checksum
 }
 
 fn parse_positive_i64(value: &Value) -> Option<i64> {
@@ -353,7 +307,7 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     match req_type {
         "transfer" => {
             let to = request_value["to"].as_str().ok_or("transfer: missing 'to'")?;
-            if !is_valid_qubic_identity(to) {
+            if crate::qubic_native::identity_to_public_key(to).is_err() {
                 let preview: String = to.chars().take(8).collect();
                 return Err(format!(
                     "transfer: 'to' must be a valid Qubic identity, got '{}'",
@@ -452,7 +406,7 @@ fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     }
 
     let to = to.ok_or("missing 'to' parameter")?;
-    if !is_valid_qubic_identity(&to) {
+    if crate::qubic_native::identity_to_public_key(&to).is_err() {
         return Err(format!("invalid identity in 'to': {}", &to[..to.len().min(8)]));
     }
     if let Some(ref a) = amount {
