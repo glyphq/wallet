@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { AddCircle, ArrowRightUp, Download, Magnifier, PenNewSquare, Upload, UsersGroupRounded } from "@solar-icons/react";
+import { AddCircle, ArrowRightUp, Download, Magnifier, PenNewSquare, UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
@@ -25,6 +25,7 @@ export default function ContactsScreen() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState<Contact | null>(null);
+  const [transferring, setTransferring] = useState(false);
   const [recentlySavedId, setRecentlySavedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [formName, setFormName] = useState("");
@@ -99,24 +100,30 @@ export default function ContactsScreen() {
 
   async function exportContacts(format: "json" | "csv") {
     setTransferStatus("");
-    const path = await save({
-      defaultPath: `glyph-contacts.${format}`,
-      filters: [{ name: format === "json" ? "JSON" : "CSV", extensions: [format] }],
-    });
-    if (!path) return;
-    const content = format === "json" ? contactsToJson(contacts) : contactsToCsv(contacts);
-    await writeTextFile(path, content);
-    setTransferStatus(`Exported ${contacts.length} contact${contacts.length === 1 ? "" : "s"}.`);
+    try {
+      const path = await save({
+        defaultPath: `glyph-contacts.${format}`,
+        filters: [{ name: format === "json" ? "JSON" : "CSV", extensions: [format] }],
+      });
+      if (!path) return;
+      const content = format === "json" ? contactsToJson(contacts) : contactsToCsv(contacts);
+      await writeTextFile(path, content);
+      setTransferStatus(`Exported ${contacts.length} contact${contacts.length === 1 ? "" : "s"}.`);
+      setTransferring(false);
+    } catch (err) {
+      console.error("[glyph] contact export failed:", err);
+      setTransferStatus("Could not export contacts.");
+    }
   }
 
   async function importContacts() {
     setTransferStatus("");
-    const path = await open({
-      multiple: false,
-      filters: [{ name: "Contacts", extensions: ["json", "csv"] }],
-    });
-    if (!path || Array.isArray(path)) return;
     try {
+      const path = await open({
+        multiple: false,
+        filters: [{ name: "Contacts", extensions: ["json", "csv"] }],
+      });
+      if (!path || Array.isArray(path)) return;
       const parsed = parseContactImport(await readTextFile(path), path);
       const existingIdentities = new Set(contacts.map((contact) => contact.identity));
       let added = 0;
@@ -127,7 +134,9 @@ export default function ContactsScreen() {
         added += 1;
       }
       setTransferStatus(`Imported ${added} contact${added === 1 ? "" : "s"}${parsed.length > added ? `, skipped ${parsed.length - added} duplicate${parsed.length - added === 1 ? "" : "s"}` : ""}.`);
+      setTransferring(false);
     } catch (err) {
+      console.error("[glyph] contact import failed:", err);
       setTransferStatus(err instanceof Error ? err.message : "Could not import contacts.");
     }
   }
@@ -160,7 +169,7 @@ export default function ContactsScreen() {
           title="Contacts"
           onBack={() => navigate("/history")}
           backAriaLabel="Back to history"
-          action={<div style={{ display: "flex", gap: "var(--space-2)" }}><IconButton label="Import contacts" title="Import contacts" onClick={importContacts} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Upload size={20} weight="Linear" aria-hidden="true" /></IconButton><IconButton label="Export contacts as JSON" title="Export contacts as JSON" onClick={() => exportContacts("json")} disabled={contacts.length === 0} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Download size={20} weight="Linear" aria-hidden="true" /></IconButton><IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={21} weight="Linear" aria-hidden="true" /></IconButton></div>}
+          action={<div style={{ display: "flex", gap: "var(--space-2)" }}><IconButton label="Import or export contacts" title="Import or export contacts" onClick={() => setTransferring(true)} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Download size={20} weight="Linear" aria-hidden="true" /></IconButton><IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={21} weight="Linear" aria-hidden="true" /></IconButton></div>}
         />
       }
       contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}
@@ -177,10 +186,7 @@ export default function ContactsScreen() {
             leftElement={<Magnifier size={18} weight="Linear" />}
           />
           <span aria-live="polite" style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{searchDescription}</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 22 }}>
-            <button type="button" onClick={() => exportContacts("csv")} disabled={contacts.length === 0} style={{ padding: 0, border: "none", background: "transparent", color: contacts.length === 0 ? "var(--color-text-disabled)" : "var(--color-accent)", cursor: contacts.length === 0 ? "default" : "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)" }}>CSV export</button>
-            {transferStatus && <span aria-live="polite" style={{ color: transferStatus.startsWith("Could not") || transferStatus.startsWith("No valid") ? "var(--color-status-error)" : "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{transferStatus}</span>}
-          </div>
+          {transferStatus && <span aria-live="polite" style={{ color: transferStatus.startsWith("Could not") || transferStatus.startsWith("No valid") ? "var(--color-status-error)" : "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{transferStatus}</span>}
         </div>
 
         {filtered.length === 0 ? (
@@ -199,6 +205,18 @@ export default function ContactsScreen() {
           </section>
         )}
       </main>
+
+      <Sheet
+        open={transferring}
+        onClose={() => setTransferring(false)}
+        title="Import or export"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <Button variant="secondary" size="md" onClick={importContacts}>Import JSON or CSV</Button>
+          <Button variant="ghost" size="md" onClick={() => exportContacts("json")} disabled={contacts.length === 0}>Export JSON</Button>
+          <Button variant="ghost" size="md" onClick={() => exportContacts("csv")} disabled={contacts.length === 0}>Export CSV</Button>
+        </div>
+      </Sheet>
 
       <Sheet
         open={adding}
@@ -324,6 +342,8 @@ function parseContactsCsv(raw: string): unknown[] {
   const rows = parseCsvRows(raw).filter((row) => row.some((cell) => cell.trim()));
   if (rows.length < 2) return [];
   const headers = rows[0].map((header) => header.trim().toLowerCase());
+  if (!headers.includes("name") || !headers.includes("identity")) throw new Error("CSV must include name and identity columns.");
+  if (rows.slice(1).some((row) => row.length !== headers.length)) throw new Error("Could not import malformed CSV.");
   return rows.slice(1).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""])));
 }
 
@@ -351,17 +371,37 @@ function parseCsvRows(raw: string): string[][] {
   let row: string[] = [];
   let cell = "";
   let quoted = false;
+  let justClosedQuote = false;
+  let cellStarted = false;
   for (let index = 0; index < raw.length; index += 1) {
     const char = raw[index];
     if (quoted) {
       if (char === '"' && raw[index + 1] === '"') { cell += '"'; index += 1; }
-      else if (char === '"') quoted = false;
+      else if (char === '"') { quoted = false; justClosedQuote = true; }
       else cell += char;
-    } else if (char === '"') quoted = true;
-    else if (char === ",") { row.push(cell); cell = ""; }
-    else if (char === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
-    else if (char !== "\r") cell += char;
+    } else if (char === '"') {
+      if (cellStarted) throw new Error("Could not import malformed CSV.");
+      quoted = true;
+      cellStarted = true;
+    } else if (char === ",") {
+      row.push(cell);
+      cell = "";
+      justClosedQuote = false;
+      cellStarted = false;
+    } else if (char === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      justClosedQuote = false;
+      cellStarted = false;
+    } else if (char !== "\r") {
+      if (justClosedQuote) throw new Error("Could not import malformed CSV.");
+      cell += char;
+      cellStarted = true;
+    }
   }
+  if (quoted) throw new Error("Could not import malformed CSV.");
   row.push(cell);
   rows.push(row);
   return rows;
