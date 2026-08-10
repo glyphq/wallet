@@ -63,6 +63,24 @@ function isDefault(f: TxFilters): boolean {
 
 type TxSection = { label: string; txs: TxHistoryItem[] };
 
+type ExportTx = {
+  hash: string;
+  status: "confirmed" | "pending" | "expired";
+  direction: "in" | "out" | "self" | "unknown";
+  type: "transfer" | "contract";
+  source: string | null;
+  destination: string | null;
+  amount: string;
+  tick: number;
+  timestamp: number | null;
+  isoDate: string;
+  moneyFlew: boolean | null;
+  inputType: number | null;
+  contractName: string;
+  memo: string;
+  tags: string[];
+};
+
 function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
   if (!txs.length) return [];
 
@@ -90,6 +108,92 @@ function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
   if (thisWeek.length) sections.push({ label: "This week", txs: thisWeek });
   if (earlier.length) sections.push({ label: "Earlier", txs: earlier });
   return sections;
+}
+
+function downloadText(filename: string, body: string, type: string) {
+  const blob = new Blob([body], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value: string | number | boolean | null | string[]): string {
+  const text = Array.isArray(value) ? value.join(";") : String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function toCsv(rows: ExportTx[]): string {
+  const headers: (keyof ExportTx)[] = ["hash", "status", "direction", "type", "source", "destination", "amount", "tick", "timestamp", "isoDate", "moneyFlew", "inputType", "contractName", "memo", "tags"];
+  return [headers.join(","), ...rows.map((row) => headers.map((key) => csvCell(row[key])).join(","))].join("\n");
+}
+
+function matchesPendingFilters(tx: PendingTx, filters: TxFilters, identity: string | null): boolean {
+  if (filters.direction === "in" && tx.destination !== identity) return false;
+  if (filters.direction === "out" && tx.source !== identity) return false;
+  if (filters.type === "transfer" && tx.contractName) return false;
+  if (filters.type === "sc" && !tx.contractName) return false;
+  try {
+    const amount = BigInt(tx.amount || "0");
+    if (filters.minAmount && amount < BigInt(filters.minAmount)) return false;
+    if (filters.maxAmount && amount > BigInt(filters.maxAmount)) return false;
+  } catch { return false; }
+  if (filters.tickFrom && tx.targetTick < Number(filters.tickFrom)) return false;
+  if (filters.tickTo && tx.targetTick > Number(filters.tickTo)) return false;
+  if (filters.dateFrom && tx.broadcastAt < new Date(`${filters.dateFrom}T00:00:00`).getTime()) return false;
+  if (filters.dateTo && tx.broadcastAt > new Date(`${filters.dateTo}T23:59:59.999`).getTime()) return false;
+  return true;
+}
+
+function txDirection(source: string | null, destination: string | null, identity: string | null): ExportTx["direction"] {
+  if (!identity) return "unknown";
+  if (source === identity && destination === identity) return "self";
+  if (destination === identity) return "in";
+  if (source === identity) return "out";
+  return "unknown";
+}
+
+function exportRecordFromTx(tx: TxHistoryItem, identity: string | null, txMemos: Record<string, string>, txTags: Record<string, string[]>): ExportTx {
+  const contractName = tx.contractName ?? (tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined) ?? (tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined) ?? "";
+  return {
+    hash: tx.hash,
+    status: "confirmed",
+    direction: txDirection(tx.source, tx.destination, identity),
+    type: contractName || (tx.inputType ?? 0) > 0 ? "contract" : "transfer",
+    source: tx.source,
+    destination: tx.destination,
+    amount: tx.amount,
+    tick: tx.tickNumber,
+    timestamp: tx.timestamp,
+    isoDate: tx.timestamp ? new Date(tx.timestamp).toISOString() : "",
+    moneyFlew: tx.moneyFlew,
+    inputType: tx.inputType,
+    contractName,
+    memo: txMemos[tx.hash]?.trim() ?? "",
+    tags: txTags[tx.hash] ?? [],
+  };
+}
+
+function exportRecordFromPending(tx: PendingTx, identity: string | null, txMemos: Record<string, string>, txTags: Record<string, string[]>, expired: boolean): ExportTx {
+  return {
+    hash: tx.hash,
+    status: expired ? "expired" : "pending",
+    direction: txDirection(tx.source, tx.destination, identity),
+    type: tx.contractName ? "contract" : "transfer",
+    source: tx.source,
+    destination: tx.destination,
+    amount: tx.amount,
+    tick: tx.targetTick,
+    timestamp: tx.broadcastAt,
+    isoDate: tx.broadcastAt ? new Date(tx.broadcastAt).toISOString() : "",
+    moneyFlew: null,
+    inputType: null,
+    contractName: tx.contractName ?? "",
+    memo: txMemos[tx.hash]?.trim() ?? "",
+    tags: txTags[tx.hash] ?? [],
+  };
 }
 
 // ── Transaction type icon map ───────────────────────────────────────────────────
@@ -178,6 +282,7 @@ export default function HistoryScreen() {
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets);
 
   const txMemos = usePersistedStore((s) => s.txMemos);
+  const txTags = usePersistedStore((s) => s.txTags);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
@@ -192,6 +297,7 @@ export default function HistoryScreen() {
   const [groupByCounterparty, setGroupByCounterparty] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [draft, setDraft] = useState<DraftInputs>(toDraft(DEFAULT_FILTERS));
+  const [exportOpen, setExportOpen] = useState(false);
   const [memoExportOpen, setMemoExportOpen] = useState(false);
   const [memoDateFrom, setMemoDateFrom] = useState("");
   const [memoDateTo, setMemoDateTo] = useState("");
@@ -215,13 +321,7 @@ export default function HistoryScreen() {
       });
     }
     if (!entries.length) return;
-    const blob = new Blob([JSON.stringify(Object.fromEntries(entries), null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `glyph-memos-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadText(`glyph-memos-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(Object.fromEntries(entries), null, 2), "application/json");
     setMemoExportOpen(false);
   }
 
@@ -267,12 +367,8 @@ export default function HistoryScreen() {
   );
 
   const filteredPending = useMemo(
-    () => visiblePending.filter((p) => {
-      if (filters.direction === "in") return p.destination === identity;
-      if (filters.direction === "out") return p.source === identity;
-      return true;
-    }),
-    [filters.direction, identity, visiblePending],
+    () => visiblePending.filter((p) => matchesPendingFilters(p, filters, identity)),
+    [filters, identity, visiblePending],
   );
 
   const filteredTxs = allTxs;
@@ -288,6 +384,24 @@ export default function HistoryScreen() {
   const hasHiddenLoadedTxs = filteredTxs.length > visibleConfirmedCount;
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
+  const exportRows = useMemo(
+    () => [
+      ...filteredPending.map((p) => exportRecordFromPending(p, identity, txMemos, txTags, isExpired(p))),
+      ...filteredTxs.map((tx) => exportRecordFromTx(tx, identity, txMemos, txTags)),
+    ],
+    [filteredPending, filteredTxs, identity, txMemos, txTags, currentTick], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  function exportHistory(format: "csv" | "json") {
+    if (!exportRows.length) return;
+    const date = new Date().toISOString().slice(0, 10);
+    if (format === "csv") {
+      downloadText(`glyph-history-${date}.csv`, toCsv(exportRows), "text/csv;charset=utf-8");
+    } else {
+      downloadText(`glyph-history-${date}.json`, JSON.stringify({ filters, transactions: exportRows }, null, 2), "application/json");
+    }
+    setExportOpen(false);
+  }
 
   // Infinite scroll sentinel
   useEffect(() => {
@@ -341,6 +455,9 @@ export default function HistoryScreen() {
           <IconButton label="View analytics" onClick={() => navigate("/analytics")}>
             <Chart size={20} aria-hidden="true" />
           </IconButton>
+          <IconButton label="Export history" onClick={() => setExportOpen(true)} disabled={!exportRows.length}>
+            <Download size={20} aria-hidden="true" />
+          </IconButton>
           <IconButton label={hasActive ? "Filter history, filters active" : "Filter history"} onClick={() => setFilterOpen(true)}>
             <Filters size={20} aria-hidden="true" />
           </IconButton>
@@ -350,7 +467,7 @@ export default function HistoryScreen() {
         </>
       }
     />
-  ), [hasActive, navigate, refetch]);
+  ), [exportRows.length, hasActive, navigate, refetch]);
 
   return (
     <AppShell
@@ -385,15 +502,6 @@ export default function HistoryScreen() {
         {...presets.fadeIn}
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
-
-      {hasMemos && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-4)" }}>
-          <Button variant="secondary" shape="sharp" size="sm" onClick={() => setMemoExportOpen(true)}>
-            <Download size={16} aria-hidden="true" />
-            Export memos
-          </Button>
-        </div>
-      )}
 
       {/* Active filter chips */}
       {chips.length > 0 && (
@@ -580,6 +688,18 @@ export default function HistoryScreen() {
         </div>
       </Sheet>
 
+      <Sheet
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="Export history"
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <ExportAction label="CSV" detail={`${exportRows.length} records`} onClick={() => exportHistory("csv")} />
+          <ExportAction label="JSON" detail={`${exportRows.length} records`} onClick={() => exportHistory("json")} />
+          {hasMemos && <ExportAction label="Memos" detail="JSON" onClick={() => { setExportOpen(false); setMemoExportOpen(true); }} />}
+        </div>
+      </Sheet>
+
       {/* Memo export filter sheet */}
       <Sheet
         open={memoExportOpen}
@@ -737,6 +857,19 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
       display: "flex", alignItems: "center", gap: "var(--space-1)",
     }}>
       {label} <span style={{ fontSize: "var(--text-caption)", lineHeight: 1 }}>✕</span>
+    </button>
+  );
+}
+
+function ExportAction({ label, detail, onClick }: { label: string; detail: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} style={{
+      background: "none", border: "none", borderBottom: "1px solid var(--color-border-subtle)", cursor: "pointer",
+      fontFamily: "var(--font-sans)", color: "var(--color-text-primary)",
+      padding: "var(--space-4) 0", display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left",
+    }}>
+      <span style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{detail}</span>
     </button>
   );
 }
