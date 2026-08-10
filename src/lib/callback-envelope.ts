@@ -21,6 +21,7 @@ export interface CallbackSignaturePayload {
   dapp_origin: string;
   request_type: GlyphRequest["type"];
   exp: number | null;
+  issued_at: number | null;
   result_hash: string;
   relay: CallbackRelayBinding;
 }
@@ -81,6 +82,7 @@ export function canonicalCallbackPayload(payload: CallbackSignaturePayload): str
 }
 
 export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, result: GlyphCallbackResponse): Promise<CallbackSignaturePayload> {
+  const exp = envelope.request.exp ?? null;
   return {
     version: CALLBACK_ENVELOPE_VERSION,
     request_hash: envelope.request_hash,
@@ -88,8 +90,9 @@ export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, res
     nonce: envelope.request.nonce,
     dapp_origin: envelope.request.dapp.origin,
     request_type: envelope.request.type,
-    exp: envelope.request.exp ?? null,
-    result_hash: await sha256Base64Url(jcsCanonicalize(result)),
+    exp,
+    issued_at: exp === null ? null : Math.max(0, exp - 3600),
+    result_hash: `sha256:${await sha256Base64Url(jcsCanonicalize(result))}`,
     relay: await buildRelayBinding(envelope.callback),
   };
 }

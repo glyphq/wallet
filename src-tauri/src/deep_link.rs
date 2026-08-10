@@ -123,10 +123,40 @@ impl DeepLinkState {
     }
 }
 
+pub fn replay_key_from_envelope_payload(payload: &str) -> Result<String, String> {
+    Ok(format!("v2|{}", replay_parts_from_envelope_payload(payload)?.join("|")))
+}
+
+pub fn replay_parts_from_envelope_payload(payload: &str) -> Result<[String; 4], String> {
+    let envelope: Value = serde_json::from_str(payload).map_err(|e| format!("invalid pending request: {e}"))?;
+    let request = envelope.get("request").and_then(Value::as_object).ok_or("missing request")?;
+    let nonce = request.get("nonce").and_then(Value::as_str).ok_or("missing nonce")?;
+    let dapp_origin = request
+        .get("dapp")
+        .and_then(Value::as_object)
+        .and_then(|dapp| dapp.get("origin"))
+        .and_then(Value::as_str)
+        .ok_or("missing dapp.origin")?;
+    let network_id = envelope
+        .get("network")
+        .and_then(Value::as_object)
+        .and_then(|network| network.get("id"))
+        .and_then(Value::as_str)
+        .ok_or("missing network.id")?;
+    let request_hash = envelope
+        .get("request_hash")
+        .and_then(Value::as_str)
+        .ok_or("missing request_hash")?;
+    Ok([
+        network_id.to_string(),
+        dapp_origin.to_string(),
+        nonce.to_string(),
+        request_hash.to_string(),
+    ])
+}
+
 struct ParsedRequest {
     request: Value,
-    nonce: String,
-    dapp_origin: String,
     request_hash: String,
     network: Value,
     callback: Option<String>,
@@ -429,8 +459,6 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     }
 
     Ok(ParsedRequest {
-        nonce: nonce.to_string(),
-        dapp_origin: claimed_origin,
         request: request_value,
         request_hash: expected_hash,
         network,
@@ -512,20 +540,6 @@ pub fn process_url(app: &AppHandle, raw: &str) -> bool {
     match validate(raw) {
         Ok(parsed) => {
             let state = app.state::<DeepLinkState>();
-            let replay_key = format!(
-                "v2|{}|{}|{}|{}",
-                parsed.network.get("id").and_then(Value::as_str).unwrap_or(""),
-                parsed.dapp_origin,
-                parsed.nonce,
-                parsed.request_hash
-            );
-            if !state.record_nonce(app, &replay_key) {
-                eprintln!(
-                    "[glyph] deep link rejected: duplicate nonce '{}'",
-                    parsed.nonce
-                );
-                return false;
-            }
             let envelope = serde_json::json!({
                 "protocol": REQUEST_PROTOCOL_V2,
                 "request": parsed.request,
@@ -566,8 +580,9 @@ pub fn register_handler(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::{
-        now_secs, validate, validate_dapp_origin, validate_delivery_url, validate_pay, DeepLinkState,
-        MAX_PENDING_LINKS, REQUEST_PROTOCOL_V2, jcs, sha256_base64url,
+        now_secs, replay_key_from_envelope_payload, validate, validate_dapp_origin,
+        validate_delivery_url, validate_pay, DeepLinkState, MAX_PENDING_LINKS,
+        REQUEST_PROTOCOL_V2, jcs, sha256_base64url,
     };
 
     #[test]
@@ -642,6 +657,29 @@ mod tests {
 
         assert_eq!(state.take().as_deref(), Some("request-1"));
         assert_eq!(state.take_payment().as_deref(), Some("payment-1"));
+    }
+
+    #[test]
+    fn replay_key_is_derived_at_the_acceptance_boundary() {
+        let payload = serde_json::json!({
+            "protocol": REQUEST_PROTOCOL_V2,
+            "request": {
+                "type": "connect",
+                "dapp": { "name": "Demo", "origin": "https://demo.app" },
+                "nonce": "network-switch-nonce",
+                "exp": now_secs() + 300,
+            },
+            "callback": null,
+            "redirect_uri": null,
+            "network": { "id": "qubic:testnet" },
+            "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+        })
+        .to_string();
+
+        assert_eq!(
+            replay_key_from_envelope_payload(&payload).unwrap(),
+            "v2|qubic:testnet|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
+        );
     }
 
     #[test]
