@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.5
+
+### Patch Changes
+
+- Ship native `glyph://v2/request` handling so connected apps can open the Wallet.
+
 ## 0.16.4
 
 ### Patch Changes
