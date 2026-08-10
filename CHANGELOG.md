@@ -1,5 +1,14 @@
 # glyph
 
+## 0.16.4
+
+### Patch Changes
+
+- 10feb41: Correct the approximate fiat value shown in transaction details.
+- cae1a1b: Refine Request History and Approved dApps settings with clearer linear layouts, expandable request details, and easier access management.
+- c663ec3: Remove unused application code and consolidate request parsing helpers.
+- 89d6858: Add transaction and contact portability, Vault backup verification, clearer QEarn lifecycle insights, safe network presets, and preferred fiat-currency display.
+
 ## 0.16.3
 
 ### Patch Changes
