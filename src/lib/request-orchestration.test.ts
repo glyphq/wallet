@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { approveRequest, buildRedirectUrl, deliverRequestResult, rejectRequest, type RequestOrchestrationDeps } from "@/lib/request-orchestration";
 import type { GlyphEnvelope } from "@/lib/request-schema";
 import type { RequestHistoryItem } from "@/store/persisted";
+import { REQUEST_PROTOCOL_V2 } from "@/lib/jcs";
 
 function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
   const added: RequestHistoryItem[] = [];
@@ -18,7 +19,7 @@ function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
     updateRequestHistoryItem: (id, patch) => { updates.push({ id, patch }); },
     recordAuditEvent: (event) => { audits.push(event); },
     signMessage: async (accountIndex, messageBytes) => ({
-      signature: new Uint8Array([accountIndex, messageBytes.length]),
+      signature: new Uint8Array([accountIndex, 7]),
       publicKey: new Uint8Array([7, 8, 9]),
       identity: "ID1",
     }),
@@ -28,6 +29,7 @@ function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
 }
 
 const transferEnvelope: GlyphEnvelope = {
+  protocol: REQUEST_PROTOCOL_V2,
   request: {
     type: "transfer",
     dapp: { name: "Demo", origin: "https://demo.app" },
@@ -37,6 +39,8 @@ const transferEnvelope: GlyphEnvelope = {
   },
   callback: "https://demo.app/callback",
   redirect_uri: "https://demo.app/return",
+  network: { id: "qubic:mainnet" },
+  request_hash: "sha256:requestHash_12345678901234567890123456789012",
 };
 
 describe("request orchestration", () => {
@@ -70,9 +74,11 @@ describe("request orchestration", () => {
     });
     const callbackEnvelope = JSON.parse(added[0].callbackBody ?? "{}");
     expect(callbackEnvelope).toMatchObject({
-      version: "glyph-connect-callback-envelope/1",
+      version: "glyph-connect-callback-envelope/2",
       result: { status: "signed", tx_hash: "tx-1", target_tick: 42 },
       payload: {
+        request_hash: transferEnvelope.request_hash,
+        network: { id: "qubic:mainnet" },
         nonce: "nonce-1",
         dapp_origin: "https://demo.app",
         request_type: "transfer",

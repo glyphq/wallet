@@ -3,6 +3,7 @@ import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
 import { truncateIdentity } from "@/lib/crypto";
 import { formatQu } from "@/lib/format";
 import { isGlobalHttpsUrl, normalizedGlobalHttpsOrigin } from "@/lib/url-security";
+import { REQUEST_PROTOCOL_V2, requestHashV2, type GlyphNetworkBinding } from "@/lib/jcs";
 
 export const MAX_REQUEST_CHARS = 128 * 1024;
 export const MAX_REQUEST_MESSAGE_CHARS = 64 * 1024;
@@ -96,10 +97,21 @@ export const glyphRequestSchema = z.discriminatedUnion("type", [
   connectRequestSchema,
 ]);
 
+const networkBindingSchema = z.object({
+  id: z.union([
+    z.literal("qubic:mainnet"),
+    z.literal("qubic:testnet"),
+    z.string().regex(/^qubic:custom:sha256:[A-Za-z0-9_-]{43}$/),
+  ]),
+}) as z.ZodType<GlyphNetworkBinding>;
+
 export const glyphEnvelopeSchema = z.object({
+  protocol: z.literal(REQUEST_PROTOCOL_V2),
   request: glyphRequestSchema,
-  callback: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
-  redirect_uri: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
+  callback: z.union([z.string(), z.null()]),
+  redirect_uri: z.union([z.string(), z.null()]),
+  network: networkBindingSchema,
+  request_hash: z.string().regex(/^sha256:[A-Za-z0-9_-]{43}$/),
 }).superRefine((envelope, ctx) => {
   const claimedOrigin = normalizedGlobalHttpsOrigin(envelope.request.dapp.origin);
   if (!claimedOrigin) {
@@ -203,6 +215,10 @@ export type ParsedEnvelopeResult =
   | { envelope: GlyphEnvelope; error: null }
   | { envelope: null; error: string };
 
+export type ParsedEnvelopeAsyncResult =
+  | { envelope: GlyphEnvelope; error: null }
+  | { envelope: null; error: string };
+
 export const REQUEST_TYPE_LABEL: Record<GlyphRequest["type"], string> = {
   transfer: "Send QU",
   sc_call: "Contract call",
@@ -229,6 +245,27 @@ export function parseGlyphEnvelope(raw: string | null): ParsedEnvelopeResult {
   } catch {
     return { envelope: null, error: "Invalid request format" };
   }
+}
+
+export async function verifyGlyphEnvelope(envelope: GlyphEnvelope, activeNetwork?: GlyphNetworkBinding): Promise<string | null> {
+  const expectedHash = await requestHashV2({
+    protocol: envelope.protocol,
+    request: envelope.request,
+    callback: envelope.callback,
+    redirect_uri: envelope.redirect_uri,
+    network: envelope.network,
+  });
+  if (expectedHash !== envelope.request_hash) return "Request hash mismatch";
+  if (activeNetwork && activeNetwork.id !== envelope.network.id) return "Request network does not match active wallet network";
+  return null;
+}
+
+export async function parseGlyphEnvelopeAsync(raw: string | null, activeNetwork?: GlyphNetworkBinding): Promise<ParsedEnvelopeAsyncResult> {
+  const parsed = parseGlyphEnvelope(raw);
+  if (!parsed.envelope) return parsed;
+  const error = await verifyGlyphEnvelope(parsed.envelope, activeNetwork);
+  if (error) return { envelope: null, error };
+  return parsed;
 }
 
 function parseQuAmount(value: unknown): bigint | null {

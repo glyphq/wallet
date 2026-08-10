@@ -1,6 +1,7 @@
 import type { GlyphCallbackResponse, GlyphEnvelope, GlyphRequest } from "@/lib/request-schema";
+import { CALLBACK_ENVELOPE_VERSION_V2, bytesToBase64, jcsCanonicalize, sha256Base64Url } from "@/lib/jcs";
 
-export const CALLBACK_ENVELOPE_VERSION = "glyph-connect-callback-envelope/1";
+export const CALLBACK_ENVELOPE_VERSION = CALLBACK_ENVELOPE_VERSION_V2;
 export const CALLBACK_SIGNATURE_ALGORITHM = "qubic-schnorrq-sha256";
 
 export interface CallbackRelayBinding {
@@ -14,6 +15,8 @@ export interface CallbackRelayBinding {
 
 export interface CallbackSignaturePayload {
   version: typeof CALLBACK_ENVELOPE_VERSION;
+  request_hash: string;
+  network: GlyphEnvelope["network"];
   nonce: string;
   dapp_origin: string;
   request_type: GlyphRequest["type"];
@@ -36,30 +39,6 @@ export interface GlyphSignedCallbackEnvelope {
 }
 
 const OFFICIAL_RELAY_ORIGIN = "https://relay.glyphq.org";
-
-function canonicalize(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalize(record[key])}`).join(",")}}`;
-}
-
-function bytesToBase64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-export function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
-
-export async function sha256Base64Url(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-  return bytesToBase64Url(new Uint8Array(digest));
-}
 
 export async function buildRelayBinding(callbackUrl: string | null): Promise<CallbackRelayBinding> {
   const fallback: CallbackRelayBinding = {
@@ -98,17 +77,19 @@ export async function buildRelayBinding(callbackUrl: string | null): Promise<Cal
 }
 
 export function canonicalCallbackPayload(payload: CallbackSignaturePayload): string {
-  return canonicalize(payload);
+  return jcsCanonicalize(payload);
 }
 
 export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, result: GlyphCallbackResponse): Promise<CallbackSignaturePayload> {
   return {
     version: CALLBACK_ENVELOPE_VERSION,
+    request_hash: envelope.request_hash,
+    network: envelope.network,
     nonce: envelope.request.nonce,
     dapp_origin: envelope.request.dapp.origin,
     request_type: envelope.request.type,
     exp: envelope.request.exp ?? null,
-    result_hash: await sha256Base64Url(canonicalize(result)),
+    result_hash: await sha256Base64Url(jcsCanonicalize(result)),
     relay: await buildRelayBinding(envelope.callback),
   };
 }

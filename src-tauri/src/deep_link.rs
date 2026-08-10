@@ -1,5 +1,6 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -16,11 +17,12 @@ const MAX_PENDING_LINKS: usize = 16;
 // The relay is the only trusted cross-origin callback transport. Its exact
 // origin and callback route remain constrained below, including a bounded nonce.
 const OFFICIAL_RELAY_ORIGIN: &str = "https://relay.glyphq.org";
+const REQUEST_PROTOCOL_V2: &str = "glyph-connect-request/2";
 
 pub struct DeepLinkState {
     pending_requests: Arc<Mutex<VecDeque<String>>>,
     pending_payments: Arc<Mutex<VecDeque<String>>>,
-    /// Maps nonce → unix timestamp of first receipt for time-bounded replay protection.
+    /// Maps v2 replay key → unix timestamp of first receipt for time-bounded replay protection.
     seen_nonces: Arc<Mutex<HashMap<String, u64>>>,
 }
 
@@ -106,7 +108,7 @@ impl DeepLinkState {
         }
     }
 
-    /// Returns false if the nonce was already seen within the last hour (replay), true if fresh.
+    /// Returns false if the replay key was already seen within the last hour (replay), true if fresh.
     pub fn record_nonce(&self, app: &AppHandle, nonce: &str) -> bool {
         let mut seen = self.seen_nonces.lock().unwrap_or_else(|e| e.into_inner());
         let now = now_secs();
@@ -124,8 +126,45 @@ impl DeepLinkState {
 struct ParsedRequest {
     request: Value,
     nonce: String,
+    dapp_origin: String,
+    request_hash: String,
+    network: Value,
     callback: Option<String>,
     redirect_uri: Option<String>,
+}
+
+fn jcs(value: &Value) -> Result<String, String> {
+    match value {
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => serde_json::to_string(value).map_err(|e| e.to_string()),
+        Value::Array(items) => Ok(format!("[{}]", items.iter().map(jcs).collect::<Result<Vec<_>, _>>()?.join(","))),
+        Value::Object(map) => {
+            let mut keys = map.keys().collect::<Vec<_>>();
+            keys.sort();
+            let mut parts = Vec::with_capacity(keys.len());
+            for key in keys {
+                let encoded_key = serde_json::to_string(key).map_err(|e| e.to_string())?;
+                parts.push(format!("{}:{}", encoded_key, jcs(&map[key])?));
+            }
+            Ok(format!("{{{}}}", parts.join(",")))
+        }
+    }
+}
+
+fn sha256_base64url(input: &str) -> String {
+    URL_SAFE_NO_PAD.encode(Sha256::digest(input.as_bytes()))
+}
+
+fn validate_network(value: &Value) -> Result<(), String> {
+    let id = value.get("id").and_then(Value::as_str).ok_or("missing network.id")?;
+    if id == "qubic:mainnet" || id == "qubic:testnet" {
+        return Ok(());
+    }
+    let suffix = id.strip_prefix("qubic:custom:sha256:").ok_or("invalid network.id")?;
+    if suffix.len() == 43 && suffix.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_')) {
+        Ok(())
+    } else {
+        Err("invalid custom network hash".into())
+    }
 }
 
 fn now_secs() -> u64 {
@@ -217,16 +256,14 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     if crate::link_broker::validate_launch_url(uri_str)
         != Ok(crate::link_broker::LinkKind::Request)
     {
-        return Err("expected glyph://v1/request".into());
+        return Err("expected glyph://v2/request".into());
     }
 
     let mut d_param: Option<String> = None;
-    let mut cb_param: Option<String> = None;
     for (k, v) in url.query_pairs() {
         match k.as_ref() {
             "d" if d_param.is_none() => d_param = Some(v.into_owned()),
-            "cb" if cb_param.is_none() => cb_param = Some(v.into_owned()),
-            "d" | "cb" => return Err("duplicate query parameters are not allowed".into()),
+            "d" => return Err("duplicate query parameters are not allowed".into()),
             _ => {}
         }
     }
@@ -247,14 +284,28 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let value: Value =
         serde_json::from_str(&json_str).map_err(|e| format!("JSON parse failed: {e}"))?;
 
-    let (request_value, callback_from_payload, redirect_uri_from_payload) = match value.get("request") {
-        Some(request) if request.is_object() => (
-            request.clone(),
-            value.get("callback").and_then(|v| v.as_str()).map(|s| s.to_string()),
-            value.get("redirect_uri").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        ),
-        _ => (value.clone(), None, None),
-    };
+    if value.get("protocol").and_then(Value::as_str) != Some(REQUEST_PROTOCOL_V2) {
+        return Err("invalid request protocol".into());
+    }
+    let request_value = value.get("request").filter(|v| v.is_object()).ok_or("missing request envelope")?.clone();
+    let callback_from_payload = value.get("callback").and_then(|v| if v.is_null() { Some(None) } else { v.as_str().map(|s| Some(s.to_string())) }).ok_or("callback must be present as string or null")?;
+    let redirect_uri_from_payload = value.get("redirect_uri").and_then(|v| if v.is_null() { Some(None) } else { v.as_str().map(|s| Some(s.to_string())) }).ok_or("redirect_uri must be present as string or null")?;
+    let network = value.get("network").filter(|v| v.is_object()).ok_or("missing network envelope")?.clone();
+    validate_network(&network)?;
+    let request_hash = value.get("request_hash").and_then(Value::as_str).ok_or("missing request_hash")?;
+    let hash_material = serde_json::json!({
+        "protocol": REQUEST_PROTOCOL_V2,
+        "request": request_value,
+        "callback": callback_from_payload,
+        "redirect_uri": redirect_uri_from_payload,
+        "network": network,
+    });
+    let expected_hash = format!("sha256:{}", sha256_base64url(&jcs(&hash_material)?));
+    if request_hash != expected_hash {
+        return Err("request_hash mismatch".into());
+    }
+    let request_value = hash_material.get("request").unwrap().clone();
+    let network = hash_material.get("network").unwrap().clone();
 
     // Required fields
     let req_type = request_value["type"].as_str().ok_or("missing 'type' field")?;
@@ -299,13 +350,7 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     }
 
     // Validate callback URL if present
-    let callback = match (callback_from_payload, cb_param) {
-        (Some(from_payload), Some(from_query)) if from_payload != from_query => {
-            return Err("callback URL mismatch between payload and query parameter".into())
-        }
-        (Some(from_payload), _) => Some(from_payload),
-        (None, from_query) => from_query,
-    };
+    let callback = callback_from_payload;
 
     if let Some(cb) = &callback {
         validate_delivery_url(cb, "callback URL", &claimed_origin, true)?;
@@ -385,7 +430,10 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
 
     Ok(ParsedRequest {
         nonce: nonce.to_string(),
+        dapp_origin: claimed_origin,
         request: request_value,
+        request_hash: expected_hash,
+        network,
         callback,
         redirect_uri,
     })
@@ -464,7 +512,14 @@ pub fn process_url(app: &AppHandle, raw: &str) -> bool {
     match validate(raw) {
         Ok(parsed) => {
             let state = app.state::<DeepLinkState>();
-            if !state.record_nonce(app, &parsed.nonce) {
+            let replay_key = format!(
+                "v2|{}|{}|{}|{}",
+                parsed.network.get("id").and_then(Value::as_str).unwrap_or(""),
+                parsed.dapp_origin,
+                parsed.nonce,
+                parsed.request_hash
+            );
+            if !state.record_nonce(app, &replay_key) {
                 eprintln!(
                     "[glyph] deep link rejected: duplicate nonce '{}'",
                     parsed.nonce
@@ -472,9 +527,12 @@ pub fn process_url(app: &AppHandle, raw: &str) -> bool {
                 return false;
             }
             let envelope = serde_json::json!({
+                "protocol": REQUEST_PROTOCOL_V2,
                 "request": parsed.request,
                 "callback": parsed.callback,
                 "redirect_uri": parsed.redirect_uri,
+                "network": parsed.network,
+                "request_hash": parsed.request_hash,
             });
             let payload = envelope.to_string();
             state.store(payload.clone());
@@ -509,7 +567,7 @@ pub fn register_handler(app: &AppHandle) {
 mod tests {
     use super::{
         now_secs, validate, validate_dapp_origin, validate_delivery_url, validate_pay, DeepLinkState,
-        MAX_PENDING_LINKS,
+        MAX_PENDING_LINKS, REQUEST_PROTOCOL_V2, jcs, sha256_base64url,
     };
 
     #[test]
@@ -631,6 +689,7 @@ mod tests {
         use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 
         let envelope = serde_json::json!({
+            "protocol": REQUEST_PROTOCOL_V2,
             "request": {
                 "type": "connect",
                 "dapp": { "name": "Glyph Support", "origin": "https://glyphq.org" },
@@ -640,9 +699,19 @@ mod tests {
             },
             "callback": "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
             "redirect_uri": null,
+            "network": { "id": "qubic:mainnet" },
         });
+        let mut envelope = envelope;
+        let hash_material = serde_json::json!({
+            "protocol": envelope["protocol"].clone(),
+            "request": envelope["request"].clone(),
+            "callback": envelope["callback"].clone(),
+            "redirect_uri": envelope["redirect_uri"].clone(),
+            "network": envelope["network"].clone(),
+        });
+        envelope["request_hash"] = serde_json::Value::String(format!("sha256:{}", sha256_base64url(&jcs(&hash_material).unwrap())));
         let url = format!(
-            "glyph://v1/request?d={}",
+            "glyph://v2/request?d={}",
             URL_SAFE_NO_PAD.encode(envelope.to_string())
         );
 

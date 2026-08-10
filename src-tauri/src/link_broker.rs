@@ -31,8 +31,8 @@ pub fn validate_launch_url(raw: &str) -> Result<LinkKind, String> {
     }
 
     match (url.host_str(), url.path()) {
-        (Some("v1"), "/request") => {
-            validate_query_keys(&url, &["d", "cb"], &["d"])?;
+        (Some("v2"), "/request") => {
+            validate_query_keys(&url, &["d"], &["d"])?;
             Ok(LinkKind::Request)
         }
         (Some("pay"), "" | "/") => {
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn accepts_only_the_two_public_routes() {
         assert_eq!(
-            validate_launch_url("glyph://v1/request?d=YWJjZA"),
+            validate_launch_url("glyph://v2/request?d=YWJjZA"),
             Ok(LinkKind::Request)
         );
         assert_eq!(
@@ -90,15 +90,15 @@ mod tests {
     fn rejects_command_line_and_route_injection() {
         let rejected = [
             "glyph://path/to/bash&MaliciousCommand",
-            "glyph://v1/request?d=abc&cmd=calc.exe",
-            "glyph://v1/request?d=abc%22%20--inspect",
-            "glyph://v1/request?d=abc\\--inspect",
-            "glyph://v1/request?d=abc\" --inspect",
+            "glyph://v2/request?d=abc&cmd=calc.exe",
+            "glyph://v2/request?d=abc%22%20--inspect",
+            "glyph://v2/request?d=abc\\--inspect",
+            "glyph://v2/request?d=abc\" --inspect",
             "glyph://v1/request?d=abc|glyph://pay?to=def",
             "glyph://user@v1/request?d=abc",
             "glyph://v1:80/request?d=abc",
-            "glyph://v1/request?d=abc#fragment",
-            "glyph://v1/request?d=abc&d=def",
+            "glyph://v2/request?d=abc#fragment",
+            "glyph://v2/request?d=abc&d=def",
             "glyph://pay/../../bin/bash?to=abc",
         ];
 
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn rejects_split_or_non_url_input() {
-        for value in ["", "--inspect", "glyph://v1/request d=abc", "\nglyph://v1/request?d=abc"] {
+        for value in ["", "--inspect", "glyph://v2/request d=abc", "\nglyph://v2/request?d=abc"] {
             assert!(validate_launch_url(value).is_err(), "accepted {value:?}");
         }
     }
