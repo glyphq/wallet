@@ -28,7 +28,7 @@ const result: GlyphCallbackResponse = {
 
 describe("callback envelope", () => {
   test("binds request, origin, expiry, result hash, network, and v2 relay capability fields", async () => {
-    const payload = await buildCallbackSignaturePayload(relayEnvelope, result);
+    const payload = await buildCallbackSignaturePayload(relayEnvelope, result, 1_899_999_000);
 
     expect(payload).toMatchObject({
       version: "glyph-connect-callback-envelope/2",
@@ -38,7 +38,7 @@ describe("callback envelope", () => {
       dapp_origin: "https://demo.app",
       request_type: "connect",
       exp: 1_900_000_000,
-      issued_at: 1_899_996_400,
+      issued_at: 1_899_999_000,
       relay: {
         callback_url: "https://relay.glyphq.org/v2/callback/session_1234567890abcdef/I3hmpEKOFd_adnSpDzj6BYkCc7h9VKbNL4NLsgSShEs",
         official_relay: true,
@@ -74,6 +74,7 @@ describe("callback envelope", () => {
         signedLength = messageBytes.length;
         return { signature: new Uint8Array([accountIndex, 7]), publicKey: new Uint8Array([1, 2, 3, 4]), identity: "IDENTITY" };
       },
+      nowEpochSeconds: () => 1_899_999_000,
     });
 
     expect(signed.proof).toMatchObject({
@@ -85,5 +86,23 @@ describe("callback envelope", () => {
     expect(signedLength).toBeGreaterThan(128);
     expect(signed.proof.signature).toBe("Agc=");
     expect(signed.result).toEqual(result);
+    expect(signed.payload.issued_at).toBe(1_899_999_000);
+  });
+
+  test("uses numeric issued_at for requests without expiration", async () => {
+    const noExpEnvelope: GlyphEnvelope = { ...relayEnvelope, request: { ...relayEnvelope.request, exp: undefined } };
+
+    const signed = await buildSignedCallbackEnvelope({
+      envelope: noExpEnvelope,
+      result,
+      identity: "IDENTITY",
+      accountIndex: 0,
+      signMessage: async () => ({ signature: new Uint8Array([1]), publicKey: new Uint8Array([2]), identity: "IDENTITY" }),
+      nowEpochSeconds: () => 1_899_999_001,
+    });
+
+    expect(signed.payload.exp).toBeNull();
+    expect(signed.payload.issued_at).toBe(1_899_999_001);
+    expect(Number.isSafeInteger(signed.payload.issued_at)).toBe(true);
   });
 });

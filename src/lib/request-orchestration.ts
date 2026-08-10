@@ -44,6 +44,10 @@ export interface RequestOrchestrationDeps {
   signMessage?: typeof signMessageFromSession;
 }
 
+function nowEpochSeconds(deps: Pick<RequestOrchestrationDeps, "now">) {
+  return Math.floor(deps.now() / 1000);
+}
+
 export type RequestApprovalResult =
   | { kind: "tx"; approve: ApproveResult }
   | { kind: "message"; approve: SignMessageApproveResult }
@@ -128,7 +132,14 @@ export async function rejectRequest(
     type: envelope.request.type,
     reason: "user_rejected",
   };
-  const callbackBody = JSON.stringify(response);
+  const callbackBody = JSON.stringify(await buildSignedCallbackEnvelope({
+    envelope,
+    result: response,
+    identity: "",
+    accountIndex: 0,
+    signMessage: deps.signMessage ?? signMessageFromSession,
+    nowEpochSeconds: () => nowEpochSeconds(deps),
+  }));
 
   deps.addRequestHistoryItem({
     id: requestHistoryId,
@@ -178,6 +189,7 @@ export async function approveRequest(
     identity,
     accountIndex: getApprovalAccountIndex(input.approval),
     signMessage: deps.signMessage ?? signMessageFromSession,
+    nowEpochSeconds: () => nowEpochSeconds(deps),
   }));
 
   deps.recordAuditEvent({

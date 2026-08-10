@@ -99,12 +99,20 @@ describe("request orchestration", () => {
     await rejectRequest(deps, transferEnvelope);
 
     expect(added[0]).toMatchObject({ action: "rejected", callbackStatus: "pending" });
-    expect(JSON.parse(added[0].callbackBody ?? "{}")).toEqual({
-      status: "rejected",
-      nonce: "nonce-1",
-      type: "transfer",
-      reason: "user_rejected",
+    const callbackEnvelope = JSON.parse(added[0].callbackBody ?? "{}");
+    expect(callbackEnvelope).toMatchObject({
+      version: "glyph-connect-callback-envelope/2",
+      result: {
+        status: "rejected",
+        nonce: "nonce-1",
+        type: "transfer",
+        reason: "user_rejected",
+      },
+      payload: { issued_at: 1, exp: null, request_type: "transfer" },
+      proof: { algorithm: "qubic-schnorrq-sha256", identity: "ID1" },
     });
+    expect(Number.isSafeInteger(callbackEnvelope.payload.issued_at)).toBe(true);
+    expect(callbackEnvelope.proof.signed_payload).toContain('"result_hash":"sha256:');
     expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "failed", callbackUpdatedAt: 1234 } }]);
     expect(audits).toContainEqual({ kind: "request_callback_failed", status: "failure", title: "Callback failed", detail: "https://demo.app/callback" });
   });
