@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
@@ -103,17 +103,11 @@ function SmallActionButton({
   ariaLabel: string;
   onClick: () => void;
 }) {
-  function handleClick(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    onClick();
-  }
-
   return (
     <button
       type="button"
       aria-label={ariaLabel}
-      onClick={handleClick}
+      onClick={onClick}
       style={{
         minHeight: 44,
         display: "inline-flex",
@@ -224,10 +218,6 @@ export default function DappsScreen() {
                           </div>
                         </div>
                       </div>
-                      <SmallActionButton ariaLabel={`Revoke ${dapp.name}`} onClick={() => revokeDapp(dapp.origin)}>
-                        <SlashIcon />
-                        Revoke
-                      </SmallActionButton>
                     </summary>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", paddingTop: "var(--space-4)", paddingLeft: "calc(16px + var(--space-3))" }}>
@@ -293,6 +283,13 @@ export default function DappsScreen() {
                             No extra permissions granted
                           </span>
                         )}
+                      </div>
+
+                      <div style={{ paddingTop: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)" }}>
+                        <SmallActionButton ariaLabel={`Revoke ${dapp.name}`} onClick={() => revokeDapp(dapp.origin)}>
+                          <SlashIcon />
+                          Revoke access
+                        </SmallActionButton>
                       </div>
                     </div>
                   </details>
