@@ -16,6 +16,7 @@ import {
   Palette,
 } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -174,8 +175,9 @@ export default function SettingsScreen() {
           )}
         </div>
         {/* Lock Vault */}
-        <motion.button
-          {...gesture.pressSubtle}
+        <Button
+          variant="primary"
+          size="lg"
           onClick={() => {
             useSessionStore.getState().lock();
             navigate("/lock", { replace: true });
@@ -183,22 +185,13 @@ export default function SettingsScreen() {
           className="settings-pressable settings-pressable-accent"
           style={{
             marginTop: "var(--space-4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
             background: "var(--color-accent)",
             border: "1px solid var(--color-accent)",
-            borderRadius: "var(--radius-card)",
-            cursor: "pointer",
           }}
         >
           <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-accent-contrast)" }} />
-          <span style={{
-            fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-            fontWeight: 500, color: "var(--color-accent-contrast)",
-          }}>
-            Lock Vault
-          </span>
-        </motion.button>
+          Lock Vault
+        </Button>
       </motion.div>
     </AppShell>
   );
