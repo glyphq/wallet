@@ -32,7 +32,6 @@ export default function CreateVaultScreen() {
   const [passwordsVisible, setPasswordsVisible] = useState(false);
   const [backupSeedRevealed, setBackupSeedRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [copiedSegment, setCopiedSegment] = useState<number | null>(null);
   const [seedViewed, setSeedViewed] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [nameError, setNameError] = useState("");
@@ -77,13 +76,6 @@ export default function CreateVaultScreen() {
     if (!didCopy) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
-  }
-
-  async function copySeedSegment(segment: string, index: number) {
-    const didCopy = await copyToClipboard(segment, SEED_CLIPBOARD_CLEAR_SECS);
-    if (!didCopy) return;
-    setCopiedSegment(index);
-    window.setTimeout(() => setCopiedSegment((current) => current === index ? null : current), 1500);
   }
 
   function confirmBackup() {
@@ -183,8 +175,6 @@ export default function CreateVaultScreen() {
           <SeedSurface
             seed={seed}
             revealed={backupSeedRevealed}
-            copiedIndex={copiedSegment}
-            onCopySegment={copySeedSegment}
           />
           <button
             type="button"

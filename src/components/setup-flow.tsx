@@ -111,66 +111,43 @@ export function SetupError({ children }: { children: ReactNode }) {
 export function SeedSurface({
   seed,
   revealed = true,
-  copiedIndex,
-  onCopySegment,
 }: {
   seed: string;
   revealed?: boolean;
-  copiedIndex?: number | null;
-  onCopySegment?: (segment: string, index: number) => void;
 }) {
-  const segments = seed.match(/.{1,5}/g) ?? [seed];
-
   return (
     <div
+      aria-label={revealed ? "Recovery seed" : "Recovery seed hidden"}
       style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-        gap: "var(--space-2)",
+        width: "100%",
+        minHeight: 96,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-4)",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: "var(--radius-control)",
+        background: "var(--color-bg-surface-2)",
+        overflow: "hidden",
       }}
     >
-      {segments.map((segment, index) => {
-        const copied = copiedIndex === index;
-        return (
-          <button
-            key={index}
-            type="button"
-            disabled={!revealed}
-            onClick={() => onCopySegment?.(segment, index)}
-            aria-label={revealed ? `Copy seed segment ${index + 1}` : `Seed segment ${index + 1} hidden`}
-            style={{
-              minWidth: 0,
-              minHeight: 46,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "var(--space-2) var(--space-3)",
-              border: "1px solid var(--color-border-subtle)",
-              borderRadius: "var(--radius-control)",
-              background: copied ? "var(--color-bg-hover)" : "var(--color-bg-surface-2)",
-              color: "var(--color-text-primary)",
-              cursor: revealed ? "copy" : "default",
-              opacity: 1,
-              textAlign: "center",
-              transition: "background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out)",
-            }}
-          >
-            <code
-              aria-live="polite"
-              style={{
-                minWidth: 0,
-                overflow: "hidden",
-                fontFamily: "var(--font-mono)",
-                fontSize: copied ? "var(--text-caption)" : "var(--text-body-compact)",
-                letterSpacing: "0.035em",
-                color: "inherit",
-              }}
-            >
-              {copied ? "copied" : revealed ? segment : "•••••"}
-            </code>
-          </button>
-        );
-      })}
+      <code
+        aria-live="polite"
+        style={{
+          display: "block",
+          maxWidth: "100%",
+          fontFamily: "var(--font-mono)",
+          fontSize: "var(--text-body-compact)",
+          letterSpacing: "0.035em",
+          color: "var(--color-text-primary)",
+          lineHeight: 1.7,
+          overflowWrap: "anywhere",
+          textAlign: "center",
+          userSelect: revealed ? "text" : "none",
+        }}
+      >
+        {revealed ? seed : "••••••••••••"}
+      </code>
     </div>
   );
 }
