@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { AddCircle, ArrowRightUp, Magnifier, PenNewSquare, UsersGroupRounded } from "@solar-icons/react";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { AddCircle, ArrowRightUp, Download, Magnifier, PenNewSquare, Upload, UsersGroupRounded } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
@@ -30,6 +32,7 @@ export default function ContactsScreen() {
   const [formNote, setFormNote] = useState("");
   const [formTags, setFormTags] = useState("");
   const [identityError, setIdentityError] = useState("");
+  const [transferStatus, setTransferStatus] = useState("");
 
   function parseTags(raw: string): string[] {
     return raw.split(/[,\s]+/).map((tag) => tag.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean);
@@ -94,6 +97,41 @@ export default function ContactsScreen() {
     setEditing(null);
   }
 
+  async function exportContacts(format: "json" | "csv") {
+    setTransferStatus("");
+    const path = await save({
+      defaultPath: `glyph-contacts.${format}`,
+      filters: [{ name: format === "json" ? "JSON" : "CSV", extensions: [format] }],
+    });
+    if (!path) return;
+    const content = format === "json" ? contactsToJson(contacts) : contactsToCsv(contacts);
+    await writeTextFile(path, content);
+    setTransferStatus(`Exported ${contacts.length} contact${contacts.length === 1 ? "" : "s"}.`);
+  }
+
+  async function importContacts() {
+    setTransferStatus("");
+    const path = await open({
+      multiple: false,
+      filters: [{ name: "Contacts", extensions: ["json", "csv"] }],
+    });
+    if (!path || Array.isArray(path)) return;
+    try {
+      const parsed = parseContactImport(await readTextFile(path), path);
+      const existingIdentities = new Set(contacts.map((contact) => contact.identity));
+      let added = 0;
+      for (const contact of parsed) {
+        if (existingIdentities.has(contact.identity)) continue;
+        existingIdentities.add(contact.identity);
+        addContact(contact);
+        added += 1;
+      }
+      setTransferStatus(`Imported ${added} contact${added === 1 ? "" : "s"}${parsed.length > added ? `, skipped ${parsed.length - added} duplicate${parsed.length - added === 1 ? "" : "s"}` : ""}.`);
+    } catch (err) {
+      setTransferStatus(err instanceof Error ? err.message : "Could not import contacts.");
+    }
+  }
+
   const filtered = useMemo(() => contacts
     .filter((contact) => {
       if (!search.trim()) return true;
@@ -118,15 +156,11 @@ export default function ContactsScreen() {
     <AppShell
       fullBleed
       statusBar={
-        <ScreenHeader
+          <ScreenHeader
           title="Contacts"
           onBack={() => navigate("/history")}
           backAriaLabel="Back to history"
-          action={
-            <IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}>
-              <AddCircle size={21} weight="Linear" aria-hidden="true" />
-            </IconButton>
-          }
+          action={<div style={{ display: "flex", gap: "var(--space-2)" }}><IconButton label="Import contacts" title="Import contacts" onClick={importContacts} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Upload size={20} weight="Linear" aria-hidden="true" /></IconButton><IconButton label="Export contacts as JSON" title="Export contacts as JSON" onClick={() => exportContacts("json")} disabled={contacts.length === 0} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Download size={20} weight="Linear" aria-hidden="true" /></IconButton><IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={21} weight="Linear" aria-hidden="true" /></IconButton></div>}
         />
       }
       contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}
@@ -143,6 +177,10 @@ export default function ContactsScreen() {
             leftElement={<Magnifier size={18} weight="Linear" />}
           />
           <span aria-live="polite" style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{searchDescription}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 22 }}>
+            <button type="button" onClick={() => exportContacts("csv")} disabled={contacts.length === 0} style={{ padding: 0, border: "none", background: "transparent", color: contacts.length === 0 ? "var(--color-text-disabled)" : "var(--color-accent)", cursor: contacts.length === 0 ? "default" : "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)" }}>CSV export</button>
+            {transferStatus && <span aria-live="polite" style={{ color: transferStatus.startsWith("Could not") || transferStatus.startsWith("No valid") ? "var(--color-status-error)" : "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{transferStatus}</span>}
+          </div>
         </div>
 
         {filtered.length === 0 ? (
@@ -252,6 +290,81 @@ function EmptyState({ hasContacts, onAdd }: { hasContacts: boolean; onAdd: () =>
       {!hasContacts && <IconButton label="Add your first contact" title="Add your first contact" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: 44, height: 44, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={22} weight="Linear" aria-hidden="true" /></IconButton>}
     </section>
   );
+}
+
+function contactsToJson(contacts: Contact[]): string {
+  return `${JSON.stringify({ version: 1, contacts: contacts.map(portableContact) }, null, 2)}\n`;
+}
+
+function contactsToCsv(contacts: Contact[]): string {
+  const rows = [["name", "identity", "note", "tags"], ...contacts.map((contact) => [contact.name, contact.identity, contact.note, (contact.tags ?? []).join(" ")])];
+  return `${rows.map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
+}
+
+function parseContactImport(raw: string, path: string): Contact[] {
+  const contacts = path.toLowerCase().endsWith(".csv") ? parseContactsCsv(raw) : parseContactsJson(raw);
+  const seen = new Set<string>();
+  const valid = contacts.map(normalizeImportedContact).filter((contact): contact is Contact => {
+    if (!contact || seen.has(contact.identity)) return false;
+    seen.add(contact.identity);
+    return true;
+  });
+  if (valid.length === 0) throw new Error("No valid contacts found.");
+  return valid;
+}
+
+function parseContactsJson(raw: string): unknown[] {
+  const parsed = JSON.parse(raw) as unknown;
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === "object" && Array.isArray((parsed as { contacts?: unknown }).contacts)) return (parsed as { contacts: unknown[] }).contacts;
+  throw new Error("Could not import contacts from this JSON file.");
+}
+
+function parseContactsCsv(raw: string): unknown[] {
+  const rows = parseCsvRows(raw).filter((row) => row.some((cell) => cell.trim()));
+  if (rows.length < 2) return [];
+  const headers = rows[0].map((header) => header.trim().toLowerCase());
+  return rows.slice(1).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""])));
+}
+
+function normalizeImportedContact(value: unknown): Contact | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const name = typeof record.name === "string" ? record.name.trim().slice(0, 80) : "";
+  const identity = typeof record.identity === "string" ? record.identity.trim() : "";
+  if (!name || !isValidIdentity(identity)) return null;
+  const note = typeof record.note === "string" ? record.note.trim().slice(0, 500) : "";
+  const tags: string[] = Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === "string") : typeof record.tags === "string" ? record.tags.split(/[\s,]+/) : [];
+  return { id: newId(), name, identity, note, tags: tags.map((tag) => tag.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean).slice(0, 20), addedAt: Date.now(), lastUsedAt: 0 };
+}
+
+function portableContact(contact: Contact) {
+  return { name: contact.name, identity: contact.identity, note: contact.note, tags: contact.tags ?? [] };
+}
+
+function csvCell(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, "\"\"")}"` : value;
+}
+
+function parseCsvRows(raw: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let index = 0; index < raw.length; index += 1) {
+    const char = raw[index];
+    if (quoted) {
+      if (char === '"' && raw[index + 1] === '"') { cell += '"'; index += 1; }
+      else if (char === '"') quoted = false;
+      else cell += char;
+    } else if (char === '"') quoted = true;
+    else if (char === ",") { row.push(cell); cell = ""; }
+    else if (char === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (char !== "\r") cell += char;
+  }
+  row.push(cell);
+  rows.push(row);
+  return rows;
 }
 
 interface ContactFormProps {
