@@ -21,7 +21,7 @@ export interface CallbackSignaturePayload {
   dapp_origin: string;
   request_type: GlyphRequest["type"];
   exp: number | null;
-  issued_at: number | null;
+  issued_at: number;
   result_hash: string;
   relay: CallbackRelayBinding;
 }
@@ -81,7 +81,14 @@ export function canonicalCallbackPayload(payload: CallbackSignaturePayload): str
   return jcsCanonicalize(payload);
 }
 
-export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, result: GlyphCallbackResponse): Promise<CallbackSignaturePayload> {
+function safeEpochSeconds(epochSeconds: number): number {
+  if (!Number.isSafeInteger(epochSeconds) || epochSeconds < 0) {
+    throw new Error("callback issued_at must be a non-negative safe integer epoch seconds value");
+  }
+  return epochSeconds;
+}
+
+export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, result: GlyphCallbackResponse, issuedAtEpochSeconds: number): Promise<CallbackSignaturePayload> {
   const exp = envelope.request.exp ?? null;
   return {
     version: CALLBACK_ENVELOPE_VERSION,
@@ -91,7 +98,7 @@ export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, res
     dapp_origin: envelope.request.dapp.origin,
     request_type: envelope.request.type,
     exp,
-    issued_at: exp === null ? null : Math.max(0, exp - 3600),
+    issued_at: safeEpochSeconds(issuedAtEpochSeconds),
     result_hash: `sha256:${await sha256Base64Url(jcsCanonicalize(result))}`,
     relay: await buildRelayBinding(envelope.callback),
   };
@@ -103,8 +110,9 @@ export async function buildSignedCallbackEnvelope(input: {
   identity: string;
   accountIndex: number;
   signMessage: (accountIndex: number, messageBytes: Uint8Array) => Promise<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>;
+  nowEpochSeconds?: () => number;
 }): Promise<GlyphSignedCallbackEnvelope> {
-  const payload = await buildCallbackSignaturePayload(input.envelope, input.result);
+  const payload = await buildCallbackSignaturePayload(input.envelope, input.result, input.nowEpochSeconds?.() ?? Math.floor(Date.now() / 1000));
   const signedPayload = canonicalCallbackPayload(payload);
   const signed = await input.signMessage(input.accountIndex, new TextEncoder().encode(signedPayload));
   return {
