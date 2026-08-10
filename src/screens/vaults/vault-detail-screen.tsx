@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { SeedSurface } from "@/components/setup-flow";
+import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS, useVaultBalances } from "@/hooks/use-vault-balances";
@@ -80,8 +82,12 @@ export default function VaultDetailScreen() {
   const [revealError, setRevealError] = useState("");
   const [revealLoading, setRevealLoading] = useState(false);
   const [revealedSeed, setRevealedSeed] = useState("");
+  const [seedVisible, setSeedVisible] = useState(true);
   const [seedCopied, setSeedCopied] = useState(false);
   const [seedSecsLeft, setSeedSecsLeft] = useState(0);
+  const [verifyingBackup, setVerifyingBackup] = useState(false);
+  const [backupCheck, setBackupCheck] = useState("");
+  const [backupCheckStatus, setBackupCheckStatus] = useState<"idle" | "match" | "mismatch">("idle");
   const seedCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
@@ -312,7 +318,19 @@ export default function VaultDetailScreen() {
     setRevealError("");
     setRevealLoading(false);
     setRevealedSeed("");
+    setSeedVisible(true);
     setSeedCopied(false);
+    setVerifyingBackup(false);
+    setBackupCheck("");
+    setBackupCheckStatus("idle");
+  }
+
+  function openBackupVerification() {
+    const firstAccount = currentVault.accounts.find((account) => account.index === 0) ?? currentVault.accounts[0];
+    if (!firstAccount) return;
+    openReveal(firstAccount);
+    setSeedVisible(false);
+    setVerifyingBackup(true);
   }
 
   async function doRevealSeed() {
@@ -342,6 +360,7 @@ export default function VaultDetailScreen() {
       const seed = seeds[revealingAccount.index];
       if (!seed) throw new Error("Missing seed");
       setRevealedSeed(seed);
+      if (!verifyingBackup) setSeedVisible(true);
       setRevealPassword("");
       recordAuditEvent({
         kind: "seed_revealed",
@@ -362,6 +381,11 @@ export default function VaultDetailScreen() {
     if (!revealedSeed) return;
     await copyToClipboard(revealedSeed, SEED_CLIPBOARD_CLEAR_SECS);
     setSeedCopied(true);
+  }
+
+  function verifyBackupSeed() {
+    if (!revealedSeed) return;
+    setBackupCheckStatus(backupCheck.trim().toLowerCase() === revealedSeed ? "match" : "mismatch");
   }
 
   return (
@@ -440,6 +464,9 @@ export default function VaultDetailScreen() {
         </Button>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => setShowExport(true)}>
           <DocumentText size={14} weight="Linear" /> Export vault
+        </Button>
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={openBackupVerification}>
+          <CheckCircle size={14} weight="Linear" /> Verify backup
         </Button>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
           <Key size={14} weight="Linear" /> Change password
@@ -576,14 +603,16 @@ export default function VaultDetailScreen() {
       </Sheet>
 
       {/* Reveal seed sheet */}
-      <Sheet open={!!revealingAccount} onClose={() => setRevealingAccount(null)} title={revealingAccount ? `Reveal seed for ${revealingAccount.name}` : "Reveal seed"}>
+      <Sheet open={!!revealingAccount} onClose={() => setRevealingAccount(null)} title={verifyingBackup ? "Verify seed backup" : revealingAccount ? `Reveal seed for ${revealingAccount.name}` : "Reveal seed"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           {!revealedSeed ? (
             <>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-                {requireBiometricForSeedReveal
-                  ? "Use biometric unlock to reveal this account seed."
-                  : "Enter the vault password to decrypt this account seed."}
+                {verifyingBackup
+                  ? "Unlock once, then type your saved seed to confirm the backup."
+                  : requireBiometricForSeedReveal
+                    ? "Use biometric unlock to reveal this account seed."
+                    : "Enter the vault password to decrypt this account seed."}
               </div>
               {!requireBiometricForSeedReveal && (
                 <Input
@@ -604,33 +633,45 @@ export default function VaultDetailScreen() {
                 </div>
               )}
               <Button onClick={doRevealSeed} loading={revealLoading} disabled={!requireBiometricForSeedReveal && !revealPassword}>
-                {requireBiometricForSeedReveal ? "Use biometric" : "Reveal seed"}
+                {requireBiometricForSeedReveal ? "Use biometric" : verifyingBackup ? "Unlock seed" : "Reveal seed"}
               </Button>
             </>
           ) : (
             <>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-                [SEED VISIBLE FOR {seedSecsLeft}s]
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+                [{seedVisible ? "SEED VISIBLE" : "SEED HIDDEN"} FOR {seedSecsLeft}s]
               </div>
-              <div
-                style={{
-                  background: "var(--color-bg-surface)",
-                  border: "1px solid var(--color-border-strong)",
-                  borderRadius: "var(--radius-sharp)",
-                  padding: "var(--space-4)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-lg)",
-                  color: "var(--color-text-display)",
-                  letterSpacing: "0.08em",
-                  lineHeight: 1.8,
-                  wordBreak: "break-all",
-                }}
-              >
-                {revealedSeed}
+              <SeedSurface seed={revealedSeed} revealed={seedVisible} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
+                  {seedCopied ? "Copied" : "Copy seed"}
+                </Button>
+                <Button variant="secondary" shape="sharp" onClick={() => setSeedVisible((value) => !value)} aria-pressed={seedVisible}>
+                  {seedVisible ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+                  {seedVisible ? "Hide" : "Reveal"}
+                </Button>
               </div>
-              <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
-                {seedCopied ? "Copied" : "Copy"}
-              </Button>
+              {verifyingBackup ? (
+                <>
+                  <Textarea
+                    value={backupCheck}
+                    onChange={(event) => { setBackupCheck(event.target.value); setBackupCheckStatus("idle"); }}
+                    onKeyDown={(event) => {
+                      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") verifyBackupSeed();
+                    }}
+                    placeholder="Type your saved seed"
+                    aria-label="Saved seed"
+                    technical
+                    style={{ resize: "none", minHeight: 112, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
+                  />
+                  {backupCheckStatus !== "idle" ? (
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: backupCheckStatus === "match" ? "var(--color-status-success)" : "var(--color-status-error)" }}>
+                      {backupCheckStatus === "match" ? "Backup verified" : "Seed does not match"}
+                    </div>
+                  ) : null}
+                  <Button onClick={verifyBackupSeed} disabled={!backupCheck.trim()}>Verify backup</Button>
+                </>
+              ) : null}
             </>
           )}
         </div>
