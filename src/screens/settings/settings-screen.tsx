@@ -43,6 +43,7 @@ export default function SettingsScreen() {
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
   const contacts = usePersistedStore((s) => s.contacts);
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps ?? []);
+  const externalSignerRequests = usePersistedStore((s) => s.externalSignerRequests);
 
   const ROWS: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: string }> = [
     { label: "Security", description: `Auto-lock: ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheck size={22} weight="Linear" />, section: "General" },
@@ -50,6 +51,7 @@ export default function SettingsScreen() {
     { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", icon: <WiFiRouterMinimalistic size={22} weight="Linear" />, section: "General" },
     { label: "Contacts", description: contacts.length ? `${contacts.length} contact${contacts.length === 1 ? "" : "s"}` : "No contacts yet", route: "/settings/contacts", icon: <UsersGroupRounded size={22} weight="Linear" />, section: "Manage" },
     { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approved dApps", route: "/settings/dapps", icon: <Earth size={22} weight="Linear" />, section: "Manage" },
+    { label: "External signer", description: externalSignerRequests.length ? `${externalSignerRequests.length} request${externalSignerRequests.length === 1 ? "" : "s"}` : "Unsigned export and import", route: "/settings/external-signer", icon: <ShieldCheck size={22} weight="Linear" />, section: "Manage" },
     { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Bell size={22} weight="Linear" />, section: "Manage" },
     { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <ClockCircle size={22} weight="Linear" />, section: "Info" },
     { label: "Support", description: "Sponsors, donate QU, GitHub", route: "/settings/support", icon: <Heart size={22} weight="Linear" />, section: "Info" },
