@@ -230,6 +230,8 @@ jobs:
         run: node scripts/set-updater-channel.mjs prerelease
 
       - name: Prepare deterministic Tauri Linux bundler state
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           rm -rf \
             src-tauri/target/release/bundle/appimage/*.AppDir \

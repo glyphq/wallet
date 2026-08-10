@@ -163,6 +163,8 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Preseed pinned AppImage tools
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: scripts/prepare-tauri-linux-tools.sh
 
       - name: Build unsigned local Linux packages
