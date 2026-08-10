@@ -5,9 +5,10 @@
 
 # Glyph
 
-**A self-custodial desktop wallet for Qubic.**
+### Your Qubic desktop, with room to breathe.
 
-Create and organize Vaults, manage accounts, move QU, explore Qubic activity, and approve dApp requests from one focused desktop application.
+**Glyph is a self-custodial desktop wallet for Qubic.**
+Create Vaults, shape your workspace, move QU, follow activity, and approve requests from the apps you use, all in one calm native app.
 
 [![Release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/glyphq/wallet/ci.yml?branch=main&style=flat-square&label=CI&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/actions/workflows/ci.yml)
@@ -21,44 +22,100 @@ Windows x64 · macOS Universal · Linux x86_64
 
 ---
 
-## One desktop home for Qubic
+## One place, your pace
 
-Glyph keeps the everyday Qubic workflow clear and local:
+Glyph is built around the parts of Qubic you actually return to: your accounts, your activity, the people you pay, and the apps you choose to connect.
 
-- **Your Vaults, your control.** Create or import Vaults, organize accounts, and keep your wallet data on your device.
-- **A focused transaction flow.** Send, receive, burn, track activity, manage contacts, and review each action before it is submitted.
-- **Built for the Qubic ecosystem.** Work with live balances, assets, history, payment links, QEarn, contracts, and dApp requests in one native app.
-- **Personal by default.** Choose light or dark mode, select an interface font, hide balances when needed, and tailor each Vault to your workflow.
+```mermaid
+flowchart LR
+    V[Your Vaults] --> A[Accounts]
+    A --> H[Your home]
+    H --> R[Receive]
+    H --> S[Send QU]
+    H --> E[Explore activity]
+    H --> Q[Earn with QEarn]
+    H --> D[Use connected apps]
+```
 
-## What you can do
+### A good wallet should feel like yours
 
-### Vaults and accounts
+- **Make a home for every Qubic identity.** Create or import Vaults, keep multiple accounts together, and personalize them with names, colors, and icons.
+- **Move without the mess.** Send QU, receive with a QR code or payment link, pay several people at once, and keep useful transfer templates close by.
+- **See the story behind the balance.** Browse history, local memos, tags, contacts, analytics, counterparties, and activity trends without jumping between tools.
+- **Take your setup with you.** Back up Vaults, organize your workspace, choose a theme and font, and make Glyph fit the way you work.
 
-- Create a new Vault, import a Qubic seed, or restore a Glyph Vault export.
-- Keep multiple Vaults and up to 16 accounts in each, with names, colors, icons, and account management tools.
-- Switch between Vaults and accounts quickly from the application shell.
-- View QU, owned assets, approximate fiat values, and account activity at a glance.
+## A little tour
 
-### Send, receive, and use Qubic
+| When you want to… | Glyph gives you… |
+| --- | --- |
+| Start fresh | A new Vault, a guided backup, and room for up to 16 accounts per Vault |
+| Get paid | Your Qubic identity, a QR code, and shareable payment links |
+| Send QU | A clear review flow for one recipient or many |
+| Keep context | Contacts, notes, tags, saved templates, and searchable history |
+| Go deeper | QEarn positions, owned assets, contract activity, and Vault analytics |
+| Stay in the flow | Notifications, diagnostics, updates, custom RPC settings, and focused shortcuts |
 
-- Send QU to an identity, a saved contact, or multiple recipients at once.
-- Share an identity, QR code, or payment link to receive QU.
-- Follow a transaction from broadcast through confirmation, failure, or expiry.
-- Burn QU, work with QEarn positions, and interact with supported Qubic contracts.
-- Save transfer templates and choose when to send them.
+## For everyday Qubic
 
-### Stay organized
+### Vaults, accounts, and a space that feels familiar
 
-- Search and filter transaction history by direction, type, amount, date, or tick range.
-- Add contacts, local memos, and tags to keep frequent activity easy to find.
-- Explore Vault analytics, counterparties, contract use, and activity trends.
-- Use diagnostics, notifications, and update controls without leaving Glyph.
+Create a Vault, import a Qubic seed, or restore a Glyph Vault export. Switch Vaults or accounts from anywhere in the app, then customize names, colors, icons, and display preferences as your setup grows.
 
-### Connect with dApps
+Balances, owned assets, approximate fiat values, and recent activity stay close at hand. Need less visual noise? Hide balances, pick light or dark mode, or choose the interface font that feels right.
 
-Glyph handles `glyph://` payment links and dApp requests from the desktop. Connections, transfers, contract calls, and message requests are presented in the app for review before you choose whether to continue. Manage approved dApps and their permissions from Settings.
+### Send, receive, and keep moving
 
-For integration details, see the [User guide](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links).
+- Send QU to an identity, a contact, or several recipients.
+- Share an identity, QR code, or payment link when it is your turn to receive.
+- Follow a transaction from broadcast to confirmation, expiry, or failure.
+- Keep transfer templates for repeat payments.
+- Explore QEarn positions, supported Qubic contracts, and owned assets from the same desktop home.
+
+### Keep the details useful
+
+Search and filter history by direction, type, amount, date, or tick range. Add local memos and tags, export activity when you need it, and use contacts to make recurring destinations easier to recognize.
+
+```mermaid
+flowchart TD
+    T[Transaction activity] --> F[Find with filters]
+    T --> M[Add a memo]
+    T --> G[Add tags]
+    F --> C[See the context]
+    M --> C
+    G --> C
+    C --> X[Export when needed]
+```
+
+## Connected apps, still on your terms
+
+Glyph opens Qubic payment links and `glyph://` requests from the apps and services you use. Connection, transfer, contract-call, signing, and verification requests arrive in Glyph for a clear review before you decide what happens next.
+
+```mermaid
+sequenceDiagram
+    participant App as App or service
+    participant Desktop as Your desktop
+    participant Glyph as Glyph
+
+    App->>Desktop: Open a Glyph request
+    Desktop->>Glyph: Launch Glyph
+    Glyph->>Glyph: Show the request clearly
+    alt You continue
+        Glyph-->>App: Return the result
+    else You decline
+        Glyph-->>App: Return the decision
+    end
+```
+
+Manage connected apps and their permissions in **Settings → Connected apps**. For the complete request guide, see [External requests and Glyph links](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links).
+
+## Get started
+
+1. Download Glyph from the [official releases page](https://github.com/glyphq/wallet/releases/latest).
+2. Create a new Vault, import a Qubic seed, or restore a Glyph Vault export.
+3. Back up the seed for every new Vault before continuing.
+4. Fund an account, share its identity, or start exploring Qubic.
+
+> **Small start, big picture.** Begin with one account and one action. Glyph will be ready when your setup grows.
 
 ## Download and install
 
@@ -79,20 +136,11 @@ chmod +x Glyph_*_amd64.AppImage
 ./Glyph_*_amd64.AppImage
 ```
 
-AppImage installations support Glyph's in-app update path. Debian and RPM installations are updated through the same system package workflow used to install them.
-
-## Get started
-
-1. Download Glyph from the [official releases page](https://github.com/glyphq/wallet/releases/latest).
-2. Create a new Vault or import an existing Qubic seed or Glyph Vault export.
-3. Back up the seed for every new Vault before continuing.
-4. Fund an account, share its identity, or start exploring the Qubic network.
-
-Read the [User guide](./docs/USER_GUIDE.md) for walkthroughs covering Vaults, transactions, QEarn, contacts, history, dApps, and settings.
+AppImage installations support Glyph's in-app update path. Debian and RPM installations follow the usual system package update flow.
 
 ## Build from source
 
-Glyph is built with React, TypeScript, Rust, and Tauri v2.
+Glyph is made with React, TypeScript, Rust, and Tauri v2.
 
 ```sh
 git clone https://github.com/glyphq/wallet.git
@@ -101,9 +149,9 @@ bun install --frozen-lockfile
 bun tauri dev
 ```
 
-Use Bun `1.3.14` and Rust `1.88.0`. Platform prerequisites, validation commands, and release guidance are in [CONTRIBUTING.md](./CONTRIBUTING.md).
+Use Bun `1.3.14` and Rust `1.88.0`. Platform prerequisites, validation commands, and release guidance live in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Resources
+## Keep exploring
 
 - [User guide](./docs/USER_GUIDE.md)
 - [Changelog](./CHANGELOG.md)
