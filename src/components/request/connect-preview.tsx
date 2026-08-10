@@ -6,12 +6,17 @@ import { truncateId } from "@/lib/format";
 import { RequestActionBar, RequestSectionTitle } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
 import { CheckCircle } from "@solar-icons/react";
+import { DappPolicyControls } from "@/components/dapp-policy-controls";
+import { DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
 export interface ConnectApproveResult {
   identity: string;
   permissions: GlyphPermission[];
+  transferLimitQu?: string;
+  expiryDurationMs?: number;
+  expiresAt?: number;
 }
 
 interface ConnectPreviewProps {
@@ -35,6 +40,8 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   const requestedPerms = request.permissions ?? [];
   const [grantedPerms, setGrantedPerms] = useState<Set<string>>(() => new Set(requestedPerms));
+  const [transferLimitQu, setTransferLimitQu] = useState("");
+  const [expiryDurationMs, setExpiryDurationMs] = useState<number | undefined>(DEFAULT_DAPP_EXPIRY_DURATION_MS);
 
   const selectedWallet = wallets[selectedIndex] ?? null;
 
@@ -49,8 +56,17 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   function approve() {
     if (!selectedWallet) return;
     const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as GlyphPermission[];
-    onApprove({ identity: selectedWallet.identity, permissions });
+    const sanitizedLimit = sanitizeTransferLimitQu(transferLimitQu);
+    onApprove({
+      identity: selectedWallet.identity,
+      permissions,
+      transferLimitQu: sanitizedLimit,
+      expiryDurationMs,
+      expiresAt: makeDappExpiresAt(expiryDurationMs),
+    });
   }
+
+  const grantsTransferLike = requestedPerms.some((p) => (p === "transfer" || p === "sc_call") && grantedPerms.has(p));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
@@ -132,11 +148,26 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
               })}
             </div>
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-	            Each action still asks for your approval.
-          </div>
+	          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+		            Each action still asks for your approval.
+	          </div>
         </div>
       )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <RequestSectionTitle>Limits</RequestSectionTitle>
+        <DappPolicyControls
+          transferLimitQu={transferLimitQu}
+          expiryDurationMs={expiryDurationMs}
+          onTransferLimitChange={setTransferLimitQu}
+          onExpiryDurationChange={setExpiryDurationMs}
+          showLimit={grantsTransferLike}
+          idPrefix="connect-dapp-policy"
+        />
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+          Limits apply to this dApp and selected account only.
+        </div>
+      </div>
 
       <RequestActionBar>
         <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>

@@ -33,6 +33,8 @@ import { base64ToBytes } from "@/lib/base64";
 import { qk } from "@/lib/query-keys";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
 import type { ScCallRequest } from "@/lib/request-schema";
+import { DappPolicyStatus } from "@/components/dapp-policy-controls";
+import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { ScCallRequest } from "@/lib/request-schema";
 
@@ -128,6 +130,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const vault = vaults.find((v) => v.id === settings.activeVaultId);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
+  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const { data: tickInfo } = useTickInfo();
   const rpcIdentity = useRpcCacheIdentity("live");
   const { data: balanceData } = useBalance(wallet?.identity ?? null);
@@ -200,6 +203,13 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
     : null;
   const likelyFailures = [
     fromError || null,
+    evaluateDappPermission({
+      approvedDapps,
+      origin: request.dapp.origin,
+      permission: "sc_call",
+      identity,
+      amountQu: requestAmount,
+    }).reason,
     balance !== null && requestAmount > balance ? "Current account balance does not cover the attached QU amount." : null,
     decodedSendToMany && contractFee !== null && balance !== null && requestAmount > 0n && requestAmount !== recipientsTotal + contractFee
       ? "Attached amount does not match recipient total plus the current QUtil fee."
@@ -209,9 +219,28 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   ].filter((item): item is string => !!item);
   const insufficientBalance = balance !== null && requestAmount > balance;
   const balanceAfterDisplay = projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—";
+  const policyDecision = evaluateDappPermission({
+    approvedDapps,
+    origin: request.dapp.origin,
+    permission: "sc_call",
+    identity,
+    amountQu: requestAmount,
+  });
 
   async function approve() {
     if (!wallet) return;
+    const freshPolicyDecision = evaluateDappPermission({
+      approvedDapps,
+      origin: request.dapp.origin,
+      permission: "sc_call",
+      identity,
+      amountQu: requestAmount,
+      now: Date.now(),
+    });
+    if (!freshPolicyDecision.allowed) {
+      setTxError(freshPolicyDecision.reason ?? "dApp policy blocked this contract call.");
+      return;
+    }
     setProcessing(true);
     setTxError("");
     try {
@@ -416,6 +445,8 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         </div>
       )}
 
+      <DappPolicyStatus decision={policyDecision} />
+
       {needsHighValueConfirmation && (
         <div
           role="checkbox"
@@ -444,7 +475,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
           Reject
         </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
+        <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
           Sign and send
         </Button>
       </RequestActionBar>

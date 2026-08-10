@@ -144,6 +144,9 @@ export default function RequestScreen() {
       approvedAt: Date.now(),
       permissions: result.permissions,
       allowedIdentities: [result.identity],
+      transferLimitQu: result.transferLimitQu,
+      expiryDurationMs: result.expiryDurationMs,
+      expiresAt: result.expiresAt,
     });
     setSuccess(state);
   }

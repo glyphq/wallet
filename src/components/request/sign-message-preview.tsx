@@ -7,6 +7,8 @@ import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { SignMessageRequest } from "@/lib/request-schema";
+import { DappPolicyStatus } from "@/components/dapp-policy-controls";
+import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { SignMessageRequest } from "@/lib/request-schema";
 
@@ -35,8 +37,28 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
   const vault = usePersistedStore((s) =>
     s.vaults.find((v) => v.id === s.settings.activeVaultId)
   );
+  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
+  const identity = wallet?.identity ?? "";
+  const policyDecision = evaluateDappPermission({
+    approvedDapps,
+    origin: request.dapp.origin,
+    permission: "sign_message",
+    identity,
+  });
+
   async function approve() {
     if (!wallet) return;
+    const freshPolicyDecision = evaluateDappPermission({
+      approvedDapps,
+      origin: request.dapp.origin,
+      permission: "sign_message",
+      identity,
+      now: Date.now(),
+    });
+    if (!freshPolicyDecision.allowed) {
+      setError(freshPolicyDecision.reason ?? "dApp policy blocked this signature.");
+      return;
+    }
     setProcessing(true);
     setError("");
     try {
@@ -101,7 +123,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
           {fromError}
         </div>
       ) : (
-        <RequestDetailRow label="From" value={`${accountName} · ${truncateId(wallet?.identity ?? "", 10, 10)}`} />
+        <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />
       )}
 
       {error && (
@@ -110,11 +132,13 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
         </div>
       )}
 
+      <DappPolicyStatus decision={policyDecision} />
+
       <RequestActionBar>
         <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
           Reject
         </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError} style={{ flex: 1 }}>
+        <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError || !policyDecision.allowed} style={{ flex: 1 }}>
           Sign message
         </Button>
       </RequestActionBar>

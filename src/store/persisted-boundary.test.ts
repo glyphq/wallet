@@ -47,6 +47,7 @@ function currentState(): PersistedState {
     revokeDapp: () => undefined,
     revokeDappPermission: () => undefined,
     setDappAllowedIdentities: () => undefined,
+    setDappPolicy: () => undefined,
     setTxMemo: () => undefined,
     deleteTxMemo: () => undefined,
     addScheduledTransfer: () => undefined,
@@ -139,7 +140,12 @@ describe("persisted boundary helpers", () => {
               origin: "https://app",
               name: "App",
               approvedAt: 1,
-              permissions: ["transfer"],
+              lastUsedAt: 2,
+              permissions: ["transfer", "invalid", "transfer"],
+              allowedIdentities: ["IDENTITY_A", "IDENTITY_A", 4],
+              transferLimitQu: "2,500 qu",
+              expiryDurationMs: 60_000,
+              expiresAt: "bad",
             },
           ],
           highValueSendThreshold: "1,234 qu",
@@ -195,6 +201,12 @@ describe("persisted boundary helpers", () => {
     expect(merged.passwordAttempts).toBe(4);
     expect(merged.passwordLockoutUntil).toBe(99_000);
     expect(merged.exportSigningKey).toEqual({ kty: "oct", k: "test-key" });
+    expect(merged.settings.approvedDapps[0]).toMatchObject({
+      permissions: ["transfer"],
+      allowedIdentities: ["IDENTITY_A"],
+      transferLimitQu: "2500",
+      expiresAt: 60_001,
+    });
     expect(merged.vaults[0]?.encryptedData).toEqual({ should: "be removed" });
     expect(merged.vaults[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);

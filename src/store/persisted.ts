@@ -16,6 +16,7 @@ import {
   mergePersistedState,
 } from "./persisted-boundary";
 import type { PersistedState } from "./persisted-types";
+import { sanitizeDappExpiresAt, sanitizeDappExpiryDurationMs, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 export type {
   AccountMeta,
   AccentColorId,
@@ -179,6 +180,9 @@ export const usePersistedStore = create<PersistedState>()(
           const existing = s.settings.approvedDapps.find(
             (d) => d.origin === dapp.origin
           );
+          const transferLimitQu = sanitizeTransferLimitQu(dapp.transferLimitQu);
+          const expiryDurationMs = sanitizeDappExpiryDurationMs(dapp.expiryDurationMs);
+          const expiresAt = sanitizeDappExpiresAt(dapp.expiresAt);
           const approvedDapps = existing
             ? s.settings.approvedDapps.map((d) =>
                 d.origin === dapp.origin
@@ -186,7 +190,7 @@ export const usePersistedStore = create<PersistedState>()(
                       const allowedIdentities =
                         d.allowedIdentities === undefined ||
                         dapp.allowedIdentities === undefined
-                          ? d.allowedIdentities ?? dapp.allowedIdentities
+                          ? d.allowedIdentities
                           : [...new Set([...d.allowedIdentities, ...dapp.allowedIdentities])];
                       return {
                         ...d,
@@ -197,11 +201,14 @@ export const usePersistedStore = create<PersistedState>()(
                           ...new Set([...d.permissions, ...dapp.permissions]),
                         ],
                         allowedIdentities,
+                        transferLimitQu,
+                        expiryDurationMs,
+                        expiresAt,
                       };
                     })()
                   : d
               )
-            : [...s.settings.approvedDapps, { ...dapp, lastUsedAt: now }];
+            : [...s.settings.approvedDapps, { ...dapp, transferLimitQu, expiryDurationMs, expiresAt, lastUsedAt: now }];
           return { settings: { ...s.settings, approvedDapps } };
         }),
 
@@ -235,6 +242,23 @@ export const usePersistedStore = create<PersistedState>()(
             ...s.settings,
             approvedDapps: s.settings.approvedDapps.map((d) =>
               d.origin === origin ? { ...d, allowedIdentities: identities } : d
+            ),
+          },
+        })),
+
+      setDappPolicy: (origin, policy) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            approvedDapps: s.settings.approvedDapps.map((d) =>
+              d.origin === origin
+                ? {
+                    ...d,
+                    transferLimitQu: sanitizeTransferLimitQu(policy.transferLimitQu),
+                    expiryDurationMs: sanitizeDappExpiryDurationMs(policy.expiryDurationMs),
+                    expiresAt: sanitizeDappExpiresAt(policy.expiresAt),
+                  }
+                : d
             ),
           },
         })),
