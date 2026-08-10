@@ -17,6 +17,10 @@ import {
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
   qearnGetEndedStatus,
+  QX_CONTRACT_INDEX,
+  QX_TRANSFER_SHARE_OWNERSHIP_AND_POSSESSION_INPUT_TYPE,
+  buildQxTransferShareOwnershipAndPossessionInput,
+  qxFees,
 } from "@qubic.org/contracts";
 
 export type { ContractCall } from "@qubic.org/contracts";
@@ -38,6 +42,10 @@ export {
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
   qearnGetEndedStatus,
+  QX_CONTRACT_INDEX,
+  QX_TRANSFER_SHARE_OWNERSHIP_AND_POSSESSION_INPUT_TYPE,
+  buildQxTransferShareOwnershipAndPossessionInput,
+  qxFees,
 };
 
 // Human-readable names keyed by the camelCase namespace export (tree-shake safe).
@@ -133,6 +141,7 @@ CONTRACT_PROCEDURE_NAMES[`${QEARN_CONTRACT_INDEX}:1`] ??= "Lock";
 // Pre-computed contract destination identities.
 export const QUTIL_ADDRESS = contractIndexToIdentity(Q_UTIL_CONTRACT_INDEX);
 export const QEARN_ADDRESS = contractIndexToIdentity(QEARN_CONTRACT_INDEX);
+export const QX_ADDRESS = contractIndexToIdentity(QX_CONTRACT_INDEX);
 
 // Build full known-addresses map from all contract indices.
 export const KNOWN_CONTRACT_ADDRESSES: Record<string, string> = {};
