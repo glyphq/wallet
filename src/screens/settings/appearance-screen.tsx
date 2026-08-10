@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { usePersistedStore, type ThemeMode, type FontPairId } from "@/store/persisted";
+import { usePersistedStore, type ThemeMode, type FontPairId, type AppSettings } from "@/store/persisted";
 import { FONT_PAIRS } from "@/lib/appearance";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -10,6 +10,12 @@ import { Sun, Moon, CheckCircle } from "@solar-icons/react";
 const THEMES: { id: ThemeMode; label: string; description: string; Icon: typeof Sun }[] = [
   { id: "dark", label: "Dark", description: "Low-glare colors for focused, comfortable viewing.", Icon: Moon },
   { id: "light", label: "Light", description: "A crisp, bright palette for daylight and bright rooms.", Icon: Sun },
+];
+
+const CURRENCIES: { id: AppSettings["currency"]; label: string }[] = [
+  { id: "USD", label: "USD" },
+  { id: "EUR", label: "EUR" },
+  { id: "BTC", label: "BTC" },
 ];
 
 function SettingsSectionLabel({ children }: { children: ReactNode }) {
@@ -219,6 +225,7 @@ export default function AppearanceScreen() {
   const themeMode = usePersistedStore((s) => s.settings.themeMode);
   const fontPair = usePersistedStore((s) => s.settings.fontPair);
   const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
+  const currency = usePersistedStore((s) => s.settings.currency);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   return (
@@ -230,6 +237,40 @@ export default function AppearanceScreen() {
           <SettingsSectionLabel>Font</SettingsSectionLabel>
           <div style={{ display: "flex" }}>
             <FontPicker value={fontPair} onChange={(font) => updateSettings({ fontPair: font })} />
+          </div>
+        </div>
+
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <SettingsSectionLabel>Currency</SettingsSectionLabel>
+          <div role="radiogroup" aria-label="Currency" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--space-2)" }}>
+            {CURRENCIES.map(({ id, label }) => {
+              const selected = currency === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="settings-pressable"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => updateSettings({ currency: id })}
+                  style={{
+                    minHeight: 44,
+                    border: "1px solid var(--color-border-subtle)",
+                    borderRadius: "var(--radius-control)",
+                    background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
+                    color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-label)",
+                    fontWeight: selected ? 600 : 400,
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
