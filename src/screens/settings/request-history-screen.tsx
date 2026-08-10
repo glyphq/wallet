@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Magnifier, TrashBinMinimalistic } from "@solar-icons/react";
+import { AltArrowDown, Magnifier, TrashBinMinimalistic } from "@solar-icons/react";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { IconButton } from "@/components/icon-button";
@@ -22,10 +22,27 @@ const ACTION_LABEL: Record<RequestHistoryItem["action"], string> = {
   rejected: "Rejected",
 };
 
-function HistoryRow({ item }: { item: RequestHistoryItem }) {
+const CALLBACK_LABEL: Record<RequestHistoryItem["callbackStatus"], string> = {
+  none: "No callback",
+  pending: "Sending callback",
+  ok: "Callback delivered",
+  failed: "Callback failed",
+};
+
+function RequestDetail({ label, value, technical = false }: { label: string; value: string; technical?: boolean }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(88px, 0.4fr) minmax(0, 1fr)", gap: "var(--space-4)", alignItems: "baseline" }}>
+      <dt style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>{label}</dt>
+      <dd style={{ margin: 0, minWidth: 0, overflowWrap: "anywhere", fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)", fontSize: technical ? "var(--text-mono-sm)" : "var(--text-label)", color: "var(--color-text-secondary)" }}>{value}</dd>
+    </div>
+  );
+}
+
+function HistoryRow({ item, expanded, onToggle }: { item: RequestHistoryItem; expanded: boolean; onToggle: () => void }) {
   const approved = item.action === "approved";
   const account = item.accountName || item.accountIdentity;
   const createdAt = formatDate(item.createdAt) || "—";
+  const detailsId = `request-history-${item.id}`;
 
   return (
     <article
@@ -37,36 +54,54 @@ function HistoryRow({ item }: { item: RequestHistoryItem }) {
         borderBottom: "1px solid var(--color-border-subtle)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-4)" }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}>
-          {TYPE_LABEL[item.type]}
-        </span>
-        <time
-          style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}
-        >
-          {createdAt}
-        </time>
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: "var(--space-3)", rowGap: "var(--space-1)" }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-          {item.dappName || "Unknown dApp"}
-        </span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: approved ? "var(--color-accent)" : "var(--color-status-error)" }}>
-          {ACTION_LABEL[item.action]}
-        </span>
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", columnGap: "var(--space-3)", rowGap: "var(--space-1)" }}>
-        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)" }}>
-          {item.dappOrigin}
-        </span>
-        {account ? (
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-            {account}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        onClick={onToggle}
+        style={{ width: "100%", padding: 0, background: "none", border: "none", color: "inherit", cursor: "pointer", textAlign: "left" }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-4)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)" }}>
+            {TYPE_LABEL[item.type]}
           </span>
-        ) : null}
-      </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexShrink: 0 }}>
+            <time style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>{createdAt}</time>
+            <AltArrowDown size={16} weight="Linear" aria-hidden="true" style={{ color: "var(--color-text-tertiary)", transform: expanded ? "rotate(180deg)" : undefined, transition: "transform var(--duration-fast) var(--ease-out)" }} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: "var(--space-3)", rowGap: "var(--space-1)", marginTop: "var(--space-2)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+            {item.dappName || "Unknown dApp"}
+          </span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: approved ? "var(--color-accent)" : "var(--color-status-error)" }}>
+            {ACTION_LABEL[item.action]}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", columnGap: "var(--space-3)", rowGap: "var(--space-1)", marginTop: "var(--space-1)" }}>
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)" }}>
+            {item.dappOrigin}
+          </span>
+          {account ? (
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+              {account}
+            </span>
+          ) : null}
+        </div>
+      </button>
+
+      {expanded ? (
+        <dl id={detailsId} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", margin: "var(--space-2) 0 0", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
+          <RequestDetail label="Decision" value={ACTION_LABEL[item.action]} />
+          <RequestDetail label="Origin" value={item.dappOrigin} technical />
+          {account ? <RequestDetail label="Account" value={account} technical={!item.accountName} /> : null}
+          {item.resultDetail ? <RequestDetail label="Result" value={item.resultDetail} technical /> : null}
+          <RequestDetail label="Callback" value={CALLBACK_LABEL[item.callbackStatus]} />
+          {item.callbackUrl ? <RequestDetail label="Callback URL" value={item.callbackUrl} technical /> : null}
+        </dl>
+      ) : null}
     </article>
   );
 }
@@ -75,6 +110,7 @@ export default function RequestHistoryScreen() {
   const requestHistory = usePersistedStore((s) => s.requestHistory);
   const clearRequestHistory = usePersistedStore((s) => s.clearRequestHistory);
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -128,7 +164,14 @@ export default function RequestHistoryScreen() {
                     {filtered.length} of {requestHistory.length}
                   </span>
                 </div>
-                {filtered.map((item) => <HistoryRow key={item.id} item={item} />)}
+                {filtered.map((item) => (
+                  <HistoryRow
+                    key={item.id}
+                    item={item}
+                    expanded={expandedId === item.id}
+                    onToggle={() => setExpandedId((current) => current === item.id ? null : item.id)}
+                  />
+                ))}
               </section>
             ) : (
               <section aria-label="No matching requests" style={{ padding: "var(--space-8) 0", borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)" }}>

@@ -2,4 +2,4 @@
 "glyph": patch
 ---
 
-Refine the Request History settings view with a clearer linear layout and search controls.
+Refine Request History and Approved dApps settings with clearer linear layouts, expandable request details, and easier access management.
