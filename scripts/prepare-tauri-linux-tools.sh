@@ -20,7 +20,20 @@ install_verified() {
   local url="$2"
   local expected_sha="$3"
   local destination="$TOOL_DIR/$name"
-  local temporary actual_sha
+  local temporary actual_sha token
+  local -a curl_args=(
+    --fail --location --retry 3 --retry-all-errors --silent --show-error
+    --header "Accept: application/octet-stream"
+    --header "X-GitHub-Api-Version: 2022-11-28"
+  )
+
+  # GitHub-hosted runners can exhaust anonymous release-asset limits. Use the
+  # short-lived workflow token when it is available while preserving unauthenticated
+  # local use for public pinned assets.
+  token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+  if [[ -n "$token" ]]; then
+    curl_args+=(--header "Authorization: Bearer $token")
+  fi
 
   if [[ -f "$destination" ]]; then
     actual_sha="$(sha256sum "$destination" | awk '{print $1}')"
@@ -33,10 +46,7 @@ install_verified() {
 
   temporary="$(mktemp "$TOOL_DIR/.${name}.XXXXXX")"
   trap 'rm -f -- "$temporary"' RETURN
-  curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
-    --header "Accept: application/octet-stream" \
-    --header "X-GitHub-Api-Version: 2022-11-28" \
-    "$url" --output "$temporary"
+  curl "${curl_args[@]}" "$url" --output "$temporary"
   actual_sha="$(sha256sum "$temporary" | awk '{print $1}')"
   [[ "$actual_sha" == "$expected_sha" ]] \
     || die "checksum mismatch for $name: expected $expected_sha, got $actual_sha"
