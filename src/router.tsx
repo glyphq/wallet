@@ -16,7 +16,6 @@ import SendScreen from "@/screens/send/send-screen";
 import ScheduledTransfersScreen from "@/screens/send/scheduled-transfers-screen";
 import SendManyScreen from "@/screens/send/send-many-screen";
 import BurnScreen from "@/screens/send/burn-screen";
-import AssetSendScreen from "@/screens/assets/asset-send-screen";
 import StakeScreen from "@/screens/stake/stake-screen";
 import ReceiveScreen from "@/screens/receive/receive-screen";
 import PaymentLinkScreen from "@/screens/receive/payment-link-screen";
@@ -36,7 +35,6 @@ import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
 import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
 import AppearanceScreen from "@/screens/settings/appearance-screen";
-import ExternalSignerScreen from "@/screens/settings/external-signer-screen";
 
 function Screen({ component: C }: { component: ComponentType }) {
   return (
@@ -63,7 +61,6 @@ export const router = createHashRouter([
       { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
       { path: "/send-many", element: <Screen component={SendManyScreen} /> },
       { path: "/burn", element: <Screen component={BurnScreen} /> },
-      { path: "/assets/send", element: <Screen component={AssetSendScreen} /> },
       { path: "/stake", element: <Screen component={StakeScreen} /> },
       { path: "/receive", element: <Screen component={ReceiveScreen} /> },
       { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
@@ -75,7 +72,6 @@ export const router = createHashRouter([
       { path: "/request", element: <Screen component={RequestScreen} /> },
       { path: "/settings", element: <Screen component={SettingsScreen} /> },
       { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
-      { path: "/settings/external-signer", element: <Screen component={ExternalSignerScreen} /> },
       { path: "/settings/request-history", element: <Screen component={RequestHistoryScreen} /> },
       { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
       { path: "/settings/security/audit-log", element: <Screen component={AuditLogScreen} /> },
