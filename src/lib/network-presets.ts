@@ -2,6 +2,7 @@ import { DEFAULT_ARCHIVE_URL, DEFAULT_LIVE_URL, normalizeRpcUrl } from "@/lib/rp
 import type { NetworkConfig } from "@/store/persisted-types";
 
 export type NetworkPresetId = NetworkConfig["name"];
+export type ConfiguredNetworkPresetId = Exclude<NetworkPresetId, "testnet">;
 
 export interface NetworkPreset {
   id: NetworkPresetId;
@@ -31,9 +32,9 @@ export const NETWORK_PRESETS: readonly NetworkPreset[] = [
   },
 ] as const;
 
-export function identifyNetworkPreset(liveApiUrl: string, queryApiUrl: string, selected: NetworkPresetId): NetworkPresetId {
+export function identifyNetworkPreset(liveApiUrl: string, queryApiUrl: string): ConfiguredNetworkPresetId {
   const live = normalizeRpcUrl(liveApiUrl.trim());
   const archive = normalizeRpcUrl(queryApiUrl.trim());
   if (live === DEFAULT_LIVE_URL && archive === DEFAULT_ARCHIVE_URL) return "mainnet";
-  return selected === "testnet" ? "testnet" : "custom";
+  return "custom";
 }

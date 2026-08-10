@@ -10,7 +10,7 @@ import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-sec
 import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
 import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
-import { identifyNetworkPreset, NETWORK_PRESETS, type NetworkPresetId } from "@/lib/network-presets";
+import { identifyNetworkPreset, NETWORK_PRESETS } from "@/lib/network-presets";
 
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
 type TestStatus = "idle" | "testing" | "ok" | "error";
@@ -34,7 +34,6 @@ export default function NetworkScreen() {
 
   const [liveUrl, setLiveUrl] = useState(settings.network.liveApiUrl);
   const [queryUrl, setQueryUrl] = useState(settings.network.queryApiUrl);
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkPresetId>(settings.network.name);
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testTick, setTestTick] = useState<number | null>(null);
   const [testError, setTestError] = useState("");
@@ -62,7 +61,7 @@ export default function NetworkScreen() {
           ...settings.network,
           liveApiUrl: live,
           queryApiUrl: archive,
-          name: identifyNetworkPreset(live, archive, selectedNetwork),
+          name: identifyNetworkPreset(live, archive),
         },
       });
       queryClient.invalidateQueries();
@@ -76,7 +75,7 @@ export default function NetworkScreen() {
     const mainnet = NETWORK_PRESETS[0];
     const defaultLive = mainnet.liveApiUrl ?? "";
     const defaultQuery = mainnet.queryApiUrl ?? "";
-    setLiveUrl(defaultLive); setQueryUrl(defaultQuery); setSelectedNetwork("mainnet");
+    setLiveUrl(defaultLive); setQueryUrl(defaultQuery);
     setTestStatus("idle"); setTestError("");
     configureRpc(defaultLive, defaultQuery);
     updateSettings({ network: { liveApiUrl: defaultLive, queryApiUrl: defaultQuery, name: "mainnet" } });
@@ -84,7 +83,6 @@ export default function NetworkScreen() {
   }
 
   function choosePreset(preset: (typeof NETWORK_PRESETS)[number]) {
-    setSelectedNetwork(preset.id);
     setTestStatus("idle"); setTestError("");
     if (preset.liveApiUrl && preset.queryApiUrl) {
       setLiveUrl(preset.liveApiUrl);
@@ -95,7 +93,7 @@ export default function NetworkScreen() {
     }
   }
 
-  const activeNetwork = identifyNetworkPreset(liveUrl, queryUrl, selectedNetwork);
+  const activeNetwork = identifyNetworkPreset(liveUrl, queryUrl);
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -106,7 +104,7 @@ export default function NetworkScreen() {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <SettingsSectionLabel>Network</SettingsSectionLabel>
             <span id="rpc-endpoint-help" style={helperStyle}>
-              Mainnet uses bundled endpoints. Testnet and custom require verified HTTPS RPC URLs.
+              HTTPS RPC URLs only.
             </span>
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
