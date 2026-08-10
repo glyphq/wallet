@@ -11,7 +11,8 @@ import { useSessionStore } from "@/store/session";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { type TxHistoryItem } from "@/hooks/use-tx-history";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
-import { formatQu, formatUsdFromQu, truncateId } from "@/lib/format";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { formatQu, formatPreferredCurrencyFromQu, truncateId } from "@/lib/format";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -97,6 +98,7 @@ export default function TxDetailScreen() {
   const deleteTxMemo = usePersistedStore((s) => s.deleteTxMemo);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
   const hideBalances = settings.hideBalances;
+  const quote = usePreferredCurrencyQuote();
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
   const identity = getVaultAccountIdentity(vault, settings.activeAccountIndex, wallets);
@@ -144,6 +146,7 @@ export default function TxDetailScreen() {
   const fromContract = detail.source ? KNOWN_CONTRACT_ADDRESSES[detail.source] : undefined;
   const isSc = !!(contractName || fromContract);
   const snapshot = findClosestPriceSnapshot(isPendingTx(detail) ? detail.broadcastAt : detail.timestamp, priceSnapshots);
+  const fiatValue = snapshot ? formatPreferredCurrencyFromQu(detail.amount ?? "0", { usdPrice: snapshot.priceUsd, ...quote }).text : "—";
 
   if (isPendingTx(detail)) {
     const expired = currentTick > 0 && currentTick > detail.targetTick;
@@ -164,7 +167,7 @@ export default function TxDetailScreen() {
             </div>
             {snapshot && !hideBalances && (
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-                ≈ ${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}
+                {fiatValue}
               </div>
             )}
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
@@ -228,7 +231,7 @@ export default function TxDetailScreen() {
           </div>
           {snapshot && !hideBalances && (
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              ≈ ${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}
+              {fiatValue}
             </div>
           )}
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
@@ -248,7 +251,7 @@ export default function TxDetailScreen() {
           {snapshot && !hideBalances && (
             <>
               <div style={DIVIDER} />
-              <DetailRow icon={<Wallet size={16} />} label="Fiat value" value={`$${formatUsdFromQu(detail.amount ?? "0", snapshot.priceUsd)}`} valueColor="var(--color-text-secondary)" mono={false} />
+              <DetailRow icon={<Wallet size={16} />} label="Fiat value" value={fiatValue} valueColor="var(--color-text-secondary)" mono={false} />
             </>
           )}
         </div>

@@ -20,7 +20,8 @@ import {
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
-import { truncateId, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { truncateId, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 
@@ -285,6 +286,8 @@ export default function HistoryScreen() {
   const txTags = usePersistedStore((s) => s.txTags);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
+  const quote = usePreferredCurrencyQuote();
+
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   useEffect(() => {
     const handler = () => setWindowWidth(window.innerWidth);
@@ -540,7 +543,7 @@ export default function HistoryScreen() {
 
       {/* Transaction rows */}
       {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
+        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} quote={quote} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
       {!isLoading && !isError && !groupByCounterparty && (
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -566,7 +569,7 @@ export default function HistoryScreen() {
                 address={address}
                 time={time}
                 amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
-                amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
+                amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : formatPreferredCurrencyFromQu(p.amount, { usdPrice: pendingSnapshot.priceUsd, ...quote }).text}
                 amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
                 txType={expired ? "failed" : "pending"}
               />
@@ -618,7 +621,7 @@ export default function HistoryScreen() {
                     address={address}
                     time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
                     amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                    amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                    amountUsd={settings.hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
                     amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                     txType={txType}
                   />
@@ -885,12 +888,13 @@ function StatusText({ children, color }: { children: ReactNode; color: string })
 // ── Grouped-by-counterparty view ──────────────────────────────────────────────
 
 function GroupedTxs({
-  txs, identity, settings, priceSnapshots, onSelect,
+  txs, identity, settings, priceSnapshots, quote, onSelect,
 }: {
   txs: TxHistoryItem[];
   identity: string | null;
   settings: AppSettings;
   priceSnapshots: PriceSnapshot[];
+  quote: ReturnType<typeof usePreferredCurrencyQuote>;
   onSelect: (tx: TxHistoryItem) => void;
 }) {
   const groups = new Map<string, { label: string; txs: TxHistoryItem[]; volume: bigint }>();
@@ -929,7 +933,7 @@ function GroupedTxs({
                 address={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
                 time=""
                 amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                amountUsd={settings.hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
                 amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                 txType={!flew ? "failed" : isIn ? "received" : "sent"}
               />
