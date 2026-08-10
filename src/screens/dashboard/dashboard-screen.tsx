@@ -489,6 +489,9 @@ export default function DashboardScreen() {
                 <QrCode size={16} weight="Bold" />
                 Receive
               </Button>
+              <Button variant="secondary" size="md" shape="pill" onClick={() => navigate("/stake")}>
+                QEarn
+              </Button>
             </div>
           )}
         </div>
