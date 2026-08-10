@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn accepts_only_normal_launch_or_one_valid_link() {
         let executable = "glyph-wallet".to_string();
-        let valid = "glyph://v1/request?d=YWJjZA".to_string();
+        let valid = "glyph://v2/request?d=YWJjZA".to_string();
         assert_eq!(single_instance_url(std::slice::from_ref(&executable)), Ok(None));
         assert_eq!(
             single_instance_url(&[executable.clone(), valid.clone()]),

@@ -6,7 +6,8 @@ import { usePersistedStore } from "@/store/persisted";
 import { router } from "@/router";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { buildRequestNotification, parseGlyphEnvelope } from "@/lib/request-schema";
+import { buildRequestNotification, parseGlyphEnvelopeAsync } from "@/lib/request-schema";
+import { activeNetworkBinding } from "@/lib/network-binding";
 
 /** Listens for `glyph:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
@@ -25,8 +26,9 @@ export function useDeepLink() {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
-    function applyPayload(payload: string) {
-      const parsed = parseGlyphEnvelope(payload);
+    async function applyPayload(payload: string) {
+      const network = await activeNetworkBinding(usePersistedStore.getState().settings.network);
+      const parsed = await parseGlyphEnvelopeAsync(payload, network);
       if (!parsed.envelope) return;
       enqueuePendingRequestRef.current(payload);
       recordAuditEvent({
@@ -52,7 +54,7 @@ export function useDeepLink() {
     }
 
     listen<string>("glyph:request", (event) => {
-      applyPayload(event.payload);
+      void applyPayload(event.payload);
       invoke("clear_pending_request").catch(() => {});
     }).then((fn) => { unlisten = fn; }).catch(() => {});
 
@@ -67,7 +69,7 @@ export function useDeepLink() {
           // Clear before applyPayload so a failure in applyPayload doesn't re-process
           // the same payload on the next loop iteration.
           await invoke("clear_pending_request");
-          applyPayload(payload);
+          await applyPayload(payload);
         }
       } catch {
         // non-fatal
