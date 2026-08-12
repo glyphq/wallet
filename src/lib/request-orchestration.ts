@@ -3,7 +3,7 @@ import type { SignMessageApproveResult } from "@/components/request/sign-message
 import type { ConnectApproveResult } from "@/components/request/connect-preview";
 import type { VerifyMessageResult } from "@/components/request/verify-message-preview";
 import { buildSignedCallbackEnvelope } from "@/lib/callback-envelope";
-import { signMessageFromSession } from "@/lib/secure-session";
+import { signCallbackMessageFromSession } from "@/lib/secure-session";
 import type { GlyphCallbackResponse, GlyphEnvelope } from "@/lib/request-schema";
 import type { RequestHistoryItem, VaultMeta } from "@/store/persisted";
 
@@ -41,7 +41,8 @@ export interface RequestOrchestrationDeps {
   addRequestHistoryItem: (item: RequestHistoryItem) => void;
   updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>) => void;
   recordAuditEvent: (event: RequestAuditEvent) => void;
-  signMessage?: typeof signMessageFromSession;
+  signCallbackMessage?: typeof signCallbackMessageFromSession;
+  callbackNetworkId?: GlyphEnvelope["network"]["id"];
 }
 
 function nowEpochSeconds(deps: Pick<RequestOrchestrationDeps, "now">) {
@@ -137,7 +138,8 @@ export async function rejectRequest(
     result: response,
     identity: "",
     accountIndex: 0,
-    signMessage: deps.signMessage ?? signMessageFromSession,
+    signCallbackMessage: deps.signCallbackMessage ?? signCallbackMessageFromSession,
+    networkId: deps.callbackNetworkId,
     nowEpochSeconds: () => nowEpochSeconds(deps),
   }));
 
@@ -188,7 +190,8 @@ export async function approveRequest(
     result: response,
     identity,
     accountIndex: getApprovalAccountIndex(input.approval),
-    signMessage: deps.signMessage ?? signMessageFromSession,
+    signCallbackMessage: deps.signCallbackMessage ?? signCallbackMessageFromSession,
+    networkId: deps.callbackNetworkId,
     nowEpochSeconds: () => nowEpochSeconds(deps),
   }));
 

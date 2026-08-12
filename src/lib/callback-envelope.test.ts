@@ -70,7 +70,7 @@ describe("callback envelope", () => {
       result,
       identity: "IDENTITY",
       accountIndex: 2,
-      signMessage: async (accountIndex, messageBytes) => {
+      signCallbackMessage: async (accountIndex, messageBytes) => {
         signedLength = messageBytes.length;
         return { signature: new Uint8Array([accountIndex, 7]), publicKey: new Uint8Array([1, 2, 3, 4]), identity: "IDENTITY" };
       },
@@ -97,7 +97,7 @@ describe("callback envelope", () => {
       result,
       identity: "IDENTITY",
       accountIndex: 0,
-      signMessage: async () => ({ signature: new Uint8Array([1]), publicKey: new Uint8Array([2]), identity: "IDENTITY" }),
+      signCallbackMessage: async () => ({ signature: new Uint8Array([1]), publicKey: new Uint8Array([2]), identity: "IDENTITY" }),
       nowEpochSeconds: () => 1_899_999_001,
     });
 

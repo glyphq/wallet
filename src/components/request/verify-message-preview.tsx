@@ -18,7 +18,7 @@ export interface VerifyMessageResult {
 
 interface VerifyMessagePreviewProps {
   request: VerifyMessageRequest;
-  onApprove: (result: VerifyMessageResult) => void;
+  onApprove: (result: VerifyMessageResult) => void | Promise<void>;
   onReject: () => void;
 }
 
@@ -50,7 +50,8 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
       const digest = k12(messageBytes, 32);
       const signatureBytes = base64ToBytes(request.signature);
       const valid = verify(digest, signatureBytes, publicKeyBytes);
-      onApprove({ valid, identity: claimedIdentity ?? "", accountIndex: activeAccountIndex });
+      await onApprove({ valid, identity: claimedIdentity ?? "", accountIndex: activeAccountIndex });
+      setProcessing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Verification failed.");
       setProcessing(false);

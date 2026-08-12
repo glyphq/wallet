@@ -40,7 +40,7 @@ export type { ScCallRequest } from "@/lib/request-schema";
 
 interface ScCallPreviewProps {
   request: ScCallRequest;
-  onApprove: (result: ApproveResult) => void;
+  onApprove: (result: ApproveResult) => void | Promise<void>;
   onReject: () => void;
 }
 
@@ -270,7 +270,8 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         contractName: `${contractName} · ${inputTypeLabel}`,
       });
 
-      onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
+      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
+      setProcessing(false);
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");
       setProcessing(false);
