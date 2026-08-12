@@ -87,7 +87,9 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
-      - name: Configure sccache
+      - name: Configure optional sccache
+        id: sccache
+        continue-on-error: true
         uses: mozilla/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Cache Rust registry and sources
@@ -101,8 +103,8 @@ jobs:
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
           TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
-          RUSTC_WRAPPER: sccache
-          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: ${{ steps.sccache.outcome == 'success' && 'sccache' || '' }}
+          SCCACHE_GHA_ENABLED: ${{ steps.sccache.outcome == 'success' && 'true' || 'false' }}
 
   linux-package-smoke:
     name: Linux packages start from a clean profile
@@ -131,7 +133,9 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
-      - name: Configure sccache
+      - name: Configure optional sccache
+        id: sccache
+        continue-on-error: true
         uses: mozilla/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Cache Rust registry and sources
@@ -169,8 +173,8 @@ jobs:
 
       - name: Build unsigned local Linux packages
         env:
-          RUSTC_WRAPPER: sccache
-          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: ${{ steps.sccache.outcome == 'success' && 'sccache' || '' }}
+          SCCACHE_GHA_ENABLED: ${{ steps.sccache.outcome == 'success' && 'true' || 'false' }}
         run: bun tauri build --bundles appimage,deb --no-sign
 
       - name: Validate package payloads and fresh-profile launch
@@ -192,7 +196,9 @@ jobs:
         with:
           toolchain: ${{ env.RUST_VERSION }}
 
-      - name: Configure sccache
+      - name: Configure optional sccache
+        id: sccache
+        continue-on-error: true
         uses: mozilla/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Cache Rust registry and sources
@@ -206,8 +212,8 @@ jobs:
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
         env:
           TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
-          RUSTC_WRAPPER: sccache
-          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: ${{ steps.sccache.outcome == 'success' && 'sccache' || '' }}
+          SCCACHE_GHA_ENABLED: ${{ steps.sccache.outcome == 'success' && 'true' || 'false' }}
 
   security-audit:
     name: Security audit
