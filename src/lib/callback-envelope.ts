@@ -88,12 +88,17 @@ function safeEpochSeconds(epochSeconds: number): number {
   return epochSeconds;
 }
 
-export async function buildCallbackSignaturePayload(envelope: GlyphEnvelope, result: GlyphCallbackResponse, issuedAtEpochSeconds: number): Promise<CallbackSignaturePayload> {
+export async function buildCallbackSignaturePayload(
+  envelope: GlyphEnvelope,
+  result: GlyphCallbackResponse,
+  issuedAtEpochSeconds: number,
+  networkId: GlyphEnvelope["network"]["id"] | undefined = envelope.network.id,
+): Promise<CallbackSignaturePayload> {
   const exp = envelope.request.exp ?? null;
   return {
     version: CALLBACK_ENVELOPE_VERSION,
     request_hash: envelope.request_hash,
-    network: envelope.network,
+    network: { id: networkId },
     nonce: envelope.request.nonce,
     dapp_origin: envelope.request.dapp.origin,
     request_type: envelope.request.type,
@@ -109,12 +114,18 @@ export async function buildSignedCallbackEnvelope(input: {
   result: GlyphCallbackResponse;
   identity: string;
   accountIndex: number;
-  signMessage: (accountIndex: number, messageBytes: Uint8Array) => Promise<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>;
+  signCallbackMessage: (accountIndex: number, messageBytes: Uint8Array) => Promise<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>;
+  networkId?: GlyphEnvelope["network"]["id"];
   nowEpochSeconds?: () => number;
 }): Promise<GlyphSignedCallbackEnvelope> {
-  const payload = await buildCallbackSignaturePayload(input.envelope, input.result, input.nowEpochSeconds?.() ?? Math.floor(Date.now() / 1000));
+  const payload = await buildCallbackSignaturePayload(
+    input.envelope,
+    input.result,
+    input.nowEpochSeconds?.() ?? Math.floor(Date.now() / 1000),
+    input.networkId,
+  );
   const signedPayload = canonicalCallbackPayload(payload);
-  const signed = await input.signMessage(input.accountIndex, new TextEncoder().encode(signedPayload));
+  const signed = await input.signCallbackMessage(input.accountIndex, new TextEncoder().encode(signedPayload));
   return {
     version: CALLBACK_ENVELOPE_VERSION,
     result: input.result,

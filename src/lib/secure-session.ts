@@ -96,3 +96,22 @@ export async function signMessageFromSession(accountIndex: number, messageBytes:
     identity: result.identity,
   };
 }
+
+/**
+ * Signs only the canonical callback payload after the user has approved the
+ * request. This is intentionally a separate native command from user-message
+ * signing so a signature cannot be replayed for a different payload.
+ */
+export async function signCallbackMessageFromSession(accountIndex: number, messageBytes: Uint8Array) {
+  const result = await invoke<NativeSignMessageResult>("sign_callback_message", {
+    request: {
+      accountIndex,
+      messageBytes: Array.from(messageBytes),
+    },
+  });
+  return {
+    signature: new Uint8Array(result.signature),
+    publicKey: new Uint8Array(result.publicKey),
+    identity: result.identity,
+  };
+}
