@@ -196,6 +196,7 @@ pub fn run() {
             session_crypto::clear_session_seeds,
             session_crypto::sign_transaction,
             session_crypto::sign_message,
+            session_crypto::sign_callback_message,
             biometric::check_biometric_available,
             biometric::enable_biometric,
             biometric::biometric_unlock,

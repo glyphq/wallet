@@ -89,6 +89,12 @@ export const glyphEnvelopeSchema = z.object({
   request: glyphRequestSchema,
   callback: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
   redirect_uri: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
+  // Optional v2 binding fields are accepted for signed callback construction.
+  // Existing v1 deep links remain valid while their callback payload receives a
+  // locally derived request hash and configured network binding.
+  protocol: z.literal("glyph-connect-request/2").optional(),
+  network: z.object({ id: z.string().min(1).max(128) }).optional(),
+  request_hash: z.string().optional(),
 }).superRefine((envelope, ctx) => {
   const claimedOrigin = normalizedGlobalHttpsOrigin(envelope.request.dapp.origin);
   if (!claimedOrigin) {

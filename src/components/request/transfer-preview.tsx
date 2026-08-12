@@ -19,11 +19,12 @@ export interface ApproveResult {
   txHash: string;
   targetTick: number;
   identity: string;
+  accountIndex: number;
 }
 
 interface TransferPreviewProps {
   request: TransferRequest;
-  onApprove: (result: ApproveResult) => void;
+  onApprove: (result: ApproveResult) => void | Promise<void>;
   onReject: () => void;
 }
 
@@ -89,7 +90,8 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         broadcastAt: Date.now(),
       });
 
-      onApprove({ txHash: hash, targetTick: tick, identity });
+      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
+      setProcessing(false);
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");
       setProcessing(false);

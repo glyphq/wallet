@@ -11,12 +11,13 @@ export type { ConnectRequest } from "@/lib/request-schema";
 
 export interface ConnectApproveResult {
   identity: string;
+  accountIndex: number;
   permissions: GlyphPermission[];
 }
 
 interface ConnectPreviewProps {
   request: ConnectRequest;
-  onApprove: (result: ConnectApproveResult) => void;
+  onApprove: (result: ConnectApproveResult) => void | Promise<void>;
   onReject: () => void;
 }
 
@@ -49,7 +50,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   function approve() {
     if (!selectedWallet) return;
     const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as GlyphPermission[];
-    onApprove({ identity: selectedWallet.identity, permissions });
+    void onApprove({ identity: selectedWallet.identity, accountIndex: selectedIndex, permissions });
   }
 
   return (

@@ -13,11 +13,12 @@ export interface SignMessageApproveResult {
   signature: string; // base64-encoded 64-byte SchnorrQ signature
   publicKey: string; // base64-encoded 32-byte public key
   identity: string;
+  accountIndex: number;
 }
 
 interface SignMessagePreviewProps {
   request: SignMessageRequest;
-  onApprove: (result: SignMessageApproveResult) => void;
+  onApprove: (result: SignMessageApproveResult) => void | Promise<void>;
   onReject: () => void;
 }
 
@@ -52,11 +53,13 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);
       const { signature, publicKey, identity } = await signMessageFromSession(selectedIndex, messageBytes);
-      onApprove({
+      await onApprove({
         signature: bytesToBase64(signature),
         publicKey: bytesToBase64(publicKey),
         identity,
+        accountIndex: selectedIndex,
       });
+      setProcessing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Signing failed.");
       setProcessing(false);

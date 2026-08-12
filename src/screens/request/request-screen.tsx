@@ -26,6 +26,7 @@ import {
   type RequestOrchestrationDeps,
   type RequestSuccessState,
 } from "@/lib/request-orchestration";
+import { completePendingRequest } from "@/lib/request-lifecycle";
 
 export default function RequestScreen() {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function RequestScreen() {
   const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
   const shiftPendingRequest = useSessionStore((s) => s.shiftPendingRequest);
   const vaults = usePersistedStore((s) => s.vaults);
+  const networkName = usePersistedStore((s) => s.settings.network.name);
   const approveDapp = usePersistedStore((s) => s.approveDapp);
   const addRequestHistoryItem = usePersistedStore((s) => s.addRequestHistoryItem);
   const updateRequestHistoryItem = usePersistedStore((s) => s.updateRequestHistoryItem);
@@ -42,6 +44,7 @@ export default function RequestScreen() {
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<RequestSuccessState | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle");
   const [expirySecsLeft, setExpirySecsLeft] = useState<number | null>(null);
   const expiryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -104,48 +107,80 @@ export default function RequestScreen() {
     addRequestHistoryItem,
     updateRequestHistoryItem,
     recordAuditEvent,
+    callbackNetworkId: `qubic:${networkName}`,
   };
 
   async function reject() {
-    if (envelope) {
-      void rejectRequest(orchestrationDeps, envelope);
+    if (!envelope) return;
+    setActionError(null);
+    try {
+      await completePendingRequest(() => rejectRequest(orchestrationDeps, envelope), shiftPendingRequest);
+    } catch {
+      setActionError("Could not prepare the rejection response. This request is still open. Try again.");
     }
-    shiftPendingRequest();
   }
 
   async function handleApprove(result: ApproveResult) {
     if (!envelope) return;
-    shiftPendingRequest();
-    const state = await approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, vaults });
-    setSuccess(state);
+    setActionError(null);
+    try {
+      const state = await completePendingRequest(
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, vaults }),
+        shiftPendingRequest,
+      );
+      setSuccess(state);
+    } catch {
+      setActionError("Could not prepare the secure response. This request is still open. Try again.");
+    }
   }
 
   async function handleApproveMessage(result: SignMessageApproveResult) {
     if (!envelope) return;
-    shiftPendingRequest();
-    const state = await approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, vaults });
-    setSuccess(state);
+    setActionError(null);
+    try {
+      const state = await completePendingRequest(
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, vaults }),
+        shiftPendingRequest,
+      );
+      setSuccess(state);
+    } catch {
+      setActionError("Could not prepare the secure response. This request is still open. Try again.");
+    }
   }
 
   async function handleApproveVerify(result: VerifyMessageResult) {
     if (!envelope) return;
-    shiftPendingRequest();
-    const state = await approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults });
-    setSuccess(state);
+    setActionError(null);
+    try {
+      const state = await completePendingRequest(
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults }),
+        shiftPendingRequest,
+      );
+      setSuccess(state);
+    } catch {
+      setActionError("Could not prepare the secure response. This request is still open. Try again.");
+    }
   }
 
   async function handleApproveConnect(result: ConnectApproveResult) {
     if (!envelope) return;
-    shiftPendingRequest();
-    const state = await approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, vaults });
-    approveDapp({
-      origin: envelope.request.dapp.origin,
-      name: envelope.request.dapp.name || "Unknown dApp",
-      approvedAt: Date.now(),
-      permissions: result.permissions,
-      allowedIdentities: [result.identity],
-    });
-    setSuccess(state);
+    setActionError(null);
+    try {
+      const state = await completePendingRequest(
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, vaults }),
+        shiftPendingRequest,
+      );
+      approveDapp({
+        origin: envelope.request.dapp.origin,
+        name: envelope.request.dapp.name || "Unknown dApp",
+        approvedAt: Date.now(),
+        permissions: result.permissions,
+        allowedIdentities: [result.identity],
+      });
+      setSuccess(state);
+    } catch {
+      setActionError("Could not prepare the secure response. This request is still open. Try again.");
+    }
   }
 
   async function retryCallbackFromSuccess() {
@@ -257,6 +292,7 @@ export default function RequestScreen() {
           {pendingRequestCount - 1} more request{pendingRequestCount > 2 ? "s" : ""} queued
         </StatusLine>
       )}
+      {actionError && <StatusLine tone="error">{actionError}</StatusLine>}
 
       {request.type === "transfer" ? (
         <TransferPreview
