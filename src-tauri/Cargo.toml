@@ -1,6 +1,6 @@
 [package]
 name = "glyph-wallet"
-version = "0.16.5"
+version = "0.16.6"
 default-run = "glyph-wallet"
 description = "Self-custodial Glyph wallet with dApp deep linking"
 authors = ["alez04"]
