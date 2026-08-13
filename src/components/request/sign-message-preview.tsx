@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { signMessageFromSession } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
-import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { SignMessageRequest } from "@/lib/request-schema";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
@@ -29,6 +29,12 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
+function previewText(value: string, maxChars = 2000): string {
+  return value.length > maxChars
+    ? `${value.slice(0, maxChars)}\n\n[… ${value.length.toLocaleString()} chars total]`
+    : value;
+}
+
 export function SignMessagePreview({ request, onApprove, onReject }: SignMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +46,14 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
   );
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const identity = wallet?.identity ?? "";
+  const dataByteCount = useMemo(() => {
+    if (!request.data) return null;
+    try {
+      return base64ToBytes(request.data).length;
+    } catch {
+      return null;
+    }
+  }, [request.data]);
   const policyDecision = evaluateDappPermission({
     approvedDapps,
     origin: request.dapp.origin,
@@ -82,17 +96,21 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-	      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-	        This signature stays off-chain.
-      </div>
-
       <div>
-        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Message</RequestSectionTitle></div>
-        <RequestTechnicalBlock>
-          {request.message.length > 2000
-            ? `${request.message.slice(0, 2000)}\n\n[… ${request.message.length.toLocaleString()} chars total]`
-            : request.message}
-        </RequestTechnicalBlock>
+        <div style={{ marginBottom: "var(--space-2)" }}>
+          <RequestSectionTitle>{request.data ? "Data to sign" : "Message"}</RequestSectionTitle>
+        </div>
+        {request.data ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <RequestDetailRow label="Payload" value={dataByteCount === null ? "Invalid base64" : `${dataByteCount.toLocaleString()} bytes`} valueColor={dataByteCount === null ? "var(--color-status-error)" : undefined} />
+            {request.message && <RequestDetailRow label="Label" value={previewText(request.message, 160)} />}
+            <RequestDisclosure label={`Show base64 data${dataByteCount === null ? "" : ` · ${dataByteCount.toLocaleString()}B`}`}>
+              <RequestTechnicalBlock maxHeight={160}>{request.data}</RequestTechnicalBlock>
+            </RequestDisclosure>
+          </div>
+        ) : (
+          <RequestTechnicalBlock>{previewText(request.message)}</RequestTechnicalBlock>
+        )}
       </div>
 
       {/* Account picker (shown when dApp didn't specify `from`) */}

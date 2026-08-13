@@ -31,7 +31,7 @@ import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { base64ToBytes } from "@/lib/base64";
 import { qk } from "@/lib/query-keys";
-import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
+import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { ScCallRequest } from "@/lib/request-schema";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
@@ -120,7 +120,6 @@ function decodeMultiSignVaultRelease(bytes: Uint8Array): { vaultId: bigint; amou
 export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
-  const [showPayload, setShowPayload] = useState(false);
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
 
   const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
@@ -198,25 +197,11 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
   const recipientsTotal = decodedSendToMany?.reduce((sum, recipient) => sum + recipient.amount, 0n) ?? 0n;
   const contractFee = decodedSendToMany ? sendToManyFee : null;
   const projectedBalance = balance !== null ? balance - requestAmount : null;
-  const estimatedContractFeeComponent = decodedSendToMany
-    ? contractFee
-    : null;
-  const likelyFailures = [
-    fromError || null,
-    evaluateDappPermission({
-      approvedDapps,
-      origin: request.dapp.origin,
-      permission: "sc_call",
-      identity,
-      amountQu: requestAmount,
-    }).reason,
-    balance !== null && requestAmount > balance ? "Current account balance does not cover the attached QU amount." : null,
-    decodedSendToMany && contractFee !== null && balance !== null && requestAmount > 0n && requestAmount !== recipientsTotal + contractFee
-      ? "Attached amount does not match recipient total plus the current QUtil fee."
-      : null,
-    decodedSendToMany && contractFee === null ? "Could not fetch the current QUtil fee estimate." : null,
-    hasPendingTx ? "This account already has a pending transaction and cannot queue another one yet." : null,
-  ].filter((item): item is string => !!item);
+  const qUtilAmountWarning = decodedSendToMany && contractFee !== null && balance !== null && requestAmount > 0n && requestAmount !== recipientsTotal + contractFee
+    ? "Attached amount does not match recipient total plus the current QUtil fee."
+    : decodedSendToMany && contractFee === null
+      ? "Could not fetch the current QUtil fee estimate."
+      : null;
   const insufficientBalance = balance !== null && requestAmount > balance;
   const balanceAfterDisplay = projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—";
   const policyDecision = evaluateDappPermission({
@@ -394,40 +379,31 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {!fromError && <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
         <RequestDetailRow label="To" value={truncateId(destination as string, 10, 10)} />
-        {hasAmount && <RequestDetailRow label="Amount" value={`${formatQu(requestAmount)} QU`} />}
-        <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
+        {hasAmount && <RequestDetailRow label="Balance after" value={balanceAfterDisplay} />}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <RequestSectionTitle>Preflight</RequestSectionTitle>
-        <RequestDetailRow label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
-        <RequestDetailRow label="Balance after" value={balanceAfterDisplay} />
-        {decodedSendToMany && (
-          <>
-            <RequestDetailRow label="Recipient total" value={`${formatQu(recipientsTotal)} QU`} />
-            <RequestDetailRow label="Contract fee" value={estimatedContractFeeComponent !== null ? `${formatQu(estimatedContractFeeComponent)} QU` : "Unavailable"} />
-          </>
-        )}
-        <RequestDetailRow label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
-      </div>
-
-      {/* Payload — collapsible raw hex (always available for verification) */}
-      {payloadHex !== null && (
-        <div>
-          <button
-            onClick={() => setShowPayload((v) => !v)}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-2)" }}
-          >
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              {showPayload ? "Hide payload" : `Show payload · ${payloadByteCount}B`}
-            </span>
-          </button>
-          {showPayload && (
-            <div style={{ marginTop: "var(--space-2)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", wordBreak: "break-all", lineHeight: 1.6 }}>
-              {payloadHex}
-            </div>
-          )}
+      {decodedSendToMany && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+          <RequestSectionTitle>Totals</RequestSectionTitle>
+          <RequestDetailRow label="Recipients" value={`${formatQu(recipientsTotal)} QU`} />
+          <RequestDetailRow label="QUtil fee" value={contractFee !== null ? `${formatQu(contractFee)} QU` : "Unavailable"} />
         </div>
+      )}
+
+      {(payloadHex !== null || targetTick !== null) && (
+        <RequestDisclosure label="Advanced details">
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
+            {payloadHex !== null && (
+              <div>
+                <RequestSectionTitle>Payload · {payloadByteCount.toLocaleString()}B</RequestSectionTitle>
+                <div style={{ marginTop: "var(--space-2)" }}>
+                  <RequestTechnicalBlock maxHeight={160}>{payloadHex}</RequestTechnicalBlock>
+                </div>
+              </div>
+            )}
+          </div>
+        </RequestDisclosure>
       )}
 
       {insufficientBalance && (
@@ -438,6 +414,11 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       {hasPendingTx && !insufficientBalance && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
           This account already has a pending transfer. Wait for confirmation before sending another one.
+        </div>
+      )}
+      {qUtilAmountWarning && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+          {qUtilAmountWarning}
         </div>
       )}
       {txError && (
