@@ -29,6 +29,18 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS}" ]; then
   fi
 fi
 
+find_desktop_entry() {
+  # Tauri places the template in usr/share/applications. Some AppImage tools
+  # also copy it to the AppDir root, so support both layouts.
+  for _desktop_candidate in "${APPDIR}"/*.desktop "${APPDIR}/usr/share/applications"/*.desktop; do
+    if [ -f "${_desktop_candidate}" ]; then
+      printf '%s\n' "${_desktop_candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
 # Self-register on first run (and re-register if the AppImage has moved).
 #
 # Two things are required for glyph:// deep links to work:
@@ -46,17 +58,29 @@ _APPS="${HOME}/.local/share/applications"
 _DESKTOP="${_APPS}/glyph.desktop"
 _APPIMAGE_PATH="${APPIMAGE:-}"
 
-# Detect if we need to (re-)register: missing desktop file OR Exec= points
-# to a path that no longer matches the current AppImage location.
+# Detect if we need to (re-)register: missing desktop file, an outdated icon
+# identity, or Exec= pointing to a path that no longer matches the current
+# AppImage location. The icon check migrates existing installs after a bundle
+# identity change, including in-place updater replacements.
 _NEEDS_REGISTER=0
 if [ ! -f "${_DESKTOP}" ]; then
   _NEEDS_REGISTER=1
-elif [ -n "${_APPIMAGE_PATH}" ]; then
-  _CURRENT_EXEC=$(grep "^Exec=" "${_DESKTOP}" | head -1 | sed 's/^Exec=//;s/ %u$//')
-  _CURRENT_EXEC="${_CURRENT_EXEC%\"}"
-  _CURRENT_EXEC="${_CURRENT_EXEC#\"}"
-  if [ "${_CURRENT_EXEC}" != "${_APPIMAGE_PATH}" ]; then
+else
+  _SRC=$(find_desktop_entry || true)
+  _EXPECTED_ICON=""
+  if [ -n "${_SRC}" ]; then
+    _EXPECTED_ICON=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_SRC}")
+  fi
+  _CURRENT_ICON=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_DESKTOP}")
+  if [ -n "${_EXPECTED_ICON}" ] && [ "${_CURRENT_ICON}" != "${_EXPECTED_ICON}" ]; then
     _NEEDS_REGISTER=1
+  elif [ -n "${_APPIMAGE_PATH}" ]; then
+    _CURRENT_EXEC=$(grep "^Exec=" "${_DESKTOP}" | head -1 | sed 's/^Exec=//;s/ %u$//')
+    _CURRENT_EXEC="${_CURRENT_EXEC%\"}"
+    _CURRENT_EXEC="${_CURRENT_EXEC#\"}"
+    if [ "${_CURRENT_EXEC}" != "${_APPIMAGE_PATH}" ]; then
+      _NEEDS_REGISTER=1
+    fi
   fi
 fi
 
@@ -69,7 +93,7 @@ fi
 
 if [ "${_NEEDS_REGISTER}" = "1" ]; then
   mkdir -p "${_APPS}"
-  _SRC=$(find "${APPDIR}" -maxdepth 1 -name "*.desktop" | head -1)
+  _SRC=$(find_desktop_entry || true)
   if [ -n "${_SRC}" ]; then
     _ICON_NAME=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_SRC}")
     [ -n "${_ICON_NAME}" ] || _ICON_NAME="Glyph"
