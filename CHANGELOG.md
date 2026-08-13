@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.7
+
+### Patch Changes
+
+- 595f374: Queue incoming deep-link requests in FIFO order so requests that arrive while another approval is active are not lost.
+
 ## 0.16.6
 
 ### Patch Changes
