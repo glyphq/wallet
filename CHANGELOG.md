@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.9
+
+### Patch Changes
+
+- ea454b6: Fix Linux desktop notification icon registration in packaged builds.
+
 ## 0.16.8
 
 ### Patch Changes
