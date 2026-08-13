@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.10
+
+### Patch Changes
+
+- 72097c1: Fix the Linux package icon payload so desktop notifications resolve the Glyph application icon.
+
 ## 0.16.9
 
 ### Patch Changes
