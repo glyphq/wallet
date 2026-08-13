@@ -36,9 +36,11 @@ describe("deep link acceptance replay boundary", () => {
   test("does not burn replay state for a valid request on the wrong network", async () => {
     const payload = await makePayload({ id: "qubic:testnet" });
     const commands: string[] = [];
+    const clearPayloads: unknown[] = [];
     let consumed = false;
     const invokeNative = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
       commands.push(command);
+      if (command === "clear_pending_request") clearPayloads.push(args?.payload);
       if (command === "accept_pending_request") {
         expect(args).toMatchObject({ activeNetworkId: "qubic:testnet" });
         if (consumed) return false as T;
@@ -64,5 +66,6 @@ describe("deep link acceptance replay boundary", () => {
       shouldRetainPending: false,
     });
     expect(commands).toEqual(["accept_pending_request", "clear_pending_request", "accept_pending_request", "clear_pending_request"]);
+    expect(clearPayloads).toEqual([payload, payload]);
   });
 });

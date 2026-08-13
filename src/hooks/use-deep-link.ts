@@ -9,6 +9,7 @@ import { recordAuditEvent } from "@/lib/audit-log";
 import { buildRequestNotification, parseGlyphEnvelopeAsync } from "@/lib/request-schema";
 import { activeNetworkBinding } from "@/lib/network-binding";
 import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptance";
+import { drainPendingRequests } from "@/lib/pending-request-queue";
 
 /** Listens for `glyph:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
@@ -23,17 +24,12 @@ export function useDeepLink() {
   enqueuePendingRequestRef.current = enqueuePendingRequest;
   const notificationsEnabledRef = useRef(notificationsEnabled);
   notificationsEnabledRef.current = notificationsEnabled;
+  const pendingRequestDrainRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
-    async function applyPayload(payload: string) {
-      const { accepted } = await acceptDeepLinkPayloadAfterNetworkMatch({
-        payload,
-        networkSetting: usePersistedStore.getState().settings.network,
-        invokeNative: invoke,
-      });
-      if (!accepted) return;
+    async function applyAcceptedPayload(payload: string) {
       const parsed = await parseGlyphEnvelopeAsync(payload, await activeNetworkBinding(usePersistedStore.getState().settings.network));
       if (!parsed.envelope) return;
       enqueuePendingRequestRef.current(payload);
@@ -59,22 +55,48 @@ export function useDeepLink() {
       // If locked, lock screen reads pendingRequests and navigates to /request after unlock.
     }
 
-    listen<string>("glyph:request", (event) => {
-      void applyPayload(event.payload);
+    function drainPendingRequestQueue() {
+      if (pendingRequestDrainRef.current) return pendingRequestDrainRef.current;
+      const drain = drainPendingRequests({
+        getPendingRequest: () => invoke<string | null>("get_pending_request"),
+        acceptPendingRequest: (payload) => acceptDeepLinkPayloadAfterNetworkMatch({
+          payload,
+          networkSetting: usePersistedStore.getState().settings.network,
+          invokeNative: invoke,
+        }),
+        onAccepted: applyAcceptedPayload,
+      }).catch(() => {
+        // A transient IPC failure leaves the native queue head intact for the
+        // next event or cold-start check.
+      });
+      pendingRequestDrainRef.current = drain;
+      void drain.finally(() => {
+        if (pendingRequestDrainRef.current === drain) {
+          pendingRequestDrainRef.current = null;
+        }
+      });
+      return drain;
+    }
+
+    /*
+     * Events are availability notifications, not the source of truth. Reading
+     * payloads from the native queue serially prevents two async events from
+     * accepting and clearing each other's queue head.
+     */
+    function applyPayload() {
+      return drainPendingRequestQueue();
+    }
+
+    listen<string>("glyph:request", () => {
+      void applyPayload();
     }).then((fn) => { unlisten = fn; }).catch(() => {});
 
-    // Cold start: wait for the persisted store to hydrate before reading the Rust-side stored
-    // request. Without this, vaults.length = 0 at first render (pre-hydration), which would
-    // cause applyPayload to clear the pending request before routing is settled.
+    // Cold start: wait for the persisted store to hydrate before reading the Rust-side queue.
+    // Without this, vaults.length = 0 at first render (pre-hydration), which would
+    // cause routing to settle before the persisted vault state is available.
     async function checkPending() {
       try {
-        while (true) {
-          const payload = await invoke<string | null>("get_pending_request");
-          if (!payload) break;
-          await applyPayload(payload);
-          // Wrong-network payloads remain queued so they can be accepted after a network switch.
-          if ((await invoke<string | null>("get_pending_request")) === payload) break;
-        }
+        await applyPayload();
       } catch {
         // non-fatal
       }

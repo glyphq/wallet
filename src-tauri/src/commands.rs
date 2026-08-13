@@ -114,8 +114,8 @@ pub fn get_pending_request(state: State<'_, DeepLinkState>) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn clear_pending_request(state: State<'_, DeepLinkState>) {
-    state.take();
+pub fn clear_pending_request(state: State<'_, DeepLinkState>, payload: String) -> bool {
+    state.take_if_front(&payload)
 }
 
 #[tauri::command]
@@ -125,6 +125,9 @@ pub fn accept_pending_request(
     payload: String,
     active_network_id: String,
 ) -> Result<bool, String> {
+    if state.peek().as_deref() != Some(payload.as_str()) {
+        return Ok(false);
+    }
     let [network_id, dapp_origin, nonce, request_hash] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
     if network_id != active_network_id {
         return Ok(false);

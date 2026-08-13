@@ -77,7 +77,16 @@ export const useSessionStore = create<SessionState>()((set) => ({
   },
 
   enqueuePendingRequest: (raw) =>
-    set((s) => ({ pendingRequests: [...s.pendingRequests, raw].slice(-MAX_PENDING_REQUESTS) })),
+    set((s) => {
+      // The native queue is the authority for new links, but keep this second
+      // boundary in case the same Tauri event is delivered more than once.
+      // Keep the oldest requests at capacity so an already-visible request can
+      // never be displaced by a later link.
+      if (s.pendingRequests.includes(raw) || s.pendingRequests.length >= MAX_PENDING_REQUESTS) {
+        return s;
+      }
+      return { pendingRequests: [...s.pendingRequests, raw] };
+    }),
 
   shiftPendingRequest: () =>
     set((s) => ({ pendingRequests: s.pendingRequests.slice(1) })),
