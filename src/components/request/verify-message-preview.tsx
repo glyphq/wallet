@@ -5,7 +5,7 @@ import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
-import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
 
 export type { VerifyMessageRequest } from "@/lib/request-schema";
@@ -22,6 +22,12 @@ interface VerifyMessagePreviewProps {
   onReject: () => void;
 }
 
+function previewText(value: string, maxChars = 2000): string {
+  return value.length > maxChars
+    ? `${value.slice(0, maxChars)}\n\n[… ${value.length.toLocaleString()} chars total]`
+    : value;
+}
+
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +35,14 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const activeAccountIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
 
   const publicKeyBytes = useMemo(() => base64ToBytes(request.public_key), [request.public_key]);
+  const dataByteCount = useMemo(() => {
+    if (!request.data) return null;
+    try {
+      return base64ToBytes(request.data).length;
+    } catch {
+      return null;
+    }
+  }, [request.data]);
 
   const claimedIdentity = useMemo(() => {
     try {
@@ -62,15 +76,21 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-	      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-	        Verification runs locally.
-      </div>
-
       <div>
-        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Message</RequestSectionTitle></div>
-        <RequestTechnicalBlock maxHeight={160}>
-          {request.message}
-        </RequestTechnicalBlock>
+        <div style={{ marginBottom: "var(--space-2)" }}>
+          <RequestSectionTitle>{request.data ? "Data to verify" : "Message"}</RequestSectionTitle>
+        </div>
+        {request.data ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <RequestDetailRow label="Payload" value={dataByteCount === null ? "Invalid base64" : `${dataByteCount.toLocaleString()} bytes`} valueColor={dataByteCount === null ? "var(--color-status-error)" : undefined} />
+            {request.message && <RequestDetailRow label="Label" value={previewText(request.message, 160)} />}
+            <RequestDisclosure label={`Show base64 data${dataByteCount === null ? "" : ` · ${dataByteCount.toLocaleString()}B`}`}>
+              <RequestTechnicalBlock maxHeight={160}>{request.data}</RequestTechnicalBlock>
+            </RequestDisclosure>
+          </div>
+        ) : (
+          <RequestTechnicalBlock maxHeight={160}>{previewText(request.message)}</RequestTechnicalBlock>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
