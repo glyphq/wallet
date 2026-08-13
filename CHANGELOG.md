@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.8
+
+### Patch Changes
+
+- 7b67951: Simplify dApp request review screens by prioritizing the action, account, and approval-relevant details, with technical payload data available on demand.
+
 ## 0.16.7
 
 ### Patch Changes
