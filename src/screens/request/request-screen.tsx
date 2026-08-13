@@ -53,6 +53,13 @@ export default function RequestScreen() {
     if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
   }, [pendingRequest, success, navigate]);
 
+  // A new request can arrive while the completion view is open. The active
+  // queue head takes precedence so the wallet does not strand it behind a
+  // stale success state.
+  useEffect(() => {
+    if (success && pendingRequest) setSuccess(null);
+  }, [pendingRequest, success]);
+
   useEffect(() => {
     setCopyStatus("idle");
     if (copyResetTimeoutRef.current !== null) {
@@ -111,6 +118,15 @@ export default function RequestScreen() {
 
   const [actionError, setActionError] = useState<string | null>(null);
 
+  function showSuccessIfQueueIsEmpty(state: RequestSuccessState) {
+    // completePendingRequest shifts synchronously after a successful response.
+    // When another request is already queued, render it immediately instead of
+    // holding the screen on the previous request's completion view.
+    if (useSessionStore.getState().pendingRequests.length === 0) {
+      setSuccess(state);
+    }
+  }
+
   async function reject() {
     if (!envelope) return;
     setActionError(null);
@@ -129,7 +145,7 @@ export default function RequestScreen() {
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, vaults }),
         shiftPendingRequest,
       );
-      setSuccess(state);
+      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -143,7 +159,7 @@ export default function RequestScreen() {
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, vaults }),
         shiftPendingRequest,
       );
-      setSuccess(state);
+      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -157,7 +173,7 @@ export default function RequestScreen() {
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults }),
         shiftPendingRequest,
       );
-      setSuccess(state);
+      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -181,7 +197,7 @@ export default function RequestScreen() {
         expiryDurationMs: result.expiryDurationMs,
         expiresAt: result.expiresAt,
       });
-      setSuccess(state);
+      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }

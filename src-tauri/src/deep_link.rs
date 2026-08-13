@@ -37,15 +37,16 @@ impl Default for DeepLinkState {
 }
 
 impl DeepLinkState {
-    pub fn store(&self, payload: String) {
-        Self::store_bounded(&self.pending_requests, payload);
-    }
-
-    pub fn take(&self) -> Option<String> {
-        self.pending_requests
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .pop_front()
+    /// Queue an already validated request once. Never evict an older request:
+    /// preserving its FIFO position is safer than replacing a request that is
+    /// already awaiting explicit user review.
+    pub fn store(&self, payload: String) -> bool {
+        let mut queue = self.pending_requests.lock().unwrap_or_else(|e| e.into_inner());
+        if queue.contains(&payload) || queue.len() >= MAX_PENDING_LINKS {
+            return false;
+        }
+        queue.push_back(payload);
+        true
     }
 
     pub fn peek(&self) -> Option<String> {
@@ -54,6 +55,18 @@ impl DeepLinkState {
             .unwrap_or_else(|e| e.into_inner())
             .front()
             .cloned()
+    }
+
+    /// Remove only the expected queue head. A stale renderer event must never
+    /// consume the request that arrived after it.
+    pub fn take_if_front(&self, payload: &str) -> bool {
+        let mut queue = self.pending_requests.lock().unwrap_or_else(|e| e.into_inner());
+        if queue.front().is_some_and(|front| front == payload) {
+            queue.pop_front();
+            true
+        } else {
+            false
+        }
     }
 
     pub fn store_payment(&self, payload: String) {
@@ -549,9 +562,12 @@ pub fn process_url(app: &AppHandle, raw: &str) -> bool {
                 "request_hash": parsed.request_hash,
             });
             let payload = envelope.to_string();
-            state.store(payload.clone());
-            app.emit("glyph:request", payload).ok();
-            true
+            if state.store(payload.clone()) {
+                app.emit("glyph:request", payload).ok();
+                true
+            } else {
+                false
+            }
         }
         Err(e) => {
             eprintln!("[glyph] deep link rejected: {e}");
@@ -648,15 +664,28 @@ mod tests {
     }
 
     #[test]
-    fn pending_queues_drop_the_oldest_item_at_the_limit() {
+    fn pending_request_queue_preserves_oldest_item_at_the_limit() {
         let state = DeepLinkState::default();
         for index in 0..=MAX_PENDING_LINKS {
             state.store(format!("request-{index}"));
             state.store_payment(format!("payment-{index}"));
         }
 
-        assert_eq!(state.take().as_deref(), Some("request-1"));
+        assert!(state.take_if_front("request-0"));
         assert_eq!(state.take_payment().as_deref(), Some("payment-1"));
+    }
+
+    #[test]
+    fn pending_request_queue_deduplicates_and_only_clears_its_head() {
+        let state = DeepLinkState::default();
+        assert!(state.store("first".to_string()));
+        assert!(!state.store("first".to_string()));
+        assert!(state.store("second".to_string()));
+
+        assert!(!state.take_if_front("second"));
+        assert_eq!(state.peek().as_deref(), Some("first"));
+        assert!(state.take_if_front("first"));
+        assert_eq!(state.peek().as_deref(), Some("second"));
     }
 
     #[test]
