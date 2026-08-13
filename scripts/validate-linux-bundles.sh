@@ -105,7 +105,7 @@ validate_deb() {
   grep -Fxq 'Exec=glyph-link-broker %u' "$desktop" \
     || die "deb desktop entry does not route launches through glyph-link-broker"
   icon_name="$(awk -F= '$1 == "Icon" { print $2; exit }' "$desktop")"
-  [[ -n "$icon_name" ]] || die "deb desktop entry has no Icon value"
+  [[ "$icon_name" == "com.qubic.glyph" ]] || die "deb desktop icon is not the notification icon identity: $icon_name"
   find "$workdir/usr/share/icons" -type f -name "${icon_name}.png" -print -quit | grep -q . \
     || die "deb desktop icon does not resolve: $icon_name"
   appstream="$workdir/usr/share/metainfo/com.qubic.glyph.metainfo.xml"
@@ -164,6 +164,8 @@ validate_appimage() {
   grep -Fxq 'Exec=glyph-link-broker %u' "$desktop" \
     || die "AppImage desktop entry does not route launches through glyph-link-broker"
   icon_name="$(awk -F= '$1 == "Icon" { print $2; exit }' "$desktop")"
+  [[ "$icon_name" == "com.qubic.glyph" ]] \
+    || die "AppImage desktop icon is not the notification icon identity: $icon_name"
   [[ -f "$appdir/${icon_name}.png" ]] || die "AppImage root icon does not resolve: $icon_name"
   [[ -f "$appdir/usr/share/metainfo/com.qubic.glyph.metainfo.xml" ]] \
     || die "AppImage is missing AppStream metadata"
