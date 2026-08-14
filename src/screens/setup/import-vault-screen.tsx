@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { Button } from "@/components/button";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SetupFlow } from "@/components/setup-flow";
@@ -30,6 +31,7 @@ export default function ImportVaultScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
+  const [seedInputRevealed, setSeedInputRevealed] = useState(false);
   const [seedError, setSeedError] = useState("");
   const [nameError, setNameError] = useState("");
   const [setupError, setSetupError] = useState("");
@@ -104,7 +106,26 @@ export default function ImportVaultScreen() {
   return (
     <FullPage centered={false} style={{ paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
       {step === 1 ? (
-        <SetupFlow current={1} total={3} title="Enter your seed" primaryLabel="Continue" onPrimary={validateSeed} onBack={back}>
+        <SetupFlow
+          current={1}
+          total={3}
+          title="Enter your seed"
+          primaryLabel="Continue"
+          onPrimary={validateSeed}
+          onBack={back}
+          secondaryActions={
+            <Button
+              variant="secondary"
+              size="md"
+              style={{ width: "100%" }}
+              onClick={() => setSeedInputRevealed((value) => !value)}
+              aria-pressed={seedInputRevealed}
+            >
+              {seedInputRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+              {seedInputRevealed ? "Hide entered seed" : "Reveal entered seed"}
+            </Button>
+          }
+        >
           <Textarea
             leftElement={<KeyMinimalistic size={18} weight="Linear" />}
             value={seedInput}
@@ -121,7 +142,15 @@ export default function ImportVaultScreen() {
             autoFocus
             technical
             error={seedError}
-            style={{ resize: "none", minHeight: 136, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
+            style={{
+              resize: "none",
+              minHeight: 136,
+              borderRadius: "var(--radius-control)",
+              background: "var(--color-bg-input)",
+              overflowWrap: "anywhere",
+              filter: seedInputRevealed ? "none" : "blur(6px)",
+              transition: "filter var(--duration-fast) var(--ease-out)",
+            }}
           />
         </SetupFlow>
       ) : null}
