@@ -259,7 +259,10 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
           No transactions yet
         </div>
-        <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>Send your first transaction</Button>
+        <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>
+          <ArrowRightUp size={16} weight="Bold" aria-hidden="true" />
+          Send your first tx
+        </Button>
       </div>
     );
   }
