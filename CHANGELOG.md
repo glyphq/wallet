@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.12
+
+### Patch Changes
+
+- 6477908: Improve onboarding seed privacy and clarify dashboard actions.
+
 ## 0.16.11
 
 ### Patch Changes
