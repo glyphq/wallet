@@ -534,7 +534,6 @@ export default function HistoryScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
               No transactions yet
             </div>
-            <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>Send your first transaction</Button>
           </div>
         ) : (
           <StatusText color="var(--color-text-disabled)">No results</StatusText>

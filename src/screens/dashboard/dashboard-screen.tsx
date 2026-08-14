@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole, WalletMoney } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole, TransferHorizontal, WalletMoney } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
@@ -259,10 +259,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
           No transactions yet
         </div>
-        <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>
-          <ArrowRightUp size={16} weight="Bold" aria-hidden="true" />
-          Send your first tx
-        </Button>
       </div>
     );
   }
@@ -492,10 +488,6 @@ export default function DashboardScreen() {
                 <QrCode size={16} weight="Bold" />
                 Receive
               </Button>
-              <Button variant="secondary" size="md" shape="pill" onClick={() => navigate("/stake")}>
-                <WalletMoney size={16} weight="Linear" aria-hidden="true" />
-                Earn
-              </Button>
             </div>
           )}
         </div>
@@ -522,6 +514,25 @@ export default function DashboardScreen() {
           </div>
           <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} price={stats?.price} />
         </div>
+
+        <nav aria-label="More wallet actions" style={{ display: "flex", justifyContent: "center", gap: "var(--space-5)", marginTop: "var(--space-5)" }}>
+          <button
+            type="button"
+            onClick={() => navigate("/stake")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0, background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer" }}
+          >
+            <WalletMoney size={18} weight="Linear" aria-hidden="true" />
+            QEarn
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/send-many")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0, background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer" }}
+          >
+            <TransferHorizontal size={18} weight="Linear" aria-hidden="true" />
+            Send to many
+          </button>
+        </nav>
 
       </div>
     </AppShell>
