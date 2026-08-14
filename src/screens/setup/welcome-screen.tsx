@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { AltArrowLeft, DangerTriangle, LockKeyhole } from "@solar-icons/react";
+import { AddCircle, AltArrowLeft, DangerTriangle, FolderOpen, KeyMinimalistic, LockKeyhole } from "@solar-icons/react";
 import { presets } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -268,9 +268,11 @@ export default function WelcomeScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button onClick={() => navigate("/setup/create")}>
+              <AddCircle size={18} weight="Linear" aria-hidden="true" />
               Create Vault
             </Button>
             <Button variant="secondary" onClick={() => navigate("/setup/import")}>
+              <KeyMinimalistic size={18} weight="Linear" aria-hidden="true" />
               Restore from seed
             </Button>
           </div>
@@ -279,6 +281,7 @@ export default function WelcomeScreen() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
+              <FolderOpen size={18} weight="Linear" aria-hidden="true" />
               Import Vault file
             </Button>
           </div>

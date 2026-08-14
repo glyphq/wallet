@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
-import { Eye, EyeClosed, LockKeyhole, ShieldCheck } from "@solar-icons/react";
+import { AltArrowLeft, AltArrowRight, Eye, EyeClosed, LockKeyhole, ShieldCheck } from "@solar-icons/react";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
@@ -79,8 +79,10 @@ export function SetupFlow({
           {secondaryActions}
           <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
             {primaryLabel}
+            <AltArrowRight size={18} weight="Linear" aria-hidden="true" />
           </Button>
           <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
+            <AltArrowLeft size={18} weight="Linear" aria-hidden="true" />
             Back
           </Button>
         </div>
