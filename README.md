@@ -117,6 +117,31 @@ Manage connected apps and their permissions in **Settings → Connected apps**. 
 
 > **Small start, big picture.** Begin with one account and one action. Glyph will be ready when your setup grows.
 
+## System requirements
+
+Glyph is a native desktop application. Use a supported 64-bit desktop system with a graphical session and an internet connection to a Qubic RPC service. It does not run in a browser, on mobile, or on 32-bit systems.
+
+| Resource | Practical baseline | Recommended |
+| --- | --- | --- |
+| Processor | 64-bit dual-core CPU | Modern 64-bit quad-core CPU |
+| Memory available to Glyph | 512 MB | 1 GB when running alongside other desktop apps |
+| Storage | 500 MB free space | 1 GB free space for updates, exports, and local activity data |
+
+Glyph itself typically uses under 200 MB of memory at rest. The computer's total memory requirement is otherwise determined by its operating system and the apps you run alongside Glyph.
+
+| Platform | Supported build | What you need to run it |
+| --- | --- | --- |
+| Windows | x64 | A current 64-bit Windows desktop. Run the per-user installer. |
+| macOS | Universal | An Intel or Apple Silicon Mac. Move Glyph to Applications before opening it. |
+| Linux | x86_64 | A 64-bit Linux desktop session. Choose the AppImage, Debian, or RPM package for your distribution. |
+
+### Linux notes
+
+- The AppImage, Debian, and RPM builds are all x86_64 only.
+- AppImage uses the host graphics stack. Keep graphics drivers and the desktop compositor current if rendering is unstable.
+- Desktop notifications need an active session notification service. The tray icon depends on AppIndicator support, which may require a desktop extension on GNOME.
+- AppImage supports Glyph's built-in updater. Debian and RPM packages are updated through the system package manager.
+
 ## Download and install
 
 Get the latest stable build from [GitHub Releases](https://github.com/glyphq/wallet/releases/latest).
