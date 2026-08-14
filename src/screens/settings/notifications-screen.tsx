@@ -6,6 +6,8 @@ import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { SettingsSwitch } from "@/components/settings-switch";
+import { Button } from "@/components/button";
+import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
@@ -21,6 +23,8 @@ export default function NotificationsScreen() {
   const updateSettings = usePersistedStore((s) => s.updateSettings);
   const [autostartPending, setAutostartPending] = useState(false);
   const [autostartReady, setAutostartReady] = useState(false);
+  const [notificationTestPending, setNotificationTestPending] = useState(false);
+  const [notificationTestStatus, setNotificationTestStatus] = useState<"idle" | "sent" | "failed">("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +69,30 @@ export default function NotificationsScreen() {
     }
   }
 
+  async function sendNotificationTest() {
+    setNotificationTestPending(true);
+    setNotificationTestStatus("idle");
+    try {
+      const result = await publishNotificationEvent(createNotificationEvent({
+        kind: "system",
+        title: "Glyph notification test",
+        body: "Desktop notifications are configured correctly.",
+      }));
+      if (!result || !result.ok) {
+        setNotificationTestStatus("failed");
+        recordRuntimeIssue({
+          source: "native",
+          title: "Notification test failed",
+          detail: result?.ok === false ? result.message : "Desktop notifications are disabled.",
+        });
+        return;
+      }
+      setNotificationTestStatus("sent");
+    } finally {
+      setNotificationTestPending(false);
+    }
+  }
+
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
@@ -73,6 +101,15 @@ export default function NotificationsScreen() {
         {/* Master toggle */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSwitch label="Notifications" description="Show desktop notifications for Vault events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-sm)" }}>
+            {notificationTestStatus === "sent" ? "Notification sent" : notificationTestStatus === "failed" ? "Notification could not be sent" : "Check desktop delivery"}
+          </span>
+          <Button size="sm" variant="secondary" style={{ width: "auto" }} onClick={() => void sendNotificationTest()} disabled={!enabled || notificationTestPending} loading={notificationTestPending}>
+            Send test
+          </Button>
         </div>
 
         <SettingsDivider />
