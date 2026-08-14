@@ -183,7 +183,8 @@ export type NotificationEventKind =
   | "failed"
   | "expired"
   | "deep_link"
-  | "price_alert";
+  | "price_alert"
+  | "system";
 
 export interface NotificationEvent {
   id: string;
