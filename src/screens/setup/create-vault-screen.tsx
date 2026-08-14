@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { CheckCircle, Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { CheckCircle, Copy, Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SeedSurface, SetupFlow } from "@/components/setup-flow";
@@ -31,8 +31,9 @@ export default function CreateVaultScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
   const [backupSeedRevealed, setBackupSeedRevealed] = useState(false);
+  const [backupSeedHandled, setBackupSeedHandled] = useState(false);
+  const [confirmationRevealed, setConfirmationRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [seedViewed, setSeedViewed] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [nameError, setNameError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
@@ -60,13 +61,13 @@ export default function CreateVaultScreen() {
     }
     setNameError("");
     setBackupSeedRevealed(false);
-    setSeedViewed(false);
+    setBackupSeedHandled(false);
     setStep(2);
   }
 
   function toggleBackupSeed() {
     setBackupSeedRevealed((revealed) => {
-      if (!revealed) setSeedViewed(true);
+      if (!revealed) setBackupSeedHandled(true);
       return !revealed;
     });
   }
@@ -74,6 +75,7 @@ export default function CreateVaultScreen() {
   async function copySeed() {
     const didCopy = await copyToClipboard(seed, SEED_CLIPBOARD_CLEAR_SECS);
     if (!didCopy) return;
+    setBackupSeedHandled(true);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   }
@@ -89,6 +91,7 @@ export default function CreateVaultScreen() {
 
   function continueFromBackup() {
     setBackupSeedRevealed(false);
+    setConfirmationRevealed(false);
     setStep(3);
   }
 
@@ -156,12 +159,15 @@ export default function CreateVaultScreen() {
           total={4}
           title="Back up your seed"
           primaryLabel="Continue"
-          primaryDisabled={!acknowledged || !seedViewed}
+          primaryDisabled={!acknowledged || !backupSeedHandled}
           onPrimary={continueFromBackup}
           onBack={back}
           secondaryActions={
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-              <Button variant="secondary" size="md" onClick={copySeed}>{copied ? "Copied" : "Copy seed"}</Button>
+              <Button variant="secondary" size="md" onClick={copySeed}>
+                {copied ? <CheckCircle size={18} weight="Linear" aria-hidden="true" /> : <Copy size={18} weight="Linear" aria-hidden="true" />}
+                {copied ? "Copied" : "Copy seed"}
+              </Button>
               <Button variant="secondary" size="md" onClick={toggleBackupSeed} aria-pressed={backupSeedRevealed}>
                 {backupSeedRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
                 {backupSeedRevealed ? "Hide seed" : "Reveal seed"}
@@ -170,7 +176,7 @@ export default function CreateVaultScreen() {
           }
         >
           <p style={{ margin: 0, fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
-            Your seed stays hidden until you choose to reveal it. Write it down offline, then confirm it on the next step.
+            Copy it to your chosen secure location or reveal it to record offline. You will confirm it on the next step.
           </p>
           <SeedSurface
             seed={seed}
@@ -214,7 +220,7 @@ export default function CreateVaultScreen() {
             >
               {acknowledged ? <CheckCircle size={16} weight="Bold" /> : null}
             </span>
-            I wrote this seed down and stored it safely
+            I stored this seed safely
           </button>
         </SetupFlow>
       ) : null}
@@ -228,6 +234,12 @@ export default function CreateVaultScreen() {
           primaryDisabled={!confirmation.trim()}
           onPrimary={confirmBackup}
           onBack={back}
+          secondaryActions={
+            <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setConfirmationRevealed((value) => !value)} aria-pressed={confirmationRevealed}>
+              {confirmationRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+              {confirmationRevealed ? "Hide entered seed" : "Reveal entered seed"}
+            </Button>
+          }
         >
           <p style={{ margin: 0, fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
             Type the complete seed exactly as you saved it.
@@ -247,7 +259,15 @@ export default function CreateVaultScreen() {
             technical
             autoFocus
             error={confirmationError}
-            style={{ resize: "none", minHeight: 136, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
+            style={{
+              resize: "none",
+              minHeight: 136,
+              borderRadius: "var(--radius-control)",
+              background: "var(--color-bg-input)",
+              overflowWrap: "anywhere",
+              filter: confirmationRevealed ? "none" : "blur(6px)",
+              transition: "filter var(--duration-fast) var(--ease-out)",
+            }}
           />
         </SetupFlow>
       ) : null}
