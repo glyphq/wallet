@@ -1,5 +1,11 @@
 # glyph
 
+## 0.16.11
+
+### Patch Changes
+
+- 600644b: Add a desktop notification delivery check in Settings.
+
 ## 0.16.10
 
 ### Patch Changes
