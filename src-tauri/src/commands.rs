@@ -128,11 +128,11 @@ pub fn accept_pending_request(
     if state.peek().as_deref() != Some(payload.as_str()) {
         return Ok(false);
     }
-    let [network_id, dapp_origin, nonce, request_hash] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
+    let [network_id, ..] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
     if network_id != active_network_id {
         return Ok(false);
     }
-    let replay_key = format!("v2|{network_id}|{dapp_origin}|{nonce}|{request_hash}");
+    let replay_key = crate::deep_link::replay_key_from_envelope_payload(&payload)?;
     Ok(state.record_nonce(&app, &replay_key))
 }
 
