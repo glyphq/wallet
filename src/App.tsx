@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
 import { useShallow } from "zustand/react/shallow";
@@ -16,6 +16,8 @@ import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
+import { invalidateObsoleteRpcQueries } from "@/lib/rpc-cache-identity";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,16 +62,20 @@ function useAppearance() {
 }
 
 function useRpcSync() {
-  const { liveApiUrl, queryApiUrl } = usePersistedStore(
-    useShallow((s) => ({
-      liveApiUrl: s.settings.network.liveApiUrl,
-      queryApiUrl: s.settings.network.queryApiUrl,
-    }))
-  );
+  const snapshot = useRpcCacheSnapshot("both");
+  const previousIdentityRef = useRef(snapshot.identity);
+
+  // AppHooks renders before any RPC-consuming route. Configure synchronously so
+  // startup and network-switch renders cannot observe the previous singleton.
+  configureRpc(snapshot.network.liveApiUrl, snapshot.network.queryApiUrl);
 
   useEffect(() => {
-    configureRpc(liveApiUrl, queryApiUrl);
-  }, [liveApiUrl, queryApiUrl]);
+    const previousIdentity = previousIdentityRef.current;
+    previousIdentityRef.current = snapshot.identity;
+    if (previousIdentity !== snapshot.identity) {
+      void invalidateObsoleteRpcQueries(queryClient, previousIdentity);
+    }
+  }, [snapshot.identity]);
 }
 
 function useHideToTray() {

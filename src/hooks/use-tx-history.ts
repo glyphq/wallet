@@ -1,8 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
 import { qk } from "@/lib/query-keys";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 import {
   dedupeTxRecords,
   isKnownContract,
@@ -44,11 +43,11 @@ export function useTxHistory(
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
   const pollingIntervalMs = usePollingIntervalMs();
-  const rpcIdentity = useRpcCacheIdentity("archive");
+  const rpc = useRpcCacheSnapshot("archive");
   const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo } = queryFilters;
 
   return useInfiniteQuery({
-    queryKey: [...qk.txHistory(rpcIdentity, identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo],
+    queryKey: [...qk.txHistory(rpc.identity, identity ?? null), direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo],
     queryFn: async ({ pageParam }) => {
       const offset = pageParam;
 
@@ -77,7 +76,7 @@ export function useTxHistory(
       if (tickTo) tickRange.lte = tickTo;
       if (Object.keys(tickRange).length) txRanges.tickNumber = tickRange;
 
-      const txResult = await getRpcClient().archive.getTransactionsForIdentity({
+      const txResult = await rpc.client.archive.getTransactionsForIdentity({
         identity: identity!,
         ...(Object.keys(txFilters).length && { filters: txFilters }),
         ...(Object.keys(txRanges).length && { ranges: txRanges }),
@@ -112,7 +111,7 @@ export function useTxHistory(
           // Tick range
           if (Object.keys(tickRange).length) evtRanges.tickNumber = tickRange;
 
-          const evtResult = await getRpcClient().archive.getEventLogs({
+          const evtResult = await rpc.client.archive.getEventLogs({
             ...(direction === "all"
               ? { should: [{ terms: { source: identity!, destination: identity! } }] }
               : { filters: evtFilters }),

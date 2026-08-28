@@ -7,4 +7,6 @@ export const qk = {
   qearnEpochInfo: (rpcIdentity: string, epoch: number | null) => ["qearn-epoch-info", rpcIdentity, epoch] as const,
   qearnPositions: (rpcIdentity: string, identity: string | null, epoch: number | null) => ["qearn-positions", rpcIdentity, identity, epoch] as const,
   qutilSendManyFee: (rpcIdentity: string) => ["qutil-send-many-fee", rpcIdentity] as const,
+  vaultAnalytics: (rpcIdentity: string, vaultId: string | null, identities: string[]) => ["vault-analytics", rpcIdentity, vaultId, identities] as const,
+  searchHistory: (rpcIdentity: string, identity: string) => ["search-history", rpcIdentity, identity] as const,
 } as const;
