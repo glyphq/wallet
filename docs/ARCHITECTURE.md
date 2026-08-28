@@ -44,6 +44,8 @@ graph LR
     UI <-->|Tauri IPC and events| Native
     UI <-->|HTTPS queries| LiveRPC[Qubic live RPC]
     UI <-->|HTTPS queries| ArchiveRPC[Qubic archive RPC]
+    UI -->|restricted IPC| NativeLocal[Native loopback RPC transport]
+    NativeLocal -->|exact HTTP routes| LocalNode[Local core-lite and manifest]
     Native -->|HTTPS callback POST| DApp[dApp callback]
     Native -->|Open HTTPS redirect| Browser[System browser]
     Native --> OS[Credential store, clipboard, notifications, tray, filesystem]
@@ -51,7 +53,9 @@ graph LR
     Native --> Updater[Signed update endpoint]
 ```
 
-There is no Glyph application backend in the normal wallet data path. The renderer communicates with configured Qubic live and archive services. The native process communicates with operating-system facilities, the update service, and validated dApp callback destinations.
+There is no Glyph application backend in the normal wallet data path. The renderer communicates with configured Qubic live and archive services. HTTPS networks use the normal fetch path. Local testnet HTTP is handled by a native transport restricted to exact loopback origins, ports, methods, paths, request sizes, response sizes, timeouts, and no redirects or proxies. The native process also communicates with operating-system facilities, the update service, and validated dApp callback destinations.
+
+The local dev-kit publishes a wipe-sensitive manifest identity. Canonical network scope combines the network kind with that instance identity. Query caches, pending transactions, notifications, price history, request history, dApp approvals, and other chain-derived records are isolated by this scope. Transaction and request workflows capture the scope before asynchronous work and fail closed if the active network changes before an effect.
 
 ## 4. Repository structure
 
