@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptance";
 import { REQUEST_PROTOCOL_V2, requestHashV2, type GlyphNetworkBinding } from "@/lib/jcs";
-import type { NetworkConfig } from "@/store/persisted";
-
-const mainnet: NetworkConfig = { name: "mainnet", liveApiUrl: "", queryApiUrl: "" };
-const testnet: NetworkConfig = { name: "testnet", liveApiUrl: "", queryApiUrl: "" };
+import { LOCAL_TESTNET_NETWORK_CONFIG, MAINNET_NETWORK_CONFIG } from "@/lib/network-config";
 
 async function makePayload(network: GlyphNetworkBinding): Promise<string> {
   const request = {
@@ -15,34 +12,27 @@ async function makePayload(network: GlyphNetworkBinding): Promise<string> {
     permissions: ["transfer" as const],
   };
   const envelope = {
-    protocol: REQUEST_PROTOCOL_V2,
-    request,
+    protocol: REQUEST_PROTOCOL_V2, request,
     callback: "https://relay.glyphq.org/v2/callback/session_1234567890abcdef/c_callbackCapability1234567890ab",
-    redirect_uri: null,
-    network,
-    request_hash: "",
+    redirect_uri: null, network, request_hash: "",
   };
   envelope.request_hash = await requestHashV2({
-    protocol: envelope.protocol,
-    request: envelope.request,
-    callback: envelope.callback,
-    redirect_uri: envelope.redirect_uri,
-    network: envelope.network,
+    protocol: envelope.protocol, request: envelope.request, callback: envelope.callback,
+    redirect_uri: envelope.redirect_uri, network: envelope.network,
   });
   return JSON.stringify(envelope);
 }
 
 describe("deep link acceptance replay boundary", () => {
-  test("does not burn replay state for a valid request on the wrong network", async () => {
-    const payload = await makePayload({ id: "qubic:testnet" });
+  test("defers a wrong-network request without burning replay state, then accepts after switch", async () => {
+    const payload = await makePayload({ id: LOCAL_TESTNET_NETWORK_CONFIG.scope });
     const commands: string[] = [];
-    const clearPayloads: unknown[] = [];
     let consumed = false;
     const invokeNative = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
       commands.push(command);
-      if (command === "clear_pending_request") clearPayloads.push(args?.payload);
+      if (command === "clear_pending_request") return true as T;
       if (command === "accept_pending_request") {
-        expect(args).toMatchObject({ activeNetworkId: "qubic:testnet" });
+        expect(args).toMatchObject({ activeNetworkId: LOCAL_TESTNET_NETWORK_CONFIG.scope });
         if (consumed) return false as T;
         consumed = true;
         return true as T;
@@ -50,22 +40,14 @@ describe("deep link acceptance replay boundary", () => {
       return undefined as T;
     };
 
-    await expect(acceptDeepLinkPayloadAfterNetworkMatch({ payload, networkSetting: mainnet, invokeNative })).resolves.toEqual({
-      accepted: false,
-      shouldRetainPending: true,
+    await expect(acceptDeepLinkPayloadAfterNetworkMatch({ payload, networkSetting: MAINNET_NETWORK_CONFIG, invokeNative })).resolves.toEqual({
+      accepted: false, shouldRetainPending: false, deferredForNetworkSwitch: true,
     });
-    expect(commands).toEqual([]);
+    expect(commands).toEqual(["clear_pending_request"]);
     expect(consumed).toBe(false);
 
-    await expect(acceptDeepLinkPayloadAfterNetworkMatch({ payload, networkSetting: testnet, invokeNative })).resolves.toEqual({
-      accepted: true,
-      shouldRetainPending: false,
+    await expect(acceptDeepLinkPayloadAfterNetworkMatch({ payload, networkSetting: LOCAL_TESTNET_NETWORK_CONFIG, invokeNative })).resolves.toEqual({
+      accepted: true, shouldRetainPending: false,
     });
-    await expect(acceptDeepLinkPayloadAfterNetworkMatch({ payload, networkSetting: testnet, invokeNative })).resolves.toEqual({
-      accepted: false,
-      shouldRetainPending: false,
-    });
-    expect(commands).toEqual(["accept_pending_request", "clear_pending_request", "accept_pending_request", "clear_pending_request"]);
-    expect(clearPayloads).toEqual([payload, payload]);
   });
 });

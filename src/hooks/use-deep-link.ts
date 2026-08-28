@@ -9,13 +9,14 @@ import { recordAuditEvent } from "@/lib/audit-log";
 import { buildRequestNotification, parseGlyphEnvelopeAsync } from "@/lib/request-schema";
 import { activeNetworkBinding } from "@/lib/network-binding";
 import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptance";
-import { drainPendingRequests } from "@/lib/pending-request-queue";
+import { deferPendingRequest, drainPendingRequests, retryDeferredRequests } from "@/lib/pending-request-queue";
 
 /** Listens for `glyph:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
   const enqueuePendingRequest = useSessionStore((s) => s.enqueuePendingRequest);
   const isLocked = useSessionStore((s) => s.isLocked);
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
+  const networkScope = usePersistedStore((s) => s.settings.network.scope);
 
   // Refs keep the single effect's callbacks up-to-date without re-subscribing.
   const isLockedRef = useRef(isLocked);
@@ -65,6 +66,7 @@ export function useDeepLink() {
           invokeNative: invoke,
         }),
         onAccepted: applyAcceptedPayload,
+        onDeferred: deferPendingRequest,
       }).catch(() => {
         // A transient IPC failure leaves the native queue head intact for the
         // next event or cold-start check.
@@ -113,4 +115,14 @@ export function useDeepLink() {
 
     return () => { unlisten?.(); };
   }, []); // Stable: registered once; stale-closure handled via refs above.
+
+  useEffect(() => {
+    void retryDeferredRequests(async (payload) => {
+      const binding = await activeNetworkBinding(usePersistedStore.getState().settings.network);
+      return Boolean((await parseGlyphEnvelopeAsync(payload, binding)).envelope);
+    }, async (payload) => {
+      enqueuePendingRequestRef.current(payload);
+      if (!isLockedRef.current) router.navigate("/request");
+    });
+  }, [networkScope]);
 }

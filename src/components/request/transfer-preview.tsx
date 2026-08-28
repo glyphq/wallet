@@ -5,6 +5,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
@@ -91,9 +92,11 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
     setTxError("");
     try {
       const amount = requestAmount;
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildTransferFromSession({
         accountIndex: selectedIndex,
         destination: request.to,
@@ -102,7 +105,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         currentTick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,

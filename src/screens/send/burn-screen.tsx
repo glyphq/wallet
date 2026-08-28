@@ -15,6 +15,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { formatQu, extractMessage, truncateId } from "@/lib/format";
@@ -91,15 +92,17 @@ export default function BurnScreen() {
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
       const { inputType, payload } = buildQUtilBurnQubicInput({ amount });
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,
         inputType, payload, amount, targetTick, currentTick,
       });
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
       addPendingTx({ hash, source: identity, destination: QUTIL_ADDRESS, amount: amount.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Burn" });
       setSavedTargetTick(targetTick); setTxHash(hash); setStep("done");
     } catch (e) {

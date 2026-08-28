@@ -35,7 +35,6 @@ export default function RequestScreen() {
   const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
   const shiftPendingRequest = useSessionStore((s) => s.shiftPendingRequest);
   const vaults = usePersistedStore((s) => s.vaults);
-  const networkName = usePersistedStore((s) => s.settings.network.name);
   const approveDapp = usePersistedStore((s) => s.approveDapp);
   const addRequestHistoryItem = usePersistedStore((s) => s.addRequestHistoryItem);
   const updateRequestHistoryItem = usePersistedStore((s) => s.updateRequestHistoryItem);
@@ -113,7 +112,6 @@ export default function RequestScreen() {
     addRequestHistoryItem,
     updateRequestHistoryItem,
     recordAuditEvent,
-    callbackNetworkId: networkName === "mainnet" || networkName === "testnet" ? `qubic:${networkName}` : undefined,
   };
 
   const [actionError, setActionError] = useState<string | null>(null);

@@ -22,6 +22,7 @@ import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { identityToPublicKey } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import {
   QEARN_ADDRESS,
@@ -227,9 +228,11 @@ export default function StakeScreen() {
     if (!wallet || !tickInfo) return;
     setStep("sending");
     try {
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const amount = BigInt(amountStr.trim());
       const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
@@ -240,7 +243,7 @@ export default function StakeScreen() {
         currentTick: tickInfo.tick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,
@@ -264,12 +267,14 @@ export default function StakeScreen() {
     if (!wallet || !tickInfo || !unlockTarget) return;
     setStep("sending");
     try {
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const { inputType, payload } = buildQearnUnlockInput({
         amount: unlockTarget.lockedAmount,
         lockedEpoch: unlockTarget.epoch,
       });
       const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
@@ -280,7 +285,7 @@ export default function StakeScreen() {
         currentTick: tickInfo.tick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,

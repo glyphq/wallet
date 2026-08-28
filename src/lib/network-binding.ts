@@ -1,19 +1,17 @@
-import { DEFAULT_ARCHIVE_URL, DEFAULT_LIVE_URL, normalizeRpcUrl } from "@/lib/rpc";
 import { jcsSha256Base64Url, type GlyphNetworkBinding } from "@/lib/jcs";
-import type { NetworkConfig } from "@/store/persisted";
+import { parsePersistedNetworkConfig, type NetworkConfig } from "@/lib/network-config";
 
+/** Derives a signed-request binding from the canonical, fail-closed network config. */
 export async function activeNetworkBinding(network: NetworkConfig): Promise<GlyphNetworkBinding> {
-  if (network.name === "mainnet") return { id: "qubic:mainnet" };
-  if (network.name === "testnet") return { id: "qubic:testnet" };
-  const rpc = {
-    liveApiUrl: normalizeRpcUrl(network.liveApiUrl) ?? DEFAULT_LIVE_URL,
-    queryApiUrl: normalizeRpcUrl(network.queryApiUrl) ?? DEFAULT_ARCHIVE_URL,
-  };
-  return { id: `qubic:custom:sha256:${await jcsSha256Base64Url(rpc)}` };
+  const canonical = parsePersistedNetworkConfig(network);
+  if (canonical.name === "mainnet" || canonical.name === "testnet") {
+    return { id: canonical.scope };
+  }
+  return { id: `qubic:custom:sha256:${await jcsSha256Base64Url({ scope: canonical.scope })}` };
 }
 
 export function networkFingerprint(network: GlyphNetworkBinding): string {
   if (network.id === "qubic:mainnet") return "mainnet";
-  if (network.id === "qubic:testnet") return "testnet";
+  if (network.id.startsWith("qubic:testnet:local:")) return `local testnet ${network.id.slice(-12)}`;
   return `custom ${network.id.slice(-12)}`;
 }
