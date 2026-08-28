@@ -30,11 +30,13 @@ function currentState(): PersistedState {
     txMemos: {},
     txMemosByNetwork: {},
     txTags: {},
+    txTagsByNetwork: {},
     scheduledTransfers: [],
     scheduledTransfersByNetwork: {},
     notificationEvents: [],
     notificationEventsByNetwork: {},
     priceSnapshots: [],
+    priceSnapshotsByNetwork: {},
     runtimeIssues: [],
     auditEvents: [],
     requestHistory: [],
@@ -412,12 +414,16 @@ describe("persisted boundary helpers", () => {
     const migrated = migratePersistedState({
       settings: { approvedDapps: [{ origin: "https://app", name: "App", approvedAt: 1, permissions: ["transfer"] }] },
       txMemos: { hash: "memo" },
+      txTags: { hash: ["tax", 4] },
+      priceSnapshots: [{ timestamp: 4, priceUsd: 2.5 }],
       scheduledTransfers: [{ id: "schedule" }],
       notificationEvents: [{ id: "notice", kind: "received", title: "T", body: "B", createdAt: 2, readAt: null }],
       requestHistory: [{ id: "request", createdAt: 3, type: "connect", dappName: "App", dappOrigin: "https://app", action: "approved", callbackStatus: "none" }],
     }, 1) as Record<string, any>;
 
     expect(migrated.txMemosByNetwork).toEqual({ [MAINNET_NETWORK_SCOPE]: { hash: "memo" } });
+    expect(migrated.txTagsByNetwork).toEqual({ [MAINNET_NETWORK_SCOPE]: { hash: ["tax"] } });
+    expect(migrated.priceSnapshotsByNetwork).toEqual({ [MAINNET_NETWORK_SCOPE]: [{ timestamp: 4, priceUsd: 2.5 }] });
     for (const field of ["scheduledTransfersByNetwork", "notificationEventsByNetwork", "requestHistoryByNetwork", "approvedDappsByNetwork"]) {
       expect(migrated[field][MAINNET_NETWORK_SCOPE][0].networkScope).toBe(MAINNET_NETWORK_SCOPE);
     }
@@ -433,13 +439,17 @@ describe("persisted boundary helpers", () => {
     const merged = mergePersistedState({
       settings: { network: local },
       txMemosByNetwork: { mainnet: { shared: "mainnet" }, [local.scope]: { shared: "local" }, evil: { shared: "evil" } },
+      txTagsByNetwork: { [MAINNET_NETWORK_SCOPE]: { shared: ["mainnet"] }, [local.scope]: { shared: ["local"] } },
       scheduledTransfersByNetwork: { mainnet: [{ id: "main" }], [local.scope]: [{ id: "local", networkScope: "mainnet" }] },
       notificationEventsByNetwork: { mainnet: [{ id: "main", kind: "system", title: "M", body: "M", createdAt: 1 }], [local.scope]: [{ id: "local", kind: "received", title: "L", body: "L", createdAt: 2 }] },
       requestHistoryByNetwork: { mainnet: [{ id: "main", createdAt: 1, type: "connect", dappName: "M", dappOrigin: "https://same", action: "approved", callbackStatus: "none" }], [local.scope]: [{ id: "local", createdAt: 2, type: "connect", dappName: "L", dappOrigin: "https://same", action: "approved", callbackStatus: "none" }] },
       approvedDappsByNetwork: { mainnet: [makeDapp("https://same")], [local.scope]: [makeDapp("https://same")] },
+      priceSnapshotsByNetwork: { [MAINNET_NETWORK_SCOPE]: [{ timestamp: 1, priceUsd: 99 }], [local.scope]: [{ timestamp: 2, priceUsd: 0 }] },
     }, currentState());
 
     expect(merged.txMemos).toEqual({ shared: "local" });
+    expect(merged.txTags).toEqual({ shared: ["local"] });
+    expect(merged.priceSnapshots).toEqual([{ timestamp: 2, priceUsd: 0 }]);
     expect(merged.scheduledTransfers.map((item) => item.id)).toEqual(["local"]);
     expect(merged.scheduledTransfers[0]?.networkScope).toBe(local.scope);
     expect(merged.notificationEvents.map((item) => item.id)).toEqual(["local"]);

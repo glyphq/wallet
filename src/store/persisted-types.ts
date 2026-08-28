@@ -292,11 +292,15 @@ export interface PersistedState {
   txMemosByNetwork: Record<NetworkScope, Record<string, string>>;
   /** @deprecated Kept for migration compat only — no longer used in UI. */
   txTags: Record<string, string[]>;
+  /** Canonical legacy transaction tags partitioned by network identity. */
+  txTagsByNetwork: Record<NetworkScope, Record<string, string[]>>;
   scheduledTransfers: ScheduledTransfer[];
   scheduledTransfersByNetwork: Record<NetworkScope, ScheduledTransfer[]>;
   notificationEvents: NotificationEvent[];
   notificationEventsByNetwork: Record<NetworkScope, NotificationEvent[]>;
   priceSnapshots: PriceSnapshot[];
+  /** Canonical fiat price history partitioned to prevent cross-chain valuation. */
+  priceSnapshotsByNetwork: Record<NetworkScope, PriceSnapshot[]>;
   runtimeIssues: RuntimeIssue[];
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];

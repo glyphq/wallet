@@ -106,11 +106,13 @@ export const usePersistedStore = create<PersistedState>()(
       txMemos: {},
       txMemosByNetwork: {},
       txTags: {},
+      txTagsByNetwork: {},
       scheduledTransfers: [],
       scheduledTransfersByNetwork: {},
       notificationEvents: [],
       notificationEventsByNetwork: {},
       priceSnapshots: [],
+      priceSnapshotsByNetwork: {},
       runtimeIssues: [],
       auditEvents: [],
       requestHistory: [],
@@ -179,8 +181,10 @@ export const usePersistedStore = create<PersistedState>()(
           return {
             pendingTxs: s.pendingTxsByNetwork[network.scope] ?? [],
             txMemos: s.txMemosByNetwork[network.scope] ?? {},
+            txTags: s.txTagsByNetwork[network.scope] ?? {},
             scheduledTransfers: s.scheduledTransfersByNetwork[network.scope] ?? [],
             notificationEvents: s.notificationEventsByNetwork[network.scope] ?? [],
+            priceSnapshots: s.priceSnapshotsByNetwork[network.scope] ?? [],
             requestHistory: s.requestHistoryByNetwork[network.scope] ?? [],
             approvedDappsByNetwork: s.approvedDappsByNetwork,
             settings: {
@@ -420,7 +424,9 @@ export const usePersistedStore = create<PersistedState>()(
 
       addPriceSnapshot: (snapshot) =>
         set((s) => {
-          const latest = s.priceSnapshots[0];
+          const scope = s.settings.network.scope;
+          const activeSnapshots = s.priceSnapshotsByNetwork[scope] ?? [];
+          const latest = activeSnapshots[0];
           const priceFraction =
             latest && latest.priceUsd > 0
               ? Math.abs(latest.priceUsd - snapshot.priceUsd) / latest.priceUsd
@@ -435,8 +441,12 @@ export const usePersistedStore = create<PersistedState>()(
           return {
             priceSnapshots: clampPriceSnapshots([
               snapshot,
-              ...s.priceSnapshots,
+              ...activeSnapshots,
             ]),
+            priceSnapshotsByNetwork: {
+              ...s.priceSnapshotsByNetwork,
+              [scope]: clampPriceSnapshots([snapshot, ...activeSnapshots]),
+            },
           };
         }),
 
