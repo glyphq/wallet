@@ -1,4 +1,4 @@
-import { forwardRef, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -11,11 +11,14 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, className, ...props },
   ref,
 ) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  const generatedId = useId();
+  const inputId = id ?? (label ? `${label.toLowerCase().replace(/\s+/g, "-")}-${generatedId}` : undefined);
   const errorId = inputId ? `${inputId}-error` : undefined;
+  const describedBy = [props["aria-describedby"], error && errorId].filter(Boolean).join(" ") || undefined;
+  const ariaLabel = props["aria-label"] ?? (!label && typeof props.placeholder === "string" ? props.placeholder : undefined);
   const maxLength = props.maxLength ?? (props.type === "password" ? 128 : undefined);
 
   const inputEl = (
@@ -26,13 +29,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       spellCheck={false}
       autoComplete={props.autoComplete ?? "off"}
       id={inputId}
-      className="glyph-input"
+      className={["glyph-input", className].filter(Boolean).join(" ")}
       data-error={error ? "true" : undefined}
       aria-invalid={error ? "true" : undefined}
-      aria-describedby={error && errorId ? errorId : undefined}
+      aria-label={ariaLabel}
+      aria-describedby={describedBy}
+      aria-errormessage={error && errorId ? errorId : undefined}
       data-has-leading={leftElement ? "true" : undefined}
       style={{
-        background: "var(--color-bg-input)",
         borderRadius: "var(--radius-control)",
         paddingTop: "var(--space-3)",
         paddingRight: rightElement ? 52 : "var(--space-4)",
@@ -59,9 +63,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "var(--text-label)",
-            color: "var(--color-text-secondary)",
+            color: "var(--color-text-tertiary)",
             fontWeight: 500,
-            letterSpacing: "0.01em",
+            lineHeight: "var(--leading-compact)",
+            letterSpacing: "0.015em",
             ...labelStyle,
           }}
         >

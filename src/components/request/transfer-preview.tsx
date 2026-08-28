@@ -5,6 +5,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
@@ -12,6 +13,8 @@ import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
 import type { TransferRequest } from "@/lib/request-schema";
+import { DappPolicyStatus } from "@/components/dapp-policy-controls";
+import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { TransferRequest } from "@/lib/request-schema";
 
@@ -19,15 +22,17 @@ export interface ApproveResult {
   txHash: string;
   targetTick: number;
   identity: string;
+  accountIndex: number;
 }
 
 interface TransferPreviewProps {
   request: TransferRequest;
-  onApprove: (result: ApproveResult) => void;
+  onApprove: (result: ApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
-export function TransferPreview({ request, onApprove, onReject }: TransferPreviewProps) {
+export function TransferPreview({ request, onApprove, beforeApprove, onReject }: TransferPreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
 
@@ -39,6 +44,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const contacts = usePersistedStore((s) => s.contacts);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
+  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const { data: tickInfo } = useTickInfo();
   const { data: balanceData } = useBalance(wallet?.identity ?? null);
 
@@ -54,8 +60,16 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
   const needsHighValueConfirmation = requestAmount !== null && exceedsHighValueThreshold(requestAmount, settings.highValueSendThreshold);
   const projectedBalance = balance !== null && requestAmount !== null ? balance - requestAmount : null;
+  const policyDecision = evaluateDappPermission({
+    approvedDapps,
+    origin: request.dapp.origin,
+    permission: "transfer",
+    identity,
+    amountQu: requestAmount,
+  });
   const likelyFailures = [
     requestAmount === null ? "Malformed amount in the request body." : null,
+    policyDecision.reason,
     invalidDestination ? "Destination identity checksum is invalid." : null,
     insufficientBalance ? "Current account balance does not cover the requested transfer." : null,
     hasPendingTx ? "This account already has a pending transfer and cannot queue another one yet." : null,
@@ -63,13 +77,28 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
 
   async function approve() {
     if (!wallet || requestAmount === null) return;
+    const freshPolicyDecision = evaluateDappPermission({
+      approvedDapps,
+      origin: request.dapp.origin,
+      permission: "transfer",
+      identity,
+      amountQu: requestAmount,
+      now: Date.now(),
+    });
+    if (!freshPolicyDecision.allowed) {
+      setTxError(freshPolicyDecision.reason ?? "dApp policy blocked this transfer.");
+      return;
+    }
     setProcessing(true);
     setTxError("");
     try {
+      await beforeApprove();
       const amount = requestAmount;
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildTransferFromSession({
         accountIndex: selectedIndex,
         destination: request.to,
@@ -78,7 +107,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         currentTick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,
@@ -87,9 +116,10 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         amount: amount.toString(),
         targetTick: tick,
         broadcastAt: Date.now(),
-      });
+      }, networkScope);
 
-      onApprove({ txHash: hash, targetTick: tick, identity });
+      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
+      setProcessing(false);
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");
       setProcessing(false);
@@ -183,6 +213,8 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         </div>
       )}
 
+      <DappPolicyStatus decision={policyDecision} />
+
       {needsHighValueConfirmation && (
         <div
           role="checkbox"
@@ -211,7 +243,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
           Reject
         </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
+        <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
           Sign and send
         </Button>
       </RequestActionBar>

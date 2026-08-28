@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
 import { useShallow } from "zustand/react/shallow";
@@ -11,11 +11,12 @@ import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { useLatestStats } from "@/hooks/use-latest-stats";
-import { configureRpc } from "@/lib/rpc";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { installRpcStoreSync, useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
+import { invalidateObsoleteRpcQueries } from "@/lib/rpc-cache-identity";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Install before React renders so legacy mutation paths never start on a stale
+// singleton. Network-sensitive query paths use immutable snapshots instead.
+installRpcStoreSync();
 
 function useAppearance() {
   const { fontPair, themeMode } = usePersistedStore(
@@ -56,19 +61,20 @@ function useAppearance() {
       }
     }
   }, [themeMode]);
+
 }
 
 function useRpcSync() {
-  const { liveApiUrl, queryApiUrl } = usePersistedStore(
-    useShallow((s) => ({
-      liveApiUrl: s.settings.network.liveApiUrl,
-      queryApiUrl: s.settings.network.queryApiUrl,
-    }))
-  );
+  const snapshot = useRpcCacheSnapshot("both");
+  const previousScopeRef = useRef(snapshot.network.scope);
 
   useEffect(() => {
-    configureRpc(liveApiUrl, queryApiUrl);
-  }, [liveApiUrl, queryApiUrl]);
+    const previousScope = previousScopeRef.current;
+    previousScopeRef.current = snapshot.network.scope;
+    if (previousScope !== snapshot.network.scope) {
+      void invalidateObsoleteRpcQueries(queryClient, previousScope);
+    }
+  }, [snapshot.network.scope]);
 }
 
 function useHideToTray() {
@@ -127,13 +133,24 @@ function useRuntimeDiagnostics() {
 }
 
 function usePriceSnapshotRecorder() {
-  const { data: latestStats } = useLatestStats();
+  const { data: latestStats, dataUpdatedAt } = useLatestStats();
+  const networkScope = usePersistedStore((s) => s.settings.network.scope);
   const addPriceSnapshot = usePersistedStore((s) => s.addPriceSnapshot);
+  const sourceRef = useRef({ dataUpdatedAt: 0, scope: networkScope });
+
+  // A network switch can briefly retain cached query data. Keep its original
+  // scope until a fresh stats result is observed on the new network.
+  if (latestStats && dataUpdatedAt !== sourceRef.current.dataUpdatedAt) {
+    sourceRef.current = { dataUpdatedAt, scope: networkScope };
+  }
 
   useEffect(() => {
     if (!latestStats || !Number.isFinite(latestStats.price)) return;
-    addPriceSnapshot({ timestamp: Date.now(), priceUsd: latestStats.price });
-  }, [addPriceSnapshot, latestStats?.price]);
+    addPriceSnapshot(
+      { timestamp: Date.now(), priceUsd: latestStats.price },
+      sourceRef.current.scope,
+    );
+  }, [addPriceSnapshot, dataUpdatedAt, latestStats?.price]);
 }
 
 function AppHooks() {

@@ -49,8 +49,12 @@ assert_contains() {
 
 validate_signature() {
   local artifact="$1"
+  local signature="${artifact}.sig"
+
   if [[ "$REQUIRE_SIGNATURES" == "1" ]]; then
-    [[ -s "${artifact}.sig" ]] || die "missing or empty updater signature: ${artifact}.sig"
+    [[ -s "$signature" ]] || die "missing or empty updater signature: $signature"
+  elif [[ -e "$signature" && ! -s "$signature" ]]; then
+    die "empty updater signature exists but signatures are not required: $signature"
   fi
 }
 
@@ -88,6 +92,7 @@ validate_deb() {
   assert_contains "$depends" 'libdbus-1-3' "deb dependencies"
 
   workdir="$(mktemp -d)"
+  trap 'rm -rf -- "$workdir"' RETURN
   dpkg-deb -x "$deb" "$workdir"
   binary="$workdir/usr/bin/glyph-wallet"
   [[ -x "$binary" ]] || die "deb does not contain an executable glyph-wallet binary"
@@ -100,13 +105,14 @@ validate_deb() {
   grep -Fxq 'Exec=glyph-link-broker %u' "$desktop" \
     || die "deb desktop entry does not route launches through glyph-link-broker"
   icon_name="$(awk -F= '$1 == "Icon" { print $2; exit }' "$desktop")"
-  [[ -n "$icon_name" ]] || die "deb desktop entry has no Icon value"
+  [[ "$icon_name" == "com.qubic.glyph" ]] || die "deb desktop icon is not the notification icon identity: $icon_name"
   find "$workdir/usr/share/icons" -type f -name "${icon_name}.png" -print -quit | grep -q . \
     || die "deb desktop icon does not resolve: $icon_name"
   appstream="$workdir/usr/share/metainfo/com.qubic.glyph.metainfo.xml"
   [[ -f "$appstream" ]] || die "deb is missing AppStream metadata"
   cmp -s "$REPO_ROOT/packaging/linux/com.qubic.glyph.metainfo.xml" "$appstream" \
     || die "deb AppStream metadata differs from the repository source"
+  trap - RETURN
   rm -rf "$workdir"
 
   log "deb metadata and linkage validated: $(basename "$deb")"
@@ -139,6 +145,7 @@ validate_appimage() {
   appimage="$(realpath "$1")"
 
   workdir="$(mktemp -d)"
+  trap 'rm -rf -- "$workdir"' RETURN
   (
     cd "$workdir"
     APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --appimage-extract >/dev/null
@@ -157,6 +164,8 @@ validate_appimage() {
   grep -Fxq 'Exec=glyph-link-broker %u' "$desktop" \
     || die "AppImage desktop entry does not route launches through glyph-link-broker"
   icon_name="$(awk -F= '$1 == "Icon" { print $2; exit }' "$desktop")"
+  [[ "$icon_name" == "com.qubic.glyph" ]] \
+    || die "AppImage desktop icon is not the notification icon identity: $icon_name"
   [[ -f "$appdir/${icon_name}.png" ]] || die "AppImage root icon does not resolve: $icon_name"
   [[ -f "$appdir/usr/share/metainfo/com.qubic.glyph.metainfo.xml" ]] \
     || die "AppImage is missing AppStream metadata"
@@ -173,12 +182,13 @@ validate_appimage() {
       || die "AppImage is missing bundled library: $library"
   done
 
-  for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so; do
+  for library in libEGL.so libEGL_mesa.so libGL.so libGLdispatch.so libGLX.so libGLX_mesa.so libgbm.so libdrm.so libwayland-client.so libwayland-cursor.so libwayland-egl.so libwayland-server.so; do
     if find "$appdir/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${library}*" -print -quit | grep -q .; then
       die "AppImage incorrectly bundles host graphics library: $library"
     fi
   done
 
+  trap - RETURN
   rm -rf "$workdir"
   validate_signature "$appimage"
   log "AppImage contents validated: $(basename "$appimage")"

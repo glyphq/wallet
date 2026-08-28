@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import glyphOnLight from "@/assets/brand/glyph-on-light.png";
 import { usePersistedStore } from "@/store/persisted";
+import { networkIndicator } from "@/lib/network-display";
 
 function WinBtn({
   onClick,
@@ -50,7 +51,9 @@ export function TitleBar() {
   const win = useMemo(() => getCurrentWindow(), []);
   const [fullscreen, setFullscreen] = useState(false);
   const themeMode = usePersistedStore((state) => state.settings.themeMode);
+  const network = usePersistedStore((state) => state.settings.network);
   const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
+  const indicator = networkIndicator(network);
 
   useEffect(() => {
     win.isFullscreen().then(setFullscreen).catch(() => {});
@@ -116,6 +119,22 @@ export function TitleBar() {
         >
           Wallet
         </span>
+        {indicator && (
+          <span
+            title={indicator.detail}
+            data-tauri-drag-region
+            style={{
+              color: indicator.tone === "testnet" ? "var(--color-status-warning)" : "var(--color-text-secondary)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "9px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {indicator.label}
+          </span>
+        )}
       </div>
 
       <div style={{ display: "flex", height: "100%" }}>

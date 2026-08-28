@@ -6,7 +6,8 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useVaultBalances } from "@/hooks/use-vault-balances";
 import { useLatestStats } from "@/hooks/use-latest-stats";
-import { truncateId, formatQu, formatUsdFromQu } from "@/lib/format";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { truncateId, formatQu, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 
 export default function PortfolioScreen() {
@@ -18,6 +19,7 @@ export default function PortfolioScreen() {
   const wallets = useSessionStore((s) => s.wallets);
   const { data: balances, isLoading } = useVaultBalances();
   const { data: stats } = useLatestStats();
+  const quote = usePreferredCurrencyQuote();
 
   if (!vault) {
     return (
@@ -86,7 +88,7 @@ export default function PortfolioScreen() {
         </div>
         {allLoaded && !hideBalances && stats?.price && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
-            ≈ ${formatUsdFromQu(totalBalance, stats.price)} USD
+            {formatPreferredCurrencyFromQu(totalBalance, { usdPrice: stats.price, ...quote }).text}
           </span>
         )}
       </div>

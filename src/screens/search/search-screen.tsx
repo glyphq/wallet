@@ -9,11 +9,12 @@ import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { getRpcClient } from "@/lib/rpc";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { truncateId } from "@/lib/format";
 import { getAccountIdentity } from "@/lib/accounts";
 import { getKnownContractLabel, normalizeArchiveTransaction, pendingTxToRecord } from "@/lib/tx-domain";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
+import { qk } from "@/lib/query-keys";
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
   accounts: <UserRounded size={14} weight="Linear" />,
@@ -44,6 +45,7 @@ interface SearchResult {
 }
 
 export default function SearchScreen() {
+  const rpc = useRpcCacheSnapshot("archive");
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
 
@@ -74,11 +76,11 @@ export default function SearchScreen() {
 
   const txQueries = useQueries({
     queries: accountEntries.map((account) => ({
-      queryKey: ["search-history", account.identity],
+      queryKey: qk.searchHistory(rpc.identity, account.identity),
       enabled: !!normalizedQuery && !!account.identity,
       staleTime: 60_000,
       queryFn: async () => {
-        const result = await getRpcClient().archive.getTransactionsForIdentity({
+        const result = await rpc.client.archive.getTransactionsForIdentity({
           identity: account.identity,
           pagination: { size: 25, offset: 0 },
         });
@@ -200,7 +202,7 @@ export default function SearchScreen() {
       <div style={{ position: "relative" }}>
         <Magnifier size={18} weight="Linear" style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
         <Input
-          aria-label="Search wallet"
+          aria-label="Search Vault"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search contacts, accounts, transactions, contracts"

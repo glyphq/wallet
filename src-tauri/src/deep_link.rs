@@ -1,12 +1,12 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_store::StoreExt;
-use tiny_keccak::{Hasher, KangarooTwelve};
 use url::Url;
 
 const NONCE_STORE_PATH: &str = "glyph-security.json";
@@ -14,11 +14,15 @@ const NONCE_STORE_KEY: &str = "seen_nonces";
 const MAX_NONCE_AGE_SECS: u64 = 3600;
 const MAX_SIGN_MESSAGE_LEN: usize = 2048;
 const MAX_PENDING_LINKS: usize = 16;
+// The relay is the only trusted cross-origin callback transport. Its exact
+// origin and callback route remain constrained below, including a bounded nonce.
+const OFFICIAL_RELAY_ORIGIN: &str = "https://relay.glyphq.org";
+const REQUEST_PROTOCOL_V2: &str = "glyph-connect-request/2";
 
 pub struct DeepLinkState {
     pending_requests: Arc<Mutex<VecDeque<String>>>,
     pending_payments: Arc<Mutex<VecDeque<String>>>,
-    /// Maps nonce → unix timestamp of first receipt for time-bounded replay protection.
+    /// Maps v2 replay key → unix timestamp of first receipt for time-bounded replay protection.
     seen_nonces: Arc<Mutex<HashMap<String, u64>>>,
 }
 
@@ -33,15 +37,16 @@ impl Default for DeepLinkState {
 }
 
 impl DeepLinkState {
-    pub fn store(&self, payload: String) {
-        Self::store_bounded(&self.pending_requests, payload);
-    }
-
-    pub fn take(&self) -> Option<String> {
-        self.pending_requests
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .pop_front()
+    /// Queue an already validated request once. Never evict an older request:
+    /// preserving its FIFO position is safer than replacing a request that is
+    /// already awaiting explicit user review.
+    pub fn store(&self, payload: String) -> bool {
+        let mut queue = self.pending_requests.lock().unwrap_or_else(|e| e.into_inner());
+        if queue.contains(&payload) || queue.len() >= MAX_PENDING_LINKS {
+            return false;
+        }
+        queue.push_back(payload);
+        true
     }
 
     pub fn peek(&self) -> Option<String> {
@@ -50,6 +55,18 @@ impl DeepLinkState {
             .unwrap_or_else(|e| e.into_inner())
             .front()
             .cloned()
+    }
+
+    /// Remove only the expected queue head. A stale renderer event must never
+    /// consume the request that arrived after it.
+    pub fn take_if_front(&self, payload: &str) -> bool {
+        let mut queue = self.pending_requests.lock().unwrap_or_else(|e| e.into_inner());
+        if queue.front().is_some_and(|front| front == payload) {
+            queue.pop_front();
+            true
+        } else {
+            false
+        }
     }
 
     pub fn store_payment(&self, payload: String) {
@@ -104,7 +121,7 @@ impl DeepLinkState {
         }
     }
 
-    /// Returns false if the nonce was already seen within the last hour (replay), true if fresh.
+    /// Returns false if the replay key was already seen within the last hour (replay), true if fresh.
     pub fn record_nonce(&self, app: &AppHandle, nonce: &str) -> bool {
         let mut seen = self.seen_nonces.lock().unwrap_or_else(|e| e.into_inner());
         let now = now_secs();
@@ -119,11 +136,94 @@ impl DeepLinkState {
     }
 }
 
+pub fn replay_key_from_envelope_payload(payload: &str) -> Result<String, String> {
+    Ok(format!("v2|{}", replay_parts_from_envelope_payload(payload)?.join("|")))
+}
+
+fn valid_network_id(value: &str) -> bool {
+    if value == "qubic:mainnet" {
+        return true;
+    }
+    if let Some(instance) = value.strip_prefix("qubic:testnet:local:qubic-local%3A") {
+        return instance.len() == 64 && instance.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
+    }
+    if let Some(hash) = value.strip_prefix("qubic:custom:sha256:") {
+        return hash.len() == 43 && hash.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
+    }
+    false
+}
+
+pub fn replay_parts_from_envelope_payload(payload: &str) -> Result<[String; 4], String> {
+    let envelope: Value = serde_json::from_str(payload).map_err(|e| format!("invalid pending request: {e}"))?;
+    let request = envelope.get("request").and_then(Value::as_object).ok_or("missing request")?;
+    let nonce = request.get("nonce").and_then(Value::as_str).ok_or("missing nonce")?;
+    let dapp_origin = request
+        .get("dapp")
+        .and_then(Value::as_object)
+        .and_then(|dapp| dapp.get("origin"))
+        .and_then(Value::as_str)
+        .ok_or("missing dapp.origin")?;
+    let network_id = envelope
+        .get("network")
+        .and_then(Value::as_object)
+        .and_then(|network| network.get("id"))
+        .and_then(Value::as_str)
+        .ok_or("missing network.id")?;
+    if !valid_network_id(network_id) {
+        return Err("invalid network.id".to_string());
+    }
+    let request_hash = envelope
+        .get("request_hash")
+        .and_then(Value::as_str)
+        .ok_or("missing request_hash")?;
+    Ok([
+        network_id.to_string(),
+        dapp_origin.to_string(),
+        nonce.to_string(),
+        request_hash.to_string(),
+    ])
+}
+
 struct ParsedRequest {
     request: Value,
-    nonce: String,
+    request_hash: String,
+    network: Value,
     callback: Option<String>,
     redirect_uri: Option<String>,
+}
+
+fn jcs(value: &Value) -> Result<String, String> {
+    match value {
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => serde_json::to_string(value).map_err(|e| e.to_string()),
+        Value::Array(items) => Ok(format!("[{}]", items.iter().map(jcs).collect::<Result<Vec<_>, _>>()?.join(","))),
+        Value::Object(map) => {
+            let mut keys = map.keys().collect::<Vec<_>>();
+            keys.sort();
+            let mut parts = Vec::with_capacity(keys.len());
+            for key in keys {
+                let encoded_key = serde_json::to_string(key).map_err(|e| e.to_string())?;
+                parts.push(format!("{}:{}", encoded_key, jcs(&map[key])?));
+            }
+            Ok(format!("{{{}}}", parts.join(",")))
+        }
+    }
+}
+
+fn sha256_base64url(input: &str) -> String {
+    URL_SAFE_NO_PAD.encode(Sha256::digest(input.as_bytes()))
+}
+
+fn validate_network(value: &Value) -> Result<(), String> {
+    let id = value.get("id").and_then(Value::as_str).ok_or("missing network.id")?;
+    if id == "qubic:mainnet" || id == "qubic:testnet" {
+        return Ok(());
+    }
+    let suffix = id.strip_prefix("qubic:custom:sha256:").ok_or("invalid network.id")?;
+    if suffix.len() == 43 && suffix.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_')) {
+        Ok(())
+    } else {
+        Err("invalid custom network hash".into())
+    }
 }
 
 fn now_secs() -> u64 {
@@ -133,51 +233,6 @@ fn now_secs() -> u64 {
         .unwrap_or(0)
 }
 
-fn encode_identity_checksum(public_key: &[u8; 32]) -> [u8; 4] {
-    let mut hasher = KangarooTwelve::new(b"");
-    hasher.update(public_key);
-
-    let mut digest = [0u8; 3];
-    hasher.finalize(&mut digest);
-
-    let mut checksum = (digest[0] as u32) | ((digest[1] as u32) << 8) | ((digest[2] as u32) << 16);
-    checksum &= 0x3ffff;
-
-    let mut output = [0u8; 4];
-    for ch in &mut output {
-        *ch = (checksum % 26) as u8 + b'A';
-        checksum /= 26;
-    }
-    output
-}
-
-fn is_valid_qubic_identity(identity: &str) -> bool {
-    if identity.len() != 60 || !identity.bytes().all(|b| b.is_ascii_uppercase()) {
-        return false;
-    }
-
-    let mut public_key = [0u8; 32];
-    for fragment_index in 0..4 {
-        let mut fragment = 0u64;
-        for digit_index in (0..14).rev() {
-            let idx = fragment_index * 14 + digit_index;
-            let digit = (identity.as_bytes()[idx] - b'A') as u64;
-            fragment = match fragment
-                .checked_mul(26)
-                .and_then(|value| value.checked_add(digit))
-            {
-                Some(value) => value,
-                None => return false,
-            };
-        }
-        public_key[fragment_index * 8..(fragment_index + 1) * 8]
-            .copy_from_slice(&fragment.to_le_bytes());
-    }
-
-    let expected_checksum = encode_identity_checksum(&public_key);
-    identity.as_bytes()[56..60] == expected_checksum
-}
-
 fn parse_positive_i64(value: &Value) -> Option<i64> {
     if let Some(number) = value.as_i64() {
         return Some(number);
@@ -185,22 +240,89 @@ fn parse_positive_i64(value: &Value) -> Option<i64> {
     value.as_str()?.parse::<i64>().ok()
 }
 
+fn is_official_relay_callback(url: &Url) -> bool {
+    if url.origin().ascii_serialization() != OFFICIAL_RELAY_ORIGIN
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return false;
+    }
+
+    let Some(path) = url.path().strip_prefix("/v2/callback/") else {
+        return false;
+    };
+    let mut segments = path.split('/');
+    let (Some(session), Some(callback_cap), None) =
+        (segments.next(), segments.next(), segments.next())
+    else {
+        return false;
+    };
+    let is_base64url = |value: &str| {
+        value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    };
+    session.len() >= 22
+        && session.len() <= 128
+        && is_base64url(session)
+        && callback_cap.starts_with("c_")
+        && callback_cap.len() >= 24
+        && callback_cap.len() <= 128
+        && is_base64url(&callback_cap[2..])
+}
+
+fn validate_delivery_url(
+    url_str: &str,
+    field: &str,
+    claimed_origin: &str,
+    allow_official_relay: bool,
+) -> Result<(), String> {
+    let url = Url::parse(url_str).map_err(|_| format!("invalid {field} URL"))?;
+    let host = url.host_str().unwrap_or("");
+    if url.scheme() != "https" || !url.username().is_empty() || url.password().is_some() {
+        return Err(format!("{field} must use HTTPS without embedded credentials"));
+    }
+    if crate::commands::is_private_host(host) {
+        return Err(format!("{field} must not target a non-global address"));
+    }
+    if url.origin().ascii_serialization() != claimed_origin
+        && !(allow_official_relay && is_official_relay_callback(&url))
+    {
+        return Err(format!("{field} origin must match dapp.origin"));
+    }
+    Ok(())
+}
+
+fn validate_dapp_origin(origin: &str) -> Result<String, String> {
+    let parsed = Url::parse(origin).map_err(|_| format!("invalid dapp.origin: {origin}"))?;
+    if parsed.scheme() != "https"
+        || parsed.host_str().is_none()
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.path() != "/"
+        || parsed.query().is_some()
+        || parsed.fragment().is_some()
+    {
+        return Err("dapp.origin must be a credential-free HTTPS origin".into());
+    }
+
+    Ok(parsed.origin().ascii_serialization())
+}
+
 fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
 
-    if url.scheme() != "glyph" {
-        return Err("not a glyph:// URI".into());
-    }
-    if url.host_str() != Some("v1") || url.path() != "/request" {
-        return Err("expected glyph://v1/request".into());
+    if crate::link_broker::validate_launch_url(uri_str)
+        != Ok(crate::link_broker::LinkKind::Request)
+    {
+        return Err("expected glyph://v2/request".into());
     }
 
     let mut d_param: Option<String> = None;
-    let mut cb_param: Option<String> = None;
     for (k, v) in url.query_pairs() {
         match k.as_ref() {
-            "d" => d_param = Some(v.into_owned()),
-            "cb" => cb_param = Some(v.into_owned()),
+            "d" if d_param.is_none() => d_param = Some(v.into_owned()),
+            "d" => return Err("duplicate query parameters are not allowed".into()),
             _ => {}
         }
     }
@@ -221,14 +343,28 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let value: Value =
         serde_json::from_str(&json_str).map_err(|e| format!("JSON parse failed: {e}"))?;
 
-    let (request_value, callback_from_payload, redirect_uri_from_payload) = match value.get("request") {
-        Some(request) if request.is_object() => (
-            request.clone(),
-            value.get("callback").and_then(|v| v.as_str()).map(|s| s.to_string()),
-            value.get("redirect_uri").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        ),
-        _ => (value.clone(), None, None),
-    };
+    if value.get("protocol").and_then(Value::as_str) != Some(REQUEST_PROTOCOL_V2) {
+        return Err("invalid request protocol".into());
+    }
+    let request_value = value.get("request").filter(|v| v.is_object()).ok_or("missing request envelope")?.clone();
+    let callback_from_payload = value.get("callback").and_then(|v| if v.is_null() { Some(None) } else { v.as_str().map(|s| Some(s.to_string())) }).ok_or("callback must be present as string or null")?;
+    let redirect_uri_from_payload = value.get("redirect_uri").and_then(|v| if v.is_null() { Some(None) } else { v.as_str().map(|s| Some(s.to_string())) }).ok_or("redirect_uri must be present as string or null")?;
+    let network = value.get("network").filter(|v| v.is_object()).ok_or("missing network envelope")?.clone();
+    validate_network(&network)?;
+    let request_hash = value.get("request_hash").and_then(Value::as_str).ok_or("missing request_hash")?;
+    let hash_material = serde_json::json!({
+        "protocol": REQUEST_PROTOCOL_V2,
+        "request": request_value,
+        "callback": callback_from_payload,
+        "redirect_uri": redirect_uri_from_payload,
+        "network": network,
+    });
+    let expected_hash = format!("sha256:{}", sha256_base64url(&jcs(&hash_material)?));
+    if request_hash != expected_hash {
+        return Err("request_hash mismatch".into());
+    }
+    let request_value = hash_material.get("request").unwrap().clone();
+    let network = hash_material.get("network").unwrap().clone();
 
     // Required fields
     let req_type = request_value["type"].as_str().ok_or("missing 'type' field")?;
@@ -259,11 +395,7 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let dapp_origin = request_value["dapp"]["origin"]
         .as_str()
         .ok_or("missing 'dapp.origin'")?;
-    let parsed_origin =
-        Url::parse(dapp_origin).map_err(|_| format!("invalid dapp.origin: {dapp_origin}"))?;
-    if parsed_origin.scheme() != "https" {
-        return Err("dapp.origin must use HTTPS".into());
-    }
+    let claimed_origin = validate_dapp_origin(dapp_origin)?;
 
     // Expiry check: missing exp defaults to 5 minutes from receipt; exp too far in
     // the future is clamped so dApps cannot create permanent requests.
@@ -277,47 +409,22 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     }
 
     // Validate callback URL if present
-    let callback = match (callback_from_payload, cb_param) {
-        (Some(from_payload), Some(from_query)) if from_payload != from_query => {
-            return Err("callback URL mismatch between payload and query parameter".into())
-        }
-        (Some(from_payload), _) => Some(from_payload),
-        (None, from_query) => from_query,
-    };
-
-    // String-level private-IP check is intentional here. `callback` is also
-    // validated by DNS resolution inside `post_callback` at fetch time (the
-    // authoritative gate against rebinding). `redirect_uri` is opened by the
-    // OS/browser, not fetched by the wallet, so a Rust-side DNS lookup would
-    // be a TOCTOU race with no security benefit — the browser re-resolves
-    // independently and has its own same-origin protections.
-    fn validate_delivery_url(url_str: &str, field: &str) -> Result<(), String> {
-        let url = Url::parse(url_str).map_err(|_| format!("invalid {field} URL"))?;
-        let host = url.host_str().unwrap_or("");
-        let is_local = matches!(host, "localhost" | "127.0.0.1");
-        if url.scheme() != "https" && !(url.scheme() == "http" && is_local) {
-            return Err(format!("{field} must use HTTPS (or http://localhost / http://127.0.0.1 for local dev)"));
-        }
-        if !is_local && crate::commands::is_private_host(host) {
-            return Err(format!("{field} must not target a private or loopback address"));
-        }
-        Ok(())
-    }
+    let callback = callback_from_payload;
 
     if let Some(cb) = &callback {
-        validate_delivery_url(cb, "callback URL")?;
+        validate_delivery_url(cb, "callback URL", &claimed_origin, true)?;
     }
 
     let redirect_uri = redirect_uri_from_payload;
     if let Some(ru) = &redirect_uri {
-        validate_delivery_url(ru, "redirect_uri")?;
+        validate_delivery_url(ru, "redirect_uri", &claimed_origin, false)?;
     }
 
     // Type-specific checks
     match req_type {
         "transfer" => {
             let to = request_value["to"].as_str().ok_or("transfer: missing 'to'")?;
-            if !is_valid_qubic_identity(to) {
+            if crate::qubic_native::identity_to_public_key(to).is_err() {
                 let preview: String = to.chars().take(8).collect();
                 return Err(format!(
                     "transfer: 'to' must be a valid Qubic identity, got '{}'",
@@ -342,6 +449,13 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
                 .ok_or("sc_call: missing 'input_type'")?;
             if input_type < 0 {
                 return Err("sc_call: 'input_type' must be non-negative".into());
+            }
+            if let Some(amount) = request_value.get("amount") {
+                let amount = parse_positive_i64(amount)
+                    .ok_or("sc_call: 'amount' must be an integer")?;
+                if amount < 0 {
+                    return Err("sc_call: 'amount' must be non-negative".into());
+                }
             }
         }
         "sign_message" => {
@@ -374,8 +488,9 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     }
 
     Ok(ParsedRequest {
-        nonce: nonce.to_string(),
         request: request_value,
+        request_hash: expected_hash,
+        network,
         callback,
         redirect_uri,
     })
@@ -389,10 +504,7 @@ struct PayRequest {
 
 fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
-    if url.scheme() != "glyph" {
-        return Err("not a glyph:// URI".into());
-    }
-    if url.host_str() != Some("pay") {
+    if crate::link_broker::validate_launch_url(uri_str) != Ok(crate::link_broker::LinkKind::Pay) {
         return Err("not a glyph://pay URI".into());
     }
 
@@ -401,15 +513,18 @@ fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
     let mut label: Option<String> = None;
     for (k, v) in url.query_pairs() {
         match k.as_ref() {
-            "to" => to = Some(v.into_owned()),
-            "amount" => amount = Some(v.into_owned()),
-            "label" => label = Some(v.into_owned().chars().take(200).collect()),
+            "to" if to.is_none() => to = Some(v.into_owned()),
+            "amount" if amount.is_none() => amount = Some(v.into_owned()),
+            "label" if label.is_none() => label = Some(v.into_owned().chars().take(200).collect()),
+            "to" | "amount" | "label" => {
+                return Err("duplicate query parameters are not allowed".into())
+            }
             _ => {}
         }
     }
 
     let to = to.ok_or("missing 'to' parameter")?;
-    if !is_valid_qubic_identity(&to) {
+    if crate::qubic_native::identity_to_public_key(&to).is_err() {
         return Err(format!("invalid identity in 'to': {}", &to[..to.len().min(8)]));
     }
     if let Some(ref a) = amount {
@@ -454,22 +569,21 @@ pub fn process_url(app: &AppHandle, raw: &str) -> bool {
     match validate(raw) {
         Ok(parsed) => {
             let state = app.state::<DeepLinkState>();
-            if !state.record_nonce(app, &parsed.nonce) {
-                eprintln!(
-                    "[glyph] deep link rejected: duplicate nonce '{}'",
-                    parsed.nonce
-                );
-                return false;
-            }
             let envelope = serde_json::json!({
+                "protocol": REQUEST_PROTOCOL_V2,
                 "request": parsed.request,
                 "callback": parsed.callback,
                 "redirect_uri": parsed.redirect_uri,
+                "network": parsed.network,
+                "request_hash": parsed.request_hash,
             });
             let payload = envelope.to_string();
-            state.store(payload.clone());
-            app.emit("glyph:request", payload).ok();
-            true
+            if state.store(payload.clone()) {
+                app.emit("glyph:request", payload).ok();
+                true
+            } else {
+                false
+            }
         }
         Err(e) => {
             eprintln!("[glyph] deep link rejected: {e}");
@@ -497,7 +611,11 @@ pub fn register_handler(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{validate, validate_pay, DeepLinkState, MAX_PENDING_LINKS};
+    use super::{
+        now_secs, replay_key_from_envelope_payload, validate, validate_dapp_origin,
+        validate_delivery_url, validate_pay, DeepLinkState, MAX_PENDING_LINKS,
+        REQUEST_PROTOCOL_V2, jcs, sha256_base64url,
+    };
 
     #[test]
     fn rejects_shell_like_deep_link_paths() {
@@ -532,14 +650,184 @@ mod tests {
     }
 
     #[test]
-    fn pending_queues_drop_the_oldest_item_at_the_limit() {
+    fn parsers_reject_duplicate_query_parameters_directly() {
+        assert!(validate("glyph://v1/request?d=YWJjZA&d=ZGVm").is_err());
+        assert!(validate(
+            "glyph://v1/request?d=YWJjZA&cb=https%3A%2F%2Fdemo.app%2Fcb&cb=https%3A%2F%2Fdemo.app%2Fother"
+        )
+        .is_err());
+        assert!(validate_pay(
+            "glyph://pay?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&to=BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+        )
+        .is_err());
+        assert!(validate_pay(
+            "glyph://pay?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&amount=1&amount=2"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn parsers_reject_raw_links_that_bypass_public_broker_rules() {
+        for url in [
+            "glyph://v1/request?d=YWJjZA#fragment",
+            "glyph://v1/request?d=YWJjZA&extra=value",
+            "glyph://pay?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&extra=value",
+            "glyph://pay/path?to=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        ] {
+            assert!(validate(url).is_err(), "request parser accepted {url}");
+            assert!(validate_pay(url).is_err(), "pay parser accepted {url}");
+        }
+    }
+
+    #[test]
+    fn pending_request_queue_preserves_oldest_item_at_the_limit() {
         let state = DeepLinkState::default();
         for index in 0..=MAX_PENDING_LINKS {
             state.store(format!("request-{index}"));
             state.store_payment(format!("payment-{index}"));
         }
 
-        assert_eq!(state.take().as_deref(), Some("request-1"));
+        assert!(state.take_if_front("request-0"));
         assert_eq!(state.take_payment().as_deref(), Some("payment-1"));
+    }
+
+    #[test]
+    fn pending_request_queue_deduplicates_and_only_clears_its_head() {
+        let state = DeepLinkState::default();
+        assert!(state.store("first".to_string()));
+        assert!(!state.store("first".to_string()));
+        assert!(state.store("second".to_string()));
+
+        assert!(!state.take_if_front("second"));
+        assert_eq!(state.peek().as_deref(), Some("first"));
+        assert!(state.take_if_front("first"));
+        assert_eq!(state.peek().as_deref(), Some("second"));
+    }
+
+    #[test]
+    fn replay_key_is_derived_at_the_acceptance_boundary() {
+        let payload = serde_json::json!({
+            "protocol": REQUEST_PROTOCOL_V2,
+            "request": {
+                "type": "connect",
+                "dapp": { "name": "Demo", "origin": "https://demo.app" },
+                "nonce": "network-switch-nonce",
+                "exp": now_secs() + 300,
+            },
+            "callback": null,
+            "redirect_uri": null,
+            "network": { "id": "qubic:testnet:local:qubic-local%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+            "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+        })
+        .to_string();
+
+        assert_eq!(
+            replay_key_from_envelope_payload(&payload).unwrap(),
+            "v2|qubic:testnet:local:qubic-local%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
+        );
+    }
+
+    #[test]
+    fn replay_key_rejects_unresolved_or_generic_testnet_bindings() {
+        for network_id in ["qubic:testnet", "qubic:testnet:local:manifest-unresolved"] {
+            let payload = serde_json::json!({
+                "request": { "nonce": "n", "dapp": { "origin": "https://demo.app" } },
+                "network": { "id": network_id },
+                "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+            }).to_string();
+            assert_eq!(replay_key_from_envelope_payload(&payload).unwrap_err(), "invalid network.id");
+        }
+    }
+
+    #[test]
+    fn delivery_urls_require_https_same_origin_and_global_literals() {
+        assert!(validate_delivery_url(
+            "https://demo.app/callback",
+            "callback URL",
+            "https://demo.app",
+            false,
+        )
+        .is_ok());
+        assert!(validate_delivery_url(
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
+            "callback URL",
+            "https://glyphq.org",
+            true,
+        )
+        .is_ok());
+
+        for url in [
+            "http://demo.app/callback",
+            "https://attacker.example/callback",
+            "https://127.0.0.1/callback",
+            "https://[::ffff:127.0.0.1]/callback",
+            "https://relay.glyphq.org/v2/stream/3dd2842cbb7f42a79354df9ddf6542/r_3dd2842cbb7f42a79354df9ddf6542",
+            "https://relay.glyphq.org/v1/callback/3dd2842cbb7f42a79354df9ddf6542ae",
+            "https://relay.glyphq.org/v2/callback/short/c_3dd2842cbb7f42a79354df9ddf6542",
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/r_3dd2842cbb7f42a79354df9ddf6542",
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542?extra=1",
+        ] {
+            assert!(validate_delivery_url(url, "callback URL", "https://demo.app", true).is_err());
+        }
+
+        assert!(validate_delivery_url(
+            "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
+            "redirect_uri",
+            "https://glyphq.org",
+            false,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn accepts_a_valid_request_with_an_official_relay_callback() {
+        use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+
+        let envelope = serde_json::json!({
+            "protocol": REQUEST_PROTOCOL_V2,
+            "request": {
+                "type": "connect",
+                "dapp": { "name": "Glyph Support", "origin": "https://glyphq.org" },
+                "permissions": ["transfer"],
+                "nonce": "5b4bf4a7a53f4f29892892520dcaeffb",
+                "exp": now_secs() + 300,
+            },
+            "callback": "https://relay.glyphq.org/v2/callback/3dd2842cbb7f42a79354df9ddf6542/c_3dd2842cbb7f42a79354df9ddf6542",
+            "redirect_uri": null,
+            "network": { "id": "qubic:mainnet" },
+        });
+        let mut envelope = envelope;
+        let hash_material = serde_json::json!({
+            "protocol": envelope["protocol"].clone(),
+            "request": envelope["request"].clone(),
+            "callback": envelope["callback"].clone(),
+            "redirect_uri": envelope["redirect_uri"].clone(),
+            "network": envelope["network"].clone(),
+        });
+        envelope["request_hash"] = serde_json::Value::String(format!("sha256:{}", sha256_base64url(&jcs(&hash_material).unwrap())));
+        let url = format!(
+            "glyph://v2/request?d={}",
+            URL_SAFE_NO_PAD.encode(envelope.to_string())
+        );
+
+        assert!(validate(&url).is_ok());
+    }
+
+    #[test]
+    fn dapp_origin_must_not_contain_non_origin_components() {
+        assert_eq!(
+            validate_dapp_origin("https://demo.app/"),
+            Ok("https://demo.app".into())
+        );
+
+        for origin in [
+            "http://demo.app/",
+            "https://user@demo.app/",
+            "https://demo.app/path",
+            "https://demo.app/?query=value",
+            "https://demo.app/#fragment",
+        ] {
+            assert!(validate_dapp_origin(origin).is_err(), "accepted {origin}");
+        }
     }
 }

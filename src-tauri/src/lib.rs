@@ -4,8 +4,10 @@ mod clipboard;
 mod commands;
 mod deep_link;
 pub mod link_broker;
+mod local_rpc_transport;
 mod store_crypto;
 mod vault_crypto;
+mod qubic_native;
 mod session_crypto;
 
 use std::sync::atomic::Ordering;
@@ -86,6 +88,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::default().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_device_info::init())
         .manage(AutoLockState::default())
         .manage(DeepLinkState::default())
         .manage(ClipboardState::default())
@@ -178,6 +182,7 @@ pub fn run() {
             commands::force_lock,
             commands::get_pending_request,
             commands::clear_pending_request,
+            commands::accept_pending_request,
             commands::take_pending_pay,
             commands::copy_to_clipboard,
             commands::clear_clipboard,
@@ -185,13 +190,17 @@ pub fn run() {
             commands::post_callback,
             commands::set_hide_to_tray,
             commands::get_updater_context,
+            local_rpc_transport::fetch_local_network_manifest,
+            local_rpc_transport::local_rpc_request,
             store_crypto::encrypt_store_value,
             store_crypto::decrypt_store_value,
             vault_crypto::encrypt_vault,
             vault_crypto::decrypt_vault,
             session_crypto::store_session_seeds,
             session_crypto::clear_session_seeds,
-            session_crypto::get_session_seed_for_signing,
+            session_crypto::sign_transaction,
+            session_crypto::sign_message,
+            session_crypto::sign_callback_message,
             biometric::check_biometric_available,
             biometric::enable_biometric,
             biometric::biometric_unlock,
@@ -209,7 +218,7 @@ mod tests {
     #[test]
     fn accepts_only_normal_launch_or_one_valid_link() {
         let executable = "glyph-wallet".to_string();
-        let valid = "glyph://v1/request?d=YWJjZA".to_string();
+        let valid = "glyph://v2/request?d=YWJjZA".to_string();
         assert_eq!(single_instance_url(std::slice::from_ref(&executable)), Ok(None));
         assert_eq!(
             single_instance_url(&[executable.clone(), valid.clone()]),

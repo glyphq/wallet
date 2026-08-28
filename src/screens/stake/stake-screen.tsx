@@ -18,10 +18,11 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 import { identityToPublicKey } from "@/lib/crypto";
-import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import {
   QEARN_ADDRESS,
@@ -30,11 +31,16 @@ import {
   qearnGetUserLockStatus,
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
+  qearnGetEndedStatus,
 } from "@/lib/contracts";
 import { qk } from "@/lib/query-keys";
 import { formatQu, truncateId, extractMessage } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { Identicon } from "@/components/identicon";
+import { Button } from "@/components/button";
+import { Divider } from "@/components/divider";
+import { Input } from "@/components/input";
+import { TextButton } from "@/components/text-button";
 
 type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
@@ -52,33 +58,7 @@ const idToPk = (id: string) => identityToPublicKey(id as Identity);
 const SC_OPTS = { identityToPublicKey: idToPk };
 
 
-const accentPill: React.CSSProperties = {
-  background: "var(--color-text-display)",
-  color: "var(--color-bg-base)",
-  border: "none",
-  borderRadius: "var(--radius-pill)",
-  padding: "var(--space-3) var(--space-6)",
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-body)",
-  fontWeight: 500,
-  cursor: "pointer",
-  width: "100%",
-};
-
-const textBtn: React.CSSProperties = {
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-label)",
-  color: "var(--color-text-disabled)",
-  padding: "var(--space-2) 0",
-  alignSelf: "center",
-};
-
 const rowDivider: React.CSSProperties = {
-  height: 1,
-  background: "var(--color-border-subtle)",
   margin: "0 calc(var(--space-4) * -1)",
 };
 
@@ -89,11 +69,20 @@ const labelStyle: React.CSSProperties = {
   color: "var(--color-text-disabled)",
 };
 
-const cardStyle: React.CSSProperties = {
-  background: "var(--color-bg-surface)",
-  borderRadius: "var(--radius-card)",
-  padding: "var(--space-4)",
+const valueStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: "var(--text-label)",
+  color: "var(--color-text-primary)",
+  textAlign: "right",
 };
+
+const sectionStyle: React.CSSProperties = {
+  padding: "0 var(--space-4)",
+};
+
+function RowDivider() {
+  return <Divider style={rowDivider} />;
+}
 
 export default function StakeScreen() {
   const navigate = useNavigate();
@@ -112,7 +101,7 @@ export default function StakeScreen() {
   const visibleAccounts = vault?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
 
   const { data: tickInfo } = useTickInfo();
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const rpc = useRpcCacheSnapshot("live");
   const { data: balanceData } = useBalance(identity);
   const balance = balanceData?.balance ?? null;
   const currentEpoch = tickInfo?.epoch ?? null;
@@ -136,8 +125,8 @@ export default function StakeScreen() {
 
   // Lock tab: current epoch info
   const { data: epochInfoResult } = useQuery({
-    queryKey: qk.qearnEpochInfo(rpcIdentity, currentEpoch),
-    queryFn: () => qearnGetLockInfoPerEpoch(getRpcClient().live, { Epoch: currentEpoch! }),
+    queryKey: qk.qearnEpochInfo(rpc.identity, currentEpoch),
+    queryFn: () => qearnGetLockInfoPerEpoch(rpc.client.live, { Epoch: currentEpoch! }),
     enabled: !!currentEpoch,
     staleTime: 60_000,
   });
@@ -159,10 +148,10 @@ export default function StakeScreen() {
 
   // Unlock tab: user's locked positions across last 52 epochs
   const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useQuery({
-    queryKey: qk.qearnPositions(rpcIdentity, unlockIdentity, currentEpoch),
+    queryKey: qk.qearnPositions(rpc.identity, unlockIdentity, currentEpoch),
     queryFn: async () => {
       if (!unlockIdentity || !currentEpoch) return [];
-      const live = getRpcClient().live;
+      const live = rpc.client.live;
 
       const statusResult = await qearnGetUserLockStatus(live, { user: unlockIdentity }, SC_OPTS);
       if (!statusResult.ok || statusResult.value.status === 0n) return [];
@@ -201,6 +190,21 @@ export default function StakeScreen() {
 
   const totalUserLocked = positions?.reduce((sum, p) => sum + p.lockedAmount, 0n) ?? 0n;
   const readyPositions = positions?.filter((p) => currentEpoch !== null && currentEpoch >= p.epoch + LOCK_PERIOD_EPOCHS) ?? [];
+  const readyAmount = readyPositions.reduce((sum, p) => sum + p.lockedAmount, 0n);
+  const nextMaturityEpoch = positions
+    ?.filter((p) => currentEpoch !== null && currentEpoch < p.epoch + LOCK_PERIOD_EPOCHS)
+    .map((p) => p.epoch + LOCK_PERIOD_EPOCHS)
+    .sort((a, b) => a - b)[0] ?? null;
+
+  const { data: endedStatusResult } = useQuery({
+    queryKey: ["qearn", "ended-status", rpc.identity, unlockIdentity],
+    queryFn: () => qearnGetEndedStatus(rpc.client.live, { user: unlockIdentity! }, SC_OPTS),
+    enabled: !!unlockIdentity,
+    staleTime: 60_000,
+  });
+  const endedStatus = endedStatusResult?.ok ? endedStatusResult.value : null;
+  const historicalRewards = endedStatus ? endedStatus.fullyRewardedAmount + endedStatus.earlyRewardedAmount : 0n;
+  const historicalUnlocked = endedStatus ? endedStatus.fullyUnlockedAmount + endedStatus.earlyUnlockedAmount : 0n;
 
   function goLockConfirm() {
     const trimmed = amountStr.trim();
@@ -224,9 +228,11 @@ export default function StakeScreen() {
     if (!wallet || !tickInfo) return;
     setStep("sending");
     try {
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const amount = BigInt(amountStr.trim());
       const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
@@ -237,7 +243,7 @@ export default function StakeScreen() {
         currentTick: tickInfo.tick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,
@@ -247,7 +253,7 @@ export default function StakeScreen() {
         targetTick,
         broadcastAt: Date.now(),
         contractName: "Qearn · Lock",
-      });
+      }, networkScope);
 
       setTxHash(hash);
       setStep("done");
@@ -261,12 +267,14 @@ export default function StakeScreen() {
     if (!wallet || !tickInfo || !unlockTarget) return;
     setStep("sending");
     try {
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const { inputType, payload } = buildQearnUnlockInput({
         amount: unlockTarget.lockedAmount,
         lockedEpoch: unlockTarget.epoch,
       });
       const targetTick = estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
@@ -277,7 +285,7 @@ export default function StakeScreen() {
         currentTick: tickInfo.tick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,
@@ -287,7 +295,7 @@ export default function StakeScreen() {
         targetTick,
         broadcastAt: Date.now(),
         contractName: "Qearn · Unlock",
-      });
+      }, networkScope);
 
       setTxHash(hash);
       setStep("done");
@@ -366,11 +374,11 @@ export default function StakeScreen() {
 
           {tab === "lock" ? (
             <>
-              {/* Epoch stats card */}
-              <div style={cardStyle}>
+              {/* Epoch stats */}
+              <div style={sectionStyle}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-accent)" }}><Bolt size={22} weight="Bold" /></span>
+                    <span style={{ color: "var(--color-accent)" }}><Bolt size={22} weight="Linear" /></span>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
                       Current Epoch
                     </span>
@@ -394,14 +402,14 @@ export default function StakeScreen() {
                     </div>
                   </div>
                 )}
-                <div style={rowDivider} />
+                <RowDivider />
                 {epochInfo ? (
                   <>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
                       <span style={labelStyle}>Total locked</span>
                       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)" }}>{formatQu(epochInfo.currentLockedAmount)} QU</span>
                     </div>
-                    <div style={rowDivider} />
+                    <RowDivider />
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
                       <span style={labelStyle}>Reward pool</span>
                       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>{formatQu(epochInfo.currentBonusAmount)} QU</span>
@@ -413,7 +421,7 @@ export default function StakeScreen() {
                       <div className="skeleton" style={{ width: 100, height: 14 }} />
                       <div className="skeleton" style={{ width: 140, height: 14 }} />
                     </div>
-                    <div style={rowDivider} />
+                    <RowDivider />
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
                       <div className="skeleton" style={{ width: 100, height: 14 }} />
                       <div className="skeleton" style={{ width: 120, height: 14 }} />
@@ -422,29 +430,32 @@ export default function StakeScreen() {
                 )}
               </div>
 
-              {/* How it works */}
               <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
                 <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InfoCircle size={16} weight="Linear" /></span>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>
-                  Lock QU for {LOCK_PERIOD_EPOCHS} epochs to participate in the reward pool. Minimum {formatQu(QEARN_MIN_LOCK)} QU. Early unlock is available but rewards may be reduced.
+                  Minimum {formatQu(QEARN_MIN_LOCK)} QU. Mature after {LOCK_PERIOD_EPOCHS} epochs.
                 </span>
               </div>
 
               {/* Amount input */}
               <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-                <input
+                <Input
                   autoComplete="off"
                   value={amountStr}
                   onChange={(e) => { setAmountStr(e.target.value.replace(/[^0-9]/g, "")); setAmountError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && goLockConfirm()}
                   placeholder="0"
+                  aria-label="QU amount to lock"
                   autoFocus
+                  inputMode="numeric"
+                  error={amountError || undefined}
                   style={{
-                    width: "100%", maxWidth: 280, background: "none", border: "none", outline: "none",
+                    maxWidth: 280, background: "transparent", borderColor: "transparent", boxShadow: "none",
                     fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700,
                     color: amountError ? "var(--color-status-error)" : amountStr ? "var(--color-text-display)" : "var(--color-text-disabled)",
                     letterSpacing: "-0.03em", textAlign: "center", padding: 0,
                   }}
+                  containerStyle={{ alignItems: "center", width: "100%" }}
                 />
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>QU</span>
 
@@ -454,23 +465,16 @@ export default function StakeScreen() {
                   </span>
                 )}
 
-                {amountError && (
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-status-error)", marginTop: "var(--space-1)" }}>
-                    {amountError}
-                  </span>
-                )}
               </div>
 
               {/* Continue */}
               <div style={{ paddingBottom: "var(--space-6)" }}>
-                <button
-                  type="button"
+                <Button
                   onClick={goLockConfirm}
                   disabled={!amountStr.trim() || !wallet || !tickInfo || hasPendingTx}
-                  style={{ ...accentPill, opacity: !amountStr.trim() || !wallet || !tickInfo || hasPendingTx ? 0.5 : 1 }}
                 >
                   Continue
-                </button>
+                </Button>
               </div>
             </>
           ) : (
@@ -532,51 +536,68 @@ export default function StakeScreen() {
                 </div>
               )}
 
-              {/* Summary card */}
-              {positions && positions.length > 0 && (
-                <div style={cardStyle}>
+              {/* Summary */}
+              {((positions && positions.length > 0) || historicalUnlocked > 0n) && (
+                <div style={sectionStyle}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-accent)" }}><Lock size={22} weight="Bold" /></span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                      Your positions
-                    </span>
+                    <span style={{ color: "var(--color-accent)" }}><Lock size={22} weight="Linear" /></span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>Positions</span>
                   </div>
                   <div style={{ padding: "var(--space-2) 0 var(--space-3)" }}>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700, color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
                       {formatQu(totalUserLocked)}
                     </span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginLeft: "var(--space-2)" }}>QU locked</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginLeft: "var(--space-2)" }}>QU locked balance</span>
                   </div>
-                  <div style={rowDivider} />
+                  <RowDivider />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
                     <span style={labelStyle}>Active positions</span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)" }}>{positions.length}</span>
+                    <span style={valueStyle}>{positions?.length ?? 0}</span>
                   </div>
+                  <RowDivider />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                    <span style={labelStyle}>Ready amount</span>
+                    <span style={valueStyle}>{formatQu(readyAmount)} QU</span>
+                  </div>
+                  {nextMaturityEpoch !== null && (
+                    <>
+                      <RowDivider />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                        <span style={labelStyle}>Next maturity</span>
+                        <span style={valueStyle}>Epoch {nextMaturityEpoch}</span>
+                      </div>
+                    </>
+                  )}
+                  {historicalUnlocked > 0n && (
+                    <>
+                      <RowDivider />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+                        <span style={labelStyle}>Historical rewards</span>
+                        <span style={valueStyle}>{formatQu(historicalRewards)} QU</span>
+                      </div>
+                    </>
+                  )}
                   {readyPositions.length > 0 && (
                     <>
-                      <div style={rowDivider} />
+                      <RowDivider />
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
                         <span style={labelStyle}>Ready to unlock</span>
                         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>{readyPositions.length}</span>
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        size="md"
                         disabled={!wallet || !tickInfo || hasPendingTx}
                         onClick={() => {
                           if (!unlockIsActiveAccount) setActiveAccountIndex(unlockAccountIdx);
                           setUnlockTarget(readyPositions[0]);
                           setStep("confirm");
                         }}
-                        style={{
-                          ...accentPill,
-                          marginTop: "var(--space-2)",
-                          opacity: !wallet || !tickInfo || hasPendingTx ? 0.5 : 1,
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-                        }}
+                        style={{ marginTop: "var(--space-2)", width: "100%" }}
                       >
-                        <LockUnlocked size={16} weight="Bold" />
+                        <LockUnlocked size={16} weight="Linear" />
                         {readyPositions.length === 1 ? "Review unlock" : "Review next unlock"}
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -593,9 +614,9 @@ export default function StakeScreen() {
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
                     No active positions
                   </span>
-                  <button type="button" onClick={() => setTab("lock")} style={{ ...textBtn, color: "var(--color-accent)" }}>
+                  <TextButton type="button" tone="accent" onClick={() => setTab("lock")}>
                     Lock QU to start staking
-                  </button>
+                  </TextButton>
                 </div>
               ) : (
                 <div>
@@ -605,7 +626,7 @@ export default function StakeScreen() {
                     const epochsLeft = isEarly ? unlockEpoch - currentEpoch : 0;
                     return (
                       <div key={pos.epoch} className="stagger-item">
-                        {i > 0 && <div style={rowDivider} />}
+                        {i > 0 && <RowDivider />}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0", gap: "var(--space-3)" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
                             <div style={{ position: "relative" }}>
@@ -623,7 +644,7 @@ export default function StakeScreen() {
                               </span>
                               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-                                  Epoch {pos.epoch}
+                                  Epoch {pos.epoch} → {unlockEpoch}
                                 </span>
                                 {isEarly ? (
                                   <span style={{
@@ -651,8 +672,10 @@ export default function StakeScreen() {
                               </div>
                             </div>
                           </div>
-                          <button
+                          <Button
                             type="button"
+                            variant={isEarly ? "secondary" : "primary"}
+                            size="sm"
                             disabled={!wallet || !tickInfo || hasPendingTx}
                             onClick={() => {
                               if (!unlockIsActiveAccount) {
@@ -661,26 +684,11 @@ export default function StakeScreen() {
                               setUnlockTarget(pos);
                               setStep("confirm");
                             }}
-                            style={{
-                              background: isEarly ? "var(--color-bg-surface)" : "var(--color-accent)",
-                              color: isEarly ? "var(--color-text-secondary)" : "var(--color-bg-base)",
-                              border: "none",
-                              borderRadius: "var(--radius-pill)",
-                              padding: "var(--space-2) var(--space-4)",
-                              fontFamily: "var(--font-sans)",
-                              fontSize: "var(--text-label)",
-                              fontWeight: 500,
-                              cursor: "pointer",
-                              flexShrink: 0,
-                              opacity: !wallet || !tickInfo || hasPendingTx ? 0.5 : 1,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "var(--space-1)",
-                            }}
+                            style={{ flexShrink: 0, width: "auto" }}
                           >
-                            {!isEarly && <LockUnlocked size={14} weight="Bold" />}
+                            {!isEarly && <LockUnlocked size={14} weight="Linear" />}
                             {isEarly ? "Early" : "Unlock"}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     );
@@ -709,28 +717,28 @@ export default function StakeScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>QU</div>
           </div>
 
-          {/* Detail card */}
-          <div style={cardStyle}>
+          {/* Details */}
+          <div style={sectionStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Contract</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Qearn</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Action</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Lock QU</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Lock epoch</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{currentEpoch}</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Unlocks at epoch</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{(currentEpoch ?? 0) + LOCK_PERIOD_EPOCHS}</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Lock period</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{LOCK_PERIOD_EPOCHS} epochs</span>
@@ -741,17 +749,15 @@ export default function StakeScreen() {
 
           {/* Actions */}
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-            <button
-              type="button"
+            <Button
               onClick={sendLock}
               disabled={!wallet || !tickInfo || hasPendingTx}
-              style={{ ...accentPill, opacity: !wallet || !tickInfo || hasPendingTx ? 0.5 : 1 }}
             >
               Sign and send
-            </button>
-            <button type="button" onClick={() => setStep("main")} style={textBtn}>
+            </Button>
+            <TextButton type="button" tone="muted" onClick={() => setStep("main")} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
               Cancel
-            </button>
+            </TextButton>
           </div>
 
         </motion.div>
@@ -777,23 +783,23 @@ export default function StakeScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>QU</div>
           </div>
 
-          {/* Detail card */}
-          <div style={cardStyle}>
+          {/* Details */}
+          <div style={sectionStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Contract</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Qearn</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Action</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Unlock QU</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Lock epoch</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{unlockTarget.epoch}</span>
             </div>
-            <div style={rowDivider} />
+            <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Maturity</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: isEarly ? "var(--color-status-warning)" : "var(--color-accent)" }}>
@@ -815,17 +821,15 @@ export default function StakeScreen() {
 
           {/* Actions */}
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-            <button
-              type="button"
+            <Button
               onClick={sendUnlock}
               disabled={!wallet || !tickInfo || hasPendingTx}
-              style={{ ...accentPill, opacity: !wallet || !tickInfo || hasPendingTx ? 0.5 : 1 }}
             >
               Sign and send
-            </button>
-            <button type="button" onClick={() => { setStep("main"); setUnlockTarget(null); }} style={textBtn}>
+            </Button>
+            <TextButton type="button" tone="muted" onClick={() => { setStep("main"); setUnlockTarget(null); }} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
               Cancel
-            </button>
+            </TextButton>
           </div>
 
         </motion.div>
@@ -842,7 +846,7 @@ export default function StakeScreen() {
           <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
             <span style={{ position: "relative", zIndex: 1, color: "var(--color-accent)" }}>
-              {tab === "lock" ? <Lock size={20} weight="Bold" /> : <Lock size={20} weight="Bold" />}
+              {tab === "lock" ? <Lock size={20} weight="Linear" /> : <LockUnlocked size={20} weight="Linear" />}
             </span>
           </div>
           <div style={{ textAlign: "center" }}>
@@ -875,8 +879,8 @@ export default function StakeScreen() {
             </span>
           </div>
 
-          {/* Transaction hash card */}
-          <div style={cardStyle}>
+          {/* Transaction hash */}
+          <div style={sectionStyle}>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "var(--space-2)" }}>
               Transaction hash
             </div>
@@ -889,12 +893,12 @@ export default function StakeScreen() {
 
           {/* Actions */}
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-            <button type="button" onClick={() => navigate("/dashboard")} style={accentPill}>
+            <Button type="button" onClick={() => navigate("/dashboard")}>
               Done
-            </button>
-            <button type="button" onClick={() => { setStep("main"); refetchPositions(); }} style={textBtn}>
+            </Button>
+            <TextButton type="button" tone="muted" onClick={() => { setStep("main"); refetchPositions(); }} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
               Back to staking
-            </button>
+            </TextButton>
           </div>
 
         </motion.div>
@@ -919,12 +923,12 @@ export default function StakeScreen() {
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
-          <button type="button" onClick={() => setStep("confirm")} style={accentPill}>
+          <Button type="button" onClick={() => setStep("confirm")}>
             Try again
-          </button>
-          <button type="button" onClick={() => navigate("/dashboard")} style={textBtn}>
+          </Button>
+          <TextButton type="button" tone="muted" onClick={() => navigate("/dashboard")} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
             Cancel
-          </button>
+          </TextButton>
         </div>
       </motion.div>
     </AppShell>

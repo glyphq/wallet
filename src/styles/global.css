@@ -92,6 +92,18 @@ textarea::placeholder {
   font-family: var(--font-display);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 :focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
@@ -144,7 +156,10 @@ a:hover {
 }
 
 .glyph-btn[data-variant="primary"] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-text-inverse) 8%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-inverse) 24%, transparent),
+    0 4px 0 color-mix(in srgb, var(--color-text-display) 28%, transparent),
+    0 7px 14px rgba(0, 0, 0, 0.2);
 }
 
 .glyph-btn[data-variant="primary"]:hover:not(:disabled) {
@@ -154,6 +169,13 @@ a:hover {
 
 .glyph-btn[data-variant="secondary"]:hover:not(:disabled) {
   background: var(--color-bg-hover);
+}
+
+.glyph-btn[data-variant="secondary"] {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 3px 0 var(--color-border-strong),
+    0 5px 10px rgba(0, 0, 0, 0.12);
 }
 
 .glyph-btn[data-variant="ghost"]:hover:not(:disabled) {
@@ -166,14 +188,73 @@ a:hover {
 }
 
 .glyph-btn:active:not(:disabled) {
-  background-color: var(--color-bg-press);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
+}
+
+.settings-pressable {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 10%, transparent),
+    0 2px 0 var(--color-border-strong),
+    0 5px 10px rgba(0, 0, 0, 0.1);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.settings-pressable:hover:not(:disabled) {
+  border-color: var(--color-border-strong) !important;
+  background: var(--color-bg-hover) !important;
+}
+
+.settings-pressable.settings-pressable-accent:hover:not(:disabled) {
+  border-color: var(--color-accent-hover) !important;
+  background: var(--color-accent-hover) !important;
+}
+
+.settings-pressable:active:not(:disabled) {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
+}
+
+.settings-pressable:disabled {
+  box-shadow: none;
+}
+
+.settings-pressable[data-selected="true"],
+.settings-pressable[aria-pressed="true"],
+.settings-pressable[aria-checked="true"] {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 2px 0 color-mix(in srgb, var(--color-text-display) 42%, var(--color-border-strong)),
+    0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.settings-chip {
+  border-color: var(--color-border-default) !important;
+}
+
+.glyph-btn[data-variant="primary"]:active:not(:disabled) {
+  background: var(--color-text-secondary);
+}
+
+.glyph-btn[data-variant="secondary"]:active:not(:disabled) {
+  background: var(--color-bg-press);
 }
 
 .glyph-input {
   min-height: var(--height-input);
+  background: var(--color-bg-input);
   border: 1px solid var(--color-border-default);
+  appearance: none;
   caret-color: var(--color-text-primary);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 7%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-text-display) 10%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.08);
   transition:
+    color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out);
@@ -200,36 +281,117 @@ a:hover {
   cursor: not-allowed;
   color: var(--color-text-disabled);
   background: var(--color-bg-inset);
+  border-color: var(--color-border-subtle);
+  box-shadow: none;
 }
 
 .glyph-input:-webkit-autofill,
 .glyph-input:-webkit-autofill:hover,
 .glyph-input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary);
-  box-shadow: 0 0 0 1000px var(--color-bg-input) inset;
+  box-shadow:
+    0 0 0 1000px var(--color-bg-input) inset,
+    0 1px 0 color-mix(in srgb, var(--color-text-display) 10%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.08);
   transition: background-color 9999s ease-out;
 }
 
 .glyph-input:hover:not(:disabled) {
   border-color: var(--color-border-strong);
-  background: color-mix(in srgb, var(--color-bg-input) 88%, white 12%);
+  background: color-mix(in srgb, var(--color-bg-input) 92%, white 8%);
 }
 
-.glyph-input:focus {
+.glyph-input:focus:not(:focus-visible) {
   outline: none;
-  border-color: var(--color-border-contrast);
-  box-shadow: none;
+  border-color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-bg-input) 84%, white 16%);
+  box-shadow:
+    inset 0 0 0 1px var(--color-text-primary),
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-text-display) 10%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Inputs communicate keyboard focus through their own border, not a second outer ring. */
+.glyph-input:focus-visible {
+  outline: none;
+  border-color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-bg-input) 84%, white 16%);
+  box-shadow:
+    inset 0 0 0 1px var(--color-text-primary),
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-text-display) 10%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .glyph-input[data-error="true"] {
   border-color: var(--color-status-error);
-  box-shadow: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-status-error) 48%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-status-error) 28%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.08);
   background: color-mix(in srgb, var(--color-status-error) 4%, var(--color-bg-input));
 }
 
 .glyph-input[data-error="true"]:focus {
   border-color: var(--color-status-error);
-  box-shadow: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-status-error) 64%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-status-error) 28%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.glyph-embedded-input {
+  outline: none;
+  caret-color: var(--color-text-primary);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-embedded-input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.glyph-embedded-input:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-disabled) !important;
+}
+
+.glyph-embedded-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 var(--color-border-contrast);
+}
+
+.glyph-avatar-btn {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-strong);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
+    0 3px 0 var(--color-border-strong),
+    0 5px 10px rgba(0, 0, 0, 0.12);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.glyph-avatar-btn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-contrast);
+}
+
+.glyph-avatar-btn:active {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
+}
+
+.glyph-avatar-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px var(--color-text-primary);
 }
 
 .glyph-icon-btn {
@@ -351,6 +513,60 @@ a:hover {
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
+}
+
+@keyframes sponsor-ticker-scroll {
+  to { transform: translateX(-50%); }
+}
+
+.sponsor-ticker {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bg-inset);
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.sponsor-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: sponsor-ticker-scroll 24s linear infinite;
+}
+
+.sponsor-ticker:hover .sponsor-ticker-track {
+  animation-play-state: paused;
+}
+
+.sponsor-ticker-group {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.sponsor-ticker-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-width: 300px;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-5);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.sponsor-ticker-logo {
+  width: 132px;
+  height: 32px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.sponsor-ticker-amount {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .skeleton {

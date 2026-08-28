@@ -6,13 +6,17 @@ import { usePersistedStore } from "@/store/persisted";
 import { router } from "@/router";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { buildRequestNotification, parseGlyphEnvelope } from "@/lib/request-schema";
+import { buildRequestNotification, parseGlyphEnvelopeAsync } from "@/lib/request-schema";
+import { activeNetworkBinding } from "@/lib/network-binding";
+import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptance";
+import { deferPendingRequest, drainPendingRequests, retryDeferredRequests } from "@/lib/pending-request-queue";
 
 /** Listens for `glyph:request` Tauri events and cold-start pending requests, routing to /request when unlocked. */
 export function useDeepLink() {
   const enqueuePendingRequest = useSessionStore((s) => s.enqueuePendingRequest);
   const isLocked = useSessionStore((s) => s.isLocked);
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
+  const networkScope = usePersistedStore((s) => s.settings.network.scope);
 
   // Refs keep the single effect's callbacks up-to-date without re-subscribing.
   const isLockedRef = useRef(isLocked);
@@ -21,13 +25,15 @@ export function useDeepLink() {
   enqueuePendingRequestRef.current = enqueuePendingRequest;
   const notificationsEnabledRef = useRef(notificationsEnabled);
   notificationsEnabledRef.current = notificationsEnabled;
+  const pendingRequestDrainRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
-    function applyPayload(payload: string) {
-      const parsed = parseGlyphEnvelope(payload);
+    async function applyAcceptedPayload(payload: string) {
+      const parsed = await parseGlyphEnvelopeAsync(payload, await activeNetworkBinding(usePersistedStore.getState().settings.network));
       if (!parsed.envelope) return;
+      const acceptedNetworkScope = parsed.envelope.network.id;
       enqueuePendingRequestRef.current(payload);
       recordAuditEvent({
         kind: "request_received",
@@ -42,7 +48,7 @@ export function useDeepLink() {
             kind: "deep_link",
             title: n.title,
             body: n.body,
-          })).catch(() => {});
+          }), { networkScope: acceptedNetworkScope }).catch(() => {});
         }
       }
       if (!isLockedRef.current) {
@@ -51,24 +57,49 @@ export function useDeepLink() {
       // If locked, lock screen reads pendingRequests and navigates to /request after unlock.
     }
 
-    listen<string>("glyph:request", (event) => {
-      applyPayload(event.payload);
-      invoke("clear_pending_request").catch(() => {});
+    function drainPendingRequestQueue() {
+      if (pendingRequestDrainRef.current) return pendingRequestDrainRef.current;
+      const drain = drainPendingRequests({
+        getPendingRequest: () => invoke<string | null>("get_pending_request"),
+        acceptPendingRequest: (payload) => acceptDeepLinkPayloadAfterNetworkMatch({
+          payload,
+          networkSetting: usePersistedStore.getState().settings.network,
+          invokeNative: invoke,
+        }),
+        onAccepted: applyAcceptedPayload,
+        onDeferred: deferPendingRequest,
+      }).catch(() => {
+        // A transient IPC failure leaves the native queue head intact for the
+        // next event or cold-start check.
+      });
+      pendingRequestDrainRef.current = drain;
+      void drain.finally(() => {
+        if (pendingRequestDrainRef.current === drain) {
+          pendingRequestDrainRef.current = null;
+        }
+      });
+      return drain;
+    }
+
+    /*
+     * Events are availability notifications, not the source of truth. Reading
+     * payloads from the native queue serially prevents two async events from
+     * accepting and clearing each other's queue head.
+     */
+    function applyPayload() {
+      return drainPendingRequestQueue();
+    }
+
+    listen<string>("glyph:request", () => {
+      void applyPayload();
     }).then((fn) => { unlisten = fn; }).catch(() => {});
 
-    // Cold start: wait for the persisted store to hydrate before reading the Rust-side stored
-    // request. Without this, vaults.length = 0 at first render (pre-hydration), which would
-    // cause applyPayload to clear the pending request before routing is settled.
+    // Cold start: wait for the persisted store to hydrate before reading the Rust-side queue.
+    // Without this, vaults.length = 0 at first render (pre-hydration), which would
+    // cause routing to settle before the persisted vault state is available.
     async function checkPending() {
       try {
-        while (true) {
-          const payload = await invoke<string | null>("get_pending_request");
-          if (!payload) break;
-          // Clear before applyPayload so a failure in applyPayload doesn't re-process
-          // the same payload on the next loop iteration.
-          await invoke("clear_pending_request");
-          applyPayload(payload);
-        }
+        await applyPayload();
       } catch {
         // non-fatal
       }
@@ -85,4 +116,14 @@ export function useDeepLink() {
 
     return () => { unlisten?.(); };
   }, []); // Stable: registered once; stale-closure handled via refs above.
+
+  useEffect(() => {
+    void retryDeferredRequests(async (payload) => {
+      const binding = await activeNetworkBinding(usePersistedStore.getState().settings.network);
+      return Boolean((await parseGlyphEnvelopeAsync(payload, binding)).envelope);
+    }, async (payload) => {
+      enqueuePendingRequestRef.current(payload);
+      if (!isLockedRef.current) router.navigate("/request");
+    });
+  }, [networkScope]);
 }

@@ -103,6 +103,25 @@ export function RequestTechnicalBlock({
   );
 }
 
+export function RequestDisclosure({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <details>
+      <summary
+        style={{
+          cursor: "pointer",
+          fontFamily: "var(--font-mono)",
+          fontSize: "var(--text-mono-sm)",
+          color: "var(--color-text-secondary)",
+          letterSpacing: "0.05em",
+        }}
+      >
+        {label}
+      </summary>
+      <div style={{ marginTop: "var(--space-2)" }}>{children}</div>
+    </details>
+  );
+}
+
 export function RequestActionBar({ children }: { children: ReactNode }) {
   return <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>{children}</div>;
 }

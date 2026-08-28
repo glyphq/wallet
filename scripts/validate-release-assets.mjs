@@ -8,7 +8,7 @@ if (!tag || !repository) {
   console.error("usage: node scripts/validate-release-assets.mjs <tag> <owner/repo> [manifest-name]");
   process.exit(2);
 }
-if (!/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(tag)) {
+if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag)) {
   throw new Error(`invalid release tag: ${tag}`);
 }
 if (!/^latest(?:-prerelease)?\.json$/.test(manifestName)) {

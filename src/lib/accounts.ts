@@ -1,4 +1,3 @@
-import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import type { SessionWallet } from "@/lib/session-wallet";
 import type { AccountMeta, VaultMeta } from "@/store/persisted";
 
@@ -27,9 +26,4 @@ export function getVaultAccountIdentity(
   if (!vault) return wallets[accountIndex]?.identity ?? null;
   const account = vault.accounts.find((item) => item.index === accountIndex);
   return getAccountIdentity(account ?? { index: accountIndex, name: "", addedAt: 0, hidden: false }, wallets[accountIndex] ?? null);
-}
-
-
-export function getKnownAddressLabel(identity: string): string | null {
-  return KNOWN_CONTRACT_ADDRESSES[identity] ?? null;
 }

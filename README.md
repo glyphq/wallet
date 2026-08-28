@@ -5,218 +5,185 @@
 
 # Glyph
 
-**Self-custodial Qubic desktop wallet**
+### Your Qubic desktop, with room to breathe.
 
-[![Release](https://img.shields.io/github/v/release/glyph-ecosystem/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-ecosystem/wallet/releases/latest)
-[![CI](https://img.shields.io/github/actions/workflow/status/glyph-ecosystem/wallet/changeset.yml?style=flat-square&label=build&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyph-ecosystem/wallet/actions)
+**Glyph is a self-custodial desktop wallet for Qubic.**
+Create Vaults, shape your workspace, move QU, follow activity, and approve requests from the apps you use, all in one calm native app.
+
+[![Release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/glyphq/wallet/ci.yml?branch=main&style=flat-square&label=CI&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-0d0d0d?style=flat-square&labelColor=1a1a1a)](./LICENSE)
-[![Discord](https://img.shields.io/badge/discord-join-0d0d0d?style=flat-square&labelColor=1a1a1a)](https://discord.gg/s5qNRNGu96)
 
-Windows · macOS (Universal) · Linux (AppImage · .deb · .rpm)
+Windows x64 · macOS Universal · Linux x86_64
 
-[**Download**](https://github.com/glyph-ecosystem/wallet/releases/latest) · [Website](https://wallet.glyphq.org) · [Discord](https://discord.gg/s5qNRNGu96)
+[**Download Glyph**](https://github.com/glyphq/wallet/releases/latest) · [User guide](./docs/USER_GUIDE.md) · [Contributing](./CONTRIBUTING.md) · [Discord](https://discord.gg/s5qNRNGu96)
 
 </div>
 
 ---
 
-Keys stay encrypted on disk. Signing material lives only in Rust process memory and is wiped immediately on lock. No Glyph backend, no key escrow, no browser extension surface.
+## One place, your pace
 
-## Features
-
-**Wallet**
-- Send, receive, burn, stake
-- Send Many — up to 25 transfers in a single session with CSV/JSON import
-- Full transaction history with memos and fiat price snapshots
-- Vault analytics — net flow, top counterparties, monthly summaries
-- Global search across accounts, contacts, tx hashes, and memos
-
-**Security**
-- AES-256-GCM encrypted vaults with Argon2 KDF
-- Auto-lock on idle, sleep, or window blur
-- Clipboard auto-clear; immediate wipe on lock
-- Biometric unlock — Windows Hello, macOS Touch ID, Linux secret store
-- Local audit log of every signing event
-- Signed update payload verification
-
-**dApp integration**
-- Native `glyph://` deep-link protocol
-- Request types: `transfer`, `sc_call`, `sign_message`, `verify_message`, `connect`
-- Replay protection via nonce store (1-hour window)
-- Result delivery via server callback POST or browser redirect
-- Request history with per-entry callback status
-
-**Desktop**
-- System tray with hide-to-tray
-- Desktop notifications with inbox, per-type filters, and price/balance alerts
-- Multiple seeded vaults with color coding
-- Themes, font pairs, accent colors
-
-**Design**
-- Comprehensive design system (`DESIGN.md`) — colors, typography, spacing, components
-- Sheet-based dialogs throughout (bottom-slide pattern)
-- Geist font family (sans, display, mono)
-- Phantom-inspired dark UI with floating navigation
-- Bottom nav auto-hides when sheets are open
-
-## Security Model
-
-Vault data is encrypted before hitting disk. Unlocked keys never leave the Rust process.
+Glyph is built around the parts of Qubic you actually return to: your accounts, your activity, the people you pay, and the apps you choose to connect.
 
 ```mermaid
 flowchart LR
-    seed([Seed / private key]) -->|AES-256-GCM · Argon2| vault[(Encrypted vault on disk)]
-    vault -->|Password unlock| session[/Volatile session keys/]
-    session -->|Lock event| wiped([Cleared from memory])
+    V[Your Vaults] --> A[Accounts]
+    A --> H[Your home]
+    H --> R[Receive]
+    H --> S[Send QU]
+    H --> E[Explore activity]
+    H --> Q[Earn with QEarn]
+    H --> D[Use connected apps]
 ```
 
-Sensitive operations are isolated to the Rust layer — the renderer only sends signing requests and receives back signed transactions.
+### A good wallet should feel like yours
 
-On Windows and Linux, operating-system `glyph://` launches first pass through a
-minimal broker process. The broker accepts only one bounded URL argument, rejects
-command-line metacharacters and unknown routes, then starts the wallet without a
-shell. The wallet independently performs full request validation and user review.
+- **Make a home for every Qubic identity.** Create or import Vaults, keep multiple accounts together, and personalize them with names, colors, and icons.
+- **Move without the mess.** Send QU, receive with a QR code or payment link, pay several people at once, and keep useful transfer templates close by.
+- **See the story behind the balance.** Browse history, local memos, tags, contacts, analytics, counterparties, and activity trends without jumping between tools.
+- **Take your setup with you.** Back up Vaults, organize your workspace, choose a theme and font, and make Glyph fit the way you work.
 
-| Operation | Layer |
-|---|---|
-| Vault encryption / decryption | Rust (`aes-gcm`) |
-| Deep-link URL validation | Rust |
-| Nonce replay protection | Rust |
-| Callback HTTP posting | Rust (`reqwest`) |
-| Auto-lock timer | Rust (background thread) |
-| Clipboard clear | Rust |
-| Update payload verification | Rust |
+## A little tour
 
-## Deep-Link Protocol
+| When you want to… | Glyph gives you… |
+| --- | --- |
+| Start fresh | A new Vault, a guided backup, and room for up to 16 accounts per Vault |
+| Get paid | Your Qubic identity, a QR code, and shareable payment links |
+| Send QU | A clear review flow for one recipient or many |
+| Keep context | Contacts, notes, tags, saved templates, and searchable history |
+| Go deeper | QEarn positions, owned assets, contract activity, and Vault analytics |
+| Stay in the flow | Notifications, diagnostics, updates, custom RPC settings, and focused shortcuts |
 
-dApps send requests by opening a `glyph://v1/request?d=<base64url-envelope>` URL. Glyph validates, queues, and presents a review screen. Results are delivered to the dApp via callback POST or redirect URL.
+## For everyday Qubic
+
+### Vaults, accounts, and a space that feels familiar
+
+Create a Vault, import a Qubic seed, or restore a Glyph Vault export. Switch Vaults or accounts from anywhere in the app, then customize names, colors, icons, and display preferences as your setup grows.
+
+Balances, owned assets, approximate fiat values, and recent activity stay close at hand. Need less visual noise? Hide balances, pick light or dark mode, or choose the interface font that feels right.
+
+### Send, receive, and keep moving
+
+- Send QU to an identity, a contact, or several recipients.
+- Share an identity, QR code, or payment link when it is your turn to receive.
+- Follow a transaction from broadcast to confirmation, expiry, or failure.
+- Keep transfer templates for repeat payments.
+- Explore QEarn positions, supported Qubic contracts, and owned assets from the same desktop home.
+
+### Keep the details useful
+
+Search and filter history by direction, type, amount, date, or tick range. Add local memos and tags, export activity when you need it, and use contacts to make recurring destinations easier to recognize.
+
+```mermaid
+flowchart TD
+    T[Transaction activity] --> F[Find with filters]
+    T --> M[Add a memo]
+    T --> G[Add tags]
+    F --> C[See the context]
+    M --> C
+    G --> C
+    C --> X[Export when needed]
+```
+
+## Connected apps, still on your terms
+
+Glyph opens Qubic payment links and `glyph://` requests from the apps and services you use. Connection, transfer, contract-call, signing, and verification requests arrive in Glyph for a clear review before you decide what happens next.
 
 ```mermaid
 sequenceDiagram
-    participant dApp
-    participant Rust as Rust layer
-    participant React as Renderer
-    participant User
+    participant App as App or service
+    participant Desktop as Your desktop
+    participant Glyph as Glyph
 
-    dApp->>Rust: open glyph://v1/request?d=<payload>
-    Rust->>Rust: validate URL · check nonce · store payload
-    Rust->>React: emit glyph:request event
-    React->>User: request review UI
-    User->>React: approve / reject
-    React->>Rust: post_callback(url, body)
-    Rust->>dApp: HTTP POST result JSON
+    App->>Desktop: Open a Glyph request
+    Desktop->>Glyph: Launch Glyph
+    Glyph->>Glyph: Show the request clearly
+    alt You continue
+        Glyph-->>App: Return the result
+    else You decline
+        Glyph-->>App: Return the decision
+    end
 ```
 
-Use [`@glyph-ecosystem/connect`](https://github.com/glyph-ecosystem/glyph.connect) to build envelopes and handle result delivery from any framework.
+Manage connected apps and their permissions in **Settings → Connected apps**. For the complete request guide, see [External requests and Glyph links](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links).
 
-## Build Locally
+## Get started
 
-**Requirements:** [rustup](https://rustup.rs/) · Bun 1.3.14 · platform webview/build tools
+1. Download Glyph from the [official releases page](https://github.com/glyphq/wallet/releases/latest).
+2. Create a new Vault, import a Qubic seed, or restore a Glyph Vault export.
+3. Back up the seed for every new Vault before continuing.
+4. Fund an account, share its identity, or start exploring Qubic.
 
-The repository pins Rust 1.88.0. The pin is honored only when `cargo` and `rustc`
-come from rustup (`~/.cargo/bin`), not from an older distribution package.
+> **Small start, big picture.** Begin with one account and one action. Glyph will be ready when your setup grows.
 
-Ubuntu/Debian developers need only the native headers used by this project:
+## System requirements
+
+Glyph is a native desktop application. Use a supported 64-bit desktop system with a graphical session and an internet connection to a Qubic RPC service. It does not run in a browser, on mobile, or on 32-bit systems.
+
+| Resource | Practical baseline | Recommended |
+| --- | --- | --- |
+| Processor | 64-bit dual-core CPU | Modern 64-bit quad-core CPU |
+| Memory available to Glyph | 512 MB | 1 GB when running alongside other desktop apps |
+| Storage | 500 MB free space | 1 GB free space for updates, exports, and local activity data |
+
+Glyph itself typically uses under 200 MB of memory at rest. The computer's total memory requirement is otherwise determined by its operating system and the apps you run alongside Glyph.
+
+| Platform | Supported build | What you need to run it |
+| --- | --- | --- |
+| Windows | x64 | A current 64-bit Windows desktop. Run the per-user installer. |
+| macOS | Universal | An Intel or Apple Silicon Mac. Move Glyph to Applications before opening it. |
+| Linux | x86_64 | A 64-bit Linux desktop session. Choose the AppImage, Debian, or RPM package for your distribution. |
+
+### Linux notes
+
+- The AppImage, Debian, and RPM builds are all x86_64 only.
+- AppImage uses the host graphics stack. Keep graphics drivers and the desktop compositor current if rendering is unstable.
+- Desktop notifications need an active session notification service. The tray icon depends on AppIndicator support, which may require a desktop extension on GNOME.
+- AppImage supports Glyph's built-in updater. Debian and RPM packages are updated through the system package manager.
+
+## Download and install
+
+Get the latest stable build from [GitHub Releases](https://github.com/glyphq/wallet/releases/latest).
+
+| Platform | Download | Install |
+| --- | --- | --- |
+| Windows x64 | `Glyph_*_x64-setup.exe` | Run the per-user installer |
+| macOS, Apple Silicon and Intel | `Glyph_*_universal.dmg` | Open the DMG and move Glyph to Applications |
+| Linux x86_64 | `Glyph_*_amd64.AppImage` | Make it executable, then run it |
+| Debian / Ubuntu x86_64 | `Glyph_*_amd64.deb` | `sudo apt install ./Glyph_*_amd64.deb` |
+| Fedora / RHEL-compatible x86_64 | `Glyph-*.x86_64.rpm` | `sudo dnf install ./Glyph-*.x86_64.rpm` |
+
+### Run the AppImage
 
 ```sh
-sudo apt update
-sudo apt install build-essential libwebkit2gtk-4.1-dev libdbus-1-dev
+chmod +x Glyph_*_amd64.AppImage
+./Glyph_*_amd64.AppImage
 ```
 
-Building Debian, RPM, or AppImage release artifacts additionally requires
-`libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf`, `rpm`, and
-`xdg-utils`. The appindicator and librsvg headers are not needed by Glyph's
-Cargo feature graph, but Tauri's Linux bundler and GTK AppImage plugin consume
-their `pkg-config` metadata. The AppImage bundler also invokes `xdg-mime` from
-`xdg-utils`. `libssl-dev` and `libxdo-dev` are not required.
+AppImage installations support Glyph's in-app update path. Debian and RPM installations follow the usual system package update flow.
 
-The release workflow builds AppImage first, then deb/rpm with
-`configs/tauri-linux-packages.json`. It clears Tauri's generated AppDir before
-the AppImage build together with the intermediate `appimage_deb` staging tree.
-This prevents package-only file maps from leaking into the AppImage.
-The canonical patcher then installs AppStream metadata into the final AppImage
-before validation.
+## Build from source
+
+Glyph is made with React, TypeScript, Rust, and Tauri v2.
 
 ```sh
-git clone https://github.com/glyph-ecosystem/wallet
+git clone https://github.com/glyphq/wallet.git
 cd wallet
-bun install
-bun tauri dev        # dev server
-bun tauri build      # production bundle → src-tauri/target/release/bundle/
+bun install --frozen-lockfile
+bun tauri dev
 ```
 
-**Checks:**
-```sh
-bun run typecheck
-bun run test
-cargo check --manifest-path src-tauri/Cargo.toml --locked
-bun run release:check
-```
+Use Bun `1.3.14` and Rust `1.88.0`. Platform prerequisites, validation commands, and release guidance live in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-### Linux runtime notes
+## Keep exploring
 
-- Install `.deb` packages with `apt install ./Glyph_*.deb` so WebKitGTK, GTK,
-  D-Bus, and appindicator runtime dependencies are resolved automatically.
-- The AppImage bundles its WebKitGTK/GTK stack and WebKit subprocesses, while
-  deliberately using the host's GL/EGL drivers for graphics compatibility.
-- The main window does not depend on the system tray. On GNOME, displaying the
-  tray icon may require an AppIndicator extension.
-- Linux biometric unlock requires a working Secret Service provider such as
-  GNOME Keyring or KWallet. Without one, Glyph continues to start, disables
-  biometric availability, and uses a permission-restricted (`0600`) metadata
-  key file fallback.
-- WSLg is detected at startup and WebKit hardware compositing is disabled only
-  in that environment to avoid blank-window EGL failures.
-
-### Release pipeline
-
-Changesets creates the version PR and tag, then dispatches the isolated
-`Release` workflow. Platform artifacts upload to a draft release, Linux bundles
-are structurally validated, updater signatures are cross-checked against their
-artifacts, and the release is published only after the complete asset set and
-`latest.json` pass validation. The workflow can be retried manually for an
-existing tag while its release remains a draft, without moving the tag. A
-published release is treated as immutable. Tauri's Linux bundler helpers and
-the AppImage repacking tools are preseeded from immutable source revisions or
-release asset IDs and checksum-verified, so upstream changes cannot silently
-alter a release build.
-
-Publishing requires repository secrets for the Tauri updater key
-(`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`), Apple code
-signing and notarization (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
-`APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`), and Windows Authenticode
-(`WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`). Missing credentials,
-invalid native signatures, absent timestamps/notarization tickets, or invalid
-updater signatures stop the draft before publication.
-
-## Stack
-
-| Layer | Choice |
-|---|---|
-| Desktop shell | Tauri v2 |
-| Frontend | React 19 + TypeScript |
-| State | Zustand v5 + TanStack Query v5 |
-| Animations | Motion |
-| Design system | See [`DESIGN.md`](./DESIGN.md) |
-| Native | Rust |
-| Crypto | `aes-gcm` (Rust) |
-| Qubic SDK | `@qubic-lib/{crypto,tx,rpc,contracts}` |
-
-## Updater
-
-| Platform | Update path |
-|---|---|
-| Windows | NSIS built-in updater |
-| macOS | App built-in updater |
-| Linux AppImage | Built-in updater |
-| Linux deb / rpm | System package manager |
-
-## Community
-
-- **Discord:** https://discord.gg/s5qNRNGu96
-- **GitHub:** https://github.com/glyph-ecosystem/wallet
-- **Website:** https://wallet.glyphq.org
+- [User guide](./docs/USER_GUIDE.md)
+- [Changelog](./CHANGELOG.md)
+- [Contributing](./CONTRIBUTING.md)
+- [Release notes](https://github.com/glyphq/wallet/releases)
+- [Discord](https://discord.gg/s5qNRNGu96)
 
 ## License
 
-Source-available. See repository for current terms.
+[MIT](./LICENSE)

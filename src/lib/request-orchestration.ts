@@ -2,8 +2,11 @@ import type { ApproveResult } from "@/components/request/transfer-preview";
 import type { SignMessageApproveResult } from "@/components/request/sign-message-preview";
 import type { ConnectApproveResult } from "@/components/request/connect-preview";
 import type { VerifyMessageResult } from "@/components/request/verify-message-preview";
+import { buildSignedCallbackEnvelope } from "@/lib/callback-envelope";
+import { signCallbackMessageFromSession } from "@/lib/secure-session";
 import type { GlyphCallbackResponse, GlyphEnvelope } from "@/lib/request-schema";
 import type { RequestHistoryItem, VaultMeta } from "@/store/persisted";
+import type { NetworkScope } from "@/lib/network-config";
 
 export type CallbackStatus = "pending" | "ok" | "failed";
 
@@ -15,6 +18,7 @@ export interface RequestSuccessState {
   callbackBody: string;
   callbackUrl: string | null;
   requestHistoryId: string | null;
+  networkScope: NetworkScope;
 }
 
 export type RequestAuditEvent =
@@ -36,9 +40,16 @@ export interface RequestOrchestrationDeps {
   makeRequestHistoryId: () => string;
   postCallback: (url: string, body: string) => Promise<unknown>;
   openUrl: (url: string) => Promise<unknown>;
-  addRequestHistoryItem: (item: RequestHistoryItem) => void;
-  updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>) => void;
+  networkScope: NetworkScope;
+  addRequestHistoryItem: (item: Omit<RequestHistoryItem, "networkScope">, expectedScope: NetworkScope) => void;
+  updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>, expectedScope: NetworkScope) => void;
   recordAuditEvent: (event: RequestAuditEvent) => void;
+  signCallbackMessage?: typeof signCallbackMessageFromSession;
+  callbackNetworkId?: GlyphEnvelope["network"]["id"];
+}
+
+function nowEpochSeconds(deps: Pick<RequestOrchestrationDeps, "now">) {
+  return Math.floor(deps.now() / 1000);
 }
 
 export type RequestApprovalResult =
@@ -64,7 +75,9 @@ export function encodeCallbackResult(body: string) {
 }
 
 export function buildRedirectUrl(redirectUri: string, callbackBody: string) {
-  return `${redirectUri}?result=${encodeCallbackResult(callbackBody)}`;
+  const url = new URL(redirectUri);
+  url.searchParams.set("result", encodeCallbackResult(callbackBody));
+  return url.toString();
 }
 
 export async function deliverRequestResult(
@@ -86,7 +99,7 @@ export async function deliverRequestResult(
         deps.updateRequestHistoryItem(input.requestHistoryId, {
           callbackStatus: "ok",
           callbackUpdatedAt: deps.now(),
-        });
+        }, deps.networkScope);
       }
     } catch {
       callbackStatus = "failed";
@@ -94,7 +107,7 @@ export async function deliverRequestResult(
         deps.updateRequestHistoryItem(input.requestHistoryId, {
           callbackStatus: "failed",
           callbackUpdatedAt: deps.now(),
-        });
+        }, deps.networkScope);
       }
       deps.recordAuditEvent({
         kind: "request_callback_failed",
@@ -123,7 +136,15 @@ export async function rejectRequest(
     type: envelope.request.type,
     reason: "user_rejected",
   };
-  const callbackBody = JSON.stringify(response);
+  const callbackBody = JSON.stringify(await buildSignedCallbackEnvelope({
+    envelope,
+    result: response,
+    identity: "",
+    accountIndex: 0,
+    signCallbackMessage: deps.signCallbackMessage ?? signCallbackMessageFromSession,
+    networkId: deps.callbackNetworkId,
+    nowEpochSeconds: () => nowEpochSeconds(deps),
+  }));
 
   deps.addRequestHistoryItem({
     id: requestHistoryId,
@@ -136,7 +157,7 @@ export async function rejectRequest(
     callbackUrl: envelope.callback,
     callbackBody,
     callbackUpdatedAt: envelope.callback ? deps.now() : null,
-  });
+  }, deps.networkScope);
   deps.recordAuditEvent({
     kind: "request_rejected",
     status: "info",
@@ -166,8 +187,16 @@ export async function approveRequest(
   const callbackUrl = input.envelope.callback;
   const redirectUri = input.envelope.redirect_uri ?? null;
   const { response, success, history, auditTitle, auditDetail } = buildApprovalArtifacts(input.envelope, input.approval);
-  const callbackBody = JSON.stringify(response);
   const identity = getApprovalIdentity(input.approval);
+  const callbackBody = JSON.stringify(await buildSignedCallbackEnvelope({
+    envelope: input.envelope,
+    result: response,
+    identity,
+    accountIndex: getApprovalAccountIndex(input.approval),
+    signCallbackMessage: deps.signCallbackMessage ?? signCallbackMessageFromSession,
+    networkId: deps.callbackNetworkId,
+    nowEpochSeconds: () => nowEpochSeconds(deps),
+  }));
 
   deps.recordAuditEvent({
     kind: "request_approved",
@@ -190,7 +219,7 @@ export async function approveRequest(
     callbackUrl,
     callbackBody,
     callbackUpdatedAt: callbackUrl ? deps.now() : null,
-  });
+  }, deps.networkScope);
 
   const initialState: RequestSuccessState = {
     ...success,
@@ -199,6 +228,7 @@ export async function approveRequest(
     callbackBody,
     callbackUrl,
     requestHistoryId,
+    networkScope: deps.networkScope,
   };
 
   const callbackStatus = await deliverRequestResult(deps, {
@@ -282,4 +312,8 @@ function buildApprovalArtifacts(envelope: GlyphEnvelope, approval: RequestApprov
 
 function getApprovalIdentity(approval: RequestApprovalResult) {
   return approval.approve.identity;
+}
+
+function getApprovalAccountIndex(approval: RequestApprovalResult) {
+  return "accountIndex" in approval.approve ? approval.approve.accountIndex : 0;
 }

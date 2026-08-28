@@ -1,6 +1,5 @@
-use std::net::{IpAddr, Ipv6Addr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::OnceLock;
 
 use reqwest;
 use serde::Serialize;
@@ -69,22 +68,12 @@ pub fn get_updater_context() -> UpdaterContext {
     }
 }
 
-static HTTP_CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
-
-fn http_client() -> &'static reqwest::Client {
-    HTTP_CLIENT.get_or_init(|| {
-        reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .expect("failed to build HTTP client")
-    })
-}
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::auto_lock::{AutoLockState, MAX_LOCK_TIMEOUT_MINUTES};
+use crate::auto_lock::{AutoLockState, MAX_LOCK_TIMEOUT_MINUTES, MIN_LOCK_TIMEOUT_MINUTES};
 use crate::clipboard::ClipboardState;
 use crate::deep_link::DeepLinkState;
+use crate::session_crypto::NativeSessionState;
 
 const MAX_CLIPBOARD_CLEAR_SECS: u64 = 300;
 
@@ -95,7 +84,7 @@ pub fn reset_activity_timer(state: State<'_, AutoLockState>) {
 
 #[tauri::command]
 pub fn set_lock_timeout(minutes: u64, state: State<'_, AutoLockState>) {
-    state.set_timeout(minutes.min(MAX_LOCK_TIMEOUT_MINUTES));
+    state.set_timeout(minutes.clamp(MIN_LOCK_TIMEOUT_MINUTES, MAX_LOCK_TIMEOUT_MINUTES));
 }
 
 #[tauri::command]
@@ -109,7 +98,12 @@ pub fn get_seconds_until_lock(state: State<'_, AutoLockState>) -> Option<u64> {
 }
 
 #[tauri::command]
-pub fn force_lock(app: AppHandle, state: State<'_, AutoLockState>) {
+pub fn force_lock(
+    app: AppHandle,
+    state: State<'_, AutoLockState>,
+    session: State<'_, NativeSessionState>,
+) {
+    session.clear();
     state.reset();
     app.emit("glyph:lock", ()).ok();
 }
@@ -120,8 +114,26 @@ pub fn get_pending_request(state: State<'_, DeepLinkState>) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn clear_pending_request(state: State<'_, DeepLinkState>) {
-    state.take();
+pub fn clear_pending_request(state: State<'_, DeepLinkState>, payload: String) -> bool {
+    state.take_if_front(&payload)
+}
+
+#[tauri::command]
+pub fn accept_pending_request(
+    app: AppHandle,
+    state: State<'_, DeepLinkState>,
+    payload: String,
+    active_network_id: String,
+) -> Result<bool, String> {
+    if state.peek().as_deref() != Some(payload.as_str()) {
+        return Ok(false);
+    }
+    let [network_id, ..] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
+    if network_id != active_network_id {
+        return Ok(false);
+    }
+    let replay_key = crate::deep_link::replay_key_from_envelope_payload(&payload)?;
+    Ok(state.record_nonce(&app, &replay_key))
 }
 
 #[tauri::command]
@@ -162,58 +174,89 @@ pub fn is_private_host(host: &str) -> bool {
     }
 
     if let Ok(ip) = h.parse::<IpAddr>() {
-        return is_private_ip(ip);
-    }
-
-    if let Ok(ip) = h.parse::<Ipv6Addr>() {
-        if let Some(mapped) = ip.to_ipv4_mapped() {
-            return is_private_ip(IpAddr::V4(mapped));
-        }
-        return is_private_ip(IpAddr::V6(ip));
+        return is_non_global_ip(ip);
     }
 
     false
 }
 
-fn is_private_ip(ip: IpAddr) -> bool {
+fn is_non_global_ipv4(ip: Ipv4Addr) -> bool {
+    let [a, b, c, _] = ip.octets();
+    ip.is_loopback()
+        || ip.is_private()
+        || ip.is_link_local()
+        || ip.is_broadcast()
+        || ip.is_unspecified()
+        || ip.is_multicast()
+        || a == 0
+        || (a == 100 && (64..=127).contains(&b))
+        || (a == 192 && b == 0 && c == 0)
+        || (a == 192 && b == 0 && c == 2)
+        || (a == 198 && (b == 18 || b == 19))
+        || (a == 198 && b == 51 && c == 100)
+        || (a == 203 && b == 0 && c == 113)
+        || a >= 240
+}
+
+fn is_non_global_ip(ip: IpAddr) -> bool {
     match ip {
-        IpAddr::V4(ip) => {
-            ip.is_loopback() || ip.is_private() || ip.is_link_local() || ip.is_broadcast()
-        }
-        IpAddr::V6(ip) => {
-            ip.is_loopback()
+        IpAddr::V4(ip) => is_non_global_ipv4(ip),
+        IpAddr::V6(ip) => ip
+            .to_ipv4_mapped()
+            .map(is_non_global_ipv4)
+            .unwrap_or_else(|| {
+                ip.is_loopback()
                 || ip.is_unspecified()
                 || ip.is_unique_local()
                 || ip.is_unicast_link_local()
-        }
+                || ip.is_multicast()
+                || (ip.segments()[0] == 0x2001 && ip.segments()[1] == 0x0db8)
+            }),
     }
 }
 
-async fn resolve_public_host(host: String, port: u16) -> Result<(), String> {
+async fn resolve_public_host(host: String, port: u16) -> Result<SocketAddr, String> {
     tokio::task::spawn_blocking(move || {
         let addrs = (host.as_str(), port)
             .to_socket_addrs()
             .map_err(|e| format!("failed to resolve callback host: {e}"))?;
 
-        let mut saw_any = false;
+        let mut first = None;
         for addr in addrs {
-            saw_any = true;
-            if is_private_ip(addr.ip()) {
-                return Err("callback URL must not resolve to a private or loopback address".into());
+            if is_non_global_ip(addr.ip()) {
+                return Err("callback URL must not resolve to a non-global address".into());
             }
+            first.get_or_insert(addr);
         }
-
-        if !saw_any {
-            return Err("callback URL host did not resolve to any addresses".into());
-        }
-
-        Ok(())
+        first.ok_or_else(|| "callback URL host did not resolve to any addresses".into())
     })
     .await
     .map_err(|e| e.to_string())?
 }
 
 const MAX_CALLBACK_BODY: usize = 4 * 1024; // 4 KB
+
+fn validate_callback_target(parsed: &url::Url) -> Result<(String, u16), String> {
+    let host = parsed
+        .host_str()
+        .ok_or("callback URL has no host")?
+        .to_string();
+
+    if parsed.scheme() != "https" {
+        return Err("callback URL must use HTTPS".into());
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("callback URL must not include credentials".into());
+    }
+    if is_private_host(&host) {
+        return Err("callback URL must not target a non-global address".into());
+    }
+    let port = parsed
+        .port_or_known_default()
+        .ok_or("callback URL has no usable port")?;
+
+    Ok((host, port))
+}
 
 fn sanitize_reqwest_error(error: reqwest::Error) -> String {
     if let Some(status) = error.status() {
@@ -238,21 +281,16 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
     }
 
     let parsed = url::Url::parse(&url).map_err(|_| "invalid callback URL".to_string())?;
-    let host = parsed.host_str().ok_or("callback URL has no host")?;
+    let (host, port) = validate_callback_target(&parsed)?;
+    let validated_addr = resolve_public_host(host.clone(), port).await?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .redirect(reqwest::redirect::Policy::none())
+        .resolve(&host, validated_addr)
+        .build()
+        .map_err(|_| "failed to prepare callback request".to_string())?;
 
-    let is_local = matches!(host, "localhost" | "127.0.0.1");
-    if parsed.scheme() != "https" && !(parsed.scheme() == "http" && is_local) {
-        return Err("callback URL must use HTTPS (or http://localhost / http://127.0.0.1 for local dev)".into());
-    }
-    if !is_local {
-        // Resolve before the request and validate resolved IPs — string-level hostname
-        // checks alone don't cover all private-range encodings and are vulnerable to
-        // DNS rebinding if the check and the connection happen at different times.
-        let port = parsed.port_or_known_default().ok_or("callback URL has no usable port")?;
-        resolve_public_host(host.to_string(), port).await?;
-    }
-
-    http_client()
+    client
         .post(parsed)
         .header("Content-Type", "application/json")
         .body(body)
@@ -263,4 +301,39 @@ pub async fn post_callback(url: String, body: String) -> Result<(), String> {
         .map_err(sanitize_reqwest_error)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_private_host, validate_callback_target};
+
+    #[test]
+    fn rejects_non_global_and_mapped_ip_literals() {
+        for host in [
+            "localhost",
+            "127.0.0.1",
+            "0.0.0.0",
+            "100.64.0.1",
+            "192.0.2.1",
+            "198.18.0.1",
+            "203.0.113.1",
+            "224.0.0.1",
+            "[::1]",
+            "[::ffff:127.0.0.1]",
+            "[::ffff:10.0.0.1]",
+            "[2001:db8::1]",
+        ] {
+            assert!(is_private_host(host), "expected {host} to be rejected");
+        }
+        assert!(!is_private_host("8.8.8.8"));
+    }
+
+    #[test]
+    fn callback_target_rejects_embedded_credentials() {
+        let url = url::Url::parse("https://token@8.8.8.8/callback").unwrap();
+        assert_eq!(
+            validate_callback_target(&url),
+            Err("callback URL must not include credentials".into())
+        );
+    }
 }

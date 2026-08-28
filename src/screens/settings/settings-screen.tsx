@@ -16,6 +16,7 @@ import {
   Palette,
 } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -80,7 +81,7 @@ export default function SettingsScreen() {
                 <motion.button
                   {...gesture.pressSubtle}
                   onClick={() => navigate(row.route)}
-                  className="stagger-item"
+                  className="stagger-item settings-pressable"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -114,6 +115,7 @@ export default function SettingsScreen() {
         <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {update && updaterSupported && (
             <button
+              className="settings-pressable"
               onClick={install}
               disabled={installing}
               style={{
@@ -166,42 +168,30 @@ export default function SettingsScreen() {
               {checkError ? " Update check failed" : ""}
             </span>
           </div>
-          {!checking && !updaterSupported && context?.reason && (
-            <span style={{ ...labelStyle, color: "var(--color-text-secondary)" }}>
-              {context.reason}
-            </span>
-          )}
           {lastError && (checkError || installError || !updaterSupported) && (
             <span style={{ ...labelStyle, color: (checkError || installError) ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
               {lastError}
             </span>
           )}
         </div>
-        {/* Lock wallet */}
-        <motion.button
-          {...gesture.pressSubtle}
+        {/* Lock Vault */}
+        <Button
+          variant="primary"
+          size="lg"
           onClick={() => {
             useSessionStore.getState().lock();
             navigate("/lock", { replace: true });
           }}
+          className="settings-pressable settings-pressable-accent"
           style={{
             marginTop: "var(--space-4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: "var(--space-2)", width: "100%", padding: "var(--space-3)",
             background: "var(--color-accent)",
-            border: "none",
-            borderRadius: "var(--radius-card)",
-            cursor: "pointer",
+            border: "1px solid var(--color-accent)",
           }}
         >
           <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-accent-contrast)" }} />
-          <span style={{
-            fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-            fontWeight: 500, color: "var(--color-accent-contrast)",
-          }}>
-            Lock wallet
-          </span>
-        </motion.button>
+          Lock Vault
+        </Button>
       </motion.div>
     </AppShell>
   );

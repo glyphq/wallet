@@ -1,5 +1,131 @@
 # glyph
 
+## 0.16.12
+
+### Patch Changes
+
+- 6477908: Improve onboarding seed privacy and clarify dashboard actions.
+
+## 0.16.11
+
+### Patch Changes
+
+- 600644b: Add a desktop notification delivery check in Settings.
+
+## 0.16.10
+
+### Patch Changes
+
+- 72097c1: Fix the Linux package icon payload so desktop notifications resolve the Glyph application icon.
+
+## 0.16.9
+
+### Patch Changes
+
+- ea454b6: Fix Linux desktop notification icon registration in packaged builds.
+
+## 0.16.8
+
+### Patch Changes
+
+- 7b67951: Simplify dApp request review screens by prioritizing the action, account, and approval-relevant details, with technical payload data available on demand.
+
+## 0.16.7
+
+### Patch Changes
+
+- 595f374: Queue incoming deep-link requests in FIFO order so requests that arrive while another approval is active are not lost.
+
+## 0.16.6
+
+### Patch Changes
+
+- e1cf5a3: Improve the reliability and safety of approved dApp callbacks.
+
+  - **Security:** Sign callback proofs in a dedicated native signing path after approval.
+  - **Reliability:** Keep approved requests pending until callback delivery has been attempted, allowing failures to be retried safely.
+
+## 0.16.5
+
+### Patch Changes
+
+- Ship native `glyph://v2/request` handling so connected apps can open the Wallet.
+
+## 0.16.4
+
+### Patch Changes
+
+- 10feb41: Correct the approximate fiat value shown in transaction details.
+- cae1a1b: Refine Request History and Approved dApps settings with clearer linear layouts, expandable request details, and easier access management.
+- c663ec3: Remove unused application code and consolidate request parsing helpers.
+- 89d6858: Add transaction and contact portability, Vault backup verification, clearer QEarn lifecycle insights, safe network presets, and preferred fiat-currency display.
+
+## 0.16.3
+
+### Patch Changes
+
+- 2c8e988: Allow the in-app updater to restart Glyph after a successful update install.
+
+## 0.16.2
+
+### Patch Changes
+
+- e764b0d: Accept valid requests that use the official relay callback so Connect reviews open correctly on Linux.
+
+## 0.16.1
+
+### Patch Changes
+
+- 772727e: Fix AppImage startup on Wayland desktops.
+- f8e19e6: Update Rust dependencies to resolve open Dependabot alerts.
+
+## 0.16.0
+
+### Minor Changes
+
+- 3c604f3: Restore back navigation on settings detail screens and add device status to Diagnostics without exporting unique device or network identifiers.
+- 521b908: Add a Launch at startup setting that can register or remove Glyph from operating-system startup on Windows, macOS, and Linux.
+
+### Patch Changes
+
+- 49ffef7: Improve seed backup safety and Linux package reliability.
+
+  - **Security:** Seed backup stays concealed until you choose to view it, while Copy seed works without exposing the words on screen. Seed confirmation no longer displays seed words.
+  - **Packaging:** Fixed AppImage launches from desktop entries and verify AppImage and Debian startup with clean application profiles.
+
+## 0.15.0
+
+### Minor Changes
+
+- 13c26e0: Refresh Glyph Wallet across its core shell, setup, and approval flows.
+
+  - **Wallet:** Reworked lock, setup, wallet switching, and shared shell surfaces to feel more consistent and legible in the compact portrait desktop window.
+  - **UX:** Simplified request approval screens, navigation, headers, inputs, and buttons into a more linear, monochrome interface with clearer hierarchy.
+  - **Appearance:** Added wallet appearance selection with reusable icons and accent colors, plus updated shared identity and contract markers.
+  - **Release:** Added prerelease release-channel support so the `prerelease` branch can publish prerelease builds and updater manifests separately from stable releases.
+
+- 13c26e0: Polish dashboard, headers, transactions, and typography across the wallet.
+
+  - **Dashboard:** Added a search button in the dashboard header so accounts, contacts, transactions, and contracts are one tap away.
+  - **Headers:** Switched display headers to Boldonse and made all bottom-nav icons linear for a more consistent visual language.
+  - **Transactions:** Moved transaction type icons to the left side of each row and added copy-on-click for addresses and hashes in transaction details.
+  - **Settings:** Styled the lock wallet button as a primary action for clearer visual hierarchy.
+
+### Patch Changes
+
+- 13c26e0: Improve signing reliability after wallet approval.
+
+  - **Reliability:** Prevented transferred signing buffers from causing transaction and message-signing failures in the desktop app.
+
+- 13c26e0: Fix universal macOS builds by compiling the deep-link broker for both Apple architectures and combining them into the sidecar binary expected by Tauri.
+- 13c26e0: Improve wallet onboarding with clearer step progress, interactive seed backup, polished form controls, safer navigation behavior, and a reliable return path for existing wallets.
+- 13c26e0: Harden desktop deep-link handling and release security metadata.
+
+  - **Security:** Added a dedicated operating-system link broker that rejects malformed, split, oversized, and command-like `glyph://` launches before starting the wallet.
+  - **Packaging:** Registered and bundled the broker for Windows and Linux release artifacts while retaining native LaunchServices delivery on macOS.
+  - **Dependencies:** Updated vulnerable build dependencies and refreshed the JavaScript dependency lockfile.
+  - **License:** Released Glyph Wallet under the MIT License.
+
 ## 0.15.0-prerelease.4
 
 ### Patch Changes

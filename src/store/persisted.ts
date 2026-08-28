@@ -5,17 +5,23 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { StateStorage } from "zustand/middleware";
 import { DEFAULT_SETTINGS } from "./persisted-defaults";
 import {
-  MAX_PENDING_TXS,
   MAX_SCHEDULED_TRANSFERS,
   clampAuditEvents,
-  clampNotificationEvents,
-  clampPriceSnapshots,
   clampRequestHistory,
   clampRuntimeIssues,
   clampTxMemos,
   mergePersistedState,
+  migratePersistedState,
+  insertPendingTxForNetwork,
+  removePendingTxForNetwork,
+  insertNotificationEventForNetwork,
+  insertPriceSnapshotForNetwork,
+  setNotificationScanForNetwork,
+  PERSISTED_STATE_VERSION,
 } from "./persisted-boundary";
 import type { PersistedState } from "./persisted-types";
+import { sanitizeDappExpiresAt, sanitizeDappExpiryDurationMs, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
+import { resolveNetworkConfig } from "@/lib/network-config";
 export type {
   AccountMeta,
   AccentColorId,
@@ -26,9 +32,11 @@ export type {
   Contact,
   FontPairId,
   NetworkConfig,
+  NetworkScope,
   NotificationEvent,
   NotificationEventKind,
   PendingTx,
+  PendingTxInput,
   PriceSnapshot,
   RequestHistoryAction,
   RequestHistoryCallbackStatus,
@@ -97,15 +105,24 @@ export const usePersistedStore = create<PersistedState>()(
       settings: DEFAULT_SETTINGS,
       contacts: [],
       pendingTxs: [],
+      pendingTxsByNetwork: {},
       txMemos: {},
+      txMemosByNetwork: {},
       txTags: {},
+      txTagsByNetwork: {},
       scheduledTransfers: [],
+      scheduledTransfersByNetwork: {},
       notificationEvents: [],
+      notificationEventsByNetwork: {},
       priceSnapshots: [],
+      priceSnapshotsByNetwork: {},
       runtimeIssues: [],
       auditEvents: [],
       requestHistory: [],
+      requestHistoryByNetwork: {},
+      approvedDappsByNetwork: {},
       lastNotificationScanAt: 0,
+      notificationScanAtByNetwork: {},
       passwordLockoutUntil: 0,
       passwordAttempts: 0,
       exportSigningKey: null,
@@ -148,7 +165,41 @@ export const usePersistedStore = create<PersistedState>()(
         })),
 
       updateSettings: (updates) =>
-        set((s) => ({ settings: { ...s.settings, ...updates } })),
+        set((s) => {
+          if (!updates.network) {
+            return {
+              settings: {
+                ...s.settings,
+                ...updates,
+                network: s.settings.network,
+                approvedDapps: s.settings.approvedDapps,
+              },
+            };
+          }
+          const network = resolveNetworkConfig({
+            liveApiUrl: updates.network.liveApiUrl,
+            queryApiUrl: updates.network.queryApiUrl,
+            manifestInstanceId: updates.network.manifestInstanceId,
+          });
+          return {
+            pendingTxs: s.pendingTxsByNetwork[network.scope] ?? [],
+            txMemos: s.txMemosByNetwork[network.scope] ?? {},
+            txTags: s.txTagsByNetwork[network.scope] ?? {},
+            scheduledTransfers: s.scheduledTransfersByNetwork[network.scope] ?? [],
+            notificationEvents: s.notificationEventsByNetwork[network.scope] ?? [],
+            priceSnapshots: s.priceSnapshotsByNetwork[network.scope] ?? [],
+            requestHistory: s.requestHistoryByNetwork[network.scope] ?? [],
+            approvedDappsByNetwork: s.approvedDappsByNetwork,
+            settings: {
+              ...s.settings,
+              ...updates,
+              network,
+              approvedDapps: s.approvedDappsByNetwork[network.scope] ?? [],
+            },
+            lastNotificationScanAt:
+              s.notificationScanAtByNetwork[network.scope] ?? 0,
+          };
+        }),
 
       addContact: (contact) =>
         set((s) => ({ contacts: [...s.contacts, contact] })),
@@ -163,30 +214,41 @@ export const usePersistedStore = create<PersistedState>()(
       removeContact: (id) =>
         set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id) })),
 
-      addPendingTx: (tx) =>
-        set((s) => ({
-          pendingTxs: [tx, ...s.pendingTxs].slice(0, MAX_PENDING_TXS),
-        })),
-
-      removePendingTx: (hash) =>
-        set((s) => ({
-          pendingTxs: s.pendingTxs.filter((t) => t.hash !== hash),
-        })),
-
-      approveDapp: (dapp) =>
+      addPendingTx: (tx, expectedScope) =>
         set((s) => {
+          const inserted = insertPendingTxForNetwork(s.pendingTxsByNetwork, tx, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? inserted
+            : { pendingTxsByNetwork: inserted.pendingTxsByNetwork };
+        }),
+
+      removePendingTx: (hash, expectedScope) =>
+        set((s) => {
+          const removed = removePendingTxForNetwork(s.pendingTxsByNetwork, hash, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? removed
+            : { pendingTxsByNetwork: removed.pendingTxsByNetwork };
+        }),
+
+      approveDapp: (dapp, expectedScope) =>
+        set((s) => {
+          const scope = expectedScope;
           const now = Date.now();
-          const existing = s.settings.approvedDapps.find(
+          const activeDapps = s.approvedDappsByNetwork[scope] ?? [];
+          const existing = activeDapps.find(
             (d) => d.origin === dapp.origin
           );
+          const transferLimitQu = sanitizeTransferLimitQu(dapp.transferLimitQu);
+          const expiryDurationMs = sanitizeDappExpiryDurationMs(dapp.expiryDurationMs);
+          const expiresAt = sanitizeDappExpiresAt(dapp.expiresAt);
           const approvedDapps = existing
-            ? s.settings.approvedDapps.map((d) =>
+            ? activeDapps.map((d) =>
                 d.origin === dapp.origin
                   ? (() => {
                       const allowedIdentities =
                         d.allowedIdentities === undefined ||
                         dapp.allowedIdentities === undefined
-                          ? d.allowedIdentities ?? dapp.allowedIdentities
+                          ? d.allowedIdentities
                           : [...new Set([...d.allowedIdentities, ...dapp.allowedIdentities])];
                       return {
                         ...d,
@@ -197,27 +259,31 @@ export const usePersistedStore = create<PersistedState>()(
                           ...new Set([...d.permissions, ...dapp.permissions]),
                         ],
                         allowedIdentities,
+                        transferLimitQu,
+                        expiryDurationMs,
+                        expiresAt,
                       };
                     })()
                   : d
               )
-            : [...s.settings.approvedDapps, { ...dapp, lastUsedAt: now }];
-          return { settings: { ...s.settings, approvedDapps } };
+            : [...activeDapps, { ...dapp, networkScope: scope, transferLimitQu, expiryDurationMs, expiresAt, lastUsedAt: now }];
+          const approvedDappsByNetwork = { ...s.approvedDappsByNetwork, [scope]: approvedDapps };
+          return s.settings.network.scope === scope
+            ? { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork }
+            : { approvedDappsByNetwork };
         }),
 
       revokeDapp: (origin) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            approvedDapps: s.settings.approvedDapps.filter(
-              (d) => d.origin !== origin
-            ),
-          },
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? []).filter((d) => d.origin !== origin);
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
+        }),
 
       revokeDappPermission: (origin, permission) =>
         set((s) => {
-          const approvedDapps = s.settings.approvedDapps
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? [])
             .map((d) =>
               d.origin === origin
                 ? {
@@ -226,87 +292,107 @@ export const usePersistedStore = create<PersistedState>()(
                   }
                 : d
             );
-          return { settings: { ...s.settings, approvedDapps } };
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
         }),
 
       setDappAllowedIdentities: (origin, identities) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            approvedDapps: s.settings.approvedDapps.map((d) =>
-              d.origin === origin ? { ...d, allowedIdentities: identities } : d
-            ),
-          },
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? []).map((d) => d.origin === origin ? { ...d, allowedIdentities: identities } : d);
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
+        }),
+
+      setDappPolicy: (origin, policy) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? []).map((d) =>
+              d.origin === origin
+                ? {
+                    ...d,
+                    transferLimitQu: sanitizeTransferLimitQu(policy.transferLimitQu),
+                    expiryDurationMs: sanitizeDappExpiryDurationMs(policy.expiryDurationMs),
+                    expiresAt: sanitizeDappExpiresAt(policy.expiresAt),
+                  }
+                : d
+            );
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
+        }),
 
       setTxMemo: (hash, memo) =>
-        set((s) => ({ txMemos: clampTxMemos({ ...s.txMemos, [hash]: memo }) })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const txMemos = clampTxMemos({ ...(s.txMemosByNetwork[scope] ?? {}), [hash]: memo });
+          return { txMemos, txMemosByNetwork: { ...s.txMemosByNetwork, [scope]: txMemos } };
+        }),
 
       deleteTxMemo: (hash) =>
         set((s) => {
-          const next = { ...s.txMemos };
+          const scope = s.settings.network.scope;
+          const next = { ...(s.txMemosByNetwork[scope] ?? {}) };
           delete next[hash];
-          return { txMemos: next };
+          return { txMemos: next, txMemosByNetwork: { ...s.txMemosByNetwork, [scope]: next } };
         }),
 
       addScheduledTransfer: (transfer) =>
-        set((s) => ({
-          scheduledTransfers: [transfer, ...s.scheduledTransfers].slice(
-            0,
-            MAX_SCHEDULED_TRANSFERS
-          ),
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const scheduledTransfers = [{ ...transfer, networkScope: scope }, ...(s.scheduledTransfersByNetwork[scope] ?? [])].slice(0, MAX_SCHEDULED_TRANSFERS);
+          return { scheduledTransfers, scheduledTransfersByNetwork: { ...s.scheduledTransfersByNetwork, [scope]: scheduledTransfers } };
+        }),
 
       updateScheduledTransfer: (id, updates) =>
-        set((s) => ({
-          scheduledTransfers: s.scheduledTransfers.map((t) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const scheduledTransfers = (s.scheduledTransfersByNetwork[scope] ?? []).map((t) =>
             t.id === id ? { ...t, ...updates } : t
-          ),
-        })),
+          );
+          return { scheduledTransfers, scheduledTransfersByNetwork: { ...s.scheduledTransfersByNetwork, [scope]: scheduledTransfers } };
+        }),
 
       removeScheduledTransfer: (id) =>
-        set((s) => ({
-          scheduledTransfers: s.scheduledTransfers.filter((t) => t.id !== id),
-        })),
-
-      addNotificationEvent: (event) =>
         set((s) => {
-          if (
-            event.dedupeKey &&
-            s.notificationEvents.some(
-              (existing) => existing.dedupeKey === event.dedupeKey
-            )
-          ) {
-            return s;
-          }
-          return {
-            notificationEvents: clampNotificationEvents([
-              event,
-              ...s.notificationEvents,
-            ]),
-          };
+          const scope = s.settings.network.scope;
+          const scheduledTransfers = (s.scheduledTransfersByNetwork[scope] ?? []).filter((t) => t.id !== id);
+          return { scheduledTransfers, scheduledTransfersByNetwork: { ...s.scheduledTransfersByNetwork, [scope]: scheduledTransfers } };
+        }),
+
+      addNotificationEvent: (event, expectedScope) =>
+        set((s) => {
+          const notificationEventsByNetwork = insertNotificationEventForNetwork(s.notificationEventsByNetwork, event, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? { notificationEvents: notificationEventsByNetwork[expectedScope] ?? [], notificationEventsByNetwork }
+            : { notificationEventsByNetwork };
         }),
 
       markNotificationEventRead: (id) =>
-        set((s) => ({
-          notificationEvents: s.notificationEvents.map((event) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const notificationEvents = (s.notificationEventsByNetwork[scope] ?? []).map((event) =>
             event.id === id && event.readAt === null
               ? { ...event, readAt: Date.now() }
               : event
-          ),
-        })),
+          );
+          return { notificationEvents, notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [scope]: notificationEvents } };
+        }),
 
       markAllNotificationEventsRead: () =>
-        set((s) => ({
-          notificationEvents: s.notificationEvents.map((event) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const notificationEvents = (s.notificationEventsByNetwork[scope] ?? []).map((event) =>
             event.readAt === null ? { ...event, readAt: Date.now() } : event
-          ),
-        })),
+          );
+          return { notificationEvents, notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [scope]: notificationEvents } };
+        }),
 
-      clearNotificationEvents: () => set({ notificationEvents: [] }),
+      clearNotificationEvents: () => set((s) => ({ notificationEvents: [], notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [s.settings.network.scope]: [] } })),
 
-      setLastNotificationScanAt: (timestamp) =>
-        set({ lastNotificationScanAt: timestamp }),
+      setLastNotificationScanAt: (timestamp, expectedScope) =>
+        set((s) => {
+          const notificationScanAtByNetwork = setNotificationScanForNetwork(s.notificationScanAtByNetwork, timestamp, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? { lastNotificationScanAt: timestamp, notificationScanAtByNetwork }
+            : { notificationScanAtByNetwork };
+        }),
 
       addAuditEvent: (event) =>
         set((s) => ({
@@ -315,26 +401,12 @@ export const usePersistedStore = create<PersistedState>()(
 
       clearAuditEvents: () => set({ auditEvents: [] }),
 
-      addPriceSnapshot: (snapshot) =>
+      addPriceSnapshot: (snapshot, expectedScope) =>
         set((s) => {
-          const latest = s.priceSnapshots[0];
-          const priceFraction =
-            latest && latest.priceUsd > 0
-              ? Math.abs(latest.priceUsd - snapshot.priceUsd) / latest.priceUsd
-              : Infinity;
-          if (
-            latest &&
-            priceFraction < 0.001 &&
-            snapshot.timestamp - latest.timestamp < 15 * 60 * 1000
-          ) {
-            return s;
-          }
-          return {
-            priceSnapshots: clampPriceSnapshots([
-              snapshot,
-              ...s.priceSnapshots,
-            ]),
-          };
+          const priceSnapshotsByNetwork = insertPriceSnapshotForNetwork(s.priceSnapshotsByNetwork, snapshot, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? { priceSnapshots: priceSnapshotsByNetwork[expectedScope] ?? [], priceSnapshotsByNetwork }
+            : { priceSnapshotsByNetwork };
         }),
 
       addRuntimeIssue: (issue) =>
@@ -344,25 +416,37 @@ export const usePersistedStore = create<PersistedState>()(
 
       clearRuntimeIssues: () => set({ runtimeIssues: [] }),
 
-      addRequestHistoryItem: (event) =>
-        set((s) => ({
-          requestHistory: clampRequestHistory([event, ...s.requestHistory]),
-        })),
+      addRequestHistoryItem: (event, expectedScope) =>
+        set((s) => {
+          const scope = expectedScope;
+          const requestHistory = clampRequestHistory([{ ...event, networkScope: scope }, ...(s.requestHistoryByNetwork[scope] ?? [])]);
+          const requestHistoryByNetwork = { ...s.requestHistoryByNetwork, [scope]: requestHistory };
+          return s.settings.network.scope === scope
+            ? { requestHistory, requestHistoryByNetwork }
+            : { requestHistoryByNetwork };
+        }),
 
-      updateRequestHistoryItem: (id, updates) =>
-        set((s) => ({
-          requestHistory: clampRequestHistory(
-            s.requestHistory.map((event) =>
+      updateRequestHistoryItem: (id, updates, expectedScope) =>
+        set((s) => {
+          const scope = expectedScope;
+          const requestHistory = clampRequestHistory(
+            (s.requestHistoryByNetwork[scope] ?? []).map((event) =>
               event.id === id ? { ...event, ...updates } : event
             )
-          ),
-        })),
+          );
+          const requestHistoryByNetwork = { ...s.requestHistoryByNetwork, [scope]: requestHistory };
+          return s.settings.network.scope === scope
+            ? { requestHistory, requestHistoryByNetwork }
+            : { requestHistoryByNetwork };
+        }),
 
-      clearRequestHistory: () => set({ requestHistory: [] }),
+      clearRequestHistory: () => set((s) => ({ requestHistory: [], requestHistoryByNetwork: { ...s.requestHistoryByNetwork, [s.settings.network.scope]: [] } })),
     }),
     {
       name: "glyph-persisted",
       storage: createJSONStorage(() => tauriStorage),
+      version: PERSISTED_STATE_VERSION,
+      migrate: migratePersistedState,
       // Deep-merge settings so new fields added to DEFAULT_SETTINGS survive rehydration.
       // Validate array fields so corrupted JSON cannot replace typed arrays with scalars.
       merge: mergePersistedState,

@@ -18,8 +18,6 @@ import type { Transition, Variants } from "motion/react";
 export const EASE_OUT = [0, 0, 0.2, 1] as const;
 /** Material-style ease-in — accelerating exit */
 export const EASE_IN = [0.4, 0, 1, 1] as const;
-/** Material-style ease-in-out — symmetric movement */
-export const EASE_IN_OUT = [0.4, 0, 0.2, 1] as const;
 
 // ── Transition presets ───────────────────────────────────────────────────────
 
@@ -100,45 +98,11 @@ export const staggerContainer: Variants = {
   },
 };
 
-/** Parent: faster stagger for tight lists (e.g. numpad, settings). */
-export const staggerFast: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.025,
-      delayChildren: 0.03,
-    },
-  },
-};
-
-/** Parent: slower stagger for hero content. */
-export const staggerSlow: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-};
-
 /** Child: fade in. Use inside a stagger parent. */
 export const staggerItem: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.2, ease: EASE_OUT },
-  },
-};
-
-/** Child: scale in. Use for cards/grid items. */
-export const staggerScale: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
     transition: { duration: 0.2, ease: EASE_OUT },
   },
 };
@@ -160,21 +124,21 @@ export const stepMotion = {
 
 /** Hover scale up, tap scale down. For buttons and cards. */
 export const gesture = {
-  /** Standard press feedback — scale to 0.97. */
+  /** Standard press feedback without resizing the control. */
   press: {
     whileHover: { scale: 1.015 },
-    whileTap: { scale: 0.97 },
+    whileTap: { opacity: 0.88 },
     transition: transition.springStiff,
   },
-  /** Subtle press feedback — scale to 0.98. */
+  /** Subtle press feedback without resizing the control. */
   pressSubtle: {
     whileHover: { scale: 1.008 },
-    whileTap: { scale: 0.98 },
+    whileTap: { opacity: 0.92 },
     transition: transition.spring,
   },
-  /** Button press — scale to 0.95 (strong feedback). */
+  /** Strong button feedback without resizing the control. */
   buttonPress: {
-    whileTap: { scale: 0.95 },
+    whileTap: { opacity: 0.84 },
     transition: transition.springStiff,
   },
   /** Lift on hover — scale up slightly. */

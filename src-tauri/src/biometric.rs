@@ -1,11 +1,6 @@
-use sha2::{Digest, Sha256};
 use tauri::{command, State};
 use crate::session_crypto::NativeSessionState;
-use crate::vault_crypto::{decrypt_vault_data, VaultData};
-
-fn sha256_hex(data: &str) -> String {
-    hex::encode(Sha256::digest(data.as_bytes()))
-}
+use crate::vault_crypto::VaultData;
 
 fn validate_vault_id(vault_id: &str) -> Result<(), String> {
     let is_uuid = vault_id.len() == 36
@@ -31,6 +26,7 @@ fn validate_vault_id(vault_id: &str) -> Result<(), String> {
 // CRED_PERSIST_LOCAL_MACHINE to guarantee persistence.
 
 #[cfg(target_os = "windows")]
+#[allow(dead_code)]
 mod cred_store {
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::Security::Credentials::{
@@ -101,6 +97,7 @@ mod cred_store {
 }
 
 #[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
 mod cred_store {
     use keyring::Entry;
 
@@ -140,165 +137,17 @@ mod cred_store {
     }
 }
 
-// ── macOS: LAContext via objc ──────────────────────────────────────────────
-
-#[cfg(target_os = "macos")]
-mod platform {
-    use block::ConcreteBlock;
-    use objc::runtime::{Object, BOOL, YES};
-    use objc::{class, msg_send, sel, sel_impl};
-    use std::sync::mpsc;
-
-    #[link(name = "LocalAuthentication", kind = "framework")]
-    extern "C" {}
-
-    const LA_BIOMETRICS: usize = 1;
-
-    pub fn available() -> bool {
-        unsafe {
-            let ctx: *mut Object = msg_send![class!(LAContext), new];
-            let mut err: *mut Object = std::ptr::null_mut();
-            let can: BOOL = msg_send![ctx, canEvaluatePolicy:LA_BIOMETRICS error:&mut err];
-            let _: () = msg_send![ctx, release];
-            can == YES
-        }
-    }
-
-    pub fn authenticate(reason: &str) -> Result<(), String> {
-        let (tx, rx) = mpsc::channel::<bool>();
-
-        let block = ConcreteBlock::new(move |success: BOOL, _err: *mut Object| {
-            let _ = tx.send(success == YES);
-        });
-        let block = block.copy();
-
-        // SAFETY: ctx must remain alive until after rx.recv() because evaluatePolicy
-        // is async — releasing ctx while authentication is in progress causes a UAF.
-        let ctx: *mut Object = unsafe { msg_send![class!(LAContext), new] };
-        unsafe {
-            let bytes = reason.as_bytes();
-            let ns_alloc: *mut Object = msg_send![class!(NSString), alloc];
-            let ns_reason: *mut Object = msg_send![
-                ns_alloc,
-                initWithBytes: bytes.as_ptr() as *const std::os::raw::c_void
-                length: bytes.len()
-                encoding: 4usize
-            ];
-            let _: () = msg_send![
-                ctx,
-                evaluatePolicy: LA_BIOMETRICS
-                localizedReason: ns_reason
-                reply: &*block
-            ];
-            // ns_reason is retained by evaluatePolicy; release our reference now.
-            let _: () = msg_send![ns_reason, release];
-        }
-
-        let result = rx.recv()
-            .map_err(|_| "Authentication cancelled".to_string())
-            .and_then(|ok| {
-                if ok { Ok(()) } else { Err("Biometric authentication failed".to_string()) }
-            });
-
-        // Release ctx only after the async callback has fired.
-        unsafe { let _: () = msg_send![ctx, release]; }
-        result
-    }
-}
-
-// ── Windows: UserConsentVerifier ───────────────────────────────────────────
-
-#[cfg(target_os = "windows")]
-mod platform {
-    use windows::Security::Credentials::UI::{
-        UserConsentVerificationResult, UserConsentVerifier, UserConsentVerifierAvailability,
-    };
-    use windows::core::HSTRING;
-
-    pub fn available() -> bool {
-        let Ok(op) = UserConsentVerifier::CheckAvailabilityAsync() else {
-            return false;
-        };
-        matches!(op.get(), Ok(r) if r == UserConsentVerifierAvailability::Available)
-    }
-
-    pub fn authenticate(reason: &str) -> Result<(), String> {
-        let reason_w = HSTRING::from(reason);
-        let op = UserConsentVerifier::RequestVerificationAsync(&reason_w)
-            .map_err(|e| format!("RequestVerificationAsync: {e}"))?;
-        let result = op.get().map_err(|e| format!("IAsyncOperation::get: {e}"))?;
-        if result == UserConsentVerificationResult::Verified {
-            Ok(())
-        } else if result == UserConsentVerificationResult::Canceled {
-            Err("Canceled".to_string())
-        } else if result == UserConsentVerificationResult::DeviceNotPresent {
-            Err("DeviceNotPresent: no biometric hardware detected".to_string())
-        } else if result == UserConsentVerificationResult::NotConfiguredForUser {
-            Err("NotConfiguredForUser: Windows Hello not set up for this account".to_string())
-        } else if result == UserConsentVerificationResult::DisabledByPolicy {
-            Err("DisabledByPolicy: biometrics disabled by system policy".to_string())
-        } else if result == UserConsentVerificationResult::DeviceBusy {
-            Err("DeviceBusy: biometric device is busy".to_string())
-        } else if result == UserConsentVerificationResult::RetriesExhausted {
-            Err("RetriesExhausted: too many failed attempts".to_string())
-        } else {
-            Err(format!("UnknownResult({})", result.0))
-        }
-    }
-}
-
-// ── Linux / other: secure storage only ─────────────────────────────────────
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-mod platform {
-    pub fn available() -> bool {
-        true
-    }
-
-    pub fn authenticate(_reason: &str) -> Result<(), String> {
-        Ok(())
-    }
-}
-
 // ── Tauri commands ─────────────────────────────────────────────────────────
 
 #[command]
 pub async fn check_biometric_available() -> bool {
-    tokio::task::spawn_blocking(|| {
-        #[cfg(target_os = "windows")]
-        {
-            platform::available()
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            platform::available()
-        }
-
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-        {
-            platform::available() && cred_store::available()
-        }
-    })
-        .await
-        .unwrap_or(false)
+    false
 }
 
 #[command]
 pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        // Confirm biometric before storing the password to prevent silent enrollment
-        platform::authenticate("Enable biometric unlock for Glyph")?;
-        // Hash the ciphertext hex string — stable across any struct field reordering
-        // or serialization changes that would break a hash over serde_json output.
-        let hash = sha256_hex(&vault_data.ciphertext);
-        // Store as "password\nhash" so unlock can verify the renderer-supplied blob
-        let stored = format!("{}\n{}", password, hash);
-        cred_store::store(&vault_id, &stored)
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    let _ = (vault_id, vault_data, password);
+    Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
@@ -307,28 +156,8 @@ pub async fn biometric_unlock(
     vault_data: VaultData,
     session: State<'_, NativeSessionState>,
 ) -> Result<usize, String> {
-    let seeds = tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        platform::authenticate("Unlock Glyph vault")?;
-        let stored = cred_store::load(&vault_id)?;
-        // Stored format: "password\nhash" (new) or "password" (legacy without hash)
-        let (password, expected_hash) = match stored.split_once('\n') {
-            Some((pw, hash)) => (pw.to_string(), Some(hash.to_string())),
-            None => (stored, None),
-        };
-        if let Some(expected) = expected_hash {
-            if sha256_hex(&vault_data.ciphertext) != expected {
-                return Err("vault data integrity check failed".into());
-            }
-        }
-        decrypt_vault_data(&vault_data, &password)
-    })
-    .await
-    .map_err(|e| e.to_string())??;
-
-    let count = seeds.len();
-    session.replace_seeds(seeds);
-    Ok(count)
+    let _ = (vault_id, vault_data, session);
+    Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
@@ -337,28 +166,8 @@ pub async fn reveal_seed_with_biometric(
     vault_data: VaultData,
     account_index: usize,
 ) -> Result<String, String> {
-    let seeds = tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        platform::authenticate("Reveal Glyph seed")?;
-        let stored = cred_store::load(&vault_id)?;
-        let (password, expected_hash) = match stored.split_once('\n') {
-            Some((pw, hash)) => (pw.to_string(), Some(hash.to_string())),
-            None => (stored, None),
-        };
-        if let Some(expected) = expected_hash {
-            if sha256_hex(&vault_data.ciphertext) != expected {
-                return Err("vault data integrity check failed".into());
-            }
-        }
-        decrypt_vault_data(&vault_data, &password)
-    })
-    .await
-    .map_err(|e| e.to_string())??;
-
-    seeds
-        .get(account_index)
-        .cloned()
-        .ok_or_else(|| "missing seed".to_string())
+    let _ = (vault_id, vault_data, account_index);
+    Err("biometric seed reveal is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]

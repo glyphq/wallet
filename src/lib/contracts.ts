@@ -16,6 +16,7 @@ import {
   qearnGetUserLockStatus,
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
+  qearnGetEndedStatus,
 } from "@qubic.org/contracts";
 
 export type { ContractCall } from "@qubic.org/contracts";
@@ -36,6 +37,7 @@ export {
   qearnGetUserLockStatus,
   qearnGetUserLockedInfo,
   qearnGetLockInfoPerEpoch,
+  qearnGetEndedStatus,
 };
 
 // Human-readable names keyed by the camelCase namespace export (tree-shake safe).

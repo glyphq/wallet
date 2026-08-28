@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier } from "@solar-icons/react";
+import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole, TransferHorizontal, WalletMoney } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
@@ -14,9 +14,10 @@ import { useBalance } from "@/hooks/use-balance";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { Button } from "@/components/button";
-import { truncateId, formatQu, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
+import { truncateId, formatQu, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 
@@ -217,6 +218,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   const { data: lastProcessedTickData } = useLastProcessedTick();
   const queryClient = useQueryClient();
   const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
+  const quote = usePreferredCurrencyQuote();
 
   const isExpired = (p: { targetTick: number }) =>
     lastProcessedTick > 0 && lastProcessedTick >= p.targetTick;
@@ -257,7 +259,6 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
           No transactions yet
         </div>
-        <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>Send your first transaction</Button>
       </div>
     );
   }
@@ -306,7 +307,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
       ? isIn ? "var(--color-accent)" : "var(--color-text-display)"
       : "var(--color-text-disabled)";
     const amount = hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount ?? "0")} QU`;
-    const amountUsd = !hideBalances && price ? `$${formatUsdFromQu(tx.amount ?? "0", price)}` : undefined;
+    const amountUsd = !hideBalances && price ? formatPreferredCurrencyFromQu(tx.amount ?? "0", { usdPrice: price, ...quote }).text : undefined;
     const address = isSc
       ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—")))
       : truncateId(isIn ? (tx.source ?? "—") : (tx.destination ?? "—"));
@@ -347,6 +348,7 @@ export default function DashboardScreen() {
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const isLocked = useSessionStore((s) => s.isLocked);
+  const lock = useSessionStore((s) => s.lock);
   const wallets = useSessionStore((s) => s.wallets);
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
@@ -356,6 +358,8 @@ export default function DashboardScreen() {
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
   const { data: stats } = useLatestStats();
   const { data: ownedAssets } = useOwnedAssets(identity);
+  const quote = usePreferredCurrencyQuote();
+  const balanceFiat = balance && stats?.price ? formatPreferredCurrencyFromQu(balance.balance, { usdPrice: stats.price, ...quote }).text : "—";
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
   // Compute 24h price change from snapshots
@@ -385,12 +389,23 @@ export default function DashboardScreen() {
       leading={<ShellVaultSwitcher />}
       title="Dashboard"
       action={
-        <IconButton label="Search" onClick={() => navigate("/search")}>
-          <Magnifier size={20} weight="Linear" aria-hidden="true" />
-        </IconButton>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          <IconButton
+            label="Lock Vault"
+            onClick={() => {
+              lock();
+              navigate("/lock", { replace: true });
+            }}
+          >
+            <LockKeyhole size={19} weight="Linear" aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Search" onClick={() => navigate("/search")}>
+            <Magnifier size={20} weight="Linear" aria-hidden="true" />
+          </IconButton>
+        </div>
       }
     />
-  ), [navigate]);
+  ), [lock, navigate]);
 
   return (
     <AppShell statusBar={dashboardHeader} contentStyle={{ padding: "var(--space-4)" }}>
@@ -420,7 +435,7 @@ export default function DashboardScreen() {
           {balance && !balanceLoading && !settings.hideBalances && stats?.price && (
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                ≈ ${formatUsdFromQu(balance.balance, stats.price)} USD
+                {balanceFiat}
               </span>
               {priceChange24h !== null && (
                 <span style={{
@@ -499,6 +514,25 @@ export default function DashboardScreen() {
           </div>
           <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} price={stats?.price} />
         </div>
+
+        <nav aria-label="More wallet actions" style={{ display: "flex", justifyContent: "center", gap: "var(--space-5)", marginTop: "var(--space-5)" }}>
+          <button
+            type="button"
+            onClick={() => navigate("/stake")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0, background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer" }}
+          >
+            <WalletMoney size={18} weight="Linear" aria-hidden="true" />
+            QEarn
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/send-many")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0, background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer" }}
+          >
+            <TransferHorizontal size={18} weight="Linear" aria-hidden="true" />
+            Send to many
+          </button>
+        </nav>
 
       </div>
     </AppShell>

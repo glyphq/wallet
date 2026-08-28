@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Glyph",
-  "version": "0.15.0-prerelease.4",
+  "version": "0.16.12",
   "identifier": "com.qubic.glyph",
   "build": {
     "beforeDevCommand": "node scripts/prepare-link-broker.mjs --debug && bun run dev",
@@ -58,7 +58,7 @@
     "linux": {
       "appimage": {
         "files": {
-          "/usr/share/icons/hicolor/128x128/apps/Glyph.png": "icons/128x128.png"
+          "/usr/share/icons/hicolor/128x128/apps/com.qubic.glyph.png": "icons/128x128.png"
         }
       },
       "deb": {
@@ -86,7 +86,7 @@
       },
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJCRjQzOUVERjAwNUJENDEKUldSQnZRWHc3VG4wSzNTbFlmcWtWSTFjV0NDS0xWaHFLNmdCT0lVelhmWHlYN1ZkTkVMdmZiREkK",
       "endpoints": [
-        "https://github.com/glyph-ecosystem/wallet/releases/latest/download/latest.json"
+        "https://github.com/glyphq/wallet/releases/latest/download/latest.json"
       ]
     }
   }

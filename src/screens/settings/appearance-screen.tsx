@@ -1,73 +1,272 @@
-import { usePersistedStore, type ThemeMode, type FontPairId } from "@/store/persisted";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePersistedStore, type ThemeMode, type FontPairId, type AppSettings } from "@/store/persisted";
 import { FONT_PAIRS } from "@/lib/appearance";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { Sun, Moon } from "@solar-icons/react";
+import { Sun, Moon, CheckCircle } from "@solar-icons/react";
 
-const THEMES: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
-  { id: "dark", label: "Dark", Icon: Moon },
-  { id: "light", label: "Light", Icon: Sun },
+const THEMES: { id: ThemeMode; label: string; description: string; Icon: typeof Sun }[] = [
+  { id: "dark", label: "Dark", description: "Low-glare colors for focused, comfortable viewing.", Icon: Moon },
+  { id: "light", label: "Light", description: "A crisp, bright palette for daylight and bright rooms.", Icon: Sun },
 ];
+
+const CURRENCIES: { id: AppSettings["currency"]; label: string }[] = [
+  { id: "USD", label: "USD" },
+  { id: "EUR", label: "EUR" },
+  { id: "BTC", label: "BTC" },
+];
+
+function SettingsSectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <span style={{
+      fontFamily: "var(--font-sans)",
+      fontSize: "var(--text-caption)",
+      fontWeight: 600,
+      color: "var(--color-text-disabled)",
+      letterSpacing: "0.06em",
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function SettingsDivider() {
+  return <div style={{ height: 1, background: "var(--color-border-subtle)" }} />;
+}
+
+function SettingsToggleRow({
+  checked,
+  description,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  description: string;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="settings-pressable"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: "100%",
+        minHeight: 44,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "var(--space-3)",
+        padding: "var(--space-3)",
+        background: "var(--color-bg-surface)",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: "var(--radius-control)",
+        color: "var(--color-text-primary)",
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{label}</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
+          {description}
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 38,
+          height: 22,
+          flex: "0 0 auto",
+          padding: 2,
+          borderRadius: "var(--radius-pill)",
+          background: checked ? "var(--color-accent)" : "var(--color-bg-input)",
+          border: "1px solid var(--color-border-default)",
+        }}
+      >
+        <span
+          style={{
+            display: "block",
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            background: checked ? "var(--color-accent-contrast)" : "var(--color-text-tertiary)",
+            transform: checked ? "translateX(16px)" : "translateX(0)",
+            transition: "transform var(--duration-fast) var(--ease-out)",
+          }}
+        />
+      </span>
+    </button>
+  );
+}
+
+function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: FontPairId) => void }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedFont = FONT_PAIRS.find((pair) => pair.id === value) ?? FONT_PAIRS[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (containerRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        className="settings-pressable"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="interface-font-options"
+        onClick={() => setOpen((current) => !current)}
+        style={{
+          width: "100%",
+          minHeight: 44,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-2)",
+          padding: "0 var(--space-3)",
+          background: "var(--color-bg-input)",
+          border: "1px solid var(--color-border-subtle)",
+          borderRadius: "var(--radius-control)",
+          color: "var(--color-text-primary)",
+          cursor: "pointer",
+          fontFamily: selectedFont.sans,
+          fontSize: "var(--text-label)",
+          textAlign: "left",
+        }}
+      >
+        <span>{selectedFont.name}</span>
+        <span aria-hidden="true" style={{ color: "var(--color-text-tertiary)", fontFamily: "var(--font-sans)" }}>▾</span>
+      </button>
+
+      {open && (
+        <div
+          id="interface-font-options"
+          role="listbox"
+          aria-label="Interface font"
+          style={{
+            position: "absolute",
+            zIndex: 2,
+            top: "calc(100% + var(--space-1))",
+            right: 0,
+            width: "max-content",
+            minWidth: "100%",
+            overflow: "hidden",
+            background: "var(--color-bg-elevated)",
+            border: "1px solid var(--color-border-default)",
+            borderRadius: "var(--radius-control)",
+            boxShadow: "var(--shadow-floating)",
+          }}
+        >
+          {FONT_PAIRS.map((pair, index) => (
+            <div key={pair.id}>
+              {index > 0 && <SettingsDivider />}
+              <button
+                type="button"
+                role="option"
+                aria-selected={pair.id === value}
+                onClick={() => {
+                  onChange(pair.id);
+                  setOpen(false);
+                }}
+                style={{
+                  width: "100%",
+                  minHeight: 44,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "var(--space-4)",
+                  padding: "var(--space-2) var(--space-3)",
+                  background: pair.id === value ? "var(--color-bg-hover)" : "none",
+                  border: "none",
+                  color: pair.id === value ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                  cursor: "pointer",
+                  fontFamily: pair.sans,
+                  fontSize: "var(--text-label)",
+                  fontWeight: pair.id === value ? 600 : 400,
+                  textAlign: "left",
+                }}
+              >
+                <span>{pair.name}</span>
+                {pair.id === value && (
+                  <CheckCircle size={16} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AppearanceScreen() {
   const themeMode = usePersistedStore((s) => s.settings.themeMode);
   const fontPair = usePersistedStore((s) => s.settings.fontPair);
+  const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
+  const currency = usePersistedStore((s) => s.settings.currency);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", minHeight: 0 }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-5) var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", minHeight: 0 }}>
         <SettingsPageHeader title="Appearance" />
 
-        {/* Theme toggle group */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-            Theme
-          </span>
-          <div
-            role="radiogroup"
-            aria-label="Theme"
-            style={{
-              display: "flex",
-              background: "var(--color-bg-surface)",
-              borderRadius: "var(--radius-control)",
-              border: "1px solid var(--color-border-subtle)",
-              padding: 3,
-              gap: 2,
-            }}
-          >
-            {THEMES.map(({ id, label, Icon }) => {
-              const selected = themeMode === id;
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <SettingsSectionLabel>Font</SettingsSectionLabel>
+          <div style={{ display: "flex" }}>
+            <FontPicker value={fontPair} onChange={(font) => updateSettings({ fontPair: font })} />
+          </div>
+        </div>
+
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <SettingsSectionLabel>Currency</SettingsSectionLabel>
+          <div role="radiogroup" aria-label="Currency" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--space-2)" }}>
+            {CURRENCIES.map(({ id, label }) => {
+              const selected = currency === id;
               return (
                 <button
                   key={id}
                   type="button"
+                  className="settings-pressable"
                   role="radio"
                   aria-checked={selected}
-                  onClick={() => updateSettings({ themeMode: id })}
+                  onClick={() => updateSettings({ currency: id })}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "var(--space-2)",
-                    flex: 1,
-                    padding: "var(--space-2) var(--space-3)",
-                    minHeight: 40,
-                    background: selected ? "var(--color-bg-elevated)" : "transparent",
-                    borderRadius: "calc(var(--radius-control) - 2px)",
-                    border: selected ? "1px solid var(--color-border-strong)" : "1px solid transparent",
-                    boxShadow: selected ? "var(--shadow-surface)" : "none",
+                    minHeight: 44,
+                    border: "1px solid var(--color-border-subtle)",
+                    borderRadius: "var(--radius-control)",
+                    background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
+                    color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
                     cursor: "pointer",
                     fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body)",
-                    fontWeight: selected ? 500 : 400,
-                    color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-                    transition: "background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out)",
+                    fontSize: "var(--text-label)",
+                    fontWeight: selected ? 600 : 400,
                   }}
                 >
-                  <Icon size={16} weight="Linear" aria-hidden="true" />
                   {label}
                 </button>
               );
@@ -75,52 +274,67 @@ export default function AppearanceScreen() {
           </div>
         </div>
 
-        {/* Font pair selector */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-            Font
-          </span>
-          <div style={{ position: "relative" }}>
-            <select
-              value={fontPair}
-              onChange={(e) => updateSettings({ fontPair: e.target.value as FontPairId })}
-              style={{
-                width: "100%",
-                minHeight: "var(--height-input)",
-                padding: "var(--space-2) var(--space-3)",
-                paddingRight: "var(--space-8)",
-                background: "var(--color-bg-surface)",
-                border: "1px solid var(--color-border-subtle)",
-                borderRadius: "var(--radius-control)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-primary)",
-                cursor: "pointer",
-                appearance: "none",
-                outline: "none",
-              }}
-            >
-              {FONT_PAIRS.map((pair) => (
-                <option key={pair.id} value={pair.id}>
-                  {pair.name}
-                </option>
-              ))}
-            </select>
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                right: "var(--space-3)",
-                top: "50%",
-                transform: "translateY(-50%)",
-                pointerEvents: "none",
-                color: "var(--color-text-tertiary)",
-                fontSize: 10,
-              }}
-            >
-              ▼
-            </span>
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <SettingsSectionLabel>Theme</SettingsSectionLabel>
+          <div role="radiogroup" aria-label="Theme" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {THEMES.map(({ id, label, description, Icon }) => {
+              const selected = themeMode === id;
+              return (
+                <div key={id}>
+                  <button
+                    type="button"
+                    className="settings-pressable"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => updateSettings({ themeMode: id })}
+                    style={{
+                      width: "100%",
+                      minHeight: 64,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "var(--space-3)",
+                      padding: "var(--space-3)",
+                      background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
+                      border: "1px solid var(--color-border-subtle)",
+                      borderRadius: "var(--radius-control)",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-body)",
+                      fontWeight: selected ? 600 : 400,
+                      color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                      <Icon size={18} weight="Linear" aria-hidden="true" style={{ marginTop: 1, flexShrink: 0 }} />
+                      <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                        <span>{label}</span>
+                        <span style={{ maxWidth: "75%", fontSize: "var(--text-caption)", fontWeight: 400, color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
+                          {description}
+                        </span>
+                      </span>
+                    </span>
+                    {selected ? <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
+                  </button>
+                </div>
+              );
+            })}
           </div>
+        </div>
+
+        <SettingsDivider />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <SettingsSectionLabel>Privacy</SettingsSectionLabel>
+          <SettingsToggleRow
+            checked={hideBalances}
+            label="Hide balances"
+            description="Mask Vault amounts until you turn this off."
+            onChange={(checked) => updateSettings({ hideBalances: checked })}
+          />
         </div>
       </motion.div>
     </AppShell>

@@ -6,19 +6,19 @@ export interface EmbeddedInputProps extends InputHTMLAttributes<HTMLInputElement
 }
 
 export const EmbeddedInput = forwardRef<HTMLInputElement, EmbeddedInputProps>(function EmbeddedInput(
-  { style, technical = false, align, ...props },
+  { style, technical = false, align, className, ...props },
   ref,
 ) {
   return (
     <input
       {...props}
       ref={ref}
+      className={["glyph-embedded-input", className].filter(Boolean).join(" ")}
       spellCheck={false}
       autoComplete={props.autoComplete ?? "off"}
       style={{
         background: "none",
         border: "none",
-        outline: "none",
         width: "100%",
         minWidth: 0,
         padding: 0,

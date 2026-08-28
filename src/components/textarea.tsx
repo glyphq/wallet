@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, TextareaHTMLAttributes } from "react";
+import { useId, type CSSProperties, type ReactNode, type TextareaHTMLAttributes } from "react";
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -18,11 +18,15 @@ export function Textarea({
   containerStyle,
   leftElement,
   technical = false,
+  className,
   ...props
 }: TextareaProps) {
-  const fieldId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  const generatedId = useId();
+  const fieldId = id ?? (label ? `${label.toLowerCase().replace(/\s+/g, "-")}-${generatedId}` : undefined);
   const errorId = error && fieldId ? `${fieldId}-error` : undefined;
   const hintId = hint && fieldId ? `${fieldId}-hint` : undefined;
+  const describedBy = [props["aria-describedby"], hintId, errorId].filter(Boolean).join(" ") || undefined;
+  const ariaLabel = props["aria-label"] ?? (!label && typeof props.placeholder === "string" ? props.placeholder : undefined);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
@@ -32,8 +36,10 @@ export function Textarea({
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "var(--text-label)",
-            color: "var(--color-text-secondary)",
-            letterSpacing: "0.02em",
+            color: "var(--color-text-tertiary)",
+            fontWeight: 500,
+            lineHeight: "var(--leading-compact)",
+            letterSpacing: "0.015em",
           }}
         >
           {label}
@@ -61,11 +67,13 @@ export function Textarea({
           {...props}
           id={fieldId}
           spellCheck={props.spellCheck ?? false}
-          className="glyph-input"
+          className={["glyph-input", className].filter(Boolean).join(" ")}
           data-has-leading={leftElement ? "true" : undefined}
           data-error={error ? "true" : undefined}
           aria-invalid={error ? "true" : undefined}
-          aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+          aria-label={ariaLabel}
+          aria-describedby={describedBy}
+          aria-errormessage={error ? errorId : undefined}
           style={{
             width: "100%",
             resize: "vertical",
@@ -74,7 +82,6 @@ export function Textarea({
             paddingRight: "var(--space-4)",
             paddingBottom: "var(--space-3)",
             paddingLeft: leftElement ? 48 : "var(--space-4)",
-            background: "var(--color-bg-surface-2)",
             borderRadius: "var(--radius-control)",
             color: "var(--color-text-primary)",
             fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",

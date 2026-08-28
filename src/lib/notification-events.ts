@@ -2,6 +2,7 @@ import { notify, type NotificationDeliveryResult } from "@/lib/notifications";
 import { useSessionStore } from "@/store/session";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
+import type { NetworkScope } from "@/lib/network-config";
 
 function makeEventId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -34,10 +35,10 @@ export function createNotificationEvent(input: {
 
 export async function publishNotificationEvent(
   event: NotificationEvent,
-  options?: { desktop?: boolean },
+  options: { networkScope: NetworkScope; desktop?: boolean },
 ): Promise<NotificationDeliveryResult | null> {
-  usePersistedStore.getState().addNotificationEvent(event);
-  if (options?.desktop === false) {
+  usePersistedStore.getState().addNotificationEvent(event, options.networkScope);
+  if (options.desktop === false) {
     return null;
   }
   const { notificationsEnabled, notifyWhenLocked } = usePersistedStore.getState().settings;
@@ -46,7 +47,7 @@ export async function publishNotificationEvent(
     return null;
   }
   if (isLocked && !notifyWhenLocked) {
-    return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the wallet is locked." };
+    return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the Vault is locked." };
   }
   const result = await notify(event.title, event.body);
   if (!result.ok) {

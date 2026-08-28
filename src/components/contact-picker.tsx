@@ -67,7 +67,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", maxHeight: 340, overflowY: "auto" }}>
           {filteredAccounts.length > 0 && (
             <PickerSection
-              title="This wallet"
+              title="This Vault"
               entries={filteredAccounts.map((account) => ({
                 key: `account:${account.identity}`,
                 name: account.name,

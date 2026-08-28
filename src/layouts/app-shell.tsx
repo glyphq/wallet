@@ -16,7 +16,10 @@ export function AppShell({ children, statusBar, contentStyle, fullBleed }: AppSh
 
   // Push statusBar content to the static header slot in AnimatedLayout
   useEffect(() => {
-    setHeader(statusBar ?? null);
+    // Subscreens register their own header with SettingsPageHeader. Do not
+    // overwrite it with null when this shell has no status bar of its own.
+    if (statusBar === undefined) return;
+    setHeader(statusBar);
     return () => setHeader(null);
   }, [statusBar, setHeader]);
 

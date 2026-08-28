@@ -1,6 +1,6 @@
 [package]
 name = "glyph-wallet"
-version = "0.15.0-prerelease.4"
+version = "0.16.12"
 default-run = "glyph-wallet"
 description = "Self-custodial Glyph wallet with dApp deep linking"
 authors = ["alez04"]
@@ -39,14 +39,22 @@ hex = "0.4"
 url = "2"
 reqwest = { version = "0.12", features = ["rustls-tls", "json"], default-features = false }
 keyring = { version = "3", features = ["sync-secret-service", "apple-native", "crypto-rust"] }
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt", "sync", "time"] }
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-fs = "2.5.1"
 tiny-keccak = { version = "2", features = ["k12"] }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-objc = "0.2"
-block = "0.1"
+num-bigint = "0.4"
+num-traits = "0.2"
+zeroize = "1.8"
+tauri-plugin-autostart = "2.5.1"
+tauri-plugin-device-info = "1.0.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = ["Security_Credentials_UI", "Win32_Security_Credentials", "Win32_Foundation"] }
+
+[patch.crates-io]
+# Temporary security backports until crates.io releases include quick-xml >= 0.41.
+tauri-winrt-notification = { path = "vendor/tauri-winrt-notification" }
+# battery 0.7.8 is the latest published release; patch its target-only nix constraint to the fixed release.
+battery = { path = "vendor/battery" }
+wayland-scanner = { git = "https://github.com/Smithay/wayland-rs", rev = "05196740da57e41b60a9e9f8e35079e9bd29b89a" }

@@ -20,7 +20,20 @@ install_verified() {
   local url="$2"
   local expected_sha="$3"
   local destination="$TOOL_DIR/$name"
-  local temporary actual_sha
+  local temporary actual_sha token
+  local -a curl_args=(
+    --fail --location --retry 3 --retry-all-errors --silent --show-error
+    --header "Accept: application/octet-stream"
+    --header "X-GitHub-Api-Version: 2022-11-28"
+  )
+
+  # GitHub-hosted runners can exhaust anonymous release-asset limits. Use the
+  # short-lived workflow token when it is available while preserving unauthenticated
+  # local use for public pinned assets.
+  token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+  if [[ -n "$token" ]]; then
+    curl_args+=(--header "Authorization: Bearer $token")
+  fi
 
   if [[ -f "$destination" ]]; then
     actual_sha="$(sha256sum "$destination" | awk '{print $1}')"
@@ -32,15 +45,14 @@ install_verified() {
   fi
 
   temporary="$(mktemp "$TOOL_DIR/.${name}.XXXXXX")"
-  curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
-    --header "Accept: application/octet-stream" \
-    --header "X-GitHub-Api-Version: 2022-11-28" \
-    "$url" --output "$temporary"
+  trap 'rm -f -- "$temporary"' RETURN
+  curl "${curl_args[@]}" "$url" --output "$temporary"
   actual_sha="$(sha256sum "$temporary" | awk '{print $1}')"
   [[ "$actual_sha" == "$expected_sha" ]] \
     || die "checksum mismatch for $name: expected $expected_sha, got $actual_sha"
   chmod +x "$temporary"
   mv -f "$temporary" "$destination"
+  trap - RETURN
   log "installed verified $name"
 }
 
@@ -67,8 +79,8 @@ main() {
     "c107b49d84edbffc6ab226ed1007e0626a4f7aa2c3a36b7782bef62351d49e94"
   install_verified \
     "linuxdeploy-plugin-appimage.AppImage" \
-    "https://api.github.com/repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/462804774" \
-    "1da16a46fa5e058ae740e7c35ed0d36d86cb869ac9cc8a5fd9a1847d7978d99a"
+    "https://api.github.com/repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/228937581" \
+    "992d502a248e14ab185448ddf6f6e7d25558cb84d4623c354c3af350c25fccb3"
 }
 
 main "$@"

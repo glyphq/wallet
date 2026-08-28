@@ -1,4 +1,11 @@
 import type { VaultData } from "@qubic.org/wallet";
+import type { NetworkConfig, NetworkScope } from "@/lib/network-config";
+
+export type {
+  NetworkConfig,
+  NetworkKind,
+  NetworkScope,
+} from "@/lib/network-config";
 
 export type VaultColor =
   | "slate"
@@ -63,14 +70,9 @@ export interface VaultMeta {
   encryptedData: VaultData | null;
 }
 
-export interface NetworkConfig {
-  liveApiUrl: string;
-  queryApiUrl: string;
-  name: "mainnet" | "testnet" | "custom";
-}
-
 /** A dApp origin that the user has explicitly approved, along with its granted permission set. */
 export interface ApprovedDapp {
+  networkScope: NetworkScope;
   origin: string;
   name: string;
   approvedAt: number;
@@ -79,6 +81,12 @@ export interface ApprovedDapp {
   permissions: ("transfer" | "sc_call" | "sign_message")[];
   /** When set, restricts this dApp's permissions to these specific account identities only. */
   allowedIdentities?: string[];
+  /** Optional per-request QU ceiling for transfer-like requests from this dApp. */
+  transferLimitQu?: string;
+  /** User-selected approval lifetime, persisted so Settings can refresh the expiry with the same duration. */
+  expiryDurationMs?: number;
+  /** Unix ms timestamp after which this approval cannot be exercised. Undefined means no expiry. */
+  expiresAt?: number;
 }
 
 export interface AppSettings {
@@ -120,6 +128,8 @@ export interface AppSettings {
   pollingIntervalTrayMs: number;
   pollingIntervalLockedMs: number;
   hideToTray: boolean;
+  /** Whether Glyph is registered to launch when the user signs in. */
+  autostartEnabled: boolean;
   sponsorAttribution: "anonymous" | "identity" | "custom";
   allowBlurLockBypass: boolean;
   requirePasswordForBurn: boolean;
@@ -133,6 +143,20 @@ export interface AppSettings {
   customPriceFeedUrl: string;
 }
 
+export type NetworkConfigUpdate = Pick<
+  NetworkConfig,
+  "liveApiUrl" | "queryApiUrl"
+> &
+  Partial<Pick<NetworkConfig, "name" | "scope" | "manifestInstanceId">>;
+
+export type AppSettingsUpdate = Omit<Partial<AppSettings>, "network"> & {
+  network?: NetworkConfigUpdate;
+};
+
+/**
+ * Contacts are intentionally wallet-global. A Qubic identity is portable
+ * address-book metadata, not proof of chain activity or authorization.
+ */
 export interface Contact {
   id: string;
   name: string;
@@ -145,6 +169,7 @@ export interface Contact {
 
 /** A recurring transfer that runs on a fixed day interval. */
 export interface ScheduledTransfer {
+  networkScope: NetworkScope;
   id: string;
   label: string;
   sourceIdentity: string;
@@ -158,6 +183,7 @@ export interface ScheduledTransfer {
 
 /** A broadcast transaction awaiting confirmation or expiry tracking. */
 export interface PendingTx {
+  networkScope: NetworkScope;
   hash: string;
   source: string;
   destination: string;
@@ -168,6 +194,9 @@ export interface PendingTx {
   contractName?: string;
 }
 
+/** New broadcasts are scoped by the store from the active canonical network. */
+export type PendingTxInput = Omit<PendingTx, "networkScope">;
+
 export type NotificationEventKind =
   | "received"
   | "sent"
@@ -175,9 +204,12 @@ export type NotificationEventKind =
   | "failed"
   | "expired"
   | "deep_link"
-  | "price_alert";
+  | "price_alert"
+  | "system";
 
 export interface NotificationEvent {
+  /** Stamped by the persisted store. Legacy/helper inputs may omit it before insertion. */
+  networkScope?: NetworkScope;
   id: string;
   kind: NotificationEventKind;
   title: string;
@@ -228,6 +260,8 @@ export type RequestHistoryAction = "approved" | "rejected";
 export type RequestHistoryCallbackStatus = "none" | "pending" | "ok" | "failed";
 
 export interface RequestHistoryItem {
+  /** Stamped by the persisted store. Legacy/helper inputs may omit it before insertion. */
+  networkScope?: NetworkScope;
   id: string;
   createdAt: number;
   type: "transfer" | "sc_call" | "sign_message" | "verify_message" | "connect";
@@ -248,18 +282,35 @@ export interface PersistedState {
   vaults: VaultMeta[];
   settings: AppSettings;
   contacts: Contact[];
+  /** Active-network projection retained for existing UI consumers. */
   pendingTxs: PendingTx[];
+  /** Canonical persisted pending transactions partitioned by network identity. */
+  pendingTxsByNetwork: Record<NetworkScope, PendingTx[]>;
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
+  /** Canonical transaction memos partitioned by network identity. */
+  txMemosByNetwork: Record<NetworkScope, Record<string, string>>;
   /** @deprecated Kept for migration compat only — no longer used in UI. */
   txTags: Record<string, string[]>;
+  /** Canonical legacy transaction tags partitioned by network identity. */
+  txTagsByNetwork: Record<NetworkScope, Record<string, string[]>>;
   scheduledTransfers: ScheduledTransfer[];
+  scheduledTransfersByNetwork: Record<NetworkScope, ScheduledTransfer[]>;
   notificationEvents: NotificationEvent[];
+  notificationEventsByNetwork: Record<NetworkScope, NotificationEvent[]>;
   priceSnapshots: PriceSnapshot[];
+  /** Canonical fiat price history partitioned to prevent cross-chain valuation. */
+  priceSnapshotsByNetwork: Record<NetworkScope, PriceSnapshot[]>;
   runtimeIssues: RuntimeIssue[];
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];
+  requestHistoryByNetwork: Record<NetworkScope, RequestHistoryItem[]>;
+  /** Canonical dApp approvals. settings.approvedDapps is the active-network projection. */
+  approvedDappsByNetwork: Record<NetworkScope, ApprovedDapp[]>;
+  /** Active-network projection retained for existing notification hooks. */
   lastNotificationScanAt: number;
+  /** Canonical persisted notification scan cursor partitioned by network identity. */
+  notificationScanAtByNetwork: Record<NetworkScope, number>;
   /** Unix ms timestamp until which password attempts are locked out. 0 = no lockout. */
   passwordLockoutUntil: number;
   /** Number of consecutive failed password attempts — persists across restarts. */
@@ -277,14 +328,14 @@ export interface PersistedState {
   setActiveAccountIndex: (index: number) => void;
   /** Stamps `lastUnlockedAt` with the current time — used to sort vaults by recency. */
   touchVaultUnlocked: (id: string) => void;
-  updateSettings: (updates: Partial<AppSettings>) => void;
+  updateSettings: (updates: AppSettingsUpdate) => void;
   addContact: (contact: Contact) => void;
   updateContact: (id: string, updates: Partial<Omit<Contact, "id">>) => void;
   removeContact: (id: string) => void;
-  addPendingTx: (tx: PendingTx) => void;
-  removePendingTx: (hash: string) => void;
+  addPendingTx: (tx: PendingTxInput, expectedScope: NetworkScope) => void;
+  removePendingTx: (hash: string, expectedScope: NetworkScope) => void;
   /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
-  approveDapp: (dapp: ApprovedDapp) => void;
+  approveDapp: (dapp: Omit<ApprovedDapp, "networkScope">, expectedScope: NetworkScope) => void;
   revokeDapp: (origin: string) => void;
   /** Removes a single permission while leaving the persisted dApp connection entry intact. */
   revokeDappPermission: (
@@ -295,28 +346,33 @@ export interface PersistedState {
     origin: string,
     identities: string[] | undefined
   ) => void;
+  setDappPolicy: (
+    origin: string,
+    policy: Pick<ApprovedDapp, "transferLimitQu" | "expiryDurationMs" | "expiresAt">
+  ) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;
-  addScheduledTransfer: (transfer: ScheduledTransfer) => void;
+  addScheduledTransfer: (transfer: Omit<ScheduledTransfer, "networkScope">) => void;
   updateScheduledTransfer: (
     id: string,
-    updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt">>
+    updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt" | "networkScope">>
   ) => void;
   removeScheduledTransfer: (id: string) => void;
-  addNotificationEvent: (event: NotificationEvent) => void;
+  addNotificationEvent: (event: Omit<NotificationEvent, "networkScope">, expectedScope: NetworkScope) => void;
   markNotificationEventRead: (id: string) => void;
   markAllNotificationEventsRead: () => void;
   clearNotificationEvents: () => void;
-  setLastNotificationScanAt: (timestamp: number) => void;
+  setLastNotificationScanAt: (timestamp: number, expectedScope: NetworkScope) => void;
   addAuditEvent: (event: AuditEvent) => void;
   clearAuditEvents: () => void;
-  addPriceSnapshot: (snapshot: PriceSnapshot) => void;
+  addPriceSnapshot: (snapshot: PriceSnapshot, expectedScope: NetworkScope) => void;
   addRuntimeIssue: (issue: RuntimeIssue) => void;
   clearRuntimeIssues: () => void;
-  addRequestHistoryItem: (event: RequestHistoryItem) => void;
+  addRequestHistoryItem: (event: Omit<RequestHistoryItem, "networkScope">, expectedScope: NetworkScope) => void;
   updateRequestHistoryItem: (
     id: string,
-    updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt">>
+    updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt" | "networkScope">>,
+    expectedScope: NetworkScope
   ) => void;
   clearRequestHistory: () => void;
 }

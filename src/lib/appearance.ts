@@ -1,16 +1,10 @@
-import type { FontPairId, AccentColorId } from "@/store/persisted";
+import type { FontPairId } from "@/store/persisted";
 
 export interface FontPair {
   id: FontPairId;
   name: string;
   sans: string;
   mono: string;
-}
-
-export interface AccentColor {
-  id: AccentColorId;
-  name: string;
-  hex: string;
 }
 
 export const FONT_PAIRS: FontPair[] = [
@@ -20,15 +14,6 @@ export const FONT_PAIRS: FontPair[] = [
   { id: "space-grotesk", name: "Space Grotesk",  sans: "'Space Grotesk', system-ui, sans-serif",    mono: "'Space Mono', monospace" },
   { id: "fira",          name: "Fira",           sans: "'Fira Sans', system-ui, sans-serif",        mono: "'Fira Code', monospace" },
   { id: "jetbrains",     name: "JetBrains",      sans: "'Inter', system-ui, sans-serif",            mono: "'JetBrains Mono', monospace" },
-];
-
-export const ACCENT_COLORS: AccentColor[] = [
-  { id: "green",  name: "Green",  hex: "#22c55e" },
-  { id: "amber",  name: "Amber",  hex: "#f59e0b" },
-  { id: "sky",    name: "Sky",    hex: "#0ea5e9" },
-  { id: "violet", name: "Violet", hex: "#8b5cf6" },
-  { id: "rose",   name: "Rose",   hex: "#f43f5e" },
-  { id: "mono",   name: "Mono",   hex: "#909090" },
 ];
 
 /** CSS variable names that the theme system overrides. */
@@ -136,4 +121,3 @@ export function getThemeVars(mode: "dark" | "light"): Record<string, string> {
   }
   return {};
 }
-

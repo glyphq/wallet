@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { signMessageFromSession } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
-import { RequestActionBar, RequestDetailRow, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import { base64ToBytes } from "@/lib/base64";
+import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { SignMessageRequest } from "@/lib/request-schema";
+import { DappPolicyStatus } from "@/components/dapp-policy-controls";
+import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { SignMessageRequest } from "@/lib/request-schema";
 
@@ -13,28 +16,27 @@ export interface SignMessageApproveResult {
   signature: string; // base64-encoded 64-byte SchnorrQ signature
   publicKey: string; // base64-encoded 32-byte public key
   identity: string;
+  accountIndex: number;
 }
 
 interface SignMessagePreviewProps {
   request: SignMessageRequest;
-  onApprove: (result: SignMessageApproveResult) => void;
+  onApprove: (result: SignMessageApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  try {
-    const binary = atob(b64);
-    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  } catch {
-    return new Uint8Array(0);
-  }
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
-export function SignMessagePreview({ request, onApprove, onReject }: SignMessagePreviewProps) {
+function previewText(value: string, maxChars = 2000): string {
+  return value.length > maxChars
+    ? `${value.slice(0, maxChars)}\n\n[… ${value.length.toLocaleString()} chars total]`
+    : value;
+}
+
+export function SignMessagePreview({ request, onApprove, beforeApprove, onReject }: SignMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,20 +45,51 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
   const vault = usePersistedStore((s) =>
     s.vaults.find((v) => v.id === s.settings.activeVaultId)
   );
+  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
+  const identity = wallet?.identity ?? "";
+  const dataByteCount = useMemo(() => {
+    if (!request.data) return null;
+    try {
+      return base64ToBytes(request.data).length;
+    } catch {
+      return null;
+    }
+  }, [request.data]);
+  const policyDecision = evaluateDappPermission({
+    approvedDapps,
+    origin: request.dapp.origin,
+    permission: "sign_message",
+    identity,
+  });
+
   async function approve() {
     if (!wallet) return;
+    const freshPolicyDecision = evaluateDappPermission({
+      approvedDapps,
+      origin: request.dapp.origin,
+      permission: "sign_message",
+      identity,
+      now: Date.now(),
+    });
+    if (!freshPolicyDecision.allowed) {
+      setError(freshPolicyDecision.reason ?? "dApp policy blocked this signature.");
+      return;
+    }
     setProcessing(true);
     setError("");
     try {
+      await beforeApprove();
       const messageBytes = request.data
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);
       const { signature, publicKey, identity } = await signMessageFromSession(selectedIndex, messageBytes);
-      onApprove({
+      await onApprove({
         signature: bytesToBase64(signature),
         publicKey: bytesToBase64(publicKey),
         identity,
+        accountIndex: selectedIndex,
       });
+      setProcessing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Signing failed.");
       setProcessing(false);
@@ -65,17 +98,21 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-        This is an off-chain signature. No transaction will be broadcast.
-      </div>
-
       <div>
-        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Message</RequestSectionTitle></div>
-        <RequestTechnicalBlock>
-          {request.message.length > 2000
-            ? `${request.message.slice(0, 2000)}\n\n[… ${request.message.length.toLocaleString()} chars total]`
-            : request.message}
-        </RequestTechnicalBlock>
+        <div style={{ marginBottom: "var(--space-2)" }}>
+          <RequestSectionTitle>{request.data ? "Data to sign" : "Message"}</RequestSectionTitle>
+        </div>
+        {request.data ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <RequestDetailRow label="Payload" value={dataByteCount === null ? "Invalid base64" : `${dataByteCount.toLocaleString()} bytes`} valueColor={dataByteCount === null ? "var(--color-status-error)" : undefined} />
+            {request.message && <RequestDetailRow label="Label" value={previewText(request.message, 160)} />}
+            <RequestDisclosure label={`Show base64 data${dataByteCount === null ? "" : ` · ${dataByteCount.toLocaleString()}B`}`}>
+              <RequestTechnicalBlock maxHeight={160}>{request.data}</RequestTechnicalBlock>
+            </RequestDisclosure>
+          </div>
+        ) : (
+          <RequestTechnicalBlock>{previewText(request.message)}</RequestTechnicalBlock>
+        )}
       </div>
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
@@ -109,7 +146,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
           {fromError}
         </div>
       ) : (
-        <RequestDetailRow label="From" value={`${accountName} · ${truncateId(wallet?.identity ?? "", 10, 10)}`} />
+        <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />
       )}
 
       {error && (
@@ -118,11 +155,13 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
         </div>
       )}
 
+      <DappPolicyStatus decision={policyDecision} />
+
       <RequestActionBar>
         <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
           Reject
         </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError} style={{ flex: 1 }}>
+        <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError || !policyDecision.allowed} style={{ flex: 1 }}>
           Sign message
         </Button>
       </RequestActionBar>

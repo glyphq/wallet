@@ -29,6 +29,18 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS}" ]; then
   fi
 fi
 
+find_desktop_entry() {
+  # Tauri places the template in usr/share/applications. Some AppImage tools
+  # also copy it to the AppDir root, so support both layouts.
+  for _desktop_candidate in "${APPDIR}"/*.desktop "${APPDIR}/usr/share/applications"/*.desktop; do
+    if [ -f "${_desktop_candidate}" ]; then
+      printf '%s\n' "${_desktop_candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
 # Self-register on first run (and re-register if the AppImage has moved).
 #
 # Two things are required for glyph:// deep links to work:
@@ -46,17 +58,29 @@ _APPS="${HOME}/.local/share/applications"
 _DESKTOP="${_APPS}/glyph.desktop"
 _APPIMAGE_PATH="${APPIMAGE:-}"
 
-# Detect if we need to (re-)register: missing desktop file OR Exec= points
-# to a path that no longer matches the current AppImage location.
+# Detect if we need to (re-)register: missing desktop file, an outdated icon
+# identity, or Exec= pointing to a path that no longer matches the current
+# AppImage location. The icon check migrates existing installs after a bundle
+# identity change, including in-place updater replacements.
 _NEEDS_REGISTER=0
 if [ ! -f "${_DESKTOP}" ]; then
   _NEEDS_REGISTER=1
-elif [ -n "${_APPIMAGE_PATH}" ]; then
-  _CURRENT_EXEC=$(grep "^Exec=" "${_DESKTOP}" | head -1 | sed 's/^Exec=//;s/ %u$//')
-  _CURRENT_EXEC="${_CURRENT_EXEC%\"}"
-  _CURRENT_EXEC="${_CURRENT_EXEC#\"}"
-  if [ "${_CURRENT_EXEC}" != "${_APPIMAGE_PATH}" ]; then
+else
+  _SRC=$(find_desktop_entry || true)
+  _EXPECTED_ICON=""
+  if [ -n "${_SRC}" ]; then
+    _EXPECTED_ICON=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_SRC}")
+  fi
+  _CURRENT_ICON=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_DESKTOP}")
+  if [ -n "${_EXPECTED_ICON}" ] && [ "${_CURRENT_ICON}" != "${_EXPECTED_ICON}" ]; then
     _NEEDS_REGISTER=1
+  elif [ -n "${_APPIMAGE_PATH}" ]; then
+    _CURRENT_EXEC=$(grep "^Exec=" "${_DESKTOP}" | head -1 | sed 's/^Exec=//;s/ %u$//')
+    _CURRENT_EXEC="${_CURRENT_EXEC%\"}"
+    _CURRENT_EXEC="${_CURRENT_EXEC#\"}"
+    if [ "${_CURRENT_EXEC}" != "${_APPIMAGE_PATH}" ]; then
+      _NEEDS_REGISTER=1
+    fi
   fi
 fi
 
@@ -69,7 +93,7 @@ fi
 
 if [ "${_NEEDS_REGISTER}" = "1" ]; then
   mkdir -p "${_APPS}"
-  _SRC=$(find "${APPDIR}" -maxdepth 1 -name "*.desktop" | head -1)
+  _SRC=$(find_desktop_entry || true)
   if [ -n "${_SRC}" ]; then
     _ICON_NAME=$(awk -F= '$1 == "Icon" { print $2; exit }' "${_SRC}")
     [ -n "${_ICON_NAME}" ] || _ICON_NAME="Glyph"
@@ -109,6 +133,37 @@ fi
 for _hook in "${APPDIR}/apprun-hooks/"*.sh; do
   [ -f "${_hook}" ] && source "${_hook}"
 done
+
+# Keep the bundled GLib from loading host GIO modules. Host modules such as
+# GVfs are built against the host GLib ABI and can emit unresolved-symbol
+# failures when loaded by the AppImage's bundled GLib.
+export GIO_MODULE_DIR="${APPDIR}/usr/lib/x86_64-linux-gnu/gio/modules"
+
+# The Wayland client library is part of the compositor ABI and must come from
+# the host. Preload it on Wayland sessions so WebKitGTK and GTK agree on the
+# host protocol implementation instead of the copy bundled by linuxdeploy.
+if [ -n "${WAYLAND_DISPLAY:-}" ] || [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+  export DESKTOPINTEGRATION=1
+  for _wayland_client in \
+    /usr/lib/libwayland-client.so.0 \
+    /usr/lib64/libwayland-client.so.0 \
+    /usr/lib/x86_64-linux-gnu/libwayland-client.so.0 \
+    /usr/lib/aarch64-linux-gnu/libwayland-client.so.0 \
+    /usr/lib/arm-linux-gnueabihf/libwayland-client.so.0 \
+    /usr/lib/libwayland-client.so \
+    /usr/lib64/libwayland-client.so \
+    /usr/lib/x86_64-linux-gnu/libwayland-client.so \
+    /usr/lib/aarch64-linux-gnu/libwayland-client.so \
+    /usr/lib/arm-linux-gnueabihf/libwayland-client.so; do
+    if [ -f "${_wayland_client}" ]; then
+      case ":${LD_PRELOAD:-}:" in
+        *":${_wayland_client}:"*) ;;
+        *) export LD_PRELOAD="${_wayland_client}${LD_PRELOAD:+:${LD_PRELOAD}}" ;;
+      esac
+      break
+    fi
+  done
+fi
 
 # Delegate to the original AppRun binary (linuxdeploy renamed it to .wrapped).
 # It handles app-specific launch logic (chdir, Exec= lookup, etc.).

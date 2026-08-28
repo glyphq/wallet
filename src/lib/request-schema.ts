@@ -2,29 +2,61 @@ import { z } from "zod";
 import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
 import { truncateIdentity } from "@/lib/crypto";
 import { formatQu } from "@/lib/format";
+import { isGlobalHttpsUrl, normalizedGlobalHttpsOrigin } from "@/lib/url-security";
+import { REQUEST_PROTOCOL_V2, requestHashV2, type GlyphNetworkBinding } from "@/lib/jcs";
+
+export const MAX_REQUEST_CHARS = 128 * 1024;
+export const MAX_REQUEST_MESSAGE_CHARS = 64 * 1024;
+export const MAX_REQUEST_BINARY_BYTES = 64 * 1024;
+const OFFICIAL_RELAY_ORIGIN = "https://relay.glyphq.org";
+
+const MAX_UINT64 = 18_446_744_073_709_551_615n;
+const MAX_BASE64_CHARS = Math.ceil(MAX_REQUEST_BINARY_BYTES / 3) * 4;
+
+function isBase64(value: string): boolean {
+  return /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value);
+}
 
 const permissionSchema = z.enum(["transfer", "sc_call", "sign_message"]);
 
 const dappMetaSchema = z.object({
-  name: z.string().optional().default(""),
-  origin: z.string(),
-  icon: z.string().optional(),
+  name: z.string().max(256).optional().default(""),
+  origin: z.string().max(2048),
+  icon: z.string().max(2048).optional(),
 });
 
 const baseRequestSchema = z.object({
   dapp: dappMetaSchema,
-  nonce: z.string(),
+  nonce: z.string().min(1).max(256),
   exp: z.number().int().positive().optional(),
 });
 
-const amountSchema = z.union([z.number(), z.string()]);
+const amountSchema = z.union([
+  z.number().int().safe().nonnegative(),
+  z.string().max(20).regex(/^\d+$/, "Amount must be an unsigned integer"),
+]).refine((value) => BigInt(value) <= MAX_UINT64, "Amount exceeds the maximum supported value");
+
+const binaryDataSchema = z.string()
+  .max(MAX_BASE64_CHARS, "Binary data is too large")
+  .refine(isBase64, "Binary data must be valid base64");
+const tickOffsetSchema = z.number().int().min(1).max(60);
+
+function isOfficialRelayCallback(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const match = url.pathname.match(/^\/v2\/callback\/([A-Za-z0-9_-]{22,128})\/(c_[A-Za-z0-9_-]{22,126})$/);
+    return url.origin === OFFICIAL_RELAY_ORIGIN && !url.search && !url.hash && Boolean(match);
+  } catch {
+    return false;
+  }
+}
 
 export const transferRequestSchema = baseRequestSchema.extend({
   type: z.literal("transfer"),
   to: z.string(),
-  amount: amountSchema,
+  amount: amountSchema.refine((value) => BigInt(value) > 0n, "Transfer amount must be positive"),
   from: z.string().optional(),
-  tick_offset: z.number().int().optional(),
+  tick_offset: tickOffsetSchema.optional(),
 });
 
 export const scCallRequestSchema = baseRequestSchema.extend({
@@ -33,23 +65,23 @@ export const scCallRequestSchema = baseRequestSchema.extend({
   input_type: z.number().int().min(0).max(65535),
   from: z.string().optional(),
   amount: amountSchema.optional(),
-  payload: z.string().optional(),
-  tick_offset: z.number().int().optional(),
+  payload: binaryDataSchema.optional(),
+  tick_offset: tickOffsetSchema.optional(),
 });
 
 export const signMessageRequestSchema = baseRequestSchema.extend({
   type: z.literal("sign_message"),
-  message: z.string(),
+  message: z.string().max(MAX_REQUEST_MESSAGE_CHARS),
   from: z.string().optional(),
-  data: z.string().optional(),
+  data: binaryDataSchema.optional(),
 });
 
 export const verifyMessageRequestSchema = baseRequestSchema.extend({
   type: z.literal("verify_message"),
-  message: z.string(),
-  data: z.string().optional(),
-  signature: z.string(),
-  public_key: z.string(),
+  message: z.string().max(MAX_REQUEST_MESSAGE_CHARS),
+  data: binaryDataSchema.optional(),
+  signature: binaryDataSchema,
+  public_key: binaryDataSchema,
 });
 
 export const connectRequestSchema = baseRequestSchema.extend({
@@ -65,12 +97,24 @@ export const glyphRequestSchema = z.discriminatedUnion("type", [
   connectRequestSchema,
 ]);
 
+const networkBindingSchema = z.object({
+  id: z.union([
+    z.literal("qubic:mainnet"),
+    z.string().regex(/^qubic:testnet:local:qubic-local%3A[0-9a-f]{64}$/),
+    z.string().regex(/^qubic:custom:sha256:[A-Za-z0-9_-]{43}$/),
+  ]),
+}) as z.ZodType<GlyphNetworkBinding>;
+
 export const glyphEnvelopeSchema = z.object({
+  protocol: z.literal(REQUEST_PROTOCOL_V2),
   request: glyphRequestSchema,
-  callback: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
-  redirect_uri: z.union([z.string(), z.null()]).optional().transform((value) => value ?? null),
+  callback: z.union([z.string(), z.null()]),
+  redirect_uri: z.union([z.string(), z.null()]),
+  network: networkBindingSchema,
+  request_hash: z.string().regex(/^sha256:[A-Za-z0-9_-]{43}$/),
 }).superRefine((envelope, ctx) => {
-  if (!envelope.request.dapp.origin.startsWith("https://")) {
+  const claimedOrigin = normalizedGlobalHttpsOrigin(envelope.request.dapp.origin);
+  if (!claimedOrigin) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "dApp origin must be HTTPS",
@@ -81,13 +125,21 @@ export const glyphEnvelopeSchema = z.object({
   if (envelope.callback && !isAllowedCallbackUrl(envelope.callback)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Callback URL must use HTTPS or localhost HTTP",
+      message: "Callback URL must use HTTPS",
       path: ["callback"],
     });
   }
+  if (envelope.callback && claimedOrigin
+    && normalizedGlobalHttpsOrigin(envelope.callback) !== claimedOrigin
+    && !isOfficialRelayCallback(envelope.callback)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Callback origin must match dApp origin", path: ["callback"] });
+  }
 
   if (envelope.redirect_uri && !isAllowedCallbackUrl(envelope.redirect_uri)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri must use HTTPS or localhost HTTP", path: ["redirect_uri"] });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri must use HTTPS", path: ["redirect_uri"] });
+  }
+  if (envelope.redirect_uri && claimedOrigin && normalizedGlobalHttpsOrigin(envelope.redirect_uri) !== claimedOrigin) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "redirect_uri origin must match dApp origin", path: ["redirect_uri"] });
   }
 
   if (envelope.request.exp && Math.floor(Date.now() / 1000) > envelope.request.exp) {
@@ -163,6 +215,10 @@ export type ParsedEnvelopeResult =
   | { envelope: GlyphEnvelope; error: null }
   | { envelope: null; error: string };
 
+export type ParsedEnvelopeAsyncResult =
+  | { envelope: GlyphEnvelope; error: null }
+  | { envelope: null; error: string };
+
 export const REQUEST_TYPE_LABEL: Record<GlyphRequest["type"], string> = {
   transfer: "Send QU",
   sc_call: "Contract call",
@@ -172,18 +228,12 @@ export const REQUEST_TYPE_LABEL: Record<GlyphRequest["type"], string> = {
 };
 
 export function isAllowedCallbackUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    const host = url.hostname.toLowerCase();
-    const isLocal = host === "localhost" || host === "127.0.0.1";
-    return url.protocol === "https:" || (url.protocol === "http:" && isLocal);
-  } catch {
-    return false;
-  }
+  return isGlobalHttpsUrl(value);
 }
 
 export function parseGlyphEnvelope(raw: string | null): ParsedEnvelopeResult {
   if (!raw) return { envelope: null, error: "No pending request" };
+  if (raw.length > MAX_REQUEST_CHARS) return { envelope: null, error: "Request is too large" };
   try {
     const parsed = JSON.parse(raw) as unknown;
     const result = glyphEnvelopeSchema.safeParse(parsed);
@@ -195,6 +245,27 @@ export function parseGlyphEnvelope(raw: string | null): ParsedEnvelopeResult {
   } catch {
     return { envelope: null, error: "Invalid request format" };
   }
+}
+
+export async function verifyGlyphEnvelope(envelope: GlyphEnvelope, activeNetwork?: GlyphNetworkBinding): Promise<string | null> {
+  const expectedHash = await requestHashV2({
+    protocol: envelope.protocol,
+    request: envelope.request,
+    callback: envelope.callback,
+    redirect_uri: envelope.redirect_uri,
+    network: envelope.network,
+  });
+  if (expectedHash !== envelope.request_hash) return "Request hash mismatch";
+  if (activeNetwork && activeNetwork.id !== envelope.network.id) return "Request network does not match active wallet network";
+  return null;
+}
+
+export async function parseGlyphEnvelopeAsync(raw: string | null, activeNetwork?: GlyphNetworkBinding): Promise<ParsedEnvelopeAsyncResult> {
+  const parsed = parseGlyphEnvelope(raw);
+  if (!parsed.envelope) return parsed;
+  const error = await verifyGlyphEnvelope(parsed.envelope, activeNetwork);
+  if (error) return { envelope: null, error };
+  return parsed;
 }
 
 function parseQuAmount(value: unknown): bigint | null {

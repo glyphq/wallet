@@ -14,22 +14,26 @@ import { Input } from "@/components/input";
 import { TextButton } from "@/components/text-button";
 import { ContactPicker } from "@/components/contact-picker";
 import { AddressSuggestions } from "@/components/address-suggestions";
+import { QrIntakeSheet } from "@/components/qr-intake-sheet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
-import { truncateId, formatQu, extractMessage } from "@/lib/format";
+import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import { parseScannedSendPayload } from "@/lib/scan-payload";
 
 type Step = "input" | "review" | "sending" | "done" | "error";
 
@@ -122,6 +126,7 @@ export default function SendScreen() {
   const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
+  const quote = usePreferredCurrencyQuote();
 
   const [step, setStep] = useState<Step>("input");
   const [draftRestored, setDraftRestored] = useState(false);
@@ -139,6 +144,8 @@ export default function SendScreen() {
   const [highValueVerifying, setHighValueVerifying] = useState(false);
   const [memo, setMemo] = useState("");
   const [showPicker, setShowPicker] = useState(false);
+  const [showQrIntake, setShowQrIntake] = useState(false);
+  const [qrIntakeError, setQrIntakeError] = useState("");
   const [saveName, setSaveName] = useState("");
   const [saved, setSaved] = useState(false);
   const [usdMode, setUsdMode] = useState(false);
@@ -160,6 +167,9 @@ export default function SendScreen() {
         <>
           <IconButton label="Send to many" onClick={() => navigate("/send-many")}>
             <UsersGroupRounded size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Scan QR" onClick={() => { setQrIntakeError(""); setShowQrIntake(true); }}>
+            <QrCode size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label="Burn QU" onClick={() => navigate("/burn")}>
             <Fire size={20} aria-hidden="true" />
@@ -184,7 +194,7 @@ export default function SendScreen() {
   );
 
   const price = stats?.price;
-  const usdEquiv = price && amountStr ? Number(amountStr) * price : null;
+  const fiatEquiv = price && amountStr ? formatPreferredCurrencyFromQu(amountStr, { usdPrice: price, ...quote }).text : null;
 
   // Sync from URL
   const prevSearchRef = useRef(searchParams.toString());
@@ -288,17 +298,40 @@ export default function SendScreen() {
 
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
 
+  function applyScannedPayload(raw: string) {
+    const parsed = parseScannedSendPayload(raw);
+    if (!parsed) {
+      setQrIntakeError("Unsupported QR. Use a Glyph payment link or a Qubic identity.");
+      return;
+    }
+
+    if (parsed.kind === "identity") {
+      setDestination(parsed.identity);
+    } else {
+      setDestination(parsed.to);
+      setAmountStr(parsed.amount ?? "");
+      setUsdMode(false);
+      setUsdStr("");
+    }
+    setDestError("");
+    setAmountError("");
+    setQrIntakeError("");
+    setShowQrIntake(false);
+  }
+
   async function send() {
     if (!wallet) return;
     setSending(true);
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
-      await broadcastTx(encoded);
-      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
+      await broadcastTx(encoded, networkScope);
+      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() }, networkScope);
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
       setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
       if (memo.trim()) setTxMemo(hash, memo.trim());
@@ -376,7 +409,7 @@ export default function SendScreen() {
           >
             {usdMode
               ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
-              : (usdEquiv !== null && usdEquiv > 0 ? `≈ $${usdEquiv.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "USD")
+              : (fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : quote.currency)
             }
           </TextButton>
 
@@ -470,6 +503,12 @@ export default function SendScreen() {
           contacts={contacts}
           accounts={vaultAccountTargets}
         />
+        <QrIntakeSheet
+          open={showQrIntake}
+          onClose={() => { setShowQrIntake(false); setQrIntakeError(""); }}
+          onScan={applyScannedPayload}
+          errorMessage={qrIntakeError}
+        />
         </motion.div>
       </AppShell>
     );
@@ -478,14 +517,18 @@ export default function SendScreen() {
   // ── Review step ──────────────────────────────────────────────────────────
 
   if (step === "review") {
-    const cardStyle: React.CSSProperties = {
-      background: "var(--color-bg-surface)",
-      borderRadius: "var(--radius-card)",
-      padding: "var(--space-1) var(--space-4)",
-      animation: "fade-in-up 0.25s ease-out both",
+    const rowGroupStyle: React.CSSProperties = {
+      borderTop: "1px solid var(--color-border-subtle)",
+      borderBottom: "1px solid var(--color-border-subtle)",
     };
-    const divider: React.CSSProperties = {
-      height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
+    const divider: React.CSSProperties = { height: 1, background: "var(--color-border-subtle)" };
+    const noticeStyle: React.CSSProperties = {
+      borderTop: "1px solid var(--color-border-subtle)",
+      borderBottom: "1px solid var(--color-border-subtle)",
+      padding: "var(--space-4) 0",
+      display: "flex",
+      flexDirection: "column",
+      gap: "var(--space-3)",
     };
     const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "Unavailable";
 
@@ -494,21 +537,20 @@ export default function SendScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
         {/* Amount */}
-        <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
+        <header style={{ paddingTop: "var(--space-3)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <span style={{ ...labelStyle, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Review transfer</span>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
           {price && amountStr && (
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-              ≈ ${(Number(amountStr) * price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : null}
             </div>
           )}
-        </div>
+        </header>
 
-        <div style={{ height: 1, background: "var(--color-border-subtle)", opacity: 0.5, margin: "var(--space-1) 0" }} />
-
-        {/* Parties card */}
-        <div style={cardStyle}>
+        {/* Parties */}
+        <section aria-label="Transfer parties" style={rowGroupStyle}>
           <DetailRow
             icon={<UserId size={16} />}
             label="To"
@@ -523,10 +565,10 @@ export default function SendScreen() {
             value={`${accountName} · ${truncateId(identity)}`}
             mono={false}
           />
-        </div>
+        </section>
 
-        {/* Details card */}
-        <div style={cardStyle}>
+        {/* Details */}
+        <section aria-label="Transaction facts" style={rowGroupStyle}>
           <DetailRow
             icon={<ClockCircle size={16} />}
             label="Target tick"
@@ -539,39 +581,50 @@ export default function SendScreen() {
             value="None"
             mono={false}
           />
-        </div>
+        </section>
 
         {/* Pending warning */}
         {hasPendingTx && (
-          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>A transfer is pending. Wait for confirmation.</span>
-          </div>
+          <aside role="status" style={noticeStyle}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", color: "var(--color-status-warning)" }}>
+              <ClockCircle size={16} style={{ flexShrink: 0 }} />
+              <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Pending transfer detected</span>
+            </div>
+            <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>Wait for confirmation before signing another transfer from this account.</p>
+          </aside>
         )}
 
         {/* High value confirmation */}
         {needsHighValueConfirmation && !highValueVerified && (
-          <div style={{ background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-card)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Confirm this high-value transfer with your wallet password.</span>
+          <section aria-labelledby="high-value-confirmation" style={noticeStyle}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", color: "var(--color-status-warning)" }}>
+              <ShieldWarning size={16} style={{ flexShrink: 0 }} />
+              <span id="high-value-confirmation" style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value confirmation required</span>
+            </div>
+            <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>Enter your wallet password to explicitly approve this amount.</p>
             <Input type="password" label="Wallet password" value={highValuePassword}
               onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
               onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
               error={highValuePasswordError} placeholder="••••••••••" autoComplete="current-password" />
-            <Button variant="secondary" onClick={verifyHighValue} loading={highValueVerifying} disabled={!highValuePassword}>Confirm</Button>
-          </div>
+            <Button variant="secondary" onClick={verifyHighValue} loading={highValueVerifying} disabled={!highValuePassword}>Confirm high-value transfer</Button>
+          </section>
         )}
         {needsHighValueConfirmation && highValueVerified && (
-          <div style={{ ...labelStyle, color: "var(--color-accent)", textAlign: "center" }}>High-value transfer confirmed ✓</div>
+          <div role="status" style={{ ...noticeStyle, flexDirection: "row", alignItems: "center", color: "var(--color-accent)" }}>
+            <ShieldCheck size={16} style={{ flexShrink: 0 }} />
+            <span style={{ ...labelStyle, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
+          </div>
         )}
 
         {/* Memo */}
-        <div style={{
-          background: "var(--color-bg-surface)",
-          borderRadius: "var(--radius-card)",
-          padding: "var(--space-3) var(--space-4)",
+        <label style={{
+          borderTop: "1px solid var(--color-border-subtle)",
+          borderBottom: "1px solid var(--color-border-subtle)",
+          padding: "var(--space-3) 0",
           display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
         }}>
           <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
+          <span style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>Transfer note</span>
           <textarea
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
@@ -584,7 +637,7 @@ export default function SendScreen() {
               resize: "none", boxSizing: "border-box", minWidth: 0,
             }}
           />
-        </div>
+        </label>
 
         <div style={{ flex: 1 }} />
 
@@ -593,7 +646,7 @@ export default function SendScreen() {
           <Button onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
           <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
             style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
-            Edit
+            Edit transfer
           </motion.button>
         </div>
         </motion.div>
@@ -606,22 +659,14 @@ export default function SendScreen() {
   if (step === "sending") {
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
-        <div style={{
-          width: 48, height: 48, position: "relative",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{
-            position: "absolute", inset: 0,
-            border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)",
-            borderRadius: "50%", animation: "spin 0.7s linear infinite",
-          }} />
-          <ArrowRightUp size={18} style={{ color: "var(--color-accent)" }} />
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcasting</div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-            {formatQu(amountStr)} to {matchedContact?.name ?? truncateId(destUpper)}
+        <motion.div {...stepMotion} aria-live="polite" aria-busy="true" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-5)" }}>
+        <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+          <span aria-hidden="true" style={{ width: 20, height: 20, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting transfer</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
+              {formatQu(amountStr)} to {matchedContact?.name ?? truncateId(destUpper)}
+            </div>
           </div>
         </div>
         </motion.div>
@@ -632,36 +677,29 @@ export default function SendScreen() {
   // ── Done ─────────────────────────────────────────────────────────────────
 
   if (step === "done") {
-    const cardStyle: React.CSSProperties = {
-      background: "var(--color-bg-surface)",
-      borderRadius: "var(--radius-card)",
-      padding: "var(--space-1) var(--space-4)",
+    const receiptStyle: React.CSSProperties = {
+      borderTop: "1px solid var(--color-border-subtle)",
+      borderBottom: "1px solid var(--color-border-subtle)",
     };
-    const divider: React.CSSProperties = {
-      height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))",
-    };
+    const divider: React.CSSProperties = { height: 1, background: "var(--color-border-subtle)" };
 
-    const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-disabled)";
+    const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-secondary)";
+    const statusLabel = watchResult === "confirmed" ? "Confirmed" : watchResult === "failed" ? "Failed" : "Watching…";
 
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
 
         {/* Amount */}
-        <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
-            <CheckCircle size={64} style={{ color: "var(--color-accent)" }} />
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-            Transaction sent
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1, marginTop: "var(--space-2)" }}>
+        <header className="flash-success" style={{ paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <span style={{ ...labelStyle, color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}><CheckCircle size={16} /> Transaction sent</span>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
-        </div>
+        </header>
 
-        {/* Details card */}
-        <div style={cardStyle}>
+        {/* Details */}
+        <section aria-label="Broadcast receipt" style={receiptStyle}>
           <DetailRow
             icon={<UserId size={16} />}
             label="To"
@@ -677,24 +715,23 @@ export default function SendScreen() {
           <DetailRow
             icon={watchResult === "confirmed" ? <ShieldCheck size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldWarning size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
             label="Status"
-            value={watchResult === "confirmed" ? "Confirmed" : watchResult === "failed" ? "Failed" : "Watching…"}
+            value={statusLabel}
             mono={false}
             valueColor={statusColor}
           />
-        </div>
+        </section>
 
         {/* Save contact */}
         {!destIsKnownContact && !saved && (
-          <div style={{
-            background: "var(--color-bg-surface)",
-            borderRadius: "var(--radius-card)",
-            padding: "var(--space-4) var(--space-4)",
+          <form onSubmit={(e) => { e.preventDefault(); doSaveContact(); }} style={{
+            borderTop: "1px solid var(--color-border-subtle)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+            padding: "var(--space-3) 0",
             display: "flex", alignItems: "center", gap: "var(--space-3)",
           }}>
             <Bookmark size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-            <input autoComplete="off" value={saveName}
+            <input aria-label="Contact name" autoComplete="off" value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && doSaveContact()}
               placeholder="Save as contact"
               style={{
                 flex: 1, background: "none", border: "none", outline: "none",
@@ -702,7 +739,7 @@ export default function SendScreen() {
                 color: "var(--color-text-display)", padding: 0, minWidth: 0,
               }}
             />
-            <button type="button" onClick={doSaveContact} disabled={!saveName.trim()}
+            <button type="submit" disabled={!saveName.trim()}
               style={{
                 background: "none", border: "none", cursor: saveName.trim() ? "pointer" : "default",
                 fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
@@ -711,13 +748,13 @@ export default function SendScreen() {
               }}>
               Save
             </button>
-          </div>
+          </form>
         )}
         {saved && (
           <div style={{
-            background: "var(--color-bg-surface)",
-            borderRadius: "var(--radius-card)",
-            padding: "var(--space-4) var(--space-4)",
+            borderTop: "1px solid var(--color-border-subtle)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+            padding: "var(--space-3) 0",
             display: "flex", alignItems: "center", gap: "var(--space-3)",
           }}>
             <CheckCircle size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
@@ -747,22 +784,21 @@ export default function SendScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-      <div style={{
-        width: 48, height: 48, borderRadius: "50%",
-        background: "var(--color-status-error-soft)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
-      </div>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>Broadcast failed</div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
-          {txError || "The transaction could not be broadcast."}
+      <motion.div {...stepMotion} role="alert" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-5)" }}>
+      <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "flex-start", gap: "var(--space-4)" }}>
+        <ShieldWarning size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
+        <div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcast failed</div>
+          <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+            {txError || "The transaction could not be broadcast."}
+          </p>
+          <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)", lineHeight: 1.5 }}>
+            Your draft was kept so you can review and try again.
+          </p>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
-        <Button onClick={() => setStep("review")}>Try again</Button>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", paddingTop: "var(--space-2)" }}>
+        <Button onClick={() => setStep("review")}>Review and try again</Button>
         <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/dashboard")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
           Cancel

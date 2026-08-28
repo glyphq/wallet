@@ -1,8 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { SeedSurface } from "@/components/setup-flow";
+import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS, useVaultBalances } from "@/hooks/use-vault-balances";
@@ -21,7 +23,7 @@ import { recordAuditEvent } from "@/lib/audit-log";
 import { formatQu } from "@/lib/format";
 import {
   Pen2, DocumentText, Key, EyeClosed, Eye, TrashBinMinimalistic,
-  AddCircle, InfoCircle,
+  AddCircle, InfoCircle, CheckCircle,
 } from "@solar-icons/react";
 
 const ACCOUNT_NAME_SUGGESTIONS = [
@@ -80,8 +82,12 @@ export default function VaultDetailScreen() {
   const [revealError, setRevealError] = useState("");
   const [revealLoading, setRevealLoading] = useState(false);
   const [revealedSeed, setRevealedSeed] = useState("");
+  const [seedVisible, setSeedVisible] = useState(true);
   const [seedCopied, setSeedCopied] = useState(false);
   const [seedSecsLeft, setSeedSecsLeft] = useState(0);
+  const [verifyingBackup, setVerifyingBackup] = useState(false);
+  const [backupCheck, setBackupCheck] = useState("");
+  const [backupCheckStatus, setBackupCheckStatus] = useState<"idle" | "match" | "mismatch">("idle");
   const seedCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const biometricVaultIds = usePersistedStore((s) => s.settings.biometricVaultIds) ?? [];
   const requireBiometricForSeedReveal = usePersistedStore((s) => s.settings.requireBiometricForSeedReveal);
@@ -224,6 +230,12 @@ export default function VaultDetailScreen() {
     setEditingMeta(null);
   }
 
+  function makeActive(account: AccountMeta) {
+    if (!isActive || account.hidden) return;
+    setActiveAccountIndex(account.index);
+    closeAccountMenu();
+  }
+
   function toggleHide(account: AccountMeta) {
     if (!account.hidden) {
       setHidingAccount(account);
@@ -306,7 +318,19 @@ export default function VaultDetailScreen() {
     setRevealError("");
     setRevealLoading(false);
     setRevealedSeed("");
+    setSeedVisible(true);
     setSeedCopied(false);
+    setVerifyingBackup(false);
+    setBackupCheck("");
+    setBackupCheckStatus("idle");
+  }
+
+  function openBackupVerification() {
+    const firstAccount = currentVault.accounts.find((account) => account.index === 0) ?? currentVault.accounts[0];
+    if (!firstAccount) return;
+    openReveal(firstAccount);
+    setSeedVisible(false);
+    setVerifyingBackup(true);
   }
 
   async function doRevealSeed() {
@@ -336,6 +360,7 @@ export default function VaultDetailScreen() {
       const seed = seeds[revealingAccount.index];
       if (!seed) throw new Error("Missing seed");
       setRevealedSeed(seed);
+      if (!verifyingBackup) setSeedVisible(true);
       setRevealPassword("");
       recordAuditEvent({
         kind: "seed_revealed",
@@ -356,6 +381,11 @@ export default function VaultDetailScreen() {
     if (!revealedSeed) return;
     await copyToClipboard(revealedSeed, SEED_CLIPBOARD_CLEAR_SECS);
     setSeedCopied(true);
+  }
+
+  function verifyBackupSeed() {
+    if (!revealedSeed) return;
+    setBackupCheckStatus(backupCheck.trim().toLowerCase() === revealedSeed ? "match" : "mismatch");
   }
 
   return (
@@ -570,14 +600,16 @@ export default function VaultDetailScreen() {
       </Sheet>
 
       {/* Reveal seed sheet */}
-      <Sheet open={!!revealingAccount} onClose={() => setRevealingAccount(null)} title={revealingAccount ? `Reveal seed for ${revealingAccount.name}` : "Reveal seed"}>
+      <Sheet open={!!revealingAccount} onClose={() => setRevealingAccount(null)} title={verifyingBackup ? "Verify seed backup" : revealingAccount ? `Reveal seed for ${revealingAccount.name}` : "Reveal seed"}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           {!revealedSeed ? (
             <>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-                {requireBiometricForSeedReveal
-                  ? "Use biometric unlock to reveal this account seed."
-                  : "Enter the vault password to decrypt this account seed."}
+                {verifyingBackup
+                  ? "Unlock once, then type your saved seed to confirm the backup."
+                  : requireBiometricForSeedReveal
+                    ? "Use biometric unlock to reveal this account seed."
+                    : "Enter the vault password to decrypt this account seed."}
               </div>
               {!requireBiometricForSeedReveal && (
                 <Input
@@ -598,33 +630,45 @@ export default function VaultDetailScreen() {
                 </div>
               )}
               <Button onClick={doRevealSeed} loading={revealLoading} disabled={!requireBiometricForSeedReveal && !revealPassword}>
-                {requireBiometricForSeedReveal ? "Use biometric" : "Reveal seed"}
+                {requireBiometricForSeedReveal ? "Use biometric" : verifyingBackup ? "Unlock seed" : "Reveal seed"}
               </Button>
             </>
           ) : (
             <>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-                [SEED VISIBLE FOR {seedSecsLeft}s]
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
+                {seedVisible ? "Shown" : "Hidden"}. Closes in {seedSecsLeft}s.
               </div>
-              <div
-                style={{
-                  background: "var(--color-bg-surface)",
-                  border: "1px solid var(--color-border-strong)",
-                  borderRadius: "var(--radius-sharp)",
-                  padding: "var(--space-4)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-lg)",
-                  color: "var(--color-text-display)",
-                  letterSpacing: "0.08em",
-                  lineHeight: 1.8,
-                  wordBreak: "break-all",
-                }}
-              >
-                {revealedSeed}
+              <SeedSurface seed={revealedSeed} revealed={seedVisible} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
+                  {seedCopied ? "Copied" : "Copy seed"}
+                </Button>
+                <Button variant="secondary" shape="sharp" onClick={() => setSeedVisible((value) => !value)} aria-pressed={seedVisible}>
+                  {seedVisible ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+                  {seedVisible ? "Hide" : "Reveal"}
+                </Button>
               </div>
-              <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
-                {seedCopied ? "Copied" : "Copy"}
-              </Button>
+              {verifyingBackup ? (
+                <>
+                  <Textarea
+                    value={backupCheck}
+                    onChange={(event) => { setBackupCheck(event.target.value); setBackupCheckStatus("idle"); }}
+                    onKeyDown={(event) => {
+                      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") verifyBackupSeed();
+                    }}
+                    placeholder="Type your saved seed"
+                    aria-label="Saved seed"
+                    technical
+                    style={{ resize: "none", minHeight: 112, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
+                  />
+                  {backupCheckStatus !== "idle" ? (
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: backupCheckStatus === "match" ? "var(--color-status-success)" : "var(--color-status-error)" }}>
+                      {backupCheckStatus === "match" ? "Backup verified" : "Seed does not match"}
+                    </div>
+                  ) : null}
+                  <Button onClick={verifyBackupSeed} disabled={!backupCheck.trim()}>Verify backup</Button>
+                </>
+              ) : null}
             </>
           )}
         </div>
@@ -664,16 +708,14 @@ export default function VaultDetailScreen() {
         }
       >
         {selectedAccount && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "var(--space-3)",
-                padding: "var(--space-3)",
-                background: "var(--color-bg-surface)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
+                paddingBottom: "var(--space-4)",
+                borderBottom: "1px solid var(--color-border-subtle)",
               }}
             >
               <Identicon kind="account" code={`A${selectedAccount.index + 1}`} seed={getAccountIdentity(selectedAccount, sessionWallets[selectedAccount.index] ?? null) ?? selectedAccount.name} label={selectedAccount.name} size={40} radius={8} style={{ flexShrink: 0 }} />
@@ -698,72 +740,88 @@ export default function VaultDetailScreen() {
               })()}
             </div>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Identity
-            </div>
-            <ActionCard
-              title="Rename"
-              description="Change the label shown in the vault and account switcher."
-              icon={Pen2}
-              onClick={() => {
-                setRenamingAccount(selectedAccount);
-                setRenameValue(selectedAccount.name);
-                closeAccountMenu();
-              }}
-            />
-            <ActionCard
-              title="Notes and tags"
-              description="Add labels like staking, cold, or trading and keep a short note."
-              icon={DocumentText}
-              onClick={() => {
-                setEditingMeta(selectedAccount);
-                setMetaNote(selectedAccount.note ?? "");
-                setMetaTags((selectedAccount.tags ?? []).join(", "));
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Selection">
+              <ActionRow
+                title={isActive && settings.activeAccountIndex === selectedAccount.index ? "Active account" : "Use this account"}
+                description={selectedAccount.hidden ? "Hidden accounts cannot be made active." : "Use for sending, receiving, and signing."}
+                icon={CheckCircle}
+                selected={isActive && settings.activeAccountIndex === selectedAccount.index}
+                disabled={!isActive || selectedAccount.hidden || settings.activeAccountIndex === selectedAccount.index}
+                onClick={() => makeActive(selectedAccount)}
+              />
+            </ActionSection>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Security
-            </div>
-            <ActionCard
-              title="Reveal seed"
-              description="Decrypt and display this account seed for a limited time."
-              icon={Key}
-              onClick={() => {
-                openReveal(selectedAccount);
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Details">
+              <ActionRow
+                title="Rename"
+                description="Change the label shown in the vault and switcher."
+                icon={Pen2}
+                onClick={() => {
+                  setRenamingAccount(selectedAccount);
+                  setRenameValue(selectedAccount.name);
+                  closeAccountMenu();
+                }}
+              />
+              <ActionRow
+                title="Notes and tags"
+                description="Keep metadata such as staking, cold, or treasury."
+                icon={DocumentText}
+                onClick={() => {
+                  setEditingMeta(selectedAccount);
+                  setMetaNote(selectedAccount.note ?? "");
+                  setMetaTags((selectedAccount.tags ?? []).join(", "));
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Visibility
-            </div>
-            <ActionCard
-              title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
-              description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove this account from the switcher without deleting it."}
-              icon={selectedAccount.hidden ? Eye : EyeClosed}
-              onClick={() => {
-                toggleHide(selectedAccount);
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Security">
+              <ActionRow
+                title="Verify backup"
+                description="Check your saved seed against this vault. Hidden by default."
+                icon={CheckCircle}
+                onClick={() => {
+                  openBackupVerification();
+                  closeAccountMenu();
+                }}
+              />
+              <ActionRow
+                title="Reveal seed"
+                description="Decrypt and display this account seed for a limited time."
+                icon={Key}
+                onClick={() => {
+                  openReveal(selectedAccount);
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
 
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-error)", letterSpacing: "0.05em", marginTop: "var(--space-2)" }}>
-              Danger zone
-            </div>
-            <ActionCard
-              title="Remove account"
-              description="Delete this account from the vault. This cannot be undone."
-              icon={TrashBinMinimalistic}
-              danger
-              onClick={() => {
-                setRemovingAccount(selectedAccount);
-                setRemovePassword("");
-                setRemoveError("");
-                closeAccountMenu();
-              }}
-            />
+            <ActionSection title="Visibility">
+              <ActionRow
+                title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
+                description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove from the switcher without deleting it."}
+                icon={selectedAccount.hidden ? Eye : EyeClosed}
+                onClick={() => {
+                  toggleHide(selectedAccount);
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
+
+            <ActionSection title="Danger zone" danger>
+              <ActionRow
+                title="Remove account"
+                description="Delete this account from the vault. This cannot be undone."
+                icon={TrashBinMinimalistic}
+                danger
+                onClick={() => {
+                  setRemovingAccount(selectedAccount);
+                  setRemovePassword("");
+                  setRemoveError("");
+                  closeAccountMenu();
+                }}
+              />
+            </ActionSection>
           </div>
         )}
       </Sheet>
@@ -788,7 +846,8 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div
+    <button
+      type="button"
       className={`stagger-item${flashSuccess ? " flash-success" : ""}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -803,8 +862,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
         gap: "var(--space-3)",
         alignItems: "flex-start",
         cursor: "pointer",
-        transition: "background 0.12s ease, transform 0.12s ease",
-        transform: hovered ? "translateY(-1px)" : "translateY(0)",
+        transition: "background 0.12s ease, border-color 0.12s ease",
       }}
     >
       <Identicon kind="account" code={`A${account.index + 1}`} seed={identity ?? account.name} label={account.name} size={40} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -823,14 +881,10 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
               {hideBalances ? "••••••" : formatQu(balance)}
             </span>
           ) : (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onManage(); }}
+            <span
               style={{
-                background: "none",
                 border: "1px solid var(--color-border-strong)",
                 borderRadius: "var(--radius-sharp)",
-                cursor: "pointer",
                 fontFamily: "var(--font-sans)",
                 fontSize: "var(--text-mono-sm)",
                 color: "var(--color-text-secondary)",
@@ -840,13 +894,13 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
               }}
             >
               Manage
-            </button>
+            </span>
           )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              Active
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-accent)", letterSpacing: "0.05em" }}>
+              <CheckCircle size={14} weight="Outline" aria-hidden="true" /> Active
             </span>
           )}
           {account.hidden && (
@@ -871,42 +925,72 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
           </div>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
-function ActionCard({
+function ActionSection({
+  title,
+  danger,
+  children,
+}: {
+  title: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+        {title}
+      </div>
+      <div style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ActionRow({
   title,
   description,
   icon: Icon,
+  selected,
+  disabled,
   danger,
   onClick,
 }: {
   title: string;
   description: string;
   icon?: typeof Pen2;
+  selected?: boolean;
+  disabled?: boolean;
   danger?: boolean;
   onClick: () => void;
 }) {
+  const muted = disabled && !selected;
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         display: "flex",
         alignItems: "center",
         gap: "var(--space-3)",
         width: "100%",
         textAlign: "left",
-        background: danger ? "color-mix(in srgb, var(--color-status-error) 8%, var(--color-bg-surface))" : "var(--color-bg-surface)",
-        border: `1px solid ${danger ? "color-mix(in srgb, var(--color-status-error) 40%, var(--color-border-strong))" : "var(--color-border-strong)"}`,
-        borderRadius: "var(--radius-sharp)",
-        cursor: "pointer",
-        padding: "var(--space-3) var(--space-4)",
+        background: "transparent",
+        border: "none",
+        borderBottom: "1px solid var(--color-border-subtle)",
+        borderRadius: 0,
+        cursor: disabled ? "default" : "pointer",
+        opacity: muted ? 0.55 : 1,
+        padding: "var(--space-3) 0",
+        transform: "none",
       }}
     >
       {Icon && (
-        <Icon size={18} weight="Linear" />
+        <Icon size={18} weight="Outline" color={danger ? "var(--color-status-error)" : "var(--color-text-secondary)"} aria-hidden="true" />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-display)" }}>
@@ -916,9 +1000,11 @@ function ActionCard({
           {description}
         </div>
       </div>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: danger ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em", flexShrink: 0 }}>
-        →
-      </span>
+      {selected ? (
+        <CheckCircle size={18} weight="Outline" color="var(--color-accent)" aria-label="Selected" />
+      ) : (
+        <span style={{ width: 18, height: 18, border: "1px solid var(--color-border-strong)", borderRadius: "999px", flexShrink: 0 }} aria-hidden="true" />
+      )}
     </button>
   );
 }

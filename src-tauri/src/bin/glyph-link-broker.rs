@@ -20,7 +20,13 @@ fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), String> {
         return Err("multiple launch arguments are not allowed".into());
     }
 
-    let wallet = find_wallet_binary(Path::new(&broker_path))?;
+    // Desktop entries can invoke the broker by its bare filename. In that
+    // case argv[0] is relative and does not identify the sibling wallet in
+    // an AppImage's `usr/bin` directory. The running executable path is the
+    // authoritative location on every supported platform. Keep argv[0] only
+    // as a fallback for unusual platforms where `current_exe` is unavailable.
+    let broker_path = std::env::current_exe().unwrap_or_else(|_| PathBuf::from(broker_path));
+    let wallet = find_wallet_binary(&broker_path)?;
     let mut command = Command::new(wallet);
     if let Some(raw) = raw {
         let raw = raw

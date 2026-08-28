@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
@@ -20,7 +20,8 @@ import {
 } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
-import { truncateId, formatQuCompact, formatDate, formatUsdFromQu } from "@/lib/format";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { truncateId, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
 
@@ -63,6 +64,24 @@ function isDefault(f: TxFilters): boolean {
 
 type TxSection = { label: string; txs: TxHistoryItem[] };
 
+type ExportTx = {
+  hash: string;
+  status: "confirmed" | "pending" | "expired";
+  direction: "in" | "out" | "self" | "unknown";
+  type: "transfer" | "contract";
+  source: string | null;
+  destination: string | null;
+  amount: string;
+  tick: number;
+  timestamp: number | null;
+  isoDate: string;
+  moneyFlew: boolean | null;
+  inputType: number | null;
+  contractName: string;
+  memo: string;
+  tags: string[];
+};
+
 function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
   if (!txs.length) return [];
 
@@ -90,6 +109,92 @@ function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
   if (thisWeek.length) sections.push({ label: "This week", txs: thisWeek });
   if (earlier.length) sections.push({ label: "Earlier", txs: earlier });
   return sections;
+}
+
+function downloadText(filename: string, body: string, type: string) {
+  const blob = new Blob([body], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value: string | number | boolean | null | string[]): string {
+  const text = Array.isArray(value) ? value.join(";") : String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function toCsv(rows: ExportTx[]): string {
+  const headers: (keyof ExportTx)[] = ["hash", "status", "direction", "type", "source", "destination", "amount", "tick", "timestamp", "isoDate", "moneyFlew", "inputType", "contractName", "memo", "tags"];
+  return [headers.join(","), ...rows.map((row) => headers.map((key) => csvCell(row[key])).join(","))].join("\n");
+}
+
+function matchesPendingFilters(tx: PendingTx, filters: TxFilters, identity: string | null): boolean {
+  if (filters.direction === "in" && tx.destination !== identity) return false;
+  if (filters.direction === "out" && tx.source !== identity) return false;
+  if (filters.type === "transfer" && tx.contractName) return false;
+  if (filters.type === "sc" && !tx.contractName) return false;
+  try {
+    const amount = BigInt(tx.amount || "0");
+    if (filters.minAmount && amount < BigInt(filters.minAmount)) return false;
+    if (filters.maxAmount && amount > BigInt(filters.maxAmount)) return false;
+  } catch { return false; }
+  if (filters.tickFrom && tx.targetTick < Number(filters.tickFrom)) return false;
+  if (filters.tickTo && tx.targetTick > Number(filters.tickTo)) return false;
+  if (filters.dateFrom && tx.broadcastAt < new Date(`${filters.dateFrom}T00:00:00`).getTime()) return false;
+  if (filters.dateTo && tx.broadcastAt > new Date(`${filters.dateTo}T23:59:59.999`).getTime()) return false;
+  return true;
+}
+
+function txDirection(source: string | null, destination: string | null, identity: string | null): ExportTx["direction"] {
+  if (!identity) return "unknown";
+  if (source === identity && destination === identity) return "self";
+  if (destination === identity) return "in";
+  if (source === identity) return "out";
+  return "unknown";
+}
+
+function exportRecordFromTx(tx: TxHistoryItem, identity: string | null, txMemos: Record<string, string>, txTags: Record<string, string[]>): ExportTx {
+  const contractName = tx.contractName ?? (tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined) ?? (tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined) ?? "";
+  return {
+    hash: tx.hash,
+    status: "confirmed",
+    direction: txDirection(tx.source, tx.destination, identity),
+    type: contractName || (tx.inputType ?? 0) > 0 ? "contract" : "transfer",
+    source: tx.source,
+    destination: tx.destination,
+    amount: tx.amount,
+    tick: tx.tickNumber,
+    timestamp: tx.timestamp,
+    isoDate: tx.timestamp ? new Date(tx.timestamp).toISOString() : "",
+    moneyFlew: tx.moneyFlew,
+    inputType: tx.inputType,
+    contractName,
+    memo: txMemos[tx.hash]?.trim() ?? "",
+    tags: txTags[tx.hash] ?? [],
+  };
+}
+
+function exportRecordFromPending(tx: PendingTx, identity: string | null, txMemos: Record<string, string>, txTags: Record<string, string[]>, expired: boolean): ExportTx {
+  return {
+    hash: tx.hash,
+    status: expired ? "expired" : "pending",
+    direction: txDirection(tx.source, tx.destination, identity),
+    type: tx.contractName ? "contract" : "transfer",
+    source: tx.source,
+    destination: tx.destination,
+    amount: tx.amount,
+    tick: tx.targetTick,
+    timestamp: tx.broadcastAt,
+    isoDate: tx.broadcastAt ? new Date(tx.broadcastAt).toISOString() : "",
+    moneyFlew: null,
+    inputType: null,
+    contractName: tx.contractName ?? "",
+    memo: txMemos[tx.hash]?.trim() ?? "",
+    tags: txTags[tx.hash] ?? [],
+  };
 }
 
 // ── Transaction type icon map ───────────────────────────────────────────────────
@@ -178,7 +283,10 @@ export default function HistoryScreen() {
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets);
 
   const txMemos = usePersistedStore((s) => s.txMemos);
+  const txTags = usePersistedStore((s) => s.txTags);
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
+
+  const quote = usePreferredCurrencyQuote();
 
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   useEffect(() => {
@@ -192,6 +300,7 @@ export default function HistoryScreen() {
   const [groupByCounterparty, setGroupByCounterparty] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [draft, setDraft] = useState<DraftInputs>(toDraft(DEFAULT_FILTERS));
+  const [exportOpen, setExportOpen] = useState(false);
   const [memoExportOpen, setMemoExportOpen] = useState(false);
   const [memoDateFrom, setMemoDateFrom] = useState("");
   const [memoDateTo, setMemoDateTo] = useState("");
@@ -215,13 +324,7 @@ export default function HistoryScreen() {
       });
     }
     if (!entries.length) return;
-    const blob = new Blob([JSON.stringify(Object.fromEntries(entries), null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `glyph-memos-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadText(`glyph-memos-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(Object.fromEntries(entries), null, 2), "application/json");
     setMemoExportOpen(false);
   }
 
@@ -267,12 +370,8 @@ export default function HistoryScreen() {
   );
 
   const filteredPending = useMemo(
-    () => visiblePending.filter((p) => {
-      if (filters.direction === "in") return p.destination === identity;
-      if (filters.direction === "out") return p.source === identity;
-      return true;
-    }),
-    [filters.direction, identity, visiblePending],
+    () => visiblePending.filter((p) => matchesPendingFilters(p, filters, identity)),
+    [filters, identity, visiblePending],
   );
 
   const filteredTxs = allTxs;
@@ -288,6 +387,24 @@ export default function HistoryScreen() {
   const hasHiddenLoadedTxs = filteredTxs.length > visibleConfirmedCount;
   const hasActive = !isDefault(filters);
   const isExpired = (p: PendingTx) => currentTick > 0 && currentTick > p.targetTick;
+  const exportRows = useMemo(
+    () => [
+      ...filteredPending.map((p) => exportRecordFromPending(p, identity, txMemos, txTags, isExpired(p))),
+      ...filteredTxs.map((tx) => exportRecordFromTx(tx, identity, txMemos, txTags)),
+    ],
+    [filteredPending, filteredTxs, identity, txMemos, txTags, currentTick], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  function exportHistory(format: "csv" | "json") {
+    if (!exportRows.length) return;
+    const date = new Date().toISOString().slice(0, 10);
+    if (format === "csv") {
+      downloadText(`glyph-history-${date}.csv`, toCsv(exportRows), "text/csv;charset=utf-8");
+    } else {
+      downloadText(`glyph-history-${date}.json`, JSON.stringify({ filters, transactions: exportRows }, null, 2), "application/json");
+    }
+    setExportOpen(false);
+  }
 
   // Infinite scroll sentinel
   useEffect(() => {
@@ -341,6 +458,9 @@ export default function HistoryScreen() {
           <IconButton label="View analytics" onClick={() => navigate("/analytics")}>
             <Chart size={20} aria-hidden="true" />
           </IconButton>
+          <IconButton label="Export history" onClick={() => setExportOpen(true)} disabled={!exportRows.length}>
+            <Download size={20} aria-hidden="true" />
+          </IconButton>
           <IconButton label={hasActive ? "Filter history, filters active" : "Filter history"} onClick={() => setFilterOpen(true)}>
             <Filters size={20} aria-hidden="true" />
           </IconButton>
@@ -350,7 +470,7 @@ export default function HistoryScreen() {
         </>
       }
     />
-  ), [hasActive, navigate, refetch]);
+  ), [exportRows.length, hasActive, navigate, refetch]);
 
   return (
     <AppShell
@@ -360,42 +480,22 @@ export default function HistoryScreen() {
     >
       {/* ── Wide-screen sticky filter sidebar ── */}
       {wideLayout && (
-        <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--color-border-subtle)", overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
-            Filter
-            {hasActive && (
-              <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }} style={{ marginLeft: "var(--space-3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", padding: 0 }}>
-                Reset
-              </button>
-            )}
-          </div>
-          <FilterSection label="Direction">
-            {(["all", "in", "out"] as const).map((v) => (
-              <Pill key={v} label={v === "all" ? "All" : v === "in" ? "In" : "Out"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
-            ))}
-          </FilterSection>
-          <FilterSection label="Type">
-            {(["all", "transfer", "sc"] as const).map((v) => (
-              <Pill key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
-            ))}
-          </FilterSection>
-          <FilterSection label="Group by">
-            <Pill label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-            <Pill label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
-          </FilterSection>
-          <FilterSection label="Date from">
-            <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateFrom: draft.dateFrom }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-          <FilterSection label="Date to">
-            <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} onBlur={() => setFilters((f) => ({ ...f, dateTo: draft.dateTo }))} style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-          <FilterSection label="Min QU">
-            <Input value={draft.minAmount} onChange={(e) => setDraft((d) => ({ ...d, minAmount: e.target.value.replace(/\D/g, "") }))} onBlur={() => setFilters((f) => ({ ...f, minAmount: sanitize(draft.minAmount) }))} placeholder="0" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-          <FilterSection label="Max QU">
-            <Input value={draft.maxAmount} onChange={(e) => setDraft((d) => ({ ...d, maxAmount: e.target.value.replace(/\D/g, "") }))} onBlur={() => setFilters((f) => ({ ...f, maxAmount: sanitize(draft.maxAmount) }))} placeholder="∞" inputMode="numeric" style={INPUT_SM} containerStyle={{ width: "100%" }} />
-          </FilterSection>
-        </div>
+        <aside style={FILTER_SIDEBAR} aria-label="History filters">
+          <FilterHeader
+            title="Filters"
+            active={hasActive}
+            onReset={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }}
+          />
+          <HistoryFilterControls
+            filters={filters}
+            draft={draft}
+            groupByCounterparty={groupByCounterparty}
+            commitOnFieldBlur
+            setFilters={setFilters}
+            setDraft={setDraft}
+            setGroupByCounterparty={setGroupByCounterparty}
+          />
+        </aside>
       )}
 
       {/* ── Main content column ── */}
@@ -405,15 +505,6 @@ export default function HistoryScreen() {
         {...presets.fadeIn}
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
       >
-
-      {hasMemos && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-4)" }}>
-          <Button variant="secondary" shape="sharp" size="sm" onClick={() => setMemoExportOpen(true)}>
-            <Download size={16} aria-hidden="true" />
-            Export memos
-          </Button>
-        </div>
-      )}
 
       {/* Active filter chips */}
       {chips.length > 0 && (
@@ -443,7 +534,6 @@ export default function HistoryScreen() {
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
               No transactions yet
             </div>
-            <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/send")}>Send your first transaction</Button>
           </div>
         ) : (
           <StatusText color="var(--color-text-disabled)">No results</StatusText>
@@ -452,7 +542,7 @@ export default function HistoryScreen() {
 
       {/* Transaction rows */}
       {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
+        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} quote={quote} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
       {!isLoading && !isError && !groupByCounterparty && (
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -478,7 +568,7 @@ export default function HistoryScreen() {
                 address={address}
                 time={time}
                 amount={settings.hideBalances ? "••••••" : `−${formatQuCompact(p.amount)}`}
-                amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : `≈ $${formatUsdFromQu(p.amount, pendingSnapshot.priceUsd)}`}
+                amountUsd={settings.hideBalances || !pendingSnapshot ? undefined : formatPreferredCurrencyFromQu(p.amount, { usdPrice: pendingSnapshot.priceUsd, ...quote }).text}
                 amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
                 txType={expired ? "failed" : "pending"}
               />
@@ -530,7 +620,7 @@ export default function HistoryScreen() {
                     address={address}
                     time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
                     amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                    amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                    amountUsd={settings.hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
                     amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                     txType={txType}
                   />
@@ -576,9 +666,9 @@ export default function HistoryScreen() {
       <Sheet
         open={filterOpen}
         onClose={applyAndClose}
-        title="Filter"
+        title="Filter history"
         footer={
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={FILTER_FOOTER}>
             {hasActive ? (
               <button type="button" onClick={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); setFilterOpen(false); }} style={GHOST_BTN}>
                 Reset all
@@ -588,50 +678,28 @@ export default function HistoryScreen() {
           </div>
         }
       >
-
-        <FilterSection label="Direction">
-          {(["all", "in", "out"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "All" : v === "in" ? "In" : "Out"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
-          ))}
-        </FilterSection>
-
-        <FilterSection label="Type">
-          {(["all", "transfer", "sc"] as const).map((v) => (
-            <Pill key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
-          ))}
-        </FilterSection>
-
-        <FilterSection label="Date range">
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
-            <Input type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
-            <Input type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} style={INPUT_SM} containerStyle={{ flex: 1 }} />
-          </div>
-        </FilterSection>
-
-        <FilterSection label="Amount (QU)">
-          <RangeInputs
-            fromValue={draft.minAmount} fromPlaceholder="Min"
-            toValue={draft.maxAmount} toPlaceholder="Max"
-            onFromChange={(v) => setDraft((d) => ({ ...d, minAmount: v }))}
-            onToChange={(v) => setDraft((d) => ({ ...d, maxAmount: v }))}
+        <div style={FILTER_SHEET_BODY}>
+          <HistoryFilterControls
+            filters={filters}
+            draft={draft}
+            groupByCounterparty={groupByCounterparty}
+            setFilters={setFilters}
+            setDraft={setDraft}
+            setGroupByCounterparty={setGroupByCounterparty}
           />
-        </FilterSection>
+        </div>
+      </Sheet>
 
-        <FilterSection label="Tick range">
-          <RangeInputs
-            fromValue={draft.tickFrom} fromPlaceholder="From"
-            toValue={draft.tickTo} toPlaceholder="To"
-            onFromChange={(v) => setDraft((d) => ({ ...d, tickFrom: v }))}
-            onToChange={(v) => setDraft((d) => ({ ...d, tickTo: v }))}
-          />
-        </FilterSection>
-
-        <FilterSection label="Group by">
-          <Pill label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-          <Pill label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
-        </FilterSection>
-
+      <Sheet
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="Export history"
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <ExportAction label="CSV" detail={`${exportRows.length} records`} onClick={() => exportHistory("csv")} />
+          <ExportAction label="JSON" detail={`${exportRows.length} records`} onClick={() => exportHistory("json")} />
+          {hasMemos && <ExportAction label="Memos" detail="JSON" onClick={() => { setExportOpen(false); setMemoExportOpen(true); }} />}
+        </div>
       </Sheet>
 
       {/* Memo export filter sheet */}
@@ -665,6 +733,18 @@ export default function HistoryScreen() {
 
 const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
 
+const FILTER_SIDEBAR: React.CSSProperties = {
+  width: 212,
+  flexShrink: 0,
+  borderRight: "1px solid var(--color-border-subtle)",
+  overflowY: "auto",
+  padding: "var(--space-4) var(--space-3)",
+};
+
+const FILTER_SHEET_BODY: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "var(--space-1)" };
+
+const FILTER_FOOTER: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center" };
+
 const GHOST_BTN: React.CSSProperties = {
   background: "none", border: "none", cursor: "pointer",
   fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
@@ -681,37 +761,88 @@ const APPLY_BTN: React.CSSProperties = {
 
 function FilterSection({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: "var(--space-6)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-3)" }}>
+    <section style={{ padding: "var(--space-3) 0", borderTop: "1px solid var(--color-border-subtle)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
         {label}
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>{children}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)" }}>{children}</div>
+    </section>
+  );
+}
+
+function FilterHeader({ title, active, onReset }: { title: string; active: boolean; onReset: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)", paddingBottom: "var(--space-3)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{title}</div>
+      {active && <button type="button" onClick={onReset} style={GHOST_BTN}>Reset</button>}
     </div>
   );
 }
 
-function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, onFromChange, onToChange }: {
+function HistoryFilterControls({
+  filters, draft, groupByCounterparty, commitOnFieldBlur = false, setFilters, setDraft, setGroupByCounterparty,
+}: {
+  filters: TxFilters;
+  draft: DraftInputs;
+  groupByCounterparty: boolean;
+  commitOnFieldBlur?: boolean;
+  setFilters: Dispatch<SetStateAction<TxFilters>>;
+  setDraft: Dispatch<SetStateAction<DraftInputs>>;
+  setGroupByCounterparty: Dispatch<SetStateAction<boolean>>;
+}) {
+  const fieldBlur = (key: keyof DraftInputs) => commitOnFieldBlur ? () => setFilters((f) => ({ ...f, [key]: key.includes("Amount") || key.includes("tick") ? sanitize(draft[key]) : draft[key] })) : undefined;
+  return (
+    <>
+      <FilterSection label="Direction">
+        {(["all", "in", "out"] as const).map((v) => (
+          <FilterChoice key={v} label={v === "all" ? "All" : v === "in" ? "Incoming" : "Outgoing"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
+        ))}
+      </FilterSection>
+      <FilterSection label="Type">
+        {(["all", "transfer", "sc"] as const).map((v) => (
+          <FilterChoice key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
+        ))}
+      </FilterSection>
+      <FilterSection label="Date range">
+        <RangeInputs fromValue={draft.dateFrom} fromPlaceholder="From" toValue={draft.dateTo} toPlaceholder="To" type="date" onFromBlur={fieldBlur("dateFrom")} onToBlur={fieldBlur("dateTo")} onFromChange={(v) => setDraft((d) => ({ ...d, dateFrom: v }))} onToChange={(v) => setDraft((d) => ({ ...d, dateTo: v }))} />
+      </FilterSection>
+      <FilterSection label="Amount (QU)">
+        <RangeInputs fromValue={draft.minAmount} fromPlaceholder="Min" toValue={draft.maxAmount} toPlaceholder="Max" onFromBlur={fieldBlur("minAmount")} onToBlur={fieldBlur("maxAmount")} onFromChange={(v) => setDraft((d) => ({ ...d, minAmount: v.replace(/\D/g, "") }))} onToChange={(v) => setDraft((d) => ({ ...d, maxAmount: v.replace(/\D/g, "") }))} />
+      </FilterSection>
+      <FilterSection label="Tick range">
+        <RangeInputs fromValue={draft.tickFrom} fromPlaceholder="From" toValue={draft.tickTo} toPlaceholder="To" onFromBlur={fieldBlur("tickFrom")} onToBlur={fieldBlur("tickTo")} onFromChange={(v) => setDraft((d) => ({ ...d, tickFrom: v.replace(/\D/g, "") }))} onToChange={(v) => setDraft((d) => ({ ...d, tickTo: v.replace(/\D/g, "") }))} />
+      </FilterSection>
+      <FilterSection label="Group by">
+        <FilterChoice label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
+        <FilterChoice label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
+      </FilterSection>
+    </>
+  );
+}
+
+function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, type, onFromChange, onToChange, onFromBlur, onToBlur }: {
   fromValue: string; toValue: string; fromPlaceholder: string; toPlaceholder: string;
-  onFromChange: (v: string) => void; onToChange: (v: string) => void;
+  type?: "date"; onFromChange: (v: string) => void; onToChange: (v: string) => void; onFromBlur?: () => void; onToBlur?: () => void;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
-      <Input value={fromValue} onChange={(e) => onFromChange(e.target.value)} placeholder={fromPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
+      <Input type={type} value={fromValue} onChange={(e) => onFromChange(e.target.value)} onBlur={onFromBlur} placeholder={fromPlaceholder} inputMode={type === "date" ? undefined : "numeric"} style={INPUT_SM} containerStyle={{ flex: 1, minWidth: 0 }} />
       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
-      <Input value={toValue} onChange={(e) => onToChange(e.target.value)} placeholder={toPlaceholder} inputMode="numeric" style={INPUT_SM} containerStyle={{ flex: 1 }} />
+      <Input type={type} value={toValue} onChange={(e) => onToChange(e.target.value)} onBlur={onToBlur} placeholder={toPlaceholder} inputMode={type === "date" ? undefined : "numeric"} style={INPUT_SM} containerStyle={{ flex: 1, minWidth: 0 }} />
     </div>
   );
 }
 
-function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function FilterChoice({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} style={{
-      background: active ? "var(--color-text-primary)" : "none",
-      border: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+      background: "none",
+      border: "none",
+      borderBottom: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-subtle)"}`,
+      cursor: "pointer",
       fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
-      color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-      padding: "var(--space-1) var(--space-3)",
+      color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+      padding: "var(--space-2) var(--space-2) var(--space-1)",
     }}>
       {label}
     </button>
@@ -721,14 +852,26 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
 function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <button type="button" onClick={onRemove} style={{
-      background: "none", border: "1px solid var(--color-text-primary)",
-      borderRadius: "var(--radius-sharp)", cursor: "pointer",
+      background: "none", border: "none", borderBottom: "1px solid var(--color-text-primary)", cursor: "pointer",
       fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
       color: "var(--color-text-primary)",
-      padding: "var(--space-1) var(--space-2)",
+      padding: "var(--space-1) 0",
       display: "flex", alignItems: "center", gap: "var(--space-1)",
     }}>
       {label} <span style={{ fontSize: "var(--text-caption)", lineHeight: 1 }}>✕</span>
+    </button>
+  );
+}
+
+function ExportAction({ label, detail, onClick }: { label: string; detail: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} style={{
+      background: "none", border: "none", borderBottom: "1px solid var(--color-border-subtle)", cursor: "pointer",
+      fontFamily: "var(--font-sans)", color: "var(--color-text-primary)",
+      padding: "var(--space-4) 0", display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left",
+    }}>
+      <span style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{detail}</span>
     </button>
   );
 }
@@ -744,12 +887,13 @@ function StatusText({ children, color }: { children: ReactNode; color: string })
 // ── Grouped-by-counterparty view ──────────────────────────────────────────────
 
 function GroupedTxs({
-  txs, identity, settings, priceSnapshots, onSelect,
+  txs, identity, settings, priceSnapshots, quote, onSelect,
 }: {
   txs: TxHistoryItem[];
   identity: string | null;
   settings: AppSettings;
   priceSnapshots: PriceSnapshot[];
+  quote: ReturnType<typeof usePreferredCurrencyQuote>;
   onSelect: (tx: TxHistoryItem) => void;
 }) {
   const groups = new Map<string, { label: string; txs: TxHistoryItem[]; volume: bigint }>();
@@ -788,7 +932,7 @@ function GroupedTxs({
                 address={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
                 time=""
                 amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                amountUsd={settings.hideBalances || !snapshot ? undefined : `≈ $${formatUsdFromQu(tx.amount, snapshot.priceUsd)}`}
+                amountUsd={settings.hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
                 amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                 txType={!flew ? "failed" : isIn ? "received" : "sent"}
               />

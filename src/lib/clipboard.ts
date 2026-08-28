@@ -21,7 +21,10 @@ export async function copyToClipboard(text: string, clearAfterSecs = 0): Promise
 
   if (clearAfterSecs > 0) {
     fallbackClearTimer = window.setTimeout(() => {
-      navigator.clipboard.writeText("").catch(() => {});
+      // Do not erase content the user copied after this wallet value.
+      navigator.clipboard.readText()
+        .then((current) => current === text ? navigator.clipboard.writeText("") : undefined)
+        .catch(() => {});
       fallbackClearTimer = null;
     }, clearAfterSecs * 1000);
   }

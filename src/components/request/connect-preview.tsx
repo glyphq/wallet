@@ -5,17 +5,25 @@ import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
 import { RequestActionBar, RequestSectionTitle } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
+import { CheckCircle } from "@solar-icons/react";
+import { DappPolicyControls } from "@/components/dapp-policy-controls";
+import { DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
 export interface ConnectApproveResult {
   identity: string;
+  accountIndex: number;
   permissions: GlyphPermission[];
+  transferLimitQu?: string;
+  expiryDurationMs?: number;
+  expiresAt?: number;
 }
 
 interface ConnectPreviewProps {
   request: ConnectRequest;
-  onApprove: (result: ConnectApproveResult) => void;
+  onApprove: (result: ConnectApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
@@ -25,7 +33,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   sign_message: "Sign messages",
 };
 
-export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
+export function ConnectPreview({ request, onApprove, beforeApprove, onReject }: ConnectPreviewProps) {
   const wallets = useSessionStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
@@ -34,6 +42,8 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   const requestedPerms = request.permissions ?? [];
   const [grantedPerms, setGrantedPerms] = useState<Set<string>>(() => new Set(requestedPerms));
+  const [transferLimitQu, setTransferLimitQu] = useState("");
+  const [expiryDurationMs, setExpiryDurationMs] = useState<number | undefined>(DEFAULT_DAPP_EXPIRY_DURATION_MS);
 
   const selectedWallet = wallets[selectedIndex] ?? null;
 
@@ -45,25 +55,28 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
     });
   }
 
-  function approve() {
+  async function approve() {
     if (!selectedWallet) return;
+    await beforeApprove();
     const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as GlyphPermission[];
-    onApprove({ identity: selectedWallet.identity, permissions });
+    const sanitizedLimit = sanitizeTransferLimitQu(transferLimitQu);
+    await onApprove({
+      identity: selectedWallet.identity,
+      accountIndex: selectedIndex,
+      permissions,
+      transferLimitQu: sanitizedLimit,
+      expiryDurationMs,
+      expiresAt: makeDappExpiresAt(expiryDurationMs),
+    });
   }
+
+  const grantsTransferLike = requestedPerms.some((p) => (p === "transfer" || p === "sc_call") && grantedPerms.has(p));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
-        This app wants to connect to your wallet.
-      </div>
-
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-        Glyph stores the connection so you can review or revoke it later. Each requested action still needs your approval.
-      </div>
-
       {/* Account picker */}
       <div>
-          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Reveal account</RequestSectionTitle></div>
+        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Account</RequestSectionTitle></div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {wallets.map((w, i) => {
             const account = vault?.accounts[i];
@@ -72,6 +85,8 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
             return (
               <button
                 key={i}
+                type="button"
+                aria-pressed={isSelected}
                 onClick={() => setSelectedIndex(i)}
                 style={{
                   display: "flex",
@@ -92,9 +107,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   {isSelected ? (
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
-                      Selected
-                    </span>
+                    <CheckCircle size={16} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                   ) : null}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
                     {truncateId(w.identity, 10, 10)}
@@ -110,7 +123,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
       {requestedPerms.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <div>
-            <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Permissions requested</RequestSectionTitle></div>
+            <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Permissions</RequestSectionTitle></div>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               {requestedPerms.map((p) => {
                 const granted = grantedPerms.has(p);
@@ -131,11 +144,20 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
               })}
             </div>
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            Each action will show a confirmation screen. Nothing is signed without your approval.
-          </div>
         </div>
       )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <RequestSectionTitle>Limits</RequestSectionTitle>
+        <DappPolicyControls
+          transferLimitQu={transferLimitQu}
+          expiryDurationMs={expiryDurationMs}
+          onTransferLimitChange={setTransferLimitQu}
+          onExpiryDurationChange={setExpiryDurationMs}
+          showLimit={grantsTransferLike}
+          idPrefix="connect-dapp-policy"
+        />
+      </div>
 
       <RequestActionBar>
         <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>

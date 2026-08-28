@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { Button } from "@/components/button";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SetupFlow } from "@/components/setup-flow";
@@ -30,6 +31,7 @@ export default function ImportVaultScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
+  const [seedInputRevealed, setSeedInputRevealed] = useState(false);
   const [seedError, setSeedError] = useState("");
   const [nameError, setNameError] = useState("");
   const [setupError, setSetupError] = useState("");
@@ -56,7 +58,7 @@ export default function ImportVaultScreen() {
 
   function continueFromName() {
     if (!name.trim()) {
-      setNameError("Enter a wallet name");
+      setNameError("Enter a Vault name");
       return;
     }
     setNameError("");
@@ -95,7 +97,7 @@ export default function ImportVaultScreen() {
       unlock(vault.id, wallets);
       navigate("/dashboard", { replace: true });
     } catch {
-      setSetupError("Wallet setup could not be completed. Try again.");
+      setSetupError("Vault setup could not be completed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -104,7 +106,26 @@ export default function ImportVaultScreen() {
   return (
     <FullPage centered={false} style={{ paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
       {step === 1 ? (
-        <SetupFlow current={1} total={3} title="Enter your seed" primaryLabel="Continue" onPrimary={validateSeed} onBack={back}>
+        <SetupFlow
+          current={1}
+          total={3}
+          title="Enter your seed"
+          primaryLabel="Continue"
+          onPrimary={validateSeed}
+          onBack={back}
+          secondaryActions={
+            <Button
+              variant="secondary"
+              size="md"
+              style={{ width: "100%" }}
+              onClick={() => setSeedInputRevealed((value) => !value)}
+              aria-pressed={seedInputRevealed}
+            >
+              {seedInputRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+              {seedInputRevealed ? "Hide entered seed" : "Reveal entered seed"}
+            </Button>
+          }
+        >
           <Textarea
             leftElement={<KeyMinimalistic size={18} weight="Linear" />}
             value={seedInput}
@@ -121,13 +142,21 @@ export default function ImportVaultScreen() {
             autoFocus
             technical
             error={seedError}
-            style={{ resize: "none", minHeight: 136, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
+            style={{
+              resize: "none",
+              minHeight: 136,
+              borderRadius: "var(--radius-control)",
+              background: "var(--color-bg-input)",
+              overflowWrap: "anywhere",
+              filter: seedInputRevealed ? "none" : "blur(6px)",
+              transition: "filter var(--duration-fast) var(--ease-out)",
+            }}
           />
         </SetupFlow>
       ) : null}
 
       {step === 2 ? (
-        <SetupFlow current={2} total={3} title="Name your wallet" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
+        <SetupFlow current={2} total={3} title="Name your Vault" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
           {identity ? (
             <div
               style={{
@@ -153,8 +182,8 @@ export default function ImportVaultScreen() {
               setNameError("");
             }}
             onKeyDown={(event) => event.key === "Enter" && continueFromName()}
-            placeholder="Wallet name"
-            aria-label="Wallet name"
+            placeholder="Vault name"
+            aria-label="Vault name"
             autoFocus
             error={nameError}
           />
@@ -166,7 +195,7 @@ export default function ImportVaultScreen() {
           current={3}
           total={3}
           title="Set a password"
-          primaryLabel="Restore wallet"
+          primaryLabel="Restore Vault"
           primaryDisabled={!passwordValid}
           primaryLoading={loading}
           onPrimary={finish}
