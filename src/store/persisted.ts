@@ -5,7 +5,6 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { StateStorage } from "zustand/middleware";
 import { DEFAULT_SETTINGS } from "./persisted-defaults";
 import {
-  MAX_PENDING_TXS,
   MAX_SCHEDULED_TRANSFERS,
   clampAuditEvents,
   clampNotificationEvents,
@@ -15,6 +14,7 @@ import {
   clampTxMemos,
   mergePersistedState,
   migratePersistedState,
+  insertPendingTxForNetwork,
   PERSISTED_STATE_VERSION,
 } from "./persisted-boundary";
 import type { PersistedState } from "./persisted-types";
@@ -211,20 +211,12 @@ export const usePersistedStore = create<PersistedState>()(
       removeContact: (id) =>
         set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id) })),
 
-      addPendingTx: (tx) =>
+      addPendingTx: (tx, expectedScope) =>
         set((s) => {
-          const scope = s.settings.network.scope;
-          const pendingTxs = [
-            { ...tx, networkScope: scope },
-            ...(s.pendingTxsByNetwork[scope] ?? []),
-          ].slice(0, MAX_PENDING_TXS);
-          return {
-            pendingTxs,
-            pendingTxsByNetwork: {
-              ...s.pendingTxsByNetwork,
-              [scope]: pendingTxs,
-            },
-          };
+          const inserted = insertPendingTxForNetwork(s.pendingTxsByNetwork, tx, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? inserted
+            : { pendingTxsByNetwork: inserted.pendingTxsByNetwork };
         }),
 
       removePendingTx: (hash) =>

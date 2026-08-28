@@ -159,6 +159,21 @@ export function sanitizePendingTxsByNetwork(
   return result as Record<NetworkScope, PendingTx[]>;
 }
 
+export function insertPendingTxForNetwork(
+  pendingTxsByNetwork: Record<NetworkScope, PendingTx[]>,
+  tx: Omit<PendingTx, "networkScope">,
+  expectedScope: NetworkScope
+): { pendingTxs: PendingTx[]; pendingTxsByNetwork: Record<NetworkScope, PendingTx[]> } {
+  const pendingTxs = [
+    { ...tx, networkScope: expectedScope },
+    ...(pendingTxsByNetwork[expectedScope] ?? []),
+  ].slice(0, MAX_PENDING_TXS);
+  return {
+    pendingTxs,
+    pendingTxsByNetwork: { ...pendingTxsByNetwork, [expectedScope]: pendingTxs },
+  };
+}
+
 export function sanitizeNotificationScanAtByNetwork(
   value: unknown
 ): Record<NetworkScope, number> {
