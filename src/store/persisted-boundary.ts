@@ -2,6 +2,7 @@ import type {
   AccountMeta,
   AuditEvent,
   NotificationEvent,
+  PendingTx,
   PersistedState,
   PriceSnapshot,
   RequestHistoryItem,
@@ -9,8 +10,18 @@ import type {
   ScheduledTransfer,
   VaultMeta,
 } from "./persisted-types";
+import type { NetworkScope } from "@/lib/network-config";
 import { isGlobalHttpsUrl } from "@/lib/url-security";
 import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
+import {
+  MAINNET_NETWORK_CONFIG,
+  MAINNET_NETWORK_SCOPE,
+  isNetworkScope,
+  parsePersistedNetworkConfig,
+  resolveNetworkConfig,
+} from "@/lib/network-config";
+
+export const PERSISTED_STATE_VERSION = 1;
 
 export const MAX_PENDING_TXS = 50;
 export const MAX_TX_MEMOS = 500;
@@ -92,11 +103,162 @@ export function sanitizeCustomPriceFeedUrl(value: unknown, fallback: string): st
   return trimmed;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function sanitizePendingTx(value: unknown, networkScope: NetworkScope): PendingTx | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.hash !== "string" ||
+    typeof value.source !== "string" ||
+    typeof value.destination !== "string" ||
+    typeof value.amount !== "string" ||
+    typeof value.targetTick !== "number" ||
+    !Number.isFinite(value.targetTick) ||
+    typeof value.broadcastAt !== "number" ||
+    !Number.isFinite(value.broadcastAt)
+  ) {
+    return null;
+  }
+  return {
+    hash: value.hash,
+    source: value.source,
+    destination: value.destination,
+    amount: value.amount,
+    targetTick: value.targetTick,
+    broadcastAt: value.broadcastAt,
+    networkScope,
+    ...(typeof value.contractName === "string"
+      ? { contractName: value.contractName }
+      : {}),
+  };
+}
+
+function sanitizePendingTxList(
+  value: unknown,
+  networkScope: NetworkScope
+): PendingTx[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((tx) => sanitizePendingTx(tx, networkScope))
+    .filter((tx): tx is PendingTx => tx !== null)
+    .slice(0, MAX_PENDING_TXS);
+}
+
+export function sanitizePendingTxsByNetwork(
+  value: unknown
+): Record<NetworkScope, PendingTx[]> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<NetworkScope, PendingTx[]>> = {};
+  for (const [scope, transactions] of Object.entries(value)) {
+    if (!isNetworkScope(scope)) continue;
+    result[scope] = sanitizePendingTxList(transactions, scope);
+  }
+  return result as Record<NetworkScope, PendingTx[]>;
+}
+
+export function sanitizeNotificationScanAtByNetwork(
+  value: unknown
+): Record<NetworkScope, number> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<NetworkScope, number>> = {};
+  for (const [scope, timestamp] of Object.entries(value)) {
+    if (
+      isNetworkScope(scope) &&
+      typeof timestamp === "number" &&
+      Number.isFinite(timestamp) &&
+      timestamp >= 0
+    ) {
+      result[scope] = timestamp;
+    }
+  }
+  return result as Record<NetworkScope, number>;
+}
+
+/**
+ * Explicit persistence migration. Unknown versions and invalid legacy network
+ * endpoints throw so hydration cannot silently switch the wallet to mainnet.
+ */
+export function migratePersistedState(
+  persistedState: unknown,
+  persistedVersion: number
+): unknown {
+  if (persistedVersion === PERSISTED_STATE_VERSION) return persistedState;
+  if (persistedVersion !== 0) {
+    throw new Error(`Unsupported persisted state version: ${persistedVersion}`);
+  }
+  if (!isRecord(persistedState)) {
+    throw new Error("Persisted state must be an object");
+  }
+
+  if (
+    persistedState.settings !== undefined &&
+    !isRecord(persistedState.settings)
+  ) {
+    throw new Error("Persisted legacy settings are invalid");
+  }
+  const legacySettings = isRecord(persistedState.settings)
+    ? persistedState.settings
+    : {};
+  const legacyNetwork = legacySettings.network;
+  const network =
+    legacyNetwork === undefined
+      ? MAINNET_NETWORK_CONFIG
+      : isRecord(legacyNetwork)
+        ? resolveNetworkConfig({
+            liveApiUrl: legacyNetwork.liveApiUrl,
+            queryApiUrl: legacyNetwork.queryApiUrl,
+            manifestInstanceId: legacyNetwork.manifestInstanceId,
+          })
+        : (() => {
+            throw new Error("Persisted legacy network configuration is invalid");
+          })();
+
+  // Pre-versioned chain-derived records all originated from the mainnet-only
+  // wallet. Preserve that fact even if an old custom endpoint setting existed.
+  const pendingTxs = sanitizePendingTxList(
+    persistedState.pendingTxs,
+    MAINNET_NETWORK_SCOPE
+  );
+  const lastNotificationScanAt =
+    typeof persistedState.lastNotificationScanAt === "number" &&
+    Number.isFinite(persistedState.lastNotificationScanAt) &&
+    persistedState.lastNotificationScanAt >= 0
+      ? persistedState.lastNotificationScanAt
+      : 0;
+
+  return {
+    ...persistedState,
+    settings: { ...legacySettings, network },
+    pendingTxs,
+    pendingTxsByNetwork: { [MAINNET_NETWORK_SCOPE]: pendingTxs },
+    lastNotificationScanAt,
+    notificationScanAtByNetwork: {
+      [MAINNET_NETWORK_SCOPE]: lastNotificationScanAt,
+    },
+  };
+}
+
 export function mergePersistedState(
   persistedState: unknown,
   currentState: PersistedState
 ): PersistedState {
+  if (!isRecord(persistedState)) {
+    throw new Error("Persisted state must be an object");
+  }
   const ps = persistedState as Partial<PersistedState>;
+  if (ps.settings !== undefined && !isRecord(ps.settings)) {
+    throw new Error("Persisted settings are invalid");
+  }
+  const persistedSettings = isRecord(ps.settings) ? ps.settings : null;
+  const network =
+    persistedSettings && "network" in persistedSettings
+      ? parsePersistedNetworkConfig(persistedSettings.network)
+      : currentState.settings.network;
+  const settingsBase = persistedSettings
+    ? { ...currentState.settings, ...persistedSettings, network }
+    : currentState.settings;
   const vaults = Array.isArray(ps.vaults)
     ? ps.vaults
         .filter(
@@ -133,9 +295,11 @@ export function mergePersistedState(
   const contacts = Array.isArray(ps.contacts)
     ? ps.contacts
     : currentState.contacts;
-  const pendingTxs = Array.isArray(ps.pendingTxs)
-    ? ps.pendingTxs
-    : currentState.pendingTxs;
+  const pendingTxsByNetwork =
+    ps.pendingTxsByNetwork !== undefined
+      ? sanitizePendingTxsByNetwork(ps.pendingTxsByNetwork)
+      : currentState.pendingTxsByNetwork;
+  const pendingTxs = pendingTxsByNetwork[network.scope] ?? [];
   const txMemos =
     ps.txMemos && typeof ps.txMemos === "object" && !Array.isArray(ps.txMemos)
       ? clampTxMemos(ps.txMemos as Record<string, string>)
@@ -219,16 +383,11 @@ export function mergePersistedState(
         )
       )
     : currentState.requestHistory;
-  const lastNotificationScanAt =
-    typeof ps.lastNotificationScanAt === "number"
-      ? ps.lastNotificationScanAt
-      : currentState.lastNotificationScanAt;
-  const settingsBase =
-    ps.settings &&
-    typeof ps.settings === "object" &&
-    !Array.isArray(ps.settings)
-      ? { ...currentState.settings, ...ps.settings }
-      : currentState.settings;
+  const notificationScanAtByNetwork =
+    ps.notificationScanAtByNetwork !== undefined
+      ? sanitizeNotificationScanAtByNetwork(ps.notificationScanAtByNetwork)
+      : currentState.notificationScanAtByNetwork;
+  const lastNotificationScanAt = notificationScanAtByNetwork[network.scope] ?? 0;
   const approvedDapps = Array.isArray(settingsBase.approvedDapps)
     ? settingsBase.approvedDapps
         .map(sanitizeApprovedDapp)
@@ -293,6 +452,7 @@ export function mergePersistedState(
     vaults,
     contacts,
     pendingTxs,
+    pendingTxsByNetwork,
     txMemos,
     txTags,
     scheduledTransfers,
@@ -302,6 +462,7 @@ export function mergePersistedState(
     auditEvents,
     requestHistory,
     lastNotificationScanAt,
+    notificationScanAtByNetwork,
     passwordAttempts:
       typeof ps.passwordAttempts === "number" && Number.isInteger(ps.passwordAttempts)
         ? Math.min(10, Math.max(0, ps.passwordAttempts))

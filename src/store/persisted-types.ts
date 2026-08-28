@@ -1,4 +1,11 @@
 import type { VaultData } from "@qubic.org/wallet";
+import type { NetworkConfig, NetworkScope } from "@/lib/network-config";
+
+export type {
+  NetworkConfig,
+  NetworkKind,
+  NetworkScope,
+} from "@/lib/network-config";
 
 export type VaultColor =
   | "slate"
@@ -61,12 +68,6 @@ export interface VaultMeta {
   lastUnlockedAt: number;
   accounts: AccountMeta[];
   encryptedData: VaultData | null;
-}
-
-export interface NetworkConfig {
-  liveApiUrl: string;
-  queryApiUrl: string;
-  name: "mainnet" | "testnet" | "custom";
 }
 
 /** A dApp origin that the user has explicitly approved, along with its granted permission set. */
@@ -141,6 +142,16 @@ export interface AppSettings {
   customPriceFeedUrl: string;
 }
 
+export type NetworkConfigUpdate = Pick<
+  NetworkConfig,
+  "liveApiUrl" | "queryApiUrl"
+> &
+  Partial<Pick<NetworkConfig, "name" | "scope" | "manifestInstanceId">>;
+
+export type AppSettingsUpdate = Omit<Partial<AppSettings>, "network"> & {
+  network?: NetworkConfigUpdate;
+};
+
 export interface Contact {
   id: string;
   name: string;
@@ -166,6 +177,7 @@ export interface ScheduledTransfer {
 
 /** A broadcast transaction awaiting confirmation or expiry tracking. */
 export interface PendingTx {
+  networkScope: NetworkScope;
   hash: string;
   source: string;
   destination: string;
@@ -175,6 +187,9 @@ export interface PendingTx {
   /** Present for SC calls — used as the notification label instead of the raw amount. */
   contractName?: string;
 }
+
+/** New broadcasts are scoped by the store from the active canonical network. */
+export type PendingTxInput = Omit<PendingTx, "networkScope">;
 
 export type NotificationEventKind =
   | "received"
@@ -257,7 +272,10 @@ export interface PersistedState {
   vaults: VaultMeta[];
   settings: AppSettings;
   contacts: Contact[];
+  /** Active-network projection retained for existing UI consumers. */
   pendingTxs: PendingTx[];
+  /** Canonical persisted pending transactions partitioned by network identity. */
+  pendingTxsByNetwork: Record<NetworkScope, PendingTx[]>;
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
   /** @deprecated Kept for migration compat only — no longer used in UI. */
@@ -268,7 +286,10 @@ export interface PersistedState {
   runtimeIssues: RuntimeIssue[];
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];
+  /** Active-network projection retained for existing notification hooks. */
   lastNotificationScanAt: number;
+  /** Canonical persisted notification scan cursor partitioned by network identity. */
+  notificationScanAtByNetwork: Record<NetworkScope, number>;
   /** Unix ms timestamp until which password attempts are locked out. 0 = no lockout. */
   passwordLockoutUntil: number;
   /** Number of consecutive failed password attempts — persists across restarts. */
@@ -286,11 +307,11 @@ export interface PersistedState {
   setActiveAccountIndex: (index: number) => void;
   /** Stamps `lastUnlockedAt` with the current time — used to sort vaults by recency. */
   touchVaultUnlocked: (id: string) => void;
-  updateSettings: (updates: Partial<AppSettings>) => void;
+  updateSettings: (updates: AppSettingsUpdate) => void;
   addContact: (contact: Contact) => void;
   updateContact: (id: string, updates: Partial<Omit<Contact, "id">>) => void;
   removeContact: (id: string) => void;
-  addPendingTx: (tx: PendingTx) => void;
+  addPendingTx: (tx: PendingTxInput) => void;
   removePendingTx: (hash: string) => void;
   /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
   approveDapp: (dapp: ApprovedDapp) => void;

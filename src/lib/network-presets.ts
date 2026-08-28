@@ -1,8 +1,13 @@
-import { DEFAULT_ARCHIVE_URL, DEFAULT_LIVE_URL, normalizeRpcUrl } from "@/lib/rpc";
-import type { NetworkConfig } from "@/store/persisted-types";
+import {
+  LOCAL_TESTNET_LIVE_API_URL,
+  LOCAL_TESTNET_QUERY_API_URL,
+  MAINNET_NETWORK_CONFIG,
+  tryResolveNetworkConfig,
+  type NetworkKind,
+} from "@/lib/network-config";
 
-export type NetworkPresetId = NetworkConfig["name"];
-export type ConfiguredNetworkPresetId = Exclude<NetworkPresetId, "testnet">;
+export type NetworkPresetId = NetworkKind;
+export type ConfiguredNetworkPresetId = NetworkPresetId;
 
 export interface NetworkPreset {
   id: NetworkPresetId;
@@ -15,14 +20,14 @@ export const NETWORK_PRESETS: readonly NetworkPreset[] = [
   {
     id: "mainnet",
     label: "Mainnet",
-    liveApiUrl: DEFAULT_LIVE_URL,
-    queryApiUrl: DEFAULT_ARCHIVE_URL,
+    liveApiUrl: MAINNET_NETWORK_CONFIG.liveApiUrl,
+    queryApiUrl: MAINNET_NETWORK_CONFIG.queryApiUrl,
   },
   {
     id: "testnet",
-    label: "Testnet",
-    liveApiUrl: null,
-    queryApiUrl: null,
+    label: "Local testnet",
+    liveApiUrl: LOCAL_TESTNET_LIVE_API_URL,
+    queryApiUrl: LOCAL_TESTNET_QUERY_API_URL,
   },
   {
     id: "custom",
@@ -32,9 +37,16 @@ export const NETWORK_PRESETS: readonly NetworkPreset[] = [
   },
 ] as const;
 
-export function identifyNetworkPreset(liveApiUrl: string, queryApiUrl: string): ConfiguredNetworkPresetId {
-  const live = normalizeRpcUrl(liveApiUrl.trim());
-  const archive = normalizeRpcUrl(queryApiUrl.trim());
-  if (live === DEFAULT_LIVE_URL && archive === DEFAULT_ARCHIVE_URL) return "mainnet";
-  return "custom";
+/**
+ * Classifies a valid endpoint pair. Invalid/incomplete input is treated as a
+ * custom draft for settings-screen compatibility, while canonical resolution
+ * remains fail-closed through resolveNetworkConfig.
+ */
+export function identifyNetworkPreset(
+  liveApiUrl: string,
+  queryApiUrl: string
+): ConfiguredNetworkPresetId {
+  return (
+    tryResolveNetworkConfig({ liveApiUrl, queryApiUrl })?.name ?? "custom"
+  );
 }
