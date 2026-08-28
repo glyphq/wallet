@@ -12,6 +12,16 @@ export interface RpcCacheSnapshot {
   readonly client: QubicClient;
 }
 
+/** Creates an RPC client bound only to this canonical network configuration. */
+export function createRpcClientForNetwork(network: NetworkConfig): QubicClient {
+  const resolved = resolveNetworkConfig(network);
+  return createQubicClient({
+    liveBaseUrl: resolved.liveApiUrl,
+    archiveBaseUrl: resolved.queryApiUrl,
+    fetch: rpcFetch,
+  });
+}
+
 export function rpcCacheIdentity(
   network: NetworkConfig,
   scope: RpcCacheScope = "both",
@@ -32,11 +42,7 @@ export function createRpcCacheSnapshot(
   return Object.freeze({
     network: resolved,
     identity: rpcCacheIdentity(resolved, scope),
-    client: createQubicClient({
-      liveBaseUrl: resolved.liveApiUrl,
-      archiveBaseUrl: resolved.queryApiUrl,
-      fetch: rpcFetch,
-    }),
+    client: createRpcClientForNetwork(resolved),
   });
 }
 
