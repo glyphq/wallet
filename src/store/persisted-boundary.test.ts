@@ -28,13 +28,18 @@ function currentState(): PersistedState {
     pendingTxs: [],
     pendingTxsByNetwork: {},
     txMemos: {},
+    txMemosByNetwork: {},
     txTags: {},
     scheduledTransfers: [],
+    scheduledTransfersByNetwork: {},
     notificationEvents: [],
+    notificationEventsByNetwork: {},
     priceSnapshots: [],
     runtimeIssues: [],
     auditEvents: [],
     requestHistory: [],
+    requestHistoryByNetwork: {},
+    approvedDappsByNetwork: {},
     lastNotificationScanAt: 0,
     notificationScanAtByNetwork: {},
     passwordLockoutUntil: 0,
@@ -140,25 +145,20 @@ describe("persisted boundary helpers", () => {
   });
 
   test("merges persisted state with default settings and sanitized boundary fields", () => {
+    const approval = {
+      origin: "https://app", name: "App", approvedAt: 1, lastUsedAt: 2,
+      permissions: ["transfer", "invalid", "transfer"],
+      allowedIdentities: ["IDENTITY_A", "IDENTITY_A", 4],
+      transferLimitQu: "2,500 qu", expiryDurationMs: 60_000, expiresAt: "bad",
+    };
+    const memos = Object.fromEntries(Array.from({ length: MAX_TX_MEMOS + 1 }, (_, index) => [`h-${index}`, `m-${index}`]));
     const merged = mergePersistedState(
       {
         passwordAttempts: 4,
         passwordLockoutUntil: 99_000,
         exportSigningKey: { kty: "oct", k: "test-key" },
         settings: {
-          approvedDapps: [
-            {
-              origin: "https://app",
-              name: "App",
-              approvedAt: 1,
-              lastUsedAt: 2,
-              permissions: ["transfer", "invalid", "transfer"],
-              allowedIdentities: ["IDENTITY_A", "IDENTITY_A", 4],
-              transferLimitQu: "2,500 qu",
-              expiryDurationMs: 60_000,
-              expiresAt: "bad",
-            },
-          ],
+          approvedDapps: [approval],
           highValueSendThreshold: "1,234 qu",
           priceAlertAbove: "$12.34",
           customPriceFeedUrl: "http://127.0.0.1:8080/latest-stats",
@@ -188,12 +188,8 @@ describe("persisted boundary helpers", () => {
             ],
           },
         ],
-        txMemos: Object.fromEntries(
-          Array.from({ length: MAX_TX_MEMOS + 1 }, (_, index) => [
-            `h-${index}`,
-            `m-${index}`,
-          ])
-        ),
+        txMemosByNetwork: { [MAINNET_NETWORK_SCOPE]: memos },
+        approvedDappsByNetwork: { [MAINNET_NETWORK_SCOPE]: [approval] },
       },
       currentState()
     );
@@ -410,5 +406,53 @@ describe("persisted boundary helpers", () => {
         currentState()
       )
     ).toThrow("does not match its endpoints");
+  });
+
+  test("migrates every legacy authorization or chain-derived record to mainnet", () => {
+    const migrated = migratePersistedState({
+      settings: { approvedDapps: [{ origin: "https://app", name: "App", approvedAt: 1, permissions: ["transfer"] }] },
+      txMemos: { hash: "memo" },
+      scheduledTransfers: [{ id: "schedule" }],
+      notificationEvents: [{ id: "notice", kind: "received", title: "T", body: "B", createdAt: 2, readAt: null }],
+      requestHistory: [{ id: "request", createdAt: 3, type: "connect", dappName: "App", dappOrigin: "https://app", action: "approved", callbackStatus: "none" }],
+    }, 1) as Record<string, any>;
+
+    expect(migrated.txMemosByNetwork).toEqual({ [MAINNET_NETWORK_SCOPE]: { hash: "memo" } });
+    for (const field of ["scheduledTransfersByNetwork", "notificationEventsByNetwork", "requestHistoryByNetwork", "approvedDappsByNetwork"]) {
+      expect(migrated[field][MAINNET_NETWORK_SCOPE][0].networkScope).toBe(MAINNET_NETWORK_SCOPE);
+    }
+  });
+
+  test("projects only the active scope and rejects unknown scope keys", () => {
+    const local = resolveNetworkConfig({
+      liveApiUrl: LOCAL_TESTNET_LIVE_API_URL,
+      queryApiUrl: LOCAL_TESTNET_QUERY_API_URL,
+      manifestInstanceId: `qubic-local:${"a".repeat(64)}`,
+    });
+    const makeDapp = (origin: string) => ({ origin, name: origin, approvedAt: 1, permissions: ["transfer"] });
+    const merged = mergePersistedState({
+      settings: { network: local },
+      txMemosByNetwork: { mainnet: { shared: "mainnet" }, [local.scope]: { shared: "local" }, evil: { shared: "evil" } },
+      scheduledTransfersByNetwork: { mainnet: [{ id: "main" }], [local.scope]: [{ id: "local", networkScope: "mainnet" }] },
+      notificationEventsByNetwork: { mainnet: [{ id: "main", kind: "system", title: "M", body: "M", createdAt: 1 }], [local.scope]: [{ id: "local", kind: "received", title: "L", body: "L", createdAt: 2 }] },
+      requestHistoryByNetwork: { mainnet: [{ id: "main", createdAt: 1, type: "connect", dappName: "M", dappOrigin: "https://same", action: "approved", callbackStatus: "none" }], [local.scope]: [{ id: "local", createdAt: 2, type: "connect", dappName: "L", dappOrigin: "https://same", action: "approved", callbackStatus: "none" }] },
+      approvedDappsByNetwork: { mainnet: [makeDapp("https://same")], [local.scope]: [makeDapp("https://same")] },
+    }, currentState());
+
+    expect(merged.txMemos).toEqual({ shared: "local" });
+    expect(merged.scheduledTransfers.map((item) => item.id)).toEqual(["local"]);
+    expect(merged.scheduledTransfers[0]?.networkScope).toBe(local.scope);
+    expect(merged.notificationEvents.map((item) => item.id)).toEqual(["local"]);
+    expect(merged.requestHistory.map((item) => item.id)).toEqual(["local"]);
+    expect(merged.settings.approvedDapps).toHaveLength(1);
+    expect(merged.settings.approvedDapps[0]?.networkScope).toBe(local.scope);
+    expect((merged.txMemosByNetwork as Record<string, unknown>).evil).toBeUndefined();
+  });
+
+  test("keeps contacts global while isolating chain-derived records", () => {
+    const contact = { id: "contact", name: "Alice", identity: "IDENTITY", note: "", addedAt: 1, lastUsedAt: 1 };
+    const merged = mergePersistedState({ contacts: [contact], txMemosByNetwork: { [MAINNET_NETWORK_SCOPE]: { hash: "memo" } } }, currentState());
+    expect(merged.contacts).toEqual([contact]);
+    expect(merged.txMemos).toEqual({ hash: "memo" });
   });
 });

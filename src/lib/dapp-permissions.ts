@@ -1,6 +1,7 @@
 import type { ApprovedDapp } from "@/store/persisted-types";
 import { formatQu } from "@/lib/format";
 import type { GlyphPermission } from "@/lib/request-schema";
+import type { NetworkScope } from "@/lib/network-config";
 
 const MAX_UINT64 = 18_446_744_073_709_551_615n;
 const MAX_EXPIRY_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
@@ -62,15 +63,16 @@ export function makeDappExpiresAt(durationMs: number | undefined, now = Date.now
   return durationMs === undefined ? undefined : now + durationMs;
 }
 
-export function sanitizeApprovedDapp(value: unknown): ApprovedDapp | null {
+export function sanitizeApprovedDapp(value: unknown, networkScope?: NetworkScope): ApprovedDapp | null {
   if (!value || typeof value !== "object") return null;
   const dapp = value as Partial<ApprovedDapp>;
+  const scope = networkScope ?? dapp.networkScope;
   if (
     typeof dapp.origin !== "string" ||
     typeof dapp.name !== "string" ||
     typeof dapp.approvedAt !== "number" ||
     !Number.isFinite(dapp.approvedAt) ||
-    !Array.isArray(dapp.permissions)
+    !Array.isArray(dapp.permissions) || !scope
   ) {
     return null;
   }
@@ -94,6 +96,7 @@ export function sanitizeApprovedDapp(value: unknown): ApprovedDapp | null {
     : undefined;
 
   return {
+    networkScope: scope,
     origin: dapp.origin,
     name: dapp.name,
     approvedAt: dapp.approvedAt,
@@ -123,6 +126,7 @@ export function getDappLimitLabel(dapp: Pick<ApprovedDapp, "transferLimitQu">): 
 
 export function evaluateDappPermission(input: {
   approvedDapps: ApprovedDapp[];
+  networkScope?: NetworkScope;
   origin: string;
   permission: DappPolicyPermission;
   identity?: string | null;
@@ -130,7 +134,10 @@ export function evaluateDappPermission(input: {
   now?: number;
 }): DappPermissionDecision {
   const now = input.now ?? Date.now();
-  const dapp = input.approvedDapps.find((candidate) => candidate.origin === input.origin) ?? null;
+  const dapp = input.approvedDapps.find((candidate) =>
+    candidate.origin === input.origin &&
+    (input.networkScope === undefined || candidate.networkScope === input.networkScope)
+  ) ?? null;
 
   if (!dapp) {
     return { allowed: false, reason: "Connect this dApp before approving this action.", dapp };

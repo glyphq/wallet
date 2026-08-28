@@ -104,13 +104,18 @@ export const usePersistedStore = create<PersistedState>()(
       pendingTxs: [],
       pendingTxsByNetwork: {},
       txMemos: {},
+      txMemosByNetwork: {},
       txTags: {},
       scheduledTransfers: [],
+      scheduledTransfersByNetwork: {},
       notificationEvents: [],
+      notificationEventsByNetwork: {},
       priceSnapshots: [],
       runtimeIssues: [],
       auditEvents: [],
       requestHistory: [],
+      requestHistoryByNetwork: {},
+      approvedDappsByNetwork: {},
       lastNotificationScanAt: 0,
       notificationScanAtByNetwork: {},
       passwordLockoutUntil: 0,
@@ -158,7 +163,12 @@ export const usePersistedStore = create<PersistedState>()(
         set((s) => {
           if (!updates.network) {
             return {
-              settings: { ...s.settings, ...updates, network: s.settings.network },
+              settings: {
+                ...s.settings,
+                ...updates,
+                network: s.settings.network,
+                approvedDapps: s.settings.approvedDapps,
+              },
             };
           }
           const network = resolveNetworkConfig({
@@ -167,8 +177,18 @@ export const usePersistedStore = create<PersistedState>()(
             manifestInstanceId: updates.network.manifestInstanceId,
           });
           return {
-            settings: { ...s.settings, ...updates, network },
             pendingTxs: s.pendingTxsByNetwork[network.scope] ?? [],
+            txMemos: s.txMemosByNetwork[network.scope] ?? {},
+            scheduledTransfers: s.scheduledTransfersByNetwork[network.scope] ?? [],
+            notificationEvents: s.notificationEventsByNetwork[network.scope] ?? [],
+            requestHistory: s.requestHistoryByNetwork[network.scope] ?? [],
+            approvedDappsByNetwork: s.approvedDappsByNetwork,
+            settings: {
+              ...s.settings,
+              ...updates,
+              network,
+              approvedDapps: s.approvedDappsByNetwork[network.scope] ?? [],
+            },
             lastNotificationScanAt:
               s.notificationScanAtByNetwork[network.scope] ?? 0,
           };
@@ -220,15 +240,17 @@ export const usePersistedStore = create<PersistedState>()(
 
       approveDapp: (dapp) =>
         set((s) => {
+          const scope = s.settings.network.scope;
           const now = Date.now();
-          const existing = s.settings.approvedDapps.find(
+          const activeDapps = s.approvedDappsByNetwork[scope] ?? [];
+          const existing = activeDapps.find(
             (d) => d.origin === dapp.origin
           );
           const transferLimitQu = sanitizeTransferLimitQu(dapp.transferLimitQu);
           const expiryDurationMs = sanitizeDappExpiryDurationMs(dapp.expiryDurationMs);
           const expiresAt = sanitizeDappExpiresAt(dapp.expiresAt);
           const approvedDapps = existing
-            ? s.settings.approvedDapps.map((d) =>
+            ? activeDapps.map((d) =>
                 d.origin === dapp.origin
                   ? (() => {
                       const allowedIdentities =
@@ -252,23 +274,21 @@ export const usePersistedStore = create<PersistedState>()(
                     })()
                   : d
               )
-            : [...s.settings.approvedDapps, { ...dapp, transferLimitQu, expiryDurationMs, expiresAt, lastUsedAt: now }];
-          return { settings: { ...s.settings, approvedDapps } };
+            : [...activeDapps, { ...dapp, networkScope: scope, transferLimitQu, expiryDurationMs, expiresAt, lastUsedAt: now }];
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
         }),
 
       revokeDapp: (origin) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            approvedDapps: s.settings.approvedDapps.filter(
-              (d) => d.origin !== origin
-            ),
-          },
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? []).filter((d) => d.origin !== origin);
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
+        }),
 
       revokeDappPermission: (origin, permission) =>
         set((s) => {
-          const approvedDapps = s.settings.approvedDapps
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? [])
             .map((d) =>
               d.origin === origin
                 ? {
@@ -277,24 +297,20 @@ export const usePersistedStore = create<PersistedState>()(
                   }
                 : d
             );
-          return { settings: { ...s.settings, approvedDapps } };
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
         }),
 
       setDappAllowedIdentities: (origin, identities) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            approvedDapps: s.settings.approvedDapps.map((d) =>
-              d.origin === origin ? { ...d, allowedIdentities: identities } : d
-            ),
-          },
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? []).map((d) => d.origin === origin ? { ...d, allowedIdentities: identities } : d);
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
+        }),
 
       setDappPolicy: (origin, policy) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            approvedDapps: s.settings.approvedDapps.map((d) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const approvedDapps = (s.approvedDappsByNetwork[scope] ?? []).map((d) =>
               d.origin === origin
                 ? {
                     ...d,
@@ -303,75 +319,85 @@ export const usePersistedStore = create<PersistedState>()(
                     expiresAt: sanitizeDappExpiresAt(policy.expiresAt),
                   }
                 : d
-            ),
-          },
-        })),
+            );
+          return { settings: { ...s.settings, approvedDapps }, approvedDappsByNetwork: { ...s.approvedDappsByNetwork, [scope]: approvedDapps } };
+        }),
 
       setTxMemo: (hash, memo) =>
-        set((s) => ({ txMemos: clampTxMemos({ ...s.txMemos, [hash]: memo }) })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const txMemos = clampTxMemos({ ...(s.txMemosByNetwork[scope] ?? {}), [hash]: memo });
+          return { txMemos, txMemosByNetwork: { ...s.txMemosByNetwork, [scope]: txMemos } };
+        }),
 
       deleteTxMemo: (hash) =>
         set((s) => {
-          const next = { ...s.txMemos };
+          const scope = s.settings.network.scope;
+          const next = { ...(s.txMemosByNetwork[scope] ?? {}) };
           delete next[hash];
-          return { txMemos: next };
+          return { txMemos: next, txMemosByNetwork: { ...s.txMemosByNetwork, [scope]: next } };
         }),
 
       addScheduledTransfer: (transfer) =>
-        set((s) => ({
-          scheduledTransfers: [transfer, ...s.scheduledTransfers].slice(
-            0,
-            MAX_SCHEDULED_TRANSFERS
-          ),
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const scheduledTransfers = [{ ...transfer, networkScope: scope }, ...(s.scheduledTransfersByNetwork[scope] ?? [])].slice(0, MAX_SCHEDULED_TRANSFERS);
+          return { scheduledTransfers, scheduledTransfersByNetwork: { ...s.scheduledTransfersByNetwork, [scope]: scheduledTransfers } };
+        }),
 
       updateScheduledTransfer: (id, updates) =>
-        set((s) => ({
-          scheduledTransfers: s.scheduledTransfers.map((t) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const scheduledTransfers = (s.scheduledTransfersByNetwork[scope] ?? []).map((t) =>
             t.id === id ? { ...t, ...updates } : t
-          ),
-        })),
+          );
+          return { scheduledTransfers, scheduledTransfersByNetwork: { ...s.scheduledTransfersByNetwork, [scope]: scheduledTransfers } };
+        }),
 
       removeScheduledTransfer: (id) =>
-        set((s) => ({
-          scheduledTransfers: s.scheduledTransfers.filter((t) => t.id !== id),
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const scheduledTransfers = (s.scheduledTransfersByNetwork[scope] ?? []).filter((t) => t.id !== id);
+          return { scheduledTransfers, scheduledTransfersByNetwork: { ...s.scheduledTransfersByNetwork, [scope]: scheduledTransfers } };
+        }),
 
       addNotificationEvent: (event) =>
         set((s) => {
+          const scope = s.settings.network.scope;
+          const activeEvents = s.notificationEventsByNetwork[scope] ?? [];
           if (
             event.dedupeKey &&
-            s.notificationEvents.some(
+            activeEvents.some(
               (existing) => existing.dedupeKey === event.dedupeKey
             )
           ) {
             return s;
           }
-          return {
-            notificationEvents: clampNotificationEvents([
-              event,
-              ...s.notificationEvents,
-            ]),
-          };
+          const notificationEvents = clampNotificationEvents([{ ...event, networkScope: scope }, ...activeEvents]);
+          return { notificationEvents, notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [scope]: notificationEvents } };
         }),
 
       markNotificationEventRead: (id) =>
-        set((s) => ({
-          notificationEvents: s.notificationEvents.map((event) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const notificationEvents = (s.notificationEventsByNetwork[scope] ?? []).map((event) =>
             event.id === id && event.readAt === null
               ? { ...event, readAt: Date.now() }
               : event
-          ),
-        })),
+          );
+          return { notificationEvents, notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [scope]: notificationEvents } };
+        }),
 
       markAllNotificationEventsRead: () =>
-        set((s) => ({
-          notificationEvents: s.notificationEvents.map((event) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const notificationEvents = (s.notificationEventsByNetwork[scope] ?? []).map((event) =>
             event.readAt === null ? { ...event, readAt: Date.now() } : event
-          ),
-        })),
+          );
+          return { notificationEvents, notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [scope]: notificationEvents } };
+        }),
 
-      clearNotificationEvents: () => set({ notificationEvents: [] }),
+      clearNotificationEvents: () => set((s) => ({ notificationEvents: [], notificationEventsByNetwork: { ...s.notificationEventsByNetwork, [s.settings.network.scope]: [] } })),
 
       setLastNotificationScanAt: (timestamp) =>
         set((s) => {
@@ -422,20 +448,24 @@ export const usePersistedStore = create<PersistedState>()(
       clearRuntimeIssues: () => set({ runtimeIssues: [] }),
 
       addRequestHistoryItem: (event) =>
-        set((s) => ({
-          requestHistory: clampRequestHistory([event, ...s.requestHistory]),
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const requestHistory = clampRequestHistory([{ ...event, networkScope: scope }, ...(s.requestHistoryByNetwork[scope] ?? [])]);
+          return { requestHistory, requestHistoryByNetwork: { ...s.requestHistoryByNetwork, [scope]: requestHistory } };
+        }),
 
       updateRequestHistoryItem: (id, updates) =>
-        set((s) => ({
-          requestHistory: clampRequestHistory(
-            s.requestHistory.map((event) =>
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const requestHistory = clampRequestHistory(
+            (s.requestHistoryByNetwork[scope] ?? []).map((event) =>
               event.id === id ? { ...event, ...updates } : event
             )
-          ),
-        })),
+          );
+          return { requestHistory, requestHistoryByNetwork: { ...s.requestHistoryByNetwork, [scope]: requestHistory } };
+        }),
 
-      clearRequestHistory: () => set({ requestHistory: [] }),
+      clearRequestHistory: () => set((s) => ({ requestHistory: [], requestHistoryByNetwork: { ...s.requestHistoryByNetwork, [s.settings.network.scope]: [] } })),
     }),
     {
       name: "glyph-persisted",

@@ -9,6 +9,7 @@ import {
 
 const now = 1_000_000;
 const baseDapp: ApprovedDapp = {
+  networkScope: "mainnet",
   origin: "https://demo.app",
   name: "Demo",
   approvedAt: now - 10_000,
@@ -28,7 +29,7 @@ describe("dApp permission policy", () => {
       transferLimitQu: "1,234 qu",
       expiryDurationMs: 60_000,
       expiresAt: "bad",
-    });
+    }, "mainnet");
 
     expect(sanitized?.permissions).toEqual(["transfer"]);
     expect(sanitized?.allowedIdentities).toEqual(["IDENTITY_A"]);
@@ -47,6 +48,12 @@ describe("dApp permission policy", () => {
   test("allows granted in-scope approvals at or under the transfer limit", () => {
     expect(evaluateDappPermission({ approvedDapps: [baseDapp], origin: baseDapp.origin, permission: "transfer", identity: "IDENTITY_A", amountQu: 1000n, now }).allowed).toBe(true);
     expect(evaluateDappPermission({ approvedDapps: [baseDapp], origin: baseDapp.origin, permission: "sign_message", identity: "IDENTITY_A", now }).allowed).toBe(true);
+  });
+
+  test("keys permission lookup by network scope as well as origin", () => {
+    const local = { ...baseDapp, networkScope: "local:test" as const, permissions: ["sc_call"] as ApprovedDapp["permissions"] };
+    expect(evaluateDappPermission({ approvedDapps: [baseDapp, local], networkScope: "mainnet", origin: baseDapp.origin, permission: "sc_call", now }).allowed).toBe(false);
+    expect(evaluateDappPermission({ approvedDapps: [baseDapp, local], networkScope: "local:test", origin: baseDapp.origin, permission: "sc_call", now }).allowed).toBe(true);
   });
 
   test("sanitizes limits and creates expiry timestamps", () => {

@@ -72,6 +72,7 @@ export interface VaultMeta {
 
 /** A dApp origin that the user has explicitly approved, along with its granted permission set. */
 export interface ApprovedDapp {
+  networkScope: NetworkScope;
   origin: string;
   name: string;
   approvedAt: number;
@@ -152,6 +153,10 @@ export type AppSettingsUpdate = Omit<Partial<AppSettings>, "network"> & {
   network?: NetworkConfigUpdate;
 };
 
+/**
+ * Contacts are intentionally wallet-global. A Qubic identity is portable
+ * address-book metadata, not proof of chain activity or authorization.
+ */
 export interface Contact {
   id: string;
   name: string;
@@ -164,6 +169,7 @@ export interface Contact {
 
 /** A recurring transfer that runs on a fixed day interval. */
 export interface ScheduledTransfer {
+  networkScope: NetworkScope;
   id: string;
   label: string;
   sourceIdentity: string;
@@ -202,6 +208,8 @@ export type NotificationEventKind =
   | "system";
 
 export interface NotificationEvent {
+  /** Stamped by the persisted store. Legacy/helper inputs may omit it before insertion. */
+  networkScope?: NetworkScope;
   id: string;
   kind: NotificationEventKind;
   title: string;
@@ -252,6 +260,8 @@ export type RequestHistoryAction = "approved" | "rejected";
 export type RequestHistoryCallbackStatus = "none" | "pending" | "ok" | "failed";
 
 export interface RequestHistoryItem {
+  /** Stamped by the persisted store. Legacy/helper inputs may omit it before insertion. */
+  networkScope?: NetworkScope;
   id: string;
   createdAt: number;
   type: "transfer" | "sc_call" | "sign_message" | "verify_message" | "connect";
@@ -278,14 +288,21 @@ export interface PersistedState {
   pendingTxsByNetwork: Record<NetworkScope, PendingTx[]>;
   /** tx hash → user note, persisted locally */
   txMemos: Record<string, string>;
+  /** Canonical transaction memos partitioned by network identity. */
+  txMemosByNetwork: Record<NetworkScope, Record<string, string>>;
   /** @deprecated Kept for migration compat only — no longer used in UI. */
   txTags: Record<string, string[]>;
   scheduledTransfers: ScheduledTransfer[];
+  scheduledTransfersByNetwork: Record<NetworkScope, ScheduledTransfer[]>;
   notificationEvents: NotificationEvent[];
+  notificationEventsByNetwork: Record<NetworkScope, NotificationEvent[]>;
   priceSnapshots: PriceSnapshot[];
   runtimeIssues: RuntimeIssue[];
   auditEvents: AuditEvent[];
   requestHistory: RequestHistoryItem[];
+  requestHistoryByNetwork: Record<NetworkScope, RequestHistoryItem[]>;
+  /** Canonical dApp approvals. settings.approvedDapps is the active-network projection. */
+  approvedDappsByNetwork: Record<NetworkScope, ApprovedDapp[]>;
   /** Active-network projection retained for existing notification hooks. */
   lastNotificationScanAt: number;
   /** Canonical persisted notification scan cursor partitioned by network identity. */
@@ -314,7 +331,7 @@ export interface PersistedState {
   addPendingTx: (tx: PendingTxInput) => void;
   removePendingTx: (hash: string) => void;
   /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
-  approveDapp: (dapp: ApprovedDapp) => void;
+  approveDapp: (dapp: Omit<ApprovedDapp, "networkScope">) => void;
   revokeDapp: (origin: string) => void;
   /** Removes a single permission while leaving the persisted dApp connection entry intact. */
   revokeDappPermission: (
@@ -331,13 +348,13 @@ export interface PersistedState {
   ) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;
-  addScheduledTransfer: (transfer: ScheduledTransfer) => void;
+  addScheduledTransfer: (transfer: Omit<ScheduledTransfer, "networkScope">) => void;
   updateScheduledTransfer: (
     id: string,
-    updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt">>
+    updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt" | "networkScope">>
   ) => void;
   removeScheduledTransfer: (id: string) => void;
-  addNotificationEvent: (event: NotificationEvent) => void;
+  addNotificationEvent: (event: Omit<NotificationEvent, "networkScope">) => void;
   markNotificationEventRead: (id: string) => void;
   markAllNotificationEventsRead: () => void;
   clearNotificationEvents: () => void;
@@ -347,10 +364,10 @@ export interface PersistedState {
   addPriceSnapshot: (snapshot: PriceSnapshot) => void;
   addRuntimeIssue: (issue: RuntimeIssue) => void;
   clearRuntimeIssues: () => void;
-  addRequestHistoryItem: (event: RequestHistoryItem) => void;
+  addRequestHistoryItem: (event: Omit<RequestHistoryItem, "networkScope">) => void;
   updateRequestHistoryItem: (
     id: string,
-    updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt">>
+    updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt" | "networkScope">>
   ) => void;
   clearRequestHistory: () => void;
 }
