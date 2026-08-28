@@ -3,6 +3,9 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { router } from "@/router";
 import { parsePayLink } from "@/lib/pay-link";
+import { canUseLegacyPayLinks } from "@/lib/pay-link-network-policy";
+import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { usePersistedStore } from "@/store/persisted";
 
 /** Listens for glyph://pay deep links and navigates to the send screen with pre-filled params. */
 export function usePayLink() {
@@ -16,6 +19,16 @@ export function usePayLink() {
           if (!payload) break;
           const pay = parsePayLink(payload);
           if (!pay) continue;
+          const network = usePersistedStore.getState().settings.network;
+          if (!canUseLegacyPayLinks(network.name)) {
+            await publishNotificationEvent(createNotificationEvent({
+              kind: "system",
+              title: "Payment link not opened",
+              body: "Legacy payment links are mainnet-only because they do not identify a network.",
+              dedupeKey: `legacy-pay-link-blocked:${network.scope}`,
+            }), { desktop: false });
+            continue;
+          }
           const params = new URLSearchParams({ to: pay.to });
           if (pay.amount) params.set("amount", pay.amount);
           if (pay.label) params.set("label", pay.label);
