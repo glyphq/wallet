@@ -143,13 +143,21 @@ export interface LocalReadinessOptions {
   onCapability?: (capability: ReadinessCapability, tick?: number) => void;
 }
 
-function defaultSleep(milliseconds: number, signal: AbortSignal): Promise<void> {
+export function abortableSleep(milliseconds: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) {
+    return Promise.reject(signal.reason ?? new DOMException("The operation was aborted", "AbortError"));
+  }
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(resolve, milliseconds);
-    signal.addEventListener("abort", () => {
+    const onAbort = () => {
       clearTimeout(timeout);
+      signal.removeEventListener("abort", onAbort);
       reject(signal.reason ?? new DOMException("The operation was aborted", "AbortError"));
-    }, { once: true });
+    };
+    const timeout = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -161,7 +169,10 @@ export async function verifyLocalNetworkReadiness(
   const timeoutMs = options.timeoutMs ?? 30_000;
   const pollIntervalMs = options.pollIntervalMs ?? 2_000;
   const now = options.now ?? Date.now;
-  const sleep = options.sleep ?? defaultSleep;
+  const sleep = options.sleep ?? abortableSleep;
+  if (options.signal?.aborted) {
+    throw options.signal.reason ?? new DOMException("The operation was aborted", "AbortError");
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(new Error("Local testnet readiness timed out.")), timeoutMs);
   const onExternalAbort = () => controller.abort(options.signal?.reason);
