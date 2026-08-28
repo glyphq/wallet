@@ -9,10 +9,11 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
-import { createQubicClient, configureRpc } from "@/lib/rpc";
+import { configureRpc } from "@/lib/rpc";
+import { createRpcClientForNetwork } from "@/lib/rpc-cache-identity";
 import { resolveNetworkConfig, type NetworkConfig } from "@/lib/network-config";
 import { identifyNetworkPreset, NETWORK_PRESETS } from "@/lib/network-presets";
-import { fetchLocalNetworkManifest, rpcFetch } from "@/lib/rpc-transport";
+import { fetchLocalNetworkManifest } from "@/lib/rpc-transport";
 import {
   INITIAL_LOCAL_READINESS_STATE,
   reduceLocalReadinessState,
@@ -120,11 +121,7 @@ export default function NetworkScreen() {
       }
 
       // This client and canonical config are immutable for the entire probe.
-      const client = createQubicClient({
-        liveBaseUrl: snapshot.liveApiUrl,
-        archiveBaseUrl: snapshot.queryApiUrl,
-        fetch: rpcFetch,
-      });
+      const client = createRpcClientForNetwork(snapshot);
 
       let currentTick: number;
       if (isLocal) {
