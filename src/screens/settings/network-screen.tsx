@@ -200,6 +200,9 @@ export default function NetworkScreen() {
 
   const activeNetwork = identifyNetworkPreset(liveUrl, queryUrl);
   const showLocalReadiness = activeNetwork === "testnet";
+  const localInstanceLabel = localReadiness.instanceId
+    ? `${localReadiness.instanceId.slice("qubic-local:".length, "qubic-local:".length + 8)}…${localReadiness.instanceId.slice(-4)}`
+    : null;
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -224,7 +227,7 @@ export default function NetworkScreen() {
           <Input id="archive-api-url" label="Archive API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); resetTestState(); }} placeholder="https://rpc.qubic.org/query/v1" />
 
           {showLocalReadiness && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", padding: "var(--space-3)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
+            <div style={{ display: "flex", minWidth: 0, flexDirection: "column", gap: "var(--space-2)", padding: "var(--space-3)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
               <strong style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-sm)" }}>Local testnet readiness</strong>
               {(Object.keys(capabilityLabels) as ReadinessCapability[]).map((capability) => {
                 const complete = localReadiness.completed.includes(capability);
@@ -235,7 +238,13 @@ export default function NetworkScreen() {
                 );
               })}
               {localReadiness.instanceId && (
-                <span style={helperStyle}>Instance: {localReadiness.instanceId}</span>
+                <span
+                  aria-label={`Local testnet instance ${localReadiness.instanceId}`}
+                  title={localReadiness.instanceId}
+                  style={helperStyle}
+                >
+                  Instance: {localInstanceLabel}
+                </span>
               )}
               <span style={helperStyle}>
                 Requires the dev-kit stack and manifest server. Saving stays disabled until every check passes.
