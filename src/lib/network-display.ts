@@ -3,7 +3,7 @@ export interface DisplayNetworkConfig {
   manifestInstanceId?: string | null;
 }
 
-const UNRESOLVED_LOCAL_INSTANCE = "manifest-unresolved";
+const LOCAL_INSTANCE_PATTERN = /^qubic-local:([0-9a-f]{64})$/u;
 
 export interface NetworkIndicator {
   label: string;
@@ -16,9 +16,8 @@ export function networkIndicator(network: DisplayNetworkConfig): NetworkIndicato
 
   if (network.name === "testnet") {
     const instanceId = network.manifestInstanceId?.trim();
-    const suffix = instanceId && instanceId !== UNRESOLVED_LOCAL_INSTANCE
-      ? ` · ${instanceId.slice(0, 8)}`
-      : "";
+    const instanceHash = instanceId?.match(LOCAL_INSTANCE_PATTERN)?.[1];
+    const suffix = instanceHash ? ` · ${instanceHash.slice(0, 8)}` : "";
     return {
       label: `LOCAL TESTNET${suffix}`,
       detail: "Local testnet funds have no real value",
