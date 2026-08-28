@@ -110,6 +110,26 @@ bun run dev
 
 This starts only Vite. It is useful for isolated visual work, but Tauri commands and plugins are not available in a normal browser tab. Vault cryptography, native session signing, store encryption, deep links, updater behavior, notifications, tray behavior, and platform integration cannot be validated this way.
 
+### Local Qubic testnet
+
+Local testnet requires the sibling `aio-qubic-dev-kit` repository, Docker Compose, and enough memory for core-lite and Bob. The lean stack uses about 21 GB RAM. Do not start it on a host without adequate headroom.
+
+```sh
+cd ../aio-qubic-dev-kit
+git submodule update --init core-lite core-bob
+cp -n .env.example .env
+sed -i 's/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=/' .env
+./scripts/up.sh
+./scripts/check-local-network.sh
+
+cd ../wallet
+bun tauri dev
+```
+
+In Glyph, open **Settings > Network**, select **Local testnet**, then run **Test & save**. The readiness flow fetches the exact loopback manifest at `127.0.0.1:41842`, probes core-lite live and query APIs at `127.0.0.1:41841`, and requires tick progress.
+
+Do not use `down.sh --wipe` casually. A wipe rotates the local instance identity and requires a fresh genesis. Wallet identities that need funds must be included in the dev-kit genesis state before the wipe and restart.
+
 ### Preview a frontend production build
 
 ```sh
@@ -413,7 +433,8 @@ CI Rust compilation is a platform matrix, but it is not a full GUI, installer, c
 
 - Put endpoint calls and client setup in `src/lib/rpc.ts` or the appropriate domain helper.
 - Use TanStack Query hooks in `src/hooks/`.
-- Include endpoint identity in query keys when cached results depend on the configured server.
+- Bind every query key and query function to the same immutable RPC snapshot. Its identity includes the canonical network scope and endpoints.
+- Treat each local manifest instance as a separate chain, even when its loopback URLs are unchanged after a wipe.
 - Apply polling profiles rather than creating independent high-frequency timers.
 
 ### Persisted state
@@ -423,6 +444,7 @@ CI Rust compilation is a platform matrix, but it is not a full GUI, installer, c
 - Add explicit maximum lengths, collection caps, numeric ranges, and migration defaults.
 - Add or update `src/store/persisted-boundary.test.ts`.
 - Decide whether the data is a secret, local metadata, or reproducible network cache before persisting it.
+- Stamp chain-derived and authorization-bearing records with the captured network scope. Late async writers must receive that scope explicitly rather than reading the active network at completion.
 
 Do not put active seeds into Zustand, browser storage, query cache, logs, diagnostics, or error messages.
 

@@ -445,7 +445,17 @@ An encrypted export without its password is not a recovery method.
 
 ## 16. Network settings
 
-Glyph uses separate live and archive RPC endpoints. The Network settings screen allows custom HTTPS endpoints to be tested before saving. It also controls the target-tick offset.
+Glyph uses separate live and archive RPC endpoints. The Network settings screen provides Mainnet, Local testnet, and Custom profiles. Custom networks require HTTPS endpoints. Local testnet is restricted to the loopback services published by `aio-qubic-dev-kit`.
+
+To use Local testnet:
+
+1. Start `aio-qubic-dev-kit` and wait for `./scripts/check-local-network.sh` to pass.
+2. Open **Settings > Network** and select **Local testnet**.
+3. Choose **Test & save**. Glyph verifies the dev-kit manifest, live and query services, and advancing ticks before saving.
+
+The title bar keeps a visible testnet marker and abbreviated instance fingerprint while Local testnet is active. A dev-kit wipe creates a new instance identity. Glyph treats that new generation as a separate network, so cached and persisted chain records from the previous generation are not reused.
+
+Local testnet QU has no fiat value in Glyph. Price-derived displays and alerts are disabled. Legacy payment links without an explicit network are mainnet-only, and dApp requests must bind to the exact local instance.
 
 Use trusted endpoints. A malicious or unreliable RPC can provide false balances, incomplete history, stale ticks, or failed broadcasts. It cannot produce a valid signature without the seed, but it can mislead the information shown before signing.
 
