@@ -7,10 +7,12 @@ import {
   resolveNetworkConfig,
 } from "@/lib/network-config";
 import {
+  createRpcClientForNetwork,
   createRpcCacheSnapshot,
   invalidateObsoleteRpcQueries,
   rpcCacheIdentity,
 } from "@/lib/rpc-cache-identity";
+import { getRpcClient } from "@/lib/rpc";
 
 const INSTANCE_A = `qubic-local:${"a".repeat(64)}`;
 const INSTANCE_B = `qubic-local:${"b".repeat(64)}`;
@@ -58,6 +60,17 @@ describe("rpc cache identity", () => {
     expect(first.identity).toContain(MAINNET_NETWORK_CONFIG.scope);
     expect(second.identity).toContain(custom.scope);
     expect(first.network).toEqual(MAINNET_NETWORK_CONFIG);
+  });
+
+  test("creates a candidate client without mutating the active singleton", () => {
+    const active = getRpcClient();
+    const candidate = createRpcClientForNetwork(resolveNetworkConfig({
+      liveApiUrl: "https://candidate-live.example/v1",
+      queryApiUrl: "https://candidate-query.example/v1",
+    }));
+
+    expect(candidate).not.toBe(active);
+    expect(getRpcClient()).toBe(active);
   });
 
   test("cancels and invalidates only obsolete scoped queries before a late result can land", async () => {
