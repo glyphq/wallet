@@ -14,11 +14,15 @@ describe("networkIndicator", () => {
     });
     expect(networkIndicator({
       name: "testnet",
-      manifestInstanceId: "12ab34cd-56ef-7890",
+      manifestInstanceId: `qubic-local:${"12ab34cd".repeat(8)}`,
     })?.label).toBe("LOCAL TESTNET · 12ab34cd");
     expect(networkIndicator({
       name: "testnet",
       manifestInstanceId: "manifest-unresolved",
+    })?.label).toBe("LOCAL TESTNET");
+    expect(networkIndicator({
+      name: "testnet",
+      manifestInstanceId: "qubic-local:not-a-valid-instance",
     })?.label).toBe("LOCAL TESTNET");
   });
 
