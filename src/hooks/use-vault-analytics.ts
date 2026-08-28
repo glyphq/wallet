@@ -1,17 +1,18 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { buildVaultAnalytics, type AnalyticsTxLike } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { dedupeTxRecords, normalizeArchiveTransaction } from "@/lib/tx-domain";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
+import { qk } from "@/lib/query-keys";
+import type { QubicClient } from "@/lib/rpc";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 20; // cap at 2 000 transactions per identity
 
-async function fetchAllTransactionsForIdentity(identity: string, signal?: AbortSignal): Promise<AnalyticsTxLike[]> {
-  const client = getRpcClient();
+async function fetchAllTransactionsForIdentity(client: QubicClient, identity: string, signal?: AbortSignal): Promise<AnalyticsTxLike[]> {
   const transactions: AnalyticsTxLike[] = [];
   let offset = 0;
 
@@ -43,6 +44,7 @@ async function fetchAllTransactionsForIdentity(identity: string, signal?: AbortS
 }
 
 export function useVaultAnalytics() {
+  const rpc = useRpcCacheSnapshot("archive");
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((item) => item.id === s.settings.activeVaultId) ?? null);
   const wallets = useSessionStore((s) => s.wallets);
@@ -56,9 +58,9 @@ export function useVaultAnalytics() {
   }, [vault, wallets]);
 
   return useQuery({
-    queryKey: ["vault-analytics", settings.activeVaultId, identities],
+    queryKey: qk.vaultAnalytics(rpc.identity, settings.activeVaultId, identities),
     queryFn: async ({ signal }) => {
-      const all = await Promise.all(identities.map((identity) => fetchAllTransactionsForIdentity(identity, signal)));
+      const all = await Promise.all(identities.map((identity) => fetchAllTransactionsForIdentity(rpc.client, identity, signal)));
       return buildVaultAnalytics(new Set(identities), dedupeTxRecords(all.flat()));
     },
     enabled: identities.length > 0,

@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { qUtilGetBalances16 } from "@qubic.org/contracts";
-import { getRpcClient } from "@/lib/rpc";
 import { identityToPublicKey } from "@/lib/crypto";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 import type { Identity } from "@qubic.org/types";
 
 const idToPk = (id: string) => identityToPublicKey(id as Identity);
@@ -20,7 +19,7 @@ export function useVaultBalances() {
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
   const pollingIntervalMs = usePollingIntervalMs();
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const rpc = useRpcCacheSnapshot("live");
 
   const liveIdentities = wallets.slice(0, MAX_VAULT_ACCOUNTS).map((w) => w.identity);
   const identities = liveIdentities.length > 0
@@ -28,10 +27,10 @@ export function useVaultBalances() {
     : (notifyWhenLocked ? cachedIdentities : []);
 
   return useQuery({
-    queryKey: qk.vaultBalances(rpcIdentity, identities),
+    queryKey: qk.vaultBalances(rpc.identity, identities),
     queryFn: async () => {
       const result = await qUtilGetBalances16(
-        getRpcClient().live,
+        rpc.client.live,
         { publicKeys: identities },
         { identityToPublicKey: idToPk },
       );

@@ -1,15 +1,56 @@
-import { DEFAULT_ARCHIVE_URL, DEFAULT_LIVE_URL, normalizeRpcUrl } from "@/lib/rpc";
+import type { QueryClient as TanstackQueryClient } from "@tanstack/react-query";
+import { createQubicClient, type QubicClient } from "@qubic.org/rpc";
+import type { NetworkConfig } from "@/lib/network-config";
+import { resolveNetworkConfig } from "@/lib/network-config";
+import { rpcFetch } from "@/lib/rpc-transport";
 
 export type RpcCacheScope = "live" | "archive" | "both";
 
+export interface RpcCacheSnapshot {
+  readonly network: Readonly<NetworkConfig>;
+  readonly identity: string;
+  readonly client: QubicClient;
+}
+
 export function rpcCacheIdentity(
-  network: { liveApiUrl: string; queryApiUrl: string },
+  network: NetworkConfig,
   scope: RpcCacheScope = "both",
 ): string {
-  const live = normalizeRpcUrl(network.liveApiUrl) ?? DEFAULT_LIVE_URL;
-  const archive = normalizeRpcUrl(network.queryApiUrl) ?? DEFAULT_ARCHIVE_URL;
+  const resolved = resolveNetworkConfig(network);
+  const networkScope = resolved.scope;
 
-  if (scope === "live") return `live:${live}`;
-  if (scope === "archive") return `archive:${archive}`;
-  return `live:${live}|archive:${archive}`;
+  if (scope === "live") return `${networkScope}|live:${resolved.liveApiUrl}`;
+  if (scope === "archive") return `${networkScope}|archive:${resolved.queryApiUrl}`;
+  return `${networkScope}|live:${resolved.liveApiUrl}|archive:${resolved.queryApiUrl}`;
+}
+
+export function createRpcCacheSnapshot(
+  network: NetworkConfig,
+  scope: RpcCacheScope = "both",
+): RpcCacheSnapshot {
+  const resolved = Object.freeze(resolveNetworkConfig(network));
+  return Object.freeze({
+    network: resolved,
+    identity: rpcCacheIdentity(resolved, scope),
+    client: createQubicClient({
+      liveBaseUrl: resolved.liveApiUrl,
+      archiveBaseUrl: resolved.queryApiUrl,
+      fetch: rpcFetch,
+    }),
+  });
+}
+
+export function isRpcScopedQueryKey(queryKey: readonly unknown[], identity: string): boolean {
+  return queryKey.includes(identity);
+}
+
+/** Cancel first so a late obsolete response cannot repopulate its cache entry. */
+export async function invalidateObsoleteRpcQueries(
+  queryClient: TanstackQueryClient,
+  identity: string,
+): Promise<void> {
+  const predicate = (query: { queryKey: readonly unknown[] }) =>
+    isRpcScopedQueryKey(query.queryKey, identity);
+  await queryClient.cancelQueries({ predicate });
+  await queryClient.invalidateQueries({ predicate, refetchType: "none" });
 }

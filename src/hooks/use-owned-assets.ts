@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 
 export interface OwnedAssetItem {
   name: string;
@@ -15,12 +14,12 @@ export interface OwnedAssetItem {
 /** Fetches assets owned by the given identity via the live RPC. */
 export function useOwnedAssets(identity: string | null | undefined) {
   const pollingIntervalMs = usePollingIntervalMs();
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const rpc = useRpcCacheSnapshot("live");
 
   return useQuery({
-    queryKey: ["owned-assets", rpcIdentity, identity],
+    queryKey: ["owned-assets", rpc.identity, identity],
     queryFn: async () => {
-      const result = await getRpcClient().live.getOwnedAssets(identity!);
+      const result = await rpc.client.live.getOwnedAssets(identity!);
       if (!result.ok) throw result.error;
 
       const items: OwnedAssetItem[] = [];

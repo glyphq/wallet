@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef } from "react";
-import { getRpcClient } from "@/lib/rpc";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { truncateId } from "@/lib/format";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 
 const STARTUP_RECEIVED_LOOKBACK_MS = 24 * 60 * 60 * 1000; // 24 h
 const PAGE_SIZE = 50;
 
 export function useNotificationReconcile() {
+  const rpc = useRpcCacheSnapshot("archive");
   const wallets = useSessionStore((s) => s.wallets);
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
   const setLastNotificationScanAt = usePersistedStore((s) => s.setLastNotificationScanAt);
@@ -18,7 +19,7 @@ export function useNotificationReconcile() {
     return live.length > 0 ? live : cachedIdentities;
   }, [wallets, cachedIdentities]);
 
-  const identitiesKey = identities.join("|");
+  const identitiesKey = `${rpc.identity}|${identities.join("|")}`;
   const runKeyRef = useRef<string>("");
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function useNotificationReconcile() {
       if (!cancelled && lastNotificationScanAt > 0) {
         await Promise.all(
           identities.map(async (identity) => {
-            const result = await getRpcClient().archive.getTransactionsForIdentity({
+            const result = await rpc.client.archive.getTransactionsForIdentity({
               identity,
               filters: { destination: identity },
               ranges: { timestamp: { gte: String(Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS)) } },
@@ -45,6 +46,7 @@ export function useNotificationReconcile() {
             if (!result.ok) return;
 
             for (const tx of result.value.transactions ?? []) {
+              if (cancelled) return;
               if (!tx.hash || tx.moneyFlew === false) continue;
               await publishNotificationEvent(createNotificationEvent({
                 kind: "received",
@@ -70,5 +72,5 @@ export function useNotificationReconcile() {
     return () => {
       cancelled = true;
     };
-  }, [identities, identitiesKey, setLastNotificationScanAt]);
+  }, [identities, identitiesKey, rpc.client, setLastNotificationScanAt]);
 }
