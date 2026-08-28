@@ -42,6 +42,7 @@ export type { ScCallRequest } from "@/lib/request-schema";
 interface ScCallPreviewProps {
   request: ScCallRequest;
   onApprove: (result: ApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
@@ -118,7 +119,7 @@ function decodeMultiSignVaultRelease(bytes: Uint8Array): { vaultId: bigint; amou
   }
 }
 
-export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewProps) {
+export function ScCallPreview({ request, onApprove, beforeApprove, onReject }: ScCallPreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
@@ -230,6 +231,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
     setProcessing(true);
     setTxError("");
     try {
+      await beforeApprove();
       const amount = requestAmount;
       const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
@@ -256,7 +258,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         targetTick: tick,
         broadcastAt: Date.now(),
         contractName: `${contractName} · ${inputTypeLabel}`,
-      });
+      }, networkScope);
 
       await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
       setProcessing(false);

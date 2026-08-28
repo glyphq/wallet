@@ -253,7 +253,7 @@ export default function StakeScreen() {
         targetTick,
         broadcastAt: Date.now(),
         contractName: "Qearn · Lock",
-      });
+      }, networkScope);
 
       setTxHash(hash);
       setStep("done");
@@ -295,7 +295,7 @@ export default function StakeScreen() {
         targetTick,
         broadcastAt: Date.now(),
         contractName: "Qearn · Unlock",
-      });
+      }, networkScope);
 
       setTxHash(hash);
       setStep("done");

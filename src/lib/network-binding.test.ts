@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { activeNetworkBinding } from "@/lib/network-binding";
-import { LOCAL_TESTNET_LIVE_API_URL, LOCAL_TESTNET_QUERY_API_URL, MAINNET_NETWORK_CONFIG, resolveNetworkConfig } from "@/lib/network-config";
+import { LOCAL_TESTNET_LIVE_API_URL, LOCAL_TESTNET_NETWORK_CONFIG, LOCAL_TESTNET_QUERY_API_URL, MAINNET_NETWORK_CONFIG, resolveNetworkConfig } from "@/lib/network-config";
 
 const INSTANCE_A = `qubic-local:${"a".repeat(64)}`;
 const INSTANCE_B = `qubic-local:${"b".repeat(64)}`;
@@ -16,6 +16,10 @@ describe("active network binding", () => {
 
   test("fails closed for forged configs instead of falling back to mainnet", async () => {
     await expect(activeNetworkBinding({ ...MAINNET_NETWORK_CONFIG, liveApiUrl: "" })).rejects.toThrow();
+  });
+
+  test("fails closed while the local manifest instance is unresolved", async () => {
+    await expect(activeNetworkBinding(LOCAL_TESTNET_NETWORK_CONFIG)).rejects.toThrow("instance identity is unresolved");
   });
 
   test("hashes canonical custom scope deterministically", async () => {

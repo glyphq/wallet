@@ -19,6 +19,7 @@ export interface VerifyMessageResult {
 interface VerifyMessagePreviewProps {
   request: VerifyMessageRequest;
   onApprove: (result: VerifyMessageResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
@@ -28,7 +29,7 @@ function previewText(value: string, maxChars = 2000): string {
     : value;
 }
 
-export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
+export function VerifyMessagePreview({ request, onApprove, beforeApprove, onReject }: VerifyMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const wallets = useSessionStore((s) => s.wallets);
@@ -58,6 +59,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
     setProcessing(true);
     setError("");
     try {
+      await beforeApprove();
       const messageBytes = request.data
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);

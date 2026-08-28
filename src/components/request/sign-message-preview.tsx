@@ -22,6 +22,7 @@ export interface SignMessageApproveResult {
 interface SignMessagePreviewProps {
   request: SignMessageRequest;
   onApprove: (result: SignMessageApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
@@ -35,7 +36,7 @@ function previewText(value: string, maxChars = 2000): string {
     : value;
 }
 
-export function SignMessagePreview({ request, onApprove, onReject }: SignMessagePreviewProps) {
+export function SignMessagePreview({ request, onApprove, beforeApprove, onReject }: SignMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
@@ -77,6 +78,7 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
     setProcessing(true);
     setError("");
     try {
+      await beforeApprove();
       const messageBytes = request.data
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);

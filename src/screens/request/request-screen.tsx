@@ -27,6 +27,7 @@ import {
   type RequestSuccessState,
 } from "@/lib/request-orchestration";
 import { completePendingRequest } from "@/lib/request-lifecycle";
+import { requireActiveNetworkEnvelope } from "@/lib/deep-link-acceptance";
 
 export default function RequestScreen() {
   const navigate = useNavigate();
@@ -125,6 +126,14 @@ export default function RequestScreen() {
     }
   }
 
+  async function freshApprovalEnvelope() {
+    if (!pendingRequest) throw new Error("This request is no longer pending.");
+    return requireActiveNetworkEnvelope({
+      payload: pendingRequest,
+      networkSetting: usePersistedStore.getState().settings.network,
+    });
+  }
+
   async function reject() {
     if (!envelope) return;
     setActionError(null);
@@ -139,8 +148,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
+      const freshEnvelope = await freshApprovalEnvelope();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "tx", approve: result }, vaults }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -153,8 +163,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
+      const freshEnvelope = await freshApprovalEnvelope();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "message", approve: result }, vaults }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -167,8 +178,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
+      const freshEnvelope = await freshApprovalEnvelope();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "verify", approve: result }, vaults }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -181,13 +193,14 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
+      const freshEnvelope = await freshApprovalEnvelope();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "connect", approve: result }, vaults }),
         shiftPendingRequest,
       );
       approveDapp({
-        origin: envelope.request.dapp.origin,
-        name: envelope.request.dapp.name || "Unknown dApp",
+        origin: freshEnvelope.request.dapp.origin,
+        name: freshEnvelope.request.dapp.name || "Unknown dApp",
         approvedAt: Date.now(),
         permissions: result.permissions,
         allowedIdentities: [result.identity],
@@ -315,30 +328,35 @@ export default function RequestScreen() {
       {request.type === "transfer" ? (
         <TransferPreview
           request={request}
+          beforeApprove={freshApprovalEnvelope}
           onApprove={handleApprove}
           onReject={reject}
         />
       ) : request.type === "sc_call" ? (
         <ScCallPreview
           request={request}
+          beforeApprove={freshApprovalEnvelope}
           onApprove={handleApprove}
           onReject={reject}
         />
       ) : request.type === "sign_message" ? (
         <SignMessagePreview
           request={request}
+          beforeApprove={freshApprovalEnvelope}
           onApprove={handleApproveMessage}
           onReject={reject}
         />
       ) : request.type === "verify_message" ? (
         <VerifyMessagePreview
           request={request}
+          beforeApprove={freshApprovalEnvelope}
           onApprove={handleApproveVerify}
           onReject={reject}
         />
       ) : request.type === "connect" ? (
         <ConnectPreview
           request={request}
+          beforeApprove={freshApprovalEnvelope}
           onApprove={handleApproveConnect}
           onReject={reject}
         />
