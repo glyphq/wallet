@@ -1,5 +1,11 @@
 # glyph
 
+## 0.17.0-prerelease.0
+
+### Minor Changes
+
+- 202fb09: Add first-class, instance-isolated local Qubic testnet support with restricted loopback transport, readiness checks, network-scoped state, and persistent safety indicators.
+
 ## 0.16.12
 
 ### Patch Changes

@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "prerelease",
+  "initialVersions": {
+    "glyph": "0.16.12"
+  },
+  "changesets": [
+    "add-local-testnet-support"
+  ]
+}
