@@ -4,6 +4,7 @@ mod clipboard;
 mod commands;
 mod deep_link;
 pub mod link_broker;
+mod local_rpc_transport;
 mod store_crypto;
 mod vault_crypto;
 mod qubic_native;
@@ -189,6 +190,8 @@ pub fn run() {
             commands::post_callback,
             commands::set_hide_to_tray,
             commands::get_updater_context,
+            local_rpc_transport::fetch_local_network_manifest,
+            local_rpc_transport::local_rpc_request,
             store_crypto::encrypt_store_value,
             store_crypto::decrypt_store_value,
             vault_crypto::encrypt_vault,
