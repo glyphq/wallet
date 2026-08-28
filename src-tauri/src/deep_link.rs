@@ -140,6 +140,19 @@ pub fn replay_key_from_envelope_payload(payload: &str) -> Result<String, String>
     Ok(format!("v2|{}", replay_parts_from_envelope_payload(payload)?.join("|")))
 }
 
+fn valid_network_id(value: &str) -> bool {
+    if value == "qubic:mainnet" || value == "qubic:testnet:local:manifest-unresolved" {
+        return true;
+    }
+    if let Some(instance) = value.strip_prefix("qubic:testnet:local:qubic-local%3A") {
+        return instance.len() == 64 && instance.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
+    }
+    if let Some(hash) = value.strip_prefix("qubic:custom:sha256:") {
+        return hash.len() == 43 && hash.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
+    }
+    false
+}
+
 pub fn replay_parts_from_envelope_payload(payload: &str) -> Result<[String; 4], String> {
     let envelope: Value = serde_json::from_str(payload).map_err(|e| format!("invalid pending request: {e}"))?;
     let request = envelope.get("request").and_then(Value::as_object).ok_or("missing request")?;
@@ -156,6 +169,9 @@ pub fn replay_parts_from_envelope_payload(payload: &str) -> Result<[String; 4], 
         .and_then(|network| network.get("id"))
         .and_then(Value::as_str)
         .ok_or("missing network.id")?;
+    if !valid_network_id(network_id) {
+        return Err("invalid network.id".to_string());
+    }
     let request_hash = envelope
         .get("request_hash")
         .and_then(Value::as_str)
@@ -700,14 +716,14 @@ mod tests {
             },
             "callback": null,
             "redirect_uri": null,
-            "network": { "id": "qubic:testnet" },
+            "network": { "id": "qubic:testnet:local:manifest-unresolved" },
             "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
         })
         .to_string();
 
         assert_eq!(
             replay_key_from_envelope_payload(&payload).unwrap(),
-            "v2|qubic:testnet|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
+            "v2|qubic:testnet:local:manifest-unresolved|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
         );
     }
 

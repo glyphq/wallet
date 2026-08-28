@@ -100,7 +100,7 @@ export const glyphRequestSchema = z.discriminatedUnion("type", [
 const networkBindingSchema = z.object({
   id: z.union([
     z.literal("qubic:mainnet"),
-    z.literal("qubic:testnet"),
+    z.string().regex(/^qubic:testnet:local:(?:qubic-local%3A[0-9a-f]{64}|manifest-unresolved)$/),
     z.string().regex(/^qubic:custom:sha256:[A-Za-z0-9_-]{43}$/),
   ]),
 }) as z.ZodType<GlyphNetworkBinding>;

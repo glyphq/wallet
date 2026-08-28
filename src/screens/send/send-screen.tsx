@@ -25,6 +25,7 @@ import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote"
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { unlockVault } from "@/lib/vault";
 import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
@@ -324,10 +325,12 @@ export default function SendScreen() {
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
       addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
       setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");

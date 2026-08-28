@@ -26,6 +26,7 @@ import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
@@ -198,6 +199,7 @@ export default function SendManyScreen() {
     setSending(true);
     setStep("sending");
     try {
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
       const fields: PayloadField[] = [];
@@ -211,13 +213,14 @@ export default function SendManyScreen() {
       }
       const payload = buildPayload(fields);
       const total = recipients.reduce((s, r) => s + BigInt(r.amount.trim()), 0n) + (fee ?? 0n);
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,
         inputType: Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
         payload, amount: total, targetTick, currentTick,
       });
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
       recipients.forEach((r) => {
         const id = r.identity.trim().toUpperCase();
         const contact = contacts.find((c) => c.identity === id);

@@ -8,6 +8,7 @@ import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick, getRpcClient } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
@@ -230,9 +231,11 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
     setTxError("");
     try {
       const amount = requestAmount;
+      const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
 
+      assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: selectedIndex,
         destination,
@@ -243,7 +246,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         currentTick,
       });
 
-      await broadcastTx(encoded);
+      await broadcastTx(encoded, networkScope);
 
       addPendingTx({
         hash,
