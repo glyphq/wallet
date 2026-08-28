@@ -133,13 +133,24 @@ function useRuntimeDiagnostics() {
 }
 
 function usePriceSnapshotRecorder() {
-  const { data: latestStats } = useLatestStats();
+  const { data: latestStats, dataUpdatedAt } = useLatestStats();
+  const networkScope = usePersistedStore((s) => s.settings.network.scope);
   const addPriceSnapshot = usePersistedStore((s) => s.addPriceSnapshot);
+  const sourceRef = useRef({ dataUpdatedAt: 0, scope: networkScope });
+
+  // A network switch can briefly retain cached query data. Keep its original
+  // scope until a fresh stats result is observed on the new network.
+  if (latestStats && dataUpdatedAt !== sourceRef.current.dataUpdatedAt) {
+    sourceRef.current = { dataUpdatedAt, scope: networkScope };
+  }
 
   useEffect(() => {
     if (!latestStats || !Number.isFinite(latestStats.price)) return;
-    addPriceSnapshot({ timestamp: Date.now(), priceUsd: latestStats.price });
-  }, [addPriceSnapshot, latestStats?.price]);
+    addPriceSnapshot(
+      { timestamp: Date.now(), priceUsd: latestStats.price },
+      sourceRef.current.scope,
+    );
+  }, [addPriceSnapshot, dataUpdatedAt, latestStats?.price]);
 }
 
 function AppHooks() {

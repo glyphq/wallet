@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { createNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { truncateId } from "@/lib/format";
@@ -48,7 +48,7 @@ export function useNotificationReconcile() {
             for (const tx of result.value.transactions ?? []) {
               if (cancelled) return;
               if (!tx.hash || tx.moneyFlew === false) continue;
-              await publishNotificationEvent(createNotificationEvent({
+              usePersistedStore.getState().addNotificationEvent(createNotificationEvent({
                 kind: "received",
                 title: "Funds received",
                 body: `${BigInt(tx.amount ?? "0").toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
@@ -56,21 +56,21 @@ export function useNotificationReconcile() {
                 txHash: tx.hash,
                 dedupeKey: `received:${tx.hash}:${identity}`,
                 createdAt: tx.timestamp ? Number(tx.timestamp) : startedAt,
-              }), { desktop: false });
+              }), rpc.network.scope);
             }
           }),
         );
       }
 
-      if (!cancelled) setLastNotificationScanAt(startedAt);
+      if (!cancelled) setLastNotificationScanAt(startedAt, rpc.network.scope);
     }
 
     reconcile().catch(() => {
-      if (!cancelled) setLastNotificationScanAt(Date.now());
+      if (!cancelled) setLastNotificationScanAt(Date.now(), rpc.network.scope);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [identities, identitiesKey, rpc.client, setLastNotificationScanAt]);
+  }, [identities, identitiesKey, rpc.client, rpc.network.scope, setLastNotificationScanAt]);
 }
