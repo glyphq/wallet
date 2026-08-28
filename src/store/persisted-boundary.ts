@@ -174,6 +174,45 @@ export function insertPendingTxForNetwork(
   };
 }
 
+export function insertNotificationEventForNetwork(
+  eventsByNetwork: Record<NetworkScope, NotificationEvent[]>,
+  event: Omit<NotificationEvent, "networkScope">,
+  expectedScope: NetworkScope
+): Record<NetworkScope, NotificationEvent[]> {
+  const activeEvents = eventsByNetwork[expectedScope] ?? [];
+  if (event.dedupeKey && activeEvents.some((existing) => existing.dedupeKey === event.dedupeKey)) {
+    return eventsByNetwork;
+  }
+  return {
+    ...eventsByNetwork,
+    [expectedScope]: clampNotificationEvents([{ ...event, networkScope: expectedScope }, ...activeEvents]),
+  };
+}
+
+export function insertPriceSnapshotForNetwork(
+  snapshotsByNetwork: Record<NetworkScope, PriceSnapshot[]>,
+  snapshot: PriceSnapshot,
+  expectedScope: NetworkScope
+): Record<NetworkScope, PriceSnapshot[]> {
+  const activeSnapshots = snapshotsByNetwork[expectedScope] ?? [];
+  const latest = activeSnapshots[0];
+  const priceFraction = latest && latest.priceUsd > 0
+    ? Math.abs(latest.priceUsd - snapshot.priceUsd) / latest.priceUsd
+    : Infinity;
+  if (latest && priceFraction < 0.001 && snapshot.timestamp - latest.timestamp < 15 * 60 * 1000) {
+    return snapshotsByNetwork;
+  }
+  return { ...snapshotsByNetwork, [expectedScope]: clampPriceSnapshots([snapshot, ...activeSnapshots]) };
+}
+
+export function setNotificationScanForNetwork(
+  scansByNetwork: Record<NetworkScope, number>,
+  timestamp: number,
+  expectedScope: NetworkScope
+): Record<NetworkScope, number> {
+  return { ...scansByNetwork, [expectedScope]: timestamp };
+}
+
 export function sanitizeNotificationScanAtByNetwork(
   value: unknown
 ): Record<NetworkScope, number> {

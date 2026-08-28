@@ -335,7 +335,7 @@ export interface PersistedState {
   addPendingTx: (tx: PendingTxInput, expectedScope: NetworkScope) => void;
   removePendingTx: (hash: string) => void;
   /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
-  approveDapp: (dapp: Omit<ApprovedDapp, "networkScope">) => void;
+  approveDapp: (dapp: Omit<ApprovedDapp, "networkScope">, expectedScope: NetworkScope) => void;
   revokeDapp: (origin: string) => void;
   /** Removes a single permission while leaving the persisted dApp connection entry intact. */
   revokeDappPermission: (
@@ -358,20 +358,21 @@ export interface PersistedState {
     updates: Partial<Omit<ScheduledTransfer, "id" | "createdAt" | "networkScope">>
   ) => void;
   removeScheduledTransfer: (id: string) => void;
-  addNotificationEvent: (event: Omit<NotificationEvent, "networkScope">) => void;
+  addNotificationEvent: (event: Omit<NotificationEvent, "networkScope">, expectedScope: NetworkScope) => void;
   markNotificationEventRead: (id: string) => void;
   markAllNotificationEventsRead: () => void;
   clearNotificationEvents: () => void;
-  setLastNotificationScanAt: (timestamp: number) => void;
+  setLastNotificationScanAt: (timestamp: number, expectedScope: NetworkScope) => void;
   addAuditEvent: (event: AuditEvent) => void;
   clearAuditEvents: () => void;
-  addPriceSnapshot: (snapshot: PriceSnapshot) => void;
+  addPriceSnapshot: (snapshot: PriceSnapshot, expectedScope: NetworkScope) => void;
   addRuntimeIssue: (issue: RuntimeIssue) => void;
   clearRuntimeIssues: () => void;
-  addRequestHistoryItem: (event: Omit<RequestHistoryItem, "networkScope">) => void;
+  addRequestHistoryItem: (event: Omit<RequestHistoryItem, "networkScope">, expectedScope: NetworkScope) => void;
   updateRequestHistoryItem: (
     id: string,
-    updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt" | "networkScope">>
+    updates: Partial<Omit<RequestHistoryItem, "id" | "createdAt" | "networkScope">>,
+    expectedScope: NetworkScope
   ) => void;
   clearRequestHistory: () => void;
 }

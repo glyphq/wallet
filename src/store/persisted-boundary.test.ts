@@ -16,6 +16,9 @@ import {
   mergePersistedState,
   migratePersistedState,
   insertPendingTxForNetwork,
+  insertNotificationEventForNetwork,
+  insertPriceSnapshotForNetwork,
+  setNotificationScanForNetwork,
   sanitizeCustomPriceFeedUrl,
   sanitizePollingInterval,
 } from "./persisted-boundary";
@@ -476,5 +479,21 @@ describe("persisted boundary helpers", () => {
     expect(inserted.pendingTxs[0]?.networkScope).toBe(localScope);
     expect(inserted.pendingTxsByNetwork[localScope]?.[0]?.hash).toBe("local-hash");
     expect(inserted.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE]).toBeUndefined();
+  });
+
+  test("files late notification, price, and scan results under their captured scope", () => {
+    const localScope = `qubic:testnet:local:qubic-local%3A${"a".repeat(64)}` as const;
+    const notifications = insertNotificationEventForNetwork({}, {
+      id: "notice", kind: "received", title: "Local", body: "Local", createdAt: 1, readAt: null,
+    }, localScope);
+    const prices = insertPriceSnapshotForNetwork({}, { timestamp: 2, priceUsd: 0 }, localScope);
+    const scans = setNotificationScanForNetwork({}, 3, localScope);
+
+    expect(notifications[localScope]?.[0]?.networkScope).toBe(localScope);
+    expect(prices[localScope]).toEqual([{ timestamp: 2, priceUsd: 0 }]);
+    expect(scans[localScope]).toBe(3);
+    expect(notifications[MAINNET_NETWORK_SCOPE]).toBeUndefined();
+    expect(prices[MAINNET_NETWORK_SCOPE]).toBeUndefined();
+    expect(scans[MAINNET_NETWORK_SCOPE]).toBeUndefined();
   });
 });
