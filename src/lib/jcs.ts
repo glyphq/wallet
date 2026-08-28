@@ -38,7 +38,12 @@ export async function jcsSha256Base64Url(value: unknown): Promise<string> {
   return sha256Base64Url(jcsCanonicalize(value));
 }
 
-export type GlyphNetworkBinding = { id: `qubic:${string}` };
+export type GlyphNetworkBinding = {
+  id:
+    | "qubic:mainnet"
+    | `qubic:testnet:local:qubic-local%3A${string}`
+    | `qubic:custom:sha256:${string}`;
+};
 
 export async function requestHashV2(input: {
   protocol: typeof REQUEST_PROTOCOL_V2;

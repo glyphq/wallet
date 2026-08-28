@@ -103,7 +103,7 @@ export default function BurnScreen() {
         inputType, payload, amount, targetTick, currentTick,
       });
       await broadcastTx(encoded, networkScope);
-      addPendingTx({ hash, source: identity, destination: QUTIL_ADDRESS, amount: amount.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Burn" });
+      addPendingTx({ hash, source: identity, destination: QUTIL_ADDRESS, amount: amount.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Burn" }, networkScope);
       setSavedTargetTick(targetTick); setTxHash(hash); setStep("done");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));

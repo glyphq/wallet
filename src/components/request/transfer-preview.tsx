@@ -28,10 +28,11 @@ export interface ApproveResult {
 interface TransferPreviewProps {
   request: TransferRequest;
   onApprove: (result: ApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
-export function TransferPreview({ request, onApprove, onReject }: TransferPreviewProps) {
+export function TransferPreview({ request, onApprove, beforeApprove, onReject }: TransferPreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
 
@@ -91,6 +92,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
     setProcessing(true);
     setTxError("");
     try {
+      await beforeApprove();
       const amount = requestAmount;
       const networkScope = usePersistedStore.getState().settings.network.scope;
       const currentTick = await getLatestTick();
@@ -114,7 +116,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         amount: amount.toString(),
         targetTick: tick,
         broadcastAt: Date.now(),
-      });
+      }, networkScope);
 
       await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
       setProcessing(false);

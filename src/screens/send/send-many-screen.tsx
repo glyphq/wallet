@@ -226,7 +226,7 @@ export default function SendManyScreen() {
         const contact = contacts.find((c) => c.identity === id);
         if (contact) updateContact(contact.id, { lastUsedAt: Date.now() });
       });
-      addPendingTx({ hash, source: wallet.identity, destination: QUTIL_ADDRESS, amount: total.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Send to Many" });
+      addPendingTx({ hash, source: wallet.identity, destination: QUTIL_ADDRESS, amount: total.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Send to Many" }, networkScope);
       setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));

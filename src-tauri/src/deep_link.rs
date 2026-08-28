@@ -141,7 +141,7 @@ pub fn replay_key_from_envelope_payload(payload: &str) -> Result<String, String>
 }
 
 fn valid_network_id(value: &str) -> bool {
-    if value == "qubic:mainnet" || value == "qubic:testnet:local:manifest-unresolved" {
+    if value == "qubic:mainnet" {
         return true;
     }
     if let Some(instance) = value.strip_prefix("qubic:testnet:local:qubic-local%3A") {
@@ -716,15 +716,27 @@ mod tests {
             },
             "callback": null,
             "redirect_uri": null,
-            "network": { "id": "qubic:testnet:local:manifest-unresolved" },
+            "network": { "id": "qubic:testnet:local:qubic-local%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
             "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
         })
         .to_string();
 
         assert_eq!(
             replay_key_from_envelope_payload(&payload).unwrap(),
-            "v2|qubic:testnet:local:manifest-unresolved|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
+            "v2|qubic:testnet:local:qubic-local%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
         );
+    }
+
+    #[test]
+    fn replay_key_rejects_unresolved_or_generic_testnet_bindings() {
+        for network_id in ["qubic:testnet", "qubic:testnet:local:manifest-unresolved"] {
+            let payload = serde_json::json!({
+                "request": { "nonce": "n", "dapp": { "origin": "https://demo.app" } },
+                "network": { "id": network_id },
+                "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+            }).to_string();
+            assert_eq!(replay_key_from_envelope_payload(&payload).unwrap_err(), "invalid network.id");
+        }
     }
 
     #[test]

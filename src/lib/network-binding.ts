@@ -4,8 +4,12 @@ import { parsePersistedNetworkConfig, type NetworkConfig } from "@/lib/network-c
 /** Derives a signed-request binding from the canonical, fail-closed network config. */
 export async function activeNetworkBinding(network: NetworkConfig): Promise<GlyphNetworkBinding> {
   const canonical = parsePersistedNetworkConfig(network);
-  if (canonical.name === "mainnet" || canonical.name === "testnet") {
-    return { id: canonical.scope };
+  if (canonical.name === "testnet" && canonical.manifestInstanceId === null) {
+    throw new Error("Local testnet instance identity is unresolved. Refresh the network manifest before continuing.");
+  }
+  if (canonical.name === "mainnet") return { id: "qubic:mainnet" };
+  if (canonical.name === "testnet") {
+    return { id: canonical.scope as `qubic:testnet:local:qubic-local%3A${string}` };
   }
   return { id: `qubic:custom:sha256:${await jcsSha256Base64Url({ scope: canonical.scope })}` };
 }

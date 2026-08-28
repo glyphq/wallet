@@ -331,7 +331,7 @@ export default function SendScreen() {
       assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
       const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
       await broadcastTx(encoded, networkScope);
-      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
+      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() }, networkScope);
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
       setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
       if (memo.trim()) setTxMemo(hash, memo.trim());

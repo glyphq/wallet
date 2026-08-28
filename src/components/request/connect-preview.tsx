@@ -22,7 +22,8 @@ export interface ConnectApproveResult {
 
 interface ConnectPreviewProps {
   request: ConnectRequest;
-  onApprove: (result: ConnectApproveResult) => void;
+  onApprove: (result: ConnectApproveResult) => void | Promise<void>;
+  beforeApprove: () => Promise<unknown>;
   onReject: () => void;
 }
 
@@ -32,7 +33,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   sign_message: "Sign messages",
 };
 
-export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
+export function ConnectPreview({ request, onApprove, beforeApprove, onReject }: ConnectPreviewProps) {
   const wallets = useSessionStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
@@ -54,11 +55,12 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
     });
   }
 
-  function approve() {
+  async function approve() {
     if (!selectedWallet) return;
+    await beforeApprove();
     const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as GlyphPermission[];
     const sanitizedLimit = sanitizeTransferLimitQu(transferLimitQu);
-    onApprove({
+    await onApprove({
       identity: selectedWallet.identity,
       accountIndex: selectedIndex,
       permissions,
