@@ -2,11 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { approveRequest, buildRedirectUrl, deliverRequestResult, rejectRequest, type RequestOrchestrationDeps } from "@/lib/request-orchestration";
 import type { GlyphEnvelope } from "@/lib/request-schema";
 import type { RequestHistoryItem } from "@/store/persisted";
+import type { NetworkScope } from "@/lib/network-config";
 import { REQUEST_PROTOCOL_V2 } from "@/lib/jcs";
 
 function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
-  const added: RequestHistoryItem[] = [];
-  const updates: Array<{ id: string; patch: Partial<RequestHistoryItem> }> = [];
+  const added: Array<{ item: Omit<RequestHistoryItem, "networkScope">; scope: NetworkScope }> = [];
+  const updates: Array<{ id: string; patch: Partial<RequestHistoryItem>; scope: NetworkScope }> = [];
   const audits: unknown[] = [];
   const posts: Array<{ url: string; body: string }> = [];
   const opened: string[] = [];
@@ -14,10 +15,11 @@ function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
   const deps: RequestOrchestrationDeps = {
     now: () => 1234,
     makeRequestHistoryId: () => "req_test",
+    networkScope: "qubic:mainnet",
     postCallback: async (url, body) => { posts.push({ url, body }); },
     openUrl: async (url) => { opened.push(url); },
-    addRequestHistoryItem: (item) => { added.push(item); },
-    updateRequestHistoryItem: (id, patch) => { updates.push({ id, patch }); },
+    addRequestHistoryItem: (item, scope) => { added.push({ item, scope }); },
+    updateRequestHistoryItem: (id, patch, scope) => { updates.push({ id, patch, scope }); },
     recordAuditEvent: (event) => { audits.push(event); },
     signCallbackMessage: async (accountIndex, payload) => {
       callbackSignatures.push({ accountIndex, payload });
@@ -64,7 +66,7 @@ describe("request orchestration", () => {
     expect(success.kind).toBe("tx");
     expect(success.detail).toBe("tx-1");
     expect(success.callbackStatus).toBe("ok");
-    expect(added[0]).toMatchObject({
+    expect(added[0].item).toMatchObject({
       id: "req_test",
       action: "approved",
       accountName: "Main",
@@ -72,7 +74,8 @@ describe("request orchestration", () => {
       resultDetail: "tx-1",
       callbackStatus: "pending",
     });
-    const callbackEnvelope = JSON.parse(added[0].callbackBody ?? "{}");
+    expect(added[0].scope).toBe("qubic:mainnet");
+    const callbackEnvelope = JSON.parse(added[0].item.callbackBody ?? "{}");
     expect(callbackEnvelope).toMatchObject({
       version: "glyph-connect-callback-envelope/2",
       result: { status: "signed", tx_hash: "tx-1", target_tick: 42 },
@@ -89,9 +92,9 @@ describe("request orchestration", () => {
     });
     expect(callbackEnvelope.proof.signed_payload).toContain('"result_hash"');
     expect(callbackSignatures).toHaveLength(1);
-    expect(posts).toEqual([{ url: "https://demo.app/callback", body: added[0].callbackBody! }]);
-    expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "ok", callbackUpdatedAt: 1234 } }]);
-    expect(opened[0]).toBe(buildRedirectUrl("https://demo.app/return", added[0].callbackBody!));
+    expect(posts).toEqual([{ url: "https://demo.app/callback", body: added[0].item.callbackBody! }]);
+    expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "ok", callbackUpdatedAt: 1234 }, scope: "qubic:mainnet" }]);
+    expect(opened[0]).toBe(buildRedirectUrl("https://demo.app/return", added[0].item.callbackBody!));
   });
 
   test("rejects request and records failed callback delivery", async () => {
@@ -99,8 +102,8 @@ describe("request orchestration", () => {
 
     await rejectRequest(deps, transferEnvelope);
 
-    expect(added[0]).toMatchObject({ action: "rejected", callbackStatus: "pending" });
-    const callbackEnvelope = JSON.parse(added[0].callbackBody ?? "{}");
+    expect(added[0]).toMatchObject({ scope: "qubic:mainnet", item: { action: "rejected", callbackStatus: "pending" } });
+    const callbackEnvelope = JSON.parse(added[0].item.callbackBody ?? "{}");
     expect(callbackEnvelope).toMatchObject({
       version: "glyph-connect-callback-envelope/2",
       result: {
@@ -115,8 +118,28 @@ describe("request orchestration", () => {
     expect(Number.isSafeInteger(callbackEnvelope.payload.issued_at)).toBe(true);
     expect(callbackSignatures).toHaveLength(1);
     expect(callbackEnvelope.proof.signed_payload).toContain('"result_hash":"sha256:');
-    expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "failed", callbackUpdatedAt: 1234 } }]);
+    expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "failed", callbackUpdatedAt: 1234 }, scope: "qubic:mainnet" }]);
     expect(audits).toContainEqual({ kind: "request_callback_failed", status: "failure", title: "Callback failed", detail: "https://demo.app/callback" });
+  });
+
+  test("keeps history and callback updates on the captured scope when network switches during delivery", async () => {
+    let currentScope: NetworkScope = "qubic:mainnet";
+    const { deps, added, updates } = makeDeps({
+      networkScope: "qubic:mainnet",
+      postCallback: async () => {
+        currentScope = "qubic:custom:https%3A%2F%2Flive.example|https%3A%2F%2Fquery.example";
+      },
+    });
+
+    await approveRequest(deps, {
+      envelope: transferEnvelope,
+      approval: { kind: "tx", approve: { txHash: "tx-switch", targetTick: 42, identity: "ID1", accountIndex: 0 } },
+      vaults: [],
+    });
+
+    expect(currentScope).not.toBe("qubic:mainnet");
+    expect(added[0].scope).toBe("qubic:mainnet");
+    expect(updates[0].scope).toBe("qubic:mainnet");
   });
 
   test("approved sign_message keeps the user signature distinct from the callback proof", async () => {
@@ -142,7 +165,7 @@ describe("request orchestration", () => {
       vaults: [{ id: "v1", name: "Vault", accounts: [{ index: 2, name: "Main", identity: "ID1" }] }],
     });
 
-    const body = JSON.parse(added[0].callbackBody ?? "{}");
+    const body = JSON.parse(added[0].item.callbackBody ?? "{}");
     expect(body.result.signature).toBe("USER_MESSAGE_SIGNATURE");
     expect(body.proof.signature).not.toBe("USER_MESSAGE_SIGNATURE");
     expect(callbackSignatures).toHaveLength(1);
@@ -179,7 +202,7 @@ describe("request orchestration", () => {
       });
       expect(callbackSignatures).toHaveLength(1);
       expect(callbackSignatures[0]?.accountIndex).toBe(1);
-      expect(JSON.parse(added[0].callbackBody ?? "{}").proof.algorithm).toBe("qubic-schnorrq-sha256");
+      expect(JSON.parse(added[0].item.callbackBody ?? "{}").proof.algorithm).toBe("qubic-schnorrq-sha256");
       expect(posts).toHaveLength(1);
     }
   });

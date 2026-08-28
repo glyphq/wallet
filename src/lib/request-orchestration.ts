@@ -6,6 +6,7 @@ import { buildSignedCallbackEnvelope } from "@/lib/callback-envelope";
 import { signCallbackMessageFromSession } from "@/lib/secure-session";
 import type { GlyphCallbackResponse, GlyphEnvelope } from "@/lib/request-schema";
 import type { RequestHistoryItem, VaultMeta } from "@/store/persisted";
+import type { NetworkScope } from "@/lib/network-config";
 
 export type CallbackStatus = "pending" | "ok" | "failed";
 
@@ -17,6 +18,7 @@ export interface RequestSuccessState {
   callbackBody: string;
   callbackUrl: string | null;
   requestHistoryId: string | null;
+  networkScope: NetworkScope;
 }
 
 export type RequestAuditEvent =
@@ -38,8 +40,9 @@ export interface RequestOrchestrationDeps {
   makeRequestHistoryId: () => string;
   postCallback: (url: string, body: string) => Promise<unknown>;
   openUrl: (url: string) => Promise<unknown>;
-  addRequestHistoryItem: (item: RequestHistoryItem) => void;
-  updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>) => void;
+  networkScope: NetworkScope;
+  addRequestHistoryItem: (item: Omit<RequestHistoryItem, "networkScope">, expectedScope: NetworkScope) => void;
+  updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>, expectedScope: NetworkScope) => void;
   recordAuditEvent: (event: RequestAuditEvent) => void;
   signCallbackMessage?: typeof signCallbackMessageFromSession;
   callbackNetworkId?: GlyphEnvelope["network"]["id"];
@@ -96,7 +99,7 @@ export async function deliverRequestResult(
         deps.updateRequestHistoryItem(input.requestHistoryId, {
           callbackStatus: "ok",
           callbackUpdatedAt: deps.now(),
-        });
+        }, deps.networkScope);
       }
     } catch {
       callbackStatus = "failed";
@@ -104,7 +107,7 @@ export async function deliverRequestResult(
         deps.updateRequestHistoryItem(input.requestHistoryId, {
           callbackStatus: "failed",
           callbackUpdatedAt: deps.now(),
-        });
+        }, deps.networkScope);
       }
       deps.recordAuditEvent({
         kind: "request_callback_failed",
@@ -154,7 +157,7 @@ export async function rejectRequest(
     callbackUrl: envelope.callback,
     callbackBody,
     callbackUpdatedAt: envelope.callback ? deps.now() : null,
-  });
+  }, deps.networkScope);
   deps.recordAuditEvent({
     kind: "request_rejected",
     status: "info",
@@ -216,7 +219,7 @@ export async function approveRequest(
     callbackUrl,
     callbackBody,
     callbackUpdatedAt: callbackUrl ? deps.now() : null,
-  });
+  }, deps.networkScope);
 
   const initialState: RequestSuccessState = {
     ...success,
@@ -225,6 +228,7 @@ export async function approveRequest(
     callbackBody,
     callbackUrl,
     requestHistoryId,
+    networkScope: deps.networkScope,
   };
 
   const callbackStatus = await deliverRequestResult(deps, {

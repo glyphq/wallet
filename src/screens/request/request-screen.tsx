@@ -28,6 +28,7 @@ import {
 } from "@/lib/request-orchestration";
 import { completePendingRequest } from "@/lib/request-lifecycle";
 import { requireActiveNetworkEnvelope } from "@/lib/deep-link-acceptance";
+import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 
 export default function RequestScreen() {
   const navigate = useNavigate();
@@ -105,7 +106,7 @@ export default function RequestScreen() {
     shiftPendingRequest();
   }
 
-  const orchestrationDeps: RequestOrchestrationDeps = {
+  const orchestrationDeps = (networkScope: Parameters<typeof addRequestHistoryItem>[1]): RequestOrchestrationDeps => ({
     now: Date.now,
     makeRequestHistoryId,
     postCallback: (url, body) => invoke("post_callback", { url, body }),
@@ -113,7 +114,8 @@ export default function RequestScreen() {
     addRequestHistoryItem,
     updateRequestHistoryItem,
     recordAuditEvent,
-  };
+    networkScope,
+  });
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -126,19 +128,27 @@ export default function RequestScreen() {
     }
   }
 
-  async function freshApprovalEnvelope() {
+  async function freshApprovalContext() {
     if (!pendingRequest) throw new Error("This request is no longer pending.");
-    return requireActiveNetworkEnvelope({
+    const networkScope = usePersistedStore.getState().settings.network.scope;
+    const freshEnvelope = await requireActiveNetworkEnvelope({
       payload: pendingRequest,
       networkSetting: usePersistedStore.getState().settings.network,
     });
+    assertNetworkScopeUnchanged(networkScope, usePersistedStore.getState().settings.network.scope);
+    return { freshEnvelope, networkScope };
+  }
+
+  async function freshApprovalEnvelope() {
+    return (await freshApprovalContext()).freshEnvelope;
   }
 
   async function reject() {
     if (!envelope) return;
     setActionError(null);
     try {
-      await completePendingRequest(() => rejectRequest(orchestrationDeps, envelope), shiftPendingRequest);
+      const { freshEnvelope, networkScope } = await freshApprovalContext();
+      await completePendingRequest(() => rejectRequest(orchestrationDeps(networkScope), freshEnvelope), shiftPendingRequest);
     } catch {
       setActionError("Could not prepare the rejection response. This request is still open. Try again.");
     }
@@ -148,9 +158,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
-      const freshEnvelope = await freshApprovalEnvelope();
+      const { freshEnvelope, networkScope } = await freshApprovalContext();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "tx", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps(networkScope), { envelope: freshEnvelope, approval: { kind: "tx", approve: result }, vaults }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -163,9 +173,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
-      const freshEnvelope = await freshApprovalEnvelope();
+      const { freshEnvelope, networkScope } = await freshApprovalContext();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "message", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps(networkScope), { envelope: freshEnvelope, approval: { kind: "message", approve: result }, vaults }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -178,9 +188,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
-      const freshEnvelope = await freshApprovalEnvelope();
+      const { freshEnvelope, networkScope } = await freshApprovalContext();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "verify", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps(networkScope), { envelope: freshEnvelope, approval: { kind: "verify", approve: result }, vaults }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -193,9 +203,9 @@ export default function RequestScreen() {
     if (!envelope) return;
     setActionError(null);
     try {
-      const freshEnvelope = await freshApprovalEnvelope();
+      const { freshEnvelope, networkScope } = await freshApprovalContext();
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope: freshEnvelope, approval: { kind: "connect", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps(networkScope), { envelope: freshEnvelope, approval: { kind: "connect", approve: result }, vaults }),
         shiftPendingRequest,
       );
       approveDapp({
@@ -207,7 +217,7 @@ export default function RequestScreen() {
         transferLimitQu: result.transferLimitQu,
         expiryDurationMs: result.expiryDurationMs,
         expiresAt: result.expiresAt,
-      });
+      }, networkScope);
       showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
@@ -217,7 +227,7 @@ export default function RequestScreen() {
   async function retryCallbackFromSuccess() {
     if (!success?.callbackUrl) return;
     setSuccess((current) => current ? { ...current, callbackStatus: "pending" } : current);
-    const callbackStatus = await deliverRequestResult(orchestrationDeps, {
+    const callbackStatus = await deliverRequestResult(orchestrationDeps(success.networkScope), {
       callbackBody: success.callbackBody,
       callbackUrl: success.callbackUrl,
       redirectUri: null,
