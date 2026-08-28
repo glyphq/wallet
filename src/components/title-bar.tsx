@@ -124,15 +124,11 @@ export function TitleBar() {
             title={indicator.detail}
             data-tauri-drag-region
             style={{
-              border: `1px solid ${indicator.tone === "testnet" ? "var(--color-status-warning)" : "var(--color-border-strong)"}`,
-              borderRadius: "var(--radius-pill)",
               color: indicator.tone === "testnet" ? "var(--color-status-warning)" : "var(--color-text-secondary)",
               fontFamily: "var(--font-mono)",
               fontSize: "9px",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              lineHeight: 1,
-              padding: "3px 6px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
               whiteSpace: "nowrap",
             }}
           >
