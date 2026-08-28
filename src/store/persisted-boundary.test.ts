@@ -15,6 +15,7 @@ import {
   clampTxMemos,
   mergePersistedState,
   migratePersistedState,
+  insertPendingTxForNetwork,
   sanitizeCustomPriceFeedUrl,
   sanitizePollingInterval,
 } from "./persisted-boundary";
@@ -464,5 +465,16 @@ describe("persisted boundary helpers", () => {
     const merged = mergePersistedState({ contacts: [contact], txMemosByNetwork: { [MAINNET_NETWORK_SCOPE]: { hash: "memo" } } }, currentState());
     expect(merged.contacts).toEqual([contact]);
     expect(merged.txMemos).toEqual({ hash: "memo" });
+  });
+
+  test("files a completed broadcast under its captured scope after an active-network switch", () => {
+    const localScope = `local:${"a".repeat(64)}` as const;
+    const inserted = insertPendingTxForNetwork({}, {
+      hash: "local-hash", source: "A", destination: "B", amount: "1",
+      targetTick: 10, broadcastAt: 20,
+    }, localScope);
+    expect(inserted.pendingTxs[0]?.networkScope).toBe(localScope);
+    expect(inserted.pendingTxsByNetwork[localScope]?.[0]?.hash).toBe("local-hash");
+    expect(inserted.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE]).toBeUndefined();
   });
 });
