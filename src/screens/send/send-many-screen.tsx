@@ -21,10 +21,10 @@ import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { getRpcClient, estimateTargetTick, getLatestTick } from "@/lib/rpc";
+import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
@@ -74,10 +74,10 @@ export default function SendManyScreen() {
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const rpc = useRpcCacheSnapshot("live");
   const { data: feeData } = useQuery({
-    queryKey: qk.qutilSendManyFee(rpcIdentity),
-    queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
+    queryKey: qk.qutilSendManyFee(rpc.identity),
+    queryFn: () => qUtilGetSendToManyV1Fee(rpc.client.live),
     staleTime: 60_000,
   });
   const fee = feeData?.ok ? feeData.value.fee : null;

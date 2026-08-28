@@ -33,6 +33,7 @@ export function useDeepLink() {
     async function applyAcceptedPayload(payload: string) {
       const parsed = await parseGlyphEnvelopeAsync(payload, await activeNetworkBinding(usePersistedStore.getState().settings.network));
       if (!parsed.envelope) return;
+      const acceptedNetworkScope = parsed.envelope.network.id;
       enqueuePendingRequestRef.current(payload);
       recordAuditEvent({
         kind: "request_received",
@@ -47,7 +48,7 @@ export function useDeepLink() {
             kind: "deep_link",
             title: n.title,
             body: n.body,
-          })).catch(() => {});
+          }), { networkScope: acceptedNetworkScope }).catch(() => {});
         }
       }
       if (!isLockedRef.current) {
