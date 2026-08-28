@@ -1,11 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_SETTINGS } from "./persisted-defaults";
 import {
+  LOCAL_TESTNET_LIVE_API_URL,
+  LOCAL_TESTNET_QUERY_API_URL,
+  MAINNET_NETWORK_CONFIG,
+  MAINNET_NETWORK_SCOPE,
+  resolveNetworkConfig,
+} from "@/lib/network-config";
+import {
   MAX_NOTIFICATION_EVENTS,
   MAX_TX_MEMOS,
+  PERSISTED_STATE_VERSION,
   clampNotificationEvents,
   clampTxMemos,
   mergePersistedState,
+  migratePersistedState,
   sanitizeCustomPriceFeedUrl,
   sanitizePollingInterval,
 } from "./persisted-boundary";
@@ -17,6 +26,7 @@ function currentState(): PersistedState {
     settings: DEFAULT_SETTINGS,
     contacts: [],
     pendingTxs: [],
+    pendingTxsByNetwork: {},
     txMemos: {},
     txTags: {},
     scheduledTransfers: [],
@@ -26,6 +36,7 @@ function currentState(): PersistedState {
     auditEvents: [],
     requestHistory: [],
     lastNotificationScanAt: 0,
+    notificationScanAtByNetwork: {},
     passwordLockoutUntil: 0,
     passwordAttempts: 0,
     exportSigningKey: null,
@@ -216,5 +227,188 @@ describe("persisted boundary helpers", () => {
     const merged = mergePersistedState({ settings: {} }, currentState());
 
     expect(merged.settings.autostartEnabled).toBe(false);
+  });
+
+  test("migrates pre-versioned chain records into the mainnet scope", () => {
+    const migrated = migratePersistedState(
+      {
+        settings: {},
+        pendingTxs: [
+          {
+            hash: "legacy-hash",
+            source: "SOURCE",
+            destination: "DESTINATION",
+            amount: "42",
+            targetTick: 100,
+            broadcastAt: 10,
+          },
+        ],
+        lastNotificationScanAt: 1234,
+      },
+      0
+    ) as Record<string, any>;
+
+    expect(migrated.settings.network).toEqual(MAINNET_NETWORK_CONFIG);
+    expect(migrated.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE]).toEqual([
+      expect.objectContaining({
+        hash: "legacy-hash",
+        networkScope: MAINNET_NETWORK_SCOPE,
+      }),
+    ]);
+    expect(migrated.notificationScanAtByNetwork).toEqual({
+      [MAINNET_NETWORK_SCOPE]: 1234,
+    });
+  });
+
+  test("canonicalizes a legacy local endpoint setting without trusting its old name", () => {
+    const migrated = migratePersistedState(
+      {
+        settings: {
+          network: {
+            name: "custom",
+            liveApiUrl: `${LOCAL_TESTNET_LIVE_API_URL}/`,
+            queryApiUrl: `${LOCAL_TESTNET_QUERY_API_URL}/`,
+          },
+        },
+      },
+      0
+    ) as Record<string, any>;
+
+    expect(migrated.settings.network).toMatchObject({
+      name: "testnet",
+      liveApiUrl: LOCAL_TESTNET_LIVE_API_URL,
+      queryApiUrl: LOCAL_TESTNET_QUERY_API_URL,
+    });
+  });
+
+  test("keeps legacy chain records on mainnet even when the saved endpoints were custom", () => {
+    const migrated = migratePersistedState(
+      {
+        settings: {
+          network: {
+            name: "mainnet",
+            liveApiUrl: "https://live.example/v1",
+            queryApiUrl: "https://query.example/v1",
+          },
+        },
+        pendingTxs: [
+          {
+            hash: "legacy-custom-setting",
+            source: "SOURCE",
+            destination: "DESTINATION",
+            amount: "1",
+            targetTick: 2,
+            broadcastAt: 3,
+          },
+        ],
+      },
+      0
+    ) as Record<string, any>;
+
+    expect(migrated.settings.network.name).toBe("custom");
+    expect(migrated.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE][0].networkScope).toBe(
+      MAINNET_NETWORK_SCOPE
+    );
+  });
+
+  test("fails closed for invalid legacy networks and unsupported versions", () => {
+    expect(() =>
+      migratePersistedState(
+        {
+          settings: {
+            network: {
+              name: "mainnet",
+              liveApiUrl: "invalid",
+              queryApiUrl: "also invalid",
+            },
+          },
+        },
+        0
+      )
+    ).toThrow("valid URLs");
+    expect(() => migratePersistedState({}, PERSISTED_STATE_VERSION + 1)).toThrow(
+      "Unsupported persisted state version"
+    );
+    expect(() => migratePersistedState({ settings: "corrupt" }, 0)).toThrow(
+      "legacy settings are invalid"
+    );
+    expect(() =>
+      mergePersistedState({ settings: "corrupt" }, currentState())
+    ).toThrow("Persisted settings are invalid");
+  });
+
+  test("projects pending transactions and notification cursors for only the active scope", () => {
+    const local = resolveNetworkConfig({
+      liveApiUrl: LOCAL_TESTNET_LIVE_API_URL,
+      queryApiUrl: LOCAL_TESTNET_QUERY_API_URL,
+      manifestInstanceId: `qubic-local:${"a".repeat(64)}`,
+    });
+    const merged = mergePersistedState(
+      {
+        settings: { network: local },
+        pendingTxsByNetwork: {
+          [MAINNET_NETWORK_SCOPE]: [
+            {
+              hash: "mainnet",
+              source: "SOURCE",
+              destination: "DESTINATION",
+              amount: "1",
+              targetTick: 2,
+              broadcastAt: 3,
+            },
+          ],
+          [local.scope]: [
+            {
+              hash: "local",
+              source: "SOURCE",
+              destination: "DESTINATION",
+              amount: "4",
+              targetTick: 5,
+              broadcastAt: 6,
+              networkScope: MAINNET_NETWORK_SCOPE,
+            },
+          ],
+        },
+        notificationScanAtByNetwork: {
+          [MAINNET_NETWORK_SCOPE]: 100,
+          [local.scope]: 200,
+        },
+      },
+      currentState()
+    );
+
+    expect(merged.settings.network).toEqual(local);
+    expect(merged.pendingTxs.map((tx) => tx.hash)).toEqual(["local"]);
+    expect(merged.pendingTxs[0]?.networkScope).toBe(local.scope);
+    expect(merged.lastNotificationScanAt).toBe(200);
+    expect(merged.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE]?.[0]?.hash).toBe(
+      "mainnet"
+    );
+  });
+
+  test("rejects current-version persisted network name or scope divergence", () => {
+    expect(() =>
+      mergePersistedState(
+        {
+          settings: {
+            network: { ...MAINNET_NETWORK_CONFIG, name: "testnet" },
+          },
+        },
+        currentState()
+      )
+    ).toThrow("does not match its endpoints");
+    expect(() =>
+      mergePersistedState(
+        {
+          settings: {
+            network: {
+              ...MAINNET_NETWORK_CONFIG,
+              scope: "qubic:custom:forged",
+            },
+          },
+        },
+        currentState()
+      )
+    ).toThrow("does not match its endpoints");
   });
 });

@@ -14,9 +14,12 @@ import {
   clampRuntimeIssues,
   clampTxMemos,
   mergePersistedState,
+  migratePersistedState,
+  PERSISTED_STATE_VERSION,
 } from "./persisted-boundary";
 import type { PersistedState } from "./persisted-types";
 import { sanitizeDappExpiresAt, sanitizeDappExpiryDurationMs, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
+import { resolveNetworkConfig } from "@/lib/network-config";
 export type {
   AccountMeta,
   AccentColorId,
@@ -30,6 +33,7 @@ export type {
   NotificationEvent,
   NotificationEventKind,
   PendingTx,
+  PendingTxInput,
   PriceSnapshot,
   RequestHistoryAction,
   RequestHistoryCallbackStatus,
@@ -98,6 +102,7 @@ export const usePersistedStore = create<PersistedState>()(
       settings: DEFAULT_SETTINGS,
       contacts: [],
       pendingTxs: [],
+      pendingTxsByNetwork: {},
       txMemos: {},
       txTags: {},
       scheduledTransfers: [],
@@ -107,6 +112,7 @@ export const usePersistedStore = create<PersistedState>()(
       auditEvents: [],
       requestHistory: [],
       lastNotificationScanAt: 0,
+      notificationScanAtByNetwork: {},
       passwordLockoutUntil: 0,
       passwordAttempts: 0,
       exportSigningKey: null,
@@ -149,7 +155,24 @@ export const usePersistedStore = create<PersistedState>()(
         })),
 
       updateSettings: (updates) =>
-        set((s) => ({ settings: { ...s.settings, ...updates } })),
+        set((s) => {
+          if (!updates.network) {
+            return {
+              settings: { ...s.settings, ...updates, network: s.settings.network },
+            };
+          }
+          const network = resolveNetworkConfig({
+            liveApiUrl: updates.network.liveApiUrl,
+            queryApiUrl: updates.network.queryApiUrl,
+            manifestInstanceId: updates.network.manifestInstanceId,
+          });
+          return {
+            settings: { ...s.settings, ...updates, network },
+            pendingTxs: s.pendingTxsByNetwork[network.scope] ?? [],
+            lastNotificationScanAt:
+              s.notificationScanAtByNetwork[network.scope] ?? 0,
+          };
+        }),
 
       addContact: (contact) =>
         set((s) => ({ contacts: [...s.contacts, contact] })),
@@ -165,14 +188,35 @@ export const usePersistedStore = create<PersistedState>()(
         set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id) })),
 
       addPendingTx: (tx) =>
-        set((s) => ({
-          pendingTxs: [tx, ...s.pendingTxs].slice(0, MAX_PENDING_TXS),
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const pendingTxs = [
+            { ...tx, networkScope: scope },
+            ...(s.pendingTxsByNetwork[scope] ?? []),
+          ].slice(0, MAX_PENDING_TXS);
+          return {
+            pendingTxs,
+            pendingTxsByNetwork: {
+              ...s.pendingTxsByNetwork,
+              [scope]: pendingTxs,
+            },
+          };
+        }),
 
       removePendingTx: (hash) =>
-        set((s) => ({
-          pendingTxs: s.pendingTxs.filter((t) => t.hash !== hash),
-        })),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          const pendingTxs = (s.pendingTxsByNetwork[scope] ?? []).filter(
+            (tx) => tx.hash !== hash
+          );
+          return {
+            pendingTxs,
+            pendingTxsByNetwork: {
+              ...s.pendingTxsByNetwork,
+              [scope]: pendingTxs,
+            },
+          };
+        }),
 
       approveDapp: (dapp) =>
         set((s) => {
@@ -330,7 +374,16 @@ export const usePersistedStore = create<PersistedState>()(
       clearNotificationEvents: () => set({ notificationEvents: [] }),
 
       setLastNotificationScanAt: (timestamp) =>
-        set({ lastNotificationScanAt: timestamp }),
+        set((s) => {
+          const scope = s.settings.network.scope;
+          return {
+            lastNotificationScanAt: timestamp,
+            notificationScanAtByNetwork: {
+              ...s.notificationScanAtByNetwork,
+              [scope]: timestamp,
+            },
+          };
+        }),
 
       addAuditEvent: (event) =>
         set((s) => ({
@@ -387,6 +440,8 @@ export const usePersistedStore = create<PersistedState>()(
     {
       name: "glyph-persisted",
       storage: createJSONStorage(() => tauriStorage),
+      version: PERSISTED_STATE_VERSION,
+      migrate: migratePersistedState,
       // Deep-merge settings so new fields added to DEFAULT_SETTINGS survive rehydration.
       // Validate array fields so corrupted JSON cannot replace typed arrays with scalars.
       merge: mergePersistedState,

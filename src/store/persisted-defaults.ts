@@ -1,15 +1,12 @@
 import type { AppSettings } from "./persisted-types";
+import { MAINNET_NETWORK_CONFIG } from "@/lib/network-config";
 
 export const DEFAULT_SETTINGS: AppSettings = {
   autoLockMinutes: 15,
   lockOnSleep: true,
   lockOnWindowBlur: false,
   clipboardClearSeconds: 30,
-  network: {
-    liveApiUrl: "https://rpc.qubic.org/live/v1",
-    queryApiUrl: "https://rpc.qubic.org/query/v1",
-    name: "mainnet",
-  },
+  network: MAINNET_NETWORK_CONFIG,
   activeVaultId: null,
   activeAccountIndex: 0,
   hideBalances: false,
