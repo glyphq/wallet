@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
 import { isGlobalHttpsUrl } from "@/lib/url-security";
+import { resolveLatestStatsUrl } from "@/lib/latest-stats-policy";
 
 interface LatestStats {
   price: number;
@@ -10,11 +11,6 @@ interface LatestStats {
   activeAddresses: number;
   epoch: number;
   currentTick: number;
-}
-
-function buildStatsUrl(liveApiUrl: string): string {
-  const base = new URL(liveApiUrl);
-  return new URL("/v1/latest-stats", base).toString();
 }
 
 async function fetchLatestStats(url: string): Promise<LatestStats> {
@@ -26,13 +22,17 @@ async function fetchLatestStats(url: string): Promise<LatestStats> {
 }
 
 export function useLatestStats() {
-  const liveApiUrl = usePersistedStore((s) => s.settings.network.liveApiUrl);
+  const network = usePersistedStore((s) => s.settings.network);
   const customPriceFeedUrl = usePersistedStore((s) => s.settings.customPriceFeedUrl);
   const pollingIntervalMs = usePollingIntervalMs();
-  const url = customPriceFeedUrl || buildStatsUrl(liveApiUrl);
+  const url = resolveLatestStatsUrl(network, customPriceFeedUrl);
   return useQuery({
     queryKey: ["latest-stats", url],
-    queryFn: () => fetchLatestStats(url),
+    queryFn: () => {
+      if (!url) throw new Error("market statistics are disabled on local testnet");
+      return fetchLatestStats(url);
+    },
+    enabled: url !== null,
     staleTime: 60_000,
     retry: 1,
     refetchInterval: Math.max(15_000, pollingIntervalMs),
