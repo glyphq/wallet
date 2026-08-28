@@ -13,6 +13,7 @@ import {
   mergePersistedState,
   migratePersistedState,
   insertPendingTxForNetwork,
+  removePendingTxForNetwork,
   insertNotificationEventForNetwork,
   insertPriceSnapshotForNetwork,
   setNotificationScanForNetwork,
@@ -31,6 +32,7 @@ export type {
   Contact,
   FontPairId,
   NetworkConfig,
+  NetworkScope,
   NotificationEvent,
   NotificationEventKind,
   PendingTx,
@@ -220,19 +222,12 @@ export const usePersistedStore = create<PersistedState>()(
             : { pendingTxsByNetwork: inserted.pendingTxsByNetwork };
         }),
 
-      removePendingTx: (hash) =>
+      removePendingTx: (hash, expectedScope) =>
         set((s) => {
-          const scope = s.settings.network.scope;
-          const pendingTxs = (s.pendingTxsByNetwork[scope] ?? []).filter(
-            (tx) => tx.hash !== hash
-          );
-          return {
-            pendingTxs,
-            pendingTxsByNetwork: {
-              ...s.pendingTxsByNetwork,
-              [scope]: pendingTxs,
-            },
-          };
+          const removed = removePendingTxForNetwork(s.pendingTxsByNetwork, hash, expectedScope);
+          return s.settings.network.scope === expectedScope
+            ? removed
+            : { pendingTxsByNetwork: removed.pendingTxsByNetwork };
         }),
 
       approveDapp: (dapp, expectedScope) =>

@@ -333,7 +333,7 @@ export interface PersistedState {
   updateContact: (id: string, updates: Partial<Omit<Contact, "id">>) => void;
   removeContact: (id: string) => void;
   addPendingTx: (tx: PendingTxInput, expectedScope: NetworkScope) => void;
-  removePendingTx: (hash: string) => void;
+  removePendingTx: (hash: string, expectedScope: NetworkScope) => void;
   /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
   approveDapp: (dapp: Omit<ApprovedDapp, "networkScope">, expectedScope: NetworkScope) => void;
   revokeDapp: (origin: string) => void;
