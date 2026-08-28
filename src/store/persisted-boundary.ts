@@ -10,6 +10,7 @@ import type {
   ScheduledTransfer,
   VaultMeta,
 } from "./persisted-types";
+import type { ApprovedDapp } from "./persisted-types";
 import type { NetworkScope } from "@/lib/network-config";
 import { isGlobalHttpsUrl } from "@/lib/url-security";
 import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
@@ -21,7 +22,7 @@ import {
   resolveNetworkConfig,
 } from "@/lib/network-config";
 
-export const PERSISTED_STATE_VERSION = 1;
+export const PERSISTED_STATE_VERSION = 2;
 
 export const MAX_PENDING_TXS = 50;
 export const MAX_TX_MEMOS = 500;
@@ -176,6 +177,69 @@ export function sanitizeNotificationScanAtByNetwork(
   return result as Record<NetworkScope, number>;
 }
 
+function sanitizeScopedRecordMap<T>(
+  value: unknown,
+  sanitizeList: (value: unknown, scope: NetworkScope) => T[]
+): Record<NetworkScope, T[]> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<NetworkScope, T[]>> = {};
+  for (const [scope, records] of Object.entries(value)) {
+    if (isNetworkScope(scope)) result[scope] = sanitizeList(records, scope);
+  }
+  return result as Record<NetworkScope, T[]>;
+}
+
+function sanitizeTxMemos(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  return clampTxMemos(Object.fromEntries(Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string"
+  )));
+}
+
+export function sanitizeTxMemosByNetwork(value: unknown): Record<NetworkScope, Record<string, string>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<NetworkScope, Record<string, string>>> = {};
+  for (const [scope, memos] of Object.entries(value)) {
+    if (isNetworkScope(scope)) result[scope] = sanitizeTxMemos(memos);
+  }
+  return result as Record<NetworkScope, Record<string, string>>;
+}
+
+function withScope<T extends object>(value: T, networkScope: NetworkScope): T & { networkScope: NetworkScope } {
+  return { ...value, networkScope };
+}
+
+function sanitizeScheduledTransferList(value: unknown, scope: NetworkScope): ScheduledTransfer[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is ScheduledTransfer => isRecord(item) && typeof item.id === "string")
+    .map((item) => withScope(item, scope)).slice(0, MAX_SCHEDULED_TRANSFERS);
+}
+
+function sanitizeNotificationEventList(value: unknown, scope: NetworkScope): NotificationEvent[] {
+  if (!Array.isArray(value)) return [];
+  return clampNotificationEvents(value.filter((event): event is NotificationEvent =>
+    isRecord(event) && typeof event.id === "string" && typeof event.title === "string" &&
+    typeof event.body === "string" && typeof event.kind === "string" &&
+    typeof event.createdAt === "number" && Number.isFinite(event.createdAt)
+  ).map((event) => withScope(event, scope)));
+}
+
+function sanitizeRequestHistoryList(value: unknown, scope: NetworkScope): RequestHistoryItem[] {
+  if (!Array.isArray(value)) return [];
+  return clampRequestHistory(value.filter((event): event is RequestHistoryItem =>
+    isRecord(event) && typeof event.id === "string" && typeof event.type === "string" &&
+    typeof event.dappName === "string" && typeof event.dappOrigin === "string" &&
+    typeof event.action === "string" && typeof event.callbackStatus === "string" &&
+    typeof event.createdAt === "number" && Number.isFinite(event.createdAt)
+  ).map((event) => withScope(event, scope)));
+}
+
+function sanitizeApprovedDappList(value: unknown, scope: NetworkScope): ApprovedDapp[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((dapp) => sanitizeApprovedDapp(dapp, scope))
+    .filter((dapp): dapp is ApprovedDapp => dapp !== null);
+}
+
 /**
  * Explicit persistence migration. Unknown versions and invalid legacy network
  * endpoints throw so hydration cannot silently switch the wallet to mainnet.
@@ -185,7 +249,7 @@ export function migratePersistedState(
   persistedVersion: number
 ): unknown {
   if (persistedVersion === PERSISTED_STATE_VERSION) return persistedState;
-  if (persistedVersion !== 0) {
+  if (persistedVersion !== 0 && persistedVersion !== 1) {
     throw new Error(`Unsupported persisted state version: ${persistedVersion}`);
   }
   if (!isRecord(persistedState)) {
@@ -215,8 +279,8 @@ export function migratePersistedState(
             throw new Error("Persisted legacy network configuration is invalid");
           })();
 
-  // Pre-versioned chain-derived records all originated from the mainnet-only
-  // wallet. Preserve that fact even if an old custom endpoint setting existed.
+  // Records written before v2 had no trustworthy chain binding. Assign them
+  // deterministically to mainnet, never to the currently configured endpoint.
   const pendingTxs = sanitizePendingTxList(
     persistedState.pendingTxs,
     MAINNET_NETWORK_SCOPE
@@ -237,6 +301,11 @@ export function migratePersistedState(
     notificationScanAtByNetwork: {
       [MAINNET_NETWORK_SCOPE]: lastNotificationScanAt,
     },
+    txMemosByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeTxMemos(persistedState.txMemos) },
+    scheduledTransfersByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeScheduledTransferList(persistedState.scheduledTransfers, MAINNET_NETWORK_SCOPE) },
+    notificationEventsByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeNotificationEventList(persistedState.notificationEvents, MAINNET_NETWORK_SCOPE) },
+    requestHistoryByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeRequestHistoryList(persistedState.requestHistory, MAINNET_NETWORK_SCOPE) },
+    approvedDappsByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeApprovedDappList(legacySettings.approvedDapps, MAINNET_NETWORK_SCOPE) },
   };
 }
 
@@ -300,33 +369,22 @@ export function mergePersistedState(
       ? sanitizePendingTxsByNetwork(ps.pendingTxsByNetwork)
       : currentState.pendingTxsByNetwork;
   const pendingTxs = pendingTxsByNetwork[network.scope] ?? [];
-  const txMemos =
-    ps.txMemos && typeof ps.txMemos === "object" && !Array.isArray(ps.txMemos)
-      ? clampTxMemos(ps.txMemos as Record<string, string>)
-      : currentState.txMemos;
+  const txMemosByNetwork = ps.txMemosByNetwork !== undefined
+    ? sanitizeTxMemosByNetwork(ps.txMemosByNetwork)
+    : currentState.txMemosByNetwork;
+  const txMemos = txMemosByNetwork[network.scope] ?? {};
   const txTags =
     ps.txTags && typeof ps.txTags === "object" && !Array.isArray(ps.txTags)
       ? (ps.txTags as Record<string, string[]>)
       : currentState.txTags;
-  const scheduledTransfers = Array.isArray(ps.scheduledTransfers)
-    ? (ps.scheduledTransfers as ScheduledTransfer[]).filter(
-        (t) => t && typeof t.id === "string"
-      )
-    : currentState.scheduledTransfers;
-  const notificationEvents = Array.isArray(ps.notificationEvents)
-    ? clampNotificationEvents(
-        ps.notificationEvents.filter(
-          (event): event is NotificationEvent =>
-            !!event &&
-            typeof event === "object" &&
-            typeof event.id === "string" &&
-            typeof event.title === "string" &&
-            typeof event.body === "string" &&
-            typeof event.kind === "string" &&
-            typeof event.createdAt === "number"
-        )
-      )
-    : currentState.notificationEvents;
+  const scheduledTransfersByNetwork = ps.scheduledTransfersByNetwork !== undefined
+    ? sanitizeScopedRecordMap(ps.scheduledTransfersByNetwork, sanitizeScheduledTransferList)
+    : currentState.scheduledTransfersByNetwork;
+  const scheduledTransfers = scheduledTransfersByNetwork[network.scope] ?? [];
+  const notificationEventsByNetwork = ps.notificationEventsByNetwork !== undefined
+    ? sanitizeScopedRecordMap(ps.notificationEventsByNetwork, sanitizeNotificationEventList)
+    : currentState.notificationEventsByNetwork;
+  const notificationEvents = notificationEventsByNetwork[network.scope] ?? [];
   const priceSnapshots = Array.isArray(ps.priceSnapshots)
     ? clampPriceSnapshots(
         ps.priceSnapshots.filter(
@@ -367,32 +425,19 @@ export function mergePersistedState(
         )
       )
     : currentState.auditEvents;
-  const requestHistory = Array.isArray(ps.requestHistory)
-    ? clampRequestHistory(
-        ps.requestHistory.filter(
-          (event): event is RequestHistoryItem =>
-            !!event &&
-            typeof event === "object" &&
-            typeof event.id === "string" &&
-            typeof event.type === "string" &&
-            typeof event.dappName === "string" &&
-            typeof event.dappOrigin === "string" &&
-            typeof event.action === "string" &&
-            typeof event.callbackStatus === "string" &&
-            typeof event.createdAt === "number"
-        )
-      )
-    : currentState.requestHistory;
+  const requestHistoryByNetwork = ps.requestHistoryByNetwork !== undefined
+    ? sanitizeScopedRecordMap(ps.requestHistoryByNetwork, sanitizeRequestHistoryList)
+    : currentState.requestHistoryByNetwork;
+  const requestHistory = requestHistoryByNetwork[network.scope] ?? [];
   const notificationScanAtByNetwork =
     ps.notificationScanAtByNetwork !== undefined
       ? sanitizeNotificationScanAtByNetwork(ps.notificationScanAtByNetwork)
       : currentState.notificationScanAtByNetwork;
   const lastNotificationScanAt = notificationScanAtByNetwork[network.scope] ?? 0;
-  const approvedDapps = Array.isArray(settingsBase.approvedDapps)
-    ? settingsBase.approvedDapps
-        .map(sanitizeApprovedDapp)
-        .filter((dapp): dapp is NonNullable<typeof dapp> => dapp !== null)
-    : currentState.settings.approvedDapps;
+  const approvedDappsByNetwork = ps.approvedDappsByNetwork !== undefined
+    ? sanitizeScopedRecordMap(ps.approvedDappsByNetwork, sanitizeApprovedDappList)
+    : currentState.approvedDappsByNetwork;
+  const approvedDapps = approvedDappsByNetwork[network.scope] ?? [];
   const settings = {
     ...settingsBase,
     approvedDapps,
@@ -454,13 +499,18 @@ export function mergePersistedState(
     pendingTxs,
     pendingTxsByNetwork,
     txMemos,
+    txMemosByNetwork,
     txTags,
     scheduledTransfers,
+    scheduledTransfersByNetwork,
     notificationEvents,
+    notificationEventsByNetwork,
     priceSnapshots,
     runtimeIssues,
     auditEvents,
     requestHistory,
+    requestHistoryByNetwork,
+    approvedDappsByNetwork,
     lastNotificationScanAt,
     notificationScanAtByNetwork,
     passwordAttempts:
