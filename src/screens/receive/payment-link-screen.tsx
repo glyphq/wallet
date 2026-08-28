@@ -11,6 +11,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
+import { canUseLegacyPayLinks } from "@/lib/pay-link-network-policy";
 
 const WEB_BASE = "https://wallet.glyphq.org/pay";
 const QR_BG = "var(--color-qr-surface)";
@@ -60,15 +61,17 @@ export default function PaymentLinkScreen() {
   const [copiedWeb, setCopiedWeb] = useState(false);
   const [copiedDeep, setCopiedDeep] = useState(false);
   const [qrMode, setQrMode] = useState<"web" | "deep">("web");
+  const payLinksAllowed = canUseLegacyPayLinks(settings.network.name);
 
   const links = useMemo(() => {
+    if (!payLinksAllowed) return null;
     if (!to.trim() || to.trim().length !== 60) return null;
     try {
       return buildLinks(to.trim().toUpperCase(), amount, label);
     } catch {
       return null;
     }
-  }, [to, amount, label]);
+  }, [to, amount, label, payLinksAllowed]);
 
   async function copy(text: string, which: "web" | "deep") {
     await copyToClipboard(text);
@@ -115,6 +118,23 @@ export default function PaymentLinkScreen() {
           </p>
         </section>
 
+        {!payLinksAllowed && (
+          <section
+            role="status"
+            style={{
+              border: "1px solid var(--color-status-warning)",
+              borderRadius: "var(--radius-md)",
+              color: "var(--color-status-warning)",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-body)",
+              lineHeight: 1.45,
+              padding: "var(--space-3)",
+            }}
+          >
+            Payment links are unavailable on this network because the current link format does not include a network identifier.
+          </section>
+        )}
+
         {accountOptions.length > 1 && (
           <section aria-labelledby="receive-to-heading" style={sectionStyle}>
             <span id="receive-to-heading" style={eyebrowStyle}>Receive to</span>
@@ -126,6 +146,7 @@ export default function PaymentLinkScreen() {
                     key={a.identity}
                     type="button"
                     aria-pressed={selected}
+                    disabled={!payLinksAllowed}
                     onClick={() => setTo(a.identity)}
                     style={{
                       display: "grid",
@@ -139,7 +160,8 @@ export default function PaymentLinkScreen() {
                       border: 0,
                       borderTop: "1px solid var(--color-border-subtle)",
                       color: "var(--color-text-primary)",
-                      cursor: "pointer",
+                      cursor: payLinksAllowed ? "pointer" : "not-allowed",
+                      opacity: payLinksAllowed ? 1 : 0.55,
                       fontFamily: "var(--font-sans)",
                       textAlign: "left",
                     }}
@@ -172,6 +194,7 @@ export default function PaymentLinkScreen() {
               placeholder="Leave blank to let sender choose"
               inputMode="numeric"
               autoComplete="off"
+              disabled={!payLinksAllowed}
             />
             <Input
               label="Label"
@@ -179,6 +202,7 @@ export default function PaymentLinkScreen() {
               onChange={(e) => setLabel(e.target.value.slice(0, 100))}
               placeholder="e.g. Coffee, Invoice #42"
               autoComplete="off"
+              disabled={!payLinksAllowed}
             />
           </div>
         </section>
