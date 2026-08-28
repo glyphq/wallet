@@ -205,6 +205,33 @@ export function sanitizeTxMemosByNetwork(value: unknown): Record<NetworkScope, R
   return result as Record<NetworkScope, Record<string, string>>;
 }
 
+function sanitizeTxTags(value: unknown): Record<string, string[]> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value).flatMap(([hash, tags]) =>
+    Array.isArray(tags)
+      ? [[hash, tags.filter((tag): tag is string => typeof tag === "string")]]
+      : []
+  ));
+}
+
+function sanitizeTxTagsByNetwork(value: unknown): Record<NetworkScope, Record<string, string[]>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<NetworkScope, Record<string, string[]>>> = {};
+  for (const [scope, tags] of Object.entries(value)) {
+    if (isNetworkScope(scope)) result[scope] = sanitizeTxTags(tags);
+  }
+  return result as Record<NetworkScope, Record<string, string[]>>;
+}
+
+function sanitizePriceSnapshotList(value: unknown): PriceSnapshot[] {
+  if (!Array.isArray(value)) return [];
+  return clampPriceSnapshots(value.filter((snapshot): snapshot is PriceSnapshot =>
+    isRecord(snapshot) && typeof snapshot.timestamp === "number" &&
+    Number.isFinite(snapshot.timestamp) && typeof snapshot.priceUsd === "number" &&
+    Number.isFinite(snapshot.priceUsd)
+  ));
+}
+
 function withScope<T extends object>(value: T, networkScope: NetworkScope): T & { networkScope: NetworkScope } {
   return { ...value, networkScope };
 }
@@ -302,10 +329,12 @@ export function migratePersistedState(
       [MAINNET_NETWORK_SCOPE]: lastNotificationScanAt,
     },
     txMemosByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeTxMemos(persistedState.txMemos) },
+    txTagsByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeTxTags(persistedState.txTags) },
     scheduledTransfersByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeScheduledTransferList(persistedState.scheduledTransfers, MAINNET_NETWORK_SCOPE) },
     notificationEventsByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeNotificationEventList(persistedState.notificationEvents, MAINNET_NETWORK_SCOPE) },
     requestHistoryByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeRequestHistoryList(persistedState.requestHistory, MAINNET_NETWORK_SCOPE) },
     approvedDappsByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizeApprovedDappList(legacySettings.approvedDapps, MAINNET_NETWORK_SCOPE) },
+    priceSnapshotsByNetwork: { [MAINNET_NETWORK_SCOPE]: sanitizePriceSnapshotList(persistedState.priceSnapshots) },
   };
 }
 
@@ -374,9 +403,12 @@ export function mergePersistedState(
     : currentState.txMemosByNetwork;
   const txMemos = txMemosByNetwork[network.scope] ?? {};
   const txTags =
-    ps.txTags && typeof ps.txTags === "object" && !Array.isArray(ps.txTags)
-      ? (ps.txTags as Record<string, string[]>)
-      : currentState.txTags;
+    (ps.txTagsByNetwork !== undefined
+      ? sanitizeTxTagsByNetwork(ps.txTagsByNetwork)
+      : currentState.txTagsByNetwork)[network.scope] ?? {};
+  const txTagsByNetwork = ps.txTagsByNetwork !== undefined
+    ? sanitizeTxTagsByNetwork(ps.txTagsByNetwork)
+    : currentState.txTagsByNetwork;
   const scheduledTransfersByNetwork = ps.scheduledTransfersByNetwork !== undefined
     ? sanitizeScopedRecordMap(ps.scheduledTransfersByNetwork, sanitizeScheduledTransferList)
     : currentState.scheduledTransfersByNetwork;
@@ -385,18 +417,10 @@ export function mergePersistedState(
     ? sanitizeScopedRecordMap(ps.notificationEventsByNetwork, sanitizeNotificationEventList)
     : currentState.notificationEventsByNetwork;
   const notificationEvents = notificationEventsByNetwork[network.scope] ?? [];
-  const priceSnapshots = Array.isArray(ps.priceSnapshots)
-    ? clampPriceSnapshots(
-        ps.priceSnapshots.filter(
-          (snapshot): snapshot is PriceSnapshot =>
-            !!snapshot &&
-            typeof snapshot === "object" &&
-            typeof snapshot.timestamp === "number" &&
-            typeof snapshot.priceUsd === "number" &&
-            Number.isFinite(snapshot.priceUsd)
-        )
-      )
-    : currentState.priceSnapshots;
+  const priceSnapshotsByNetwork = ps.priceSnapshotsByNetwork !== undefined
+    ? sanitizeScopedRecordMap(ps.priceSnapshotsByNetwork, sanitizePriceSnapshotList)
+    : currentState.priceSnapshotsByNetwork;
+  const priceSnapshots = priceSnapshotsByNetwork[network.scope] ?? [];
   const runtimeIssues = Array.isArray(ps.runtimeIssues)
     ? clampRuntimeIssues(
         ps.runtimeIssues.filter(
@@ -501,11 +525,13 @@ export function mergePersistedState(
     txMemos,
     txMemosByNetwork,
     txTags,
+    txTagsByNetwork,
     scheduledTransfers,
     scheduledTransfersByNetwork,
     notificationEvents,
     notificationEventsByNetwork,
     priceSnapshots,
+    priceSnapshotsByNetwork,
     runtimeIssues,
     auditEvents,
     requestHistory,
