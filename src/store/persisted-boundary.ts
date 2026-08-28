@@ -174,6 +174,18 @@ export function insertPendingTxForNetwork(
   };
 }
 
+export function removePendingTxForNetwork(
+  pendingTxsByNetwork: Record<NetworkScope, PendingTx[]>,
+  hash: string,
+  expectedScope: NetworkScope
+): { pendingTxs: PendingTx[]; pendingTxsByNetwork: Record<NetworkScope, PendingTx[]> } {
+  const pendingTxs = (pendingTxsByNetwork[expectedScope] ?? []).filter((tx) => tx.hash !== hash);
+  return {
+    pendingTxs,
+    pendingTxsByNetwork: { ...pendingTxsByNetwork, [expectedScope]: pendingTxs },
+  };
+}
+
 export function insertNotificationEventForNetwork(
   eventsByNetwork: Record<NetworkScope, NotificationEvent[]>,
   event: Omit<NotificationEvent, "networkScope">,

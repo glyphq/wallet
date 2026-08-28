@@ -16,6 +16,7 @@ import {
   mergePersistedState,
   migratePersistedState,
   insertPendingTxForNetwork,
+  removePendingTxForNetwork,
   insertNotificationEventForNetwork,
   insertPriceSnapshotForNetwork,
   setNotificationScanForNetwork,
@@ -479,6 +480,15 @@ describe("persisted boundary helpers", () => {
     expect(inserted.pendingTxs[0]?.networkScope).toBe(localScope);
     expect(inserted.pendingTxsByNetwork[localScope]?.[0]?.hash).toBe("local-hash");
     expect(inserted.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE]).toBeUndefined();
+  });
+
+  test("removes a reconciled transaction only from its captured scope after a switch", () => {
+    const localScope = `qubic:testnet:local:qubic-local%3A${"a".repeat(64)}` as const;
+    const tx = { networkScope: localScope, hash: "same", source: "A", destination: "B", amount: "1", targetTick: 1, broadcastAt: 1 };
+    const mainnetTx = { ...tx, networkScope: MAINNET_NETWORK_SCOPE };
+    const removed = removePendingTxForNetwork({ [localScope]: [tx], [MAINNET_NETWORK_SCOPE]: [mainnetTx] }, "same", localScope);
+    expect(removed.pendingTxsByNetwork[localScope]).toEqual([]);
+    expect(removed.pendingTxsByNetwork[MAINNET_NETWORK_SCOPE]).toEqual([mainnetTx]);
   });
 
   test("files late notification, price, and scan results under their captured scope", () => {
