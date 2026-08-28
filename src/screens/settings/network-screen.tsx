@@ -1,7 +1,6 @@
 import { useReducer, useState } from "react";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -9,7 +8,6 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
-import { configureRpc } from "@/lib/rpc";
 import { createRpcClientForNetwork } from "@/lib/rpc-cache-identity";
 import { resolveNetworkConfig, type NetworkConfig } from "@/lib/network-config";
 import { identifyNetworkPreset, NETWORK_PRESETS } from "@/lib/network-presets";
@@ -64,7 +62,6 @@ function resultValue<T>(result: { ok: true; value: T } | { ok: false; error: unk
 export default function NetworkScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
-  const queryClient = useQueryClient();
 
   const [liveUrl, setLiveUrl] = useState(settings.network.liveApiUrl);
   const [queryUrl, setQueryUrl] = useState(settings.network.queryApiUrl);
@@ -159,7 +156,7 @@ export default function NetworkScreen() {
         currentTick = live.tick as number;
       }
 
-      // Persistence and global transport change only after every validation succeeds.
+      // Centralized store-driven RPC synchronization owns the active singleton and cache retirement.
       updateSettings({
         network: {
           liveApiUrl: snapshot.liveApiUrl,
@@ -167,8 +164,6 @@ export default function NetworkScreen() {
           manifestInstanceId: snapshot.manifestInstanceId,
         },
       });
-      configureRpc(snapshot.liveApiUrl, snapshot.queryApiUrl);
-      queryClient.invalidateQueries();
       setTestTick(currentTick);
       setTestStatus("ok");
     } catch (error) {
@@ -187,9 +182,7 @@ export default function NetworkScreen() {
     setQueryUrl(defaultQuery);
     setTestStatus("idle");
     setTestError("");
-    configureRpc(defaultLive, defaultQuery);
     updateSettings({ network: { liveApiUrl: defaultLive, queryApiUrl: defaultQuery } });
-    queryClient.invalidateQueries();
   }
 
   function choosePreset(preset: (typeof NETWORK_PRESETS)[number]) {

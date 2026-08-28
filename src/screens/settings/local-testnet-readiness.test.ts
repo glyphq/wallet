@@ -7,6 +7,7 @@ import {
 import { LOCAL_NETWORK_MANIFEST_URL, type LocalNetworkManifest } from "@/lib/rpc-transport";
 import {
   INITIAL_LOCAL_READINESS_STATE,
+  abortableSleep,
   reduceLocalReadinessState,
   validateLocalNetworkManifest,
   verifyLocalNetworkReadiness,
@@ -64,6 +65,46 @@ describe("local testnet manifest validation", () => {
 });
 
 describe("local testnet readiness", () => {
+  test("honors pre-aborted signals without starting an RPC probe", async () => {
+    const controller = new AbortController();
+    const reason = new Error("cancelled before start");
+    controller.abort(reason);
+    let calls = 0;
+
+    await expect(
+      verifyLocalNetworkReadiness(
+        {
+          readLiveTick: async () => { calls += 1; return 100; },
+          readQueryTick: async () => { calls += 1; return 99; },
+        },
+        { signal: controller.signal },
+      ),
+    ).rejects.toBe(reason);
+    expect(calls).toBe(0);
+  });
+
+  test("abortable sleep removes its listener after normal resolution", async () => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const originalAdd = signal.addEventListener.bind(signal);
+    const originalRemove = signal.removeEventListener.bind(signal);
+    let adds = 0;
+    let removes = 0;
+    signal.addEventListener = ((...args: Parameters<AbortSignal["addEventListener"]>) => {
+      adds += 1;
+      return originalAdd(...args);
+    }) as AbortSignal["addEventListener"];
+    signal.removeEventListener = ((...args: Parameters<AbortSignal["removeEventListener"]>) => {
+      removes += 1;
+      return originalRemove(...args);
+    }) as AbortSignal["removeEventListener"];
+
+    await abortableSleep(0, signal);
+
+    expect(adds).toBe(1);
+    expect(removes).toBe(1);
+  });
+
   test("probes live and query, then proves live progress using one RPC snapshot", async () => {
     const liveTicks = [100, 100, 101];
     const queryTicks = [98, 99];
