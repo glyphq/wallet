@@ -73,15 +73,19 @@ describe("rpc cache identity", () => {
     expect(getRpcClient()).toBe(active);
   });
 
-  test("cancels and invalidates only obsolete scoped queries before a late result can land", async () => {
+  test("cancels every identity variant for the obsolete scope without touching unrelated keys", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const obsolete = rpcCacheIdentity(local(INSTANCE_A));
-    const current = rpcCacheIdentity(local(INSTANCE_B));
+    const obsoleteNetwork = local(INSTANCE_A);
+    const currentNetwork = local(INSTANCE_B);
+    const obsoleteLive = rpcCacheIdentity(obsoleteNetwork, "live");
+    const obsoleteArchive = rpcCacheIdentity(obsoleteNetwork, "archive");
+    const obsoleteBoth = rpcCacheIdentity(obsoleteNetwork, "both");
+    const current = rpcCacheIdentity(currentNetwork, "live");
     let release!: () => void;
     let aborted = false;
 
     const obsoleteFetch = client.fetchQuery({
-      queryKey: ["tick-info", obsolete],
+      queryKey: ["tick-info", obsoleteLive],
       queryFn: ({ signal }) => new Promise<string>((resolve, reject) => {
         release = () => resolve("old-network-result");
         signal.addEventListener("abort", () => {
@@ -91,15 +95,24 @@ describe("rpc cache identity", () => {
       }),
     }).catch(() => undefined);
 
+    client.setQueryData(["history", obsoleteArchive], "old-archive");
+    client.setQueryData(["combined", obsoleteBoth], "old-both");
+    client.setQueryData(["network-metadata", obsoleteNetwork.scope], "old-scope");
     client.setQueryData(["tick-info", current], "current-network-result");
-    await invalidateObsoleteRpcQueries(client, obsolete);
+    client.setQueryData(["latest-stats", "https://price.example"], "non-rpc-result");
+    await invalidateObsoleteRpcQueries(client, obsoleteNetwork.scope);
     release();
     await obsoleteFetch;
 
     expect(aborted).toBe(true);
-    expect(client.getQueryData(["tick-info", obsolete])).toBeUndefined();
-    expect(client.getQueryState(["tick-info", obsolete])?.isInvalidated).toBe(true);
+    expect(client.getQueryData(["tick-info", obsoleteLive])).toBeUndefined();
+    expect(client.getQueryState(["tick-info", obsoleteLive])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(["history", obsoleteArchive])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(["combined", obsoleteBoth])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(["network-metadata", obsoleteNetwork.scope])?.isInvalidated).toBe(true);
     expect(client.getQueryData(["tick-info", current])).toBe("current-network-result");
     expect(client.getQueryState(["tick-info", current])?.isInvalidated).toBe(false);
+    expect(client.getQueryData(["latest-stats", "https://price.example"])).toBe("non-rpc-result");
+    expect(client.getQueryState(["latest-stats", "https://price.example"])?.isInvalidated).toBe(false);
   });
 });
