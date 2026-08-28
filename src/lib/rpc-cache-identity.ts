@@ -46,17 +46,19 @@ export function createRpcCacheSnapshot(
   });
 }
 
-export function isRpcScopedQueryKey(queryKey: readonly unknown[], identity: string): boolean {
-  return queryKey.includes(identity);
+export function isRpcScopedQueryKey(queryKey: readonly unknown[], networkScope: string): boolean {
+  return queryKey.some(
+    (part) => typeof part === "string" && (part === networkScope || part.startsWith(`${networkScope}|`)),
+  );
 }
 
 /** Cancel first so a late obsolete response cannot repopulate its cache entry. */
 export async function invalidateObsoleteRpcQueries(
   queryClient: TanstackQueryClient,
-  identity: string,
+  networkScope: string,
 ): Promise<void> {
   const predicate = (query: { queryKey: readonly unknown[] }) =>
-    isRpcScopedQueryKey(query.queryKey, identity);
+    isRpcScopedQueryKey(query.queryKey, networkScope);
   await queryClient.cancelQueries({ predicate });
   await queryClient.invalidateQueries({ predicate, refetchType: "none" });
 }

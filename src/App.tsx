@@ -11,12 +11,11 @@ import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { useLatestStats } from "@/hooks/use-latest-stats";
-import { configureRpc } from "@/lib/rpc";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
+import { installRpcStoreSync, useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 import { invalidateObsoleteRpcQueries } from "@/lib/rpc-cache-identity";
 
 const queryClient = new QueryClient({
@@ -27,6 +26,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Install before React renders so legacy mutation paths never start on a stale
+// singleton. Network-sensitive query paths use immutable snapshots instead.
+installRpcStoreSync();
 
 function useAppearance() {
   const { fontPair, themeMode } = usePersistedStore(
@@ -63,19 +66,15 @@ function useAppearance() {
 
 function useRpcSync() {
   const snapshot = useRpcCacheSnapshot("both");
-  const previousIdentityRef = useRef(snapshot.identity);
-
-  // AppHooks renders before any RPC-consuming route. Configure synchronously so
-  // startup and network-switch renders cannot observe the previous singleton.
-  configureRpc(snapshot.network.liveApiUrl, snapshot.network.queryApiUrl);
+  const previousScopeRef = useRef(snapshot.network.scope);
 
   useEffect(() => {
-    const previousIdentity = previousIdentityRef.current;
-    previousIdentityRef.current = snapshot.identity;
-    if (previousIdentity !== snapshot.identity) {
-      void invalidateObsoleteRpcQueries(queryClient, previousIdentity);
+    const previousScope = previousScopeRef.current;
+    previousScopeRef.current = snapshot.network.scope;
+    if (previousScope !== snapshot.network.scope) {
+      void invalidateObsoleteRpcQueries(queryClient, previousScope);
     }
-  }, [snapshot.identity]);
+  }, [snapshot.network.scope]);
 }
 
 function useHideToTray() {
