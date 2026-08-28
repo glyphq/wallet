@@ -18,9 +18,9 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useRpcCacheSnapshot } from "@/hooks/use-rpc-cache-identity";
 import { identityToPublicKey } from "@/lib/crypto";
-import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { assertNetworkScopeUnchanged } from "@/lib/network-operation";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
@@ -101,7 +101,7 @@ export default function StakeScreen() {
   const visibleAccounts = vault?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
 
   const { data: tickInfo } = useTickInfo();
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const rpc = useRpcCacheSnapshot("live");
   const { data: balanceData } = useBalance(identity);
   const balance = balanceData?.balance ?? null;
   const currentEpoch = tickInfo?.epoch ?? null;
@@ -125,8 +125,8 @@ export default function StakeScreen() {
 
   // Lock tab: current epoch info
   const { data: epochInfoResult } = useQuery({
-    queryKey: qk.qearnEpochInfo(rpcIdentity, currentEpoch),
-    queryFn: () => qearnGetLockInfoPerEpoch(getRpcClient().live, { Epoch: currentEpoch! }),
+    queryKey: qk.qearnEpochInfo(rpc.identity, currentEpoch),
+    queryFn: () => qearnGetLockInfoPerEpoch(rpc.client.live, { Epoch: currentEpoch! }),
     enabled: !!currentEpoch,
     staleTime: 60_000,
   });
@@ -148,10 +148,10 @@ export default function StakeScreen() {
 
   // Unlock tab: user's locked positions across last 52 epochs
   const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useQuery({
-    queryKey: qk.qearnPositions(rpcIdentity, unlockIdentity, currentEpoch),
+    queryKey: qk.qearnPositions(rpc.identity, unlockIdentity, currentEpoch),
     queryFn: async () => {
       if (!unlockIdentity || !currentEpoch) return [];
-      const live = getRpcClient().live;
+      const live = rpc.client.live;
 
       const statusResult = await qearnGetUserLockStatus(live, { user: unlockIdentity }, SC_OPTS);
       if (!statusResult.ok || statusResult.value.status === 0n) return [];
@@ -197,8 +197,8 @@ export default function StakeScreen() {
     .sort((a, b) => a - b)[0] ?? null;
 
   const { data: endedStatusResult } = useQuery({
-    queryKey: ["qearn", "ended-status", rpcIdentity, unlockIdentity],
-    queryFn: () => qearnGetEndedStatus(getRpcClient().live, { user: unlockIdentity! }, SC_OPTS),
+    queryKey: ["qearn", "ended-status", rpc.identity, unlockIdentity],
+    queryFn: () => qearnGetEndedStatus(rpc.client.live, { user: unlockIdentity! }, SC_OPTS),
     enabled: !!unlockIdentity,
     staleTime: 60_000,
   });

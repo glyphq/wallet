@@ -26,7 +26,7 @@ export function usePayLink() {
               title: "Payment link not opened",
               body: "Legacy payment links are mainnet-only because they do not identify a network.",
               dedupeKey: `legacy-pay-link-blocked:${network.scope}`,
-            }), { desktop: false });
+            }), { networkScope: network.scope, desktop: false });
             continue;
           }
           const params = new URLSearchParams({ to: pay.to });

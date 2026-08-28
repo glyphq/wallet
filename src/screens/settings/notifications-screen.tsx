@@ -20,6 +20,7 @@ export default function NotificationsScreen() {
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const autostartEnabled = usePersistedStore((s) => s.settings.autostartEnabled);
+  const networkScope = usePersistedStore((s) => s.settings.network.scope);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
   const [autostartPending, setAutostartPending] = useState(false);
   const [autostartReady, setAutostartReady] = useState(false);
@@ -77,7 +78,7 @@ export default function NotificationsScreen() {
         kind: "system",
         title: "Glyph notification test",
         body: "Desktop notifications are configured correctly.",
-      }));
+      }), { networkScope });
       if (!result || !result.ok) {
         setNotificationTestStatus("failed");
         recordRuntimeIssue({

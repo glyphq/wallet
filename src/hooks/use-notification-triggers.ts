@@ -27,6 +27,7 @@ export function useNotificationTriggers() {
   const onPriceAlerts = usePersistedStore((s) => s.settings.notifyOnPriceAlerts);
   const priceAlertAbove = usePersistedStore((s) => s.settings.priceAlertAbove);
   const priceAlertBelow = usePersistedStore((s) => s.settings.priceAlertBelow);
+  const networkScope = usePersistedStore((s) => s.settings.network.scope);
 
   const identity = wallets[activeIndex]?.identity ?? null;
   const queryClient = useQueryClient();
@@ -61,14 +62,14 @@ export function useNotificationTriggers() {
               title: "Large transfer received",
               body: `${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}`,
               identity: id,
-            })).catch(() => {});
+            }), { networkScope }).catch(() => {});
           } else if (enabled && onReceived) {
             publishNotificationEvent(createNotificationEvent({
               kind: "received",
               title: "Funds received",
               body: `${diff.toLocaleString()} QU on ${truncateId(id, 8, 4)}`,
               identity: id,
-            })).catch(() => {});
+            }), { networkScope }).catch(() => {});
           }
         }
       }
@@ -106,7 +107,7 @@ export function useNotificationTriggers() {
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
-            })).catch(() => {});
+            }), { networkScope: tx.networkScope }).catch(() => {});
           } else {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
@@ -115,7 +116,7 @@ export function useNotificationTriggers() {
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
-            })).catch(() => {});
+            }), { networkScope: tx.networkScope }).catch(() => {});
           }
         }
       }
@@ -160,7 +161,7 @@ export function useNotificationTriggers() {
       for (const p of pendingTxs) {
         if (historyHashSet.has(p.hash)) {
           confirmedHashesRef.current.add(p.hash);
-          removePendingTx(p.hash);
+          removePendingTx(p.hash, p.networkScope);
         }
       }
       return;
@@ -176,7 +177,7 @@ export function useNotificationTriggers() {
       const histTx = historyMap.get(pending.hash);
       if (!histTx) continue;
       confirmedHashesRef.current.add(pending.hash);
-      removePendingTx(pending.hash);
+      removePendingTx(pending.hash, pending.networkScope);
       const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
       if (histTx.moneyFlew) {
         if (enabled && onConfirmed) {
@@ -187,7 +188,7 @@ export function useNotificationTriggers() {
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:confirmed`,
-          })).catch(() => {});
+          }), { networkScope: pending.networkScope }).catch(() => {});
         }
       } else {
         addTxAlert({ id: pending.hash, label, reason: "failed" });
@@ -199,7 +200,7 @@ export function useNotificationTriggers() {
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:failed`,
-          })).catch(() => {});
+          }), { networkScope: pending.networkScope }).catch(() => {});
         }
       }
     }
@@ -213,7 +214,7 @@ export function useNotificationTriggers() {
       if (confirmedHashesRef.current.has(pending.hash)) continue;
       if (currentTick > pending.targetTick + 30) {
         confirmedHashesRef.current.add(pending.hash);
-        removePendingTx(pending.hash);
+        removePendingTx(pending.hash, pending.networkScope);
         const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
         addTxAlert({ id: pending.hash, label, reason: "expired" });
         if (enabled && onMissedConfirmations) {
@@ -224,7 +225,7 @@ export function useNotificationTriggers() {
             identity: pending.source,
             txHash: pending.hash,
             dedupeKey: `resolved:${pending.hash}:expired`,
-          })).catch(() => {});
+          }), { networkScope: pending.networkScope }).catch(() => {});
         }
       }
     }
@@ -253,7 +254,7 @@ export function useNotificationTriggers() {
           title: "QU Price Alert",
           body: `QU moved above $${priceAlertAboveValue.toFixed(4)} and is now trading near $${price.toFixed(4)}.`,
           dedupeKey: `price:above:${priceAlertAboveValue}:${Math.floor(Date.now() / 60_000)}`,
-        })).catch(() => {});
+        }), { networkScope }).catch(() => {});
       }
       if (price < priceAlertAboveValue) aboveTriggeredRef.current = false;
     }
@@ -266,7 +267,7 @@ export function useNotificationTriggers() {
           title: "QU Price Alert",
           body: `QU moved below $${priceAlertBelowValue.toFixed(4)} and is now trading near $${price.toFixed(4)}.`,
           dedupeKey: `price:below:${priceAlertBelowValue}:${Math.floor(Date.now() / 60_000)}`,
-        })).catch(() => {});
+        }), { networkScope }).catch(() => {});
       }
       if (price > priceAlertBelowValue) belowTriggeredRef.current = false;
     }
