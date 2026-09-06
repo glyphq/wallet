@@ -48,8 +48,8 @@ jobs:
         with:
           version: scripts/version-for-branch.sh
           publish: bun run tag-release
-          title: "chore: version packages"
-          commit: "chore: version packages"
+          title: "chore(release): version packages"
+          commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
