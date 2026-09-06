@@ -329,7 +329,7 @@ GitHub provenance attestations are stored by GitHub's attestation service, not u
 
 ## Branch prerelease artifacts
 
-`.github/workflows/prerelease-artifacts.yml` runs on every push to `prerelease` and can also be dispatched manually. It builds Linux, universal macOS, and Windows artifacts from the branch commit, configures the prerelease updater channel, adds per-platform checksums, and uploads GitHub Actions artifacts retained for 14 days.
+`.github/workflows/prerelease-artifacts.yml` runs for code, build, and release-input changes pushed to `prerelease`, and can also be dispatched manually. Documentation-only, Changesets-only, and sponsor changes do not rebuild all platform artifacts. The workflow builds Linux, universal macOS, and Windows artifacts from the branch commit, configures the prerelease updater channel, adds per-platform checksums, and uploads GitHub Actions artifacts retained for 14 days.
 
 These run artifacts are for testing. They do not create a version tag, GitHub Release, or updater manifest, and they do not publish anything. macOS and Windows branch artifacts may be unsigned at the native platform layer when their certificate credentials are absent.
 
