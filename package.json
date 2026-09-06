@@ -11,6 +11,7 @@
     "lint": "bun run typecheck",
     "test": "bun test",
     "check": "bun run lint && bun run test",
+    "commitlint": "commitlint",
     "release:check": "node scripts/sync-version.mjs --check && scripts/lint-workflows.sh",
     "audit:security": "scripts/security-audit.sh",
     "build": "tsc --noEmit --pretty false && vite build",
@@ -68,6 +69,10 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.11.4",
     "@types/react": "^19.2.17",
