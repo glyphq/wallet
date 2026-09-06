@@ -371,7 +371,7 @@ Platform credential-store and biometric code has less direct automated coverage 
 
 ## 9. Continuous integration
 
-`.github/workflows/ci.yml` runs for relevant pushes and pull requests to `main` and `prerelease`. Markdown-only, sponsor, and Changesets-only changes are excluded by its path rules.
+`.github/workflows/ci.yml` runs for every push and pull request to `main` and `prerelease`, including documentation-only changes. The protected-branch gate must always report its required checks so a path filter cannot leave a pull request permanently waiting for a missing status.
 
 CI uses:
 

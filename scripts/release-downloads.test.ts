@@ -59,4 +59,17 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     expect(workflow).toContain("scripts/prepare-tauri-linux-tools.sh");
     expect(workflow).toContain('scripts/patch-appimage.sh "$appimage"');
   });
+
+  test("production signing preflight checks out and runs only reviewed required inputs", async () => {
+    const workflow = await readFile(join(scriptsDir, "../.github/workflows/release.yml"), "utf8");
+
+    expect(workflow).toContain("scripts/validate-signing-config.mjs");
+    expect(workflow).toContain("src-tauri/tauri.conf.json");
+    expect(workflow).toContain(
+      "node scripts/validate-signing-config.mjs --mode release --config src-tauri/tauri.conf.json",
+    );
+    expect(workflow).not.toContain(
+      "node .release-automation/scripts/validate-signing-config.mjs --mode release --config src-tauri/tauri.conf.json",
+    );
+  });
 });
