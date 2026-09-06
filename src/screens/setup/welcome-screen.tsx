@@ -15,8 +15,7 @@ import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { newId } from "@/lib/crypto";
 import { parseSignedExportEnvelope } from "@/lib/export-format";
 import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
-import { unlockSecureSession } from "@/lib/secure-session";
-import { createVault, type VaultData, unlockVault } from "@/lib/vault";
+import { selectVaultAccounts, type VaultData, unlockVaultSession } from "@/lib/vault";
 import { usePersistedStore, type AccountMeta, type VaultColor, type WalletIconId } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -169,21 +168,17 @@ export default function WelcomeScreen() {
     setImportLoading(true);
     setImportError("");
     try {
-      const allSeeds = await unlockVault(importData.vault, importPw);
-
-      let finalSeeds = allSeeds;
       let finalAccounts = importData.accounts;
       let finalEncryptedData: VaultData = importData.vault;
 
       if (importData.accounts.length > MAX_VAULT_ACCOUNTS) {
         const sortedSelected = [...selectedIndices].sort((a, b) => a - b);
-        finalSeeds = sortedSelected.map((i) => allSeeds[i]);
         const byIndex = new Map(importData.accounts.map((account) => [account.index, account]));
         finalAccounts = sortedSelected.map((origIdx, newIdx) => ({ ...byIndex.get(origIdx)!, index: newIdx }));
-        finalEncryptedData = await createVault(importPw, finalSeeds);
+        finalEncryptedData = await selectVaultAccounts(importData.vault, importPw, sortedSelected);
       }
 
-      const wallets = await unlockSecureSession(finalSeeds);
+      const wallets = await unlockVaultSession(finalEncryptedData, importPw);
       const newVaultId = newId();
       addVault({
         id: newVaultId,

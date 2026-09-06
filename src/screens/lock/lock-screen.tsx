@@ -13,11 +13,11 @@ import { Input } from "@/components/input";
 import { Identicon } from "@/components/identicon";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage, timeAgo } from "@/lib/format";
-import { restoreSessionWalletsFromIdentities, unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault } from "@/lib/vault";
+import { restoreSessionWalletsFromIdentities } from "@/lib/secure-session";
+import { unlockVaultSession } from "@/lib/vault";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import type { Seed } from "@/lib/crypto";
+import type { SessionWallet } from "@/lib/session-wallet";
 
 interface FormValues {
   password: string;
@@ -211,10 +211,9 @@ export default function LockScreen() {
     startCountdown(PASSWORD_LOCKOUT_SECS);
   }
 
-  async function finishUnlock(seeds: Seed[]) {
+  async function finishUnlock(wallets: SessionWallet[]) {
     if (!selected) return;
     setActiveVault(selected.id);
-    const wallets = await unlockSecureSession(seeds);
     unlock(selected.id, wallets);
     touchVaultUnlocked(selected.id);
     recordAuditEvent({
@@ -233,9 +232,9 @@ export default function LockScreen() {
 
   async function doUnlock(password: string) {
     if (!selected || !selected.encryptedData) return;
-    const seeds = await unlockVault(selected.encryptedData, password);
+    const wallets = await unlockVaultSession(selected.encryptedData, password);
     await invoke("disable_biometric", { vaultId: selected.id }).catch(() => {});
-    await finishUnlock(seeds);
+    await finishUnlock(wallets);
   }
 
   async function onSubmit({ password }: FormValues) {

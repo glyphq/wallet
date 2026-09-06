@@ -26,7 +26,7 @@ import { isValidIdentity, newId } from "@/lib/crypto";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildTransferFromSession } from "@/lib/secure-session";
-import { unlockVault } from "@/lib/vault";
+import { verifyVaultPassword } from "@/lib/vault";
 import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { TxMemoField } from "@/components/tx-memo-field";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
@@ -281,16 +281,27 @@ export default function SendScreen() {
     if (!wallet) { setDestError("Account locked"); destRef.current?.focus(); return false; }
     if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); destRef.current?.focus(); ok = false; } else setDestError("");
     const amount = amountStr.trim();
-    if (!amount || !Number.isInteger(Number(amount)) || Number(amount) <= 0) { setAmountError("Enter an amount"); ok = false; }
-    else if (balance !== null && BigInt(amount) > balance) { setAmountError("Insufficient balance"); ok = false; }
-    else setAmountError("");
+    try {
+      if (!/^\d+$/.test(amount) || BigInt(amount) <= 0n) {
+        setAmountError("Enter an amount");
+        ok = false;
+      } else if (balance !== null && BigInt(amount) > balance) {
+        setAmountError("Insufficient balance");
+        ok = false;
+      } else {
+        setAmountError("");
+      }
+    } catch {
+      setAmountError("Enter an amount");
+      ok = false;
+    }
     return ok;
   }
 
   async function verifyHighValue() {
     if (!vault?.encryptedData || !highValuePassword) return;
     setHighValueVerifying(true); setHighValuePasswordError("");
-    try { await unlockVault(vault.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
+    try { await verifyVaultPassword(vault.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
     catch { setHighValuePasswordError("Wrong password"); }
     finally { setHighValueVerifying(false); }
   }

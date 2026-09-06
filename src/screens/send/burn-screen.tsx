@@ -18,7 +18,7 @@ import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { formatQu, extractMessage, truncateId } from "@/lib/format";
-import { unlockVault } from "@/lib/vault";
+import { verifyVaultPassword } from "@/lib/vault";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 
 type Step = "input" | "confirm" | "sending" | "done" | "error";
@@ -76,7 +76,7 @@ export default function BurnScreen() {
     setSending(true);
     if (needsPassword && vault?.encryptedData) {
       try {
-        await unlockVault(vault.encryptedData, burnPassword);
+        await verifyVaultPassword(vault.encryptedData, burnPassword);
       } catch {
         setBurnPasswordError("Password did not unlock this wallet");
         setSending(false);

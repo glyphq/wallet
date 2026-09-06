@@ -9,7 +9,7 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { SettingsSwitch } from "@/components/settings-switch";
 import { usePersistedStore } from "@/store/persisted";
-import { unlockVault } from "@/lib/vault";
+import { verifyVaultPassword } from "@/lib/vault";
 import { extractMessage } from "@/lib/format";
 
 const TIMEOUT_OPTIONS = [
@@ -102,7 +102,7 @@ export default function SecurityScreen() {
     if (!vault) return;
     setEnableLoading(true); setEnableError("");
     if (!vault.encryptedData) { setEnableError("Vault data missing"); setEnableLoading(false); return; }
-    try { await unlockVault(vault.encryptedData, enablePw); }
+    try { await verifyVaultPassword(vault.encryptedData, enablePw); }
     catch { setEnableError("Wrong password"); setEnableLoading(false); return; }
     const pw = enablePw; setEnablePw("");
     try {

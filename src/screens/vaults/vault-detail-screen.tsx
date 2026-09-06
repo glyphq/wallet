@@ -10,8 +10,7 @@ import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS, useVaultBalances } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
 import { deriveIdentityFromSeed, generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
-import { unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault, addToVault, removeFromVault, exportVault, createVault } from "@/lib/vault";
+import { addToVault, removeFromVault, exportVault, revealVaultSeed, rotateVaultPassword, unlockVaultSession } from "@/lib/vault";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
@@ -195,8 +194,7 @@ export default function VaultDetailScreen() {
         accounts: [...currentVault.accounts, newAccount],
       });
       if (isActive) {
-        const allSeeds = await unlockVault(newEncrypted, addPassword);
-        const wallets = await unlockSecureSession(allSeeds);
+        const wallets = await unlockVaultSession(newEncrypted, addPassword);
         sessionUnlock(currentVault.id, wallets);
       }
       setNewlyAddedIndex(newIndex);
@@ -269,8 +267,7 @@ export default function VaultDetailScreen() {
         .map((a) => ({ ...a, index: a.index > removingAccount.index ? a.index - 1 : a.index }));
       updateVault(currentVault.id, { encryptedData: newEncrypted, accounts: updatedAccounts });
       if (isActive) {
-        const remaining = await unlockVault(newEncrypted, removePassword);
-        const wallets = await unlockSecureSession(remaining);
+        const wallets = await unlockVaultSession(newEncrypted, removePassword);
         sessionUnlock(currentVault.id, wallets);
         const activeIdx = settings.activeAccountIndex;
         if (removingAccount.index === activeIdx) {
@@ -294,11 +291,10 @@ export default function VaultDetailScreen() {
     setRotateLoading(true);
     setRotateError("");
     try {
-      const seeds = await unlockVault(currentVault.encryptedData!, rotateOldPassword);
-      const newEncrypted = await createVault(rotateNewPassword, seeds);
+      const newEncrypted = await rotateVaultPassword(currentVault.encryptedData!, rotateOldPassword, rotateNewPassword);
       updateVault(currentVault.id, { encryptedData: newEncrypted });
       if (isActive) {
-        const wallets = await unlockSecureSession(seeds);
+        const wallets = await unlockVaultSession(newEncrypted, rotateNewPassword);
         sessionUnlock(currentVault.id, wallets);
       }
       setRotateDone(true);
@@ -355,7 +351,9 @@ export default function VaultDetailScreen() {
         seeds = [];
         seeds[revealingAccount.index] = toSeed(seed);
       } else {
-        seeds = await unlockVault(currentVault.encryptedData!, revealPassword);
+        const seed = await revealVaultSeed(currentVault.encryptedData!, revealPassword, revealingAccount.index);
+        seeds = [];
+        seeds[revealingAccount.index] = toSeed(seed);
       }
       const seed = seeds[revealingAccount.index];
       if (!seed) throw new Error("Missing seed");

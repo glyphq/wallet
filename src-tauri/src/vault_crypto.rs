@@ -3,7 +3,7 @@ use aes_gcm::{Aes256Gcm, Key, Nonce};
 use pbkdf2::pbkdf2_hmac_array;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use tauri::command;
+use tauri::{command, State};
 
 const VAULT_VERSION: u32 = 1;
 const PBKDF2_ITERATIONS: u32 = 600_000;
@@ -24,6 +24,13 @@ pub struct VaultData {
 #[derive(Serialize, Deserialize)]
 struct VaultPayload {
     seeds: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionWalletMetadata {
+    public_key: Vec<u8>,
+    identity: String,
 }
 
 fn derive_key(password: &str, salt: &[u8], iterations: u32) -> [u8; 32] {
@@ -90,6 +97,20 @@ pub fn decrypt_vault_data(vault_data: &VaultData, password: &str) -> Result<Vec<
     Ok(payload.seeds)
 }
 
+fn session_metadata(seeds: &[String]) -> Result<Vec<SessionWalletMetadata>, String> {
+    seeds
+        .iter()
+        .map(|seed| {
+            let public_key = crate::qubic_native::public_key_from_seed(seed)?;
+            let identity = crate::qubic_native::public_key_to_identity(&public_key)?;
+            Ok(SessionWalletMetadata {
+                public_key: public_key.to_vec(),
+                identity,
+            })
+        })
+        .collect()
+}
+
 #[command]
 pub async fn encrypt_vault(password: String, seeds: Vec<String>) -> Result<VaultData, String> {
     tokio::task::spawn_blocking(move || encrypt_vault_data(&password, &seeds))
@@ -98,15 +119,129 @@ pub async fn encrypt_vault(password: String, seeds: Vec<String>) -> Result<Vault
 }
 
 #[command]
-pub async fn decrypt_vault(vault_data: VaultData, password: String) -> Result<Vec<String>, String> {
-    tokio::task::spawn_blocking(move || decrypt_vault_data(&vault_data, &password))
-        .await
-        .map_err(|e| e.to_string())?
+pub async fn unlock_vault_session(
+    vault_data: VaultData,
+    password: String,
+    session: State<'_, crate::session_crypto::NativeSessionState>,
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
+) -> Result<Vec<SessionWalletMetadata>, String> {
+    let (seeds, metadata) = tokio::task::spawn_blocking(move || {
+        let seeds = decrypt_vault_data(&vault_data, &password)?;
+        crate::session_crypto::validate_session_seeds(&seeds)?;
+        let metadata = session_metadata(&seeds)?;
+        Ok::<_, String>((seeds, metadata))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    authorization_state.clear_signing_authorizations();
+    session.replace_seeds(seeds);
+    Ok(metadata)
+}
+
+#[command]
+pub async fn verify_vault_password(vault_data: VaultData, password: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let seeds = decrypt_vault_data(&vault_data, &password)?;
+        crate::session_crypto::validate_session_seeds(&seeds)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn add_seed_to_vault(
+    vault_data: VaultData,
+    password: String,
+    seed: String,
+) -> Result<VaultData, String> {
+    tokio::task::spawn_blocking(move || {
+        let mut seeds = decrypt_vault_data(&vault_data, &password)?;
+        seeds.push(seed);
+        crate::session_crypto::validate_session_seeds(&seeds)?;
+        encrypt_vault_data(&password, &seeds)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn remove_seed_from_vault(
+    vault_data: VaultData,
+    password: String,
+    index: usize,
+) -> Result<VaultData, String> {
+    tokio::task::spawn_blocking(move || {
+        let mut seeds = decrypt_vault_data(&vault_data, &password)?;
+        if index >= seeds.len() || seeds.len() <= 1 {
+            return Err("vault must retain at least one account".to_string());
+        }
+        seeds.remove(index);
+        encrypt_vault_data(&password, &seeds)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn select_vault_accounts(
+    vault_data: VaultData,
+    password: String,
+    indices: Vec<usize>,
+) -> Result<VaultData, String> {
+    tokio::task::spawn_blocking(move || {
+        if indices.is_empty() || indices.len() > 16 {
+            return Err("select between 1 and 16 vault accounts".to_string());
+        }
+        let seeds = decrypt_vault_data(&vault_data, &password)?;
+        let mut selected = Vec::with_capacity(indices.len());
+        for index in indices {
+            let seed = seeds
+                .get(index)
+                .ok_or_else(|| "selected account index is outside this vault".to_string())?;
+            selected.push(seed.clone());
+        }
+        crate::session_crypto::validate_session_seeds(&selected)?;
+        encrypt_vault_data(&password, &selected)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn rotate_vault_password(
+    vault_data: VaultData,
+    old_password: String,
+    new_password: String,
+) -> Result<VaultData, String> {
+    tokio::task::spawn_blocking(move || {
+        let seeds = decrypt_vault_data(&vault_data, &old_password)?;
+        crate::session_crypto::validate_session_seeds(&seeds)?;
+        encrypt_vault_data(&new_password, &seeds)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[command]
+pub async fn reveal_vault_seed(
+    vault_data: VaultData,
+    password: String,
+    account_index: usize,
+) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || {
+        let seeds = decrypt_vault_data(&vault_data, &password)?;
+        seeds
+            .get(account_index)
+            .cloned()
+            .ok_or_else(|| "account index is outside this vault".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{decrypt_vault_data, VaultData, MAX_PBKDF2_ITERATIONS};
+    use super::{decrypt_vault_data, session_metadata, VaultData, MAX_PBKDF2_ITERATIONS};
 
     #[test]
     fn rejects_excessive_iteration_counts_before_derivation() {
@@ -122,5 +257,16 @@ mod tests {
             decrypt_vault_data(&vault, &non_secret_test_input).unwrap_err(),
             "vault iteration count exceeds the supported maximum"
         );
+    }
+
+    #[test]
+    fn unlock_metadata_contains_only_public_account_data() {
+        let metadata = session_metadata(&["a".repeat(55)]).unwrap();
+
+        assert_eq!(metadata.len(), 1);
+        assert_eq!(metadata[0].public_key.len(), 32);
+        assert_eq!(metadata[0].identity.len(), 60);
+        let serialized = serde_json::to_string(&metadata).unwrap();
+        assert!(!serialized.contains(&"a".repeat(55)));
     }
 }

@@ -185,33 +185,30 @@ impl DeepLinkState {
         *self.seen_nonces.lock().unwrap_or_else(|e| e.into_inner()) = seen;
     }
 
-    fn persist_seen_nonces(&self, app: &AppHandle) {
-        let Ok(store) = app.store(NONCE_STORE_PATH) else {
-            return;
-        };
-        let seen = self
-            .seen_nonces
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .clone();
-        if let Ok(value) = serde_json::to_value(seen) {
-            store.set(NONCE_STORE_KEY, value);
-            let _ = store.save();
-        }
+    fn persist_seen_nonces(app: &AppHandle, seen: &HashMap<String, u64>) -> Result<(), String> {
+        let store = app
+            .store(NONCE_STORE_PATH)
+            .map_err(|error| format!("could not open replay protection storage: {error}"))?;
+        let value = serde_json::to_value(seen)
+            .map_err(|error| format!("could not serialize replay protection storage: {error}"))?;
+        store.set(NONCE_STORE_KEY, value);
+        store
+            .save()
+            .map_err(|error| format!("could not persist replay protection storage: {error}"))
     }
 
     /// Returns false if the replay key was already seen within the last hour (replay), true if fresh.
-    pub fn record_nonce(&self, app: &AppHandle, nonce: &str) -> bool {
+    /// The map mutex is held through persistence so a stale snapshot cannot overwrite a newer nonce.
+    pub fn record_nonce(&self, app: &AppHandle, nonce: &str) -> Result<bool, String> {
         let mut seen = self.seen_nonces.lock().unwrap_or_else(|e| e.into_inner());
         let now = now_secs();
         Self::prune_seen_nonces(&mut seen, now);
         if seen.contains_key(nonce) {
-            return false;
+            return Ok(false);
         }
         seen.insert(nonce.to_string(), now);
-        drop(seen);
-        self.persist_seen_nonces(app);
-        true
+        Self::persist_seen_nonces(app, &seen)?;
+        Ok(true)
     }
 
     pub fn mark_request_accepted(&self, payload: &str) -> Result<(), String> {
