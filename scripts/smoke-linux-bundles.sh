@@ -104,7 +104,7 @@ main() {
   version="$(dpkg-deb -f "$deb" Version)"
   architecture="$(dpkg-deb -f "$deb" Architecture)"
   depends="$(dpkg-deb -f "$deb" Depends)"
-  [[ "$package" == "glyph" ]] || die "unexpected Debian package: $package"
+  [[ "$package" == "glyph-wallet" ]] || die "unexpected Debian package: $package"
   [[ "$version" == "$EXPECTED_VERSION" ]] || die "Debian package version is $version, expected $EXPECTED_VERSION"
   [[ "$architecture" == "amd64" ]] || die "Debian package architecture is $architecture, expected amd64"
   grep -Eqi 'libwebkit2gtk-4[.]1-0' <<<"$depends" || die "Debian package is missing WebKit runtime dependency"
