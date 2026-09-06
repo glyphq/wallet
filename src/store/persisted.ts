@@ -63,7 +63,7 @@ const tauriStorage: StateStorage = {
     } catch (err) {
       console.error("[glyph] encrypt_store_value failed:", err);
       window.dispatchEvent(new CustomEvent("glyph:disk-write-error"));
-      return;
+      throw err;
     }
     try {
       await _disk.set(name, encrypted);
@@ -79,6 +79,7 @@ const tauriStorage: StateStorage = {
           err2
         );
         window.dispatchEvent(new CustomEvent("glyph:disk-write-error"));
+        throw err2;
       }
     }
   },
@@ -86,7 +87,11 @@ const tauriStorage: StateStorage = {
     try {
       await _disk.delete(name);
       await _disk.save();
-    } catch {}
+    } catch (err) {
+      console.error("[glyph] disk delete failed:", err);
+      window.dispatchEvent(new CustomEvent("glyph:disk-write-error"));
+      throw err;
+    }
   },
 };
 
@@ -186,26 +191,15 @@ export const usePersistedStore = create<PersistedState>()(
           const approvedDapps = existing
             ? s.settings.approvedDapps.map((d) =>
                 d.origin === dapp.origin
-                  ? (() => {
-                      const allowedIdentities =
-                        d.allowedIdentities === undefined ||
-                        dapp.allowedIdentities === undefined
-                          ? d.allowedIdentities
-                          : [...new Set([...d.allowedIdentities, ...dapp.allowedIdentities])];
-                      return {
-                        ...d,
-                        name: dapp.name,
-                        approvedAt: dapp.approvedAt,
-                        lastUsedAt: now,
-                        permissions: [
-                          ...new Set([...d.permissions, ...dapp.permissions]),
-                        ],
-                        allowedIdentities,
-                        transferLimitQu,
-                        expiryDurationMs,
-                        expiresAt,
-                      };
-                    })()
+                  ? {
+                      ...dapp,
+                      permissions: [...new Set(dapp.permissions)],
+                      allowedIdentities: dapp.allowedIdentities && [...new Set(dapp.allowedIdentities)],
+                      transferLimitQu,
+                      expiryDurationMs,
+                      expiresAt,
+                      lastUsedAt: now,
+                    }
                   : d
               )
             : [...s.settings.approvedDapps, { ...dapp, transferLimitQu, expiryDurationMs, expiresAt, lastUsedAt: now }];

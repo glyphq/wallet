@@ -8,6 +8,7 @@ import { parsePayLink } from "@/lib/pay-link";
 export function usePayLink() {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
+    let active = true;
 
     const consumePendingPay = async () => {
       try {
@@ -28,11 +29,18 @@ export function usePayLink() {
 
     listen("glyph:pay", consumePendingPay)
       .then((fn) => {
+        if (!active) {
+          fn();
+          return;
+        }
         unlisten = fn;
         void consumePendingPay();
       })
       .catch(() => {});
 
-    return () => { unlisten?.(); };
+    return () => {
+      active = false;
+      unlisten?.();
+    };
   }, []);
 }

@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { createHashRouter, Navigate } from "react-router";
+import { createHashRouter, Navigate, Outlet } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -35,6 +35,8 @@ import NotificationsScreen from "@/screens/settings/notifications-screen";
 import SupportScreen from "@/screens/settings/support-screen";
 import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
 import AppearanceScreen from "@/screens/settings/appearance-screen";
+import { usePersistedStore } from "@/store/persisted";
+import { useSessionStore } from "@/store/session";
 
 function Screen({ component: C }: { component: ComponentType }) {
   return (
@@ -42,6 +44,23 @@ function Screen({ component: C }: { component: ComponentType }) {
       <C />
     </ErrorBoundary>
   );
+}
+
+/**
+ * Keeps all sensitive application screens behind one lock-state boundary.
+ * Individual screens must not decide whether their own data is safe to show.
+ */
+function UnlockedRoute() {
+  const isLocked = useSessionStore((state) => state.isLocked);
+  const hasVaults = usePersistedStore((state) => state.vaults.length > 0);
+
+  // Never render persisted account data before hydration has completed.
+  if (!usePersistedStore.persist.hasHydrated()) {
+    return <Screen component={SplashScreen} />;
+  }
+  if (!hasVaults) return <Navigate to="/setup" replace />;
+  if (isLocked) return <Navigate to="/lock" replace />;
+  return <Outlet />;
 }
 
 export const router = createHashRouter([
@@ -53,34 +72,39 @@ export const router = createHashRouter([
       { path: "/setup", element: <Screen component={WelcomeScreen} /> },
       { path: "/setup/create", element: <Screen component={CreateVaultScreen} /> },
       { path: "/setup/import", element: <Screen component={ImportVaultScreen} /> },
-      { path: "/dashboard", element: <Screen component={DashboardScreen} /> },
-      { path: "/vaults", element: <Screen component={VaultsScreen} /> },
-      { path: "/vaults/:id", element: <Screen component={VaultDetailScreen} /> },
-      { path: "/vaults/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
-      { path: "/send", element: <Screen component={SendScreen} /> },
-      { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
-      { path: "/send-many", element: <Screen component={SendManyScreen} /> },
-      { path: "/burn", element: <Screen component={BurnScreen} /> },
-      { path: "/stake", element: <Screen component={StakeScreen} /> },
-      { path: "/receive", element: <Screen component={ReceiveScreen} /> },
-      { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
-      { path: "/history", element: <Screen component={HistoryScreen} /> },
-      { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },
-      { path: "/analytics", element: <Screen component={AnalyticsScreen} /> },
-      { path: "/contacts", element: <Screen component={ContactsScreen} /> },
-      { path: "/search", element: <Screen component={SearchScreen} /> },
-      { path: "/request", element: <Screen component={RequestScreen} /> },
-      { path: "/settings", element: <Screen component={SettingsScreen} /> },
-      { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
-      { path: "/settings/request-history", element: <Screen component={RequestHistoryScreen} /> },
-      { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
-      { path: "/settings/security/audit-log", element: <Screen component={AuditLogScreen} /> },
-      { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
-      { path: "/settings/contacts", element: <Screen component={ContactsScreen} /> },
-      { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
-      { path: "/settings/support", element: <Screen component={SupportScreen} /> },
-      { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
-      { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
+      {
+        element: <UnlockedRoute />,
+        children: [
+          { path: "/dashboard", element: <Screen component={DashboardScreen} /> },
+          { path: "/vaults", element: <Screen component={VaultsScreen} /> },
+          { path: "/vaults/:id", element: <Screen component={VaultDetailScreen} /> },
+          { path: "/vaults/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
+          { path: "/send", element: <Screen component={SendScreen} /> },
+          { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
+          { path: "/send-many", element: <Screen component={SendManyScreen} /> },
+          { path: "/burn", element: <Screen component={BurnScreen} /> },
+          { path: "/stake", element: <Screen component={StakeScreen} /> },
+          { path: "/receive", element: <Screen component={ReceiveScreen} /> },
+          { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
+          { path: "/history", element: <Screen component={HistoryScreen} /> },
+          { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },
+          { path: "/analytics", element: <Screen component={AnalyticsScreen} /> },
+          { path: "/contacts", element: <Screen component={ContactsScreen} /> },
+          { path: "/search", element: <Screen component={SearchScreen} /> },
+          { path: "/request", element: <Screen component={RequestScreen} /> },
+          { path: "/settings", element: <Screen component={SettingsScreen} /> },
+          { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
+          { path: "/settings/request-history", element: <Screen component={RequestHistoryScreen} /> },
+          { path: "/settings/security", element: <Screen component={SecurityScreen} /> },
+          { path: "/settings/security/audit-log", element: <Screen component={AuditLogScreen} /> },
+          { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
+          { path: "/settings/contacts", element: <Screen component={ContactsScreen} /> },
+          { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
+          { path: "/settings/support", element: <Screen component={SupportScreen} /> },
+          { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
+          { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
+        ],
+      },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

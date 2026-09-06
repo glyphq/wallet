@@ -28,6 +28,8 @@ export function useDeepLink() {
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
+    let active = true;
+    let unsubscribeHydration: (() => void) | undefined;
 
     async function applyAcceptedPayload(payload: string) {
       const parsed = await parseGlyphEnvelopeAsync(payload, await activeNetworkBinding(usePersistedStore.getState().settings.network));
@@ -89,7 +91,10 @@ export function useDeepLink() {
 
     listen<string>("glyph:request", () => {
       void applyPayload();
-    }).then((fn) => { unlisten = fn; }).catch(() => {});
+    }).then((fn) => {
+      if (active) unlisten = fn;
+      else fn();
+    }).catch(() => {});
 
     // Cold start: wait for the persisted store to hydrate before reading the Rust-side queue.
     // Without this, vaults.length = 0 at first render (pre-hydration), which would
@@ -105,12 +110,18 @@ export function useDeepLink() {
     if (usePersistedStore.persist.hasHydrated()) {
       void checkPending();
     } else {
-      const unsub = usePersistedStore.persist.onFinishHydration(() => {
+      unsubscribeHydration = usePersistedStore.persist.onFinishHydration(() => {
+        if (!active) return;
         void checkPending();
-        unsub();
+        unsubscribeHydration?.();
+        unsubscribeHydration = undefined;
       });
     }
 
-    return () => { unlisten?.(); };
+    return () => {
+      active = false;
+      unsubscribeHydration?.();
+      unlisten?.();
+    };
   }, []); // Stable: registered once; stale-closure handled via refs above.
 }

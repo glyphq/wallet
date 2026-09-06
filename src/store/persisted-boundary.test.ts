@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { DEFAULT_SETTINGS } from "./persisted-defaults";
 import {
   MAX_NOTIFICATION_EVENTS,
+  MAX_ACCOUNTS_PER_VAULT,
+  MAX_PENDING_TXS,
+  MAX_SCHEDULED_TRANSFERS,
   MAX_TX_MEMOS,
   clampNotificationEvents,
   clampTxMemos,
@@ -239,5 +242,35 @@ describe("persisted boundary helpers", () => {
     const merged = mergePersistedState({ settings: {} }, currentState());
 
     expect(merged.settings.autostartEnabled).toBe(false);
+  });
+
+  test("rejects non-object state and malformed collection records", () => {
+    expect(mergePersistedState(null, currentState()).contacts).toEqual([]);
+    expect(mergePersistedState([], currentState()).pendingTxs).toEqual([]);
+
+    const merged = mergePersistedState({
+      contacts: [{ id: "valid", name: "Name", identity: "IDENTITY", note: "", addedAt: 1, lastUsedAt: 2 }, { id: 1 }],
+      pendingTxs: [{ hash: "h", source: "s", destination: "d", amount: "1", targetTick: 1, broadcastAt: 1 }, { hash: "broken" }],
+      scheduledTransfers: [{ id: "s", label: "Scheduled", sourceIdentity: "SOURCE", destination: "DESTINATION", amount: "1", intervalDays: 1, nextRunAt: 1, createdAt: 1, enabled: true }, { id: "broken" }],
+    }, currentState());
+
+    expect(merged.contacts).toHaveLength(1);
+    expect(merged.pendingTxs).toHaveLength(1);
+    expect(merged.scheduledTransfers).toHaveLength(1);
+  });
+
+  test("caps persisted account, pending, and scheduled collections", () => {
+    const account = { index: 0, name: "Account", addedAt: 1, hidden: false };
+    const pending = { hash: "h", source: "s", destination: "d", amount: "1", targetTick: 1, broadcastAt: 1 };
+    const scheduled = { id: "s", label: "Scheduled", sourceIdentity: "SOURCE", destination: "DESTINATION", amount: "1", intervalDays: 1, nextRunAt: 1, createdAt: 1, enabled: true };
+    const merged = mergePersistedState({
+      vaults: [{ id: "vault", name: "Vault", color: "sky", createdAt: 1, lastUnlockedAt: 1, encryptedData: null, accounts: Array.from({ length: MAX_ACCOUNTS_PER_VAULT + 1 }, (_, index) => ({ ...account, index })) }],
+      pendingTxs: Array.from({ length: MAX_PENDING_TXS + 1 }, (_, index) => ({ ...pending, hash: `h-${index}` })),
+      scheduledTransfers: Array.from({ length: MAX_SCHEDULED_TRANSFERS + 1 }, (_, index) => ({ ...scheduled, id: `s-${index}` })),
+    }, currentState());
+
+    expect(merged.vaults[0]?.accounts).toHaveLength(MAX_ACCOUNTS_PER_VAULT);
+    expect(merged.pendingTxs).toHaveLength(MAX_PENDING_TXS);
+    expect(merged.scheduledTransfers).toHaveLength(MAX_SCHEDULED_TRANSFERS);
   });
 });

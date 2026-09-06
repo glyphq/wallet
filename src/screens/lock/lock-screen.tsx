@@ -146,6 +146,7 @@ export default function LockScreen() {
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
   const lockedVaults = vaults
+    .slice()
     .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   useEffect(() => {
     if (vaults.length > 0 && lockedVaults.length === 0) {

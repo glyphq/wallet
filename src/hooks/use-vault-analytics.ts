@@ -6,6 +6,7 @@ import { useSessionStore } from "@/store/session";
 import { buildVaultAnalytics, type AnalyticsTxLike } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { dedupeTxRecords, normalizeArchiveTransaction } from "@/lib/tx-domain";
+import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 20; // cap at 2 000 transactions per identity
@@ -46,6 +47,7 @@ export function useVaultAnalytics() {
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((item) => item.id === s.settings.activeVaultId) ?? null);
   const wallets = useSessionStore((s) => s.wallets);
+  const rpcIdentity = useRpcCacheIdentity("archive");
 
   const identities = useMemo(() => {
     if (!vault) return [] as string[];
@@ -56,7 +58,7 @@ export function useVaultAnalytics() {
   }, [vault, wallets]);
 
   return useQuery({
-    queryKey: ["vault-analytics", settings.activeVaultId, identities],
+    queryKey: ["vault-analytics", settings.activeVaultId, rpcIdentity, identities],
     queryFn: async ({ signal }) => {
       const all = await Promise.all(identities.map((identity) => fetchAllTransactionsForIdentity(identity, signal)));
       return buildVaultAnalytics(new Set(identities), dedupeTxRecords(all.flat()));
