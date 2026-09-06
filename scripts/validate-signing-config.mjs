@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
 
 const UPDATER_SECRETS = ["TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"];
+const UNSIGNED_RELEASE_FLAG = "GLYPH_ALLOW_UNSIGNED_NATIVE_RELEASE";
 const MACOS_SECRETS = [
   "APPLE_CERTIFICATE",
   "APPLE_CERTIFICATE_PASSWORD",
@@ -58,11 +59,12 @@ export function validateUpdaterConfig(config) {
 
 /**
  * Validate the secret names needed by a release build without printing secret
- * values. Development artifacts may explicitly opt out of native platform
- * signing, but updater signing remains mandatory in every build path.
+ * values. Development artifacts and explicit unsigned-native releases may opt
+ * out of platform signing, but updater signing remains mandatory in every
+ * build path.
  */
 export function validateSigningConfig({ env = process.env, mode = "release", platform = "all" } = {}) {
-  if (!['release', 'development'].includes(mode)) {
+  if (!['release', 'unsigned-release', 'development'].includes(mode)) {
     throw new Error(`unsupported signing mode: ${mode}`);
   }
   if (!['all', 'macos', 'windows', 'linux'].includes(platform)) {
@@ -72,6 +74,10 @@ export function validateSigningConfig({ env = process.env, mode = "release", pla
   const missing = missingSecrets(env, UPDATER_SECRETS);
   if (missing.length > 0) {
     throw new Error(`missing required updater signing secrets: ${missing.join(", ")}`);
+  }
+
+  if (mode === "unsigned-release" && env[UNSIGNED_RELEASE_FLAG] !== "true") {
+    throw new Error(`${UNSIGNED_RELEASE_FLAG}=true is required for unsigned native release builds`);
   }
 
   if (platform === "linux") return { mode, platform, missing: [] };
@@ -86,7 +92,7 @@ export function validateSigningConfig({ env = process.env, mode = "release", pla
       throw new Error(`missing required native signing secrets: ${missingNative.join(", ")}`);
     }
     validateWindowsCertificate(env);
-  } else {
+  } else if (mode === "development") {
     if (env.GLYPH_DEVELOPMENT_UNSIGNED_NATIVE !== "true") {
       throw new Error(
         "development signing mode requires GLYPH_DEVELOPMENT_UNSIGNED_NATIVE=true when native signing is optional",

@@ -63,6 +63,14 @@ describe("release signing configuration", () => {
     );
   });
 
+  test("allows an unsigned native release only with an explicit opt-in", () => {
+    const unsignedReleaseEnv = { ...updater, GLYPH_ALLOW_UNSIGNED_NATIVE_RELEASE: "true" };
+    expect(() => validateSigningConfig({ env: unsignedReleaseEnv, mode: "unsigned-release" })).not.toThrow();
+    expect(() => validateSigningConfig({ env: updater, mode: "unsigned-release" })).toThrow(
+      "GLYPH_ALLOW_UNSIGNED_NATIVE_RELEASE=true",
+    );
+  });
+
   test("never makes missing updater credentials optional in development", () => {
     expect(() =>
       validateSigningConfig({
