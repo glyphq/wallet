@@ -22,6 +22,10 @@ const REQUEST_PROTOCOL_V2: &str = "glyph-connect-request/2";
 pub struct DeepLinkState {
     pending_requests: Arc<Mutex<VecDeque<String>>>,
     pending_payments: Arc<Mutex<VecDeque<String>>>,
+    /// Recently completed, native-validated envelopes that may still deliver
+    /// their callback. This preserves retry support without exposing a generic
+    /// outbound HTTP primitive to the renderer.
+    callback_delivery_payloads: Arc<Mutex<VecDeque<String>>>,
     /// Maps v2 replay key → unix timestamp of first receipt for time-bounded replay protection.
     seen_nonces: Arc<Mutex<HashMap<String, u64>>>,
 }
@@ -31,6 +35,7 @@ impl Default for DeepLinkState {
         Self {
             pending_requests: Arc::new(Mutex::new(VecDeque::new())),
             pending_payments: Arc::new(Mutex::new(VecDeque::new())),
+            callback_delivery_payloads: Arc::new(Mutex::new(VecDeque::new())),
             seen_nonces: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -41,7 +46,10 @@ impl DeepLinkState {
     /// preserving its FIFO position is safer than replacing a request that is
     /// already awaiting explicit user review.
     pub fn store(&self, payload: String) -> bool {
-        let mut queue = self.pending_requests.lock().unwrap_or_else(|e| e.into_inner());
+        let mut queue = self
+            .pending_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if queue.contains(&payload) || queue.len() >= MAX_PENDING_LINKS {
             return false;
         }
@@ -60,13 +68,38 @@ impl DeepLinkState {
     /// Remove only the expected queue head. A stale renderer event must never
     /// consume the request that arrived after it.
     pub fn take_if_front(&self, payload: &str) -> bool {
-        let mut queue = self.pending_requests.lock().unwrap_or_else(|e| e.into_inner());
+        let mut queue = self
+            .pending_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if queue.front().is_some_and(|front| front == payload) {
-            queue.pop_front();
+            let completed_payload = queue.pop_front().expect("queue front was present");
+            drop(queue);
+            Self::store_bounded(&self.callback_delivery_payloads, completed_payload);
             true
         } else {
             false
         }
+    }
+
+    /// Only the active request or a recently completed request can submit its
+    /// callback. The URL itself is always re-read from the native-validated
+    /// envelope, so renderer input cannot select a new destination.
+    pub fn authorizes_callback_delivery(&self, payload: &str) -> bool {
+        if self
+            .pending_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .front()
+            .is_some_and(|front| front == payload)
+        {
+            return true;
+        }
+        self.callback_delivery_payloads
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .iter()
+            .any(|completed| completed == payload)
     }
 
     pub fn store_payment(&self, payload: String) {
@@ -137,13 +170,38 @@ impl DeepLinkState {
 }
 
 pub fn replay_key_from_envelope_payload(payload: &str) -> Result<String, String> {
-    Ok(format!("v2|{}", replay_parts_from_envelope_payload(payload)?.join("|")))
+    Ok(format!(
+        "v2|{}",
+        replay_parts_from_envelope_payload(payload)?.join("|")
+    ))
+}
+
+pub fn callback_from_envelope_payload(payload: &str) -> Result<Option<String>, String> {
+    let envelope: Value =
+        serde_json::from_str(payload).map_err(|_| "invalid pending request".to_string())?;
+    envelope
+        .get("callback")
+        .and_then(|value| {
+            if value.is_null() {
+                Some(None)
+            } else {
+                value.as_str().map(|callback| Some(callback.to_string()))
+            }
+        })
+        .ok_or_else(|| "pending request has an invalid callback".to_string())
 }
 
 pub fn replay_parts_from_envelope_payload(payload: &str) -> Result<[String; 4], String> {
-    let envelope: Value = serde_json::from_str(payload).map_err(|e| format!("invalid pending request: {e}"))?;
-    let request = envelope.get("request").and_then(Value::as_object).ok_or("missing request")?;
-    let nonce = request.get("nonce").and_then(Value::as_str).ok_or("missing nonce")?;
+    let envelope: Value =
+        serde_json::from_str(payload).map_err(|e| format!("invalid pending request: {e}"))?;
+    let request = envelope
+        .get("request")
+        .and_then(Value::as_object)
+        .ok_or("missing request")?;
+    let nonce = request
+        .get("nonce")
+        .and_then(Value::as_str)
+        .ok_or("missing nonce")?;
     let dapp_origin = request
         .get("dapp")
         .and_then(Value::as_object)
@@ -178,8 +236,17 @@ struct ParsedRequest {
 
 fn jcs(value: &Value) -> Result<String, String> {
     match value {
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => serde_json::to_string(value).map_err(|e| e.to_string()),
-        Value::Array(items) => Ok(format!("[{}]", items.iter().map(jcs).collect::<Result<Vec<_>, _>>()?.join(","))),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {
+            serde_json::to_string(value).map_err(|e| e.to_string())
+        }
+        Value::Array(items) => Ok(format!(
+            "[{}]",
+            items
+                .iter()
+                .map(jcs)
+                .collect::<Result<Vec<_>, _>>()?
+                .join(",")
+        )),
         Value::Object(map) => {
             let mut keys = map.keys().collect::<Vec<_>>();
             keys.sort();
@@ -198,12 +265,21 @@ fn sha256_base64url(input: &str) -> String {
 }
 
 fn validate_network(value: &Value) -> Result<(), String> {
-    let id = value.get("id").and_then(Value::as_str).ok_or("missing network.id")?;
+    let id = value
+        .get("id")
+        .and_then(Value::as_str)
+        .ok_or("missing network.id")?;
     if id == "qubic:mainnet" || id == "qubic:testnet" {
         return Ok(());
     }
-    let suffix = id.strip_prefix("qubic:custom:sha256:").ok_or("invalid network.id")?;
-    if suffix.len() == 43 && suffix.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_')) {
+    let suffix = id
+        .strip_prefix("qubic:custom:sha256:")
+        .ok_or("invalid network.id")?;
+    if suffix.len() == 43
+        && suffix
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_'))
+    {
         Ok(())
     } else {
         Err("invalid custom network hash".into())
@@ -264,7 +340,9 @@ fn validate_delivery_url(
     let url = Url::parse(url_str).map_err(|_| format!("invalid {field} URL"))?;
     let host = url.host_str().unwrap_or("");
     if url.scheme() != "https" || !url.username().is_empty() || url.password().is_some() {
-        return Err(format!("{field} must use HTTPS without embedded credentials"));
+        return Err(format!(
+            "{field} must use HTTPS without embedded credentials"
+        ));
     }
     if crate::commands::is_private_host(host) {
         return Err(format!("{field} must not target a non-global address"));
@@ -296,8 +374,7 @@ fn validate_dapp_origin(origin: &str) -> Result<String, String> {
 fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let url = Url::parse(uri_str).map_err(|e| format!("invalid URI: {e}"))?;
 
-    if crate::link_broker::validate_launch_url(uri_str)
-        != Ok(crate::link_broker::LinkKind::Request)
+    if crate::link_broker::validate_launch_url(uri_str) != Ok(crate::link_broker::LinkKind::Request)
     {
         return Err("expected glyph://v2/request".into());
     }
@@ -330,12 +407,41 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     if value.get("protocol").and_then(Value::as_str) != Some(REQUEST_PROTOCOL_V2) {
         return Err("invalid request protocol".into());
     }
-    let request_value = value.get("request").filter(|v| v.is_object()).ok_or("missing request envelope")?.clone();
-    let callback_from_payload = value.get("callback").and_then(|v| if v.is_null() { Some(None) } else { v.as_str().map(|s| Some(s.to_string())) }).ok_or("callback must be present as string or null")?;
-    let redirect_uri_from_payload = value.get("redirect_uri").and_then(|v| if v.is_null() { Some(None) } else { v.as_str().map(|s| Some(s.to_string())) }).ok_or("redirect_uri must be present as string or null")?;
-    let network = value.get("network").filter(|v| v.is_object()).ok_or("missing network envelope")?.clone();
+    let request_value = value
+        .get("request")
+        .filter(|v| v.is_object())
+        .ok_or("missing request envelope")?
+        .clone();
+    let callback_from_payload = value
+        .get("callback")
+        .and_then(|v| {
+            if v.is_null() {
+                Some(None)
+            } else {
+                v.as_str().map(|s| Some(s.to_string()))
+            }
+        })
+        .ok_or("callback must be present as string or null")?;
+    let redirect_uri_from_payload = value
+        .get("redirect_uri")
+        .and_then(|v| {
+            if v.is_null() {
+                Some(None)
+            } else {
+                v.as_str().map(|s| Some(s.to_string()))
+            }
+        })
+        .ok_or("redirect_uri must be present as string or null")?;
+    let network = value
+        .get("network")
+        .filter(|v| v.is_object())
+        .ok_or("missing network envelope")?
+        .clone();
     validate_network(&network)?;
-    let request_hash = value.get("request_hash").and_then(Value::as_str).ok_or("missing request_hash")?;
+    let request_hash = value
+        .get("request_hash")
+        .and_then(Value::as_str)
+        .ok_or("missing request_hash")?;
     let hash_material = serde_json::json!({
         "protocol": REQUEST_PROTOCOL_V2,
         "request": request_value,
@@ -351,7 +457,9 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     let network = hash_material.get("network").unwrap().clone();
 
     // Required fields
-    let req_type = request_value["type"].as_str().ok_or("missing 'type' field")?;
+    let req_type = request_value["type"]
+        .as_str()
+        .ok_or("missing 'type' field")?;
 
     if ![
         "transfer",
@@ -365,7 +473,9 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
         return Err(format!("unknown request type: {req_type}"));
     }
 
-    let nonce = request_value["nonce"].as_str().ok_or("missing 'nonce' field")?;
+    let nonce = request_value["nonce"]
+        .as_str()
+        .ok_or("missing 'nonce' field")?;
     if nonce.len() < 16 || nonce.len() > 128 {
         return Err("nonce must be 16–128 characters".into());
     }
@@ -407,16 +517,17 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
     // Type-specific checks
     match req_type {
         "transfer" => {
-            let to = request_value["to"].as_str().ok_or("transfer: missing 'to'")?;
+            let to = request_value["to"]
+                .as_str()
+                .ok_or("transfer: missing 'to'")?;
             if crate::qubic_native::identity_to_public_key(to).is_err() {
                 let preview: String = to.chars().take(8).collect();
                 return Err(format!(
-                    "transfer: 'to' must be a valid Qubic identity, got '{}'",
-                    preview
+                    "transfer: 'to' must be a valid Qubic identity, got '{preview}'"
                 ));
             }
-            let amount = parse_positive_i64(&request_value["amount"])
-                .ok_or("transfer: missing 'amount'")?;
+            let amount =
+                parse_positive_i64(&request_value["amount"]).ok_or("transfer: missing 'amount'")?;
             if amount <= 0 {
                 return Err("transfer: 'amount' must be positive".into());
             }
@@ -435,8 +546,8 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
                 return Err("sc_call: 'input_type' must be non-negative".into());
             }
             if let Some(amount) = request_value.get("amount") {
-                let amount = parse_positive_i64(amount)
-                    .ok_or("sc_call: 'amount' must be an integer")?;
+                let amount =
+                    parse_positive_i64(amount).ok_or("sc_call: 'amount' must be an integer")?;
                 if amount < 0 {
                     return Err("sc_call: 'amount' must be non-negative".into());
                 }
@@ -509,7 +620,10 @@ fn validate_pay(uri_str: &str) -> Result<PayRequest, String> {
 
     let to = to.ok_or("missing 'to' parameter")?;
     if crate::qubic_native::identity_to_public_key(&to).is_err() {
-        return Err(format!("invalid identity in 'to': {}", &to[..to.len().min(8)]));
+        return Err(format!(
+            "invalid identity in 'to': {}",
+            &to[..to.len().min(8)]
+        ));
     }
     if let Some(ref a) = amount {
         let n: i64 = a.parse().map_err(|_| "amount is not a valid integer")?;
@@ -581,14 +695,14 @@ pub fn register_handler(app: &AppHandle) {
 
     if let Ok(Some(urls)) = app.deep_link().get_current() {
         for url in urls {
-            process_url(app, &url.to_string());
+            process_url(app, url.as_ref());
         }
     }
 
     let handle = app.clone();
     app.deep_link().on_open_url(move |event| {
         for url in event.urls() {
-            process_url(&handle, &url.to_string());
+            process_url(&handle, url.as_ref());
         }
     });
 }
@@ -596,9 +710,9 @@ pub fn register_handler(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::{
-        now_secs, replay_key_from_envelope_payload, validate, validate_dapp_origin,
-        validate_delivery_url, validate_pay, DeepLinkState, MAX_PENDING_LINKS,
-        REQUEST_PROTOCOL_V2, jcs, sha256_base64url,
+        callback_from_envelope_payload, jcs, now_secs, replay_key_from_envelope_payload,
+        sha256_base64url, validate, validate_dapp_origin, validate_delivery_url, validate_pay,
+        DeepLinkState, MAX_PENDING_LINKS, REQUEST_PROTOCOL_V2,
     };
 
     #[test]
@@ -689,6 +803,25 @@ mod tests {
     }
 
     #[test]
+    fn callback_delivery_is_limited_to_native_queue_payloads() {
+        let state = DeepLinkState::default();
+        let first = r#"{"callback":"https://demo.app/callback"}"#;
+        let second = r#"{"callback":"https://demo.app/second"}"#;
+        assert!(state.store(first.to_string()));
+        assert!(state.store(second.to_string()));
+        assert!(state.authorizes_callback_delivery(first));
+        assert!(!state.authorizes_callback_delivery(second));
+        assert!(state.take_if_front(first));
+        assert!(state.authorizes_callback_delivery(first));
+        assert!(state.authorizes_callback_delivery(second));
+        assert!(!state.authorizes_callback_delivery("not-a-queued-request"));
+        assert_eq!(
+            callback_from_envelope_payload(first).unwrap().as_deref(),
+            Some("https://demo.app/callback")
+        );
+    }
+
+    #[test]
     fn replay_key_is_derived_at_the_acceptance_boundary() {
         let payload = serde_json::json!({
             "protocol": REQUEST_PROTOCOL_V2,
@@ -776,7 +909,10 @@ mod tests {
             "redirect_uri": envelope["redirect_uri"].clone(),
             "network": envelope["network"].clone(),
         });
-        envelope["request_hash"] = serde_json::Value::String(format!("sha256:{}", sha256_base64url(&jcs(&hash_material).unwrap())));
+        envelope["request_hash"] = serde_json::Value::String(format!(
+            "sha256:{}",
+            sha256_base64url(&jcs(&hash_material).unwrap())
+        ));
         let url = format!(
             "glyph://v2/request?d={}",
             URL_SAFE_NO_PAD.encode(envelope.to_string())

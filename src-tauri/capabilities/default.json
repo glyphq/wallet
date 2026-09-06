@@ -34,6 +34,35 @@
         "$DOWNLOAD/**/*",
         "$DOCUMENT/**/*"
       ]
-    }
+    },
+    "allow-reset-activity-timer",
+    "allow-set-lock-timeout",
+    "allow-set-lock-on-sleep",
+    "allow-get-seconds-until-lock",
+    "allow-force-lock",
+    "allow-get-pending-request",
+    "allow-clear-pending-request",
+    "allow-accept-pending-request",
+    "allow-take-pending-pay",
+    "allow-copy-to-clipboard",
+    "allow-clear-clipboard",
+    "allow-lock-clipboard",
+    "allow-post-callback",
+    "allow-set-hide-to-tray",
+    "allow-get-updater-context",
+    "allow-encrypt-store-value",
+    "allow-decrypt-store-value",
+    "allow-encrypt-vault",
+    "allow-decrypt-vault",
+    "allow-store-session-seeds",
+    "allow-clear-session-seeds",
+    "allow-sign-transaction",
+    "allow-sign-message",
+    "allow-sign-callback-message",
+    "allow-check-biometric-available",
+    "allow-enable-biometric",
+    "allow-biometric-unlock",
+    "allow-reveal-seed-with-biometric",
+    "allow-disable-biometric"
   ]
 }

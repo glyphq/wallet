@@ -35,7 +35,8 @@ impl AutoLockState {
     }
 
     pub fn set_timeout(&self, minutes: u64) {
-        *Self::lock_recover(&self.timeout_minutes) = minutes.clamp(MIN_LOCK_TIMEOUT_MINUTES, MAX_LOCK_TIMEOUT_MINUTES);
+        *Self::lock_recover(&self.timeout_minutes) =
+            minutes.clamp(MIN_LOCK_TIMEOUT_MINUTES, MAX_LOCK_TIMEOUT_MINUTES);
     }
 
     pub fn set_lock_on_sleep(&self, enabled: bool) {
@@ -71,7 +72,9 @@ pub fn spawn_lock_watcher(app: AppHandle) {
             let wall_delta = now_wall.duration_since(*last_wall).unwrap_or_default();
             *last_wall = now_wall;
 
-            if *lock_on_sleep.lock().unwrap_or_else(|e| e.into_inner()) && wall_delta.as_secs() > POLL_SECS + 2 {
+            if *lock_on_sleep.lock().unwrap_or_else(|e| e.into_inner())
+                && wall_delta.as_secs() > POLL_SECS + 2
+            {
                 app.state::<NativeSessionState>().clear();
                 app.emit("glyph:lock", ()).ok();
                 *last_activity.lock().unwrap_or_else(|e| e.into_inner()) = Instant::now();
@@ -85,7 +88,10 @@ pub fn spawn_lock_watcher(app: AppHandle) {
             continue;
         };
         let timeout = Duration::from_secs(timeout_secs);
-        let elapsed = last_activity.lock().unwrap_or_else(|e| e.into_inner()).elapsed();
+        let elapsed = last_activity
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .elapsed();
 
         if elapsed >= timeout {
             app.state::<NativeSessionState>().clear();
@@ -106,7 +112,9 @@ mod tests {
         assert!(state.seconds_until_lock().is_some());
 
         state.set_timeout(u64::MAX);
-        let seconds = state.seconds_until_lock().expect("timeout must remain enabled");
+        let seconds = state
+            .seconds_until_lock()
+            .expect("timeout must remain enabled");
         assert!(seconds <= MAX_LOCK_TIMEOUT_MINUTES * 60);
     }
 }

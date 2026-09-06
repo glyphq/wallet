@@ -109,7 +109,12 @@ mod tests {
 
     #[test]
     fn rejects_split_or_non_url_input() {
-        for value in ["", "--inspect", "glyph://v2/request d=abc", "\nglyph://v2/request?d=abc"] {
+        for value in [
+            "",
+            "--inspect",
+            "glyph://v2/request d=abc",
+            "\nglyph://v2/request?d=abc",
+        ] {
             assert!(validate_launch_url(value).is_err(), "accepted {value:?}");
         }
     }
