@@ -3,7 +3,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+use base64::Engine;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{command, State};
 
 use crate::qubic_native;
@@ -59,6 +61,10 @@ pub struct SignTransactionRequest {
     current_tick: Option<u32>,
     input_type: u16,
     payload: Vec<u8>,
+    authorization: String,
+    request_payload: Option<String>,
+    dapp_origin: Option<String>,
+    intent: String,
 }
 
 #[derive(Serialize)]
@@ -72,6 +78,87 @@ pub struct SignedTxResult {
 pub struct SignMessageRequest {
     account_index: usize,
     message_bytes: Vec<u8>,
+    authorization: String,
+    request_payload: Option<String>,
+    dapp_origin: Option<String>,
+    intent: String,
+}
+
+fn request_value(payload: &str) -> Result<Value, String> {
+    let envelope: Value = serde_json::from_str(payload)
+        .map_err(|_| "invalid signing request authorization payload".to_string())?;
+    envelope
+        .get("request")
+        .cloned()
+        .ok_or_else(|| "signing authorization payload has no request".to_string())
+}
+
+fn ensure_transaction_matches_request(
+    payload: &str,
+    request: &SignTransactionRequest,
+    amount: i64,
+) -> Result<(), String> {
+    let value = request_value(payload)?;
+    let request_type = value
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "signing authorization payload has no request type".to_string())?;
+    let requested_amount = value
+        .get("amount")
+        .and_then(|value| value.as_i64().or_else(|| value.as_str()?.parse().ok()));
+    if requested_amount != Some(amount) {
+        return Err("transaction does not match the reviewed request".into());
+    }
+    match request_type {
+        "transfer" => {
+            if value.get("to").and_then(Value::as_str) != Some(request.destination.as_str()) {
+                return Err("destination does not match the reviewed request".into());
+            }
+        }
+        "sc_call" => {
+            if value.get("input_type").and_then(Value::as_u64) != Some(request.input_type as u64) {
+                return Err("contract input type does not match the reviewed request".into());
+            }
+            if let Some(encoded) = value.get("payload").and_then(Value::as_str) {
+                let decoded = base64::engine::general_purpose::STANDARD
+                    .decode(encoded)
+                    .map_err(|_| "reviewed contract payload is invalid".to_string())?;
+                if decoded != request.payload {
+                    return Err("contract payload does not match the reviewed request".into());
+                }
+            } else if !request.payload.is_empty() {
+                return Err("contract payload does not match the reviewed request".into());
+            }
+        }
+        _ => return Err("authorization is not for a transaction request".into()),
+    }
+    Ok(())
+}
+
+fn ensure_message_matches_request(
+    payload: &str,
+    request: &SignMessageRequest,
+) -> Result<(), String> {
+    let value = request_value(payload)?;
+    if value.get("type").and_then(Value::as_str) != Some("sign_message") {
+        return Err("authorization is not for a message-signing request".into());
+    }
+    let expected = if let Some(data) = value.get("data").and_then(Value::as_str) {
+        base64::engine::general_purpose::STANDARD
+            .decode(data)
+            .map_err(|_| "reviewed message payload is invalid".to_string())?
+    } else {
+        value
+            .get("message")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "reviewed message has no content".to_string())?
+            .as_bytes()
+            .to_vec()
+    };
+    if expected != request.message_bytes {
+        return Err("message does not match the reviewed request".into());
+    }
+    Ok(())
 }
 
 #[derive(Serialize)]
@@ -199,22 +286,29 @@ mod tests {
 #[command]
 pub async fn store_session_seeds(
     state: State<'_, NativeSessionState>,
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
     seeds: Vec<String>,
 ) -> Result<(), String> {
     validate_session_seeds(&seeds)?;
+    authorization_state.clear_signing_authorizations();
     state.replace_seeds(seeds);
     Ok(())
 }
 
 #[command]
-pub async fn clear_session_seeds(state: State<'_, NativeSessionState>) -> Result<(), String> {
+pub async fn clear_session_seeds(
+    state: State<'_, NativeSessionState>,
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
+) -> Result<(), String> {
     state.clear();
+    authorization_state.clear_signing_authorizations();
     Ok(())
 }
 
 #[command]
 pub async fn sign_transaction(
     state: State<'_, NativeSessionState>,
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
     request: SignTransactionRequest,
 ) -> Result<SignedTxResult, String> {
     let amount = request
@@ -224,6 +318,17 @@ pub async fn sign_transaction(
     if amount < 0 {
         return Err("amount must not be negative".to_string());
     }
+    let request_payload = request.request_payload.as_deref();
+    if let Some(payload) = request_payload {
+        ensure_transaction_matches_request(payload, &request, amount)?;
+    }
+    authorization_state.consume_user_authorization(
+        &request.authorization,
+        request_payload,
+        request.dapp_origin.as_deref(),
+        request.account_index,
+        &request.intent,
+    )?;
     state
         .with_seed_at(request.account_index, |seed| {
             let (encoded, hash) = qubic_native::sign_transaction(
@@ -243,11 +348,23 @@ pub async fn sign_transaction(
 #[command]
 pub async fn sign_message(
     state: State<'_, NativeSessionState>,
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
     request: SignMessageRequest,
 ) -> Result<SignMessageResult, String> {
     if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
         return Err("message exceeds the native signing limit".to_string());
     }
+    let request_payload = request.request_payload.as_deref();
+    if let Some(payload) = request_payload {
+        ensure_message_matches_request(payload, &request)?;
+    }
+    authorization_state.consume_user_authorization(
+        &request.authorization,
+        request_payload,
+        request.dapp_origin.as_deref(),
+        request.account_index,
+        &request.intent,
+    )?;
     state
         .with_seed_at(request.account_index, |seed| {
             let (signature, public_key, identity) =
@@ -264,11 +381,19 @@ pub async fn sign_message(
 #[command]
 pub async fn sign_callback_message(
     state: State<'_, NativeSessionState>,
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
     request: SignMessageRequest,
 ) -> Result<SignMessageResult, String> {
     if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
         return Err("callback payload exceeds the native signing limit".to_string());
     }
+    authorization_state.consume_callback_authorization(
+        &request.authorization,
+        request.request_payload.as_deref(),
+        request.dapp_origin.as_deref(),
+        request.account_index,
+        &request.intent,
+    )?;
     state
         .with_seed_at_waiting_for_quota(request.account_index, |seed| {
             let (signature, public_key, identity) =

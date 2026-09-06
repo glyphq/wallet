@@ -27,6 +27,7 @@ import {
   type RequestSuccessState,
 } from "@/lib/request-orchestration";
 import { completePendingRequest } from "@/lib/request-lifecycle";
+import { authorizePendingRequest, signCallbackMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
 
 export default function RequestScreen() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ export default function RequestScreen() {
   const expiryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const copyResetTimeoutRef = useRef<number | null>(null);
   const callbackPayloadRef = useRef<string | null>(null);
+  const callbackAuthorizationRef = useRef<SigningAuthorizationContext | null>(null);
 
   useEffect(() => {
     if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
@@ -118,6 +120,11 @@ export default function RequestScreen() {
     addRequestHistoryItem,
     updateRequestHistoryItem,
     recordAuditEvent,
+    signCallbackMessage: async (accountIndex, messageBytes) => {
+      const authorization = callbackAuthorizationRef.current;
+      if (!authorization) throw new Error("request approval authorization is unavailable");
+      return signCallbackMessageFromSession(accountIndex, messageBytes, authorization);
+    },
     callbackNetworkId: networkName === "mainnet" || networkName === "testnet" ? `qubic:${networkName}` : undefined,
   };
 
@@ -132,20 +139,40 @@ export default function RequestScreen() {
     }
   }
 
+  async function authorizeForRequest(accountIndex: number, intent: string): Promise<SigningAuthorizationContext> {
+    if (!pendingRequest || !envelope) throw new Error("request is no longer available");
+    const authorization = await authorizePendingRequest({
+      payload: pendingRequest,
+      dappOrigin: envelope.request.dapp.origin,
+      requestHash: envelope.request_hash,
+      accountIndex,
+      intent,
+    });
+    const context = {
+      authorization,
+      requestPayload: pendingRequest,
+      dappOrigin: envelope.request.dapp.origin,
+    };
+    callbackAuthorizationRef.current = context;
+    return context;
+  }
+
   async function reject() {
     if (!envelope) return;
     callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
+      await authorizeForRequest(0, "callback");
       await completePendingRequest(() => rejectRequest(orchestrationDeps, envelope), shiftPendingRequest);
     } catch {
       setActionError("Could not prepare the rejection response. This request is still open. Try again.");
     }
   }
 
-  async function handleApprove(result: ApproveResult) {
+  async function handleApprove(result: ApproveResult, authorization: SigningAuthorizationContext) {
     if (!envelope) return;
     callbackPayloadRef.current = pendingRequest;
+    callbackAuthorizationRef.current = authorization;
     setActionError(null);
     try {
       const state = await completePendingRequest(
@@ -158,9 +185,10 @@ export default function RequestScreen() {
     }
   }
 
-  async function handleApproveMessage(result: SignMessageApproveResult) {
+  async function handleApproveMessage(result: SignMessageApproveResult, authorization: SigningAuthorizationContext) {
     if (!envelope) return;
     callbackPayloadRef.current = pendingRequest;
+    callbackAuthorizationRef.current = authorization;
     setActionError(null);
     try {
       const state = await completePendingRequest(
@@ -178,6 +206,7 @@ export default function RequestScreen() {
     callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
+      await authorizeForRequest(0, "callback");
       const state = await completePendingRequest(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults }),
         shiftPendingRequest,
@@ -193,6 +222,7 @@ export default function RequestScreen() {
     callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
+      await authorizeForRequest(result.accountIndex, "callback");
       const state = await completePendingRequest(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, vaults }),
         shiftPendingRequest,
@@ -328,18 +358,21 @@ export default function RequestScreen() {
         <TransferPreview
           request={request}
           onApprove={handleApprove}
+          authorize={authorizeForRequest}
           onReject={reject}
         />
       ) : request.type === "sc_call" ? (
         <ScCallPreview
           request={request}
           onApprove={handleApprove}
+          authorize={authorizeForRequest}
           onReject={reject}
         />
       ) : request.type === "sign_message" ? (
         <SignMessagePreview
           request={request}
           onApprove={handleApproveMessage}
+          authorize={authorizeForRequest}
           onReject={reject}
         />
       ) : request.type === "verify_message" ? (

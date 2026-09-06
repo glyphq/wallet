@@ -5,7 +5,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
-import { buildTransferFromSession } from "@/lib/secure-session";
+import { buildTransferFromSession, transactionSigningIntent, type SigningAuthorizationContext } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
 import { truncateId, formatQu } from "@/lib/format";
@@ -26,11 +26,12 @@ export interface ApproveResult {
 
 interface TransferPreviewProps {
   request: TransferRequest;
-  onApprove: (result: ApproveResult) => void | Promise<void>;
+  onApprove: (result: ApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
+  authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
   onReject: () => void;
 }
 
-export function TransferPreview({ request, onApprove, onReject }: TransferPreviewProps) {
+export function TransferPreview({ request, onApprove, onReject, authorize }: TransferPreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
 
@@ -93,6 +94,13 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
       const amount = requestAmount;
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
+      const authorization = await authorize(selectedIndex, transactionSigningIntent({
+        accountIndex: selectedIndex,
+        destination: request.to,
+        amount,
+        inputType: 0,
+        payload: new Uint8Array(0),
+      }));
 
       const { encoded, hash } = await buildTransferFromSession({
         accountIndex: selectedIndex,
@@ -100,7 +108,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         amount,
         targetTick: tick,
         currentTick,
-      });
+      }, authorization);
 
       await broadcastTx(encoded);
 
@@ -113,7 +121,7 @@ export function TransferPreview({ request, onApprove, onReject }: TransferPrevie
         broadcastAt: Date.now(),
       });
 
-      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
+      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex }, authorization);
       setProcessing(false);
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");

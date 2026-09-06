@@ -182,6 +182,8 @@ pub fn run() {
             commands::get_pending_request,
             commands::clear_pending_request,
             commands::accept_pending_request,
+            commands::authorize_pending_request,
+            commands::authorize_local_signing,
             commands::take_pending_pay,
             commands::copy_to_clipboard,
             commands::clear_clipboard,

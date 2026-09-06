@@ -11,6 +11,8 @@ fn main() {
         "get_pending_request",
         "clear_pending_request",
         "accept_pending_request",
+        "authorize_pending_request",
+        "authorize_local_signing",
         "take_pending_pay",
         "copy_to_clipboard",
         "clear_clipboard",

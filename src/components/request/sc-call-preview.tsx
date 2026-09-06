@@ -8,7 +8,7 @@ import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick, getRpcClient } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
-import { buildScTransactionFromSession } from "@/lib/secure-session";
+import { buildScTransactionFromSession, transactionSigningIntent, type SigningAuthorizationContext } from "@/lib/secure-session";
 import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
 import {
@@ -40,7 +40,8 @@ export type { ScCallRequest } from "@/lib/request-schema";
 
 interface ScCallPreviewProps {
   request: ScCallRequest;
-  onApprove: (result: ApproveResult) => void | Promise<void>;
+  onApprove: (result: ApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
+  authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
   onReject: () => void;
 }
 
@@ -117,7 +118,7 @@ function decodeMultiSignVaultRelease(bytes: Uint8Array): { vaultId: bigint; amou
   }
 }
 
-export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewProps) {
+export function ScCallPreview({ request, onApprove, onReject, authorize }: ScCallPreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
@@ -232,6 +233,13 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
       const amount = requestAmount;
       const currentTick = await getLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
+      const authorization = await authorize(selectedIndex, transactionSigningIntent({
+        accountIndex: selectedIndex,
+        destination,
+        amount,
+        inputType: request.input_type,
+        payload: payloadBytes,
+      }));
 
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: selectedIndex,
@@ -241,7 +249,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         amount,
         targetTick: tick,
         currentTick,
-      });
+      }, authorization);
 
       await broadcastTx(encoded);
 
@@ -255,7 +263,7 @@ export function ScCallPreview({ request, onApprove, onReject }: ScCallPreviewPro
         contractName: `${contractName} · ${inputTypeLabel}`,
       });
 
-      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex });
+      await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex }, authorization);
       setProcessing(false);
     } catch (e) {
       setTxError(e instanceof Error ? e.message : "Broadcast failed.");

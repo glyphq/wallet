@@ -101,8 +101,10 @@ pub fn force_lock(
     app: AppHandle,
     state: State<'_, AutoLockState>,
     session: State<'_, NativeSessionState>,
+    authorization_state: State<'_, DeepLinkState>,
 ) {
     session.clear();
+    authorization_state.clear_signing_authorizations();
     state.reset();
     app.emit("glyph:lock", ()).ok();
 }
@@ -132,7 +134,32 @@ pub fn accept_pending_request(
         return Ok(false);
     }
     let replay_key = crate::deep_link::replay_key_from_envelope_payload(&payload)?;
-    Ok(state.record_nonce(&app, &replay_key))
+    if !state.record_nonce(&app, &replay_key) {
+        return Ok(false);
+    }
+    state.mark_request_accepted(&payload)?;
+    Ok(true)
+}
+
+#[tauri::command]
+pub fn authorize_pending_request(
+    state: State<'_, DeepLinkState>,
+    payload: String,
+    dapp_origin: String,
+    request_hash: String,
+    account_index: usize,
+    intent: String,
+) -> Result<String, String> {
+    state.authorize_request(&payload, &dapp_origin, &request_hash, account_index, intent)
+}
+
+#[tauri::command]
+pub fn authorize_local_signing(
+    state: State<'_, DeepLinkState>,
+    account_index: usize,
+    intent: String,
+) -> Result<String, String> {
+    Ok(state.authorize_local(account_index, intent))
 }
 
 #[tauri::command]
