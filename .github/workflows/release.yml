@@ -8,7 +8,8 @@ on:
         required: true
         type: string
       allow_unsigned_native:
-        description: Publish unsigned macOS and Windows bundles. Users will see OS security warnings.
+        description: >-
+          Publish unsigned macOS and Windows bundles. Users will see operating-system security warnings.
         required: false
         default: false
         type: boolean
@@ -86,7 +87,9 @@ jobs:
           if [[ "${{ inputs.allow_unsigned_native }}" == "true" ]]; then
             cat >> release-notes.md <<'EOF'
 
-          > **Warning:** macOS and Windows installers in this release are not platform-code-signed. Their updater archives remain signed, but your operating system will show a security warning when opening the app for the first time.
+          > **Warning:** macOS and Windows installers in this release are not platform-code-signed.
+          > Their updater archives remain signed, but your operating system will show a security warning
+          > when opening the app for the first time.
           EOF
           fi
           expected_prerelease=false
