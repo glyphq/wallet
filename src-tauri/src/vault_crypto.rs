@@ -70,7 +70,10 @@ pub fn decrypt_vault_data(vault_data: &VaultData, password: &str) -> Result<Vec<
         return Err("malformed iv".to_string());
     }
     if vault_data.iterations < MIN_PBKDF2_ITERATIONS {
-        return Err(format!("vault iteration count too low: {}", vault_data.iterations));
+        return Err(format!(
+            "vault iteration count too low: {}",
+            vault_data.iterations
+        ));
     }
     if vault_data.iterations > MAX_PBKDF2_ITERATIONS {
         return Err("vault iteration count exceeds the supported maximum".to_string());

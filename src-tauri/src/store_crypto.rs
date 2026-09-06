@@ -85,7 +85,8 @@ fn store_key_file(secret: &str) -> Result<(), String> {
             .mode(0o600)
             .open(&temp)
             .map_err(|e| format!("failed to create store-key file securely: {e}"))?;
-        file.write_all(secret.as_bytes()).map_err(|e| e.to_string())?;
+        file.write_all(secret.as_bytes())
+            .map_err(|e| e.to_string())?;
         file.sync_all().map_err(|e| e.to_string())?;
         std::fs::rename(&temp, &path).map_err(|e| e.to_string())?;
     }

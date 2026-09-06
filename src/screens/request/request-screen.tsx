@@ -48,6 +48,7 @@ export default function RequestScreen() {
   const [expirySecsLeft, setExpirySecsLeft] = useState<number | null>(null);
   const expiryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const copyResetTimeoutRef = useRef<number | null>(null);
+  const callbackPayloadRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
@@ -108,7 +109,11 @@ export default function RequestScreen() {
   const orchestrationDeps: RequestOrchestrationDeps = {
     now: Date.now,
     makeRequestHistoryId,
-    postCallback: (url, body) => invoke("post_callback", { url, body }),
+    postCallback: (url, body) => {
+      const payload = callbackPayloadRef.current;
+      if (!payload) return Promise.reject(new Error("callback request is no longer available"));
+      return invoke("post_callback", { payload, url, body });
+    },
     openUrl,
     addRequestHistoryItem,
     updateRequestHistoryItem,
@@ -129,6 +134,7 @@ export default function RequestScreen() {
 
   async function reject() {
     if (!envelope) return;
+    callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
       await completePendingRequest(() => rejectRequest(orchestrationDeps, envelope), shiftPendingRequest);
@@ -139,6 +145,7 @@ export default function RequestScreen() {
 
   async function handleApprove(result: ApproveResult) {
     if (!envelope) return;
+    callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
       const state = await completePendingRequest(
@@ -153,6 +160,7 @@ export default function RequestScreen() {
 
   async function handleApproveMessage(result: SignMessageApproveResult) {
     if (!envelope) return;
+    callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
       const state = await completePendingRequest(
@@ -167,6 +175,7 @@ export default function RequestScreen() {
 
   async function handleApproveVerify(result: VerifyMessageResult) {
     if (!envelope) return;
+    callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
       const state = await completePendingRequest(
@@ -181,6 +190,7 @@ export default function RequestScreen() {
 
   async function handleApproveConnect(result: ConnectApproveResult) {
     if (!envelope) return;
+    callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
       const state = await completePendingRequest(

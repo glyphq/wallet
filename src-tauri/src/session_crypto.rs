@@ -1,4 +1,7 @@
-use std::{sync::Mutex, time::{Duration, Instant}};
+use std::{
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 
 use serde::{Deserialize, Serialize};
 use tauri::{command, State};
@@ -8,6 +11,22 @@ use zeroize::Zeroizing;
 
 const MAX_SIGN_MESSAGE_BYTES: usize = 64 * 1024;
 const MIN_SIGN_INTERVAL: Duration = Duration::from_millis(750);
+const MAX_SESSION_SEEDS: usize = 16;
+const QUBIC_SEED_LENGTH: usize = 55;
+
+fn validate_session_seeds(seeds: &[String]) -> Result<(), String> {
+    if seeds.is_empty() || seeds.len() > MAX_SESSION_SEEDS {
+        return Err(format!(
+            "session must contain between 1 and {MAX_SESSION_SEEDS} Qubic seeds"
+        ));
+    }
+    if seeds.iter().any(|seed| {
+        seed.len() != QUBIC_SEED_LENGTH || !seed.bytes().all(|byte| byte.is_ascii_lowercase())
+    }) {
+        return Err("session seeds must be 55 lowercase ASCII characters".to_string());
+    }
+    Ok(())
+}
 
 fn remaining_signing_quota(last: Option<Instant>, now: Instant) -> Duration {
     last.and_then(|previous| MIN_SIGN_INTERVAL.checked_sub(now.duration_since(previous)))
@@ -66,33 +85,60 @@ pub struct SignMessageResult {
 impl NativeSessionState {
     pub fn replace_seeds(&self, seeds: Vec<String>) {
         self.clear();
-        let mut guard = self.seeds.lock().expect("native session mutex poisoned");
-        *guard = seeds.into_iter().map(|seed| Zeroizing::new(seed.into_bytes())).collect();
+        let mut guard = self
+            .seeds
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        *guard = seeds
+            .into_iter()
+            .map(|seed| Zeroizing::new(seed.into_bytes()))
+            .collect();
     }
 
     pub fn clear(&self) {
-        let mut guard = self.seeds.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut guard = self
+            .seeds
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         guard.clear();
-        *self.last_signature.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
+        *self
+            .last_signature
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
     }
 
-    fn with_seed_at_locked<T>(&self, account_index: usize, f: impl FnOnce(&str) -> Result<T, String>) -> Result<T, String> {
+    fn with_seed_at_locked<T>(
+        &self,
+        account_index: usize,
+        f: impl FnOnce(&str) -> Result<T, String>,
+    ) -> Result<T, String> {
         let now = Instant::now();
-        let mut last = self.last_signature.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut last = self
+            .last_signature
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         if last.is_some_and(|previous| now.duration_since(previous) < MIN_SIGN_INTERVAL) {
             return Err("signing is temporarily rate limited".to_string());
         }
         *last = Some(now);
         drop(last);
-        let guard = self.seeds.lock().map_err(|_| "native session unavailable".to_string())?;
+        let guard = self
+            .seeds
+            .lock()
+            .map_err(|_| "native session unavailable".to_string())?;
         let seed = guard
             .get(account_index)
             .ok_or_else(|| "unlocked account not available".to_string())?;
-        let seed = std::str::from_utf8(seed).map_err(|_| "session seed is invalid UTF-8".to_string())?;
+        let seed =
+            std::str::from_utf8(seed).map_err(|_| "session seed is invalid UTF-8".to_string())?;
         f(seed)
     }
 
-    async fn with_seed_at<T>(&self, account_index: usize, f: impl FnOnce(&str) -> Result<T, String>) -> Result<T, String> {
+    async fn with_seed_at<T>(
+        &self,
+        account_index: usize,
+        f: impl FnOnce(&str) -> Result<T, String>,
+    ) -> Result<T, String> {
         let _gate = self.signing_gate.lock().await;
         self.with_seed_at_locked(account_index, f)
     }
@@ -104,7 +150,10 @@ impl NativeSessionState {
     ) -> Result<T, String> {
         let _gate = self.signing_gate.lock().await;
         let wait = {
-            let last = self.last_signature.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            let last = self
+                .last_signature
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             remaining_signing_quota(*last, Instant::now())
         };
         if !wait.is_zero() {
@@ -116,19 +165,34 @@ impl NativeSessionState {
 
 #[cfg(test)]
 mod tests {
-    use super::{remaining_signing_quota, Duration, Instant, MIN_SIGN_INTERVAL};
+    use super::{
+        remaining_signing_quota, validate_session_seeds, Duration, Instant, MAX_SESSION_SEEDS,
+        MIN_SIGN_INTERVAL,
+    };
 
     #[test]
     fn callback_wait_is_only_the_remaining_signing_quota() {
         let now = Instant::now();
         assert_eq!(remaining_signing_quota(None, now), Duration::ZERO);
         assert!(remaining_signing_quota(Some(now), now) >= MIN_SIGN_INTERVAL);
-        assert_eq!(remaining_signing_quota(Some(now - MIN_SIGN_INTERVAL), now), Duration::ZERO);
+        assert_eq!(
+            remaining_signing_quota(Some(now - MIN_SIGN_INTERVAL), now),
+            Duration::ZERO
+        );
     }
 
     #[test]
     fn general_signing_interval_remains_750_milliseconds() {
         assert_eq!(MIN_SIGN_INTERVAL, Duration::from_millis(750));
+    }
+
+    #[test]
+    fn rejects_invalid_session_seed_sets_before_storing_them() {
+        assert!(validate_session_seeds(&[]).is_err());
+        assert!(validate_session_seeds(&["A".repeat(55)]).is_err());
+        assert!(validate_session_seeds(&["a".repeat(54)]).is_err());
+        assert!(validate_session_seeds(&vec!["a".repeat(55); MAX_SESSION_SEEDS + 1]).is_err());
+        assert!(validate_session_seeds(&["a".repeat(55)]).is_ok());
     }
 }
 
@@ -137,6 +201,7 @@ pub async fn store_session_seeds(
     state: State<'_, NativeSessionState>,
     seeds: Vec<String>,
 ) -> Result<(), String> {
+    validate_session_seeds(&seeds)?;
     state.replace_seeds(seeds);
     Ok(())
 }
@@ -159,18 +224,20 @@ pub async fn sign_transaction(
     if amount < 0 {
         return Err("amount must not be negative".to_string());
     }
-    state.with_seed_at(request.account_index, |seed| {
-        let (encoded, hash) = qubic_native::sign_transaction(
-            seed,
-            &request.destination,
-            amount,
-            request.target_tick,
-            request.current_tick,
-            request.input_type,
-            &request.payload,
-        )?;
-        Ok(SignedTxResult { encoded, hash })
-    }).await
+    state
+        .with_seed_at(request.account_index, |seed| {
+            let (encoded, hash) = qubic_native::sign_transaction(
+                seed,
+                &request.destination,
+                amount,
+                request.target_tick,
+                request.current_tick,
+                request.input_type,
+                &request.payload,
+            )?;
+            Ok(SignedTxResult { encoded, hash })
+        })
+        .await
 }
 
 #[command]
@@ -181,10 +248,17 @@ pub async fn sign_message(
     if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
         return Err("message exceeds the native signing limit".to_string());
     }
-    state.with_seed_at(request.account_index, |seed| {
-        let (signature, public_key, identity) = qubic_native::sign_message(seed, &request.message_bytes)?;
-        Ok(SignMessageResult { signature, public_key, identity })
-    }).await
+    state
+        .with_seed_at(request.account_index, |seed| {
+            let (signature, public_key, identity) =
+                qubic_native::sign_message(seed, &request.message_bytes)?;
+            Ok(SignMessageResult {
+                signature,
+                public_key,
+                identity,
+            })
+        })
+        .await
 }
 
 #[command]
@@ -195,8 +269,15 @@ pub async fn sign_callback_message(
     if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
         return Err("callback payload exceeds the native signing limit".to_string());
     }
-    state.with_seed_at_waiting_for_quota(request.account_index, |seed| {
-        let (signature, public_key, identity) = qubic_native::sign_message(seed, &request.message_bytes)?;
-        Ok(SignMessageResult { signature, public_key, identity })
-    }).await
+    state
+        .with_seed_at_waiting_for_quota(request.account_index, |seed| {
+            let (signature, public_key, identity) =
+                qubic_native::sign_message(seed, &request.message_bytes)?;
+            Ok(SignMessageResult {
+                signature,
+                public_key,
+                identity,
+            })
+        })
+        .await
 }

@@ -69,9 +69,7 @@ pub fn spawn_clipboard_watcher(app: AppHandle) {
                 .wait_timeout(clear_at, wait_for)
                 .unwrap_or_else(|e| e.into_inner());
             clear_at = next_clear_at;
-            if timeout_result.timed_out()
-                && clear_at.map_or(false, |at| Instant::now() >= at)
-            {
+            if timeout_result.timed_out() && clear_at.is_some_and(|at| Instant::now() >= at) {
                 app.clipboard().write_text("").ok();
                 *clear_at = None;
                 break;

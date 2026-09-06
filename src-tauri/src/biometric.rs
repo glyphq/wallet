@@ -1,16 +1,13 @@
-use tauri::{command, State};
 use crate::session_crypto::NativeSessionState;
 use crate::vault_crypto::VaultData;
+use tauri::{command, State};
 
 fn validate_vault_id(vault_id: &str) -> Result<(), String> {
     let is_uuid = vault_id.len() == 36
-        && vault_id
-            .chars()
-            .enumerate()
-            .all(|(idx, ch)| match idx {
-                8 | 13 | 18 | 23 => ch == '-',
-                _ => ch.is_ascii_hexdigit(),
-            });
+        && vault_id.chars().enumerate().all(|(idx, ch)| match idx {
+            8 | 13 | 18 | 23 => ch == '-',
+            _ => ch.is_ascii_hexdigit(),
+        });
 
     if is_uuid {
         Ok(())
@@ -28,12 +25,12 @@ fn validate_vault_id(vault_id: &str) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 #[allow(dead_code)]
 mod cred_store {
+    use windows::core::{PCWSTR, PWSTR};
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::Security::Credentials::{
         CredDeleteW, CredFree, CredReadW, CredWriteW, CREDENTIALW, CRED_FLAGS,
         CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC,
     };
-    use windows::core::{PCWSTR, PWSTR};
 
     fn to_wide(s: &str) -> Vec<u16> {
         s.encode_utf16().chain(std::iter::once(0)).collect()
@@ -74,10 +71,8 @@ mod cred_store {
                 .map_err(|e| format!("CredReadW: {e}"))?;
 
             let cred = &*pcred;
-            let blob = std::slice::from_raw_parts(
-                cred.CredentialBlob,
-                cred.CredentialBlobSize as usize,
-            );
+            let blob =
+                std::slice::from_raw_parts(cred.CredentialBlob, cred.CredentialBlobSize as usize);
             let result = std::str::from_utf8(blob)
                 .map(|s| s.to_string())
                 .map_err(|e| format!("utf8: {e}"));
@@ -90,8 +85,7 @@ mod cred_store {
     pub fn delete(vault_id: &str) -> Result<(), String> {
         let target = target(vault_id);
         unsafe {
-            CredDeleteW(PCWSTR(target.as_ptr()), CRED_TYPE_GENERIC, 0)
-                .map_err(|e| e.to_string())
+            CredDeleteW(PCWSTR(target.as_ptr()), CRED_TYPE_GENERIC, 0).map_err(|e| e.to_string())
         }
     }
 }
@@ -109,8 +103,12 @@ mod cred_store {
     /// Returns false on any platform that has no working secret-service daemon
     /// (no gnome-keyring, no kwallet, mock backend, etc.).
     pub fn available() -> bool {
-        let Ok(e) = entry("__glyph_probe__") else { return false; };
-        if e.set_password("probe").is_err() { return false; }
+        let Ok(e) = entry("__glyph_probe__") else {
+            return false;
+        };
+        if e.set_password("probe").is_err() {
+            return false;
+        }
         let ok = e.get_password().is_ok();
         let _ = e.delete_credential();
         ok
@@ -125,9 +123,7 @@ mod cred_store {
     }
 
     pub fn load(vault_id: &str) -> Result<String, String> {
-        entry(vault_id)?
-            .get_password()
-            .map_err(|e| e.to_string())
+        entry(vault_id)?.get_password().map_err(|e| e.to_string())
     }
 
     pub fn delete(vault_id: &str) -> Result<(), String> {
@@ -145,7 +141,11 @@ pub async fn check_biometric_available() -> bool {
 }
 
 #[command]
-pub async fn enable_biometric(vault_id: String, vault_data: VaultData, password: String) -> Result<(), String> {
+pub async fn enable_biometric(
+    vault_id: String,
+    vault_data: VaultData,
+    password: String,
+) -> Result<(), String> {
     let _ = (vault_id, vault_data, password);
     Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
@@ -176,6 +176,6 @@ pub async fn disable_biometric(vault_id: String) -> Result<(), String> {
         validate_vault_id(&vault_id)?;
         cred_store::delete(&vault_id)
     })
-        .await
-        .map_err(|e| e.to_string())?
+    .await
+    .map_err(|e| e.to_string())?
 }

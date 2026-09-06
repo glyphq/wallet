@@ -106,6 +106,15 @@ jobs:
           RUSTC_WRAPPER: ${{ steps.sccache.outcome == 'success' && 'sccache' || '' }}
           SCCACHE_GHA_ENABLED: ${{ steps.sccache.outcome == 'success' && 'true' || 'false' }}
 
+      - name: Verify Rust formatting and linting
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml --check
+          cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
+        env:
+          TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
+          RUSTC_WRAPPER: ${{ steps.sccache.outcome == 'success' && 'sccache' || '' }}
+          SCCACHE_GHA_ENABLED: ${{ steps.sccache.outcome == 'success' && 'true' || 'false' }}
+
   linux-package-smoke:
     name: Linux packages start from a clean profile
     runs-on: ubuntu-22.04

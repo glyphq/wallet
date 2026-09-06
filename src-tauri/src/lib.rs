@@ -4,10 +4,10 @@ mod clipboard;
 mod commands;
 mod deep_link;
 pub mod link_broker;
-mod store_crypto;
-mod vault_crypto;
 mod qubic_native;
 mod session_crypto;
+mod store_crypto;
+mod vault_crypto;
 
 use std::sync::atomic::Ordering;
 
@@ -216,7 +216,10 @@ mod tests {
     fn accepts_only_normal_launch_or_one_valid_link() {
         let executable = "glyph-wallet".to_string();
         let valid = "glyph://v2/request?d=YWJjZA".to_string();
-        assert_eq!(single_instance_url(std::slice::from_ref(&executable)), Ok(None));
+        assert_eq!(
+            single_instance_url(std::slice::from_ref(&executable)),
+            Ok(None)
+        );
         assert_eq!(
             single_instance_url(&[executable.clone(), valid.clone()]),
             Ok(Some(valid.as_str()))

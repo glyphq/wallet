@@ -1,7 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use reqwest;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 
@@ -39,12 +38,12 @@ pub fn get_updater_context() -> UpdaterContext {
                 reason: None,
             };
         }
-        return UpdaterContext {
+        UpdaterContext {
             platform: "linux",
             package_kind: "system_package",
             supports_auto_update: false,
             reason: Some("Glyph's Linux updater currently targets the AppImage release path. deb/rpm installs must be updated through the system package you installed."),
-        };
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -128,11 +127,11 @@ pub fn accept_pending_request(
     if state.peek().as_deref() != Some(payload.as_str()) {
         return Ok(false);
     }
-    let [network_id, dapp_origin, nonce, request_hash] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
+    let [network_id, ..] = crate::deep_link::replay_parts_from_envelope_payload(&payload)?;
     if network_id != active_network_id {
         return Ok(false);
     }
-    let replay_key = format!("v2|{network_id}|{dapp_origin}|{nonce}|{request_hash}");
+    let replay_key = crate::deep_link::replay_key_from_envelope_payload(&payload)?;
     Ok(state.record_nonce(&app, &replay_key))
 }
 
@@ -148,7 +147,9 @@ pub fn copy_to_clipboard(
     app: AppHandle,
     clip_state: State<'_, ClipboardState>,
 ) -> Result<(), String> {
-    app.clipboard().write_text(&text).map_err(|e| e.to_string())?;
+    app.clipboard()
+        .write_text(&text)
+        .map_err(|e| e.to_string())?;
     clip_state.schedule_clear(clear_after_secs.min(MAX_CLIPBOARD_CLEAR_SECS));
     Ok(())
 }
@@ -168,7 +169,9 @@ pub fn lock_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
 }
 
 pub fn is_private_host(host: &str) -> bool {
-    let h = host.trim_matches(|c| c == '[' || c == ']').to_ascii_lowercase();
+    let h = host
+        .trim_matches(|c| c == '[' || c == ']')
+        .to_ascii_lowercase();
     if h == "localhost" {
         return true;
     }
@@ -206,11 +209,11 @@ fn is_non_global_ip(ip: IpAddr) -> bool {
             .map(is_non_global_ipv4)
             .unwrap_or_else(|| {
                 ip.is_loopback()
-                || ip.is_unspecified()
-                || ip.is_unique_local()
-                || ip.is_unicast_link_local()
-                || ip.is_multicast()
-                || (ip.segments()[0] == 0x2001 && ip.segments()[1] == 0x0db8)
+                    || ip.is_unspecified()
+                    || ip.is_unique_local()
+                    || ip.is_unicast_link_local()
+                    || ip.is_multicast()
+                    || (ip.segments()[0] == 0x2001 && ip.segments()[1] == 0x0db8)
             }),
     }
 }
@@ -275,9 +278,22 @@ fn sanitize_reqwest_error(error: reqwest::Error) -> String {
 }
 
 #[tauri::command]
-pub async fn post_callback(url: String, body: String) -> Result<(), String> {
+pub async fn post_callback(
+    state: State<'_, DeepLinkState>,
+    payload: String,
+    url: String,
+    body: String,
+) -> Result<(), String> {
     if body.len() > MAX_CALLBACK_BODY {
         return Err("callback body exceeds 4 KB limit".into());
+    }
+
+    if !state.authorizes_callback_delivery(&payload) {
+        return Err("callback is not authorized for this request".into());
+    }
+    let expected_url = crate::deep_link::callback_from_envelope_payload(&payload)?;
+    if expected_url.as_deref() != Some(url.as_str()) {
+        return Err("callback URL does not match the validated request".into());
     }
 
     let parsed = url::Url::parse(&url).map_err(|_| "invalid callback URL".to_string())?;
