@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Glyph",
+  "productName": "Glyph Wallet",
   "version": "0.16.12",
   "identifier": "com.qubic.glyph",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Glyph",
+        "title": "Glyph Wallet",
         "width": 380,
         "height": 680,
         "minWidth": 360,
