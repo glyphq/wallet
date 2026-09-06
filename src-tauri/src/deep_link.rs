@@ -207,7 +207,10 @@ impl DeepLinkState {
             return Ok(false);
         }
         seen.insert(nonce.to_string(), now);
-        Self::persist_seen_nonces(app, &seen)?;
+        if let Err(error) = Self::persist_seen_nonces(app, &seen) {
+            seen.remove(nonce);
+            return Err(error);
+        }
         Ok(true)
     }
 
