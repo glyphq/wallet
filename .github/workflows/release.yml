@@ -585,6 +585,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare-release, create-manifest]
     permissions:
+      attestations: read
       contents: write
 
     steps:
@@ -613,6 +614,28 @@ jobs:
           GH_REPO: ${{ github.repository }}
           UPDATER_MANIFEST: ${{ env.UPDATER_MANIFEST }}
         run: node .release-automation/scripts/validate-release-assets.mjs "$RELEASE_TAG" "$GH_REPO" "$UPDATER_MANIFEST"
+
+      - name: Verify release provenance attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p verified-attestations
+          gh release download "$RELEASE_TAG" --repo "$GH_REPO" --dir verified-attestations --clobber \
+            --pattern '*.AppImage' \
+            --pattern '*.deb' \
+            --pattern '*.rpm' \
+            --pattern '*.app.tar.gz' \
+            --pattern '*.dmg' \
+            --pattern '*.exe' \
+            --pattern '*.sig' \
+            --pattern 'SHA256SUMS-*.txt' \
+            --pattern 'latest*.json'
+          find verified-attestations -maxdepth 1 -type f -print0 | while IFS= read -r -d '' subject; do
+            gh attestation verify "$subject" --repo "$GH_REPO"
+          done
 
       - name: Publish draft release
         env:
