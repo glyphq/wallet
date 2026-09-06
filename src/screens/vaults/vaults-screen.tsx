@@ -72,10 +72,12 @@ export default function VaultsScreen() {
   // ─── Actions ───
 
   function openActions(vault: VaultMeta) {
+    if (switchLoading) return;
     setActionVault(vault);
   }
 
   function openSwitch(vault: VaultMeta) {
+    if (switchLoading) return;
     setActionVault(null);
     setSwitchingVault(vault);
     setSwitchPassword("");
@@ -83,7 +85,7 @@ export default function VaultsScreen() {
   }
 
   async function doSwitch() {
-    if (!switchingVault) return;
+    if (!switchingVault || switchLoading) return;
     setSwitchLoading(true);
     setSwitchError("");
     try {
@@ -250,11 +252,11 @@ export default function VaultsScreen() {
           Vault management
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-        <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")}>
+        <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")} disabled={switchLoading}>
           <AddCircle size={18} aria-hidden="true" />
           New vault
         </Button>
-        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openImportPicker}>
+        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openImportPicker} disabled={switchLoading}>
           <FolderOpen size={18} aria-hidden="true" />
           Import vault
         </Button>
@@ -268,6 +270,7 @@ export default function VaultsScreen() {
       {sorted.map((vault) => {
         const isActive = vault.id === settings.activeVaultId;
         const visibleCount = vault.accounts.filter((a) => !a.hidden).length;
+        const isSwitching = switchLoading && switchingVault?.id === vault.id;
 
         return (
           <div
@@ -286,9 +289,11 @@ export default function VaultsScreen() {
             <button
               type="button"
               onClick={() => isActive ? navigate(`/vaults/${vault.id}`) : openSwitch(vault)}
+              disabled={switchLoading}
+              aria-busy={isSwitching || undefined}
               style={{
                 display: "flex", alignItems: "center", gap: "var(--space-3)",
-                background: "none", border: "none", cursor: "pointer",
+                background: "none", border: "none", cursor: switchLoading ? "not-allowed" : "pointer",
                 flex: 1, minWidth: 0, textAlign: "left", padding: 0,
               }}
             >
@@ -307,7 +312,9 @@ export default function VaultsScreen() {
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
                   color: "var(--color-text-disabled)",
                 }}>
-                  {visibleCount} {visibleCount === 1 ? "account" : "accounts"} · Unlocked {timeAgo(vault.lastUnlockedAt).toLowerCase()}
+                  {isSwitching
+                    ? <span role="status" aria-live="polite">Unlocking vault…</span>
+                    : `${visibleCount} ${visibleCount === 1 ? "account" : "accounts"} · Unlocked ${timeAgo(vault.lastUnlockedAt).toLowerCase()}`}
                 </span>
               </div>
               {isActive && (
@@ -321,8 +328,9 @@ export default function VaultsScreen() {
               type="button"
               aria-label="Vault options"
               onClick={() => openActions(vault)}
+              disabled={switchLoading}
               style={{
-                background: "none", border: "none", cursor: "pointer",
+                background: "none", border: "none", cursor: switchLoading ? "not-allowed" : "pointer",
                 color: "var(--color-text-disabled)", padding: "var(--space-2)",
                 flexShrink: 0, display: "flex", alignItems: "center",
               }}
@@ -367,7 +375,7 @@ export default function VaultsScreen() {
       </Sheet>
 
       {/* ─── Switch vault sheet ─── */}
-      <Sheet open={!!switchingVault} onClose={() => setSwitchingVault(null)} title={`Unlock ${switchingVault?.name ?? ""}`}>
+      <Sheet open={!!switchingVault} onClose={() => { if (!switchLoading) setSwitchingVault(null); }} title={`Unlock ${switchingVault?.name ?? ""}`}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <Input
             type="password"
@@ -379,8 +387,9 @@ export default function VaultsScreen() {
             placeholder="••••••••••"
             autoComplete="current-password"
             autoFocus
+            disabled={switchLoading}
           />
-          <Button onClick={doSwitch} loading={switchLoading}>Unlock</Button>
+          <Button onClick={doSwitch} loading={switchLoading} disabled={!switchPassword}>Unlock</Button>
         </div>
       </Sheet>
 

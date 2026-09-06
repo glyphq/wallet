@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowRightUp, QrCode, UserId, Wallet, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic, UsersGroupRounded, Fire } from "@solar-icons/react";
+import { ArrowRightUp, QrCode, UserId, Wallet, WalletMoney, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic, UsersGroupRounded, Fire } from "@solar-icons/react";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { ScreenHeader } from "@/components/screen-header";
@@ -242,7 +242,6 @@ export default function SendScreen() {
         if (price) {
           const n = parseFloat(next);
           const quAmount = !isNaN(n) && n > 0 ? Math.round(n / price) : 0;
-          if (balance !== null && BigInt(quAmount) > balance) return; // cap at balance
           setAmountStr(quAmount > 0 ? quAmount.toString() : "");
         }
         setUsdStr(next);
@@ -254,11 +253,7 @@ export default function SendScreen() {
         setAmountStr((prev) => {
           if (prev === "0" && key !== "0") return key;
           if (prev === "0" && key === "0") return prev;
-          const next = prev + key;
-          if (balance !== null) {
-            try { if (BigInt(next) > balance) return prev; } catch { return prev; }
-          }
-          return next;
+          return prev + key;
         });
       }
     }
@@ -268,9 +263,20 @@ export default function SendScreen() {
   useEffect(() => {
     if (step !== "input") return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key >= "0" && e.key <= "9") handleNumpad(e.key);
-      else if (e.key === "Backspace") handleNumpad("⌫");
-      else if (e.key === "Enter") goReview();
+      const target = e.target instanceof Element ? e.target : null;
+      const isEditingText = !!target?.closest('input, textarea, select, [contenteditable="true"]');
+      if (e.defaultPrevented || e.isComposing || e.metaKey || e.ctrlKey || e.altKey || isEditingText) return;
+
+      if (e.key >= "0" && e.key <= "9") {
+        e.preventDefault();
+        handleNumpad(e.key);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        handleNumpad("⌫");
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        goReview();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -539,6 +545,8 @@ export default function SendScreen() {
       gap: "var(--space-3)",
     };
     const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "Unavailable";
+    const reviewAmount = BigInt(amountStr);
+    const balanceAfter = balance === null ? null : balance - reviewAmount;
 
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
@@ -578,6 +586,14 @@ export default function SendScreen() {
         {/* Details */}
         <section aria-label="Transaction facts" style={rowGroupStyle}>
           <DetailRow
+            icon={<WalletMoney size={16} />}
+            label="Balance after"
+            value={balanceAfter === null ? "Unavailable" : `${formatQu(balanceAfter)} QU`}
+            mono={false}
+            valueColor={balanceAfter === null ? undefined : "var(--color-text-primary)"}
+          />
+          <div style={divider} />
+          <DetailRow
             icon={<ClockCircle size={16} />}
             label="Target tick"
             value={targetTick}
@@ -590,6 +606,29 @@ export default function SendScreen() {
             mono={false}
           />
         </section>
+
+        <aside
+          aria-label="Balance impact"
+          style={{
+            background: "var(--color-bg-surface-2)",
+            border: "1px solid var(--color-border-default)",
+            borderRadius: "var(--radius-control)",
+            padding: "var(--space-3) var(--space-4)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-1)",
+          }}
+        >
+          <span style={{ ...labelStyle, color: "var(--color-text-secondary)" }}>You will spend</span>
+          <strong style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
+            {formatQu(reviewAmount)} QU
+          </strong>
+          {balanceAfter !== null ? (
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
+              Remaining balance: {formatQu(balanceAfter)} QU
+            </span>
+          ) : null}
+        </aside>
 
         {/* Pending warning */}
         {hasPendingTx && (

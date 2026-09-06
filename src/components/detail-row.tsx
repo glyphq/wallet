@@ -22,13 +22,14 @@ export function DetailRow({ icon, label, value, valueColor, mono = true }: Detai
         {label}
       </span>
       <span style={{
+        minWidth: 0,
         fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
         fontSize: "var(--text-label)",
         fontWeight: mono ? 400 : 500,
         color: valueColor ?? "var(--color-text-display)",
         textAlign: "right",
         maxWidth: "55%",
-        wordBreak: "break-all",
+        overflowWrap: "anywhere",
       }}>
         {value}
       </span>

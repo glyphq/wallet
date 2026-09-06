@@ -43,7 +43,7 @@ const SIZE: Record<Size, CSSProperties> = {
 
 const SHAPE: Record<Shape, CSSProperties> = {
   pill: { borderRadius: "var(--radius-pill)" },
-  sharp: { borderRadius: "var(--radius-pill)" },
+  sharp: { borderRadius: "var(--radius-sharp)" },
 };
 
 export function Button({

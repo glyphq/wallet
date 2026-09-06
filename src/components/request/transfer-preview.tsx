@@ -219,13 +219,15 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
       <DappPolicyStatus decision={policyDecision} />
 
       {needsHighValueConfirmation && (
-        <div
+        <button
+          type="button"
           role="checkbox"
           aria-checked={highValueConfirmed}
-          tabIndex={0}
           onClick={() => setHighValueConfirmed((value) => !value)}
-          onKeyDown={(e) => e.key === " " && setHighValueConfirmed((value) => !value)}
-          style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
+          style={{
+            display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none",
+            width: "100%", padding: 0, border: "none", background: "transparent", textAlign: "left",
+          }}
         >
           <div style={{
             width: 14, height: 14, flexShrink: 0,
@@ -239,7 +241,7 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
             I understand this is a high-value transfer.
           </span>
-        </div>
+        </button>
       )}
 
       <RequestActionBar>

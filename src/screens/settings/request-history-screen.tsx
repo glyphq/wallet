@@ -20,6 +20,7 @@ const TYPE_LABEL: Record<RequestHistoryItem["type"], string> = {
 const ACTION_LABEL: Record<RequestHistoryItem["action"], string> = {
   approved: "Approved",
   rejected: "Rejected",
+  expired: "Expired",
 };
 
 const CALLBACK_LABEL: Record<RequestHistoryItem["callbackStatus"], string> = {
@@ -40,6 +41,11 @@ function RequestDetail({ label, value, technical = false }: { label: string; val
 
 function HistoryRow({ item, expanded, onToggle }: { item: RequestHistoryItem; expanded: boolean; onToggle: () => void }) {
   const approved = item.action === "approved";
+  const actionColor = approved
+    ? "var(--color-accent)"
+    : item.action === "expired"
+      ? "var(--color-status-warning)"
+      : "var(--color-status-error)";
   const account = item.accountName || item.accountIdentity;
   const createdAt = formatDate(item.createdAt) || "—";
   const detailsId = `request-history-${item.id}`;
@@ -75,7 +81,7 @@ function HistoryRow({ item, expanded, onToggle }: { item: RequestHistoryItem; ex
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
             {item.dappName || "Unknown dApp"}
           </span>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: approved ? "var(--color-accent)" : "var(--color-status-error)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: actionColor }}>
             {ACTION_LABEL[item.action]}
           </span>
         </div>
