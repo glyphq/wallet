@@ -47,19 +47,21 @@ Repository secrets used by release builds are:
 |---|---|---|---|
 | `TAURI_SIGNING_PRIVATE_KEY` | Required | Required | Sign updater payloads |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Required | Required | Unlock updater signing key |
-| `APPLE_CERTIFICATE` | Optional | Optional | macOS code signing certificate, unused while native artifacts remain unsigned |
-| `APPLE_CERTIFICATE_PASSWORD` | Optional | Optional | Unlock Apple certificate, unused while native artifacts remain unsigned |
-| `APPLE_ID` | Optional | Optional | Apple notarization account, unused while native artifacts remain unsigned |
-| `APPLE_PASSWORD` | Optional | Optional | Apple app-specific password, unused while native artifacts remain unsigned |
-| `APPLE_TEAM_ID` | Optional | Optional | Apple signing team, unused while native artifacts remain unsigned |
-| `WINDOWS_CERTIFICATE` | Optional | Optional | Base64-encoded Authenticode PFX, unused while native artifacts remain unsigned |
-| `WINDOWS_CERTIFICATE_PASSWORD` | Optional | Optional | Unlock Windows certificate, unused while native artifacts remain unsigned |
+| `APPLE_CERTIFICATE` | Required | Required | Base64-encoded Apple Developer ID certificate for macOS code signing |
+| `APPLE_CERTIFICATE_PASSWORD` | Required | Required | Unlock Apple certificate |
+| `APPLE_SIGNING_IDENTITY` | Required | Required | Developer ID Application identity used by Tauri |
+| `APPLE_ID` | Required | Required | Apple account used for notarization |
+| `APPLE_PASSWORD` | Required | Required | Apple app-specific password used for notarization |
+| `APPLE_TEAM_ID` | Required | Required | Apple Developer Team ID |
+| `WINDOWS_CERTIFICATE` | Required | Required | Base64-encoded Authenticode PFX |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Required | Required | Unlock Windows certificate |
 
-macOS and Windows releases are intentionally unsigned for now unless `allow_unsigned_native=false` is explicitly set and all native signing credentials are configured. Updater signing credentials remain required by the release workflow for every channel.
+Production release jobs require the updater key pair and every native signing/notarization secret before any platform build starts. The release workflow has no unsigned-native override. The separate `prerelease-artifacts.yml` workflow is the only unsigned-native path: it runs on the `prerelease` branch, uploads short-lived Actions artifacts rather than a GitHub Release, and still requires Tauri updater signing credentials and `.sig` files.
 
 `TAURI_UPDATER_PUBLIC_KEY` may override the public key used by the final validator; otherwise the validator reads the configured key from `src-tauri/tauri.conf.json`.
 
-Never place secrets in workflow inputs, source files, Changesets, issues, pull requests, or command output.
+The secret names and build environment contract follow the [Tauri v2 signing guide](https://v2.tauri.app/distribute/signing/). Configure them as repository or protected-environment secrets, never as workflow inputs. Never place secrets in source files, Changesets, issues, pull requests, or command output.
+
 
 ## Before merging a version pull request
 
@@ -183,7 +185,7 @@ gh workflow run release.yml --ref "$RELEASE_REF" --field "tag=${RELEASE_TAG}"
 
 ## Release workflow
 
-`.github/workflows/release.yml` accepts one required input, an existing tag, plus an optional `allow_unsigned_native` switch that defaults to `true` while Windows and Apple releases are intentionally unsigned. Its concurrency group is per tag and in-progress runs are not cancelled.
+`.github/workflows/release.yml` accepts one required input, an existing tag. Its concurrency group is per tag and in-progress runs are not cancelled.
 
 The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the immutable tag for application builds. Release-only automation that may need to repair an older tagged release, such as the immutable draft-asset uploader, is checked out separately from the exact reviewed workflow commit (`github.sha`) into `.release-automation`; it does not change the tagged application source being built.
 
@@ -206,17 +208,15 @@ The three platform jobs run after draft preparation.
 
 | Platform | Build output | Native signing policy |
 |---|---|---|
-| Linux | AppImage, deb, rpm | Updater signature required |
-| macOS | universal app archive and DMG | Unsigned by default for now; signing and notarization run only when `allow_unsigned_native=false` and credentials are complete |
-| Windows | NSIS installer | Unsigned by default for now; Authenticode and timestamp validation run only when `allow_unsigned_native=false` and credentials are complete |
+| Linux | AppImage, deb, rpm | Tauri updater signature required and verified before publication |
+| macOS | universal app archive and DMG | Apple code signing, notarization, and Gatekeeper validation required |
+| Windows | NSIS installer | Authenticode SHA-256 signing and timestamp validation required |
 
 Prerelease release builds switch the bundled updater endpoint to `latest-prerelease.json` before building.
 
-### Unsigned native publication
+### Development-only unsigned native artifacts
 
-Native macOS and Windows signing is intentionally disabled by default for current releases. This affects only Apple code signing/notarization and Windows Authenticode. Tauri updater signatures, SHA-256 checksums, release asset validation, and GitHub build-provenance attestations remain mandatory.
-
-The workflow adds a prominent warning to the GitHub Release notes whenever unsigned native artifacts are allowed. Do not describe the resulting macOS or Windows artifacts as platform-signed. When native signing is intentionally restored, first configure the credentials, then dispatch with `allow_unsigned_native=false` and verify the signing validation paths before making that the default.
+The branch workflow `.github/workflows/prerelease-artifacts.yml` is intentionally separate from release publication. It may produce unsigned macOS and Windows native artifacts when platform credentials are unavailable, but it is explicitly marked as a development path, never creates or edits a GitHub Release, and retains mandatory Tauri updater signing. Its Actions artifacts expire after 14 days and must not be redistributed as production installers.
 
 #### Linux
 
@@ -337,7 +337,7 @@ These run artifacts are for testing. They do not create a version tag, GitHub Re
 
 ### Tag exists and the release is missing
 
-Run the Changesets workflow again on the relevant branch, or manually dispatch `release.yml` from `main` or `prerelease` with the existing tag. For an explicitly approved emergency unsigned stable release, add `--field allow_unsigned_native=true`. Do not recreate or move the tag.
+Run the Changesets workflow again on the relevant branch, or manually dispatch `release.yml` from `main` or `prerelease` with the existing tag. The production signing preflight must pass before any platform build starts. Do not recreate or move the tag.
 
 ### Draft release exists
 

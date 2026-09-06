@@ -14,6 +14,10 @@ env:
   RUST_VERSION: "1.88.0"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   RELEASE_CHANNEL: prerelease
+  # This workflow uploads short-lived Actions artifacts only. It never creates
+  # or publishes a GitHub Release. Native signing may be absent here, but
+  # updater signing remains mandatory in every platform job.
+  GLYPH_DEVELOPMENT_UNSIGNED_NATIVE: "true"
 
 permissions:
   contents: read
@@ -87,6 +91,12 @@ jobs:
             src-tauri/target/release/bundle/appimage_deb
           scripts/prepare-tauri-linux-tools.sh
 
+      - name: Validate development updater signing configuration
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: node scripts/validate-signing-config.mjs --mode development --platform linux
+
       - name: Build Linux bundles
         env:
           RUSTC_WRAPPER: sccache
@@ -105,6 +115,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p prerelease-artifacts/linux
+          mapfile -t appimages < <(find src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' | sort)
+          mapfile -t signatures < <(find src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage.sig' | sort)
+          [[ ${#appimages[@]} -eq 1 && ${#signatures[@]} -eq 1 ]]
           find src-tauri/target/release/bundle/appimage -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.AppImage.sig' \) -exec cp {} prerelease-artifacts/linux/ \;
           find src-tauri/target/release/bundle/deb -maxdepth 1 -type f -name '*.deb' -exec cp {} prerelease-artifacts/linux/ \;
           find src-tauri/target/release/bundle/rpm -maxdepth 1 -type f -name '*.rpm' -exec cp {} prerelease-artifacts/linux/ \;
@@ -160,18 +173,25 @@ jobs:
       - name: Configure prerelease updater channel
         run: node scripts/set-updater-channel.mjs prerelease
 
+      - name: Validate development updater signing configuration
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: node scripts/validate-signing-config.mjs --mode development --platform macos
+
       - name: Determine macOS signing mode
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
-          if [[ -n "$APPLE_CERTIFICATE" && -n "$APPLE_CERTIFICATE_PASSWORD" && -n "$APPLE_ID" && -n "$APPLE_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
+          if [[ -n "$APPLE_CERTIFICATE" && -n "$APPLE_CERTIFICATE_PASSWORD" && -n "$APPLE_SIGNING_IDENTITY" && -n "$APPLE_ID" && -n "$APPLE_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
             echo "MACOS_CODE_SIGNING_ENABLED=1" >> "$GITHUB_ENV"
           else
             echo "MACOS_CODE_SIGNING_ENABLED=0" >> "$GITHUB_ENV"
@@ -186,6 +206,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -201,9 +222,13 @@ jobs:
       - name: Stage macOS artifacts
         run: |
           set -euo pipefail
+          shopt -s nullglob
           mkdir -p prerelease-artifacts/macos
-          find src-tauri/target/universal-apple-darwin/release/bundle/macos -maxdepth 1 -type f \( -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' \) -exec cp {} prerelease-artifacts/macos/ \;
-          find src-tauri/target/universal-apple-darwin/release/bundle/dmg -maxdepth 1 -type f -name '*.dmg' -exec cp {} prerelease-artifacts/macos/ \;
+          archives=(src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz)
+          signatures=(src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz.sig)
+          images=(src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg)
+          [[ ${#archives[@]} -eq 1 && ${#signatures[@]} -eq 1 && ${#images[@]} -eq 1 ]]
+          cp "${archives[0]}" "${signatures[0]}" "${images[0]}" prerelease-artifacts/macos/
           compgen -G 'prerelease-artifacts/macos/*' >/dev/null
           (cd prerelease-artifacts/macos && shasum -a 256 ./* > SHA256SUMS.txt)
 
@@ -255,6 +280,12 @@ jobs:
       - name: Configure prerelease updater channel
         run: node scripts/set-updater-channel.mjs prerelease
 
+      - name: Validate development updater signing configuration
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: node scripts/validate-signing-config.mjs --mode development --platform windows --config src-tauri/tauri.conf.json
+
       - name: Determine Windows signing mode
         shell: pwsh
         env:
@@ -305,8 +336,11 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force -Path prerelease-artifacts/windows | Out-Null
-          Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.exe" | Copy-Item -Destination prerelease-artifacts/windows
-          Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.sig" -ErrorAction SilentlyContinue | Copy-Item -Destination prerelease-artifacts/windows
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.exe")
+          $signatures = @(Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.exe.sig")
+          if ($installers.Count -ne 1 -or $signatures.Count -ne 1) { throw "Expected one Windows installer and one updater signature" }
+          $installers | Copy-Item -Destination prerelease-artifacts/windows
+          $signatures | Copy-Item -Destination prerelease-artifacts/windows
           $files = @(Get-ChildItem prerelease-artifacts/windows -File)
           if ($files.Count -eq 0) { throw "No Windows prerelease artifacts were produced" }
           $hashes = foreach ($file in $files) {
