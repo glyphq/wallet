@@ -9,7 +9,7 @@ import type {
   ScheduledTransfer,
   VaultMeta,
 } from "./persisted-types";
-import { isGlobalHttpsUrl } from "@/lib/url-security";
+import { isGlobalHttpsUrl, isTrustedPriceFeedUrl } from "@/lib/url-security";
 import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
 
 export const MAX_PENDING_TXS = 50;
@@ -84,11 +84,22 @@ export function sanitizePollingInterval(
     : fallback;
 }
 
-export function sanitizeCustomPriceFeedUrl(value: unknown, fallback: string): string {
-  if (typeof value !== "string") return fallback;
+export function sanitizeCustomPriceFeedUrl(
+  value: unknown,
+  fallback: string,
+  allowUntrustedForDevelopment = false
+): string {
+  const isAllowed = (url: string) =>
+    isGlobalHttpsUrl(url) &&
+    (allowUntrustedForDevelopment || isTrustedPriceFeedUrl(url));
+  const safeFallback =
+    typeof fallback === "string" && fallback.trim().length <= 2048 && isAllowed(fallback.trim())
+      ? fallback.trim()
+      : "";
+  if (typeof value !== "string") return safeFallback;
   const trimmed = value.trim();
   if (!trimmed) return "";
-  if (trimmed.length > 2048 || !isGlobalHttpsUrl(trimmed)) return fallback;
+  if (trimmed.length > 2048 || !isAllowed(trimmed)) return safeFallback;
   return trimmed;
 }
 
@@ -251,7 +262,8 @@ export function mergePersistedState(
         : currentState.settings.lowBalanceThreshold,
     customPriceFeedUrl: sanitizeCustomPriceFeedUrl(
       settingsBase.customPriceFeedUrl,
-      currentState.settings.customPriceFeedUrl
+      currentState.settings.customPriceFeedUrl,
+      import.meta.env.DEV === true
     ),
     largeIncomingThreshold:
       typeof settingsBase.largeIncomingThreshold === "string"
