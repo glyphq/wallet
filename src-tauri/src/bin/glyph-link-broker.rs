@@ -61,9 +61,9 @@ fn find_wallet_binary(broker_path: &Path) -> Result<PathBuf, String> {
         .ok_or("broker executable directory is unavailable")?;
 
     #[cfg(target_os = "windows")]
-    let candidates = ["glyph-wallet.exe", "Glyph.exe"];
+    let candidates = ["glyph-wallet.exe", "Glyph Wallet.exe", "Glyph.exe"];
     #[cfg(not(target_os = "windows"))]
-    let candidates = ["glyph-wallet", "Glyph"];
+    let candidates = ["glyph-wallet", "Glyph Wallet", "Glyph"];
 
     for name in candidates {
         let candidate = directory.join(name);
@@ -81,16 +81,16 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn finds_only_a_fixed_wallet_name_beside_the_broker() {
+    fn finds_the_glyph_wallet_binary_beside_the_broker() {
         let root =
             std::env::temp_dir().join(format!("glyph-link-broker-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
 
         #[cfg(target_os = "windows")]
-        let wallet_name = "glyph-wallet.exe";
+        let wallet_name = "Glyph Wallet.exe";
         #[cfg(not(target_os = "windows"))]
-        let wallet_name = "glyph-wallet";
+        let wallet_name = "Glyph Wallet";
 
         let broker = root.join("glyph-link-broker");
         let wallet = root.join(wallet_name);
