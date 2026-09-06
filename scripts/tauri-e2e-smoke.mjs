@@ -108,7 +108,7 @@ try {
 
   launchDeepLink();
   if (initiallyLocked) {
-    page = await waitFor(session, (html) => html.includes('type="password"') && html.includes("pending request".replace(" ", " ")), "request retained while locked");
+    await waitFor(session, (html) => html.includes('type="password"') && html.includes("pending request"), "request retained while locked");
     if (!password) throw new Error("TAURI_E2E_PASSWORD is required when the seeded profile starts locked");
     await fillPassword(session, password);
     await clickText(session, "Unlock Vault");
