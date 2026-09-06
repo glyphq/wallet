@@ -1235,8 +1235,7 @@ mod tests {
     use super::{
         callback_from_envelope_payload, jcs, now_secs, replay_key_from_envelope_payload,
         sha256_base64url, validate, validate_dapp_origin, validate_delivery_url, validate_pay,
-        DeepLinkState, CALLBACK_ENVELOPE_VERSION_V2, MAX_PENDING_LINKS,
-        MAX_SIGNING_AUTHORIZATION_AGE_SECS, REQUEST_PROTOCOL_V2,
+        DeepLinkState, CALLBACK_ENVELOPE_VERSION_V2, MAX_PENDING_LINKS, REQUEST_PROTOCOL_V2,
     };
     use serde_json::Value;
 
@@ -1479,7 +1478,6 @@ mod tests {
 
         let expired = authorization_payload(now_secs().saturating_sub(1));
         assert!(state.mark_request_accepted(&expired).is_err());
-        assert!(MAX_SIGNING_AUTHORIZATION_AGE_SECS > 0);
     }
 
     fn callback_authorization_fixture() -> (String, Value, Vec<u8>) {
