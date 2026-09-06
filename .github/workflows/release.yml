@@ -7,6 +7,11 @@ on:
         description: Existing release tag to build, for example v0.14.2
         required: true
         type: string
+      allow_unsigned_native:
+        description: Publish unsigned macOS and Windows bundles. Users will see OS security warnings.
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: release-${{ inputs.tag }}
@@ -78,6 +83,12 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/extract-changelog.mjs "$VERSION" > release-notes.md
+          if [[ "${{ inputs.allow_unsigned_native }}" == "true" ]]; then
+            cat >> release-notes.md <<'EOF'
+
+          > **Warning:** macOS and Windows installers in this release are not platform-code-signed. Their updater archives remain signed, but your operating system will show a security warning when opening the app for the first time.
+          EOF
+          fi
           expected_prerelease=false
           if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
             expected_prerelease=true
@@ -126,7 +137,7 @@ jobs:
             src-tauri/tauri.conf.json
           sparse-checkout-cone-mode: false
 
-      - name: Require updater and native signing credentials
+      - name: Validate updater and native signing policy
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -138,7 +149,13 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-        run: node scripts/validate-signing-config.mjs --mode release --config src-tauri/tauri.conf.json
+          GLYPH_ALLOW_UNSIGNED_NATIVE_RELEASE: ${{ inputs.allow_unsigned_native && 'true' || '' }}
+        run: |
+          if [[ "${{ inputs.allow_unsigned_native }}" == "true" ]]; then
+            node scripts/validate-signing-config.mjs --mode unsigned-release --config src-tauri/tauri.conf.json
+          else
+            node scripts/validate-signing-config.mjs --mode release --config src-tauri/tauri.conf.json
+          fi
 
   release-linux:
     name: Build Linux bundles
@@ -374,6 +391,8 @@ jobs:
           mv "${signatures[0]}" "$target.sig"
 
       - name: Validate macOS bundles
+        env:
+          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -387,10 +406,14 @@ jobs:
           binary="${apps[0]}/Contents/MacOS/glyph-wallet"
           [[ -x "$binary" ]]
           lipo "$binary" -verify_arch x86_64 arm64
-          codesign --verify --deep --strict --verbose=2 "${apps[0]}"
-          codesign --verify --deep --strict --verbose=2 "${images[0]}"
-          xcrun stapler validate "${images[0]}"
-          spctl --assess --type open --context context:primary-signature --verbose=4 "${images[0]}"
+          if [[ "$ALLOW_UNSIGNED_NATIVE" != "true" ]]; then
+            codesign --verify --deep --strict --verbose=2 "${apps[0]}"
+            codesign --verify --deep --strict --verbose=2 "${images[0]}"
+            xcrun stapler validate "${images[0]}"
+            spctl --assess --type open --context context:primary-signature --verbose=4 "${images[0]}"
+          else
+            echo "Publishing deliberately unsigned macOS bundles. Updater archive signatures remain required."
+          fi
           shasum -a 256 "${archives[0]}" "${images[0]}" | sed -E 's#  .*/#  #' > SHA256SUMS-macos.txt
 
       - name: Attest macOS release assets
@@ -464,6 +487,7 @@ jobs:
         run: node scripts/set-updater-channel.mjs prerelease
 
       - name: Import Windows signing certificate
+        if: inputs.allow_unsigned_native != true
         shell: pwsh
         env:
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
@@ -485,24 +509,31 @@ jobs:
           SCCACHE_GHA_ENABLED: "true"
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           $ErrorActionPreference = "Stop"
-          $config = @{
-            bundle = @{
-              windows = @{
-                certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
-                digestAlgorithm = "sha256"
-                timestampUrl = "http://timestamp.digicert.com"
+          if ($env:ALLOW_UNSIGNED_NATIVE -eq "true") {
+            Write-Host "Publishing a deliberately unsigned Windows installer. Updater signatures remain required."
+            bun tauri build --bundles nsis --ci
+          } else {
+            $config = @{
+              bundle = @{
+                windows = @{
+                  certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
+                  digestAlgorithm = "sha256"
+                  timestampUrl = "http://timestamp.digicert.com"
+                }
               }
-            }
-          } | ConvertTo-Json -Compress -Depth 4
-          bun tauri build --bundles nsis --ci --config $config
+            } | ConvertTo-Json -Compress -Depth 4
+            bun tauri build --bundles nsis --ci --config $config
+          }
 
       - name: Validate Windows assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
+          ALLOW_UNSIGNED_NATIVE: ${{ inputs.allow_unsigned_native }}
         run: |
           $ErrorActionPreference = "Stop"
           $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis" -File -Filter "*.exe")
@@ -510,9 +541,11 @@ jobs:
           $installer = $installers[0]
           $signature = Get-Item "$($installer.FullName).sig"
           if ($installer.Length -le 0 -or $signature.Length -le 0) { throw "Installer or updater signature is empty" }
-          $authenticode = Get-AuthenticodeSignature $installer.FullName
-          if ($authenticode.Status -ne "Valid") { throw "Installer Authenticode status is $($authenticode.Status): $($authenticode.StatusMessage)" }
-          if ($null -eq $authenticode.TimeStamperCertificate) { throw "Installer signature is not timestamped" }
+          if ($env:ALLOW_UNSIGNED_NATIVE -ne "true") {
+            $authenticode = Get-AuthenticodeSignature $installer.FullName
+            if ($authenticode.Status -ne "Valid") { throw "Installer Authenticode status is $($authenticode.Status): $($authenticode.StatusMessage)" }
+            if ($null -eq $authenticode.TimeStamperCertificate) { throw "Installer signature is not timestamped" }
+          }
           $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
           "$hash  $($installer.Name)" | Set-Content -NoNewline SHA256SUMS-windows.txt
 
