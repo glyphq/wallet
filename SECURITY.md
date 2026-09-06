@@ -121,7 +121,7 @@ Do not describe CSP as proof that remote-code execution is impossible. It is one
 
 Built-in updater payloads for Windows, macOS, and Linux AppImage are signed with the Tauri updater key. Stable macOS releases require code signing and notarization credentials, and stable Windows releases require Authenticode signing credentials. Linux deb and rpm installations update through their package path rather than the built-in updater.
 
-The release workflow builds against an existing annotated tag, uploads assets only to a draft release, validates the complete asset set, verifies updater signatures and checksums, and publishes only after validation succeeds. GitHub build-provenance attestations are generated, but current publication validation does not independently verify those attestations.
+The release workflow builds against an existing annotated tag, uploads assets only to a draft release, validates the complete asset set, verifies updater signatures, checksums, and GitHub build-provenance attestations, and publishes only after validation succeeds.
 
 Release scripts refuse to move existing tags or mutate published assets, but source code alone cannot enforce repository tag protection, branch rules, or maintainer access control. The workflow currently requires annotated tags, not cryptographically signed or GitHub-verified tags. Operational repository controls remain part of the release security boundary.
 
