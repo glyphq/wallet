@@ -154,15 +154,6 @@ pub fn authorize_pending_request(
 }
 
 #[tauri::command]
-pub fn authorize_local_signing(
-    state: State<'_, DeepLinkState>,
-    account_index: usize,
-    intent: String,
-) -> Result<String, String> {
-    Ok(state.authorize_local(account_index, intent))
-}
-
-#[tauri::command]
 pub fn take_pending_pay(state: State<'_, DeepLinkState>) -> Option<String> {
     state.take_payment()
 }

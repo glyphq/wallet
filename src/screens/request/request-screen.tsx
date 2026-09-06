@@ -120,10 +120,10 @@ export default function RequestScreen() {
     addRequestHistoryItem,
     updateRequestHistoryItem,
     recordAuditEvent,
-    signCallbackMessage: async (accountIndex, messageBytes) => {
+    signCallbackMessage: async (accountIndex, messageBytes, result) => {
       const authorization = callbackAuthorizationRef.current;
       if (!authorization) throw new Error("request approval authorization is unavailable");
-      return signCallbackMessageFromSession(accountIndex, messageBytes, authorization);
+      return signCallbackMessageFromSession(accountIndex, messageBytes, authorization, result);
     },
     callbackNetworkId: networkName === "mainnet" || networkName === "testnet" ? `qubic:${networkName}` : undefined,
   };
@@ -162,7 +162,7 @@ export default function RequestScreen() {
     callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
-      await authorizeForRequest(0, "callback");
+      await authorizeForRequest(0, "callback:rejected");
       await completePendingRequest(() => rejectRequest(orchestrationDeps, envelope), shiftPendingRequest);
     } catch {
       setActionError("Could not prepare the rejection response. This request is still open. Try again.");
@@ -206,7 +206,7 @@ export default function RequestScreen() {
     callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
-      await authorizeForRequest(0, "callback");
+      await authorizeForRequest(0, "callback:response");
       const state = await completePendingRequest(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults }),
         shiftPendingRequest,
@@ -222,7 +222,7 @@ export default function RequestScreen() {
     callbackPayloadRef.current = pendingRequest;
     setActionError(null);
     try {
-      await authorizeForRequest(result.accountIndex, "callback");
+      await authorizeForRequest(result.accountIndex, "callback:response");
       const state = await completePendingRequest(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, vaults }),
         shiftPendingRequest,

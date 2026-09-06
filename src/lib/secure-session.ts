@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { deriveIdentityFromSeed, identityToPublicKey, publicKeyFromSeed } from "@/lib/crypto";
 import type { Seed } from "@/lib/crypto";
 import type { SessionWallet } from "@/lib/session-wallet";
+import type { GlyphCallbackResponse } from "@/lib/request-schema";
 
 interface BuildTxParams {
   accountIndex: number;
@@ -20,8 +21,8 @@ export interface SignedTxResult {
 
 export interface SigningAuthorizationContext {
   authorization: string;
-  requestPayload?: string;
-  dappOrigin?: string;
+  requestPayload: string;
+  dappOrigin: string;
 }
 
 export function transactionSigningIntent(input: {
@@ -61,17 +62,11 @@ export async function authorizePendingRequest(input: {
   });
 }
 
-async function authorizeLocalSigning(accountIndex: number, intent: string) {
-  return await invoke<string>("authorize_local_signing", { accountIndex, intent });
-}
-
 async function resolveAuthorization(
-  accountIndex: number,
-  intent: string,
   context?: SigningAuthorizationContext,
 ): Promise<SigningAuthorizationContext> {
   if (context) return context;
-  return { authorization: await authorizeLocalSigning(accountIndex, intent) };
+  throw new Error("dApp signing authorization is required for this operation");
 }
 
 interface NativeSignMessageResult {
@@ -118,8 +113,21 @@ async function buildSignedTransaction({
   inputType,
   payload,
 }: BuildTxParams, authorizationContext?: SigningAuthorizationContext): Promise<SignedTxResult> {
+  if (!authorizationContext) {
+    return await invoke<SignedTxResult>("sign_local_transaction", {
+      request: {
+        accountIndex,
+        destination,
+        amount: amount.toString(),
+        targetTick,
+        currentTick,
+        inputType,
+        payload: Array.from(payload),
+      },
+    });
+  }
   const intent = transactionSigningIntent({ accountIndex, destination, amount, inputType, payload });
-  const authorization = await resolveAuthorization(accountIndex, intent, authorizationContext);
+  const authorization = await resolveAuthorization(authorizationContext);
   return await invoke<SignedTxResult>("sign_transaction", {
     request: {
       accountIndex,
@@ -154,7 +162,17 @@ export async function signMessageFromSession(
   authorizationContext?: SigningAuthorizationContext,
 ) {
   const intent = messageSigningIntent(accountIndex, messageBytes);
-  const authorization = await resolveAuthorization(accountIndex, intent, authorizationContext);
+  if (!authorizationContext) {
+    const result = await invoke<NativeSignMessageResult>("sign_local_message", {
+      request: { accountIndex, messageBytes: Array.from(messageBytes) },
+    });
+    return {
+      signature: new Uint8Array(result.signature),
+      publicKey: new Uint8Array(result.publicKey),
+      identity: result.identity,
+    };
+  }
+  const authorization = await resolveAuthorization(authorizationContext);
   const result = await invoke<NativeSignMessageResult>("sign_message", {
     request: {
       accountIndex,
@@ -181,17 +199,27 @@ export async function signCallbackMessageFromSession(
   accountIndex: number,
   messageBytes: Uint8Array,
   authorizationContext?: SigningAuthorizationContext,
+  callbackResult?: GlyphCallbackResponse,
 ) {
-  if (!authorizationContext) throw new Error("request approval authorization is unavailable");
-  const intent = "callback";
+  if (!authorizationContext || !callbackResult) throw new Error("request approval authorization is unavailable");
+  const callbackAuthorization = await invoke<string>("authorize_callback_message", {
+    request: {
+      authorization: authorizationContext.authorization,
+      requestPayload: authorizationContext.requestPayload,
+      dappOrigin: authorizationContext.dappOrigin,
+      accountIndex,
+      messageBytes: Array.from(messageBytes),
+      callbackResult,
+    },
+  });
   const result = await invoke<NativeSignMessageResult>("sign_callback_message", {
     request: {
       accountIndex,
       messageBytes: Array.from(messageBytes),
-      authorization: authorizationContext.authorization,
+      authorization: callbackAuthorization,
       requestPayload: authorizationContext.requestPayload,
       dappOrigin: authorizationContext.dappOrigin,
-      intent,
+      intent: "callback",
     },
   });
   return {

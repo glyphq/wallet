@@ -114,7 +114,7 @@ export async function buildSignedCallbackEnvelope(input: {
   result: GlyphCallbackResponse;
   identity: string;
   accountIndex: number;
-  signCallbackMessage: (accountIndex: number, messageBytes: Uint8Array) => Promise<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>;
+  signCallbackMessage: (accountIndex: number, messageBytes: Uint8Array, result: GlyphCallbackResponse) => Promise<{ signature: Uint8Array; publicKey: Uint8Array; identity: string }>;
   networkId?: GlyphEnvelope["network"]["id"];
   nowEpochSeconds?: () => number;
 }): Promise<GlyphSignedCallbackEnvelope> {
@@ -125,7 +125,7 @@ export async function buildSignedCallbackEnvelope(input: {
     input.networkId,
   );
   const signedPayload = canonicalCallbackPayload(payload);
-  const signed = await input.signCallbackMessage(input.accountIndex, new TextEncoder().encode(signedPayload));
+  const signed = await input.signCallbackMessage(input.accountIndex, new TextEncoder().encode(signedPayload), input.result);
   return {
     version: CALLBACK_ENVELOPE_VERSION,
     result: input.result,

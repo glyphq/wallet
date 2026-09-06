@@ -41,7 +41,7 @@ export interface RequestOrchestrationDeps {
   addRequestHistoryItem: (item: RequestHistoryItem) => void;
   updateRequestHistoryItem: (id: string, patch: Partial<RequestHistoryItem>) => void;
   recordAuditEvent: (event: RequestAuditEvent) => void;
-  signCallbackMessage?: typeof signCallbackMessageFromSession;
+  signCallbackMessage?: (accountIndex: number, messageBytes: Uint8Array, result: GlyphCallbackResponse) => ReturnType<typeof signCallbackMessageFromSession>;
   callbackNetworkId?: GlyphEnvelope["network"]["id"];
 }
 
@@ -133,12 +133,14 @@ export async function rejectRequest(
     type: envelope.request.type,
     reason: "user_rejected",
   };
+  const signCallbackMessage = deps.signCallbackMessage ?? ((accountIndex: number, messageBytes: Uint8Array, result: GlyphCallbackResponse) =>
+    signCallbackMessageFromSession(accountIndex, messageBytes, undefined, result));
   const callbackBody = JSON.stringify(await buildSignedCallbackEnvelope({
     envelope,
     result: response,
     identity: "",
     accountIndex: 0,
-    signCallbackMessage: deps.signCallbackMessage ?? signCallbackMessageFromSession,
+    signCallbackMessage,
     networkId: deps.callbackNetworkId,
     nowEpochSeconds: () => nowEpochSeconds(deps),
   }));
@@ -185,12 +187,14 @@ export async function approveRequest(
   const redirectUri = input.envelope.redirect_uri ?? null;
   const { response, success, history, auditTitle, auditDetail } = buildApprovalArtifacts(input.envelope, input.approval);
   const identity = getApprovalIdentity(input.approval);
+  const signCallbackMessage = deps.signCallbackMessage ?? ((accountIndex: number, messageBytes: Uint8Array, result: GlyphCallbackResponse) =>
+    signCallbackMessageFromSession(accountIndex, messageBytes, undefined, result));
   const callbackBody = JSON.stringify(await buildSignedCallbackEnvelope({
     envelope: input.envelope,
     result: response,
     identity,
     accountIndex: getApprovalAccountIndex(input.approval),
-    signCallbackMessage: deps.signCallbackMessage ?? signCallbackMessageFromSession,
+    signCallbackMessage,
     networkId: deps.callbackNetworkId,
     nowEpochSeconds: () => nowEpochSeconds(deps),
   }));

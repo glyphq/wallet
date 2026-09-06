@@ -10,7 +10,7 @@ function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
   const audits: unknown[] = [];
   const posts: Array<{ url: string; body: string }> = [];
   const opened: string[] = [];
-  const callbackSignatures: Array<{ accountIndex: number; payload: Uint8Array }> = [];
+  const callbackSignatures: Array<{ accountIndex: number; payload: Uint8Array; result: GlyphCallbackResponse }> = [];
   const deps: RequestOrchestrationDeps = {
     now: () => 1234,
     makeRequestHistoryId: () => "req_test",
@@ -19,8 +19,8 @@ function makeDeps(overrides: Partial<RequestOrchestrationDeps> = {}) {
     addRequestHistoryItem: (item) => { added.push(item); },
     updateRequestHistoryItem: (id, patch) => { updates.push({ id, patch }); },
     recordAuditEvent: (event) => { audits.push(event); },
-    signCallbackMessage: async (accountIndex, payload) => {
-      callbackSignatures.push({ accountIndex, payload });
+    signCallbackMessage: async (accountIndex, payload, result) => {
+      callbackSignatures.push({ accountIndex, payload, result });
       return { signature: new Uint8Array([accountIndex, 7]), publicKey: new Uint8Array([7, 8, 9]), identity: "ID1" };
     },
     ...overrides,
@@ -89,6 +89,7 @@ describe("request orchestration", () => {
     });
     expect(callbackEnvelope.proof.signed_payload).toContain('"result_hash"');
     expect(callbackSignatures).toHaveLength(1);
+    expect(callbackSignatures[0]?.result).toMatchObject({ status: "signed", tx_hash: "tx-1", target_tick: 42 });
     expect(posts).toEqual([{ url: "https://demo.app/callback", body: added[0].callbackBody! }]);
     expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "ok", callbackUpdatedAt: 1234 } }]);
     expect(opened[0]).toBe(buildRedirectUrl("https://demo.app/return", added[0].callbackBody!));
@@ -114,6 +115,7 @@ describe("request orchestration", () => {
     });
     expect(Number.isSafeInteger(callbackEnvelope.payload.issued_at)).toBe(true);
     expect(callbackSignatures).toHaveLength(1);
+    expect(callbackSignatures[0]?.result).toMatchObject({ status: "rejected", reason: "user_rejected" });
     expect(callbackEnvelope.proof.signed_payload).toContain('"result_hash":"sha256:');
     expect(updates).toEqual([{ id: "req_test", patch: { callbackStatus: "failed", callbackUpdatedAt: 1234 } }]);
     expect(audits).toContainEqual({ kind: "request_callback_failed", status: "failure", title: "Callback failed", detail: "https://demo.app/callback" });
@@ -147,6 +149,7 @@ describe("request orchestration", () => {
     expect(body.proof.signature).not.toBe("USER_MESSAGE_SIGNATURE");
     expect(callbackSignatures).toHaveLength(1);
     expect(callbackSignatures[0]?.accountIndex).toBe(2);
+    expect(callbackSignatures[0]?.result).toMatchObject({ status: "signed", type: "sign_message" });
     expect(new TextDecoder().decode(callbackSignatures[0]!.payload)).toBe(body.proof.signed_payload);
     expect(posts).toHaveLength(1);
   });
