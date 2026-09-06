@@ -1,5 +1,5 @@
 use crate::session_crypto::NativeSessionState;
-use crate::vault_crypto::VaultData;
+use crate::vault_crypto::{SessionWalletMetadata, VaultData};
 use tauri::{command, State};
 
 fn validate_vault_id(vault_id: &str) -> Result<(), String> {
@@ -155,7 +155,7 @@ pub async fn biometric_unlock(
     vault_id: String,
     vault_data: VaultData,
     session: State<'_, NativeSessionState>,
-) -> Result<usize, String> {
+) -> Result<Vec<SessionWalletMetadata>, String> {
     let _ = (vault_id, vault_data, session);
     Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }

@@ -40,15 +40,25 @@ interface NativeSessionWallet {
   publicKey: number[];
 }
 
+function toSessionWallets(wallets: NativeSessionWallet[]): SessionWallet[] {
+  return wallets.map((wallet) => ({
+    identity: wallet.identity,
+    publicKey: new Uint8Array(wallet.publicKey),
+  }));
+}
+
 export async function unlockVaultSession(vaultData: VaultData, password: string): Promise<SessionWallet[]> {
   const wallets = await invoke<NativeSessionWallet[]>("unlock_vault_session", {
     vaultData,
     password,
   });
-  return wallets.map((wallet) => ({
-    identity: wallet.identity,
-    publicKey: new Uint8Array(wallet.publicKey),
-  }));
+  return toSessionWallets(wallets);
+}
+
+/** Native biometric unlock returns canonical public wallet metadata, never seed positions. */
+export async function unlockBiometricSession(vaultId: string, vaultData: VaultData): Promise<SessionWallet[]> {
+  const wallets = await invoke<NativeSessionWallet[]>("biometric_unlock", { vaultId, vaultData });
+  return toSessionWallets(wallets);
 }
 
 export async function verifyVaultPassword(vaultData: VaultData, password: string): Promise<void> {

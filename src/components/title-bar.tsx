@@ -19,6 +19,7 @@ function WinBtn({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       aria-label={label}
       onMouseEnter={() => setHovered(true)}
@@ -47,12 +48,19 @@ function WinBtn({
 }
 
 export function TitleBar() {
-  const win = useMemo(() => getCurrentWindow(), []);
+  // Vite previews, component tests, and browser-based accessibility checks do
+  // not have Tauri's window bridge. Keep the app shell usable in those
+  // environments instead of throwing while the title bar mounts.
+  const win = useMemo(
+    () => (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window ? getCurrentWindow() : null),
+    [],
+  );
   const [fullscreen, setFullscreen] = useState(false);
   const themeMode = usePersistedStore((state) => state.settings.themeMode);
   const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
 
   useEffect(() => {
+    if (!win) return;
     win.isFullscreen().then(setFullscreen).catch(() => {});
     let unlisten: (() => void) | undefined;
     let active = true;
@@ -118,20 +126,22 @@ export function TitleBar() {
         </span>
       </div>
 
-      <div style={{ display: "flex", height: "100%" }}>
-        <WinBtn onClick={() => win.minimize()} label="Minimize">
-          <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
-            <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        </WinBtn>
+      {win ? (
+        <div style={{ display: "flex", height: "100%" }}>
+          <WinBtn onClick={() => win.minimize()} label="Minimize">
+            <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
+              <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </WinBtn>
 
-        <WinBtn onClick={() => win.close()} label="Close" danger>
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-            <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        </WinBtn>
-      </div>
+          <WinBtn onClick={() => win.close()} label="Close" danger>
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </WinBtn>
+        </div>
+      ) : null}
     </div>
   );
 }

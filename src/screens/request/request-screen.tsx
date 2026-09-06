@@ -12,7 +12,7 @@ import { ConnectPreview, type ConnectApproveResult } from "@/components/request/
 import { VerifyMessagePreview, type VerifyMessageResult } from "@/components/request/verify-message-preview";
 import { saveFileDialog } from "@/lib/save-file";
 import { useSessionStore } from "@/store/session";
-import { usePersistedStore } from "@/store/persisted";
+import { usePersistedStore, type RequestHistoryItem } from "@/store/persisted";
 import { ScreenHeader } from "@/components/screen-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -45,6 +45,7 @@ export default function RequestScreen() {
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<RequestSuccessState | null>(null);
+  const [expiredRequest, setExpiredRequest] = useState<RequestHistoryItem | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle");
   const [expirySecsLeft, setExpirySecsLeft] = useState<number | null>(null);
   const expiryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -81,17 +82,44 @@ export default function RequestScreen() {
   // Auto-dismiss when the request's exp timestamp passes so the approval
   // buttons don't remain active after expiry. Also drives a visible countdown.
   useEffect(() => {
-    if (!envelope?.request.exp || success) {
+    if (!envelope?.request.exp || success || expiredRequest) {
       setExpirySecsLeft(null);
       return;
     }
     const msUntilExp = envelope.request.exp * 1000 - Date.now();
     if (msUntilExp <= 0) {
-      shiftPendingRequest();
+      const item: RequestHistoryItem = {
+        id: makeRequestHistoryId(),
+        createdAt: Date.now(),
+        type: envelope.request.type,
+        dappName: envelope.request.dapp.name || "Unknown dApp",
+        dappOrigin: envelope.request.dapp.origin,
+        action: "expired",
+        resultDetail: "Request expired before a decision was made.",
+        callbackStatus: "none",
+        callbackUrl: envelope.callback,
+      };
+      addRequestHistoryItem(item);
+      setExpiredRequest(item);
       return;
     }
     setExpirySecsLeft(Math.ceil(msUntilExp / 1000));
-    const t = setTimeout(() => { shiftPendingRequest(); }, msUntilExp);
+    const expire = () => {
+      const item: RequestHistoryItem = {
+        id: makeRequestHistoryId(),
+        createdAt: Date.now(),
+        type: envelope.request.type,
+        dappName: envelope.request.dapp.name || "Unknown dApp",
+        dappOrigin: envelope.request.dapp.origin,
+        action: "expired",
+        resultDetail: "Request expired before a decision was made.",
+        callbackStatus: "none",
+        callbackUrl: envelope.callback,
+      };
+      addRequestHistoryItem(item);
+      setExpiredRequest(item);
+    };
+    const t = setTimeout(expire, msUntilExp);
     expiryIntervalRef.current = setInterval(() => {
       const remaining = Math.ceil((envelope.request.exp! * 1000 - Date.now()) / 1000);
       setExpirySecsLeft(Math.max(0, remaining));
@@ -100,7 +128,7 @@ export default function RequestScreen() {
       clearTimeout(t);
       if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
     };
-  }, [envelope?.request.exp, success, shiftPendingRequest]);
+  }, [envelope?.request.exp, envelope?.request_hash, success, expiredRequest, addRequestHistoryItem]);
 
   // Dismiss without notifying the dApp — used by the BACK button so navigating
   // away doesn't send a spurious rejection to the dApp.
@@ -269,6 +297,31 @@ export default function RequestScreen() {
       setCopyStatus("idle");
       copyResetTimeoutRef.current = null;
     }, 1500);
+  }
+
+  function continueAfterExpiry() {
+    const hasQueuedRequest = useSessionStore.getState().pendingRequests.length > 1;
+    setExpiredRequest(null);
+    shiftPendingRequest();
+    if (!hasQueuedRequest) navigate("/dashboard", { replace: true });
+  }
+
+  if (expiredRequest) {
+    return (
+      <SheetLayout statusBar={<ScreenHeader title="Request expired" onBack={continueAfterExpiry} backAriaLabel="Continue" />}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
+          <Tag variant="warning">Expired</Tag>
+          <StatusLine tone="warning">This request expired before you made a decision.</StatusLine>
+          <DetailBlock label="dApp">{expiredRequest.dappName}</DetailBlock>
+          <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+            Nothing was approved and no callback was sent because the request authorization is no longer valid. The outcome is saved in request history.
+          </p>
+          <ActionFooter>
+            <Button onClick={continueAfterExpiry} style={{ flex: 1 }}>Continue</Button>
+          </ActionFooter>
+        </div>
+      </SheetLayout>
+    );
   }
 
   if (success) {

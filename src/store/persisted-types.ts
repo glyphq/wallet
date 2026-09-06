@@ -233,7 +233,7 @@ export interface AuditEvent {
   accountIndex?: number;
 }
 
-export type RequestHistoryAction = "approved" | "rejected";
+export type RequestHistoryAction = "approved" | "rejected" | "expired";
 export type RequestHistoryCallbackStatus = "none" | "pending" | "ok" | "failed";
 
 export interface RequestHistoryItem {

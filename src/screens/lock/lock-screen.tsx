@@ -13,8 +13,7 @@ import { Input } from "@/components/input";
 import { Identicon } from "@/components/identicon";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage, timeAgo } from "@/lib/format";
-import { restoreSessionWalletsFromIdentities } from "@/lib/secure-session";
-import { unlockVaultSession } from "@/lib/vault";
+import { unlockBiometricSession, unlockVaultSession } from "@/lib/vault";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionWallet } from "@/lib/session-wallet";
@@ -277,29 +276,8 @@ export default function LockScreen() {
       return;
     }
     try {
-      const seedCount = await invoke<number>("biometric_unlock", {
-        vaultId: selected.id,
-        vaultData: selected.encryptedData,
-      });
-      const identities = selected.accounts
-        .slice(0, seedCount)
-        .map((account) => account.identity)
-        .filter((identity): identity is string => !!identity);
-      unlock(selected.id, restoreSessionWalletsFromIdentities(identities));
-      setActiveVault(selected.id);
-      touchVaultUnlocked(selected.id);
-      recordAuditEvent({
-        kind: "unlock_succeeded",
-        status: "success",
-        title: "Vault unlocked",
-        detail: selected.name,
-        vaultId: selected.id,
-      });
-      biometricFailures = 0;
-      setPasswordAttempts(0);
-      setUnlocking(true);
-      await new Promise<void>((resolve) => setTimeout(resolve, 600));
-      navigate(hasPendingRequest ? "/request" : "/dashboard", { replace: true });
+      const wallets = await unlockBiometricSession(selected.id, selected.encryptedData);
+      await finishUnlock(wallets);
     } catch (event) {
       recordAuditEvent({
         kind: "unlock_failed",
