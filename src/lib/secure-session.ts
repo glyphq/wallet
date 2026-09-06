@@ -18,6 +18,62 @@ export interface SignedTxResult {
   hash: string;
 }
 
+export interface SigningAuthorizationContext {
+  authorization: string;
+  requestPayload?: string;
+  dappOrigin?: string;
+}
+
+export function transactionSigningIntent(input: {
+  accountIndex: number;
+  destination: string;
+  amount: bigint;
+  inputType: number;
+  payload: Uint8Array;
+}) {
+  return JSON.stringify({
+    kind: "transaction",
+    accountIndex: input.accountIndex,
+    destination: input.destination,
+    amount: input.amount.toString(),
+    inputType: input.inputType,
+    payload: Array.from(input.payload),
+  });
+}
+
+export function messageSigningIntent(accountIndex: number, messageBytes: Uint8Array) {
+  return JSON.stringify({ kind: "message", accountIndex, messageBytes: Array.from(messageBytes) });
+}
+
+export async function authorizePendingRequest(input: {
+  payload: string;
+  dappOrigin: string;
+  requestHash: string;
+  accountIndex: number;
+  intent: string;
+}) {
+  return await invoke<string>("authorize_pending_request", {
+    payload: input.payload,
+    dappOrigin: input.dappOrigin,
+    requestHash: input.requestHash,
+    accountIndex: input.accountIndex,
+    intent: input.intent,
+  });
+}
+
+async function authorizeLocalSigning(accountIndex: number, intent: string) {
+  return await invoke<string>("authorize_local_signing", { accountIndex, intent });
+}
+
+async function resolveAuthorization(
+  accountIndex: number,
+  intent: string,
+  context?: SigningAuthorizationContext,
+): Promise<SigningAuthorizationContext> {
+  if (context) return context;
+  return { authorization: await authorizeLocalSigning(accountIndex, intent) };
+}
+
 interface NativeSignMessageResult {
   signature: number[];
   publicKey: number[];
@@ -61,7 +117,9 @@ async function buildSignedTransaction({
   currentTick,
   inputType,
   payload,
-}: BuildTxParams): Promise<SignedTxResult> {
+}: BuildTxParams, authorizationContext?: SigningAuthorizationContext): Promise<SignedTxResult> {
+  const intent = transactionSigningIntent({ accountIndex, destination, amount, inputType, payload });
+  const authorization = await resolveAuthorization(accountIndex, intent, authorizationContext);
   return await invoke<SignedTxResult>("sign_transaction", {
     request: {
       accountIndex,
@@ -71,23 +129,40 @@ async function buildSignedTransaction({
       currentTick,
       inputType,
       payload: Array.from(payload),
+      authorization: authorization.authorization,
+      requestPayload: authorization.requestPayload,
+      dappOrigin: authorization.dappOrigin,
+      intent,
     },
   });
 }
 
-export function buildTransferFromSession(params: Omit<BuildTxParams, "inputType" | "payload">) {
-  return buildSignedTransaction({ ...params, inputType: 0, payload: new Uint8Array(0) });
+export function buildTransferFromSession(
+  params: Omit<BuildTxParams, "inputType" | "payload">,
+  authorizationContext?: SigningAuthorizationContext,
+) {
+  return buildSignedTransaction({ ...params, inputType: 0, payload: new Uint8Array(0) }, authorizationContext);
 }
 
-export function buildScTransactionFromSession(params: BuildTxParams) {
-  return buildSignedTransaction(params);
+export function buildScTransactionFromSession(params: BuildTxParams, authorizationContext?: SigningAuthorizationContext) {
+  return buildSignedTransaction(params, authorizationContext);
 }
 
-export async function signMessageFromSession(accountIndex: number, messageBytes: Uint8Array) {
+export async function signMessageFromSession(
+  accountIndex: number,
+  messageBytes: Uint8Array,
+  authorizationContext?: SigningAuthorizationContext,
+) {
+  const intent = messageSigningIntent(accountIndex, messageBytes);
+  const authorization = await resolveAuthorization(accountIndex, intent, authorizationContext);
   const result = await invoke<NativeSignMessageResult>("sign_message", {
     request: {
       accountIndex,
       messageBytes: Array.from(messageBytes),
+      authorization: authorization.authorization,
+      requestPayload: authorization.requestPayload,
+      dappOrigin: authorization.dappOrigin,
+      intent,
     },
   });
   return {
@@ -102,11 +177,21 @@ export async function signMessageFromSession(accountIndex: number, messageBytes:
  * request. This is intentionally a separate native command from user-message
  * signing so a signature cannot be replayed for a different payload.
  */
-export async function signCallbackMessageFromSession(accountIndex: number, messageBytes: Uint8Array) {
+export async function signCallbackMessageFromSession(
+  accountIndex: number,
+  messageBytes: Uint8Array,
+  authorizationContext?: SigningAuthorizationContext,
+) {
+  if (!authorizationContext) throw new Error("request approval authorization is unavailable");
+  const intent = "callback";
   const result = await invoke<NativeSignMessageResult>("sign_callback_message", {
     request: {
       accountIndex,
       messageBytes: Array.from(messageBytes),
+      authorization: authorizationContext.authorization,
+      requestPayload: authorizationContext.requestPayload,
+      dappOrigin: authorizationContext.dappOrigin,
+      intent,
     },
   });
   return {

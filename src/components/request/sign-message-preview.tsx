@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
-import { signMessageFromSession } from "@/lib/secure-session";
+import { messageSigningIntent, signMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
@@ -21,7 +21,8 @@ export interface SignMessageApproveResult {
 
 interface SignMessagePreviewProps {
   request: SignMessageRequest;
-  onApprove: (result: SignMessageApproveResult) => void | Promise<void>;
+  onApprove: (result: SignMessageApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
+  authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
   onReject: () => void;
 }
 
@@ -35,7 +36,7 @@ function previewText(value: string, maxChars = 2000): string {
     : value;
 }
 
-export function SignMessagePreview({ request, onApprove, onReject }: SignMessagePreviewProps) {
+export function SignMessagePreview({ request, onApprove, onReject, authorize }: SignMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
@@ -80,13 +81,14 @@ export function SignMessagePreview({ request, onApprove, onReject }: SignMessage
       const messageBytes = request.data
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);
-      const { signature, publicKey, identity } = await signMessageFromSession(selectedIndex, messageBytes);
+      const authorization = await authorize(selectedIndex, messageSigningIntent(selectedIndex, messageBytes));
+      const { signature, publicKey, identity } = await signMessageFromSession(selectedIndex, messageBytes, authorization);
       await onApprove({
         signature: bytesToBase64(signature),
         publicKey: bytesToBase64(publicKey),
         identity,
         accountIndex: selectedIndex,
-      });
+      }, authorization);
       setProcessing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Signing failed.");

@@ -2,7 +2,10 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, VecDeque};
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, Mutex,
+};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -14,6 +17,7 @@ const NONCE_STORE_KEY: &str = "seen_nonces";
 const MAX_NONCE_AGE_SECS: u64 = 3600;
 const MAX_SIGN_MESSAGE_LEN: usize = 2048;
 const MAX_PENDING_LINKS: usize = 16;
+pub const MAX_SIGNING_AUTHORIZATION_AGE_SECS: u64 = 300;
 // The relay is the only trusted cross-origin callback transport. Its exact
 // origin and callback route remain constrained below, including a bounded nonce.
 const OFFICIAL_RELAY_ORIGIN: &str = "https://relay.glyphq.org";
@@ -28,6 +32,20 @@ pub struct DeepLinkState {
     callback_delivery_payloads: Arc<Mutex<VecDeque<String>>>,
     /// Maps v2 replay key → unix timestamp of first receipt for time-bounded replay protection.
     seen_nonces: Arc<Mutex<HashMap<String, u64>>>,
+    accepted_requests: Arc<Mutex<HashMap<String, u64>>>,
+    signing_authorizations: Arc<Mutex<HashMap<String, SigningAuthorization>>>,
+    authorization_counter: AtomicU64,
+}
+
+#[derive(Clone, Debug)]
+struct SigningAuthorization {
+    payload: Option<String>,
+    dapp_origin: Option<String>,
+    account_index: usize,
+    intent: String,
+    expires_at: u64,
+    user_consumed: bool,
+    callback_consumed: bool,
 }
 
 impl Default for DeepLinkState {
@@ -37,6 +55,9 @@ impl Default for DeepLinkState {
             pending_payments: Arc::new(Mutex::new(VecDeque::new())),
             callback_delivery_payloads: Arc::new(Mutex::new(VecDeque::new())),
             seen_nonces: Arc::new(Mutex::new(HashMap::new())),
+            accepted_requests: Arc::new(Mutex::new(HashMap::new())),
+            signing_authorizations: Arc::new(Mutex::new(HashMap::new())),
+            authorization_counter: AtomicU64::new(0),
         }
     }
 }
@@ -166,6 +187,180 @@ impl DeepLinkState {
         drop(seen);
         self.persist_seen_nonces(app);
         true
+    }
+
+    pub fn mark_request_accepted(&self, payload: &str) -> Result<(), String> {
+        let [_, dapp_origin, _, request_hash] = replay_parts_from_envelope_payload(payload)?;
+        let envelope: Value =
+            serde_json::from_str(payload).map_err(|_| "invalid pending request".to_string())?;
+        let now = now_secs();
+        let expires_at = envelope
+            .get("request")
+            .and_then(|request| request.get("exp"))
+            .and_then(Value::as_u64)
+            .unwrap_or(now.saturating_add(MAX_SIGNING_AUTHORIZATION_AGE_SECS))
+            .min(now.saturating_add(MAX_SIGNING_AUTHORIZATION_AGE_SECS));
+        if expires_at <= now {
+            return Err("request has expired".into());
+        }
+        let mut accepted = self
+            .accepted_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        accepted.retain(|_, expires_at| *expires_at > now);
+        accepted.insert(payload.to_string(), expires_at);
+        if dapp_origin.is_empty() || request_hash.is_empty() {
+            return Err("pending request identity is incomplete".into());
+        }
+        Ok(())
+    }
+
+    pub fn authorize_request(
+        &self,
+        payload: &str,
+        dapp_origin: &str,
+        request_hash: &str,
+        account_index: usize,
+        intent: String,
+    ) -> Result<String, String> {
+        let now = now_secs();
+        let [_, expected_origin, _, expected_hash] = replay_parts_from_envelope_payload(payload)?;
+        if expected_origin != dapp_origin || expected_hash != request_hash {
+            return Err("signing authorization does not match the reviewed request".into());
+        }
+        let expires_at = self
+            .accepted_requests
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(payload)
+            .ok_or_else(|| "request is not pending native approval".to_string())?;
+        if expires_at <= now {
+            return Err("request approval has expired".into());
+        }
+
+        let token = self.new_authorization_token(payload, dapp_origin, account_index);
+        let mut authorizations = self
+            .signing_authorizations
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        authorizations.retain(|_, authorization| authorization.expires_at > now);
+        authorizations.insert(
+            token.clone(),
+            SigningAuthorization {
+                payload: Some(payload.to_string()),
+                dapp_origin: Some(dapp_origin.to_string()),
+                account_index,
+                intent,
+                expires_at,
+                user_consumed: false,
+                callback_consumed: false,
+            },
+        );
+        Ok(token)
+    }
+
+    pub fn authorize_local(&self, account_index: usize, intent: String) -> String {
+        let token = self.new_authorization_token(&intent, "local", account_index);
+        let expires_at = now_secs().saturating_add(MAX_SIGNING_AUTHORIZATION_AGE_SECS);
+        self.signing_authorizations
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(
+                token.clone(),
+                SigningAuthorization {
+                    payload: None,
+                    dapp_origin: None,
+                    account_index,
+                    intent,
+                    expires_at,
+                    user_consumed: false,
+                    callback_consumed: false,
+                },
+            );
+        token
+    }
+
+    fn new_authorization_token(&self, payload: &str, origin: &str, account_index: usize) -> String {
+        let counter = self.authorization_counter.fetch_add(1, Ordering::Relaxed);
+        format!(
+            "auth_{}",
+            sha256_base64url(&format!(
+                "{payload}|{origin}|{account_index}|{}|{counter}",
+                now_secs()
+            ))
+        )
+    }
+
+    pub fn consume_user_authorization(
+        &self,
+        token: &str,
+        payload: Option<&str>,
+        dapp_origin: Option<&str>,
+        account_index: usize,
+        intent: &str,
+    ) -> Result<(), String> {
+        self.consume_authorization(token, payload, dapp_origin, account_index, intent, false)
+    }
+
+    pub fn consume_callback_authorization(
+        &self,
+        token: &str,
+        payload: Option<&str>,
+        dapp_origin: Option<&str>,
+        account_index: usize,
+        intent: &str,
+    ) -> Result<(), String> {
+        self.consume_authorization(token, payload, dapp_origin, account_index, intent, true)
+    }
+
+    pub fn clear_signing_authorizations(&self) {
+        self.signing_authorizations
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clear();
+    }
+
+    fn consume_authorization(
+        &self,
+        token: &str,
+        payload: Option<&str>,
+        dapp_origin: Option<&str>,
+        account_index: usize,
+        intent: &str,
+        callback: bool,
+    ) -> Result<(), String> {
+        let now = now_secs();
+        let mut authorizations = self
+            .signing_authorizations
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let authorization = authorizations
+            .get_mut(token)
+            .ok_or_else(|| "signing authorization is invalid or expired".to_string())?;
+        if authorization.expires_at <= now {
+            authorizations.remove(token);
+            return Err("signing authorization has expired".into());
+        }
+        if authorization.account_index != account_index
+            || authorization.payload.as_deref() != payload
+            || authorization.dapp_origin.as_deref() != dapp_origin
+            || (!callback && authorization.intent != intent)
+        {
+            return Err("signing authorization does not match the reviewed operation".into());
+        }
+        let consumed = if callback {
+            &mut authorization.callback_consumed
+        } else {
+            &mut authorization.user_consumed
+        };
+        if *consumed {
+            return Err("signing authorization has already been consumed".into());
+        }
+        *consumed = true;
+        if authorization.user_consumed && authorization.callback_consumed {
+            authorizations.remove(token);
+        }
+        Ok(())
     }
 }
 
@@ -712,7 +907,7 @@ mod tests {
     use super::{
         callback_from_envelope_payload, jcs, now_secs, replay_key_from_envelope_payload,
         sha256_base64url, validate, validate_dapp_origin, validate_delivery_url, validate_pay,
-        DeepLinkState, MAX_PENDING_LINKS, REQUEST_PROTOCOL_V2,
+        DeepLinkState, MAX_PENDING_LINKS, MAX_SIGNING_AUTHORIZATION_AGE_SECS, REQUEST_PROTOCOL_V2,
     };
 
     #[test]
@@ -842,6 +1037,119 @@ mod tests {
             replay_key_from_envelope_payload(&payload).unwrap(),
             "v2|qubic:testnet|https://demo.app|network-switch-nonce|sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_"
         );
+    }
+
+    fn authorization_payload(exp: u64) -> String {
+        serde_json::json!({
+            "request": {
+                "dapp": { "origin": "https://demo.app" },
+                "nonce": "authorization-test-nonce",
+                "exp": exp,
+            },
+            "network": { "id": "qubic:mainnet" },
+            "request_hash": "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+        })
+        .to_string()
+    }
+
+    #[test]
+    fn signing_authorization_is_bound_and_each_capability_is_consumed_once() {
+        let state = DeepLinkState::default();
+        let payload = authorization_payload(now_secs() + 60);
+        state.mark_request_accepted(&payload).unwrap();
+
+        let token = state
+            .authorize_request(
+                &payload,
+                "https://demo.app",
+                "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+                2,
+                "message-intent".into(),
+            )
+            .unwrap();
+        assert!(state
+            .authorize_request(
+                &payload,
+                "https://demo.app",
+                "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+                2,
+                "message-intent".into(),
+            )
+            .is_err());
+        assert!(state
+            .consume_user_authorization(
+                &token,
+                Some(&payload),
+                Some("https://demo.app"),
+                2,
+                "message-intent",
+            )
+            .is_ok());
+        assert!(state
+            .consume_user_authorization(
+                &token,
+                Some(&payload),
+                Some("https://demo.app"),
+                2,
+                "message-intent",
+            )
+            .is_err());
+        assert!(state
+            .consume_callback_authorization(
+                &token,
+                Some(&payload),
+                Some("https://demo.app"),
+                2,
+                "callback",
+            )
+            .is_ok());
+        assert!(state
+            .consume_callback_authorization(
+                &token,
+                Some(&payload),
+                Some("https://demo.app"),
+                2,
+                "callback",
+            )
+            .is_err());
+    }
+
+    #[test]
+    fn signing_authorization_rejects_wrong_origin_account_intent_and_expiry() {
+        let state = DeepLinkState::default();
+        let payload = authorization_payload(now_secs() + 60);
+        state.mark_request_accepted(&payload).unwrap();
+        assert!(state
+            .authorize_request(
+                &payload,
+                "https://evil.example",
+                "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+                0,
+                "intent".into(),
+            )
+            .is_err());
+        let token = state
+            .authorize_request(
+                &payload,
+                "https://demo.app",
+                "sha256:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO_",
+                0,
+                "intent".into(),
+            )
+            .unwrap();
+        assert!(state
+            .consume_user_authorization(
+                &token,
+                Some(&payload),
+                Some("https://demo.app"),
+                1,
+                "intent",
+            )
+            .is_err());
+
+        let expired = authorization_payload(now_secs().saturating_sub(1));
+        assert!(state.mark_request_accepted(&expired).is_err());
+        assert!(MAX_SIGNING_AUTHORIZATION_AGE_SECS > 0);
     }
 
     #[test]
