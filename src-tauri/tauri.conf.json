@@ -29,7 +29,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost https:;"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost https://wallet.glyphq.org https://rpc.qubic.org https://relay.glyphq.org https://api.coinbase.com https://github.com;",
+      "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420 https://wallet.glyphq.org https://rpc.qubic.org https://relay.glyphq.org https://api.coinbase.com https://github.com;"
     }
   },
   "bundle": {

@@ -115,8 +115,20 @@ describe("persisted boundary helpers", () => {
     expect(sanitizePollingInterval("fast", 10_000)).toBe(10_000);
   });
 
-  test("sanitizes custom price feed URLs to global HTTPS endpoints", () => {
-    expect(sanitizeCustomPriceFeedUrl(" https://price.example/feed ", "")).toBe("https://price.example/feed");
+  test("sanitizes custom price feed URLs to trusted production endpoints", () => {
+    expect(
+      sanitizeCustomPriceFeedUrl(
+        " https://api.coinbase.com/v2/exchange-rates?currency=EUR ",
+        ""
+      )
+    ).toBe("https://api.coinbase.com/v2/exchange-rates?currency=EUR");
+    expect(sanitizeCustomPriceFeedUrl("https://price.example/feed", "")).toBe("");
+    expect(
+      sanitizeCustomPriceFeedUrl(
+        "https://price.example/feed",
+        "https://api.coinbase.com/v2/exchange-rates?currency=BTC"
+      )
+    ).toBe("https://api.coinbase.com/v2/exchange-rates?currency=BTC");
     for (const value of [
       "http://price.example/feed",
       "https://localhost/feed",
@@ -124,8 +136,19 @@ describe("persisted boundary helpers", () => {
       "https://user:pass@price.example/feed",
       "https://price.example/" + "x".repeat(2049),
     ]) {
-      expect(sanitizeCustomPriceFeedUrl(value, "https://safe.example/feed")).toBe("https://safe.example/feed");
+      expect(
+        sanitizeCustomPriceFeedUrl(
+          value,
+          "https://api.coinbase.com/v2/exchange-rates?currency=USD"
+        )
+      ).toBe("https://api.coinbase.com/v2/exchange-rates?currency=USD");
     }
+  });
+
+  test("retains arbitrary public HTTPS feeds only for development", () => {
+    expect(
+      sanitizeCustomPriceFeedUrl(" https://price.example/feed ", "", true)
+    ).toBe("https://price.example/feed");
   });
 
   test("merges persisted state with default settings and sanitized boundary fields", () => {
@@ -150,7 +173,7 @@ describe("persisted boundary helpers", () => {
           ],
           highValueSendThreshold: "1,234 qu",
           priceAlertAbove: "$12.34",
-          customPriceFeedUrl: "http://127.0.0.1:8080/latest-stats",
+          customPriceFeedUrl: "https://legacy-price.example/latest-stats",
           pollingIntervalActiveMs: 1,
           sponsorAttribution: "invalid",
           allowBlurLockBypass: "yes",

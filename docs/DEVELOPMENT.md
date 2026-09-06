@@ -102,6 +102,28 @@ Vite listens on `http://localhost:1420` with a strict port. If that port is occu
 
 The sidecar preparation script writes a target-suffixed binary under `src-tauri/binaries/`. That directory is generated and ignored by Git.
 
+### Content Security Policy and network endpoints
+
+The production Tauri window uses an explicit `connect-src` allowlist in
+`src-tauri/tauri.conf.json`. The entries are limited to the wallet payment-link
+origin (`wallet.glyphq.org`), Qubic RPC (`rpc.qubic.org`), Glyph Relay
+callbacks (`relay.glyphq.org`), Coinbase exchange rates (`api.coinbase.com`),
+and the configured GitHub updater endpoint (`github.com`), plus Tauri IPC.
+
+Development uses the separate `devCsp` policy. It adds only the Vite HTTP and
+HMR WebSocket origins at `localhost:1420`; those development origins are not
+present in the production policy. If a new renderer network request is added,
+update both policies deliberately and extend `scripts/tauri-csp.test.ts`.
+
+The persisted custom price-feed setting is now restricted to the explicitly
+trusted Coinbase origin in production. Legacy values on other public HTTPS
+origins are discarded during state migration, which restores the default Qubic
+stats provider. Development builds retain arbitrary public HTTPS feeds for
+local testing. A static CSP cannot safely grant arbitrary user-provided hosts
+at runtime, so a newly supported production feed origin must be explicitly
+allowlisted or served through an approved proxy rather than broadening
+`connect-src` to `https:`.
+
 ### Renderer-only development
 
 ```sh

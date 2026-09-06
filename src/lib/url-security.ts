@@ -1,3 +1,5 @@
+const TRUSTED_PRICE_FEED_ORIGINS = new Set(["https://api.coinbase.com"]);
+
 export function normalizedGlobalHttpsOrigin(value: string): string | null {
   try {
     const url = new URL(value);
@@ -6,6 +8,11 @@ export function normalizedGlobalHttpsOrigin(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function isTrustedPriceFeedUrl(value: string): boolean {
+  const origin = normalizedGlobalHttpsOrigin(value);
+  return origin !== null && TRUSTED_PRICE_FEED_ORIGINS.has(origin);
 }
 
 export function isGlobalHttpsUrl(value: string): boolean {

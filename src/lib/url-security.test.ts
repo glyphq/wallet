@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isGlobalHttpsUrl } from "@/lib/url-security";
+import { isGlobalHttpsUrl, isTrustedPriceFeedUrl } from "@/lib/url-security";
 
 describe("isGlobalHttpsUrl", () => {
   test("accepts public HTTPS hosts", () => {
@@ -26,5 +26,15 @@ describe("isGlobalHttpsUrl", () => {
     ]) {
       expect(isGlobalHttpsUrl(url)).toBe(false);
     }
+  });
+});
+
+describe("isTrustedPriceFeedUrl", () => {
+  test("accepts the explicitly trusted Coinbase origin", () => {
+    expect(isTrustedPriceFeedUrl("https://api.coinbase.com/v2/exchange-rates?currency=EUR")).toBe(true);
+  });
+
+  test("rejects other public HTTPS origins", () => {
+    expect(isTrustedPriceFeedUrl("https://price.example/feed")).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
-import { isGlobalHttpsUrl } from "@/lib/url-security";
+import { isGlobalHttpsUrl, isTrustedPriceFeedUrl } from "@/lib/url-security";
 
 interface LatestStats {
   price: number;
@@ -29,7 +29,11 @@ export function useLatestStats() {
   const liveApiUrl = usePersistedStore((s) => s.settings.network.liveApiUrl);
   const customPriceFeedUrl = usePersistedStore((s) => s.settings.customPriceFeedUrl);
   const pollingIntervalMs = usePollingIntervalMs();
-  const url = customPriceFeedUrl || buildStatsUrl(liveApiUrl);
+  const customFeedAllowed =
+    import.meta.env.DEV || isTrustedPriceFeedUrl(customPriceFeedUrl);
+  const url = customPriceFeedUrl && customFeedAllowed
+    ? customPriceFeedUrl
+    : buildStatsUrl(liveApiUrl);
   return useQuery({
     queryKey: ["latest-stats", url],
     queryFn: () => fetchLatestStats(url),
