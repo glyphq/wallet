@@ -65,13 +65,15 @@ describe("callback envelope", () => {
 
   test("signs canonical payload with the native session account signer", async () => {
     let signedLength = 0;
+    let signedResult: GlyphCallbackResponse | undefined;
     const signed = await buildSignedCallbackEnvelope({
       envelope: relayEnvelope,
       result,
       identity: "IDENTITY",
       accountIndex: 2,
-      signCallbackMessage: async (accountIndex, messageBytes) => {
+      signCallbackMessage: async (accountIndex, messageBytes, result) => {
         signedLength = messageBytes.length;
+        signedResult = result;
         return { signature: new Uint8Array([accountIndex, 7]), publicKey: new Uint8Array([1, 2, 3, 4]), identity: "IDENTITY" };
       },
       nowEpochSeconds: () => 1_899_999_000,
@@ -86,6 +88,7 @@ describe("callback envelope", () => {
     expect(signedLength).toBeGreaterThan(128);
     expect(signed.proof.signature).toBe("Agc=");
     expect(signed.result).toEqual(result);
+    expect(signedResult).toEqual(result);
     expect(signed.payload.issued_at).toBe(1_899_999_000);
   });
 

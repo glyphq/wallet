@@ -67,6 +67,18 @@ pub struct SignTransactionRequest {
     intent: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalSignTransactionRequest {
+    account_index: usize,
+    destination: String,
+    amount: String,
+    target_tick: u32,
+    current_tick: Option<u32>,
+    input_type: u16,
+    payload: Vec<u8>,
+}
+
 #[derive(Serialize)]
 pub struct SignedTxResult {
     encoded: String,
@@ -82,6 +94,13 @@ pub struct SignMessageRequest {
     request_payload: Option<String>,
     dapp_origin: Option<String>,
     intent: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalSignMessageRequest {
+    account_index: usize,
+    message_bytes: Vec<u8>,
 }
 
 fn request_value(payload: &str) -> Result<Value, String> {
@@ -116,6 +135,15 @@ fn ensure_transaction_matches_request(
             }
         }
         "sc_call" => {
+            let contract_index = value
+                .get("contract_index")
+                .and_then(Value::as_u64)
+                .ok_or_else(|| "reviewed contract call has no contract index".to_string())?;
+            let expected_destination =
+                crate::qubic_native::contract_index_to_identity(contract_index as u32)?;
+            if request.destination != expected_destination {
+                return Err("contract destination does not match the reviewed contract".into());
+            }
             if value.get("input_type").and_then(Value::as_u64) != Some(request.input_type as u64) {
                 return Err("contract input type does not match the reviewed request".into());
             }
@@ -253,8 +281,8 @@ impl NativeSessionState {
 #[cfg(test)]
 mod tests {
     use super::{
-        remaining_signing_quota, validate_session_seeds, Duration, Instant, MAX_SESSION_SEEDS,
-        MIN_SIGN_INTERVAL,
+        ensure_transaction_matches_request, remaining_signing_quota, validate_session_seeds,
+        Duration, Instant, SignTransactionRequest, MAX_SESSION_SEEDS, MIN_SIGN_INTERVAL,
     };
 
     #[test]
@@ -280,6 +308,39 @@ mod tests {
         assert!(validate_session_seeds(&["a".repeat(54)]).is_err());
         assert!(validate_session_seeds(&vec!["a".repeat(55); MAX_SESSION_SEEDS + 1]).is_err());
         assert!(validate_session_seeds(&["a".repeat(55)]).is_ok());
+    }
+
+    #[test]
+    fn smart_contract_destination_is_bound_to_the_reviewed_contract_index() {
+        let destination = crate::qubic_native::contract_index_to_identity(1).unwrap();
+        let payload = serde_json::json!({
+            "request": {
+                "type": "sc_call",
+                "amount": 0,
+                "contract_index": 1,
+                "input_type": 7,
+                "payload": "",
+            }
+        })
+        .to_string();
+        let request = SignTransactionRequest {
+            account_index: 0,
+            destination: destination.clone(),
+            amount: "0".into(),
+            target_tick: 1,
+            current_tick: None,
+            input_type: 7,
+            payload: vec![],
+            authorization: "auth".into(),
+            request_payload: Some(payload.clone()),
+            dapp_origin: Some("https://demo.app".into()),
+            intent: "intent".into(),
+        };
+        assert!(ensure_transaction_matches_request(&payload, &request, 0).is_ok());
+
+        let mut altered = request;
+        altered.destination = crate::qubic_native::contract_index_to_identity(2).unwrap();
+        assert!(ensure_transaction_matches_request(&payload, &altered, 0).is_err());
     }
 }
 
@@ -318,17 +379,59 @@ pub async fn sign_transaction(
     if amount < 0 {
         return Err("amount must not be negative".to_string());
     }
-    let request_payload = request.request_payload.as_deref();
-    if let Some(payload) = request_payload {
-        ensure_transaction_matches_request(payload, &request, amount)?;
+    let request_payload = request
+        .request_payload
+        .as_deref()
+        .ok_or_else(|| "dApp transaction authorization payload is required".to_string())?;
+    ensure_transaction_matches_request(request_payload, &request, amount)?;
+    if request.dapp_origin.is_none() {
+        return Err("dApp transaction authorization origin is required".into());
     }
     authorization_state.consume_user_authorization(
         &request.authorization,
-        request_payload,
+        Some(request_payload),
         request.dapp_origin.as_deref(),
         request.account_index,
         &request.intent,
     )?;
+    state
+        .with_seed_at(request.account_index, |seed| {
+            let (encoded, hash) = qubic_native::sign_transaction(
+                seed,
+                &request.destination,
+                amount,
+                request.target_tick,
+                request.current_tick,
+                request.input_type,
+                &request.payload,
+            )?;
+            let identity = qubic_native::derive_identity_from_seed(seed)?;
+            Ok((SignedTxResult { encoded, hash }, identity))
+        })
+        .await
+        .and_then(|(result, identity)| {
+            authorization_state.record_transaction_result(
+                &request.authorization,
+                result.hash.clone(),
+                request.target_tick,
+                identity,
+            )?;
+            Ok(result)
+        })
+}
+
+#[command]
+pub async fn sign_local_transaction(
+    state: State<'_, NativeSessionState>,
+    request: LocalSignTransactionRequest,
+) -> Result<SignedTxResult, String> {
+    let amount = request
+        .amount
+        .parse::<i64>()
+        .map_err(|_| "amount must fit signed 64-bit integer".to_string())?;
+    if amount < 0 {
+        return Err("amount must not be negative".to_string());
+    }
     state
         .with_seed_at(request.account_index, |seed| {
             let (encoded, hash) = qubic_native::sign_transaction(
@@ -354,13 +457,17 @@ pub async fn sign_message(
     if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
         return Err("message exceeds the native signing limit".to_string());
     }
-    let request_payload = request.request_payload.as_deref();
-    if let Some(payload) = request_payload {
-        ensure_message_matches_request(payload, &request)?;
+    let request_payload = request
+        .request_payload
+        .as_deref()
+        .ok_or_else(|| "dApp message authorization payload is required".to_string())?;
+    ensure_message_matches_request(request_payload, &request)?;
+    if request.dapp_origin.is_none() {
+        return Err("dApp message authorization origin is required".into());
     }
     authorization_state.consume_user_authorization(
         &request.authorization,
-        request_payload,
+        Some(request_payload),
         request.dapp_origin.as_deref(),
         request.account_index,
         &request.intent,
@@ -376,6 +483,62 @@ pub async fn sign_message(
             })
         })
         .await
+        .and_then(|result| {
+            authorization_state.record_message_result(
+                &request.authorization,
+                result.signature.clone(),
+                result.public_key.clone(),
+                result.identity.clone(),
+            )?;
+            Ok(result)
+        })
+}
+
+#[command]
+pub async fn sign_local_message(
+    state: State<'_, NativeSessionState>,
+    request: LocalSignMessageRequest,
+) -> Result<SignMessageResult, String> {
+    if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
+        return Err("message exceeds the native signing limit".to_string());
+    }
+    state
+        .with_seed_at(request.account_index, |seed| {
+            let (signature, public_key, identity) =
+                qubic_native::sign_message(seed, &request.message_bytes)?;
+            Ok(SignMessageResult {
+                signature,
+                public_key,
+                identity,
+            })
+        })
+        .await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CallbackAuthorizationRequest {
+    authorization: String,
+    request_payload: String,
+    dapp_origin: String,
+    account_index: usize,
+    message_bytes: Vec<u8>,
+    callback_result: Value,
+}
+
+#[command]
+pub fn authorize_callback_message(
+    authorization_state: State<'_, crate::deep_link::DeepLinkState>,
+    request: CallbackAuthorizationRequest,
+) -> Result<String, String> {
+    authorization_state.authorize_callback_message(
+        &request.authorization,
+        &request.request_payload,
+        &request.dapp_origin,
+        request.account_index,
+        &request.message_bytes,
+        &request.callback_result,
+    )
 }
 
 #[command]
@@ -387,17 +550,22 @@ pub async fn sign_callback_message(
     if request.message_bytes.len() > MAX_SIGN_MESSAGE_BYTES {
         return Err("callback payload exceeds the native signing limit".to_string());
     }
-    authorization_state.consume_callback_authorization(
+    let expected_callback_identity = authorization_state.consume_callback_authorization(
         &request.authorization,
         request.request_payload.as_deref(),
         request.dapp_origin.as_deref(),
         request.account_index,
-        &request.intent,
+        &request.message_bytes,
     )?;
     state
         .with_seed_at_waiting_for_quota(request.account_index, |seed| {
             let (signature, public_key, identity) =
                 qubic_native::sign_message(seed, &request.message_bytes)?;
+            if let Some(expected_identity) = expected_callback_identity {
+                if expected_identity != identity {
+                    return Err("callback signer does not match the reviewed account".into());
+                }
+            }
             Ok(SignMessageResult {
                 signature,
                 public_key,

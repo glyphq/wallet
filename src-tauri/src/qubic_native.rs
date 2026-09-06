@@ -573,6 +573,15 @@ pub fn public_key_to_identity(public_key: &[u8]) -> Result<String, String> {
 pub fn derive_identity_from_seed(seed: &str) -> Result<String, String> {
     public_key_to_identity(&public_key_from_seed(seed)?)
 }
+
+pub fn contract_index_to_identity(contract_index: u32) -> Result<String, String> {
+    if contract_index == 0 {
+        return Err("contract index must be positive".into());
+    }
+    let mut public_key = [0u8; 32];
+    public_key[..4].copy_from_slice(&contract_index.to_le_bytes());
+    public_key_to_identity(&public_key)
+}
 pub fn identity_to_public_key(identity: &str) -> Result<[u8; 32], String> {
     if identity.len() != IDENTITY_LENGTH || !identity.bytes().all(|b| b.is_ascii_uppercase()) {
         return Err(format!(
