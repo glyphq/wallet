@@ -136,8 +136,13 @@ export default function SendManyScreen() {
     if (!wallet) { setFormError("Account locked"); return false; }
     const updated = recipients.map((r) => {
       const identityError = isValidIdentity(r.identity.trim().toUpperCase()) ? "" : "Invalid identity";
-      const amount = Number(r.amount.trim());
-      const amountError = r.amount.trim() && Number.isInteger(amount) && amount > 0 ? "" : "Invalid amount";
+      const amountText = r.amount.trim();
+      let amountError = "";
+      try {
+        if (!amountText || BigInt(amountText) <= 0n) amountError = "Invalid amount";
+      } catch {
+        amountError = "Invalid amount";
+      }
       if (identityError || amountError) ok = false;
       return { ...r, identityError, amountError };
     });
@@ -182,14 +187,15 @@ export default function SendManyScreen() {
     input.click();
   }
 
-  const totalAmount = recipients.reduce((sum, r) => {
-    const n = Number(r.amount.trim());
-    return sum + (isNaN(n) ? 0 : n);
-  }, 0);
   const totalAmountBigInt = recipients.reduce((sum, r) => {
-    const n = Number(r.amount.trim());
-    return sum + (Number.isInteger(n) && n > 0 ? BigInt(n) : 0n);
+    try {
+      const amount = BigInt(r.amount.trim());
+      return sum + (amount > 0n ? amount : 0n);
+    } catch {
+      return sum;
+    }
   }, 0n);
+  const totalAmount = totalAmountBigInt;
   const needsHighValueConfirmation = exceedsHighValueThreshold(totalAmountBigInt, settings.highValueSendThreshold);
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
 
@@ -370,9 +376,9 @@ export default function SendManyScreen() {
             <span style={{ ...labelStyle, flex: 1 }}>Total</span>
             <div style={{ textAlign: "right" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>
-                {totalAmount.toLocaleString()} QU
+                {formatQu(totalAmount)} QU
               </span>
-              {price && totalAmount > 0 && (
+              {price && totalAmount > 0n && (
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
                   {price ? formatPreferredCurrencyFromQu(totalAmount, { usdPrice: price, ...quote }).text : null}
                 </div>
@@ -382,7 +388,7 @@ export default function SendManyScreen() {
           {fee !== null && (
             <>
               <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
-              <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={`${Number(fee).toLocaleString()} QU`} mono={false} />
+              <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={`${formatQu(fee)} QU`} mono={false} />
             </>
           )}
           {remaining !== null && (
@@ -479,7 +485,7 @@ export default function SendManyScreen() {
   };
 
   if (step === "review") {
-    const totalWithFee = fee !== null ? totalAmount + Number(fee) : totalAmount;
+    const totalWithFee = fee !== null ? totalAmount + fee : totalAmount;
 
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
@@ -488,7 +494,7 @@ export default function SendManyScreen() {
         {/* Amount */}
         <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {totalAmount.toLocaleString()} QU
+            {formatQu(totalAmount)} QU
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
             {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
@@ -514,7 +520,7 @@ export default function SendManyScreen() {
                     )}
                   </span>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)", flexShrink: 0 }}>
-                    {Number(r.amount).toLocaleString()} QU
+                    {formatQu(r.amount)} QU
                   </span>
                 </div>
               </div>
@@ -524,11 +530,11 @@ export default function SendManyScreen() {
 
         <div style={linearGroupStyle} aria-labelledby="send-many-review-totals">
           <span id="send-many-review-totals" style={sectionLabelStyle}>Transaction</span>
-          <DetailRow icon={<ArrowRightUp size={16} />} label="Transfers" value={`${totalAmount.toLocaleString()} QU`} />
+          <DetailRow icon={<ArrowRightUp size={16} />} label="Transfers" value={`${formatQu(totalAmount)} QU`} />
           <Divider />
-          <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={fee !== null ? `${Number(fee).toLocaleString()} QU` : "Loading…"} mono={false} />
+          <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={fee !== null ? `${formatQu(fee)} QU` : "Loading…"} mono={false} />
           <Divider />
-          <DetailRow icon={<Wallet size={16} />} label="Total" value={`${totalWithFee.toLocaleString()} QU`} mono={false} valueColor="var(--color-text-display)" />
+          <DetailRow icon={<Wallet size={16} />} label="Total" value={`${formatQu(totalWithFee)} QU`} mono={false} valueColor="var(--color-text-display)" />
         </div>
 
         {/* Pending warning */}
@@ -586,7 +592,7 @@ export default function SendManyScreen() {
           <div>
             <h2 style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting transaction</h2>
             <p style={{ margin: "var(--space-1) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-              {totalAmount.toLocaleString()} QU to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
+              {formatQu(totalAmount)} QU to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -609,7 +615,7 @@ export default function SendManyScreen() {
         {/* Amount */}
         <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {totalAmount.toLocaleString()} QU
+            {formatQu(totalAmount)} QU
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
             <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />

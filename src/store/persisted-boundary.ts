@@ -20,6 +20,7 @@ export const MAX_AUDIT_EVENTS = 500;
 export const MAX_REQUEST_HISTORY = 200;
 export const MAX_PRICE_SNAPSHOTS = 2_000;
 export const MAX_RUNTIME_ISSUES = 100;
+export const MAX_ACCOUNTS_PER_VAULT = 16;
 
 export function clampTxMemos(
   txMemos: Record<string, string>
@@ -107,7 +108,10 @@ export function mergePersistedState(
   persistedState: unknown,
   currentState: PersistedState
 ): PersistedState {
-  const ps = persistedState as Partial<PersistedState>;
+  const ps: Partial<PersistedState> =
+    persistedState && typeof persistedState === "object" && !Array.isArray(persistedState)
+      ? persistedState as Partial<PersistedState>
+      : {};
   const vaults = Array.isArray(ps.vaults)
     ? ps.vaults
         .filter(
@@ -124,6 +128,7 @@ export function mergePersistedState(
                     (account): account is AccountMeta =>
                       !!account && typeof account === "object"
                   )
+                  .slice(0, MAX_ACCOUNTS_PER_VAULT)
                   .map((account) => ({
                     ...account,
                     note: typeof account.note === "string" ? account.note : "",
@@ -142,10 +147,32 @@ export function mergePersistedState(
         )
     : currentState.vaults;
   const contacts = Array.isArray(ps.contacts)
-    ? ps.contacts
+    ? ps.contacts.filter(
+        (contact): contact is PersistedState["contacts"][number] =>
+          !!contact &&
+          typeof contact === "object" &&
+          typeof contact.id === "string" &&
+          typeof contact.name === "string" &&
+          typeof contact.identity === "string" &&
+          typeof contact.note === "string" &&
+          typeof contact.addedAt === "number" &&
+          typeof contact.lastUsedAt === "number"
+      )
     : currentState.contacts;
   const pendingTxs = Array.isArray(ps.pendingTxs)
     ? ps.pendingTxs
+        .filter(
+          (tx): tx is PersistedState["pendingTxs"][number] =>
+            !!tx &&
+            typeof tx === "object" &&
+            typeof tx.hash === "string" &&
+            typeof tx.source === "string" &&
+            typeof tx.destination === "string" &&
+            typeof tx.amount === "string" &&
+            typeof tx.targetTick === "number" &&
+            typeof tx.broadcastAt === "number"
+        )
+        .slice(0, MAX_PENDING_TXS)
     : currentState.pendingTxs;
   const txMemos =
     ps.txMemos && typeof ps.txMemos === "object" && !Array.isArray(ps.txMemos)
@@ -156,9 +183,22 @@ export function mergePersistedState(
       ? (ps.txTags as Record<string, string[]>)
       : currentState.txTags;
   const scheduledTransfers = Array.isArray(ps.scheduledTransfers)
-    ? (ps.scheduledTransfers as ScheduledTransfer[]).filter(
-        (t) => t && typeof t.id === "string"
-      )
+    ? (ps.scheduledTransfers as ScheduledTransfer[])
+        .filter(
+          (t) =>
+            !!t &&
+            typeof t === "object" &&
+            typeof t.id === "string" &&
+            typeof t.label === "string" &&
+            typeof t.sourceIdentity === "string" &&
+            typeof t.destination === "string" &&
+            typeof t.amount === "string" &&
+            typeof t.intervalDays === "number" &&
+            typeof t.nextRunAt === "number" &&
+            typeof t.createdAt === "number" &&
+            typeof t.enabled === "boolean"
+        )
+        .slice(0, MAX_SCHEDULED_TRANSFERS)
     : currentState.scheduledTransfers;
   const notificationEvents = Array.isArray(ps.notificationEvents)
     ? clampNotificationEvents(

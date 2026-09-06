@@ -34,7 +34,7 @@ export function useNotificationReconcile() {
       const lastNotificationScanAt = usePersistedStore.getState().lastNotificationScanAt;
 
       if (!cancelled && lastNotificationScanAt > 0) {
-        await Promise.all(
+        const results = await Promise.all(
           identities.map(async (identity) => {
             const result = await getRpcClient().archive.getTransactionsForIdentity({
               identity,
@@ -42,7 +42,7 @@ export function useNotificationReconcile() {
               ranges: { timestamp: { gte: String(Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS)) } },
               pagination: { size: PAGE_SIZE, offset: 0 },
             });
-            if (!result.ok) return;
+            if (!result.ok) return false;
 
             for (const tx of result.value.transactions ?? []) {
               if (!tx.hash || tx.moneyFlew === false) continue;
@@ -56,16 +56,18 @@ export function useNotificationReconcile() {
                 createdAt: tx.timestamp ? Number(tx.timestamp) : startedAt,
               }), { desktop: false });
             }
+            return true;
           }),
         );
+        if (results.some((succeeded) => !succeeded)) return;
       }
 
       if (!cancelled) setLastNotificationScanAt(startedAt);
     }
 
-    reconcile().catch(() => {
-      if (!cancelled) setLastNotificationScanAt(Date.now());
-    });
+    // Leave the watermark unchanged on an RPC or notification failure. The
+    // event dedupe key makes a retry safe, whereas advancing it loses history.
+    reconcile().catch(() => {});
 
     return () => {
       cancelled = true;
