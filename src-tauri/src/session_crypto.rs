@@ -16,7 +16,7 @@ const MIN_SIGN_INTERVAL: Duration = Duration::from_millis(750);
 const MAX_SESSION_SEEDS: usize = 16;
 const QUBIC_SEED_LENGTH: usize = 55;
 
-fn validate_session_seeds(seeds: &[String]) -> Result<(), String> {
+pub(crate) fn validate_session_seeds(seeds: &[String]) -> Result<(), String> {
     if seeds.is_empty() || seeds.len() > MAX_SESSION_SEEDS {
         return Err(format!(
             "session must contain between 1 and {MAX_SESSION_SEEDS} Qubic seeds"
@@ -51,7 +51,7 @@ impl Default for NativeSessionState {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignTransactionRequest {
     account_index: usize,
@@ -132,6 +132,9 @@ fn ensure_transaction_matches_request(
         "transfer" => {
             if value.get("to").and_then(Value::as_str) != Some(request.destination.as_str()) {
                 return Err("destination does not match the reviewed request".into());
+            }
+            if request.input_type != 0 || !request.payload.is_empty() {
+                return Err("transfer fields do not match the reviewed request".into());
             }
         }
         "sc_call" => {
@@ -341,6 +344,40 @@ mod tests {
         let mut altered = request;
         altered.destination = crate::qubic_native::contract_index_to_identity(2).unwrap();
         assert!(ensure_transaction_matches_request(&payload, &altered, 0).is_err());
+    }
+
+    #[test]
+    fn transfers_cannot_include_unreviewed_input_or_payload() {
+        let payload = serde_json::json!({
+            "request": {
+                "type": "transfer",
+                "amount": 1,
+                "to": "DESTINATION",
+            }
+        })
+        .to_string();
+        let request = SignTransactionRequest {
+            account_index: 0,
+            destination: "DESTINATION".into(),
+            amount: "1".into(),
+            target_tick: 1,
+            current_tick: None,
+            input_type: 0,
+            payload: vec![],
+            authorization: "auth".into(),
+            request_payload: Some(payload.clone()),
+            dapp_origin: Some("https://demo.app".into()),
+            intent: "intent".into(),
+        };
+        assert!(ensure_transaction_matches_request(&payload, &request, 1).is_ok());
+
+        let mut input_type = request.clone();
+        input_type.input_type = 1;
+        assert!(ensure_transaction_matches_request(&payload, &input_type, 1).is_err());
+
+        let mut payload_bytes = request;
+        payload_bytes.payload = vec![1];
+        assert!(ensure_transaction_matches_request(&payload, &payload_bytes, 1).is_err());
     }
 }
 

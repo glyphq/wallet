@@ -9,8 +9,7 @@ import { Identicon } from "@/components/identicon";
 import { usePersistedStore, type VaultMeta, type VaultColor, type AccountMeta, type WalletIconId } from "@/store/persisted";
 import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { useSessionStore } from "@/store/session";
-import { unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault, type VaultData } from "@/lib/vault";
+import { unlockVaultSession, verifyVaultPassword, type VaultData } from "@/lib/vault";
 import { newId } from "@/lib/crypto";
 
 import { parseSignedExportEnvelope } from "@/lib/export-format";
@@ -88,8 +87,7 @@ export default function VaultsScreen() {
     setSwitchLoading(true);
     setSwitchError("");
     try {
-      const seeds = await unlockVault(switchingVault.encryptedData!, switchPassword);
-      const wallets = await unlockSecureSession(seeds);
+      const wallets = await unlockVaultSession(switchingVault.encryptedData!, switchPassword);
       unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
       touchVaultUnlocked(switchingVault.id);
@@ -142,7 +140,7 @@ export default function VaultsScreen() {
     setDeleteLoading(true);
     setDeleteError("");
     try {
-      await unlockVault(deletingVault.encryptedData!, deletePassword);
+      await verifyVaultPassword(deletingVault.encryptedData!, deletePassword);
       const wasActive = deletingVault.id === settings.activeVaultId;
       removeVault(deletingVault.id);
       const remaining = usePersistedStore.getState().vaults;
@@ -221,7 +219,7 @@ export default function VaultsScreen() {
     setImportLoading(true);
     setImportError("");
     try {
-      await unlockVault(importData.vault, importPassword);
+      await verifyVaultPassword(importData.vault, importPassword);
       addVault({
         id: newId(),
         name: importData.name,

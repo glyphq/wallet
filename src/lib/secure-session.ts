@@ -87,6 +87,9 @@ export async function clearSecureSession() {
 }
 
 export async function unlockSecureSession(seeds: Seed[]): Promise<SessionWallet[]> {
+  // This bridge is restricted to a seed the user has just generated or entered
+  // during setup. Encrypted-vault unlocks use `unlockVaultSession`, which keeps
+  // decrypted seed material inside the native process.
   const wallets = seeds.map((seed) => ({
     identity: deriveIdentityFromSeed(seed),
     publicKey: publicKeyFromSeed(seed),

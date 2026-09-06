@@ -134,7 +134,7 @@ pub fn accept_pending_request(
         return Ok(false);
     }
     let replay_key = crate::deep_link::replay_key_from_envelope_payload(&payload)?;
-    if !state.record_nonce(&app, &replay_key) {
+    if !state.record_nonce(&app, &replay_key)? {
         return Ok(false);
     }
     state.mark_request_accepted(&payload)?;

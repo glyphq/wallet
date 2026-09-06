@@ -6,8 +6,7 @@ import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { usePersistedStore, type VaultMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { unlockSecureSession } from "@/lib/secure-session";
-import { unlockVault } from "@/lib/vault";
+import { unlockVaultSession } from "@/lib/vault";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { Settings, AltArrowRight, CheckCircle } from "@solar-icons/react";
 
@@ -55,8 +54,7 @@ export function ShellVaultSwitcher() {
     setLoading(true);
     setError("");
     try {
-      const seeds = await unlockVault(switchingVault.encryptedData!, password);
-      const wallets = await unlockSecureSession(seeds);
+      const wallets = await unlockVaultSession(switchingVault.encryptedData!, password);
       unlock(switchingVault.id, wallets);
       setActiveVault(switchingVault.id);
       touchVaultUnlocked(switchingVault.id);
