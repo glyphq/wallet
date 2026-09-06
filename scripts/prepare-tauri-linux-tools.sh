@@ -20,20 +20,10 @@ install_verified() {
   local url="$2"
   local expected_sha="$3"
   local destination="$TOOL_DIR/$name"
-  local temporary actual_sha token
+  local temporary actual_sha
   local -a curl_args=(
     --fail --location --retry 3 --retry-all-errors --silent --show-error
-    --header "Accept: application/octet-stream"
-    --header "X-GitHub-Api-Version: 2022-11-28"
   )
-
-  # GitHub-hosted runners can exhaust anonymous release-asset limits. Use the
-  # short-lived workflow token when it is available while preserving unauthenticated
-  # local use for public pinned assets.
-  token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
-  if [[ -n "$token" ]]; then
-    curl_args+=(--header "Authorization: Bearer $token")
-  fi
 
   if [[ -f "$destination" ]]; then
     actual_sha="$(sha256sum "$destination" | awk '{print $1}')"
@@ -63,11 +53,11 @@ main() {
 
   install_verified \
     "AppRun-x86_64" \
-    "https://api.github.com/repos/tauri-apps/binary-releases/releases/assets/274691722" \
+    "https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64" \
     "f30140a43a0a59e46db21bdefdf749b9e9f2c6946e92afabbacf98b8ae73fb4f"
   install_verified \
     "linuxdeploy-x86_64.AppImage" \
-    "https://api.github.com/repos/tauri-apps/binary-releases/releases/assets/182515537" \
+    "https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage" \
     "e762bea85c8eb0d4b3508d46e5c1f037f717d0f9303ae3b4aafc8b04991fa1ef"
   install_verified \
     "linuxdeploy-plugin-gtk.sh" \
@@ -79,7 +69,7 @@ main() {
     "c107b49d84edbffc6ab226ed1007e0626a4f7aa2c3a36b7782bef62351d49e94"
   install_verified \
     "linuxdeploy-plugin-appimage.AppImage" \
-    "https://api.github.com/repos/linuxdeploy/linuxdeploy-plugin-appimage/releases/assets/228937581" \
+    "https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-appimage-x86_64.AppImage" \
     "992d502a248e14ab185448ddf6f6e7d25558cb84d4623c354c3af350c25fccb3"
 }
 

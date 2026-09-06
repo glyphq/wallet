@@ -15,12 +15,12 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_ROOT
 readonly TOOL_CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/glyph/appimage-tools"
 
-# GitHub release asset IDs are immutable. Checksums provide a second independent
-# integrity gate and make every tool update an explicit code review.
-readonly APPIMAGETOOL_URL="https://api.github.com/repos/AppImage/AppImageKit/releases/assets/98605504"
+# Public release URLs avoid GitHub Actions job-token restrictions. Checksums
+# provide the independent integrity gate for each downloaded tool.
+readonly APPIMAGETOOL_URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
 readonly APPIMAGETOOL_SHA256="b90f4a8b18967545fda78a445b27680a1642f1ef9488ced28b65398f2be7add2"
-readonly GO_APPIMAGETOOL_URL="https://api.github.com/repos/probonopd/go-appimage/releases/assets/440974626"
-readonly GO_APPIMAGETOOL_SHA256="376998aba63bb3a35a02ea3196f77268f8543a35a3b6b7db0dc2181365119b62"
+readonly RUNTIME_TOOL_URL="https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-951-x86_64.AppImage"
+readonly RUNTIME_TOOL_SHA256="7c974f525d5bcde2712dd080e0b079a6c3802113a337f0ab142522dcefbf452d"
 PATCH_WORKDIR=""
 PATCH_OUTPUT=""
 
@@ -76,8 +76,6 @@ download_verified() {
   trap 'rm -f -- "$temporary"' RETURN
   log "Downloading $(basename "$destination")"
   curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
-    --header "Accept: application/octet-stream" \
-    --header "X-GitHub-Api-Version: 2022-11-28" \
     "$url" --output "$temporary"
   verify_sha256 "$temporary" "$expected_sha" \
     || die "checksum mismatch for downloaded tool: $url"
@@ -99,7 +97,7 @@ find_single_appimage() {
 
 prepare_runtime() {
   local go_tool="$1"
-  local runtime_dir="$TOOL_CACHE_DIR/go-appimage-947"
+  local runtime_dir="$TOOL_CACHE_DIR/go-appimage-951"
   local runtime="$runtime_dir/usr/bin/runtime-x86_64"
   local extract_dir
 
@@ -222,7 +220,7 @@ validate_appdir() {
 }
 
 main() {
-  local input appimagetool go_appimagetool runtime workdir appdir output
+  local input appimagetool runtime_tool runtime workdir appdir output
 
   require_command cmp
   require_command curl
@@ -237,10 +235,10 @@ main() {
   input="$(realpath "$input")"
 
   appimagetool="$TOOL_CACHE_DIR/appimagetool-b90f4a8b.AppImage"
-  go_appimagetool="$TOOL_CACHE_DIR/go-appimagetool-947.AppImage"
+  runtime_tool="$TOOL_CACHE_DIR/appimagetool-951-x86_64.AppImage"
   download_verified "$APPIMAGETOOL_URL" "$APPIMAGETOOL_SHA256" "$appimagetool"
-  download_verified "$GO_APPIMAGETOOL_URL" "$GO_APPIMAGETOOL_SHA256" "$go_appimagetool"
-  runtime="$(prepare_runtime "$go_appimagetool")"
+  download_verified "$RUNTIME_TOOL_URL" "$RUNTIME_TOOL_SHA256" "$runtime_tool"
+  runtime="$(prepare_runtime "$runtime_tool")"
 
   workdir="$(mktemp -d)"
   output="${input}.patched"
