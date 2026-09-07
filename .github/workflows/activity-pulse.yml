@@ -1,0 +1,60 @@
+name: Refresh README activity pulse
+
+on:
+  schedule:
+    - cron: "17 08 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: readme-activity-pulse
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  refresh:
+    name: Refresh README activity asset
+    if: github.repository == 'glyphq/wallet'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate activity pulse
+        env:
+          ACTIVITY_PULSE_OUTPUT: ${{ runner.temp }}/activity-pulse.svg
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/generate-activity-pulse.mjs
+
+      - name: Publish activity asset
+        env:
+          ACTIVITY_PULSE_PATH: ${{ runner.temp }}/activity-pulse.svg
+          PULSE_BRANCH: readme-activity
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$PULSE_BRANCH" >/dev/null; then
+            git fetch origin "refs/heads/${PULSE_BRANCH}:refs/remotes/origin/${PULSE_BRANCH}"
+            git switch --create "$PULSE_BRANCH" --track "origin/$PULSE_BRANCH"
+          else
+            git switch --create "$PULSE_BRANCH"
+          fi
+
+          mkdir -p docs/assets
+          cp "$ACTIVITY_PULSE_PATH" docs/assets/activity-pulse.svg
+          git add docs/assets/activity-pulse.svg
+          if git diff --cached --quiet; then
+            echo "Activity pulse is already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(readme): refresh activity pulse"
+          git push origin "HEAD:${PULSE_BRANCH}"

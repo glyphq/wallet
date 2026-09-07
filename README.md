@@ -10,11 +10,11 @@
 **Glyph is an open-source, self-custodial desktop wallet for Qubic.**
 Create Vaults, manage Qubic identities, send and receive QU, follow your activity, and review requests from connected apps in one focused native application.
 
-[![Release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
+[![Release downloads](https://img.shields.io/github/downloads/glyphq/wallet/latest/total?style=flat-square&label=downloads&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/glyphq/wallet/ci.yml?branch=main&style=flat-square&label=CI&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/actions/workflows/ci.yml)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0d0d0d?style=flat-square&labelColor=1a1a1a)](#download-and-install)
 [![License](https://img.shields.io/badge/license-MIT-0d0d0d?style=flat-square&labelColor=1a1a1a)](./LICENSE)
-
-**Windows x64** · **macOS Universal** · **Linux x86_64**
 
 [**Download Glyph**](https://github.com/glyphq/wallet/releases/latest) · [User guide](./docs/USER_GUIDE.md) · [Discord](https://discord.gg/s5qNRNGu96) · [Contributing](./CONTRIBUTING.md)
 
@@ -103,6 +103,12 @@ bun tauri dev
 ```
 
 Use Bun `1.3.14` and Rust `1.88.0`. Platform prerequisites, validation commands, and contribution guidance are in [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Project pulse
+
+[<img src="https://github.com/glyphq/wallet/raw/refs/heads/readme-activity/docs/assets/activity-pulse.svg" alt="Glyph Wallet commit activity over the last 12 weeks" width="720" />](https://github.com/glyphq/wallet/commits/main)
+
+A weekly commit view from `main`, refreshed every Monday.
 
 ## Project links
 
