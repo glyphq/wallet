@@ -4,7 +4,7 @@ import { join } from "node:path";
 import {
   buildActivityPulseSvg,
   fetchMainCommits,
-  weeklyCommitActivity,
+  monthlyCommitActivity,
 } from "./generate-activity-pulse.mjs";
 
 const now = new Date("2026-09-07T12:00:00.000Z");
@@ -13,11 +13,11 @@ function commit(date: string) {
   return { commit: { author: { date } } };
 }
 
-describe("weeklyCommitActivity", () => {
-  test("groups main commits into twelve UTC Monday-to-Sunday weeks", () => {
-    const activity = weeklyCommitActivity(
+describe("monthlyCommitActivity", () => {
+  test("groups main commits into twelve UTC calendar months", () => {
+    const activity = monthlyCommitActivity(
       [
-        commit("2026-06-15T00:00:00.000Z"),
+        commit("2025-10-01T00:00:00.000Z"),
         commit("2026-08-31T23:59:59.000Z"),
         commit("2026-09-07T12:00:00.000Z"),
         commit("not-a-date"),
@@ -26,13 +26,13 @@ describe("weeklyCommitActivity", () => {
     );
 
     expect(activity).toHaveLength(12);
-    expect(activity[0]).toEqual({ start: new Date("2026-06-22T00:00:00.000Z"), count: 0 });
-    expect(activity[11]).toEqual({ start: new Date("2026-09-07T00:00:00.000Z"), count: 1 });
-    expect(activity[10]).toEqual({ start: new Date("2026-08-31T00:00:00.000Z"), count: 1 });
+    expect(activity[0]).toEqual({ start: new Date("2025-10-01T00:00:00.000Z"), count: 1 });
+    expect(activity[11]).toEqual({ start: new Date("2026-09-01T00:00:00.000Z"), count: 1 });
+    expect(activity[10]).toEqual({ start: new Date("2026-08-01T00:00:00.000Z"), count: 1 });
   });
 
   test("keeps activity outside the pulse window out of the graph", () => {
-    const activity = weeklyCommitActivity([commit("2026-06-14T23:59:59.000Z")], now);
+    const activity = monthlyCommitActivity([commit("2025-09-30T23:59:59.000Z")], now);
 
     expect(activity.every((bucket) => bucket.count === 0)).toBe(true);
   });
@@ -43,7 +43,9 @@ test("buildActivityPulseSvg renders a self-contained accessible chart", () => {
 
   expect(svg).toContain('role="img"');
   expect(svg).toContain("Glyph Wallet repository activity");
-  expect(svg).toContain("1 commit over the last 12 weeks");
+  expect(svg).toContain("1 commit over the last 12 months");
+  expect(svg).toContain('font-family="Geist, Geist Sans, Inter, ui-sans-serif, system-ui, sans-serif"');
+  expect(svg).toContain('width="960"');
   expect(svg).toContain("Updated Sep 7, 2026");
   expect(svg.match(/<rect /g)).toHaveLength(13);
   expect(svg).not.toContain("<script");
@@ -63,14 +65,14 @@ describe("fetchMainCommits", () => {
 
     await expect(
       fetchMainCommits("glyphq/wallet", "test-token", {
-        since: new Date("2026-06-22T00:00:00.000Z"),
+        since: new Date("2025-10-01T00:00:00.000Z"),
         fetchImpl,
       }),
     ).resolves.toHaveLength(101);
     expect(requests).toHaveLength(2);
     for (const [index, request] of requests.entries()) {
       expect(request).toEqual({
-        url: `https://api.github.com/repos/glyphq/wallet/commits?sha=main&per_page=100&page=${index + 1}&since=2026-06-22T00%3A00%3A00.000Z`,
+        url: `https://api.github.com/repos/glyphq/wallet/commits?sha=main&per_page=100&page=${index + 1}&since=2025-10-01T00%3A00%3A00.000Z`,
         init: {
           headers: {
             Accept: "application/vnd.github+json",
@@ -101,7 +103,10 @@ test("activity refresh publishes only the generated asset branch", async () => {
   expect(workflow).toContain("PULSE_BRANCH: readme-activity");
   expect(workflow).toContain('git push origin "HEAD:${PULSE_BRANCH}"');
   expect(workflow).toContain("ref: main");
+  expect(workflow).toContain('cron: "17 08 1 * *"');
   expect(readme).toContain(
     "https://github.com/glyphq/wallet/raw/refs/heads/readme-activity/docs/assets/activity-pulse.svg",
   );
+  expect(readme).toContain("last 12 months");
+  expect(readme).toContain("refreshed on the first day of every month");
 });
