@@ -358,7 +358,19 @@ jobs:
         if: env.RELEASE_CHANNEL == 'prerelease'
         run: node scripts/set-updater-channel.mjs prerelease
 
-      - name: Build universal macOS bundles
+      - name: Build unsigned universal macOS bundles
+        if: inputs.allow_unsigned_native == true
+        env:
+          RUSTC_WRAPPER: sccache
+          SCCACHE_GHA_ENABLED: "true"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          echo "Publishing deliberately unsigned macOS bundles. Updater archive signatures remain required."
+          bun tauri build --target universal-apple-darwin --ci
+
+      - name: Build signed universal macOS bundles
+        if: inputs.allow_unsigned_native != true
         env:
           RUSTC_WRAPPER: sccache
           SCCACHE_GHA_ENABLED: "true"
