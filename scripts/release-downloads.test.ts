@@ -63,6 +63,8 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
   test("production signing preflight checks out and runs only reviewed required inputs", async () => {
     const workflow = await readFile(join(scriptsDir, "../.github/workflows/release.yml"), "utf8");
 
+    expect(workflow).toContain("default: true");
+    expect(workflow).toContain("--mode unsigned-release --config src-tauri/tauri.conf.json");
     expect(workflow).toContain("scripts/validate-signing-config.mjs");
     expect(workflow).toContain("src-tauri/tauri.conf.json");
     expect(workflow).toContain(

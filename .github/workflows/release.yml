@@ -9,9 +9,9 @@ on:
         type: string
       allow_unsigned_native:
         description: >-
-          Publish unsigned macOS and Windows bundles. Users will see operating-system security warnings.
+          Publish unsigned macOS and Windows bundles until platform signing credentials are configured. Users will see operating-system security warnings.
         required: false
-        default: false
+        default: true
         type: boolean
 
 concurrency:
