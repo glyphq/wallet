@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { AltArrowDown, CheckCircle } from "@solar-icons/react";
+import { ArrowDown01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { Sheet } from "@/components/sheet";
 import { WALLET_COLOR_OPTIONS, WALLET_ICON_OPTIONS, getWalletAccent, getWalletIconComponent, getWalletIconLabel } from "@/lib/wallet-appearance";
 import type { VaultColor, WalletIconId } from "@/store/persisted";
@@ -72,7 +72,7 @@ function SelectorField({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexShrink: 0, color: "var(--color-text-secondary)" }}>
           {trailing}
-          <AltArrowDown size={16} weight="Outline" aria-hidden="true" />
+          <ArrowDown01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
         </div>
       </button>
     </div>
@@ -121,7 +121,7 @@ export function WalletAppearancePicker({ icon, color, onIconChange, onColorChang
               boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${accent} 20%, transparent)`,
             }}
           >
-            <PreviewIcon size={22} weight="BoldDuotone" aria-hidden="true" />
+            <PreviewIcon size={22} strokeWidth={2} aria-hidden="true" />
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export function WalletAppearancePicker({ icon, color, onIconChange, onColorChang
                 color: accent,
               }}
             >
-              <PreviewIcon size={18} weight="BoldDuotone" aria-hidden="true" />
+              <PreviewIcon size={18} strokeWidth={2} aria-hidden="true" />
             </div>
           }
         />
@@ -199,11 +199,11 @@ export function WalletAppearancePicker({ icon, color, onIconChange, onColorChang
                       color: selected ? accent : "var(--color-text-secondary)",
                     }}
                   >
-                    <OptionIcon size={18} weight={selected ? "BoldDuotone" : "Linear"} aria-hidden="true" />
+                    <OptionIcon size={18} strokeWidth={selected ? 2 : 1.5} aria-hidden="true" />
                   </div>
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}>{option.label}</span>
                 </div>
-                {selected ? <CheckCircle size={18} weight="Bold" aria-hidden="true" style={{ color: accent, flexShrink: 0 }} /> : null}
+                {selected ? <CheckmarkCircle01Icon size={18} strokeWidth={2} aria-hidden="true" style={{ color: accent, flexShrink: 0 }} /> : null}
               </button>
             );
           })}
@@ -238,7 +238,7 @@ export function WalletAppearancePicker({ icon, color, onIconChange, onColorChang
                   />
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)" }}>{option.label}</span>
                 </div>
-                {selected ? <CheckCircle size={18} weight="Bold" aria-hidden="true" style={{ color: option.accent, flexShrink: 0 }} /> : null}
+                {selected ? <CheckmarkCircle01Icon size={18} strokeWidth={2} aria-hidden="true" style={{ color: option.accent, flexShrink: 0 }} /> : null}
               </button>
             );
           })}

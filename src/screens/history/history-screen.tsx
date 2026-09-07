@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, type ReactNode, type Dispatch, ty
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { Download, Filters, Refresh, Chart, ArrowRightUp, ArrowToDownLeft, Bolt, ShieldWarning, ClockCircle } from "@solar-icons/react";
+import { Download01Icon, FilterIcon, RefreshIcon, ChartLineData01Icon, ArrowUpRight01Icon, ArrowDownLeft01Icon, FlashIcon, ShieldAlertIcon, Clock01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
@@ -199,12 +199,12 @@ function exportRecordFromPending(tx: PendingTx, identity: string | null, txMemos
 
 // ── Transaction type icon map ───────────────────────────────────────────────────
 
-const TX_TYPE_ICONS: Record<string, typeof ArrowRightUp> = {
-  sent: ArrowRightUp,
-  received: ArrowToDownLeft,
-  sc: Bolt,
-  failed: ShieldWarning,
-  pending: ClockCircle,
+const TX_TYPE_ICONS: Record<string, typeof ArrowUpRight01Icon> = {
+  sent: ArrowUpRight01Icon,
+  received: ArrowDownLeft01Icon,
+  sc: FlashIcon,
+  failed: ShieldAlertIcon,
+  pending: Clock01Icon,
 };
 
 // ── Activity item ─────────────────────────────────────────────────────────────
@@ -456,16 +456,16 @@ export default function HistoryScreen() {
       action={
         <>
           <IconButton label="View analytics" onClick={() => navigate("/analytics")}>
-            <Chart size={20} aria-hidden="true" />
+            <ChartLineData01Icon size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label="Export history" onClick={() => setExportOpen(true)} disabled={!exportRows.length}>
-            <Download size={20} aria-hidden="true" />
+            <Download01Icon size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label={hasActive ? "Filter history, filters active" : "Filter history"} onClick={() => setFilterOpen(true)}>
-            <Filters size={20} aria-hidden="true" />
+            <FilterIcon size={20} aria-hidden="true" />
           </IconButton>
-          <IconButton label="Refresh history" onClick={() => void refetch()}>
-            <Refresh size={20} aria-hidden="true" />
+          <IconButton label="RefreshIcon history" onClick={() => void refetch()}>
+            <RefreshIcon size={20} aria-hidden="true" />
           </IconButton>
         </>
       }
@@ -482,7 +482,7 @@ export default function HistoryScreen() {
       {wideLayout && (
         <aside style={FILTER_SIDEBAR} aria-label="History filters">
           <FilterHeader
-            title="Filters"
+            title="FilterIcon"
             active={hasActive}
             onReset={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }}
           />

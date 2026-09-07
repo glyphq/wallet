@@ -5,7 +5,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
 import { RequestActionBar, RequestSectionTitle } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
-import { CheckCircle } from "@solar-icons/react";
+import { CheckmarkCircle01Icon } from "@/lib/icons";
 import { DappPolicyControls } from "@/components/dapp-policy-controls";
 import { DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
@@ -105,7 +105,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   {isSelected ? (
-                    <CheckCircle size={16} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                    <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                   ) : null}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
                     {truncateId(w.identity, 10, 10)}

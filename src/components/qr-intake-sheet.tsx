@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserCodeReader, BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
-import { Camera, Gallery, QrCode } from "@solar-icons/react";
+import { Camera01Icon, Image01Icon, QrCodeIcon } from "@/lib/icons";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/button";
 
@@ -30,9 +30,9 @@ const iconRowStyle: React.CSSProperties = {
 
 function decodeErrorMessage(error: unknown) {
   const name = error instanceof Error ? error.name : "";
-  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "Camera permission was denied. You can still import a QR image.";
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "Camera01Icon permission was denied. You can still import a QR image.";
   if (name === "NotFoundError" || name === "DevicesNotFoundError") return "No camera was found. Try importing a QR image.";
-  if (name === "NotReadableError" || name === "TrackStartError") return "Camera is unavailable. Close other camera apps or import a QR image.";
+  if (name === "NotReadableError" || name === "TrackStartError") return "Camera01Icon is unavailable. Close other camera apps or import a QR image.";
   return "No QR code was found. Try a clearer image or better light.";
 }
 
@@ -104,7 +104,7 @@ export function QrIntakeSheet({ open, title = "Scan QR", errorMessage = "", onCl
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-2) 0" }}>
           <div style={{ width: 54, height: 54, borderRadius: "var(--radius-pill)", border: "1px solid var(--color-border-subtle)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-secondary)", background: "var(--color-bg-surface)" }}>
-            <QrCode size={24} aria-hidden="true" />
+            <QrCodeIcon size={24} aria-hidden="true" />
           </div>
           <p style={{ ...helperText, textAlign: "center" }}>
             Scan with your camera or import an image. QR contents stay on this device.
@@ -136,13 +136,13 @@ export function QrIntakeSheet({ open, title = "Scan QR", errorMessage = "", onCl
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
           <Button variant={cameraState === "active" ? "ghost" : "secondary"} size="md" onClick={cameraState === "active" ? stopCamera : startCamera} loading={cameraState === "starting"}>
             <span style={iconRowStyle}>
-              <Camera size={16} aria-hidden="true" />
-              {cameraState === "active" ? "Stop" : "Camera"}
+              <Camera01Icon size={16} aria-hidden="true" />
+              {cameraState === "active" ? "Stop" : "Camera01Icon"}
             </span>
           </Button>
           <Button variant="secondary" size="md" onClick={() => fileInputRef.current?.click()} loading={importing}>
             <span style={iconRowStyle}>
-              <Gallery size={16} aria-hidden="true" />
+              <Image01Icon size={16} aria-hidden="true" />
               Image
             </span>
           </Button>
@@ -160,7 +160,7 @@ export function QrIntakeSheet({ open, title = "Scan QR", errorMessage = "", onCl
         />
 
         <p style={helperText}>
-          Camera access is requested only after tapping Camera. Imported images are decoded locally and are not uploaded.
+          Camera01Icon access is requested only after tapping Camera01Icon. Imported images are decoded locally and are not uploaded.
         </p>
       </div>
     </Sheet>

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
-import { AltArrowLeft, AltArrowRight, Eye, EyeClosed, LockKeyhole, ShieldCheck } from "@solar-icons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon, ViewIcon, ViewOffIcon, LockKeyholeIcon, ShieldCheckIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
@@ -79,10 +79,10 @@ export function SetupFlow({
           {secondaryActions}
           <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
             {primaryLabel}
-            <AltArrowRight size={18} weight="Linear" aria-hidden="true" />
+            <ArrowRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
           </Button>
           <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
-            <AltArrowLeft size={18} weight="Linear" aria-hidden="true" />
+            <ArrowLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
             Back
           </Button>
         </div>
@@ -171,7 +171,7 @@ function PasswordVisibilityButton({ visible, onToggle }: { visible: boolean; onT
         cursor: "pointer",
       }}
     >
-      {visible ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+      {visible ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
     </button>
   );
 }
@@ -200,7 +200,7 @@ export function PasswordFields({
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <Input
         label="Password"
-        leftElement={<LockKeyhole size={18} weight="Linear" />}
+        leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
         type={visible ? "text" : "password"}
         value={password}
         onChange={(event) => onPasswordChange(event.target.value)}
@@ -212,7 +212,7 @@ export function PasswordFields({
       />
       <Input
         label="Confirm password"
-        leftElement={<ShieldCheck size={18} weight="Linear" />}
+        leftElement={<ShieldCheckIcon size={18} strokeWidth={1.5} />}
         type={visible ? "text" : "password"}
         value={confirmPassword}
         onChange={(event) => onConfirmChange(event.target.value)}

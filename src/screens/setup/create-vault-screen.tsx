@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { CheckCircle, Copy, Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { CheckmarkCircle01Icon, Copy01Icon, ViewIcon, ViewOffIcon, KeyRoundIcon, Wallet01Icon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SeedSurface, SetupFlow } from "@/components/setup-flow";
@@ -138,7 +138,7 @@ export default function CreateVaultScreen() {
       {step === 1 ? (
         <SetupFlow current={1} total={4} title="Name your Vault" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
           <Input
-            leftElement={<Wallet size={18} weight="Linear" />}
+            leftElement={<Wallet01Icon size={18} strokeWidth={1.5} />}
             value={name}
             onChange={(event) => {
               setName(event.target.value);
@@ -165,18 +165,18 @@ export default function CreateVaultScreen() {
           secondaryActions={
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
               <Button variant="secondary" size="md" onClick={copySeed}>
-                {copied ? <CheckCircle size={18} weight="Linear" aria-hidden="true" /> : <Copy size={18} weight="Linear" aria-hidden="true" />}
-                {copied ? "Copied" : "Copy seed"}
+                {copied ? <CheckmarkCircle01Icon size={18} strokeWidth={1.5} aria-hidden="true" /> : <Copy01Icon size={18} strokeWidth={1.5} aria-hidden="true" />}
+                {copied ? "Copied" : "Copy01Icon seed"}
               </Button>
               <Button variant="secondary" size="md" onClick={toggleBackupSeed} aria-pressed={backupSeedRevealed}>
-                {backupSeedRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+                {backupSeedRevealed ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
                 {backupSeedRevealed ? "Hide seed" : "Reveal seed"}
               </Button>
             </div>
           }
         >
           <p style={{ margin: 0, fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
-            Copy it to your chosen secure location or reveal it to record offline. You will confirm it on the next step.
+            Copy01Icon it to your chosen secure location or reveal it to record offline. You will confirm it on the next step.
           </p>
           <SeedSurface
             seed={seed}
@@ -218,7 +218,7 @@ export default function CreateVaultScreen() {
                 transition: "background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out)",
               }}
             >
-              {acknowledged ? <CheckCircle size={16} weight="Bold" /> : null}
+              {acknowledged ? <CheckmarkCircle01Icon size={16} strokeWidth={2} /> : null}
             </span>
             I stored this seed safely
           </button>
@@ -236,7 +236,7 @@ export default function CreateVaultScreen() {
           onBack={back}
           secondaryActions={
             <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setConfirmationRevealed((value) => !value)} aria-pressed={confirmationRevealed}>
-              {confirmationRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+              {confirmationRevealed ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
               {confirmationRevealed ? "Hide entered seed" : "Reveal entered seed"}
             </Button>
           }
@@ -245,7 +245,7 @@ export default function CreateVaultScreen() {
             Type the complete seed exactly as you saved it.
           </p>
           <Textarea
-            leftElement={<KeyMinimalistic size={18} weight="Linear" />}
+            leftElement={<KeyRoundIcon size={18} strokeWidth={1.5} />}
             value={confirmation}
             onChange={(event) => {
               setConfirmation(event.target.value);

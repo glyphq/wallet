@@ -8,7 +8,7 @@ import { usePersistedStore, type VaultMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { unlockVaultSession } from "@/lib/vault";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { Settings, AltArrowRight, CheckCircle } from "@solar-icons/react";
+import { Settings01Icon, ArrowRight01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 
 export function ShellVaultSwitcher() {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ export function ShellVaultSwitcher() {
       recordAuditEvent({
         kind: "unlock_succeeded",
         status: "success",
-        title: "Wallet switched",
+        title: "Wallet01Icon switched",
         detail: switchingVault.name,
         vaultId: switchingVault.id,
       });
@@ -71,7 +71,7 @@ export function ShellVaultSwitcher() {
       recordAuditEvent({
         kind: "unlock_failed",
         status: "failure",
-        title: "Wallet switch failed",
+        title: "Wallet01Icon switch failed",
         detail: switchingVault.name,
         vaultId: switchingVault.id,
       });
@@ -135,11 +135,11 @@ export function ShellVaultSwitcher() {
                 color: "var(--color-text-secondary)",
               }}
             >
-              <Settings size={18} weight="Outline" style={{ flexShrink: 0 }} />
+              <Settings01Icon size={18} strokeWidth={1.5} style={{ flexShrink: 0 }} />
               <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500 }}>
                 Manage vaults
               </span>
-              <AltArrowRight size={14} weight="Outline" style={{ flexShrink: 0 }} />
+              <ArrowRight01Icon size={14} strokeWidth={1.5} style={{ flexShrink: 0 }} />
             </button>
           )
         }
@@ -210,7 +210,7 @@ export function ShellVaultSwitcher() {
                       {isActive ? "Current vault" : "Password required"}
                     </span>
                   </div>
-                  {isActive ? <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
+                  {isActive ? <CheckmarkCircle01Icon size={18} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
                 </button>
               );
             })}

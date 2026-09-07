@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NotesMinimalistic } from "@solar-icons/react";
+import { Note01Icon } from "@/lib/icons";
 import { usePersistedStore } from "@/store/persisted";
 
 export function TxMemoField({ hash }: { hash: string }) {
@@ -21,7 +21,7 @@ export function TxMemoField({ hash }: { hash: string }) {
       padding: "var(--space-3) var(--space-4)",
       display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
     }}>
-      <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
+      <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
       <textarea
         value={memo}
         onChange={(e) => setMemo(e.target.value)}

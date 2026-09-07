@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { UserId, AddCircle, TrashBinMinimalistic, Clipboard, Document, ClockCircle, Bolt, Wallet, ArrowRightUp, ShieldCheck, ShieldWarning, CheckCircle } from "@solar-icons/react";
+import { UserCircleIcon, AddCircleIcon, Delete02Icon, ClipboardIcon, File01Icon, Clock01Icon, FlashIcon, Wallet01Icon, ArrowUpRight01Icon, ShieldCheckIcon, ShieldAlertIcon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { buildPayload, type PayloadField } from "@qubic.org/tx";
 import type { Identity } from "@qubic.org/types";
 import { AppShell } from "@/layouts/app-shell";
@@ -254,10 +254,10 @@ export default function SendManyScreen() {
         {/* Import links */}
         <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)" }}>
           <TextButton onClick={() => setImportOpen(true)} tone="muted">
-            <Clipboard size={12} /> Paste list
+            <ClipboardIcon size={12} /> Paste list
           </TextButton>
           <TextButton onClick={openImportFile} tone="muted">
-            <Document size={12} /> Import CSV
+            <File01Icon size={12} /> Import CSV
           </TextButton>
         </div>
 
@@ -277,7 +277,7 @@ export default function SendManyScreen() {
               }}>
                 {/* Identity row */}
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
+                  <UserCircleIcon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
                   <EmbeddedInput
                     ref={(el) => { if (el) identityRefs.current.set(i, el); else identityRefs.current.delete(i); }}
                     autoComplete="off"
@@ -292,13 +292,13 @@ export default function SendManyScreen() {
                   {canOpenPicker && (
                     <button onClick={() => setPickerIndex(i)}
                       style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
-                      <UserId size={16} />
+                      <UserCircleIcon size={16} />
                     </button>
                   )}
                   {recipients.length > 1 && (
                     <button onClick={() => removeRecipient(i)}
                       style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
-                      <TrashBinMinimalistic size={16} />
+                      <Delete02Icon size={16} />
                     </button>
                   )}
                 </div>
@@ -361,7 +361,7 @@ export default function SendManyScreen() {
         {/* Add recipient */}
         {recipients.length < MAX_RECIPIENTS && (
           <Button variant="secondary" size="md" onClick={addRecipient}>
-            <AddCircle size={14} /> Add recipient ({recipients.length}/{MAX_RECIPIENTS})
+            <AddCircleIcon size={14} /> Add recipient ({recipients.length}/{MAX_RECIPIENTS})
           </Button>
         )}
 
@@ -372,7 +372,7 @@ export default function SendManyScreen() {
           padding: "var(--space-1) var(--space-4)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
-            <ArrowRightUp size={16} style={{ color: "var(--color-text-disabled)" }} />
+            <ArrowUpRight01Icon size={16} style={{ color: "var(--color-text-disabled)" }} />
             <span style={{ ...labelStyle, flex: 1 }}>Total</span>
             <div style={{ textAlign: "right" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>
@@ -388,14 +388,14 @@ export default function SendManyScreen() {
           {fee !== null && (
             <>
               <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
-              <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={`${formatQu(fee)} QU`} mono={false} />
+              <DetailRow icon={<FlashIcon size={16} />} label="QUtil fee" value={`${formatQu(fee)} QU`} mono={false} />
             </>
           )}
           {remaining !== null && (
             <>
               <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
-                <Wallet size={16} style={{ color: "var(--color-text-disabled)" }} />
+                <Wallet01Icon size={16} style={{ color: "var(--color-text-disabled)" }} />
                 <span style={{ ...labelStyle, flex: 1 }}>Remaining</span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: overBalance ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
                   {formatQu(remaining < 0n ? 0n : remaining)} QU
@@ -415,7 +415,7 @@ export default function SendManyScreen() {
         <div style={{ paddingBottom: "var(--space-6)" }}>
           <Button onClick={goReview} disabled={recipients.length === 0 || !wallet}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              Review <ArrowRightUp size={16} weight="Bold" />
+              Review <ArrowUpRight01Icon size={16} strokeWidth={2} />
             </span>
           </Button>
         </div>
@@ -510,7 +510,7 @@ export default function SendManyScreen() {
               <div key={r.id}>
                 {i > 0 && <Divider />}
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 44, padding: "var(--space-2) 0" }}>
-                  <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><UserId size={16} /></span>
+                  <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}><UserCircleIcon size={16} /></span>
                   <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: contact ? "var(--color-accent)" : "var(--color-text-display)" }}>
                       {contact ? contact.name : truncateId(id)}
@@ -530,17 +530,17 @@ export default function SendManyScreen() {
 
         <div style={linearGroupStyle} aria-labelledby="send-many-review-totals">
           <span id="send-many-review-totals" style={sectionLabelStyle}>Transaction</span>
-          <DetailRow icon={<ArrowRightUp size={16} />} label="Transfers" value={`${formatQu(totalAmount)} QU`} />
+          <DetailRow icon={<ArrowUpRight01Icon size={16} />} label="Transfers" value={`${formatQu(totalAmount)} QU`} />
           <Divider />
-          <DetailRow icon={<Bolt size={16} />} label="QUtil fee" value={fee !== null ? `${formatQu(fee)} QU` : "Loading…"} mono={false} />
+          <DetailRow icon={<FlashIcon size={16} />} label="QUtil fee" value={fee !== null ? `${formatQu(fee)} QU` : "Loading…"} mono={false} />
           <Divider />
-          <DetailRow icon={<Wallet size={16} />} label="Total" value={`${formatQu(totalWithFee)} QU`} mono={false} valueColor="var(--color-text-display)" />
+          <DetailRow icon={<Wallet01Icon size={16} />} label="Total" value={`${formatQu(totalWithFee)} QU`} mono={false} valueColor="var(--color-text-display)" />
         </div>
 
         {/* Pending warning */}
         {hasPendingTx && (
           <div role="status" style={noticeStyle}>
-            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
+            <Clock01Icon size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Transfer pending — wait for confirmation</span>
           </div>
         )}
@@ -551,13 +551,13 @@ export default function SendManyScreen() {
             aria-pressed={highValueConfirmed}
             onClick={() => setHighValueConfirmed(true)}
           >
-            <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
+            <ShieldAlertIcon size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)" }} />
             <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value transfer — tap to confirm</span>
           </button>
         )}
         {needsHighValueConfirmation && highValueConfirmed && (
           <div role="status" style={noticeStyle}>
-            <ShieldCheck size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
+            <ShieldCheckIcon size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
           </div>
         )}
@@ -568,7 +568,7 @@ export default function SendManyScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button onClick={send} loading={sending} disabled={!wallet || fee === null || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              Sign and send <ArrowRightUp size={16} weight="Bold" />
+              Sign and send <ArrowUpRight01Icon size={16} strokeWidth={2} />
             </span>
           </Button>
           <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
@@ -597,7 +597,7 @@ export default function SendManyScreen() {
           </div>
         </div>
         <Divider />
-        <DetailRow icon={<ArrowRightUp size={16} />} label="Contract" value="QUtil · Send to Many" mono={false} />
+        <DetailRow icon={<ArrowUpRight01Icon size={16} />} label="Contract" value="QUtil · Send to Many" mono={false} />
         </motion.div>
       </AppShell>
     );
@@ -618,19 +618,19 @@ export default function SendManyScreen() {
             {formatQu(totalAmount)} QU
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
-            <CheckCircle size={14} style={{ color: "var(--color-accent)" }} />
+            <CheckmarkCircle01Icon size={14} style={{ color: "var(--color-accent)" }} />
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Sent to {recipients.length} recipient{recipients.length !== 1 ? "s" : ""}</span>
           </div>
         </div>
 
         <div style={linearGroupStyle} aria-labelledby="send-many-completion-details">
           <span id="send-many-completion-details" style={sectionLabelStyle}>Broadcast details</span>
-          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
+          <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(txHash)} />
           <Divider />
-          <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
+          <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
           <Divider />
           <DetailRow
-            icon={watchResult === "confirmed" ? <ShieldCheck size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldWarning size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+            icon={watchResult === "confirmed" ? <ShieldCheckIcon size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldAlertIcon size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
             label="Status"
             value={watchResult === "confirmed" ? "Confirmed" : watchResult === "failed" ? "Failed" : "Watching…"}
             mono={false}
@@ -660,7 +660,7 @@ export default function SendManyScreen() {
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} role="alert" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-        <ShieldWarning size={18} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
+        <ShieldAlertIcon size={18} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
         <div>
           <h2 style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcast failed</h2>
           <p style={{ margin: "var(--space-1) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>

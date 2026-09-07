@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { UserRounded, UsersGroupRounded, TransferHorizontal, Document, Magnifier } from "@solar-icons/react";
+import { User02Icon, UserGroupIcon, Exchange01Icon, File01Icon, Search01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Input } from "@/components/input";
 import { Divider } from "@/components/divider";
@@ -16,10 +16,10 @@ import { getAccountIdentity } from "@/lib/accounts";
 import { getKnownContractLabel, normalizeArchiveTransaction, pendingTxToRecord } from "@/lib/tx-domain";
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  accounts: <UserRounded size={14} weight="Linear" />,
-  contacts: <UsersGroupRounded size={14} weight="Linear" />,
-  transactions: <TransferHorizontal size={14} weight="Linear" />,
-  contracts: <Document size={14} weight="Linear" />,
+  accounts: <User02Icon size={14} strokeWidth={1.5} />,
+  contacts: <UserGroupIcon size={14} strokeWidth={1.5} />,
+  transactions: <Exchange01Icon size={14} strokeWidth={1.5} />,
+  contracts: <File01Icon size={14} strokeWidth={1.5} />,
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -181,7 +181,7 @@ export default function SearchScreen() {
         subtitle: truncateId(identity),
         identity,
         badgeKind: "contract",
-        badgeIcon: <Document size={16} weight="Linear" aria-hidden="true" />,
+        badgeIcon: <File01Icon size={16} strokeWidth={1.5} aria-hidden="true" />,
         onSelect: () => navigate(`/send?to=${identity}`),
       }));
 
@@ -198,7 +198,7 @@ export default function SearchScreen() {
   return (
     <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <div style={{ position: "relative" }}>
-        <Magnifier size={18} weight="Linear" style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
+        <Search01Icon size={18} strokeWidth={1.5} style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
         <Input
           aria-label="Search Vault"
           value={query}
@@ -211,7 +211,7 @@ export default function SearchScreen() {
 
       {!normalizedQuery && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-          <Magnifier size={48} weight="Linear" style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
+          <Search01Icon size={48} strokeWidth={1.5} style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
             Start typing to search
           </div>
@@ -223,7 +223,7 @@ export default function SearchScreen() {
 
       {normalizedQuery && results.length === 0 && (
         <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-          <Magnifier size={48} weight="Linear" style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
+          <Search01Icon size={48} strokeWidth={1.5} style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
             No results for "{query.trim()}"
           </div>

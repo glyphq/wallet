@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Eye, EyeClosed, KeyMinimalistic, Wallet } from "@solar-icons/react";
+import { ViewIcon, ViewOffIcon, KeyRoundIcon, Wallet01Icon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
@@ -121,13 +121,13 @@ export default function ImportVaultScreen() {
               onClick={() => setSeedInputRevealed((value) => !value)}
               aria-pressed={seedInputRevealed}
             >
-              {seedInputRevealed ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+              {seedInputRevealed ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
               {seedInputRevealed ? "Hide entered seed" : "Reveal entered seed"}
             </Button>
           }
         >
           <Textarea
-            leftElement={<KeyMinimalistic size={18} weight="Linear" />}
+            leftElement={<KeyRoundIcon size={18} strokeWidth={1.5} />}
             value={seedInput}
             onChange={(event) => {
               setSeedInput(event.target.value);
@@ -175,7 +175,7 @@ export default function ImportVaultScreen() {
             </div>
           ) : null}
           <Input
-            leftElement={<Wallet size={18} weight="Linear" />}
+            leftElement={<Wallet01Icon size={18} strokeWidth={1.5} />}
             value={name}
             onChange={(event) => {
               setName(event.target.value);

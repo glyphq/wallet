@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router";
-import { HomeSmile, CardSend, CardReceive, ClockCircle, Settings } from "@solar-icons/react";
+import { Home01Icon, MoneySend01Icon, MoneyReceive01Icon, Clock01Icon, Settings01Icon } from "@/lib/icons";
 
 export type BottomNavTab = "home" | "send" | "receive" | "history" | "settings";
 
 const TABS = [
-  { id: "home" as BottomNavTab,     label: "Home",     icon: HomeSmile,     path: "/dashboard" },
-  { id: "send" as BottomNavTab,     label: "Send",     icon: CardSend,      path: "/send" },
-  { id: "receive" as BottomNavTab,  label: "Receive",  icon: CardReceive,   path: "/receive" },
-  { id: "history" as BottomNavTab,  label: "History",  icon: ClockCircle,   path: "/history" },
-  { id: "settings" as BottomNavTab, label: "Settings", icon: Settings,      path: "/settings" },
+  { id: "home" as BottomNavTab,     label: "Home",     icon: Home01Icon,     path: "/dashboard" },
+  { id: "send" as BottomNavTab,     label: "Send",     icon: MoneySend01Icon,      path: "/send" },
+  { id: "receive" as BottomNavTab,  label: "Receive",  icon: MoneyReceive01Icon,   path: "/receive" },
+  { id: "history" as BottomNavTab,  label: "History",  icon: Clock01Icon,   path: "/history" },
+  { id: "settings" as BottomNavTab, label: "Settings01Icon", icon: Settings01Icon,      path: "/settings" },
 ];
 
 export function BottomNav({ active }: { active: BottomNavTab }) {
@@ -82,7 +82,7 @@ export function BottomNav({ active }: { active: BottomNavTab }) {
               }}
             />
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon size={24} weight="Linear" aria-hidden="true" />
+              <Icon size={24} strokeWidth={1.5} aria-hidden="true" />
             </span>
             <span className="sr-only">{label}</span>
           </button>

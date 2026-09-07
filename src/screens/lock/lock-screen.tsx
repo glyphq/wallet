@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "motion/react";
-import { AddCircle, Eye, EyeClosed, LockKeyhole } from "@solar-icons/react";
+import { AddCircleIcon, ViewIcon, ViewOffIcon, LockKeyholeIcon } from "@/lib/icons";
 import { presets } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -124,7 +124,7 @@ function PasswordVisibilityButton({
         cursor: "pointer",
       }}
     >
-      {visible ? <EyeClosed size={18} weight="Linear" /> : <Eye size={18} weight="Linear" />}
+      {visible ? <ViewOffIcon size={18} strokeWidth={1.5} /> : <ViewIcon size={18} strokeWidth={1.5} />}
     </button>
   );
 }
@@ -406,7 +406,7 @@ export default function LockScreen() {
                   aria-label="Add another Vault"
                 >
                   <span className="vault-shelf-add-icon" aria-hidden="true">
-                    <AddCircle size={17} weight="Linear" />
+                    <AddCircleIcon size={17} strokeWidth={1.5} />
                   </span>
                   <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
                     <span style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
@@ -438,14 +438,14 @@ export default function LockScreen() {
                     />
                   </div>
                   <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
-                    <LockKeyhole size={16} weight="Linear" aria-hidden="true" />
+                    <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
                     {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock Vault"}
                   </Button>
                 </form>
 
               {biometricEnabled && bioFailures < 3 ? (
                 <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBiometric} disabled={loading}>
-                  <LockKeyhole size={14} weight="Linear" />
+                  <LockKeyholeIcon size={14} strokeWidth={1.5} />
                   {isLinux ? "Quick unlock" : "Use biometrics"}
                 </Button>
               ) : null}

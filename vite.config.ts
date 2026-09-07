@@ -29,7 +29,7 @@ export default defineConfig(async () => ({
           if (inPackage("@tanstack/react-query") || inPackage("zustand") || inPackage("react-hook-form") || inPackage("zod")) return "state-vendor";
           if (moduleId.includes("/node_modules/@tauri-apps/")) return "tauri-vendor";
           if (moduleId.includes("/node_modules/@qubic.org/")) return "qubic-vendor";
-          if (inPackage("motion") || inPackage("@solar-icons/react") || inPackage("qrcode.react")) return "ui-vendor";
+          if (inPackage("motion") || inPackage("qrcode.react")) return "ui-vendor";
           return "vendor";
         },
       },

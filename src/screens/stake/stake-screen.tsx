@@ -4,14 +4,14 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import {
-  AltArrowDown,
-  ShieldWarning,
-  MoneyBag,
-  Lock,
-  LockUnlocked,
-  Bolt,
-  InfoCircle,
-} from "@solar-icons/react";
+  ArrowDown01Icon,
+  ShieldAlertIcon,
+  MoneyBag01Icon,
+  SquareLock01Icon,
+  SquareUnlock01Icon,
+  FlashIcon,
+  InformationCircleIcon,
+} from "@/lib/icons";
 import type { Identity } from "@qubic.org/types";
 import { AppShell } from "@/layouts/app-shell";
 import { usePersistedStore } from "@/store/persisted";
@@ -122,7 +122,7 @@ export default function StakeScreen() {
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
   const accountPickerRef = useRef<HTMLDivElement>(null);
 
-  // Lock tab: current epoch info
+  // SquareLock01Icon tab: current epoch info
   const { data: epochInfoResult } = useQuery({
     queryKey: qk.qearnEpochInfo(rpcIdentity, currentEpoch),
     queryFn: () => qearnGetLockInfoPerEpoch(getRpcClient().live, { Epoch: currentEpoch! }),
@@ -249,7 +249,7 @@ export default function StakeScreen() {
         amount: amount.toString(),
         targetTick,
         broadcastAt: Date.now(),
-        contractName: "Qearn · Lock",
+        contractName: "Qearn · SquareLock01Icon",
       });
 
       setTxHash(hash);
@@ -308,8 +308,8 @@ export default function StakeScreen() {
 
   function TabBar() {
     const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-      { key: "lock", label: "Lock", icon: <Lock size={14} weight="Linear" /> },
-      { key: "unlock", label: "Unlock", icon: <LockUnlocked size={14} weight="Linear" /> },
+      { key: "lock", label: "SquareLock01Icon", icon: <SquareLock01Icon size={14} strokeWidth={1.5} /> },
+      { key: "unlock", label: "Unlock", icon: <SquareUnlock01Icon size={14} strokeWidth={1.5} /> },
     ];
     return (
       <div style={{ position: "relative", display: "flex", background: "var(--color-bg-surface)", borderRadius: "var(--radius-pill)", padding: "var(--space-1)", gap: 2 }}>
@@ -358,7 +358,7 @@ export default function StakeScreen() {
     );
   }
 
-  // ── Main step (Lock / Unlock) ──────────────────────────────────────────────
+  // ── Main step (SquareLock01Icon / Unlock) ──────────────────────────────────────────────
 
   if (step === "main") {
     return (
@@ -373,7 +373,7 @@ export default function StakeScreen() {
               <div style={sectionStyle}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-accent)" }}><Bolt size={22} weight="Linear" /></span>
+                    <span style={{ color: "var(--color-accent)" }}><FlashIcon size={22} strokeWidth={1.5} /></span>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
                       Current Epoch
                     </span>
@@ -426,7 +426,7 @@ export default function StakeScreen() {
               </div>
 
               <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InfoCircle size={16} weight="Linear" /></span>
+                <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InformationCircleIcon size={16} strokeWidth={1.5} /></span>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>
                   Minimum {formatQu(QEARN_MIN_LOCK)} QU. Mature after {LOCK_PERIOD_EPOCHS} epochs.
                 </span>
@@ -488,9 +488,9 @@ export default function StakeScreen() {
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
                       {vault?.accounts.find((a) => a.index === unlockAccountIdx)?.name ?? `Account ${unlockAccountIdx + 1}`}
                     </span>
-                    <AltArrowDown
+                    <ArrowDown01Icon
                       size={12}
-                      weight="Linear"
+                      strokeWidth={1.5}
                       style={{ color: "var(--color-text-disabled)", transform: accountPickerOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
                     />
                   </button>
@@ -535,7 +535,7 @@ export default function StakeScreen() {
               {((positions && positions.length > 0) || historicalUnlocked > 0n) && (
                 <div style={sectionStyle}>
                   <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-accent)" }}><Lock size={22} weight="Linear" /></span>
+                    <span style={{ color: "var(--color-accent)" }}><SquareLock01Icon size={22} strokeWidth={1.5} /></span>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>Positions</span>
                   </div>
                   <div style={{ padding: "var(--space-2) 0 var(--space-3)" }}>
@@ -590,7 +590,7 @@ export default function StakeScreen() {
                         }}
                         style={{ marginTop: "var(--space-2)", width: "100%" }}
                       >
-                        <LockUnlocked size={16} weight="Linear" />
+                        <SquareUnlock01Icon size={16} strokeWidth={1.5} />
                         {readyPositions.length === 1 ? "Review unlock" : "Review next unlock"}
                       </Button>
                     </>
@@ -605,12 +605,12 @@ export default function StakeScreen() {
                 </div>
               ) : !positions || positions.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: "var(--space-3)" }}>
-                  <span style={{ color: "var(--color-text-disabled)" }}><MoneyBag size={32} weight="Linear" /></span>
+                  <span style={{ color: "var(--color-text-disabled)" }}><MoneyBag01Icon size={32} strokeWidth={1.5} /></span>
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
                     No active positions
                   </span>
                   <TextButton type="button" tone="accent" onClick={() => setTab("lock")}>
-                    Lock QU to start staking
+                    SquareLock01Icon QU to start staking
                   </TextButton>
                 </div>
               ) : (
@@ -681,7 +681,7 @@ export default function StakeScreen() {
                             }}
                             style={{ flexShrink: 0, width: "auto" }}
                           >
-                            {!isEarly && <LockUnlocked size={14} weight="Linear" />}
+                            {!isEarly && <SquareUnlock01Icon size={14} strokeWidth={1.5} />}
                             {isEarly ? "Early" : "Unlock"}
                           </Button>
                         </div>
@@ -698,7 +698,7 @@ export default function StakeScreen() {
     );
   }
 
-  // ── Lock confirm ───────────────────────────────────────────────────────────
+  // ── SquareLock01Icon confirm ───────────────────────────────────────────────────────────
 
   if (step === "confirm" && tab === "lock") {
     return (
@@ -721,11 +721,11 @@ export default function StakeScreen() {
             <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
               <span style={labelStyle}>Action</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Lock QU</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>SquareLock01Icon QU</span>
             </div>
             <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Lock epoch</span>
+              <span style={labelStyle}>SquareLock01Icon epoch</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{currentEpoch}</span>
             </div>
             <RowDivider />
@@ -735,7 +735,7 @@ export default function StakeScreen() {
             </div>
             <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Lock period</span>
+              <span style={labelStyle}>SquareLock01Icon period</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{LOCK_PERIOD_EPOCHS} epochs</span>
             </div>
           </div>
@@ -791,7 +791,7 @@ export default function StakeScreen() {
             </div>
             <RowDivider />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Lock epoch</span>
+              <span style={labelStyle}>SquareLock01Icon epoch</span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{unlockTarget.epoch}</span>
             </div>
             <RowDivider />
@@ -805,7 +805,7 @@ export default function StakeScreen() {
 
           {isEarly && (
             <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-              <span style={{ color: "var(--color-status-warning)", flexShrink: 0, marginTop: 1 }}><ShieldWarning size={16} /></span>
+              <span style={{ color: "var(--color-status-warning)", flexShrink: 0, marginTop: 1 }}><ShieldAlertIcon size={16} /></span>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", lineHeight: 1.5 }}>
                 Early unlock — rewards may be reduced or forfeited. The position matures at epoch {unlockEpoch}.
               </span>
@@ -841,7 +841,7 @@ export default function StakeScreen() {
           <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
             <span style={{ position: "relative", zIndex: 1, color: "var(--color-accent)" }}>
-              {tab === "lock" ? <Lock size={20} weight="Linear" /> : <LockUnlocked size={20} weight="Linear" />}
+              {tab === "lock" ? <SquareLock01Icon size={20} strokeWidth={1.5} /> : <SquareUnlock01Icon size={20} strokeWidth={1.5} />}
             </span>
           </div>
           <div style={{ textAlign: "center" }}>
@@ -867,7 +867,7 @@ export default function StakeScreen() {
           {/* Status */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-4)", gap: "var(--space-2)" }}>
             <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <MoneyBag size={22} style={{ color: "var(--color-accent)" }} />
+              <MoneyBag01Icon size={22} style={{ color: "var(--color-accent)" }} />
             </div>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
               {tab === "lock" ? "Locked" : "Unlocked"}
@@ -907,7 +907,7 @@ export default function StakeScreen() {
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
+          <ShieldAlertIcon size={22} style={{ color: "var(--color-status-error)" }} />
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>

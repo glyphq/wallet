@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { AddCircle, ArrowRightUp, Download, Magnifier, PenNewSquare, UsersGroupRounded } from "@solar-icons/react";
+import { AddCircleIcon, ArrowUpRight01Icon, Download01Icon, Search01Icon, Edit02Icon, UserGroupIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
@@ -169,7 +169,7 @@ export default function ContactsScreen() {
           title="Contacts"
           onBack={() => navigate("/history")}
           backAriaLabel="Back to history"
-          action={<div style={{ display: "flex", gap: "var(--space-2)" }}><IconButton label="Import or export contacts" title="Import or export contacts" onClick={() => setTransferring(true)} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Download size={20} weight="Linear" aria-hidden="true" /></IconButton><IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={21} weight="Linear" aria-hidden="true" /></IconButton></div>}
+          action={<div style={{ display: "flex", gap: "var(--space-2)" }}><IconButton label="Import or export contacts" title="Import or export contacts" onClick={() => setTransferring(true)} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Download01Icon size={20} strokeWidth={1.5} aria-hidden="true" /></IconButton><IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircleIcon size={21} strokeWidth={1.5} aria-hidden="true" /></IconButton></div>}
         />
       }
       contentStyle={{ padding: "var(--space-4)", overflow: "auto" }}
@@ -183,7 +183,7 @@ export default function ContactsScreen() {
             placeholder="Name, identity, note, or tag"
             containerStyle={{ width: "100%" }}
             style={{ fontFamily: "var(--font-sans)" }}
-            leftElement={<Magnifier size={18} weight="Linear" />}
+            leftElement={<Search01Icon size={18} strokeWidth={1.5} />}
           />
           <span aria-live="polite" style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{searchDescription}</span>
           {transferStatus && <span aria-live="polite" style={{ color: transferStatus.startsWith("Could not") || transferStatus.startsWith("No valid") ? "var(--color-status-error)" : "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{transferStatus}</span>}
@@ -292,8 +292,8 @@ function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexShrink: 0 }}>
-        <Button variant="ghost" size="sm" onClick={onEdit}><PenNewSquare size={16} weight="Linear" aria-hidden="true" />Edit</Button>
-        <Button variant="secondary" size="sm" onClick={onSend}>Send<ArrowRightUp size={16} weight="Bold" aria-hidden="true" /></Button>
+        <Button variant="ghost" size="sm" onClick={onEdit}><Edit02Icon size={16} strokeWidth={1.5} aria-hidden="true" />Edit</Button>
+        <Button variant="secondary" size="sm" onClick={onSend}>Send<ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" /></Button>
       </div>
     </article>
   );
@@ -302,10 +302,10 @@ function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact
 function EmptyState({ hasContacts, onAdd }: { hasContacts: boolean; onAdd: () => void }) {
   return (
     <section style={{ minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)" }}>
-      <UsersGroupRounded size={38} weight="Linear" aria-hidden="true" style={{ color: "var(--color-text-disabled)" }} />
+      <UserGroupIcon size={38} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-text-disabled)" }} />
       <strong style={{ color: "var(--color-text-primary)", fontSize: "var(--text-body)", fontWeight: 600 }}>{hasContacts ? "No contacts found" : "No contacts yet"}</strong>
       <span style={{ maxWidth: 300, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>{hasContacts ? "Try a name, identity, note, or tag." : "Save trusted recipients so sending stays quick and accurate."}</span>
-      {!hasContacts && <IconButton label="Add your first contact" title="Add your first contact" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: 44, height: 44, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircle size={22} weight="Linear" aria-hidden="true" /></IconButton>}
+      {!hasContacts && <IconButton label="Add your first contact" title="Add your first contact" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: 44, height: 44, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircleIcon size={22} strokeWidth={1.5} aria-hidden="true" /></IconButton>}
     </section>
   );
 }
