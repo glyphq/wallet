@@ -2,27 +2,25 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const WEEKS = 12;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const MONTHS = 12;
+const FONT_FAMILY = "Geist, Geist Sans, Inter, ui-sans-serif, system-ui, sans-serif";
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = resolve(dirname(scriptPath), "..");
 
-function startOfUtcWeek(value) {
+function startOfUtcMonth(value) {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) {
     throw new Error(`invalid date: ${value}`);
   }
 
   date.setUTCHours(0, 0, 0, 0);
-  const daysSinceMonday = (date.getUTCDay() + 6) % 7;
-  date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+  date.setUTCDate(1);
   return date;
 }
 
-function formatWeek(date) {
+function formatMonth(date) {
   return new Intl.DateTimeFormat("en", {
     month: "short",
-    day: "numeric",
     timeZone: "UTC",
   }).format(date);
 }
@@ -40,15 +38,17 @@ function formatCount(value, noun) {
   return `${value.toLocaleString("en-US")} ${noun}${value === 1 ? "" : "s"}`;
 }
 
-export function weeklyCommitActivity(commits, now = new Date(), weeks = WEEKS) {
-  if (!Number.isInteger(weeks) || weeks < 1) {
-    throw new Error("weeks must be a positive integer");
+export function monthlyCommitActivity(commits, now = new Date(), months = MONTHS) {
+  if (!Number.isInteger(months) || months < 1) {
+    throw new Error("months must be a positive integer");
   }
 
-  const currentWeek = startOfUtcWeek(now);
-  const firstWeek = new Date(currentWeek.valueOf() - (weeks - 1) * 7 * DAY_MS);
-  const buckets = Array.from({ length: weeks }, (_, index) => {
-    const start = new Date(firstWeek.valueOf() + index * 7 * DAY_MS);
+  const currentMonth = startOfUtcMonth(now);
+  const firstMonth = new Date(currentMonth);
+  firstMonth.setUTCMonth(firstMonth.getUTCMonth() - (months - 1));
+  const buckets = Array.from({ length: months }, (_, index) => {
+    const start = new Date(firstMonth);
+    start.setUTCMonth(start.getUTCMonth() + index);
     return { start, count: 0 };
   });
 
@@ -58,8 +58,8 @@ export function weeklyCommitActivity(commits, now = new Date(), weeks = WEEKS) {
       continue;
     }
 
-    const week = startOfUtcWeek(date);
-    const index = Math.round((week.valueOf() - firstWeek.valueOf()) / (7 * DAY_MS));
+    const month = startOfUtcMonth(date);
+    const index = (month.getUTCFullYear() - firstMonth.getUTCFullYear()) * 12 + month.getUTCMonth() - firstMonth.getUTCMonth();
     if (index >= 0 && index < buckets.length) {
       buckets[index].count += 1;
     }
@@ -69,23 +69,25 @@ export function weeklyCommitActivity(commits, now = new Date(), weeks = WEEKS) {
 }
 
 export function buildActivityPulseSvg(commits, now = new Date()) {
-  const buckets = weeklyCommitActivity(commits, now);
+  const buckets = monthlyCommitActivity(commits, now);
   const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
   const maximum = Math.max(1, ...buckets.map((bucket) => bucket.count));
-  const width = 720;
-  const height = 196;
-  const chartTop = 86;
-  const chartHeight = 66;
-  const barWidth = 35;
-  const gap = 16;
-  const chartLeft = 42;
-  const chartWidth = buckets.length * barWidth + (buckets.length - 1) * gap;
+  const width = 960;
+  const height = 220;
+  const chartTop = 96;
+  const chartHeight = 76;
+  const barWidth = 50;
+  const chartLeft = 40;
+  const chartRight = 32;
+  const chartWidth = width - chartLeft - chartRight;
+  const gap = (chartWidth - buckets.length * barWidth) / (buckets.length - 1);
   const chartBottom = chartTop + chartHeight;
-  const labels = [0, 4, 8, 11]
+  const fontFamily = FONT_FAMILY.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  const labels = [0, 3, 6, 9, 11]
     .map((index) => {
       const bucket = buckets[index];
       const x = chartLeft + index * (barWidth + gap) + barWidth / 2;
-      return `<text x="${x}" y="176" fill="#a3a3a3" font-size="11" text-anchor="middle">${formatWeek(bucket.start)}</text>`;
+      return `<text x="${x}" y="200" fill="#a3a3a3" font-family="${fontFamily}" font-size="12" text-anchor="middle">${formatMonth(bucket.start)}</text>`;
     })
     .join("\n      ");
   const bars = buckets
@@ -95,7 +97,7 @@ export function buildActivityPulseSvg(commits, now = new Date()) {
       const y = chartBottom - barHeight;
       const fill = index === buckets.length - 1 ? "#ffffff" : "#d4d4d4";
       return `<g>
-        <title>Week of ${formatWeek(bucket.start)}: ${formatCount(bucket.count, "commit")}</title>
+        <title>${formatMonth(bucket.start)}: ${formatCount(bucket.count, "commit")}</title>
         <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" fill="${fill}" />
       </g>`;
     })
@@ -103,11 +105,11 @@ export function buildActivityPulseSvg(commits, now = new Date()) {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title description">
   <title id="title">Glyph Wallet repository activity</title>
-  <desc id="description">${formatCount(total, "commit")} to the main branch over the last 12 weeks, updated ${formatTimestamp(now)}.</desc>
+  <desc id="description">${formatCount(total, "commit")} to the main branch over the last 12 months, updated ${formatTimestamp(now)}.</desc>
   <rect width="${width}" height="${height}" rx="12" fill="#171717" />
-  <text x="28" y="34" fill="#fafafa" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700">Repository activity</text>
-  <text x="28" y="56" fill="#a3a3a3" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">${formatCount(total, "commit")} over the last 12 weeks</text>
-  <text x="692" y="34" fill="#a3a3a3" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" text-anchor="end">Updated ${formatTimestamp(now)}</text>
+  <text x="28" y="38" fill="#fafafa" font-family="${fontFamily}" font-size="18" font-weight="700" letter-spacing="-0.25">Repository activity</text>
+  <text x="28" y="62" fill="#a3a3a3" font-family="${fontFamily}" font-size="13">${formatCount(total, "commit")} over the last 12 months</text>
+  <text x="932" y="38" fill="#a3a3a3" font-family="${fontFamily}" font-size="12" text-anchor="end">Updated ${formatTimestamp(now)}</text>
   <line x1="${chartLeft}" y1="${chartBottom}" x2="${chartLeft + chartWidth}" y2="${chartBottom}" stroke="#404040" stroke-width="1" />
       ${bars}
       ${labels}
@@ -167,8 +169,8 @@ export async function main({
   now = new Date(),
   fetchImpl = fetch,
 } = {}) {
-  const firstWeek = weeklyCommitActivity([], now)[0].start;
-  const commits = await fetchMainCommits(repository, token, { since: firstWeek, fetchImpl });
+  const firstMonth = monthlyCommitActivity([], now)[0].start;
+  const commits = await fetchMainCommits(repository, token, { since: firstMonth, fetchImpl });
   const outputPath = resolve(repositoryRoot, output);
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, buildActivityPulseSvg(commits, now), "utf8");

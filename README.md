@@ -106,9 +106,9 @@ Use Bun `1.3.14` and Rust `1.88.0`. Platform prerequisites, validation commands,
 
 ## Project pulse
 
-[<img src="https://github.com/glyphq/wallet/raw/refs/heads/readme-activity/docs/assets/activity-pulse.svg" alt="Glyph Wallet commit activity over the last 12 weeks" width="720" />](https://github.com/glyphq/wallet/commits/main)
+[<img src="https://github.com/glyphq/wallet/raw/refs/heads/readme-activity/docs/assets/activity-pulse.svg" alt="Glyph Wallet commit activity over the last 12 months" width="100%" />](https://github.com/glyphq/wallet/commits/main)
 
-A weekly commit view from `main`, refreshed every Monday.
+A monthly commit view from `main`, refreshed on the first day of every month.
 
 ## Project links
 
