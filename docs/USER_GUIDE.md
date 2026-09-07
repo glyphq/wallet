@@ -41,8 +41,8 @@ The universal application supports Apple Silicon and Intel Macs. Protocol links 
 
 - AppImage supports Glyph's built-in update flow.
 - Debian and RPM installations must be updated through a newly installed package. The built-in updater does not replace system-managed packages.
-- The tray icon depends on the desktop's AppIndicator support. Glyph still opens if a tray cannot be created.
-- On GNOME, an AppIndicator extension may be required to display the tray icon.
+- The tray icon uses the desktop's StatusNotifierItem support. Glyph still opens if a tray cannot be created.
+- On GNOME, an AppIndicator or KStatusNotifierItem extension may be required to display the tray icon.
 - AppImage bundles much of the GTK/WebKit stack but still uses the host graphics stack. Driver and compositor differences can affect rendering.
 - Glyph detects WSLg and disables WebKit compositing and DMABUF there to avoid known rendering failures.
 

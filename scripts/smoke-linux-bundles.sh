@@ -108,7 +108,9 @@ main() {
   [[ "$version" == "$EXPECTED_VERSION" ]] || die "Debian package version is $version, expected $EXPECTED_VERSION"
   [[ "$architecture" == "amd64" ]] || die "Debian package architecture is $architecture, expected amd64"
   grep -Eqi 'libwebkit2gtk-4[.]1-0' <<<"$depends" || die "Debian package is missing WebKit runtime dependency"
-  grep -Eqi '(libappindicator3-1|libayatana-appindicator3-1)' <<<"$depends" || die "Debian package is missing tray runtime dependency"
+  if grep -Eqi '(libappindicator3-1|libayatana-appindicator3-1)' <<<"$depends"; then
+    die "Debian package still depends on deprecated AppIndicator runtime libraries"
+  fi
 
   deb_root="$WORKDIR/deb-root"
   dpkg-deb -x "$deb" "$deb_root"
