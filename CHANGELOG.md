@@ -1,5 +1,14 @@
 # glyph
 
+## 0.16.15
+
+### Patch Changes
+
+- 98ca3e1: Improve desktop release reliability.
+
+  - **Packaging:** Default native desktop bundles to unsigned until platform signing credentials are configured, while retaining required updater signatures.
+  - **Packaging:** Correctly validate the Debian package identity before publishing Linux bundles.
+
 ## 0.16.14
 
 ### Patch Changes
