@@ -88,7 +88,9 @@ validate_deb() {
   [[ "$architecture" == "amd64" ]] || die "deb architecture is $architecture, expected amd64"
   assert_contains "$depends" 'libwebkit2gtk-4[.]1-0' "deb dependencies"
   assert_contains "$depends" 'libgtk-3-0' "deb dependencies"
-  assert_contains "$depends" '(libappindicator3-1|libayatana-appindicator3-1)' "deb dependencies"
+  if grep -Eqi '(libappindicator3-1|libayatana-appindicator3-1)' <<<"$depends"; then
+    die "deb dependencies still include deprecated AppIndicator runtime libraries: $depends"
+  fi
   assert_contains "$depends" 'libdbus-1-3' "deb dependencies"
 
   workdir="$(mktemp -d)"

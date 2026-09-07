@@ -53,7 +53,7 @@ sudo apt install build-essential libwebkit2gtk-4.1-dev libdbus-1-dev
 To build Linux AppImage, Debian, and RPM packages, also install:
 
 ```sh
-sudo apt install libayatana-appindicator3-dev librsvg2-dev patchelf rpm xdg-utils
+sudo apt install librsvg2-dev patchelf rpm xdg-utils
 ```
 
 The current build does not require `libssl-dev` or `libxdo-dev` as project-specific dependencies.
@@ -703,11 +703,11 @@ The expected binaries normally live under `~/.cargo/bin`. Reorder `PATH` if a di
 
 ### Linux WebKit build errors
 
-Confirm `libwebkit2gtk-4.1-dev` and `libdbus-1-dev` are installed. For packaging errors, also confirm the AppIndicator, SVG, patching, RPM, and XDG tools listed in the prerequisite section.
+Confirm `libwebkit2gtk-4.1-dev` and `libdbus-1-dev` are installed. For packaging errors, also confirm the SVG, patching, RPM, and XDG tools listed in the prerequisite section.
 
 ### Linux tray icon missing
 
-The application can run without a tray. On GNOME, install or enable an AppIndicator-compatible extension before treating the missing icon as an application regression.
+The application can run without a tray. On GNOME, install or enable an AppIndicator or KStatusNotifierItem-compatible extension before treating the missing icon as an application regression.
 
 ### WSLg rendering problems
 

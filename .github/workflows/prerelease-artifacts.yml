@@ -41,7 +41,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libwebkit2gtk-4.1-dev \
             libdbus-1-dev \
-            libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
             rpm \

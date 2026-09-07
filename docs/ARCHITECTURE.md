@@ -620,7 +620,7 @@ A renderer compromise can exercise these allowed APIs and registered native comm
 - Packages include AppImage, Debian, and RPM.
 - Protocol integration uses the broker for desktop launches.
 - The installation key can use Secret Service and also has a durable mode-`0600` file copy.
-- Tray availability depends on AppIndicator desktop support.
+- Tray availability depends on StatusNotifierItem desktop support.
 - WSLg detection disables WebKit compositing and DMABUF.
 - AppImage bundles WebKitGTK and GTK components but depends on host GL and EGL behavior.
 
