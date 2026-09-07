@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { Fire, ShieldWarning, ClockCircle, Bolt, Wallet } from "@solar-icons/react";
+import { FireIcon, ShieldAlertIcon, Clock01Icon, FlashIcon, Wallet01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
@@ -136,7 +136,7 @@ export default function BurnScreen() {
 
         {/* Warning */}
         <div role="alert" style={noticeStyle}>
-          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
+          <ShieldAlertIcon size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
           <span style={{ ...statusCopyStyle, fontWeight: 600, color: "var(--color-status-error)" }}>
             Burning permanently destroys QU. Review the amount carefully before continuing.
           </span>
@@ -179,7 +179,7 @@ export default function BurnScreen() {
         <div style={{ paddingBottom: "var(--space-6)" }}>
           <Button variant="danger" onClick={goConfirm} disabled={!amountStr.trim() || !wallet || !tickInfo}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              <Fire size={16} /> Review burn
+              <FireIcon size={16} /> Review burn
             </span>
           </Button>
         </div>
@@ -205,7 +205,7 @@ export default function BurnScreen() {
 
         {/* Warning */}
         <div role="alert" style={noticeStyle}>
-          <ShieldWarning size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
+          <ShieldAlertIcon size={16} style={{ flexShrink: 0, color: "var(--color-status-error)", marginTop: 2 }} />
           <span style={{ ...statusCopyStyle, fontWeight: 600, color: "var(--color-status-error)" }}>
             Final review. Once broadcast is accepted, this burn cannot be reversed by Glyph or the network.
           </span>
@@ -213,22 +213,22 @@ export default function BurnScreen() {
 
         {/* Details */}
         <div aria-label="Burn review details" style={sectionStyle}>
-          <DetailRow icon={<Wallet size={16} />} label="From" value={`${accountName} · ${truncateId(identity)}`} valueColor="var(--color-text-secondary)" />
+          <DetailRow icon={<Wallet01Icon size={16} />} label="From" value={`${accountName} · ${truncateId(identity)}`} valueColor="var(--color-text-secondary)" />
           <div style={divider} />
-          <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
+          <DetailRow icon={<Clock01Icon size={16} />} label="Target tick" value={tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "—"} />
           <div style={divider} />
-          <DetailRow icon={<Bolt size={16} />} label="Fee" value="None" mono={false} />
+          <DetailRow icon={<FlashIcon size={16} />} label="Fee" value="None" mono={false} />
         </div>
 
         {/* Password confirmation (inline) */}
         {needsPassword && (
           <div style={sectionStyle}>
             <div style={{ padding: "var(--space-3) 0", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span style={{ ...labelStyle }}>Wallet password required</span>
+              <span style={{ ...labelStyle }}>Wallet01Icon password required</span>
               <Input
                 type="password"
                 value={burnPassword}
-                label="Wallet password"
+                label="Wallet01Icon password"
                 onChange={(e) => { setBurnPassword(e.target.value); setBurnPasswordError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 placeholder="••••••••••"
@@ -241,7 +241,7 @@ export default function BurnScreen() {
 
         {hasPendingTx && (
           <div role="status" style={{ borderLeft: "2px solid var(--color-status-warning)", padding: "var(--space-2) 0 var(--space-2) var(--space-3)", display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
-            <ClockCircle size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)", marginTop: 2 }} />
+            <Clock01Icon size={16} style={{ flexShrink: 0, color: "var(--color-status-warning)", marginTop: 2 }} />
             <span style={{ ...statusCopyStyle, color: "var(--color-status-warning)" }}>Another transaction is pending from this account. Wait for it to confirm before broadcasting this burn.</span>
           </div>
         )}
@@ -252,7 +252,7 @@ export default function BurnScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
           <Button variant="danger" onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsPassword && !burnPassword)}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              <Fire size={16} /> Broadcast burn
+              <FireIcon size={16} /> Broadcast burn
             </span>
           </Button>
           <TextButton type="button" onClick={() => setStep("input")} tone="muted" style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
@@ -272,7 +272,7 @@ export default function BurnScreen() {
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
         <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-status-error)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-          <Fire size={18} style={{ color: "var(--color-status-error)" }} />
+          <FireIcon size={18} style={{ color: "var(--color-status-error)" }} />
         </div>
         <div role="status" aria-live="polite" style={{ textAlign: "center", maxWidth: 280 }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting burn</div>
@@ -298,7 +298,7 @@ export default function BurnScreen() {
         {/* Amount */}
         <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
-            <Fire size={64} style={{ color: "var(--color-status-error)" }} />
+            <FireIcon size={64} style={{ color: "var(--color-status-error)" }} />
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "1.5rem", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
             QU burned
@@ -314,11 +314,11 @@ export default function BurnScreen() {
 
         {/* Details */}
         <div aria-label="Broadcast details" style={sectionStyle}>
-          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
+          <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(txHash)} />
           <div style={divider} />
-          <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
+          <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
           <div style={divider} />
-          <DetailRow icon={<Wallet size={16} />} label="Status" value="Pending" valueColor="var(--color-text-disabled)" mono={false} />
+          <DetailRow icon={<Wallet01Icon size={16} />} label="Status" value="Pending" valueColor="var(--color-text-disabled)" mono={false} />
         </div>
 
         <div style={{ flex: 1 }} />
@@ -341,7 +341,7 @@ export default function BurnScreen() {
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <ShieldWarning size={22} style={{ color: "var(--color-status-error)" }} />
+        <ShieldAlertIcon size={22} style={{ color: "var(--color-status-error)" }} />
       </div>
       <div role="alert" style={{ textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)" }}>Burn not broadcast</div>

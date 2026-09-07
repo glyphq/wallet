@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, CheckCircle, LinkRound, QrCode } from "@solar-icons/react";
+import { Copy01Icon, CheckmarkCircle01Icon, Link01Icon, QrCodeIcon } from "@/lib/icons";
 import { copyToClipboard } from "@/lib/clipboard";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -151,7 +151,7 @@ export default function PaymentLinkScreen() {
                       </span>
                     </span>
                     {selected ? (
-                      <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                      <CheckmarkCircle01Icon size={18} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                     ) : (
                       <span style={{ color: "var(--color-text-disabled)", fontSize: "var(--text-label)", fontWeight: 600 }}>Use</span>
                     )}
@@ -214,7 +214,7 @@ export default function PaymentLinkScreen() {
                         fontWeight: 600,
                       }}
                     >
-                      {mode === "web" ? <LinkRound size={14} /> : <QrCode size={14} />}
+                      {mode === "web" ? <Link01Icon size={14} /> : <QrCodeIcon size={14} />}
                       {mode === "web" ? "Web link" : "App link"}
                     </button>
                   );
@@ -239,14 +239,14 @@ export default function PaymentLinkScreen() {
             </section>
 
             <section aria-labelledby="copy-actions-heading" style={{ ...sectionStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-              <span id="copy-actions-heading" className="sr-only">Copy actions</span>
+              <span id="copy-actions-heading" className="sr-only">Copy01Icon actions</span>
               <CopyButton
-                label="Copy web link"
+                label="Copy01Icon web link"
                 copied={copiedWeb}
                 onCopy={() => copy(links.web, "web")}
               />
               <CopyButton
-                label="Copy app link"
+                label="Copy01Icon app link"
                 copied={copiedDeep}
                 onCopy={() => copy(links.deep, "deep")}
               />
@@ -263,7 +263,7 @@ export default function PaymentLinkScreen() {
           <section aria-labelledby="payment-link-empty-heading" style={{ ...sectionStyle, display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
             <span id="payment-link-empty-heading" style={eyebrowStyle}>Link unavailable</span>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <LinkRound size={18} style={{ flex: "0 0 auto", marginTop: 2, color: "var(--color-text-tertiary)" }} />
+              <Link01Icon size={18} style={{ flex: "0 0 auto", marginTop: 2, color: "var(--color-text-tertiary)" }} />
               <div>
                 <p style={{ margin: 0, color: "var(--color-text-primary)", fontSize: "var(--text-body)", lineHeight: 1.45 }}>
                   Select an account with a valid receiving identity to generate a payment link.
@@ -292,12 +292,12 @@ function CopyButton({ label, copied, onCopy }: { label: string; copied: boolean;
     >
       {copied ? (
         <>
-          <CheckCircle size={14} />
+          <CheckmarkCircle01Icon size={14} />
           Copied
         </>
       ) : (
         <>
-          <Copy size={14} />
+          <Copy01Icon size={14} />
           {label}
         </>
       )}

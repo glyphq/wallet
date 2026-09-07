@@ -13,7 +13,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { useUpdater } from "@/hooks/use-updater";
 import { formatDate } from "@/lib/format";
 import { saveFileDialog } from "@/lib/save-file";
-import { AltArrowDown, AltArrowUp } from "@solar-icons/react";
+import { ArrowDown01Icon, ArrowUp01Icon } from "@/lib/icons";
 import {
   getBatteryInfo,
   getDeviceInfo,
@@ -219,7 +219,7 @@ export default function DiagnosticsScreen() {
             style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: 0, background: "transparent", border: "none", cursor: "pointer", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}
           >
             Technical details
-            {showTechnical ? <AltArrowUp size={16} weight="Outline" aria-hidden="true" /> : <AltArrowDown size={16} weight="Outline" aria-hidden="true" />}
+            {showTechnical ? <ArrowUp01Icon size={16} strokeWidth={1.5} aria-hidden="true" /> : <ArrowDown01Icon size={16} strokeWidth={1.5} aria-hidden="true" />}
           </motion.button>
           <span style={{ display: "block", marginTop: 4, color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Security policy and update diagnostics for advanced troubleshooting.</span>
           {showTechnical && (

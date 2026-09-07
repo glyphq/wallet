@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowRightUp, QrCode, UserId, Wallet, WalletMoney, ClockCircle, Bolt, ShieldCheck, ShieldWarning, Bookmark, CheckCircle, NotesMinimalistic, UsersGroupRounded, Fire } from "@solar-icons/react";
+import { ArrowUpRight01Icon, QrCodeIcon, UserCircleIcon, Wallet01Icon, WalletAdd01Icon, Clock01Icon, FlashIcon, ShieldCheckIcon, ShieldAlertIcon, Bookmark01Icon, CheckmarkCircle01Icon, Note01Icon, UserGroupIcon, FireIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { ScreenHeader } from "@/components/screen-header";
@@ -165,13 +165,13 @@ export default function SendScreen() {
       action={
         <>
           <IconButton label="Send to many" onClick={() => navigate("/send-many")}>
-            <UsersGroupRounded size={20} aria-hidden="true" />
+            <UserGroupIcon size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label="Scan QR" onClick={() => { setQrIntakeError(""); setShowQrIntake(true); }}>
-            <QrCode size={20} aria-hidden="true" />
+            <QrCodeIcon size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label="Burn QU" onClick={() => navigate("/burn")}>
-            <Fire size={20} aria-hidden="true" />
+            <FireIcon size={20} aria-hidden="true" />
           </IconButton>
         </>
       }
@@ -441,7 +441,7 @@ export default function SendScreen() {
             boxShadow: "var(--shadow-surface)",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-              <UserId size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
+              <UserCircleIcon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
               <EmbeddedInput
                 ref={destRef}
                 autoComplete="off"
@@ -455,7 +455,7 @@ export default function SendScreen() {
               {canOpenPicker && (
                 <button onClick={() => setShowPicker(true)}
                   style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
-                  <QrCode size={16} />
+                  <QrCodeIcon size={16} />
                 </button>
               )}
             </div>
@@ -505,7 +505,7 @@ export default function SendScreen() {
         <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <Button onClick={goReview} disabled={!wallet}>
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              Review <ArrowRightUp size={16} weight="Bold" />
+              Review <ArrowUpRight01Icon size={16} strokeWidth={2} />
             </span>
           </Button>
         </div>
@@ -568,7 +568,7 @@ export default function SendScreen() {
         {/* Parties */}
         <section aria-label="Transfer parties" style={rowGroupStyle}>
           <DetailRow
-            icon={<UserId size={16} />}
+            icon={<UserCircleIcon size={16} />}
             label="To"
             value={matchedContact ? matchedContact.name : truncateId(destUpper)}
             mono={!matchedContact}
@@ -576,7 +576,7 @@ export default function SendScreen() {
           />
           <div style={divider} />
           <DetailRow
-            icon={<Wallet size={16} />}
+            icon={<Wallet01Icon size={16} />}
             label="From"
             value={`${accountName} · ${truncateId(identity)}`}
             mono={false}
@@ -586,7 +586,7 @@ export default function SendScreen() {
         {/* Details */}
         <section aria-label="Transaction facts" style={rowGroupStyle}>
           <DetailRow
-            icon={<WalletMoney size={16} />}
+            icon={<WalletAdd01Icon size={16} />}
             label="Balance after"
             value={balanceAfter === null ? "Unavailable" : `${formatQu(balanceAfter)} QU`}
             mono={false}
@@ -594,13 +594,13 @@ export default function SendScreen() {
           />
           <div style={divider} />
           <DetailRow
-            icon={<ClockCircle size={16} />}
+            icon={<Clock01Icon size={16} />}
             label="Target tick"
             value={targetTick}
           />
           <div style={divider} />
           <DetailRow
-            icon={<Bolt size={16} />}
+            icon={<FlashIcon size={16} />}
             label="Fee"
             value="None"
             mono={false}
@@ -634,7 +634,7 @@ export default function SendScreen() {
         {hasPendingTx && (
           <aside role="status" style={noticeStyle}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", color: "var(--color-status-warning)" }}>
-              <ClockCircle size={16} style={{ flexShrink: 0 }} />
+              <Clock01Icon size={16} style={{ flexShrink: 0 }} />
               <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Pending transfer detected</span>
             </div>
             <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>Wait for confirmation before signing another transfer from this account.</p>
@@ -645,11 +645,11 @@ export default function SendScreen() {
         {needsHighValueConfirmation && !highValueVerified && (
           <section aria-labelledby="high-value-confirmation" style={noticeStyle}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", color: "var(--color-status-warning)" }}>
-              <ShieldWarning size={16} style={{ flexShrink: 0 }} />
+              <ShieldAlertIcon size={16} style={{ flexShrink: 0 }} />
               <span id="high-value-confirmation" style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value confirmation required</span>
             </div>
             <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>Enter your wallet password to explicitly approve this amount.</p>
-            <Input type="password" label="Wallet password" value={highValuePassword}
+            <Input type="password" label="Wallet01Icon password" value={highValuePassword}
               onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
               onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
               error={highValuePasswordError} placeholder="••••••••••" autoComplete="current-password" />
@@ -658,7 +658,7 @@ export default function SendScreen() {
         )}
         {needsHighValueConfirmation && highValueVerified && (
           <div role="status" style={{ ...noticeStyle, flexDirection: "row", alignItems: "center", color: "var(--color-accent)" }}>
-            <ShieldCheck size={16} style={{ flexShrink: 0 }} />
+            <ShieldCheckIcon size={16} style={{ flexShrink: 0 }} />
             <span style={{ ...labelStyle, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
           </div>
         )}
@@ -670,7 +670,7 @@ export default function SendScreen() {
           padding: "var(--space-3) 0",
           display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
         }}>
-          <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
+          <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
           <span style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>Transfer note</span>
           <textarea
             value={memo}
@@ -739,7 +739,7 @@ export default function SendScreen() {
 
         {/* Amount */}
         <header className="flash-success" style={{ paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ ...labelStyle, color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}><CheckCircle size={16} /> Transaction sent</span>
+          <span style={{ ...labelStyle, color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}><CheckmarkCircle01Icon size={16} /> Transaction sent</span>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {formatQu(amountStr)}
           </div>
@@ -748,19 +748,19 @@ export default function SendScreen() {
         {/* Details */}
         <section aria-label="Broadcast receipt" style={receiptStyle}>
           <DetailRow
-            icon={<UserId size={16} />}
+            icon={<UserCircleIcon size={16} />}
             label="To"
             value={matchedContact ? matchedContact.name : truncateId(destUpper)}
             mono={!matchedContact}
             valueColor={matchedContact ? "var(--color-accent)" : undefined}
           />
           <div style={divider} />
-          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(txHash)} />
+          <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(txHash)} />
           <div style={divider} />
-          <DetailRow icon={<ClockCircle size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
+          <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
           <div style={divider} />
           <DetailRow
-            icon={watchResult === "confirmed" ? <ShieldCheck size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldWarning size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+            icon={watchResult === "confirmed" ? <ShieldCheckIcon size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldAlertIcon size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
             label="Status"
             value={statusLabel}
             mono={false}
@@ -776,7 +776,7 @@ export default function SendScreen() {
             padding: "var(--space-3) 0",
             display: "flex", alignItems: "center", gap: "var(--space-3)",
           }}>
-            <Bookmark size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
+            <Bookmark01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
             <input aria-label="Contact name" autoComplete="off" value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
               placeholder="Save as contact"
@@ -804,7 +804,7 @@ export default function SendScreen() {
             padding: "var(--space-3) 0",
             display: "flex", alignItems: "center", gap: "var(--space-3)",
           }}>
-            <CheckCircle size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
+            <CheckmarkCircle01Icon size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Contact saved</span>
           </div>
         )}
@@ -833,7 +833,7 @@ export default function SendScreen() {
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
       <motion.div {...stepMotion} role="alert" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-5)" }}>
       <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "flex-start", gap: "var(--space-4)" }}>
-        <ShieldWarning size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
+        <ShieldAlertIcon size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
         <div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcast failed</div>
           <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>

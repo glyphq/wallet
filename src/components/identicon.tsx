@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import Avatar from "boring-avatars";
-import { Bolt } from "@solar-icons/react";
+import { FlashIcon } from "@/lib/icons";
 import type { VaultColor, WalletIconId } from "@/store/persisted";
 import { CONTACT_ICON } from "@/lib/wallet-appearance";
 
@@ -153,7 +153,7 @@ export function Identicon({
           ...style,
         }}
       >
-        <CONTACT_ICON size={Math.max(12, Math.floor(innerSize * 0.56))} weight="BoldDuotone" aria-hidden="true" />
+        <CONTACT_ICON size={Math.max(12, Math.floor(innerSize * 0.56))} strokeWidth={2} aria-hidden="true" />
       </div>
     );
   }
@@ -177,7 +177,7 @@ export function Identicon({
           ...style,
         }}
       >
-        <Bolt size={Math.max(12, Math.floor(innerSize * 0.56))} weight="BoldDuotone" aria-hidden="true" />
+        <FlashIcon size={Math.max(12, Math.floor(innerSize * 0.56))} strokeWidth={2} aria-hidden="true" />
       </div>
     );
   }

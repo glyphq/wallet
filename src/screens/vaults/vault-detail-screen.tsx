@@ -21,13 +21,13 @@ import { createSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { formatQu } from "@/lib/format";
 import {
-  Pen2, DocumentText, Key, EyeClosed, Eye, TrashBinMinimalistic,
-  AddCircle, InfoCircle, CheckCircle,
-} from "@solar-icons/react";
+  PencilEdit01Icon, File02Icon, Key01Icon, ViewOffIcon, ViewIcon, Delete02Icon,
+  AddCircleIcon, InformationCircleIcon, CheckmarkCircle01Icon,
+} from "@/lib/icons";
 
 const ACCOUNT_NAME_SUGGESTIONS = [
   "Main", "Trading", "Staking", "Cold Storage", "DeFi", "Savings",
-  "Hot Wallet", "Treasury", "Operations", "Rewards",
+  "Hot Wallet01Icon", "Treasury", "Operations", "Rewards",
 ];
 
 export default function VaultDetailScreen() {
@@ -391,7 +391,7 @@ export default function VaultDetailScreen() {
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         {currentVault.accounts.length < MAX_VAULT_ACCOUNTS ? (
           <Button variant="secondary" shape="sharp" size="sm" onClick={openAdd} style={{ width: "auto" }}>
-            <AddCircle size={16} weight="Linear" aria-hidden="true" />
+            <AddCircleIcon size={16} strokeWidth={1.5} aria-hidden="true" />
             Add account
           </Button>
         ) : (
@@ -458,13 +458,13 @@ export default function VaultDetailScreen() {
 
       <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/vaults/${currentVault.id}/portfolio`)}>
-          <InfoCircle size={14} weight="Linear" /> Portfolio
+          <InformationCircleIcon size={14} strokeWidth={1.5} /> Portfolio
         </Button>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => setShowExport(true)}>
-          <DocumentText size={14} weight="Linear" /> Export vault
+          <File02Icon size={14} strokeWidth={1.5} /> Export vault
         </Button>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => { setShowRotate(true); setRotateDone(false); setRotateError(""); }}>
-          <Key size={14} weight="Linear" /> Change password
+          <Key01Icon size={14} strokeWidth={1.5} /> Change password
         </Button>
       </div>
 
@@ -473,7 +473,7 @@ export default function VaultDetailScreen() {
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
             This file contains your encrypted seed. Keep it safe. Anyone with this file and your password can access your funds.
           </span>
-          <Button onClick={doExport}>Download backup file</Button>
+          <Button onClick={doExport}>Download01Icon backup file</Button>
         </div>
       </Sheet>
 
@@ -639,10 +639,10 @@ export default function VaultDetailScreen() {
               <SeedSurface seed={revealedSeed} revealed={seedVisible} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
                 <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
-                  {seedCopied ? "Copied" : "Copy seed"}
+                  {seedCopied ? "Copied" : "Copy01Icon seed"}
                 </Button>
                 <Button variant="secondary" shape="sharp" onClick={() => setSeedVisible((value) => !value)} aria-pressed={seedVisible}>
-                  {seedVisible ? <EyeClosed size={18} weight="Linear" aria-hidden="true" /> : <Eye size={18} weight="Linear" aria-hidden="true" />}
+                  {seedVisible ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
                   {seedVisible ? "Hide" : "Reveal"}
                 </Button>
               </div>
@@ -742,7 +742,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title={isActive && settings.activeAccountIndex === selectedAccount.index ? "Active account" : "Use this account"}
                 description={selectedAccount.hidden ? "Hidden accounts cannot be made active." : "Use for sending, receiving, and signing."}
-                icon={CheckCircle}
+                icon={CheckmarkCircle01Icon}
                 selected={isActive && settings.activeAccountIndex === selectedAccount.index}
                 disabled={!isActive || selectedAccount.hidden || settings.activeAccountIndex === selectedAccount.index}
                 onClick={() => makeActive(selectedAccount)}
@@ -753,7 +753,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title="Rename"
                 description="Change the label shown in the vault and switcher."
-                icon={Pen2}
+                icon={PencilEdit01Icon}
                 onClick={() => {
                   setRenamingAccount(selectedAccount);
                   setRenameValue(selectedAccount.name);
@@ -763,7 +763,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title="Notes and tags"
                 description="Keep metadata such as staking, cold, or treasury."
-                icon={DocumentText}
+                icon={File02Icon}
                 onClick={() => {
                   setEditingMeta(selectedAccount);
                   setMetaNote(selectedAccount.note ?? "");
@@ -777,7 +777,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title="Verify backup"
                 description="Check your saved seed against this vault. Hidden by default."
-                icon={CheckCircle}
+                icon={CheckmarkCircle01Icon}
                 onClick={() => {
                   openBackupVerification();
                   closeAccountMenu();
@@ -786,7 +786,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title="Reveal seed"
                 description="Decrypt and display this account seed for a limited time."
-                icon={Key}
+                icon={Key01Icon}
                 onClick={() => {
                   openReveal(selectedAccount);
                   closeAccountMenu();
@@ -798,7 +798,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title={selectedAccount.hidden ? "Unhide account" : "Hide account"}
                 description={selectedAccount.hidden ? "Show this account in the switcher again." : "Remove from the switcher without deleting it."}
-                icon={selectedAccount.hidden ? Eye : EyeClosed}
+                icon={selectedAccount.hidden ? ViewIcon : ViewOffIcon}
                 onClick={() => {
                   toggleHide(selectedAccount);
                   closeAccountMenu();
@@ -810,7 +810,7 @@ export default function VaultDetailScreen() {
               <ActionRow
                 title="Remove account"
                 description="Delete this account from the vault. This cannot be undone."
-                icon={TrashBinMinimalistic}
+                icon={Delete02Icon}
                 danger
                 onClick={() => {
                   setRemovingAccount(selectedAccount);
@@ -898,7 +898,7 @@ function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balanc
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
           {isCurrent && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-accent)", letterSpacing: "0.05em" }}>
-              <CheckCircle size={14} weight="Outline" aria-hidden="true" /> Active
+              <CheckmarkCircle01Icon size={14} strokeWidth={1.5} aria-hidden="true" /> Active
             </span>
           )}
           {account.hidden && (
@@ -959,7 +959,7 @@ function ActionRow({
 }: {
   title: string;
   description: string;
-  icon?: typeof Pen2;
+  icon?: typeof PencilEdit01Icon;
   selected?: boolean;
   disabled?: boolean;
   danger?: boolean;
@@ -988,7 +988,7 @@ function ActionRow({
       }}
     >
       {Icon && (
-        <Icon size={18} weight="Outline" color={danger ? "var(--color-status-error)" : "var(--color-text-secondary)"} aria-hidden="true" />
+        <Icon size={18} strokeWidth={1.5} color={danger ? "var(--color-status-error)" : "var(--color-text-secondary)"} aria-hidden="true" />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-display)" }}>
@@ -999,7 +999,7 @@ function ActionRow({
         </div>
       </div>
       {selected ? (
-        <CheckCircle size={18} weight="Outline" color="var(--color-accent)" aria-label="Selected" />
+        <CheckmarkCircle01Icon size={18} strokeWidth={1.5} color="var(--color-accent)" aria-label="Selected" />
       ) : (
         <span style={{ width: 18, height: 18, border: "1px solid var(--color-border-strong)", borderRadius: "999px", flexShrink: 0 }} aria-hidden="true" />
       )}

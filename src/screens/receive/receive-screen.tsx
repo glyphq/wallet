@@ -3,7 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { LinkRound } from "@solar-icons/react";
+import { Link01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
@@ -37,7 +37,7 @@ export default function ReceiveScreen() {
       title="Receive"
       action={
         <IconButton label="Create payment link" onClick={() => navigate("/payment-link")}>
-          <LinkRound size={20} aria-hidden="true" />
+          <Link01Icon size={20} aria-hidden="true" />
         </IconButton>
       }
     />

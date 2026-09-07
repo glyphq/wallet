@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { UserId, Wallet, ClockCircle, Bolt, ArrowRightUp, NotesMinimalistic, ShieldCheck, ShieldWarning, Copy, CheckCircle } from "@solar-icons/react";
+import { UserCircleIcon, Wallet01Icon, Clock01Icon, FlashIcon, ArrowUpRight01Icon, Note01Icon, ShieldCheckIcon, ShieldAlertIcon, Copy01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
@@ -52,8 +52,8 @@ function DetailRow({ icon, label, value, valueColor, mono: useMono = true, copyV
       onClick={copyValue ? handleCopy : undefined}
     >
       {value}
-      {copyValue && !copied && <Copy size={12} style={{ flexShrink: 0, opacity: 0.4 }} />}
-      {copyValue && copied && <CheckCircle size={12} style={{ flexShrink: 0, color: "var(--color-status-success)" }} />}
+      {copyValue && !copied && <Copy01Icon size={12} style={{ flexShrink: 0, opacity: 0.4 }} />}
+      {copyValue && copied && <CheckmarkCircle01Icon size={12} style={{ flexShrink: 0, color: "var(--color-status-success)" }} />}
     </span>
   );
 
@@ -132,7 +132,7 @@ export default function TxDetailScreen() {
     return (
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-12) 0", gap: "var(--space-3)" }}>
-          <ShieldWarning size={32} style={{ color: "var(--color-text-disabled)" }} />
+          <ShieldAlertIcon size={32} style={{ color: "var(--color-text-disabled)" }} />
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
             Transaction not found
           </span>
@@ -177,13 +177,13 @@ export default function TxDetailScreen() {
 
           {/* Detail card */}
           <div style={CARD_STYLE}>
-            <DetailRow icon={<UserId size={16} />} label="From" value={detail.source ? truncateId(detail.source) : "—"} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
+            <DetailRow icon={<UserCircleIcon size={16} />} label="From" value={detail.source ? truncateId(detail.source) : "—"} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
             <div style={DIVIDER} />
-            <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
+            <DetailRow icon={<Wallet01Icon size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
             <div style={DIVIDER} />
-            <DetailRow icon={<ClockCircle size={16} />} label="Target tick" value={String(detail.targetTick)} mono={false} />
+            <DetailRow icon={<Clock01Icon size={16} />} label="Target tick" value={String(detail.targetTick)} mono={false} />
             <div style={DIVIDER} />
-            <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
+            <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
           </div>
         </motion.div>
       </AppShell>
@@ -241,17 +241,17 @@ export default function TxDetailScreen() {
 
         {/* Detail card */}
         <div style={CARD_STYLE}>
-          <DetailRow icon={<ArrowRightUp size={16} />} label="From" value={isSc && !isIn ? (fromContract ?? truncateId(detail.source ?? "—")) : truncateId(detail.source ?? "—")} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
+          <DetailRow icon={<ArrowUpRight01Icon size={16} />} label="From" value={isSc && !isIn ? (fromContract ?? truncateId(detail.source ?? "—")) : truncateId(detail.source ?? "—")} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
           <div style={DIVIDER} />
-          <DetailRow icon={<Wallet size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
+          <DetailRow icon={<Wallet01Icon size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
           <div style={DIVIDER} />
-          <DetailRow icon={<ShieldCheck size={16} />} label="Tick" value={detail.tickNumber != null ? String(detail.tickNumber) : "—"} mono={false} />
+          <DetailRow icon={<ShieldCheckIcon size={16} />} label="Tick" value={detail.tickNumber != null ? String(detail.tickNumber) : "—"} mono={false} />
           <div style={DIVIDER} />
-          <DetailRow icon={<Bolt size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
+          <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
           {snapshot && !hideBalances && (
             <>
               <div style={DIVIDER} />
-              <DetailRow icon={<Wallet size={16} />} label="Fiat value" value={fiatValue} valueColor="var(--color-text-secondary)" mono={false} />
+              <DetailRow icon={<Wallet01Icon size={16} />} label="Fiat value" value={fiatValue} valueColor="var(--color-text-secondary)" mono={false} />
             </>
           )}
         </div>
@@ -265,7 +265,7 @@ export default function TxDetailScreen() {
             display: "flex", flexDirection: "column", gap: "var(--space-3)",
           }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
+              <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
               <textarea
                 autoFocus
                 value={memo}
@@ -293,7 +293,7 @@ export default function TxDetailScreen() {
             display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
             cursor: "pointer",
           }} onClick={() => setMemoEditing(true)}>
-            <NotesMinimalistic size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
+            <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
             {memo.trim() ? (
               <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{memo.trim()}</span>
             ) : (

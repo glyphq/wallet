@@ -2,19 +2,19 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion, gesture } from "@/lib/animations";
 import {
-  AltArrowRight,
-  ShieldCheck,
-  WiFiRouterMinimalistic,
-  Earth,
-  ClockCircle,
-  UsersGroupRounded,
-  Bell,
-  Heart,
-  Bug,
-  InfoCircle,
-  LockKeyhole,
-  Palette,
-} from "@solar-icons/react";
+  ArrowRight01Icon,
+  ShieldCheckIcon,
+  Wifi01Icon,
+  EarthIcon,
+  Clock01Icon,
+  UserGroupIcon,
+  Notification01Icon,
+  FavouriteIcon,
+  Bug01Icon,
+  InformationCircleIcon,
+  LockKeyholeIcon,
+  PaintBoardIcon,
+} from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { useUpdater } from "@/hooks/use-updater";
@@ -45,15 +45,15 @@ export default function SettingsScreen() {
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps ?? []);
 
   const ROWS: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: string }> = [
-    { label: "Security", description: `Auto-lock: ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheck size={22} weight="Linear" />, section: "General" },
-    { label: "Appearance", description: "Dark or light theme", route: "/settings/appearance", icon: <Palette size={22} weight="Linear" />, section: "General" },
-    { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", icon: <WiFiRouterMinimalistic size={22} weight="Linear" />, section: "General" },
-    { label: "Contacts", description: contacts.length ? `${contacts.length} contact${contacts.length === 1 ? "" : "s"}` : "No contacts yet", route: "/settings/contacts", icon: <UsersGroupRounded size={22} weight="Linear" />, section: "Manage" },
-    { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approved dApps", route: "/settings/dapps", icon: <Earth size={22} weight="Linear" />, section: "Manage" },
-    { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Bell size={22} weight="Linear" />, section: "Manage" },
-    { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <ClockCircle size={22} weight="Linear" />, section: "Info" },
-    { label: "Support", description: "Sponsors, donate QU, GitHub", route: "/settings/support", icon: <Heart size={22} weight="Linear" />, section: "Info" },
-    { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug size={22} weight="Linear" />, section: "Info" },
+    { label: "Security", description: `Auto-lock: ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheckIcon size={22} strokeWidth={1.5} />, section: "General" },
+    { label: "Appearance", description: "Dark or light theme", route: "/settings/appearance", icon: <PaintBoardIcon size={22} strokeWidth={1.5} />, section: "General" },
+    { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", icon: <Wifi01Icon size={22} strokeWidth={1.5} />, section: "General" },
+    { label: "Contacts", description: contacts.length ? `${contacts.length} contact${contacts.length === 1 ? "" : "s"}` : "No contacts yet", route: "/settings/contacts", icon: <UserGroupIcon size={22} strokeWidth={1.5} />, section: "Manage" },
+    { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approved dApps", route: "/settings/dapps", icon: <EarthIcon size={22} strokeWidth={1.5} />, section: "Manage" },
+    { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Notification01Icon size={22} strokeWidth={1.5} />, section: "Manage" },
+    { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <Clock01Icon size={22} strokeWidth={1.5} />, section: "Info" },
+    { label: "Support", description: "Sponsors, donate QU, GitHub", route: "/settings/support", icon: <FavouriteIcon size={22} strokeWidth={1.5} />, section: "Info" },
+    { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug01Icon size={22} strokeWidth={1.5} />, section: "Info" },
   ];
 
   return (
@@ -62,7 +62,7 @@ export default function SettingsScreen() {
         {...stepMotion}
         style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minHeight: 0 }}
       >
-        {/* Settings rows with section headers */}
+        {/* Settings01Icon rows with section headers */}
         {(() => {
           let lastSection = "";
           return ROWS.map((row) => {
@@ -104,7 +104,7 @@ export default function SettingsScreen() {
                       {row.description}
                     </div>
                   </div>
-                  <AltArrowRight size={14} color="var(--color-text-disabled)" weight="Linear" style={{ flexShrink: 0 }} />
+                  <ArrowRight01Icon size={14} color="var(--color-text-disabled)" strokeWidth={1.5} style={{ flexShrink: 0 }} />
                 </motion.button>
               </div>
             );
@@ -134,7 +134,7 @@ export default function SettingsScreen() {
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                  <InfoCircle size={18} weight="Bold" style={{ color: "var(--color-status-success)" }} />
+                  <InformationCircleIcon size={18} strokeWidth={2} style={{ color: "var(--color-status-success)" }} />
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-status-success)" }}>
                     {installing
                       ? progress > 0 ? `Downloading update... ${progress}%` : "Downloading update..."
@@ -174,7 +174,7 @@ export default function SettingsScreen() {
             </span>
           )}
         </div>
-        {/* Lock Vault */}
+        {/* SquareLock01Icon Vault */}
         <Button
           variant="primary"
           size="lg"
@@ -189,8 +189,8 @@ export default function SettingsScreen() {
             border: "1px solid var(--color-accent)",
           }}
         >
-          <LockKeyhole size={16} weight="Outline" style={{ color: "var(--color-accent-contrast)" }} />
-          Lock Vault
+          <LockKeyholeIcon size={16} strokeWidth={1.5} style={{ color: "var(--color-accent-contrast)" }} />
+          SquareLock01Icon Vault
         </Button>
       </motion.div>
     </AppShell>

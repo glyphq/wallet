@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AltArrowLeft } from "@solar-icons/react";
+import { ArrowLeft01Icon } from "@/lib/icons";
 import { IconButton } from "@/components/icon-button";
 
 export interface ScreenHeaderProps {
@@ -66,7 +66,7 @@ export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: 
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 52 }}>
         {onBack ? (
           <IconButton label={backAriaLabel ?? "Go back"} onClick={onBack} style={{ flexShrink: 0 }}>
-            <AltArrowLeft size={22} aria-hidden="true" />
+            <ArrowLeft01Icon size={22} aria-hidden="true" />
           </IconButton>
         ) : null}
       </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
-import { SendSquare } from "@solar-icons/react";
+import { SentIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { SettingsPageHeader } from "@/components/settings-page-header";
@@ -44,13 +44,13 @@ export default function SupportScreen() {
           <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-4)", background: QR_BG }}>
             <QRCodeSVG value={DONATION_IDENTITY} size={184} bgColor={QR_BG} fgColor={QR_FG} level="L" title="Glyph donation address QR code" />
           </div>
-          <button type="button" onClick={() => void copyAddress()} aria-label="Copy donation address" title={copied ? "Address copied" : "Copy donation address"} style={{ maxWidth: 340, marginTop: "var(--space-5)", padding: 0, border: "none", background: "transparent", color: "var(--color-text-secondary)", cursor: "copy" }}>
+          <button type="button" onClick={() => void copyAddress()} aria-label="Copy01Icon donation address" title={copied ? "Address copied" : "Copy01Icon donation address"} style={{ maxWidth: 340, marginTop: "var(--space-5)", padding: 0, border: "none", background: "transparent", color: "var(--color-text-secondary)", cursor: "copy" }}>
             <code style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", lineHeight: 1.55, overflowWrap: "anywhere" }}>{DONATION_IDENTITY}</code>
           </button>
           <span className="sr-only" aria-live="polite">{copied ? "Donation address copied" : ""}</span>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
             <Button size="md" variant="primary" onClick={donate} style={{ width: "auto" }}>
-              <SendSquare size={17} weight="Linear" aria-hidden="true" />
+              <SentIcon size={17} strokeWidth={1.5} aria-hidden="true" />
               Donate
             </Button>
           </div>

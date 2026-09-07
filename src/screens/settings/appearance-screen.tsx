@@ -5,11 +5,11 @@ import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { Sun, Moon, CheckCircle } from "@solar-icons/react";
+import { Sun01Icon, Moon02Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 
-const THEMES: { id: ThemeMode; label: string; description: string; Icon: typeof Sun }[] = [
-  { id: "dark", label: "Dark", description: "Low-glare colors for focused, comfortable viewing.", Icon: Moon },
-  { id: "light", label: "Light", description: "A crisp, bright palette for daylight and bright rooms.", Icon: Sun },
+const THEMES: { id: ThemeMode; label: string; description: string; Icon: typeof Sun01Icon }[] = [
+  { id: "dark", label: "Dark", description: "Low-glare colors for focused, comfortable viewing.", Icon: Moon02Icon },
+  { id: "light", label: "Light", description: "A crisp, bright palette for daylight and bright rooms.", Icon: Sun01Icon },
 ];
 
 const CURRENCIES: { id: AppSettings["currency"]; label: string }[] = [
@@ -210,7 +210,7 @@ function FontPicker({ value, onChange }: { value: FontPairId; onChange: (font: F
               >
                 <span>{pair.name}</span>
                 {pair.id === value && (
-                  <CheckCircle size={16} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                  <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                 )}
               </button>
             </div>
@@ -309,7 +309,7 @@ export default function AppearanceScreen() {
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-                      <Icon size={18} weight="Linear" aria-hidden="true" style={{ marginTop: 1, flexShrink: 0 }} />
+                      <Icon size={18} strokeWidth={1.5} aria-hidden="true" style={{ marginTop: 1, flexShrink: 0 }} />
                       <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                         <span>{label}</span>
                         <span style={{ maxWidth: "75%", fontSize: "var(--text-caption)", fontWeight: 400, color: "var(--color-text-tertiary)", lineHeight: "var(--leading-compact)" }}>
@@ -317,7 +317,7 @@ export default function AppearanceScreen() {
                         </span>
                       </span>
                     </span>
-                    {selected ? <CheckCircle size={18} weight="Outline" aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
+                    {selected ? <CheckmarkCircle01Icon size={18} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} /> : null}
                   </button>
                 </div>
               );

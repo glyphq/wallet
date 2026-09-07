@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { animate } from "motion/react";
-import { AltArrowDown, MenuDots, ArrowRightUp, QrCode, Magnifier, LockKeyhole, TransferHorizontal, WalletMoney } from "@solar-icons/react";
+import { ArrowDown01Icon, MoreHorizontalIcon, ArrowUpRight01Icon, QrCodeIcon, Search01Icon, LockKeyholeIcon, Exchange01Icon, WalletAdd01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Divider } from "@/components/divider";
 import { IconButton } from "@/components/icon-button";
@@ -114,9 +114,9 @@ function AccountSelector({ vault, activeIndex, wallets, identity, onSelect }: {
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.02em" }}>
           {accountName}
         </span>
-        <AltArrowDown
+        <ArrowDown01Icon
           size={12}
-          weight="Linear"
+          strokeWidth={1.5}
           style={{ color: "var(--color-text-disabled)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
         />
       </button>
@@ -391,16 +391,16 @@ export default function DashboardScreen() {
       action={
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
           <IconButton
-            label="Lock Vault"
+            label="SquareLock01Icon Vault"
             onClick={() => {
               lock();
               navigate("/lock", { replace: true });
             }}
           >
-            <LockKeyhole size={19} weight="Linear" aria-hidden="true" />
+            <LockKeyholeIcon size={19} strokeWidth={1.5} aria-hidden="true" />
           </IconButton>
           <IconButton label="Search" onClick={() => navigate("/search")}>
-            <Magnifier size={20} weight="Linear" aria-hidden="true" />
+            <Search01Icon size={20} strokeWidth={1.5} aria-hidden="true" />
           </IconButton>
         </div>
       }
@@ -481,11 +481,11 @@ export default function DashboardScreen() {
           {(
             <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
               <Button variant="primary" size="md" shape="pill" onClick={() => navigate("/send")}>
-                <ArrowRightUp size={16} weight="Bold" />
+                <ArrowUpRight01Icon size={16} strokeWidth={2} />
                 Send
               </Button>
               <Button variant="secondary" size="md" shape="pill" onClick={() => navigate("/receive")}>
-                <QrCode size={16} weight="Bold" />
+                <QrCodeIcon size={16} strokeWidth={2} />
                 Receive
               </Button>
             </div>
@@ -509,7 +509,7 @@ export default function DashboardScreen() {
               }}
             >
               View all
-              <MenuDots size={14} weight="Linear" />
+              <MoreHorizontalIcon size={14} strokeWidth={1.5} />
             </button>
           </div>
           <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} price={stats?.price} />
@@ -521,7 +521,7 @@ export default function DashboardScreen() {
             onClick={() => navigate("/stake")}
             style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0, background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer" }}
           >
-            <WalletMoney size={18} weight="Linear" aria-hidden="true" />
+            <WalletAdd01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
             QEarn
           </button>
           <button
@@ -529,7 +529,7 @@ export default function DashboardScreen() {
             onClick={() => navigate("/send-many")}
             style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0, background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer" }}
           >
-            <TransferHorizontal size={18} weight="Linear" aria-hidden="true" />
+            <Exchange01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
             Send to many
           </button>
         </nav>

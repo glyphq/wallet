@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { AltArrowDown, Magnifier, TrashBinMinimalistic } from "@solar-icons/react";
+import { ArrowDown01Icon, Search01Icon, Delete02Icon } from "@/lib/icons";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { IconButton } from "@/components/icon-button";
@@ -73,7 +73,7 @@ function HistoryRow({ item, expanded, onToggle }: { item: RequestHistoryItem; ex
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexShrink: 0 }}>
             <time style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>{createdAt}</time>
-            <AltArrowDown size={16} weight="Linear" aria-hidden="true" style={{ color: "var(--color-text-tertiary)", transform: expanded ? "rotate(180deg)" : undefined, transition: "transform var(--duration-fast) var(--ease-out)" }} />
+            <ArrowDown01Icon size={16} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-text-tertiary)", transform: expanded ? "rotate(180deg)" : undefined, transition: "transform var(--duration-fast) var(--ease-out)" }} />
           </div>
         </div>
 
@@ -148,7 +148,7 @@ export default function RequestHistoryScreen() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search requests"
-                leftElement={<Magnifier size={18} weight="Linear" />}
+                leftElement={<Search01Icon size={18} strokeWidth={1.5} />}
                 containerStyle={{ flex: 1 }}
               />
               <IconButton
@@ -156,7 +156,7 @@ export default function RequestHistoryScreen() {
                 onClick={clearRequestHistory}
                 style={{ flexShrink: 0, color: "var(--color-status-error)" }}
               >
-                <TrashBinMinimalistic size={20} weight="Linear" aria-hidden="true" />
+                <Delete02Icon size={20} strokeWidth={1.5} aria-hidden="true" />
               </IconButton>
             </section>
 

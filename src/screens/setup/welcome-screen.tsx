@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { AddCircle, AltArrowLeft, DangerTriangle, FolderOpen, KeyMinimalistic, LockKeyhole } from "@solar-icons/react";
+import { AddCircleIcon, ArrowLeft01Icon, Alert01Icon, FolderOpenIcon, KeyRoundIcon, LockKeyholeIcon } from "@/lib/icons";
 import { presets } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -65,7 +65,7 @@ function Notice({ tone, children }: { tone: "warning" | "error"; children: React
         background: colors.background,
       }}
     >
-      <DangerTriangle size={16} color={colors.color} weight="Linear" style={{ flexShrink: 0, marginTop: 2 }} />
+      <Alert01Icon size={16} color={colors.color} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: 2 }} />
       <span
         style={{
           fontFamily: "var(--font-sans)",
@@ -240,7 +240,7 @@ export default function WelcomeScreen() {
                 cursor: "pointer",
               }}
             >
-              <AltArrowLeft size={17} weight="Linear" aria-hidden="true" />
+              <ArrowLeft01Icon size={17} strokeWidth={1.5} aria-hidden="true" />
               Back to Vault
             </button>
           ) : null}
@@ -263,11 +263,11 @@ export default function WelcomeScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button onClick={() => navigate("/setup/create")}>
-              <AddCircle size={18} weight="Linear" aria-hidden="true" />
+              <AddCircleIcon size={18} strokeWidth={1.5} aria-hidden="true" />
               Create Vault
             </Button>
             <Button variant="secondary" onClick={() => navigate("/setup/import")}>
-              <KeyMinimalistic size={18} weight="Linear" aria-hidden="true" />
+              <KeyRoundIcon size={18} strokeWidth={1.5} aria-hidden="true" />
               Restore from seed
             </Button>
           </div>
@@ -276,7 +276,7 @@ export default function WelcomeScreen() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
-              <FolderOpen size={18} weight="Linear" aria-hidden="true" />
+              <FolderOpenIcon size={18} strokeWidth={1.5} aria-hidden="true" />
               Import Vault file
             </Button>
           </div>
@@ -409,7 +409,7 @@ export default function WelcomeScreen() {
 
           <Input
             label="Vault password"
-            leftElement={<LockKeyhole size={18} weight="Linear" />}
+            leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
             type="password"
             value={importPw}
             onChange={(event) => {

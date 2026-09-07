@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { FolderOpen, AddCircle, Settings, CheckCircle } from "@solar-icons/react";
+import { FolderOpenIcon, AddCircleIcon, Settings01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -253,11 +253,11 @@ export default function VaultsScreen() {
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
         <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")} disabled={switchLoading}>
-          <AddCircle size={18} aria-hidden="true" />
+          <AddCircleIcon size={18} aria-hidden="true" />
           New vault
         </Button>
         <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openImportPicker} disabled={switchLoading}>
-          <FolderOpen size={18} aria-hidden="true" />
+          <FolderOpenIcon size={18} aria-hidden="true" />
           Import vault
         </Button>
         </div>
@@ -319,7 +319,7 @@ export default function VaultsScreen() {
               </div>
               {isActive && (
                 <span aria-label="Selected vault" title="Selected vault" style={{ display: "inline-flex", color: "var(--color-accent)", flexShrink: 0 }}>
-                  <CheckCircle size={18} weight="Outline" aria-hidden="true" />
+                  <CheckmarkCircle01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
                 </span>
               )}
             </button>
@@ -335,7 +335,7 @@ export default function VaultsScreen() {
                 flexShrink: 0, display: "flex", alignItems: "center",
               }}
             >
-              <Settings size={16} weight="Linear" />
+              <Settings01Icon size={16} strokeWidth={1.5} />
             </button>
           </div>
         );

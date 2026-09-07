@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { AddCircle } from "@solar-icons/react";
+import { AddCircleIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -73,7 +73,7 @@ export default function ScheduledTransfersScreen() {
     <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <div style={{ display: "flex", justifyContent: "flex-start" }}>
         <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openAdd}>
-          <AddCircle size={18} aria-hidden="true" />
+          <AddCircleIcon size={18} aria-hidden="true" />
           New schedule
         </Button>
       </div>

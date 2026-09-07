@@ -1,20 +1,20 @@
 import type { ComponentType } from "react";
-import type { IconProps } from "@solar-icons/react";
+import type { IconProps } from "@/lib/icons";
 import {
-  Buildings,
-  Compass,
-  FolderOpen,
-  HomeSmile,
-  Key,
-  Planet,
-  Rocket,
-  Safe2,
-  ShieldCheck,
-  Star,
-  UsersGroupRounded,
-  Wallet,
-  WalletMoney,
-} from "@solar-icons/react";
+  Building01Icon,
+  Compass01Icon,
+  FolderOpenIcon,
+  Home01Icon,
+  Key01Icon,
+  GlobalIcon,
+  Rocket01Icon,
+  SafeIcon,
+  ShieldCheckIcon,
+  StarIcon,
+  UserGroupIcon,
+  Wallet01Icon,
+  WalletAdd01Icon,
+} from "@/lib/icons";
 import type { VaultColor, WalletIconId } from "@/store/persisted";
 
 export const DEFAULT_WALLET_ICON: WalletIconId = "wallet";
@@ -27,18 +27,18 @@ type WalletIconOption = {
 };
 
 export const WALLET_ICON_OPTIONS: WalletIconOption[] = [
-  { id: "wallet", label: "Wallet", Icon: Wallet },
-  { id: "wallet-money", label: "Cash", Icon: WalletMoney },
-  { id: "safe", label: "Safe", Icon: Safe2 },
-  { id: "shield", label: "Shield", Icon: ShieldCheck },
-  { id: "folder", label: "Folder", Icon: FolderOpen },
-  { id: "home", label: "Home", Icon: HomeSmile },
-  { id: "buildings", label: "City", Icon: Buildings },
-  { id: "compass", label: "Compass", Icon: Compass },
-  { id: "star", label: "Star", Icon: Star },
-  { id: "rocket", label: "Rocket", Icon: Rocket },
-  { id: "planet", label: "Planet", Icon: Planet },
-  { id: "key", label: "Key", Icon: Key },
+  { id: "wallet", label: "Wallet01Icon", Icon: Wallet01Icon },
+  { id: "wallet-money", label: "Cash", Icon: WalletAdd01Icon },
+  { id: "safe", label: "Safe", Icon: SafeIcon },
+  { id: "shield", label: "Shield", Icon: ShieldCheckIcon },
+  { id: "folder", label: "Folder", Icon: FolderOpenIcon },
+  { id: "home", label: "Home", Icon: Home01Icon },
+  { id: "buildings", label: "City", Icon: Building01Icon },
+  { id: "compass", label: "Compass01Icon", Icon: Compass01Icon },
+  { id: "star", label: "StarIcon", Icon: StarIcon },
+  { id: "rocket", label: "Rocket01Icon", Icon: Rocket01Icon },
+  { id: "planet", label: "GlobalIcon", Icon: GlobalIcon },
+  { id: "key", label: "Key01Icon", Icon: Key01Icon },
 ];
 
 export const WALLET_COLOR_OPTIONS: { id: VaultColor; label: string; accent: string }[] = [
@@ -51,15 +51,15 @@ export const WALLET_COLOR_OPTIONS: { id: VaultColor; label: string; accent: stri
 ];
 
 export function getWalletIconComponent(icon?: WalletIconId) {
-  return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.Icon ?? Wallet;
+  return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.Icon ?? Wallet01Icon;
 }
 
 export function getWalletIconLabel(icon?: WalletIconId) {
-  return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.label ?? "Wallet";
+  return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.label ?? "Wallet01Icon";
 }
 
 export function getWalletAccent(color?: VaultColor) {
   return WALLET_COLOR_OPTIONS.find((option) => option.id === color)?.accent ?? "var(--color-wallet-accent-slate)";
 }
 
-export const CONTACT_ICON = UsersGroupRounded;
+export const CONTACT_ICON = UserGroupIcon;
