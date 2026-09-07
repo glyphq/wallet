@@ -83,7 +83,7 @@ validate_deb() {
   architecture="$(dpkg-deb -f "$deb" Architecture)"
   depends="$(dpkg-deb -f "$deb" Depends)"
 
-  [[ "$package" == "glyph" ]] || die "unexpected deb package name: $package"
+  [[ "$package" == "glyph-wallet" ]] || die "unexpected deb package name: $package"
   [[ "$version" == "$EXPECTED_VERSION" ]] || die "deb version is $version, expected $EXPECTED_VERSION"
   [[ "$architecture" == "amd64" ]] || die "deb architecture is $architecture, expected amd64"
   assert_contains "$depends" 'libwebkit2gtk-4[.]1-0' "deb dependencies"

@@ -73,5 +73,18 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     expect(workflow).not.toContain(
       "node .release-automation/scripts/validate-signing-config.mjs --mode release --config src-tauri/tauri.conf.json",
     );
+
+    const unsignedMacosBuild = workflow.match(
+      /- name: Build unsigned universal macOS bundles[\s\S]*?(?=\n      - name: Build signed universal macOS bundles)/,
+    )?.[0];
+    expect(unsignedMacosBuild).toContain("if: inputs.allow_unsigned_native == true");
+    expect(unsignedMacosBuild).not.toContain("APPLE_CERTIFICATE");
+    expect(unsignedMacosBuild).toContain("TAURI_SIGNING_PRIVATE_KEY");
+
+    const signedMacosBuild = workflow.match(
+      /- name: Build signed universal macOS bundles[\s\S]*?(?=\n      - name: Normalize versioned macOS updater artifact names)/,
+    )?.[0];
+    expect(signedMacosBuild).toContain("if: inputs.allow_unsigned_native != true");
+    expect(signedMacosBuild).toContain("APPLE_CERTIFICATE");
   });
 });
