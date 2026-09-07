@@ -84,14 +84,6 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/extract-changelog.mjs "$VERSION" > release-notes.md
-          if [[ "${{ inputs.allow_unsigned_native }}" == "true" ]]; then
-            cat >> release-notes.md <<'EOF'
-
-          > **Warning:** macOS and Windows installers in this release are not platform-code-signed.
-          > Their updater archives remain signed, but your operating system will show a security warning
-          > when opening the app for the first time.
-          EOF
-          fi
           expected_prerelease=false
           if [[ "$RELEASE_CHANNEL" == "prerelease" ]]; then
             expected_prerelease=true
