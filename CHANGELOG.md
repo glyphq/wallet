@@ -1,5 +1,14 @@
 # glyph
 
+## 0.16.14
+
+### Patch Changes
+
+- 7207b57: Refresh wallet icons and improve Linux system tray support.
+
+  - **UX:** Replace the wallet interface icon set with Hugeicons for a more consistent visual language.
+  - **Reliability:** Use Linux's native StatusNotifierItem protocol for the system tray, avoiding the deprecated AppIndicator integration.
+
 ## 0.16.13
 
 ### Patch Changes
