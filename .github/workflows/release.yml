@@ -173,6 +173,7 @@ jobs:
           path: .release-automation
           persist-credentials: false
           sparse-checkout: |
+            .github/actions/setup-bun
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -205,7 +206,7 @@ jobs:
           cache-on-failure: "true"
 
       - name: Set up Bun workspace
-        uses: ./.github/actions/setup-bun
+        uses: ./.release-automation/.github/actions/setup-bun
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
@@ -328,6 +329,7 @@ jobs:
           path: .release-automation
           persist-credentials: false
           sparse-checkout: |
+            .github/actions/setup-bun
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -349,7 +351,7 @@ jobs:
           cache-on-failure: "true"
 
       - name: Set up Bun workspace
-        uses: ./.github/actions/setup-bun
+        uses: ./.release-automation/.github/actions/setup-bun
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
@@ -453,6 +455,7 @@ jobs:
           path: .release-automation
           persist-credentials: false
           sparse-checkout: |
+            .github/actions/setup-bun
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -473,7 +476,7 @@ jobs:
           cache-on-failure: "true"
 
       - name: Set up Bun workspace
-        uses: ./.github/actions/setup-bun
+        uses: ./.release-automation/.github/actions/setup-bun
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
