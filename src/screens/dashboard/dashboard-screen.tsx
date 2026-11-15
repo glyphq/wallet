@@ -19,7 +19,7 @@ import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { Button } from "@/components/button";
 import { truncateId, formatQu, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
-import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
+import { KNOWN_CONTRACT_ADDRESSES, resolveProcedureName } from "@/lib/contracts";
 
 // ── Animated balance ─────────────────────────────────────────────────────────
 
@@ -293,13 +293,7 @@ function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
     const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
     const isSc = !!(contractName || fromContract);
 
-    const scAddress = contractName ? tx.destination : fromContract ? tx.source : null;
-    const contractIndex = scAddress
-      ? Object.entries(CONTRACT_NAMES).find(([, name]) => (contractName ?? fromContract) === name)?.[0]
-      : null;
-    const procedureName = contractIndex !== undefined && contractIndex !== null && tx.inputType !== null
-      ? CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${tx.inputType}`]
-      : undefined;
+    const procedureName = resolveProcedureName(contractName, fromContract, tx.inputType);
 
     const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
     const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";

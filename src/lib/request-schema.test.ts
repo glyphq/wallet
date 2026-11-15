@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildRequestNotification, MAX_REQUEST_CHARS, parseGlyphEnvelope, parseGlyphEnvelopeAsync } from "@/lib/request-schema";
+import { buildRequestNotification, MAX_REQUEST_CHARS, MAX_REQUEST_CONTRACT_INDEX, parseGlyphEnvelope, parseGlyphEnvelopeAsync, scCallRequestSchema } from "@/lib/request-schema";
 import { REQUEST_PROTOCOL_V2, requestHashV2 } from "@/lib/jcs";
 
 async function envelope(request: Record<string, unknown>, callback: string | null = null, redirect_uri: string | null = null, network = { id: "qubic:mainnet" as const }) {
@@ -8,6 +8,21 @@ async function envelope(request: Record<string, unknown>, callback: string | nul
 }
 
 describe("parseGlyphEnvelope", () => {
+  test("limits contract indexes to the native validation range", () => {
+    const base = { type: "sc_call", dapp: { origin: "https://demo.app" }, nonce: "n1", input_type: 1 } as const;
+    expect(MAX_REQUEST_CONTRACT_INDEX).toBe(63);
+    expect(scCallRequestSchema.safeParse({ ...base, contract_index: MAX_REQUEST_CONTRACT_INDEX }).success).toBe(true);
+    expect(scCallRequestSchema.safeParse({ ...base, contract_index: MAX_REQUEST_CONTRACT_INDEX + 1 }).success).toBe(false);
+    expect(scCallRequestSchema.safeParse({ ...base, contract_index: -1 }).success).toBe(false);
+  });
+
+  test("limits amounts to the signed 64-bit range native signing accepts", () => {
+    const base = { type: "sc_call", dapp: { origin: "https://demo.app" }, nonce: "n1", contract_index: 1, input_type: 1 } as const;
+    expect(scCallRequestSchema.safeParse({ ...base, amount: "9223372036854775807" }).success).toBe(true);
+    expect(scCallRequestSchema.safeParse({ ...base, amount: "9223372036854775808" }).success).toBe(false);
+    expect(scCallRequestSchema.safeParse({ ...base, amount: "18446744073709551615" }).success).toBe(false);
+  });
+
   test("accepts HTTPS callbacks bound to the dApp origin", async () => {
     const result = await parseGlyphEnvelopeAsync(JSON.stringify(await envelope({
       type: "transfer",

@@ -21,7 +21,6 @@ use tauri::menu::{Menu, MenuItem};
 #[cfg(not(target_os = "linux"))]
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
-use tauri_plugin_clipboard_manager::ClipboardExt;
 
 fn single_instance_url(args: &[String]) -> Result<Option<&str>, ()> {
     match args {
@@ -253,18 +252,12 @@ pub fn run() {
                 } else {
                     let app = window.app_handle();
                     let clipboard = app.state::<ClipboardState>();
-                    if clipboard.has_pending_clear() {
-                        let _ = app.clipboard().write_text("");
-                        clipboard.cancel_clear();
-                    }
+                    clipboard.clear_if_owned(app);
                 }
             } else if let tauri::WindowEvent::Destroyed = event {
                 let app = window.app_handle();
                 let clipboard = app.state::<ClipboardState>();
-                if clipboard.has_pending_clear() {
-                    let _ = app.clipboard().write_text("");
-                    clipboard.cancel_clear();
-                }
+                clipboard.clear_if_owned(app);
             }
         })
         .invoke_handler(tauri::generate_handler![

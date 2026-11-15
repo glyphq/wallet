@@ -168,7 +168,7 @@ pub fn copy_to_clipboard(
     app.clipboard()
         .write_text(&text)
         .map_err(|e| e.to_string())?;
-    clip_state.schedule_clear(clear_after_secs.min(MAX_CLIPBOARD_CLEAR_SECS));
+    clip_state.schedule_clear(clear_after_secs.min(MAX_CLIPBOARD_CLEAR_SECS), &text);
     Ok(())
 }
 
@@ -180,10 +180,7 @@ pub fn clear_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
 
 #[tauri::command]
 pub fn lock_clipboard(app: AppHandle, clip_state: State<'_, ClipboardState>) {
-    if clip_state.has_pending_clear() {
-        app.clipboard().write_text("").ok();
-        clip_state.cancel_clear();
-    }
+    clip_state.clear_if_owned(&app);
 }
 
 pub fn is_private_host(host: &str) -> bool {

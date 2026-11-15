@@ -6,6 +6,8 @@ export interface ImportedRecipient {
   label?: string;
 }
 
+const HEADER_FIELDS = new Set(["identity", "address", "recipient", "to", "amount", "qu", "value", "label", "name"]);
+
 function parseCsvLine(line: string): string[] {
   const fields: string[] = [];
   let current = "";
@@ -43,7 +45,8 @@ function normalizeAmount(value: unknown): string {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) return String(Math.trunc(value));
   if (typeof value !== "string") return "";
   const digits = value.trim().replace(/,/g, "");
-  return /^\d+$/.test(digits) ? digits : "";
+  if (!/^\d+$/.test(digits) || /^0+$/.test(digits)) return "";
+  return digits;
 }
 
 function asRecipient(record: Record<string, unknown>): ImportedRecipient | null {
@@ -76,7 +79,9 @@ export function parseRecipientImport(input: string): ImportedRecipient[] {
   if (lines.length === 0) return [];
 
   const parsedLines = lines.map(parseCsvLine);
-  const looksLikeHeader = parsedLines[0].some((field) => /identity|address|recipient|to|amount|qu|value/i.test(field));
+  // Match header names exactly: identities can contain "to" or "qu" and would
+  // otherwise be mistaken for a header row and silently dropped.
+  const looksLikeHeader = parsedLines[0].some((field) => HEADER_FIELDS.has(field.toLowerCase()));
   const body = looksLikeHeader ? parsedLines.slice(1) : parsedLines;
 
   return body

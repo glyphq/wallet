@@ -175,8 +175,12 @@ export default function SecurityScreen() {
 
         <section style={{ display: "flex", flexDirection: "column", gap: 0 }} aria-label="Approval requirements">
           <SettingsSwitch label="Password for burn" description="Require password before burning QU" checked={requirePasswordForBurn} onChange={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })} />
-          <SettingsDivider />
-          <SettingsSwitch label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
+          {bioAvailable && (
+            <>
+              <SettingsDivider />
+              <SettingsSwitch label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
+            </>
+          )}
         </section>
 
         {bioAvailable && vault && (

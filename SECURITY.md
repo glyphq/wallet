@@ -107,7 +107,7 @@ The request schema also requires the callback origin to match the request's clai
 
 ### Auto-lock and clipboard
 
-A native watcher enforces bounded inactivity timeouts and optional sleep locking. Renderer activity resets the timer, and window-blur locking is coordinated by the renderer. Protected clipboard writes have a bounded clear timer; lock handling clears clipboard content when a protected clear is pending.
+A native watcher enforces bounded inactivity timeouts and optional sleep locking. Renderer activity resets the timer, and window-blur locking is coordinated by the renderer. Protected clipboard writes have a bounded clear timer. Timed, lock-time, and exit clears only blank the clipboard while it still holds the digest of the value Glyph copied, so content copied afterwards is preserved.
 
 These controls reduce exposure but cannot prevent another process with operating-system clipboard access from reading content before it is cleared.
 

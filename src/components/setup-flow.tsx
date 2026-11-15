@@ -6,7 +6,7 @@ import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { StepProgress } from "@/components/step-progress";
 import { stepMotion } from "@/lib/animations";
-import { passwordStrength } from "@/lib/password-strength";
+import { MIN_PASSWORD_LENGTH, passwordStrength } from "@/lib/password-strength";
 
 interface SetupFlowProps {
   current: number;
@@ -247,5 +247,5 @@ export function PasswordFields({
 
 export function passwordsAreValid(password: string, confirmation: string) {
   const strength = passwordStrength(password);
-  return password.length >= 10 && strength.level >= 1 && confirmation.length > 0 && password === confirmation;
+  return password.length >= MIN_PASSWORD_LENGTH && strength.level >= 1 && confirmation.length > 0 && password === confirmation;
 }

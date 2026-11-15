@@ -139,3 +139,21 @@ export const KNOWN_CONTRACT_ADDRESSES: Record<string, string> = {};
 for (const [idx, name] of Object.entries(CONTRACT_NAMES)) {
   KNOWN_CONTRACT_ADDRESSES[contractIndexToIdentity(Number(idx)) as string] = name;
 }
+
+// Reverse lookup so transaction rows do not rebuild the name -> index map.
+const CONTRACT_INDEX_BY_NAME: Record<string, number> = {};
+for (const [idx, name] of Object.entries(CONTRACT_NAMES)) {
+  CONTRACT_INDEX_BY_NAME[name] ??= Number(idx);
+}
+
+/** Resolves the human-readable procedure for a contract transaction, if known. */
+export function resolveProcedureName(
+  contractName: string | undefined,
+  fromContract: string | undefined,
+  inputType: number | null | undefined,
+): string | undefined {
+  const scName = contractName ?? fromContract;
+  const contractIndex = scName ? CONTRACT_INDEX_BY_NAME[scName] : undefined;
+  if (contractIndex === undefined || inputType == null) return undefined;
+  return CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${inputType}`];
+}

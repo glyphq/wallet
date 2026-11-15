@@ -258,9 +258,9 @@ Decryption validates input sizes and resource bounds before deriving a key. It a
 Password strength rules are UI policy, not cryptographic-format constraints:
 
 - New-vault setup requires at least 10 characters and the screen's minimum strength level.
-- The current password-rotation screen accepts at least 8 characters.
+- Password rotation uses the same 10-character minimum.
 
-The native vault format can decrypt any valid password bytes. Reviewers should not assume one consistent password rule across every UI path.
+The native vault format can decrypt any valid password bytes, including legacy vaults whose password predates the current policy.
 
 ## 9. Unlock and signing data flow
 
@@ -355,9 +355,9 @@ Clipboard writes are performed through Tauri clipboard integration. Native sched
 - Identity copies use a configurable 15, 30, or 60 second timeout, or no automatic clear.
 - The default is 30 seconds.
 - Seed copies use 60 seconds.
-- Application close attempts to clear when a Glyph clipboard clear is pending.
+- Application close clears a pending Glyph clipboard value.
 
-The clear operation overwrites the entire clipboard. It does not compare the current clipboard value to the value originally copied by Glyph. A user copying different content before the timer expires can have that newer content cleared.
+Native keeps a SHA-256 digest of the value Glyph last copied. Scheduled clears, lock-time clears, and application-close clears blank the clipboard only while it still contains that value. If the clipboard cannot be read, the clear still runs so a copied seed does not remain. Content the user copies after Glyph is left intact.
 
 ## 13. RPC and transaction architecture
 
@@ -492,7 +492,7 @@ Native validation includes:
 
 A missing expiry is accepted for validation using an effective five-minute lifetime, but the normalized renderer request does not gain a synthesized `exp` field. As a result, the review UI cannot display a countdown for that compatibility case.
 
-There is a current cross-layer contract-index mismatch: renderer schema validation allows a wider smart-contract range, while native validation accepts only contract indexes 0 through 63. Native validation is authoritative, so some renderer-accepted inputs are rejected before execution.
+Renderer schema validation and native validation both accept smart-contract indexes 0 through 63. Native validation remains authoritative for request envelopes.
 
 ### Queues and replay timing
 
@@ -670,19 +670,15 @@ Security and architecture reviews should explicitly account for these current be
 
 1. **Transient renderer seed exposure:** unlock returns seeds over IPC before the native session is populated.
 2. **Biometrics disabled:** all public biometric commands return unavailable or an error.
-3. **Potential seed-reveal configuration trap:** the persisted require-biometric setting can be enabled even though enrollment is disabled.
-4. **Inconsistent password minimums:** onboarding requires 10 characters while password rotation requires 8.
-5. **Clipboard ownership is not checked:** a scheduled clear can erase newer clipboard content.
-6. **Linux store key has a durable file copy:** Secret Service success does not eliminate the local key file.
-7. **Windows fallback ACL is implicit:** the fallback key file does not receive an explicitly configured Glyph ACL.
-8. **Scheduled transfers are not executed:** they are reminders and prefill templates.
-9. **Stored dApp permissions are not silent authorization:** every action still requires review.
-10. **Nonce consumption occurs before approval:** rejected requests cannot reuse the same nonce for one hour.
-11. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
-12. **Smart-contract index validation differs by layer:** native validation is narrower and authoritative.
-13. **Audit history is mutable:** it is local, capped, and clearable.
-14. **Diagnostics contain metadata:** reports omit vault secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
-15. **Network-derived data is trusted for display:** signatures remain local, but malicious RPC data can influence user decisions.
+3. **Linux store key has a durable file copy:** Secret Service success does not eliminate the local key file.
+4. **Windows fallback ACL is implicit:** the fallback key file does not receive an explicitly configured Glyph ACL.
+5. **Scheduled transfers are not executed:** they are reminders and prefill templates.
+6. **Stored dApp permissions are not silent authorization:** every action still requires review.
+7. **Nonce consumption occurs before approval:** rejected requests cannot reuse the same nonce for one hour.
+8. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
+9. **Audit history is mutable:** it is local, capped, and clearable.
+10. **Diagnostics contain metadata:** reports omit vault secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
+11. **Network-derived data is trusted for display:** signatures remain local, but malicious RPC data can influence user decisions.
 
 ## 22. Review checklist for sensitive changes
 

@@ -8,9 +8,12 @@ import { REQUEST_PROTOCOL_V2, requestHashV2, type GlyphNetworkBinding } from "@/
 export const MAX_REQUEST_CHARS = 128 * 1024;
 export const MAX_REQUEST_MESSAGE_CHARS = 64 * 1024;
 export const MAX_REQUEST_BINARY_BYTES = 64 * 1024;
+/** Native request validation accepts contract indexes 0 through 63. */
+export const MAX_REQUEST_CONTRACT_INDEX = 63;
 const OFFICIAL_RELAY_ORIGIN = "https://relay.glyphq.org";
 
-const MAX_UINT64 = 18_446_744_073_709_551_615n;
+/** Native transaction amounts are signed 64-bit values. */
+const MAX_REQUEST_AMOUNT = 9_223_372_036_854_775_807n;
 const MAX_BASE64_CHARS = Math.ceil(MAX_REQUEST_BINARY_BYTES / 3) * 4;
 
 function isBase64(value: string): boolean {
@@ -34,7 +37,7 @@ const baseRequestSchema = z.object({
 const amountSchema = z.union([
   z.number().int().safe().nonnegative(),
   z.string().max(20).regex(/^\d+$/, "Amount must be an unsigned integer"),
-]).refine((value) => BigInt(value) <= MAX_UINT64, "Amount exceeds the maximum supported value");
+]).refine((value) => BigInt(value) <= MAX_REQUEST_AMOUNT, "Amount exceeds the maximum supported value");
 
 const binaryDataSchema = z.string()
   .max(MAX_BASE64_CHARS, "Binary data is too large")
@@ -61,7 +64,7 @@ export const transferRequestSchema = baseRequestSchema.extend({
 
 export const scCallRequestSchema = baseRequestSchema.extend({
   type: z.literal("sc_call"),
-  contract_index: z.number().int().min(0).max(1023),
+  contract_index: z.number().int().min(0).max(MAX_REQUEST_CONTRACT_INDEX),
   input_type: z.number().int().min(0).max(65535),
   from: z.string().optional(),
   amount: amountSchema.optional(),

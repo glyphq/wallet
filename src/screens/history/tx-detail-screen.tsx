@@ -10,7 +10,7 @@ import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { type TxHistoryItem } from "@/hooks/use-tx-history";
-import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
+import { KNOWN_CONTRACT_ADDRESSES, resolveProcedureName } from "@/lib/contracts";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { formatQu, formatPreferredCurrencyFromQu, truncateId } from "@/lib/format";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
@@ -75,14 +75,6 @@ const CARD_STYLE: React.CSSProperties = {
 const DIVIDER: React.CSSProperties = {
   height: 1, background: "var(--color-border-subtle)", margin: "0 calc(var(--space-4) * -1)",
 };
-
-function resolveProcedureName(contractName: string | undefined, fromContract: string | undefined, inputType: number | null | undefined): string | undefined {
-  const scName = contractName ?? fromContract;
-  if (!scName) return undefined;
-  const contractIndex = Object.entries(CONTRACT_NAMES).find(([, name]) => name === scName)?.[0];
-  if (contractIndex == null || inputType == null) return undefined;
-  return CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${inputType}`];
-}
 
 export default function TxDetailScreen() {
   const { hash } = useParams<{ hash: string }>();

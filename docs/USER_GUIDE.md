@@ -121,11 +121,11 @@ Removing an account requires the vault password. Confirm that its seed is backed
 
 Seed reveal requires the vault password under the normal configuration. The reveal dialog closes automatically after 60 seconds, and a copied seed is scheduled for clipboard clearing after 60 seconds.
 
-Biometric commands are currently disabled on every platform. Leave **Require biometrics for seed reveal** turned off. Enabling that setting can prevent seed reveal because no hardware-backed biometric credential can currently be enrolled.
+Biometric commands are currently disabled on every platform, so the biometric seed-reveal requirement is hidden. When biometric enrollment is available again, the requirement applies only to a vault that has an enrolled credential; otherwise Glyph falls back to the password path instead of blocking reveal.
 
 ### Change the vault password
 
-Open the vault detail screen, supply the current password, and choose a new one. The current password-change screen accepts a new password of at least 8 characters. This is less strict than the 10-character onboarding rule, so use a longer unique passphrase even when the screen permits less.
+Open the vault detail screen, supply the current password, and choose a new one. New passwords use the same 10-character minimum as onboarding. A longer unique passphrase is still preferable.
 
 Changing a password re-encrypts the vault. It does not change account seeds or identities.
 

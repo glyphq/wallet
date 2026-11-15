@@ -20,6 +20,8 @@ import { getAccountIdentity, parseAccountTags } from "@/lib/accounts";
 import { createSignedExportEnvelope } from "@/lib/export-format";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { formatQu } from "@/lib/format";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password-strength";
+import { requiresBiometricSeedReveal } from "@/lib/session-policies";
 import {
   PencilEdit01Icon, File02Icon, Key01Icon, ViewOffIcon, ViewIcon, Delete02Icon,
   AddCircleIcon, InformationCircleIcon, CheckmarkCircle01Icon,
@@ -112,6 +114,11 @@ export default function VaultDetailScreen() {
 
   if (!vault) return null;
   const currentVault = vault;
+  const biometricRevealRequired = requiresBiometricSeedReveal(
+    requireBiometricForSeedReveal,
+    biometricVaultIds,
+    currentVault.id,
+  );
 
   async function doExport() {
     if (!currentVault.encryptedData) return;
@@ -287,7 +294,7 @@ export default function VaultDetailScreen() {
   async function doRotatePassword() {
     if (!rotateOldPassword || !rotateNewPassword) return;
     if (rotateNewPassword !== rotateConfirm) { setRotateError("Passwords do not match"); return; }
-    if (rotateNewPassword.length < 8) { setRotateError("Password too short (min 8 chars)"); return; }
+    if (rotateNewPassword.length < MIN_PASSWORD_LENGTH) { setRotateError(`Password too short (min ${MIN_PASSWORD_LENGTH} chars)`); return; }
     setRotateLoading(true);
     setRotateError("");
     try {
@@ -335,13 +342,7 @@ export default function VaultDetailScreen() {
     setRevealError("");
     try {
       let seeds;
-      if (requireBiometricForSeedReveal) {
-        const bioEnabled = biometricVaultIds.includes(currentVault.id);
-        if (!bioEnabled) {
-          setRevealError("Enable biometric for this vault first");
-          setRevealLoading(false);
-          return;
-        }
+      if (biometricRevealRequired) {
         const { invoke } = await import("@tauri-apps/api/core");
         const seed = await invoke<string>("reveal_seed_with_biometric", {
           vaultId: currentVault.id,
@@ -605,11 +606,11 @@ export default function VaultDetailScreen() {
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
                 {verifyingBackup
                   ? "Unlock once, then type your saved seed to confirm the backup."
-                  : requireBiometricForSeedReveal
+                  : biometricRevealRequired
                     ? "Use biometric unlock to reveal this account seed."
                     : "Enter the vault password to decrypt this account seed."}
               </div>
-              {!requireBiometricForSeedReveal && (
+              {!biometricRevealRequired && (
                 <Input
                   type="password"
                   label="Vault password"
@@ -622,13 +623,13 @@ export default function VaultDetailScreen() {
                   autoFocus
                 />
               )}
-              {requireBiometricForSeedReveal && revealError && (
+              {biometricRevealRequired && revealError && (
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
                   [{revealError}]
                 </div>
               )}
-              <Button onClick={doRevealSeed} loading={revealLoading} disabled={!requireBiometricForSeedReveal && !revealPassword}>
-                {requireBiometricForSeedReveal ? "Use biometric" : verifyingBackup ? "Unlock seed" : "Reveal seed"}
+              <Button onClick={doRevealSeed} loading={revealLoading} disabled={!biometricRevealRequired && !revealPassword}>
+                {biometricRevealRequired ? "Use biometric" : verifyingBackup ? "Unlock seed" : "Reveal seed"}
               </Button>
             </>
           ) : (
