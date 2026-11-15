@@ -35,6 +35,10 @@ export function isDefault(f: TxFilters): boolean {
   );
 }
 
+export function isPendingTxExpired(tx: PendingTx, currentTick: number): boolean {
+  return currentTick > 0 && currentTick > tx.targetTick;
+}
+
 export type TxSection = { label: string; txs: TxHistoryItem[] };
 
 export type ExportTx = {

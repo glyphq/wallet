@@ -110,9 +110,9 @@ try {
   }
 
   const signedArtifacts = [
-    assets.find((asset) => /\.AppImage$/.test(asset.name)),
-    assets.find((asset) => /\.app\.tar\.gz$/.test(asset.name)),
-    assets.find((asset) => /\.exe$/.test(asset.name)),
+    assets.find((asset) => asset.name.endsWith(".AppImage")),
+    assets.find((asset) => asset.name.endsWith(".app.tar.gz")),
+    assets.find((asset) => asset.name.endsWith(".exe")),
   ];
   const publicKeyPath = join(workdir, "updater.pub");
   writeFileSync(publicKeyPath, Buffer.from(updaterPublicKey, "base64"));

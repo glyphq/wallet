@@ -1,0 +1,38 @@
+import { ArrowUpRight01Icon, Exchange01Icon, QrCodeIcon, WalletAdd01Icon } from "@/lib/icons";
+import { Button } from "@/components/button";
+
+export function PrimaryActions({ onSend, onReceive }: { onSend: () => void; onReceive: () => void }) {
+  return (
+    <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
+      <Button variant="primary" size="md" shape="pill" onClick={onSend}>
+        <ArrowUpRight01Icon size={16} strokeWidth={2} />
+        Send
+      </Button>
+      <Button variant="secondary" size="md" shape="pill" onClick={onReceive}>
+        <QrCodeIcon size={16} strokeWidth={2} />
+        Receive
+      </Button>
+    </div>
+  );
+}
+
+export function MoreActions({ onStake, onSendMany }: { onStake: () => void; onSendMany: () => void }) {
+  const linkStyle = {
+    display: "inline-flex", alignItems: "center", gap: "var(--space-2)", border: 0,
+    background: "transparent", padding: "var(--space-2)", color: "var(--color-text-secondary)",
+    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", cursor: "pointer",
+  } as const;
+
+  return (
+    <nav aria-label="More wallet actions" style={{ display: "flex", justifyContent: "center", gap: "var(--space-5)", marginTop: "var(--space-5)" }}>
+      <button type="button" onClick={onStake} style={linkStyle}>
+        <WalletAdd01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+        QEarn
+      </button>
+      <button type="button" onClick={onSendMany} style={linkStyle}>
+        <Exchange01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+        Send to many
+      </button>
+    </nav>
+  );
+}

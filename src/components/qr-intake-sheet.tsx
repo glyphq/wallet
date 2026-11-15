@@ -30,9 +30,9 @@ const iconRowStyle: React.CSSProperties = {
 
 function decodeErrorMessage(error: unknown) {
   const name = error instanceof Error ? error.name : "";
-  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "Camera01Icon permission was denied. You can still import a QR image.";
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "Camera permission was denied. You can still import a QR image.";
   if (name === "NotFoundError" || name === "DevicesNotFoundError") return "No camera was found. Try importing a QR image.";
-  if (name === "NotReadableError" || name === "TrackStartError") return "Camera01Icon is unavailable. Close other camera apps or import a QR image.";
+  if (name === "NotReadableError" || name === "TrackStartError") return "Camera is unavailable. Close other camera apps or import a QR image.";
   return "No QR code was found. Try a clearer image or better light.";
 }
 
@@ -137,7 +137,7 @@ export function QrIntakeSheet({ open, title = "Scan QR", errorMessage = "", onCl
           <Button variant={cameraState === "active" ? "ghost" : "secondary"} size="md" onClick={cameraState === "active" ? stopCamera : startCamera} loading={cameraState === "starting"}>
             <span style={iconRowStyle}>
               <Camera01Icon size={16} aria-hidden="true" />
-              {cameraState === "active" ? "Stop" : "Camera01Icon"}
+              {cameraState === "active" ? "Stop" : "Camera"}
             </span>
           </Button>
           <Button variant="secondary" size="md" onClick={() => fileInputRef.current?.click()} loading={importing}>

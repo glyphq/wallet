@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { ViewIcon, ViewOffIcon, KeyRoundIcon, Wallet01Icon } from "@/lib/icons";
-import { Button } from "@/components/button";
+import { Wallet01Icon } from "@/lib/icons";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SetupFlow } from "@/components/setup-flow";
-import { Textarea } from "@/components/textarea";
 import { FullPage } from "@/layouts/full-page";
 import { deriveIdentityFromSeed, InvalidSeedError, newId, toSeed, type Seed } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
@@ -14,6 +12,7 @@ import { createVault } from "@/lib/vault";
 import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
+import { SeedRevealButton, SeedTextarea } from "./seed-textarea";
 
 type Step = 1 | 2 | 3;
 
@@ -114,43 +113,21 @@ export default function ImportVaultScreen() {
           onPrimary={validateSeed}
           onBack={back}
           secondaryActions={
-            <Button
-              variant="secondary"
-              size="md"
-              style={{ width: "100%" }}
-              onClick={() => setSeedInputRevealed((value) => !value)}
-              aria-pressed={seedInputRevealed}
-            >
-              {seedInputRevealed ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
-              {seedInputRevealed ? "Hide entered seed" : "Reveal entered seed"}
-            </Button>
+            <SeedRevealButton revealed={seedInputRevealed} onToggle={() => setSeedInputRevealed((value) => !value)} />
           }
         >
-          <Textarea
-            leftElement={<KeyRoundIcon size={18} strokeWidth={1.5} />}
+          <SeedTextarea
             value={seedInput}
-            onChange={(event) => {
-              setSeedInput(event.target.value);
+            onChange={(value) => {
+              setSeedInput(value);
               setSeedError("");
             }}
-            onKeyDown={(event) => {
-              if ((event.ctrlKey || event.metaKey) && event.key === "Enter") validateSeed();
-            }}
+            onSubmit={validateSeed}
             placeholder="55 lowercase letters"
-            aria-label="Recovery seed"
+            ariaLabel="Recovery seed"
             autoCapitalize="none"
-            autoFocus
-            technical
+            revealed={seedInputRevealed}
             error={seedError}
-            style={{
-              resize: "none",
-              minHeight: 136,
-              borderRadius: "var(--radius-control)",
-              background: "var(--color-bg-input)",
-              overflowWrap: "anywhere",
-              filter: seedInputRevealed ? "none" : "blur(6px)",
-              transition: "filter var(--duration-fast) var(--ease-out)",
-            }}
           />
         </SetupFlow>
       ) : null}

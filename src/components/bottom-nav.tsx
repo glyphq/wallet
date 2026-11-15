@@ -8,7 +8,7 @@ const TABS = [
   { id: "send" as BottomNavTab,     label: "Send",     icon: MoneySend01Icon,      path: "/send" },
   { id: "receive" as BottomNavTab,  label: "Receive",  icon: MoneyReceive01Icon,   path: "/receive" },
   { id: "history" as BottomNavTab,  label: "History",  icon: Clock01Icon,   path: "/history" },
-  { id: "settings" as BottomNavTab, label: "Settings01Icon", icon: Settings01Icon,      path: "/settings" },
+  { id: "settings" as BottomNavTab, label: "Settings", icon: Settings01Icon,      path: "/settings" },
 ];
 
 export function BottomNav({ active }: { active: BottomNavTab }) {

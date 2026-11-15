@@ -11,9 +11,3 @@ export async function activeNetworkBinding(network: NetworkConfig): Promise<Glyp
   };
   return { id: `qubic:custom:sha256:${await jcsSha256Base64Url(rpc)}` };
 }
-
-export function networkFingerprint(network: GlyphNetworkBinding): string {
-  if (network.id === "qubic:mainnet") return "mainnet";
-  if (network.id === "qubic:testnet") return "testnet";
-  return `custom ${network.id.slice(-12)}`;
-}

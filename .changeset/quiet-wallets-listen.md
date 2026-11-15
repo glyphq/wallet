@@ -9,3 +9,4 @@ Harden seed reveal, clipboard clearing, and recipient imports.
 - **Consistency:** Password rotation now uses the same 10-character minimum as onboarding. dApp requests use the same contract-index and signed 64-bit amount ranges in the renderer and the native validator.
 - **UX:** CSV and JSON recipient imports no longer drop headerless rows whose identities contain the letters "to" or "qu", and zero-amount rows are rejected consistently.
 - **UX:** The QEarn lock tab now reads "Lock" instead of the icon identifier.
+- **UX:** Replaced remaining icon identifiers in user-facing copy with proper labels across camera prompts, wallet icons, staking review rows, seed copy, history filters, and password prompts.

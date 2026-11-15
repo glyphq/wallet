@@ -61,7 +61,7 @@ export function ShellVaultSwitcher() {
       recordAuditEvent({
         kind: "unlock_succeeded",
         status: "success",
-        title: "Wallet01Icon switched",
+        title: "Wallet switched",
         detail: switchingVault.name,
         vaultId: switchingVault.id,
       });
@@ -71,7 +71,7 @@ export function ShellVaultSwitcher() {
       recordAuditEvent({
         kind: "unlock_failed",
         status: "failure",
-        title: "Wallet01Icon switch failed",
+        title: "Wallet switch failed",
         detail: switchingVault.name,
         vaultId: switchingVault.id,
       });

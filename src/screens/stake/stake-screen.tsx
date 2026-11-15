@@ -1,61 +1,35 @@
-import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import {
-  ArrowDown01Icon,
-  ShieldAlertIcon,
-  MoneyBag01Icon,
-  SquareLock01Icon,
-  SquareUnlock01Icon,
-  FlashIcon,
-  InformationCircleIcon,
-} from "@/lib/icons";
-import type { Identity } from "@qubic.org/types";
 import { AppShell } from "@/layouts/app-shell";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
-import { identityToPublicKey } from "@/lib/crypto";
-import { getRpcClient, estimateTargetTick } from "@/lib/rpc";
+import { estimateTargetTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
-import {
-  QEARN_ADDRESS,
-  QEARN_LOCK_INPUT_TYPE,
-  buildQearnUnlockInput,
-  qearnGetUserLockStatus,
-  qearnGetUserLockedInfo,
-  qearnGetLockInfoPerEpoch,
-  qearnGetEndedStatus,
-} from "@/lib/contracts";
-import { qk } from "@/lib/query-keys";
-import { formatQu, truncateId, extractMessage } from "@/lib/format";
+import { QEARN_ADDRESS, QEARN_LOCK_INPUT_TYPE, buildQearnUnlockInput } from "@/lib/contracts";
+import { extractMessage, formatQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
-import { Identicon } from "@/components/identicon";
-import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { TextButton } from "@/components/text-button";
-import { RowDivider, StakeTabBar, labelStyle, sectionStyle, valueStyle } from "./stake-ui";
-
-type Tab = "lock" | "unlock";
-type Step = "main" | "confirm" | "sending" | "done" | "error";
-
-const QEARN_MIN_LOCK = 10_000_000;
-const LOCK_PERIOD_EPOCHS = 52;
-const Q_EARN_POSITION_BATCH_SIZE = 8;
-
-interface Position {
-  epoch: number;
-  lockedAmount: bigint;
-}
-
-const idToPk = (id: string) => identityToPublicKey(id as Identity);
-const SC_OPTS = { identityToPublicKey: idToPk };
-
+import { StakeTabBar, type StakeTab } from "./stake-ui";
+import {
+  QEARN_MIN_LOCK,
+  epochProgressOf,
+  ticksRemainingOf,
+  type Position,
+  type StakeStep,
+} from "./stake-model";
+import { useEpochLockInfo, useStakePositions, useQearnEndedStatus } from "./use-stake-queries";
+import { LockPanel } from "./lock-panel";
+import { UnlockPanel } from "./unlock-panel";
+import { LockConfirm } from "./lock-confirm";
+import { UnlockConfirm } from "./unlock-confirm";
+import { SendingStep } from "./sending-step";
+import { DoneStep } from "./done-step";
+import { ErrorStep } from "./error-step";
 
 export default function StakeScreen() {
   const navigate = useNavigate();
@@ -71,113 +45,43 @@ export default function StakeScreen() {
   const hasPendingTx = pendingTxs.some((tx) => tx.source === (identity ?? ""));
 
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
-  const visibleAccounts = vault?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
 
   const { data: tickInfo } = useTickInfo();
   const rpcIdentity = useRpcCacheIdentity("live");
   const { data: balanceData } = useBalance(identity);
   const balance = balanceData?.balance ?? null;
   const currentEpoch = tickInfo?.epoch ?? null;
-  const epochProgress = tickInfo?.tick != null && tickInfo?.initialTick != null && tickInfo?.duration != null && tickInfo.duration > 0
-    ? Math.min(1, Math.max(0, (tickInfo.tick - tickInfo.initialTick) / tickInfo.duration))
-    : null;
-  const ticksRemaining = tickInfo?.tick != null && tickInfo?.initialTick != null && tickInfo?.duration != null
-    ? Math.max(0, tickInfo.initialTick + tickInfo.duration - tickInfo.tick)
-    : null;
+  const epochProgress = epochProgressOf(tickInfo);
+  const ticksRemaining = ticksRemainingOf(tickInfo);
 
-  const [tab, setTab] = useState<Tab>("lock");
-  const [step, setStep] = useState<Step>("main");
+  const [tab, setTab] = useState<StakeTab>("lock");
+  const [step, setStep] = useState<StakeStep>("main");
   const [amountStr, setAmountStr] = useState("");
   const [amountError, setAmountError] = useState("");
   const [unlockTarget, setUnlockTarget] = useState<Position | null>(null);
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
   const [unlockAccountIdx, setUnlockAccountIdx] = useState(settings.activeAccountIndex);
-  const [accountPickerOpen, setAccountPickerOpen] = useState(false);
-  const accountPickerRef = useRef<HTMLDivElement>(null);
 
-  // SquareLock01Icon tab: current epoch info
-  const { data: epochInfoResult } = useQuery({
-    queryKey: qk.qearnEpochInfo(rpcIdentity, currentEpoch),
-    queryFn: () => qearnGetLockInfoPerEpoch(getRpcClient().live, { Epoch: currentEpoch! }),
-    enabled: !!currentEpoch,
-    staleTime: 60_000,
-  });
-  const epochInfo = epochInfoResult?.ok ? epochInfoResult.value : null;
+  // Lock tab: current epoch info
+  const epochInfo = useEpochLockInfo(rpcIdentity, currentEpoch);
 
   // Unlock tab: identity for the selected unlock account
   const unlockIdentity = getVaultAccountIdentity(vault, unlockAccountIdx, wallets);
   const unlockIsActiveAccount = unlockAccountIdx === settings.activeAccountIndex;
 
-  // Close account picker on outside click
-  useEffect(() => {
-    if (!accountPickerOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (accountPickerRef.current && !accountPickerRef.current.contains(e.target as Node)) setAccountPickerOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [accountPickerOpen]);
+  // Unlock tab: user's locked positions across the last lock period
+  const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useStakePositions(
+    rpcIdentity,
+    unlockIdentity,
+    currentEpoch,
+  );
 
-  // Unlock tab: user's locked positions across last 52 epochs
-  const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useQuery({
-    queryKey: qk.qearnPositions(rpcIdentity, unlockIdentity, currentEpoch),
-    queryFn: async () => {
-      if (!unlockIdentity || !currentEpoch) return [];
-      const live = getRpcClient().live;
-
-      const statusResult = await qearnGetUserLockStatus(live, { user: unlockIdentity }, SC_OPTS);
-      if (!statusResult.ok || statusResult.value.status === 0n) return [];
-
-      const epochRange = Array.from({ length: 52 }, (_, i) => currentEpoch - i).filter((e) => e > 0);
-      const infos = new Map<number, bigint>();
-
-      for (let i = 0; i < epochRange.length; i += Q_EARN_POSITION_BATCH_SIZE) {
-        const batch = epochRange.slice(i, i + Q_EARN_POSITION_BATCH_SIZE);
-        const batchResults = await Promise.all(
-          batch.map((epoch) => qearnGetUserLockedInfo(live, { user: unlockIdentity, epoch }, SC_OPTS)),
-        );
-
-        batch.forEach((epoch, batchIndex) => {
-          const result = batchResults[batchIndex];
-          if (result?.ok) {
-            infos.set(epoch, result.value.lockedAmount);
-          }
-        });
-      }
-
-      // Sort: ready first (unlocked), then by fewest epochs remaining (closest to unlocking)
-      return epochRange
-        .map((epoch) => ({ epoch, lockedAmount: infos.get(epoch) ?? 0n }))
-        .filter((p) => p.lockedAmount > 0n)
-        .sort((a, b) => {
-          const aReady = currentEpoch >= a.epoch + LOCK_PERIOD_EPOCHS ? 0 : 1;
-          const bReady = currentEpoch >= b.epoch + LOCK_PERIOD_EPOCHS ? 0 : 1;
-          if (aReady !== bReady) return aReady - bReady;
-          return b.epoch - a.epoch; // higher epoch = more recent = sooner to unlock
-        });
-    },
-    enabled: !!unlockIdentity && !!currentEpoch,
-    staleTime: 30_000,
-  });
-
-  const totalUserLocked = positions?.reduce((sum, p) => sum + p.lockedAmount, 0n) ?? 0n;
-  const readyPositions = positions?.filter((p) => currentEpoch !== null && currentEpoch >= p.epoch + LOCK_PERIOD_EPOCHS) ?? [];
-  const readyAmount = readyPositions.reduce((sum, p) => sum + p.lockedAmount, 0n);
-  const nextMaturityEpoch = positions
-    ?.filter((p) => currentEpoch !== null && currentEpoch < p.epoch + LOCK_PERIOD_EPOCHS)
-    .map((p) => p.epoch + LOCK_PERIOD_EPOCHS)
-    .sort((a, b) => a - b)[0] ?? null;
-
-  const { data: endedStatusResult } = useQuery({
-    queryKey: ["qearn", "ended-status", rpcIdentity, unlockIdentity],
-    queryFn: () => qearnGetEndedStatus(getRpcClient().live, { user: unlockIdentity! }, SC_OPTS),
-    enabled: !!unlockIdentity,
-    staleTime: 60_000,
-  });
-  const endedStatus = endedStatusResult?.ok ? endedStatusResult.value : null;
+  const endedStatus = useQearnEndedStatus(rpcIdentity, unlockIdentity);
   const historicalRewards = endedStatus ? endedStatus.fullyRewardedAmount + endedStatus.earlyRewardedAmount : 0n;
   const historicalUnlocked = endedStatus ? endedStatus.fullyUnlockedAmount + endedStatus.earlyUnlockedAmount : 0n;
+
+  const actionsDisabled = !wallet || !tickInfo || hasPendingTx;
 
   function goLockConfirm() {
     const trimmed = amountStr.trim();
@@ -223,7 +127,7 @@ export default function StakeScreen() {
         amount: amount.toString(),
         targetTick,
         broadcastAt: Date.now(),
-        contractName: "Qearn · SquareLock01Icon",
+        contractName: "Qearn · Lock",
       });
 
       setTxHash(hash);
@@ -274,11 +178,18 @@ export default function StakeScreen() {
     }
   }
 
-  const entered = amountStr.trim() && /^\d+$/.test(amountStr.trim()) ? BigInt(amountStr.trim()) : 0n;
-  const remaining = balance !== null ? balance - entered : null;
-  const balanceOver = remaining !== null && remaining < 0n;
+  function handleAmountChange(value: string) {
+    setAmountStr(value.replace(/[^0-9]/g, ""));
+    setAmountError("");
+  }
 
-  // ── Main step (SquareLock01Icon / Unlock) ──────────────────────────────────────────────
+  function reviewUnlock(position: Position) {
+    if (!unlockIsActiveAccount) setActiveAccountIndex(unlockAccountIdx);
+    setUnlockTarget(position);
+    setStep("confirm");
+  }
+
+  // ── Main step (Lock / Unlock) ──────────────────────────────────────────────
 
   if (step === "main") {
     return (
@@ -288,329 +199,33 @@ export default function StakeScreen() {
           <StakeTabBar tab={tab} onChange={setTab} />
 
           {tab === "lock" ? (
-            <>
-              {/* Epoch stats */}
-              <div style={sectionStyle}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-accent)" }}><FlashIcon size={22} strokeWidth={1.5} /></span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                      Current Epoch
-                    </span>
-                  </div>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700, color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1 }}>
-                    {currentEpoch ?? "—"}
-                  </span>
-                </div>
-                {epochProgress !== null && (
-                  <div style={{ marginBottom: "var(--space-3)" }}>
-                    <div style={{ width: "100%", height: 4, borderRadius: 2, background: "var(--color-bg-base)", overflow: "hidden" }}>
-                      <div style={{ width: "100%", height: "100%", borderRadius: 2, background: "var(--color-accent)", transform: `scaleX(${epochProgress})`, transformOrigin: "left", transition: "transform 0.3s ease" }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-1)" }}>
-                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-                        {Math.round(epochProgress * 100)}% complete
-                      </span>
-                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-                        ~{ticksRemaining != null ? ticksRemaining.toLocaleString() : "—"} ticks left
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <RowDivider />
-                {epochInfo ? (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                      <span style={labelStyle}>Total locked</span>
-                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-primary)" }}>{formatQu(epochInfo.currentLockedAmount)} QU</span>
-                    </div>
-                    <RowDivider />
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                      <span style={labelStyle}>Reward pool</span>
-                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>{formatQu(epochInfo.currentBonusAmount)} QU</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                      <div className="skeleton" style={{ width: 100, height: 14 }} />
-                      <div className="skeleton" style={{ width: 140, height: 14 }} />
-                    </div>
-                    <RowDivider />
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                      <div className="skeleton" style={{ width: 100, height: 14 }} />
-                      <div className="skeleton" style={{ width: 120, height: 14 }} />
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                <span style={{ color: "var(--color-text-disabled)", flexShrink: 0, marginTop: 1 }}><InformationCircleIcon size={16} strokeWidth={1.5} /></span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>
-                  Minimum {formatQu(QEARN_MIN_LOCK)} QU. Mature after {LOCK_PERIOD_EPOCHS} epochs.
-                </span>
-              </div>
-
-              {/* Amount input */}
-              <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-                <Input
-                  autoComplete="off"
-                  value={amountStr}
-                  onChange={(e) => { setAmountStr(e.target.value.replace(/[^0-9]/g, "")); setAmountError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && goLockConfirm()}
-                  placeholder="0"
-                  aria-label="QU amount to lock"
-                  autoFocus
-                  inputMode="numeric"
-                  error={amountError || undefined}
-                  style={{
-                    maxWidth: 280, background: "transparent", borderColor: "transparent", boxShadow: "none",
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700,
-                    color: amountError ? "var(--color-status-error)" : amountStr ? "var(--color-text-display)" : "var(--color-text-disabled)",
-                    letterSpacing: "-0.03em", textAlign: "center", padding: 0,
-                  }}
-                  containerStyle={{ alignItems: "center", width: "100%" }}
-                />
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>QU</span>
-
-                {remaining !== null && (
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: balanceOver ? "var(--color-status-error)" : "var(--color-text-disabled)", marginTop: "var(--space-2)" }}>
-                    {formatQu(remaining)} available
-                  </span>
-                )}
-
-              </div>
-
-              {/* Continue */}
-              <div style={{ paddingBottom: "var(--space-6)" }}>
-                <Button
-                  onClick={goLockConfirm}
-                  disabled={!amountStr.trim() || !wallet || !tickInfo || hasPendingTx}
-                >
-                  Continue
-                </Button>
-              </div>
-            </>
+            <LockPanel
+              currentEpoch={currentEpoch}
+              epochProgress={epochProgress}
+              ticksRemaining={ticksRemaining}
+              epochInfo={epochInfo}
+              amountStr={amountStr}
+              amountError={amountError}
+              balance={balance}
+              disabled={actionsDisabled}
+              onAmountChange={handleAmountChange}
+              onContinue={goLockConfirm}
+            />
           ) : (
-            <>
-              {/* Account selector */}
-              {visibleAccounts.length > 1 && (
-                <div ref={accountPickerRef} style={{ position: "relative" }}>
-                  <button
-                    type="button"
-                    onClick={() => setAccountPickerOpen((p) => !p)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 2,
-                      background: "none", border: "none", cursor: "pointer", padding: 0,
-                    }}
-                  >
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-                      {vault?.accounts.find((a) => a.index === unlockAccountIdx)?.name ?? `Account ${unlockAccountIdx + 1}`}
-                    </span>
-                    <ArrowDown01Icon
-                      size={12}
-                      strokeWidth={1.5}
-                      style={{ color: "var(--color-text-disabled)", transform: accountPickerOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
-                    />
-                  </button>
-                  {accountPickerOpen && (
-                    <div style={{
-                      position: "absolute", top: "calc(100% + var(--space-2))", left: 0, zIndex: 100,
-                      minWidth: 200, background: "var(--color-bg-elevated)", border: "1px solid var(--color-border-strong)",
-                      borderRadius: "var(--radius-card)", padding: "var(--space-1)", boxShadow: "var(--shadow-floating)",
-                    }}>
-                      {visibleAccounts.map((account) => {
-                        const isActive = account.index === unlockAccountIdx;
-                        const accIdentity = getVaultAccountIdentity(vault, account.index, wallets);
-                        return (
-                          <button
-                            key={account.index}
-                            type="button"
-                            onClick={() => { setUnlockAccountIdx(account.index); setAccountPickerOpen(false); }}
-                            style={{
-                              display: "flex", flexDirection: "column", gap: 2, width: "100%",
-                              padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-sharp)", border: "none",
-                              background: isActive ? "var(--color-bg-surface)" : "transparent",
-                              cursor: "pointer", textAlign: "left",
-                            }}
-                          >
-                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                              {account.name}
-                            </span>
-                            {accIdentity && (
-                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                                {truncateId(accIdentity)}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Summary */}
-              {((positions && positions.length > 0) || historicalUnlocked > 0n) && (
-                <div style={sectionStyle}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
-                    <span style={{ color: "var(--color-accent)" }}><SquareLock01Icon size={22} strokeWidth={1.5} /></span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>Positions</span>
-                  </div>
-                  <div style={{ padding: "var(--space-2) 0 var(--space-3)" }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-display)", fontWeight: 700, color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-                      {formatQu(totalUserLocked)}
-                    </span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginLeft: "var(--space-2)" }}>QU locked balance</span>
-                  </div>
-                  <RowDivider />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                    <span style={labelStyle}>Active positions</span>
-                    <span style={valueStyle}>{positions?.length ?? 0}</span>
-                  </div>
-                  <RowDivider />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                    <span style={labelStyle}>Ready amount</span>
-                    <span style={valueStyle}>{formatQu(readyAmount)} QU</span>
-                  </div>
-                  {nextMaturityEpoch !== null && (
-                    <>
-                      <RowDivider />
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                        <span style={labelStyle}>Next maturity</span>
-                        <span style={valueStyle}>Epoch {nextMaturityEpoch}</span>
-                      </div>
-                    </>
-                  )}
-                  {historicalUnlocked > 0n && (
-                    <>
-                      <RowDivider />
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                        <span style={labelStyle}>Historical rewards</span>
-                        <span style={valueStyle}>{formatQu(historicalRewards)} QU</span>
-                      </div>
-                    </>
-                  )}
-                  {readyPositions.length > 0 && (
-                    <>
-                      <RowDivider />
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-                        <span style={labelStyle}>Ready to unlock</span>
-                        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>{readyPositions.length}</span>
-                      </div>
-                      <Button
-                        type="button"
-                        size="md"
-                        disabled={!wallet || !tickInfo || hasPendingTx}
-                        onClick={() => {
-                          if (!unlockIsActiveAccount) setActiveAccountIndex(unlockAccountIdx);
-                          setUnlockTarget(readyPositions[0]);
-                          setStep("confirm");
-                        }}
-                        style={{ marginTop: "var(--space-2)", width: "100%" }}
-                      >
-                        <SquareUnlock01Icon size={16} strokeWidth={1.5} />
-                        {readyPositions.length === 1 ? "Review unlock" : "Review next unlock"}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Positions list */}
-              {!currentEpoch || positionsLoading ? (
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-                  Loading...
-                </div>
-              ) : !positions || positions.length === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: "var(--space-3)" }}>
-                  <span style={{ color: "var(--color-text-disabled)" }}><MoneyBag01Icon size={32} strokeWidth={1.5} /></span>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-                    No active positions
-                  </span>
-                  <TextButton type="button" tone="accent" onClick={() => setTab("lock")}>
-                    SquareLock01Icon QU to start staking
-                  </TextButton>
-                </div>
-              ) : (
-                <div>
-                  {positions.map((pos, i) => {
-                    const unlockEpoch = pos.epoch + LOCK_PERIOD_EPOCHS;
-                    const isEarly = currentEpoch < unlockEpoch;
-                    const epochsLeft = isEarly ? unlockEpoch - currentEpoch : 0;
-                    return (
-                      <div key={pos.epoch} className="stagger-item">
-                        {i > 0 && <RowDivider />}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0", gap: "var(--space-3)" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
-                            <div style={{ position: "relative" }}>
-                              <Identicon kind="position" code={`E${pos.epoch}`} seed={`qearn-pos-${pos.epoch}`} label={`Epoch ${pos.epoch}`} size={40} radius={8} style={{ flexShrink: 0 }} />
-                              <span style={{
-                                position: "absolute", bottom: -2, right: -2,
-                                width: 12, height: 12, borderRadius: "50%",
-                                background: isEarly ? "var(--color-text-disabled)" : "var(--color-accent)",
-                                border: "2px solid var(--color-bg-base)",
-                              }} />
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-                                {formatQu(pos.lockedAmount)} QU
-                              </span>
-                              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-                                  Epoch {pos.epoch} → {unlockEpoch}
-                                </span>
-                                {isEarly ? (
-                                  <span style={{
-                                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
-                                    color: "var(--color-text-secondary)",
-                                    padding: "0 var(--space-1)",
-                                    background: "var(--color-bg-surface)",
-                                    borderRadius: "var(--radius-pill)",
-                                    lineHeight: "18px",
-                                  }}>
-                                    {epochsLeft} epoch{epochsLeft !== 1 ? "s" : ""} left
-                                  </span>
-                                ) : (
-                                  <span style={{
-                                    fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500,
-                                    color: "var(--color-accent)",
-                                    padding: "0 var(--space-1)",
-                                    background: "color-mix(in srgb, var(--color-accent) 12%, transparent)",
-                                    borderRadius: "var(--radius-pill)",
-                                    lineHeight: "18px",
-                                  }}>
-                                    Ready
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant={isEarly ? "secondary" : "primary"}
-                            size="sm"
-                            disabled={!wallet || !tickInfo || hasPendingTx}
-                            onClick={() => {
-                              if (!unlockIsActiveAccount) {
-                                setActiveAccountIndex(unlockAccountIdx);
-                              }
-                              setUnlockTarget(pos);
-                              setStep("confirm");
-                            }}
-                            style={{ flexShrink: 0, width: "auto" }}
-                          >
-                            {!isEarly && <SquareUnlock01Icon size={14} strokeWidth={1.5} />}
-                            {isEarly ? "Early" : "Unlock"}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
+            <UnlockPanel
+              vault={vault}
+              wallets={wallets}
+              unlockAccountIdx={unlockAccountIdx}
+              onSelectAccount={setUnlockAccountIdx}
+              currentEpoch={currentEpoch}
+              positions={positions}
+              positionsLoading={positionsLoading}
+              historicalRewards={historicalRewards}
+              historicalUnlocked={historicalUnlocked}
+              disabled={actionsDisabled}
+              onReviewUnlock={reviewUnlock}
+              onSwitchToLock={() => setTab("lock")}
+            />
           )}
 
         </motion.div>
@@ -618,137 +233,31 @@ export default function StakeScreen() {
     );
   }
 
-  // ── SquareLock01Icon confirm ───────────────────────────────────────────────────────────
+  // ── Lock confirm ───────────────────────────────────────────────────────────
 
   if (step === "confirm" && tab === "lock") {
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
-
-          <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {formatQu(amountStr)}
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>QU</div>
-          </div>
-
-          {/* Details */}
-          <div style={sectionStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Contract</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Qearn</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Action</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>SquareLock01Icon QU</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>SquareLock01Icon epoch</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{currentEpoch}</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Unlocks at epoch</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{(currentEpoch ?? 0) + LOCK_PERIOD_EPOCHS}</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>SquareLock01Icon period</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{LOCK_PERIOD_EPOCHS} epochs</span>
-            </div>
-          </div>
-
-          <div style={{ flex: 1 }} />
-
-          {/* Actions */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-            <Button
-              onClick={sendLock}
-              disabled={!wallet || !tickInfo || hasPendingTx}
-            >
-              Sign and send
-            </Button>
-            <TextButton type="button" tone="muted" onClick={() => setStep("main")} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
-              Cancel
-            </TextButton>
-          </div>
-
-        </motion.div>
-      </AppShell>
+      <LockConfirm
+        amountStr={amountStr}
+        currentEpoch={currentEpoch}
+        disabled={actionsDisabled}
+        onSend={sendLock}
+        onCancel={() => setStep("main")}
+      />
     );
   }
 
   // ── Unlock confirm ─────────────────────────────────────────────────────────
 
   if (step === "confirm" && tab === "unlock" && unlockTarget) {
-    const unlockEpoch = unlockTarget.epoch + LOCK_PERIOD_EPOCHS;
-    const isEarly = currentEpoch !== null && currentEpoch < unlockEpoch;
-    const epochsLeft = isEarly ? unlockEpoch - (currentEpoch ?? 0) : 0;
-
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
-
-          <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-2)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {formatQu(unlockTarget.lockedAmount)}
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>QU</div>
-          </div>
-
-          {/* Details */}
-          <div style={sectionStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Contract</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Qearn</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Action</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>Unlock QU</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>SquareLock01Icon epoch</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>{unlockTarget.epoch}</span>
-            </div>
-            <RowDivider />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-              <span style={labelStyle}>Maturity</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: isEarly ? "var(--color-status-warning)" : "var(--color-accent)" }}>
-                {isEarly ? `${epochsLeft} epochs early` : "Mature"}
-              </span>
-            </div>
-          </div>
-
-          {isEarly && (
-            <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-              <span style={{ color: "var(--color-status-warning)", flexShrink: 0, marginTop: 1 }}><ShieldAlertIcon size={16} /></span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-warning)", lineHeight: 1.5 }}>
-                Early unlock — rewards may be reduced or forfeited. The position matures at epoch {unlockEpoch}.
-              </span>
-            </div>
-          )}
-
-          <div style={{ flex: 1 }} />
-
-          {/* Actions */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-            <Button
-              onClick={sendUnlock}
-              disabled={!wallet || !tickInfo || hasPendingTx}
-            >
-              Sign and send
-            </Button>
-            <TextButton type="button" tone="muted" onClick={() => { setStep("main"); setUnlockTarget(null); }} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
-              Cancel
-            </TextButton>
-          </div>
-
-        </motion.div>
-      </AppShell>
+      <UnlockConfirm
+        position={unlockTarget}
+        currentEpoch={currentEpoch}
+        disabled={actionsDisabled}
+        onSend={sendUnlock}
+        onCancel={() => { setStep("main"); setUnlockTarget(null); }}
+      />
     );
   }
 
@@ -756,24 +265,10 @@ export default function StakeScreen() {
 
   if (step === "sending") {
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
-          <div style={{ width: 48, height: 48, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ position: "absolute", inset: 0, border: "3px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-            <span style={{ position: "relative", zIndex: 1, color: "var(--color-accent)" }}>
-              {tab === "lock" ? <SquareLock01Icon size={20} strokeWidth={1.5} /> : <SquareUnlock01Icon size={20} strokeWidth={1.5} />}
-            </span>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-              {tab === "lock" ? "Locking" : "Unlocking"}
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-              {tab === "lock" ? formatQu(amountStr) : (unlockTarget ? formatQu(unlockTarget.lockedAmount) : "")} QU
-            </div>
-          </div>
-        </motion.div>
-      </AppShell>
+      <SendingStep
+        tab={tab}
+        amount={tab === "lock" ? formatQu(amountStr) : unlockTarget ? formatQu(unlockTarget.lockedAmount) : ""}
+      />
     );
   }
 
@@ -781,71 +276,22 @@ export default function StakeScreen() {
 
   if (step === "done") {
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
-
-          {/* Status */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-4)", gap: "var(--space-2)" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <MoneyBag01Icon size={22} style={{ color: "var(--color-accent)" }} />
-            </div>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-accent)" }}>
-              {tab === "lock" ? "Locked" : "Unlocked"}
-            </span>
-          </div>
-
-          {/* Transaction hash */}
-          <div style={sectionStyle}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: "var(--space-2)" }}>
-              Transaction hash
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-primary)", wordBreak: "break-all" }}>
-              {txHash}
-            </div>
-          </div>
-
-          <div style={{ flex: 1 }} />
-
-          {/* Actions */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-            <Button type="button" onClick={() => navigate("/dashboard")}>
-              Done
-            </Button>
-            <TextButton type="button" tone="muted" onClick={() => { setStep("main"); refetchPositions(); }} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
-              Back to staking
-            </TextButton>
-          </div>
-
-        </motion.div>
-      </AppShell>
+      <DoneStep
+        tab={tab}
+        txHash={txHash}
+        onDone={() => navigate("/dashboard")}
+        onBack={() => { setStep("main"); refetchPositions(); }}
+      />
     );
   }
 
   // ── Error ──────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
-        <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-status-error-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <ShieldAlertIcon size={22} style={{ color: "var(--color-status-error)" }} />
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-            Transaction failed
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)", maxWidth: 280 }}>
-            {txError || "The transaction could not be broadcast."}
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", maxWidth: 280, paddingTop: "var(--space-2)" }}>
-          <Button type="button" onClick={() => setStep("confirm")}>
-            Try again
-          </Button>
-          <TextButton type="button" tone="muted" onClick={() => navigate("/dashboard")} style={{ alignSelf: "center", padding: "var(--space-2) 0" }}>
-            Cancel
-          </TextButton>
-        </div>
-      </motion.div>
-    </AppShell>
+    <ErrorStep
+      txError={txError}
+      onRetry={() => setStep("confirm")}
+      onCancel={() => navigate("/dashboard")}
+    />
   );
 }

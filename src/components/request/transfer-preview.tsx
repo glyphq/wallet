@@ -1,31 +1,30 @@
 import { useState } from "react";
-import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
-import { buildTransferFromSession, transactionSigningIntent, type SigningAuthorizationContext } from "@/lib/secure-session";
+import { buildTransferFromSession, transactionSigningIntent } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
-import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
+import {
+  RequestApprovalActions,
+  RequestCheckboxMark,
+  RequestDetailRow,
+  RequestInlineNotice,
+  RequestSectionTitle,
+  RequestSigningAccountPicker,
+} from "./request-primitives";
 import type { TransferRequest } from "@/lib/request-schema";
-import type { ApproveResult } from "@/lib/request-approvals";
+import type { TransactionPreviewProps } from "./request-preview-props";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { TransferRequest } from "@/lib/request-schema";
 
-interface TransferPreviewProps {
-  request: TransferRequest;
-  onApprove: (result: ApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
-  authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
-  onReject: () => void;
-}
-
-export function TransferPreview({ request, onApprove, onReject, authorize }: TransferPreviewProps) {
+export function TransferPreview({ request, onApprove, onReject, authorize }: TransactionPreviewProps<TransferRequest>) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
 
@@ -135,36 +134,15 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
-        <div>
-          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {vault.accounts.filter((a) => !a.hidden).map((acc) => (
-              <button
-                key={acc.index}
-                onClick={() => setSelectedIndex(acc.index)}
-                style={{
-                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
-                  borderRadius: "var(--radius-pill)",
-                  border: `1px solid ${acc.index === selectedIndex ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  background: acc.index === selectedIndex ? "var(--color-text-display)" : "transparent",
-                  color: acc.index === selectedIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  cursor: "pointer",
-                }}
-              >
-                {acc.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <RequestSigningAccountPicker
+          accounts={vault.accounts}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
+        />
       )}
 
       {/* fromError: dApp specified an identity not in this vault */}
-      {fromError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {fromError}
-        </div>
-      )}
+      {fromError && <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>}
 
       {/* Detail rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -185,30 +163,20 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
       </div>
 
       {requestAmount === null && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The request amount is invalid.
-        </div>
+        <RequestInlineNotice tone="error">The request amount is invalid.</RequestInlineNotice>
       )}
       {invalidDestination && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The destination identity is invalid.
-        </div>
+        <RequestInlineNotice tone="error">The destination identity is invalid.</RequestInlineNotice>
       )}
       {insufficientBalance && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The selected account does not have enough balance for this transfer.
-        </div>
+        <RequestInlineNotice tone="error">The selected account does not have enough balance for this transfer.</RequestInlineNotice>
       )}
       {hasPendingTx && !insufficientBalance && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+        <RequestInlineNotice tone="warning">
           This account already has a pending transfer. Wait for confirmation before sending another one.
-        </div>
+        </RequestInlineNotice>
       )}
-      {txError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {txError}
-        </div>
-      )}
+      {txError && <RequestInlineNotice tone="error">{txError}</RequestInlineNotice>}
 
       <DappPolicyStatus decision={policyDecision} />
 
@@ -223,29 +191,20 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
             width: "100%", padding: 0, border: "none", background: "transparent", textAlign: "left",
           }}
         >
-          <div style={{
-            width: 14, height: 14, flexShrink: 0,
-            border: `1px solid ${highValueConfirmed ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: 2,
-            background: highValueConfirmed ? "var(--color-text-display)" : "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
-          </div>
+          <RequestCheckboxMark checked={highValueConfirmed} />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
             I understand this is a high-value transfer.
           </span>
         </button>
       )}
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
-          Sign and send
-        </Button>
-      </RequestActionBar>
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={approve}
+        approveLabel="Sign and send"
+        approveLoading={processing}
+        approveDisabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
+      />
     </div>
   );
 }

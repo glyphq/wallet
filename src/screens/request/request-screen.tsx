@@ -1,29 +1,13 @@
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { Button } from "@/components/button";
-import { useLockCountdown } from "@/hooks/use-lock-countdown";
-import { Tag } from "@/components/tag";
-import { RequestHeader } from "@/components/request/request-header";
-import { TransferPreview } from "@/components/request/transfer-preview";
-import { ScCallPreview } from "@/components/request/sc-call-preview";
-import { SignMessagePreview } from "@/components/request/sign-message-preview";
-import { ConnectPreview } from "@/components/request/connect-preview";
-import { VerifyMessagePreview } from "@/components/request/verify-message-preview";
-import type {
-  ApproveResult,
-  ConnectApproveResult,
-  SignMessageApproveResult,
-  VerifyMessageResult,
-} from "@/lib/request-approvals";
-import { saveFileDialog } from "@/lib/save-file";
 import { useSessionStore } from "@/store/session";
-import { usePersistedStore, type RequestHistoryItem } from "@/store/persisted";
-import { ScreenHeader } from "@/components/screen-header";
+import { usePersistedStore } from "@/store/persisted";
+import { saveFileDialog } from "@/lib/save-file";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { copyToClipboard } from "@/lib/clipboard";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { parseGlyphEnvelope, REQUEST_TYPE_LABEL } from "@/lib/request-schema";
+import { parseGlyphEnvelope } from "@/lib/request-schema";
 import {
   approveRequest,
   deliverRequestResult,
@@ -34,6 +18,17 @@ import {
 } from "@/lib/request-orchestration";
 import { completePendingRequest } from "@/lib/request-lifecycle";
 import { authorizePendingRequest, signCallbackMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
+import type {
+  ApproveResult,
+  ConnectApproveResult,
+  SignMessageApproveResult,
+  VerifyMessageResult,
+} from "@/lib/request-approvals";
+import { RequestApprovalView } from "./request-approval-view";
+import { RequestExpiredView } from "./request-expired-view";
+import { RequestInvalidView } from "./request-invalid-view";
+import { RequestResultView, type CopyStatus } from "./request-result-view";
+import { useRequestExpiry } from "./use-request-expiry";
 
 export default function RequestScreen() {
   const navigate = useNavigate();
@@ -51,10 +46,7 @@ export default function RequestScreen() {
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<RequestSuccessState | null>(null);
-  const [expiredRequest, setExpiredRequest] = useState<RequestHistoryItem | null>(null);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle");
-  const [expirySecsLeft, setExpirySecsLeft] = useState<number | null>(null);
-  const expiryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const copyResetTimeoutRef = useRef<number | null>(null);
   const callbackPayloadRef = useRef<string | null>(null);
   const callbackAuthorizationRef = useRef<SigningAuthorizationContext | null>(null);
@@ -84,57 +76,11 @@ export default function RequestScreen() {
     }
   }, []);
 
-
-  // Auto-dismiss when the request's exp timestamp passes so the approval
-  // buttons don't remain active after expiry. Also drives a visible countdown.
-  useEffect(() => {
-    if (!envelope?.request.exp || success || expiredRequest) {
-      setExpirySecsLeft(null);
-      return;
-    }
-    const msUntilExp = envelope.request.exp * 1000 - Date.now();
-    if (msUntilExp <= 0) {
-      const item: RequestHistoryItem = {
-        id: makeRequestHistoryId(),
-        createdAt: Date.now(),
-        type: envelope.request.type,
-        dappName: envelope.request.dapp.name || "Unknown dApp",
-        dappOrigin: envelope.request.dapp.origin,
-        action: "expired",
-        resultDetail: "Request expired before a decision was made.",
-        callbackStatus: "none",
-        callbackUrl: envelope.callback,
-      };
-      addRequestHistoryItem(item);
-      setExpiredRequest(item);
-      return;
-    }
-    setExpirySecsLeft(Math.ceil(msUntilExp / 1000));
-    const expire = () => {
-      const item: RequestHistoryItem = {
-        id: makeRequestHistoryId(),
-        createdAt: Date.now(),
-        type: envelope.request.type,
-        dappName: envelope.request.dapp.name || "Unknown dApp",
-        dappOrigin: envelope.request.dapp.origin,
-        action: "expired",
-        resultDetail: "Request expired before a decision was made.",
-        callbackStatus: "none",
-        callbackUrl: envelope.callback,
-      };
-      addRequestHistoryItem(item);
-      setExpiredRequest(item);
-    };
-    const t = setTimeout(expire, msUntilExp);
-    expiryIntervalRef.current = setInterval(() => {
-      const remaining = Math.ceil((envelope.request.exp! * 1000 - Date.now()) / 1000);
-      setExpirySecsLeft(Math.max(0, remaining));
-    }, 1000);
-    return () => {
-      clearTimeout(t);
-      if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
-    };
-  }, [envelope?.request.exp, envelope?.request_hash, success, expiredRequest, addRequestHistoryItem]);
+  const { expiredRequest, expirySecsLeft, clearExpiredRequest } = useRequestExpiry({
+    envelope,
+    suppressed: success !== null,
+    addRequestHistoryItem,
+  });
 
   // Dismiss without notifying the dApp — used by the BACK button so navigating
   // away doesn't send a spurious rejection to the dApp.
@@ -307,246 +253,51 @@ export default function RequestScreen() {
 
   function continueAfterExpiry() {
     const hasQueuedRequest = useSessionStore.getState().pendingRequests.length > 1;
-    setExpiredRequest(null);
+    clearExpiredRequest();
     shiftPendingRequest();
     if (!hasQueuedRequest) navigate("/dashboard", { replace: true });
   }
 
   if (expiredRequest) {
-    return (
-      <SheetLayout statusBar={<ScreenHeader title="Request expired" onBack={continueAfterExpiry} backAriaLabel="Continue" />}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
-          <Tag variant="warning">Expired</Tag>
-          <StatusLine tone="warning">This request expired before you made a decision.</StatusLine>
-          <DetailBlock label="dApp">{expiredRequest.dappName}</DetailBlock>
-          <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-            Nothing was approved and no callback was sent because the request authorization is no longer valid. The outcome is saved in request history.
-          </p>
-          <ActionFooter>
-            <Button onClick={continueAfterExpiry} style={{ flex: 1 }}>Continue</Button>
-          </ActionFooter>
-        </div>
-      </SheetLayout>
-    );
+    return <RequestExpiredView dappName={expiredRequest.dappName} onContinue={continueAfterExpiry} />;
   }
 
   if (success) {
-    const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Identity";
-    const tagLabel = success.kind === "tx" ? "Sent" : success.kind === "message" ? "Signed" : success.kind === "verify" ? (success.detail === "VALID" ? "Valid" : "Invalid") : "Connected";
-
     return (
-      <SheetLayout statusBar={<ScreenHeader title="Request complete" onBack={() => navigate("/dashboard")} backAriaLabel="Return to app" />}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
-          <div>
-            <Tag variant={success.kind === "verify" && success.detail !== "VALID" ? "error" : "success"}>{tagLabel}</Tag>
-          </div>
-
-          <DetailBlock label={detailLabel}>{success.detail}</DetailBlock>
-
-          <div>
-            {!success.hasCallback ? (
-              <Button
-                variant="secondary"
-                shape="sharp"
-                size="sm"
-                style={{ width: "auto" }}
-                onClick={() => void copyResult(success.callbackBody)}
-              >
-                {copyStatus === "success" ? "Copied result" : copyStatus === "error" ? "Copy failed" : "Copy result"}
-              </Button>
-            ) : success.callbackStatus === "pending" ? (
-              <StatusLine tone="muted">Sending callback...</StatusLine>
-            ) : success.callbackStatus === "ok" ? (
-              <StatusLine tone="success">Callback delivered</StatusLine>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                <StatusLine tone="error">Callback failed</StatusLine>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-                  <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={retryCallbackFromSuccess}>
-                    Retry callback
-                  </Button>
-                  <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => saveResult(success)}>
-                    Save JSON
-                  </Button>
-                  <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => void copyResult(success.callbackBody)}>
-                    {copyStatus === "success" ? "Copied JSON" : copyStatus === "error" ? "Copy failed" : "Copy JSON"}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <ActionFooter>
-            <Button onClick={() => navigate("/dashboard")} style={{ flex: 1 }}>Return to app</Button>
-          </ActionFooter>
-        </div>
-      </SheetLayout>
+      <RequestResultView
+        success={success}
+        copyStatus={copyStatus}
+        onCopy={copyResult}
+        onRetry={retryCallbackFromSuccess}
+        onSave={saveResult}
+        onReturn={() => navigate("/dashboard")}
+      />
     );
   }
 
   if (!envelope) {
     return (
-      <SheetLayout statusBar={<ScreenHeader title="Request" onBack={() => navigate("/dashboard")} />}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: "100%" }}>
-          <Tag variant="error">Invalid request</Tag>
-          <StatusLine tone="error">{parseError}</StatusLine>
-          <ActionFooter>
-            <Button variant="secondary" shape="sharp" onClick={() => { shiftPendingRequest(); navigate("/dashboard"); }} style={{ flex: 1 }}>Back to app</Button>
-          </ActionFooter>
-        </div>
-      </SheetLayout>
+      <RequestInvalidView
+        error={parseError}
+        onBack={() => navigate("/dashboard")}
+        onBackToApp={() => { shiftPendingRequest(); navigate("/dashboard"); }}
+      />
     );
   }
 
-  const { request } = envelope;
-  const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
-
-  const statusBar = <ScreenHeader title={typeLabel} onBack={dismiss} backAriaLabel="Close without rejecting" />;
-
   return (
-    <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>
-      <RequestHeader dapp={request.dapp} />
-      {pendingRequestCount > 1 && (
-        <StatusLine tone="warning">
-          {pendingRequestCount - 1} more request{pendingRequestCount > 2 ? "s" : ""} queued
-        </StatusLine>
-      )}
-      {actionError && <StatusLine tone="error">{actionError}</StatusLine>}
-
-      {request.type === "transfer" ? (
-        <TransferPreview
-          request={request}
-          onApprove={handleApprove}
-          authorize={authorizeForRequest}
-          onReject={reject}
-        />
-      ) : request.type === "sc_call" ? (
-        <ScCallPreview
-          request={request}
-          onApprove={handleApprove}
-          authorize={authorizeForRequest}
-          onReject={reject}
-        />
-      ) : request.type === "sign_message" ? (
-        <SignMessagePreview
-          request={request}
-          onApprove={handleApproveMessage}
-          authorize={authorizeForRequest}
-          onReject={reject}
-        />
-      ) : request.type === "verify_message" ? (
-        <VerifyMessagePreview
-          request={request}
-          onApprove={handleApproveVerify}
-          onReject={reject}
-        />
-      ) : request.type === "connect" ? (
-        <ConnectPreview
-          request={request}
-          onApprove={handleApproveConnect}
-          onReject={reject}
-        />
-      ) : null}
-    </SheetLayout>
-  );
-}
-
-function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
-  const countdown = useLockCountdown();
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--color-bg-base)" }}>
-      <header
-        style={{
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          minHeight: 48,
-          padding: "var(--space-3) var(--screen-padding)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-        }}
-      >
-        {statusBar}
-      </header>
-
-      {countdown !== null && (
-        <div
-          aria-live="polite"
-          style={{
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "var(--space-2) var(--screen-padding)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-warning)" }}>
-            Locking in {countdown}s
-          </span>
-        </div>
-      )}
-
-      {expirySecsLeft !== null && expirySecsLeft !== undefined && (
-        <div
-          aria-live="polite"
-          style={{
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "var(--space-2) var(--screen-padding)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: expirySecsLeft <= 10 ? "var(--color-status-error)" : "var(--color-text-disabled)" }}>
-            Request expires in {expirySecsLeft}s
-          </span>
-        </div>
-      )}
-
-      <main
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          padding: "var(--space-5) var(--screen-padding) var(--space-6)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-6)",
-        }}
-      >
-        {children}
-      </main>
-    </div>
-  );
-}
-
-function DetailBlock({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-        {label}
-      </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function StatusLine({ tone, children }: { tone: "muted" | "success" | "warning" | "error"; children: ReactNode }) {
-  const color = tone === "success" ? "var(--color-status-success)" : tone === "warning" ? "var(--color-status-warning)" : tone === "error" ? "var(--color-status-error)" : "var(--color-text-disabled)";
-  return (
-    <div role={tone === "error" || tone === "warning" ? "alert" : "status"} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color }}>
-      {children}
-    </div>
-  );
-}
-
-function ActionFooter({ children }: { children: ReactNode }) {
-  return (
-    <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-5)", borderTop: "1px solid var(--color-border-subtle)" }}>
-      {children}
-    </div>
+    <RequestApprovalView
+      request={envelope.request}
+      pendingRequestCount={pendingRequestCount}
+      actionError={actionError}
+      expirySecsLeft={expirySecsLeft}
+      onDismiss={dismiss}
+      onReject={reject}
+      authorize={authorizeForRequest}
+      onApprove={handleApprove}
+      onApproveMessage={handleApproveMessage}
+      onApproveVerify={handleApproveVerify}
+      onApproveConnect={handleApproveConnect}
+    />
   );
 }

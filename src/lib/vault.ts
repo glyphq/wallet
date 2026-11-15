@@ -1,28 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
-  generateSeed,
-  toSeed,
-  validateSeed,
   exportVault,
-  importVault,
-  WalletError,
-  VaultDecryptionError,
-  InvalidVaultError,
 } from "@qubic.org/wallet";
 import type { Seed } from "@qubic.org/types";
 import type { VaultData } from "@qubic.org/wallet";
 import type { SessionWallet } from "@/lib/session-wallet";
 
-export {
-  generateSeed,
-  toSeed,
-  validateSeed,
-  exportVault,
-  importVault,
-  WalletError,
-  VaultDecryptionError,
-  InvalidVaultError,
-};
+export { exportVault };
 
 export type {
   VaultData,

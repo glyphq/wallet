@@ -83,13 +83,18 @@ Run the checks that apply to the change and list them in the pull request.
 ```sh
 bun run check
 bun run build
+bun run lint:js
+bun run lint:rust
+bun run format:rust -- --check
 TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
   cargo check --manifest-path src-tauri/Cargo.toml --locked
 TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
   cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
-`bun run check` runs TypeScript checking and the Bun test suite. `bun run build` performs a TypeScript build followed by a production Vite build.
+`bun run check` runs the fast Oxlint pass, TypeScript checking, and the Bun test suite. `bun run build` performs a TypeScript build followed by a production Vite build.
+
+JavaScript linting uses [Oxlint](https://oxc.rs/docs/guide/usage/linter) with the rules in `.oxlintrc.json`. `bun run lint:js:fix` applies safe fixes. Rust linting uses `cargo clippy` with warnings denied, and formatting uses `cargo fmt`; both require the rustup components declared in `CONTRIBUTING.md` (`clippy`, `rustfmt`). `scripts/rust-tools.sh` prefers a rustup-managed Cargo so the pinned `1.88.0` toolchain is used locally.
 
 ### Release and workflow changes
 

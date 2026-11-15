@@ -16,7 +16,7 @@ export function ExportVaultSheet({ open, onClose, vaultName, onExport }: ExportV
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
           This file contains your encrypted seed. Keep it safe. Anyone with this file and your password can access your funds.
         </span>
-        <Button onClick={onExport}>Download01Icon backup file</Button>
+        <Button onClick={onExport}>Download backup file</Button>
       </div>
     </Sheet>
   );

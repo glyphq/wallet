@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { Button } from "@/components/button";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
-import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice } from "./request-primitives";
+import { RequestMessageContent } from "./request-message-content";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
 import type { VerifyMessageResult } from "@/lib/request-approvals";
 
@@ -15,12 +15,6 @@ interface VerifyMessagePreviewProps {
   request: VerifyMessageRequest;
   onApprove: (result: VerifyMessageResult) => void | Promise<void>;
   onReject: () => void;
-}
-
-function previewText(value: string, maxChars = 2000): string {
-  return value.length > maxChars
-    ? `${value.slice(0, maxChars)}\n\n[… ${value.length.toLocaleString()} chars total]`
-    : value;
 }
 
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
@@ -71,53 +65,35 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div>
-        <div style={{ marginBottom: "var(--space-2)" }}>
-          <RequestSectionTitle>{request.data ? "Data to verify" : "Message"}</RequestSectionTitle>
-        </div>
-        {request.data ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <RequestDetailRow label="Payload" value={dataByteCount === null ? "Invalid base64" : `${dataByteCount.toLocaleString()} bytes`} valueColor={dataByteCount === null ? "var(--color-status-error)" : undefined} />
-            {request.message && <RequestDetailRow label="Label" value={previewText(request.message, 160)} />}
-            <RequestDisclosure label={`Show base64 data${dataByteCount === null ? "" : ` · ${dataByteCount.toLocaleString()}B`}`}>
-              <RequestTechnicalBlock maxHeight={160}>{request.data}</RequestTechnicalBlock>
-            </RequestDisclosure>
-          </div>
-        ) : (
-          <RequestTechnicalBlock maxHeight={160}>{previewText(request.message)}</RequestTechnicalBlock>
-        )}
-      </div>
+      <RequestMessageContent
+        title={request.data ? "Data to verify" : "Message"}
+        data={request.data}
+        message={request.message}
+        dataByteCount={dataByteCount}
+        plainTextMaxHeight={160}
+      />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <RequestDetailRow
-	          label="Signer"
+          label="Signer"
           value={invalidKey ? "Invalid public key" : truncateId(claimedIdentity!, 10, 10)}
           valueColor={invalidKey ? "var(--color-status-error)" : undefined}
-	          badge={!invalidKey ? (isOwnIdentity ? "Your Vault" : "Other identity") : undefined}
+          badge={!invalidKey ? (isOwnIdentity ? "Your Vault" : "Other identity") : undefined}
         />
         <RequestDetailRow label="Signature" value={truncateId(request.signature, 10, 10)} />
       </div>
 
-      {invalidKey && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-	          Invalid public key
-        </div>
-      )}
+      {invalidKey && <RequestInlineNotice tone="error">Invalid public key</RequestInlineNotice>}
 
-      {error && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {error}
-        </div>
-      )}
+      {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={handleVerify} loading={processing} disabled={invalidKey} style={{ flex: 1 }}>
-          Verify and respond
-        </Button>
-      </RequestActionBar>
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={handleVerify}
+        approveLabel="Verify and respond"
+        approveLoading={processing}
+        approveDisabled={invalidKey}
+      />
     </div>
   );
 }

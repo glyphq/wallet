@@ -91,7 +91,7 @@ export function SeedRevealSheet({
             <SeedSurface seed={revealedSeed} revealed={seedVisible} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
               <Button variant="secondary" shape="sharp" onClick={onCopy}>
-                {seedCopied ? "Copied" : "Copy01Icon seed"}
+                {seedCopied ? "Copied" : "Copy seed"}
               </Button>
               <Button variant="secondary" shape="sharp" onClick={onToggleSeedVisible} aria-pressed={seedVisible}>
                 {seedVisible ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}

@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
@@ -8,8 +7,8 @@ import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, getLatestTick, getRpcClient } from "@/lib/rpc";
 import { broadcastTx } from "@/lib/broadcast";
-import { buildScTransactionFromSession, transactionSigningIntent, type SigningAuthorizationContext } from "@/lib/secure-session";
-import { contractIndexToIdentity, publicKeyToIdentity } from "@qubic.org/crypto";
+import { buildScTransactionFromSession, transactionSigningIntent } from "@/lib/secure-session";
+import { contractIndexToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
 import {
   Q_UTIL_CONTRACT_INDEX,
@@ -26,99 +25,37 @@ import {
   CONTRACT_PROCEDURE_NAMES,
 } from "@/lib/contracts";
 import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
-import type { ApproveResult } from "@/lib/request-approvals";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { base64ToBytes } from "@/lib/base64";
 import { qk } from "@/lib/query-keys";
-import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import {
+  RequestApprovalActions,
+  RequestCheckboxMark,
+  RequestDetailRow,
+  RequestInlineNotice,
+  RequestSectionTitle,
+  RequestSigningAccountPicker,
+} from "./request-primitives";
+import { ScCallAdvancedDetails } from "./sc-call-advanced-details";
+import { ScCallContractSummary } from "./sc-call-contract-summary";
+import { ScCallDecodedHeadline, ScCallRecipients } from "./sc-call-decoded-views";
+import {
+  base64ToHex,
+  decodeMultiSignVaultDeposit,
+  decodeMultiSignVaultRelease,
+  decodeMultiSignVaultResetRelease,
+  decodeQearnUnlock,
+  decodeQUtilSendToMany,
+} from "./sc-call-decoders";
+import type { TransactionPreviewProps } from "./request-preview-props";
 import type { ScCallRequest } from "@/lib/request-schema";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { ScCallRequest } from "@/lib/request-schema";
 
-interface ScCallPreviewProps {
-  request: ScCallRequest;
-  onApprove: (result: ApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
-  authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
-  onReject: () => void;
-}
-
-
-function base64ToHex(b64: string): string {
-  try {
-    const binary = atob(b64);
-    return Array.from(binary, (c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join(" ");
-  } catch {
-    return "[invalid payload]";
-  }
-}
-
-function readU32(view: DataView, offset: number): number {
-  return view.getUint32(offset, true);
-}
-
-function readU64(view: DataView, offset: number): bigint {
-  const lo = view.getUint32(offset, true);
-  const hi = view.getUint32(offset + 4, true);
-  return (BigInt(hi) << 32n) | BigInt(lo);
-}
-
-// Decode QUtil SendToManyV1 payload: 25×32-byte pubkeys + 25×8-byte uint64 amounts (LE)
-function decodeQUtilSendToMany(bytes: Uint8Array): { identity: string; amount: bigint }[] | null {
-  if (bytes.length !== 800 + 200) return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const results: { identity: string; amount: bigint }[] = [];
-  for (let i = 0; i < 25; i++) {
-    const pubKey = bytes.slice(i * 32, (i + 1) * 32);
-    const amountOffset = 800 + i * 8;
-    const amount = readU64(view, amountOffset);
-    if (amount === 0n) continue;
-    try {
-      const identity = publicKeyToIdentity(pubKey) as string;
-      results.push({ identity, amount });
-    } catch {
-      // skip invalid entries
-    }
-  }
-  return results;
-}
-
-// Decode Qearn UnlockInQearn payload: 8-byte uint64 amount + 4-byte uint32 epoch (LE)
-function decodeQearnUnlock(bytes: Uint8Array): { amount: bigint; epoch: number } | null {
-  if (bytes.length < 12) return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const amount = readU64(view, 0);
-  const epoch = readU32(view, 8);
-  return { amount, epoch };
-}
-
-function decodeMultiSignVaultDeposit(bytes: Uint8Array): { vaultId: bigint } | null {
-  if (bytes.length < 8) return null;
-  return { vaultId: readU64(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), 0) };
-}
-
-function decodeMultiSignVaultResetRelease(bytes: Uint8Array): { vaultId: bigint } | null {
-  if (bytes.length < 8) return null;
-  return { vaultId: readU64(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), 0) };
-}
-
-function decodeMultiSignVaultRelease(bytes: Uint8Array): { vaultId: bigint; amount: bigint; destination: string } | null {
-  if (bytes.length < 48) return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  try {
-    return {
-      vaultId: readU64(view, 0),
-      amount: readU64(view, 8),
-      destination: publicKeyToIdentity(bytes.slice(16, 48)) as string,
-    };
-  } catch {
-    return null;
-  }
-}
-
-export function ScCallPreview({ request, onApprove, onReject, authorize }: ScCallPreviewProps) {
+export function ScCallPreview({ request, onApprove, onReject, authorize }: TransactionPreviewProps<ScCallRequest>) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
@@ -274,114 +211,36 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: ScCal
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
       {/* Contract — primary element */}
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-          {contractName}
-        </div>
-        <div style={{ marginTop: "var(--space-2)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-          {inputTypeLabel}
-        </div>
-        {hasAmount && (
-          <div style={{ marginTop: "var(--space-3)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>
-            {formatQu(requestAmount)} QU
-          </div>
-        )}
-      </div>
+      <ScCallContractSummary
+        contractName={contractName}
+        inputTypeLabel={inputTypeLabel}
+        amountQu={hasAmount ? formatQu(requestAmount) : null}
+      />
 
-      {/* ── Decoded: QUtil SendToMany ── */}
-      {decodedSendToMany && decodedSendToMany.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <RequestSectionTitle>Recipients ({decodedSendToMany.length})</RequestSectionTitle>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", maxHeight: 180, overflowY: "auto" }}>
-            {decodedSendToMany.map((r) => (
-              <div key={r.identity} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.03em" }}>
-                  {truncateId(r.identity, 10, 10)}
-                </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
-                  {formatQu(r.amount)} QU
-                </span>
-              </div>
-            ))}
-          </div>
-          {decodedSendToMany.length > 4 && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", textAlign: "right" }}>
-              scroll ↑↓ to see all {decodedSendToMany.length}
-            </div>
-          )}
-        </div>
-      )}
+      {decodedSendToMany && <ScCallRecipients recipients={decodedSendToMany} />}
 
-      {/* ── Decoded: Qearn Lock ── */}
-      {isQearnLock && hasAmount && (
-        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          LOCK {formatQu(requestAmount)} QU FOR STAKING
-        </div>
-      )}
-
-      {isQUtilBurn && hasAmount && (
-        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          BURN {formatQu(requestAmount)} QU PERMANENTLY
-        </div>
-      )}
-
-      {/* ── Decoded: Qearn Unlock ── */}
-      {decodedQearnUnlock && (
-        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          UNLOCK {formatQu(decodedQearnUnlock.amount)} QU FROM EPOCH {decodedQearnUnlock.epoch}
-        </div>
-      )}
-
-      {decodedMultiSigDeposit && (
-        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          DEPOSIT INTO MS VAULT #{decodedMultiSigDeposit.vaultId.toString()}
-        </div>
-      )}
-
-      {decodedMultiSigRelease && (
-        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          RELEASE {formatQu(decodedMultiSigRelease.amount)} QU FROM MS VAULT #{decodedMultiSigRelease.vaultId.toString()} TO {truncateId(decodedMultiSigRelease.destination, 10, 10)}
-        </div>
-      )}
-
-      {decodedMultiSigResetRelease && (
-        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-          RESET PENDING RELEASE FOR MS VAULT #{decodedMultiSigResetRelease.vaultId.toString()}
-        </div>
-      )}
+      <ScCallDecodedHeadline
+        requestAmount={requestAmount}
+        hasAmount={hasAmount}
+        isQearnLock={isQearnLock}
+        isQUtilBurn={isQUtilBurn}
+        decodedQearnUnlock={decodedQearnUnlock}
+        decodedMultiSigDeposit={decodedMultiSigDeposit}
+        decodedMultiSigRelease={decodedMultiSigRelease}
+        decodedMultiSigResetRelease={decodedMultiSigResetRelease}
+      />
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
-        <div>
-          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {vault.accounts.filter((a) => !a.hidden).map((acc) => (
-              <button
-                key={acc.index}
-                onClick={() => setSelectedIndex(acc.index)}
-                style={{
-                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
-                  borderRadius: "var(--radius-pill)",
-                  border: `1px solid ${acc.index === selectedIndex ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  background: acc.index === selectedIndex ? "var(--color-text-display)" : "transparent",
-                  color: acc.index === selectedIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  cursor: "pointer",
-                }}
-              >
-                {acc.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <RequestSigningAccountPicker
+          accounts={vault.accounts}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
+        />
       )}
 
       {/* fromError: dApp specified an identity not in this vault */}
-      {fromError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {fromError}
-        </div>
-      )}
+      {fromError && <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>}
 
       {/* Detail rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -399,41 +258,23 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: ScCal
       )}
 
       {(payloadHex !== null || targetTick !== null) && (
-        <RequestDisclosure label="Advanced details">
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
-            {payloadHex !== null && (
-              <div>
-                <RequestSectionTitle>Payload · {payloadByteCount.toLocaleString()}B</RequestSectionTitle>
-                <div style={{ marginTop: "var(--space-2)" }}>
-                  <RequestTechnicalBlock maxHeight={160}>{payloadHex}</RequestTechnicalBlock>
-                </div>
-              </div>
-            )}
-          </div>
-        </RequestDisclosure>
+        <ScCallAdvancedDetails
+          payloadHex={payloadHex}
+          payloadByteCount={payloadByteCount}
+          targetTick={targetTick}
+        />
       )}
 
       {insufficientBalance && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The selected account does not have enough balance for this request.
-        </div>
+        <RequestInlineNotice tone="error">The selected account does not have enough balance for this request.</RequestInlineNotice>
       )}
       {hasPendingTx && !insufficientBalance && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
+        <RequestInlineNotice tone="warning">
           This account already has a pending transfer. Wait for confirmation before sending another one.
-        </div>
+        </RequestInlineNotice>
       )}
-      {qUtilAmountWarning && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-          {qUtilAmountWarning}
-        </div>
-      )}
-      {txError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {txError}
-        </div>
-      )}
+      {qUtilAmountWarning && <RequestInlineNotice tone="warning">{qUtilAmountWarning}</RequestInlineNotice>}
+      {txError && <RequestInlineNotice tone="error">{txError}</RequestInlineNotice>}
 
       <DappPolicyStatus decision={policyDecision} />
 
@@ -446,29 +287,20 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: ScCal
           onKeyDown={(e) => e.key === " " && setHighValueConfirmed((value) => !value)}
           style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
         >
-          <div style={{
-            width: 14, height: 14, flexShrink: 0,
-            border: `1px solid ${highValueConfirmed ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: 2,
-            background: highValueConfirmed ? "var(--color-text-display)" : "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
-          </div>
+          <RequestCheckboxMark checked={highValueConfirmed} />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
             I understand this is a high-value contract call.
           </span>
         </div>
       )}
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
-          Sign and send
-        </Button>
-      </RequestActionBar>
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={approve}
+        approveLabel="Sign and send"
+        approveLoading={processing}
+        approveDisabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
+      />
     </div>
   );
 }

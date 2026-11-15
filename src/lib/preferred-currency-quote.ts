@@ -1,4 +1,4 @@
-export function parseStrictUsdRate(value: unknown): number | null {
+function parseStrictUsdRate(value: unknown): number | null {
   if (typeof value !== "string" || !/^[0-9]+(?:\.[0-9]+)?$/.test(value)) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;

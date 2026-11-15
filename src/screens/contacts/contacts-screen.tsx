@@ -2,18 +2,18 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { AddCircleIcon, ArrowUpRight01Icon, Download01Icon, Search01Icon, Edit02Icon, UserGroupIcon } from "@/lib/icons";
+import { AddCircleIcon, Download01Icon, Search01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Input } from "@/components/input";
-import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
-import { Identicon } from "@/components/identicon";
 import { usePersistedStore, type Contact } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { truncateId } from "@/lib/format";
+import { ContactForm, ContactFormActions } from "./contact-form";
+import { ContactRow, EmptyState } from "./contact-row";
+import { contactsToCsv, contactsToJson, parseContactImport } from "./contacts-transfer";
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
@@ -276,171 +276,5 @@ export default function ContactsScreen() {
         </p>
       </Sheet>
     </AppShell>
-  );
-}
-
-function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact; highlighted: boolean; onSend: () => void; onEdit: () => void }) {
-  return (
-    <article className={highlighted ? "flash-success" : undefined} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", padding: "var(--space-4) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", minWidth: 0, flex: "1 1 180px" }}>
-        <Identicon kind="identity" seed={contact.identity} label={contact.name} size={40} radius={10} style={{ flexShrink: 0 }} />
-        <div style={{ minWidth: 0 }}>
-          <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{contact.name}</strong>
-          <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em" }}>{truncateId(contact.identity)}</span>
-          {contact.note && <span style={{ display: "block", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-secondary)", fontSize: "var(--text-caption)" }}>{contact.note}</span>}
-          {(contact.tags ?? []).length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: "var(--space-2)" }}>{(contact.tags ?? []).map((tag) => <span key={tag} style={{ padding: "2px var(--space-2)", border: "1px solid var(--color-accent)", borderRadius: "var(--radius-pill)", color: "var(--color-accent)", fontSize: "var(--text-caption)", lineHeight: 1.2 }}>#{tag}</span>)}</div>}
-        </div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexShrink: 0 }}>
-        <Button variant="ghost" size="sm" onClick={onEdit}><Edit02Icon size={16} strokeWidth={1.5} aria-hidden="true" />Edit</Button>
-        <Button variant="secondary" size="sm" onClick={onSend}>Send<ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" /></Button>
-      </div>
-    </article>
-  );
-}
-
-function EmptyState({ hasContacts, onAdd }: { hasContacts: boolean; onAdd: () => void }) {
-  return (
-    <section style={{ minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)" }}>
-      <UserGroupIcon size={38} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-text-disabled)" }} />
-      <strong style={{ color: "var(--color-text-primary)", fontSize: "var(--text-body)", fontWeight: 600 }}>{hasContacts ? "No contacts found" : "No contacts yet"}</strong>
-      <span style={{ maxWidth: 300, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>{hasContacts ? "Try a name, identity, note, or tag." : "Save trusted recipients so sending stays quick and accurate."}</span>
-      {!hasContacts && <IconButton label="Add your first contact" title="Add your first contact" onClick={onAdd} style={{ marginTop: "var(--space-2)", width: 44, height: 44, color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircleIcon size={22} strokeWidth={1.5} aria-hidden="true" /></IconButton>}
-    </section>
-  );
-}
-
-function contactsToJson(contacts: Contact[]): string {
-  return `${JSON.stringify({ version: 1, contacts: contacts.map(portableContact) }, null, 2)}\n`;
-}
-
-function contactsToCsv(contacts: Contact[]): string {
-  const rows = [["name", "identity", "note", "tags"], ...contacts.map((contact) => [contact.name, contact.identity, contact.note, (contact.tags ?? []).join(" ")])];
-  return `${rows.map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
-}
-
-function parseContactImport(raw: string, path: string): Contact[] {
-  const contacts = path.toLowerCase().endsWith(".csv") ? parseContactsCsv(raw) : parseContactsJson(raw);
-  const seen = new Set<string>();
-  const valid = contacts.map(normalizeImportedContact).filter((contact): contact is Contact => {
-    if (!contact || seen.has(contact.identity)) return false;
-    seen.add(contact.identity);
-    return true;
-  });
-  if (valid.length === 0) throw new Error("No valid contacts found.");
-  return valid;
-}
-
-function parseContactsJson(raw: string): unknown[] {
-  const parsed = JSON.parse(raw) as unknown;
-  if (Array.isArray(parsed)) return parsed;
-  if (parsed && typeof parsed === "object" && Array.isArray((parsed as { contacts?: unknown }).contacts)) return (parsed as { contacts: unknown[] }).contacts;
-  throw new Error("Could not import contacts from this JSON file.");
-}
-
-function parseContactsCsv(raw: string): unknown[] {
-  const rows = parseCsvRows(raw).filter((row) => row.some((cell) => cell.trim()));
-  if (rows.length < 2) return [];
-  const headers = rows[0].map((header) => header.trim().toLowerCase());
-  if (!headers.includes("name") || !headers.includes("identity")) throw new Error("CSV must include name and identity columns.");
-  if (rows.slice(1).some((row) => row.length !== headers.length)) throw new Error("Could not import malformed CSV.");
-  return rows.slice(1).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""])));
-}
-
-function normalizeImportedContact(value: unknown): Contact | null {
-  if (!value || typeof value !== "object") return null;
-  const record = value as Record<string, unknown>;
-  const name = typeof record.name === "string" ? record.name.trim().slice(0, 80) : "";
-  const identity = typeof record.identity === "string" ? record.identity.trim() : "";
-  if (!name || !isValidIdentity(identity)) return null;
-  const note = typeof record.note === "string" ? record.note.trim().slice(0, 500) : "";
-  const tags: string[] = Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === "string") : typeof record.tags === "string" ? record.tags.split(/[\s,]+/) : [];
-  return { id: newId(), name, identity, note, tags: tags.map((tag) => tag.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean).slice(0, 20), addedAt: Date.now(), lastUsedAt: 0 };
-}
-
-function portableContact(contact: Contact) {
-  return { name: contact.name, identity: contact.identity, note: contact.note, tags: contact.tags ?? [] };
-}
-
-function csvCell(value: string): string {
-  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, "\"\"")}"` : value;
-}
-
-function parseCsvRows(raw: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-  let justClosedQuote = false;
-  let cellStarted = false;
-  for (let index = 0; index < raw.length; index += 1) {
-    const char = raw[index];
-    if (quoted) {
-      if (char === '"' && raw[index + 1] === '"') { cell += '"'; index += 1; }
-      else if (char === '"') { quoted = false; justClosedQuote = true; }
-      else cell += char;
-    } else if (char === '"') {
-      if (cellStarted) throw new Error("Could not import malformed CSV.");
-      quoted = true;
-      cellStarted = true;
-    } else if (char === ",") {
-      row.push(cell);
-      cell = "";
-      justClosedQuote = false;
-      cellStarted = false;
-    } else if (char === "\n") {
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-      justClosedQuote = false;
-      cellStarted = false;
-    } else if (char !== "\r") {
-      if (justClosedQuote) throw new Error("Could not import malformed CSV.");
-      cell += char;
-      cellStarted = true;
-    }
-  }
-  if (quoted) throw new Error("Could not import malformed CSV.");
-  row.push(cell);
-  rows.push(row);
-  return rows;
-}
-
-interface ContactFormProps {
-  formId: string;
-  name: string;
-  onName: (value: string) => void;
-  identity: string;
-  onIdentity: (value: string) => void;
-  note: string;
-  onNote: (value: string) => void;
-  tags: string;
-  onTags: (value: string) => void;
-  identityError: string;
-  onSubmit: () => void;
-}
-
-function ContactForm({ formId, name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit }: ContactFormProps) {
-  return (
-    <form id={formId} onSubmit={(event) => { event.preventDefault(); onSubmit(); }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-      <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>Use a clear name and verify the identity before saving. You can add private notes and tags to help organize recipients.</p>
-      <Input label="Name" value={name} onChange={(event) => onName(event.target.value)} placeholder="e.g. Alice" autoFocus autoComplete="name" maxLength={80} />
-      <Input label="Qubic identity" value={identity} onChange={(event) => onIdentity(event.target.value)} error={identityError} placeholder="60 uppercase letters" technical autoCapitalize="characters" autoCorrect="off" maxLength={60} />
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-        <Input label="Tags" value={tags} onChange={(event) => onTags(event.target.value)} placeholder="friend, exchange, work" maxLength={160} />
-        <span style={{ color: "var(--color-text-tertiary)", fontSize: "var(--text-caption)" }}>Optional. Separate tags with commas.</span>
-      </div>
-      <Textarea label="Private note" value={note} onChange={(event) => onNote(event.target.value)} placeholder="Optional context that stays in Glyph" rows={3} maxLength={500} style={{ minHeight: 96 }} />
-    </form>
-  );
-}
-
-function ContactFormActions({ formId, submitLabel, disabled, onCancel }: { formId: string; submitLabel: string; disabled: boolean; onCancel: () => void }) {
-  return (
-    <div style={{ display: "flex", gap: "var(--space-3)" }}>
-      <Button type="button" variant="ghost" size="md" style={{ flex: 1 }} onClick={onCancel}>Cancel</Button>
-      <Button type="submit" form={formId} size="md" style={{ flex: 1 }} disabled={disabled}>{submitLabel}</Button>
-    </div>
   );
 }

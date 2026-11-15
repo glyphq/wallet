@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { messageSigningIntent, signMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
-import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice, RequestSigningAccountPicker } from "./request-primitives";
+import { RequestMessageContent } from "./request-message-content";
 import type { SignMessageRequest } from "@/lib/request-schema";
 import type { SignMessageApproveResult } from "@/lib/request-approvals";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
@@ -22,12 +22,6 @@ interface SignMessagePreviewProps {
 
 function bytesToBase64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes));
-}
-
-function previewText(value: string, maxChars = 2000): string {
-  return value.length > maxChars
-    ? `${value.slice(0, maxChars)}\n\n[… ${value.length.toLocaleString()} chars total]`
-    : value;
 }
 
 export function SignMessagePreview({ request, onApprove, onReject, authorize }: SignMessagePreviewProps) {
@@ -76,11 +70,11 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
         ? base64ToBytes(request.data)
         : new TextEncoder().encode(request.message);
       const authorization = await authorize(selectedIndex, messageSigningIntent(selectedIndex, messageBytes));
-      const { signature, publicKey, identity } = await signMessageFromSession(selectedIndex, messageBytes, authorization);
+      const { signature, publicKey, identity: signingIdentity } = await signMessageFromSession(selectedIndex, messageBytes, authorization);
       await onApprove({
         signature: bytesToBase64(signature),
         publicKey: bytesToBase64(publicKey),
-        identity,
+        identity: signingIdentity,
         accountIndex: selectedIndex,
       }, authorization);
       setProcessing(false);
@@ -92,73 +86,39 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div>
-        <div style={{ marginBottom: "var(--space-2)" }}>
-          <RequestSectionTitle>{request.data ? "Data to sign" : "Message"}</RequestSectionTitle>
-        </div>
-        {request.data ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <RequestDetailRow label="Payload" value={dataByteCount === null ? "Invalid base64" : `${dataByteCount.toLocaleString()} bytes`} valueColor={dataByteCount === null ? "var(--color-status-error)" : undefined} />
-            {request.message && <RequestDetailRow label="Label" value={previewText(request.message, 160)} />}
-            <RequestDisclosure label={`Show base64 data${dataByteCount === null ? "" : ` · ${dataByteCount.toLocaleString()}B`}`}>
-              <RequestTechnicalBlock maxHeight={160}>{request.data}</RequestTechnicalBlock>
-            </RequestDisclosure>
-          </div>
-        ) : (
-          <RequestTechnicalBlock>{previewText(request.message)}</RequestTechnicalBlock>
-        )}
-      </div>
+      <RequestMessageContent
+        title={request.data ? "Data to sign" : "Message"}
+        data={request.data}
+        message={request.message}
+        dataByteCount={dataByteCount}
+      />
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
       {showPicker && vault && (
-        <div>
-          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {vault.accounts.filter((a) => !a.hidden).map((acc) => (
-              <button
-                key={acc.index}
-                onClick={() => setSelectedIndex(acc.index)}
-                style={{
-                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
-                  borderRadius: "var(--radius-pill)",
-                  border: `1px solid ${acc.index === selectedIndex ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  background: acc.index === selectedIndex ? "var(--color-text-display)" : "transparent",
-                  color: acc.index === selectedIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  cursor: "pointer",
-                }}
-              >
-                {acc.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <RequestSigningAccountPicker
+          accounts={vault.accounts}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
+        />
       )}
 
       {fromError ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {fromError}
-        </div>
+        <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>
       ) : (
         <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />
       )}
 
-      {error && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {error}
-        </div>
-      )}
+      {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}
 
       <DappPolicyStatus decision={policyDecision} />
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || !!fromError || !policyDecision.allowed} style={{ flex: 1 }}>
-          Sign message
-        </Button>
-      </RequestActionBar>
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={approve}
+        approveLabel="Sign message"
+        approveLoading={processing}
+        approveDisabled={!wallet || !!fromError || !policyDecision.allowed}
+      />
     </div>
   );
 }

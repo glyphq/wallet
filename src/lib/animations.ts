@@ -5,19 +5,18 @@
  * All presets use GPU-accelerated properties (opacity, transform) only.
  *
  * Usage:
- *   import { presets, variants, transition } from "@/lib/animations";
+ *   import { presets, transition, stepMotion } from "@/lib/animations";
  *   <motion.div {...presets.fadeIn} />
- *   <motion.div variants={variants.staggerItem} />
  */
 
-import type { Transition, Variants } from "motion/react";
+import type { Transition } from "motion/react";
 
 // ── Easing curves ────────────────────────────────────────────────────────────
 
 /** Material-style ease-out — decelerating entrance */
-export const EASE_OUT = [0, 0, 0.2, 1] as const;
+const EASE_OUT = [0, 0, 0.2, 1] as const;
 /** Material-style ease-in — accelerating exit */
-export const EASE_IN = [0.4, 0, 1, 1] as const;
+const EASE_IN = [0.4, 0, 1, 1] as const;
 
 // ── Transition presets ───────────────────────────────────────────────────────
 
@@ -83,29 +82,6 @@ export const presets = {
     transition: { duration: 0.12, ease: EASE_OUT },
   },
 } as const;
-
-// ── Variant-based presets (for parent-child orchestration) ───────────────────
-
-/** Parent: orchestrates staggered children. */
-export const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.04,
-      delayChildren: 0.06,
-    },
-  },
-};
-
-/** Child: fade in. Use inside a stagger parent. */
-export const staggerItem: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.2, ease: EASE_OUT },
-  },
-};
 
 // ── Step motion (multi-step flows: send, stake, create vault) ────────────────
 

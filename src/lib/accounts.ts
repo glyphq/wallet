@@ -1,7 +1,7 @@
 import type { SessionWallet } from "@/lib/session-wallet";
 import type { AccountMeta, VaultMeta } from "@/store/persisted";
 
-export function sanitizeAccountTags(tags: string[]): string[] {
+function sanitizeAccountTags(tags: string[]): string[] {
   return [...new Set(
     tags
       .map((tag) => tag.trim())

@@ -1,208 +1,23 @@
-import { Fragment, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { AddCircleIcon, ArrowLeft01Icon, Alert01Icon, FolderOpenIcon, KeyRoundIcon, LockKeyholeIcon } from "@/lib/icons";
+import { AddCircleIcon, ArrowLeft01Icon, FolderOpenIcon, KeyRoundIcon } from "@/lib/icons";
 import { presets } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { BrandLockup } from "@/components/brand-lockup";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
-import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
-import { StepProgress } from "@/components/step-progress";
-import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
-import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
-import { newId } from "@/lib/crypto";
-import { parseSignedExportEnvelope } from "@/lib/export-format";
-import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
-import { selectVaultAccounts, type VaultData, unlockVaultSession } from "@/lib/vault";
-import { usePersistedStore, type AccountMeta, type VaultColor, type WalletIconId } from "@/store/persisted";
+import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-
-const noticeStyle: Record<"warning" | "error", React.CSSProperties> = {
-  warning: {
-    color: "var(--color-status-warning)",
-    borderColor: "color-mix(in srgb, var(--color-status-warning) 45%, transparent)",
-    background: "color-mix(in srgb, var(--color-status-warning) 10%, var(--color-bg-surface))",
-  },
-  error: {
-    color: "var(--color-status-error)",
-    borderColor: "color-mix(in srgb, var(--color-status-error) 45%, transparent)",
-    background: "color-mix(in srgb, var(--color-status-error) 10%, var(--color-bg-surface))",
-  },
-};
-
-const cardStyle: React.CSSProperties = {
-  background: "var(--color-bg-surface)",
-  border: "1px solid var(--color-border-default)",
-  borderRadius: "var(--radius-sheet)",
-  padding: "var(--space-5)",
-};
-
-interface ImportFileData {
-  name: string;
-  color: VaultColor;
-  icon?: WalletIconId;
-  accounts: AccountMeta[];
-  vault: VaultData;
-  formatVersion: number;
-  signatureVerified: boolean;
-  legacy: boolean;
-}
-
-function Notice({ tone, children }: { tone: "warning" | "error"; children: React.ReactNode }) {
-  const colors = noticeStyle[tone];
-  return (
-    <div
-      role={tone === "error" ? "alert" : "status"}
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "var(--space-3)",
-        padding: "var(--space-4)",
-        border: `1px solid ${colors.borderColor}`,
-        borderRadius: "var(--radius-surface)",
-        background: colors.background,
-      }}
-    >
-      <Alert01Icon size={16} color={colors.color} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: 2 }} />
-      <span
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-body-compact)",
-          lineHeight: "var(--leading-body)",
-          color: colors.color,
-        }}
-      >
-        {children}
-      </span>
-    </div>
-  );
-}
+import { ImportVaultSheet } from "./welcome/import-vault-sheet";
+import { Notice } from "./welcome/notice";
+import { useVaultFileImport } from "./welcome/use-vault-file-import";
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
-  const addVault = usePersistedStore((s) => s.addVault);
-  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
   const hasVaults = usePersistedStore((s) => s.vaults.length > 0);
-  const unlock = useSessionStore((s) => s.unlock);
   const isLocked = useSessionStore((s) => s.isLocked);
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
-
-  const [importData, setImportData] = useState<ImportFileData | null>(null);
-  const [importPw, setImportPw] = useState("");
-  const [importError, setImportError] = useState("");
-  const [importFileError, setImportFileError] = useState("");
-  const [importLoading, setImportLoading] = useState(false);
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
-  const [importWalletIcon, setImportWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
-  const [importWalletColor, setImportWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
-
-  function openFilePicker() {
-    setImportFileError("");
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json,application/json";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const parsed = await parseSignedExportEnvelope<{
-          glyph: number;
-          name: string;
-          color: VaultColor;
-          icon?: WalletIconId;
-          accounts: AccountMeta[];
-          vault: VaultData;
-        }>(text, "vault");
-        const envelopePayload = parsed.payload;
-        if (envelopePayload.glyph !== 1 || !envelopePayload.vault || !envelopePayload.name?.trim()) {
-          throw new Error("bad format");
-        }
-        const accounts: AccountMeta[] = envelopePayload.accounts ?? [];
-        setImportData({
-          name: envelopePayload.name,
-          color: envelopePayload.color ?? DEFAULT_WALLET_COLOR,
-          icon: envelopePayload.icon ?? DEFAULT_WALLET_ICON,
-          accounts,
-          vault: envelopePayload.vault as VaultData,
-          formatVersion: parsed.version,
-          signatureVerified: parsed.verified,
-          legacy: parsed.legacy,
-        });
-        if (accounts.length > MAX_VAULT_ACCOUNTS) {
-          const sorted = [...accounts].sort((a, b) => a.index - b.index);
-          setSelectedIndices(new Set(sorted.slice(0, MAX_VAULT_ACCOUNTS).map((account) => account.index)));
-        } else {
-          setSelectedIndices(new Set());
-        }
-        setImportPw("");
-        setImportError("");
-        setImportWalletColor(envelopePayload.color ?? DEFAULT_WALLET_COLOR);
-        setImportWalletIcon(envelopePayload.icon ?? DEFAULT_WALLET_ICON);
-      } catch {
-        setImportData(null);
-        setImportPw("");
-        setImportError("");
-        setImportFileError("Invalid or unsupported Vault file. Choose a Glyph export and try again.");
-      }
-    };
-    input.click();
-  }
-
-  function toggleAccount(index: number) {
-    setSelectedIndices((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else if (next.size < MAX_VAULT_ACCOUNTS) {
-        next.add(index);
-      }
-      return next;
-    });
-  }
-
-  async function doImport() {
-    if (!importData) return;
-    setImportLoading(true);
-    setImportError("");
-    try {
-      let finalAccounts = importData.accounts;
-      let finalEncryptedData: VaultData = importData.vault;
-
-      if (importData.accounts.length > MAX_VAULT_ACCOUNTS) {
-        const sortedSelected = [...selectedIndices].sort((a, b) => a - b);
-        const byIndex = new Map(importData.accounts.map((account) => [account.index, account]));
-        finalAccounts = sortedSelected.map((origIdx, newIdx) => ({ ...byIndex.get(origIdx)!, index: newIdx }));
-        finalEncryptedData = await selectVaultAccounts(importData.vault, importPw, sortedSelected);
-      }
-
-      const wallets = await unlockVaultSession(finalEncryptedData, importPw);
-      const newVaultId = newId();
-      addVault({
-        id: newVaultId,
-        name: importData.name,
-        color: importWalletColor,
-        icon: importWalletIcon,
-        kind: "seeded",
-        createdAt: Date.now(),
-        lastUnlockedAt: Date.now(),
-        accounts: finalAccounts,
-        encryptedData: finalEncryptedData,
-      });
-      setActiveVault(newVaultId);
-      unlock(newVaultId, wallets);
-      navigate("/dashboard", { replace: true });
-    } catch {
-      setImportError("Could not import this Vault. Check the password and try again.");
-    } finally {
-      setImportLoading(false);
-    }
-  }
-
-  const importNeedsSelection = importData !== null && importData.accounts.length > MAX_VAULT_ACCOUNTS;
-  const importDisabled = !importPw || importLoading || (importNeedsSelection && selectedIndices.size === 0);
+  const importFlow = useVaultFileImport();
 
   return (
     <FullPage centered={false} style={{ justifyContent: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
@@ -257,7 +72,7 @@ export default function WelcomeScreen() {
             </Notice>
           ) : null}
 
-          {importFileError ? <Notice tone="error">{importFileError}</Notice> : null}
+          {importFlow.importFileError ? <Notice tone="error">{importFlow.importFileError}</Notice> : null}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0 }}>
@@ -275,7 +90,7 @@ export default function WelcomeScreen() {
           <div style={{ height: 1, background: "var(--color-border-subtle)" }} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={openFilePicker}>
+            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={importFlow.openFilePicker}>
               <FolderOpenIcon size={18} strokeWidth={1.5} aria-hidden="true" />
               Import Vault file
             </Button>
@@ -296,140 +111,7 @@ export default function WelcomeScreen() {
         </div>
       </motion.div>
 
-      <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? "Vault"}`}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <StepProgress current={2} total={2} />
-          <FlowHeader
-            title="Unlock Vault file"
-            description={importData && importData.accounts.length > MAX_VAULT_ACCOUNTS
-              ? `${selectedIndices.size} of ${MAX_VAULT_ACCOUNTS} accounts selected`
-              : `${importData?.accounts.length ?? 0} ${(importData?.accounts.length ?? 0) === 1 ? "account" : "accounts"} · ${importData?.name ?? "Vault"}`}
-          />
-
-          <WalletAppearancePicker
-            icon={importWalletIcon}
-            color={importWalletColor}
-            onIconChange={setImportWalletIcon}
-            onColorChange={setImportWalletColor}
-          />
-
-          <div
-            style={{
-              ...cardStyle,
-              padding: "var(--space-4)",
-              borderColor: importData?.signatureVerified ? "color-mix(in srgb, var(--color-status-success) 35%, var(--color-border-default))" : "color-mix(in srgb, var(--color-status-warning) 35%, var(--color-border-default))",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body-compact)",
-                lineHeight: "var(--leading-body)",
-                color: importData?.signatureVerified ? "var(--color-status-success)" : "var(--color-status-warning)",
-              }}
-            >
-              {importData?.legacy
-                ? "Legacy format v1 detected. Import only if you trust the export source."
-                : importData?.signatureVerified
-                  ? `Signed export v${importData?.formatVersion ?? 2} verified on this device.`
-                  : `Signed export v${importData?.formatVersion ?? 2} could not be verified on this device.`}
-            </div>
-          </div>
-
-          {importNeedsSelection ? (
-            <div style={{ ...cardStyle, padding: "var(--space-4)", maxHeight: 220, overflowY: "auto" }}>
-              {[...importData.accounts].sort((a, b) => a.index - b.index).map((account, index, accounts) => {
-                const selected = selectedIndices.has(account.index);
-                const atLimit = !selected && selectedIndices.size >= MAX_VAULT_ACCOUNTS;
-                return (
-                  <Fragment key={account.index}>
-                    <button
-                      type="button"
-                      onClick={() => toggleAccount(account.index)}
-                      disabled={atLimit}
-                      aria-pressed={selected}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "var(--space-3)",
-                        padding: "var(--space-3) 0",
-                        background: "transparent",
-                        border: "none",
-                        cursor: atLimit ? "not-allowed" : "pointer",
-                        opacity: atLimit ? 0.45 : 1,
-                        textAlign: "left",
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          width: 18,
-                          height: 18,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: 999,
-                          border: `1px solid ${selected ? "var(--color-accent)" : "var(--color-border-default)"}`,
-                          color: selected ? "var(--color-accent)" : "var(--color-text-tertiary)",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--text-mono-sm)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {selected ? "✓" : ""}
-                      </span>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                        <span
-                          style={{
-                            fontFamily: "var(--font-sans)",
-                            fontSize: "var(--text-body)",
-                            color: "var(--color-text-primary)",
-                          }}
-                        >
-                          {account.name}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: "var(--text-mono-sm)",
-                            color: "var(--color-text-tertiary)",
-                          }}
-                        >
-                          #{account.index + 1}
-                        </span>
-                      </div>
-                    </button>
-                    {index < accounts.length - 1 ? <div style={{ height: 1, background: "var(--color-border-subtle)" }} /> : null}
-                  </Fragment>
-                );
-              })}
-            </div>
-          ) : null}
-
-          <Input
-            label="Vault password"
-            leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
-            type="password"
-            value={importPw}
-            onChange={(event) => {
-              setImportPw(event.target.value);
-              setImportError("");
-            }}
-            onKeyDown={(event) => event.key === "Enter" && !importLoading && doImport()}
-            placeholder="Enter the export password"
-            autoComplete="current-password"
-            autoFocus
-            error={importError}
-          />
-
-          <Button onClick={doImport} disabled={importDisabled} loading={importLoading}>
-            Import Vault
-          </Button>
-        </div>
-      </Sheet>
-
-
+      <ImportVaultSheet flow={importFlow} />
     </FullPage>
   );
 }

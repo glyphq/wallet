@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-export const PRODUCT_CONTRACT = Object.freeze({
+const PRODUCT_CONTRACT = Object.freeze({
   displayName: "Glyph Wallet",
   identifier: "com.qubic.glyph",
   walletBinary: "glyph-wallet",
@@ -117,7 +117,7 @@ function plistValue(text, key) {
   return text.match(pattern)?.[1] ?? null;
 }
 
-export function validateMacInstalledRoot(root) {
+function validateMacInstalledRoot(root) {
   const plist = singleFile(
     root,
     (_path, name) => name === "Info.plist" && _path.includes(".app/Contents/"),
@@ -136,7 +136,7 @@ export function validateMacInstalledRoot(root) {
   return { plist };
 }
 
-export function validateWindowsInstalledRoot(root) {
+function validateWindowsInstalledRoot(root) {
   const executable = singleFile(
     root,
     (_path, name) => /^(glyph-wallet|glyph wallet|glyph)[.]exe$/i.test(name),

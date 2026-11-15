@@ -91,7 +91,7 @@ export function SetupFlow({
   );
 }
 
-export function SetupError({ children }: { children: ReactNode }) {
+function SetupError({ children }: { children: ReactNode }) {
   return (
     <div
       role="alert"

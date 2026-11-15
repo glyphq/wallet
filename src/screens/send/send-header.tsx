@@ -1,0 +1,35 @@
+import { FireIcon, QrCodeIcon, UserGroupIcon } from "@/lib/icons";
+import { ScreenHeader } from "@/components/screen-header";
+import { IconButton } from "@/components/icon-button";
+import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
+
+/** Send screen header with the cross-flow actions. */
+export function SendHeader({
+  onSendMany,
+  onScanQr,
+  onBurn,
+}: {
+  onSendMany: () => void;
+  onScanQr: () => void;
+  onBurn: () => void;
+}) {
+  return (
+    <ScreenHeader
+      leading={<ShellVaultSwitcher />}
+      title="Send"
+      action={
+        <>
+          <IconButton label="Send to many" onClick={onSendMany}>
+            <UserGroupIcon size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Scan QR" onClick={onScanQr}>
+            <QrCodeIcon size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Burn QU" onClick={onBurn}>
+            <FireIcon size={20} aria-hidden="true" />
+          </IconButton>
+        </>
+      }
+    />
+  );
+}

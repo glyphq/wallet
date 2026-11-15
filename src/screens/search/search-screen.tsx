@@ -1,47 +1,17 @@
 import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { User02Icon, UserGroupIcon, Exchange01Icon, File01Icon, Search01Icon } from "@/lib/icons";
+import { Search01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Input } from "@/components/input";
-import { Divider } from "@/components/divider";
-import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getRpcClient } from "@/lib/rpc";
-import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { truncateId } from "@/lib/format";
 import { getAccountIdentity } from "@/lib/accounts";
-import { getKnownContractLabel, normalizeArchiveTransaction, pendingTxToRecord } from "@/lib/tx-domain";
-
-const SECTION_ICONS: Record<string, React.ReactNode> = {
-  accounts: <User02Icon size={14} strokeWidth={1.5} />,
-  contacts: <UserGroupIcon size={14} strokeWidth={1.5} />,
-  transactions: <Exchange01Icon size={14} strokeWidth={1.5} />,
-  contracts: <File01Icon size={14} strokeWidth={1.5} />,
-};
-
-const SECTION_LABELS: Record<string, string> = {
-  accounts: "Accounts",
-  contacts: "Contacts",
-  transactions: "Transactions",
-  contracts: "Contracts",
-};
-
-type SearchSection = "accounts" | "contacts" | "transactions" | "contracts";
-
-interface SearchResult {
-  key: string;
-  section: SearchSection;
-  title: string;
-  subtitle: string;
-  identity?: string;
-  badgeKind?: "account" | "contact" | "contract" | "identity";
-  badgeCode?: string;
-  badgeIcon?: ReactNode;
-  onSelect: () => void;
-}
+import { normalizeArchiveTransaction } from "@/lib/tx-domain";
+import { buildSearchResults, groupSearchResults } from "./search-results";
+import { SearchResults } from "./search-results-view";
+import { SearchEmptyState } from "./search-empty-state";
 
 export default function SearchScreen() {
   const navigate = useNavigate();
@@ -99,101 +69,19 @@ export default function SearchScreen() {
 
   const txItems = txQueries.flatMap((queryResult) => queryResult.data ?? []);
 
-  const results = useMemo(() => {
-    if (!normalizedQuery) return [] as SearchResult[];
+  const results = useMemo(() => buildSearchResults({
+    accounts: accountEntries,
+    contacts,
+    transactions: txItems,
+    pendingTxs,
+    txMemos,
+    query: normalizedQuery,
+    navigate,
+    setActiveVault,
+    setActiveAccountIndex,
+  }), [accountEntries, contacts, navigate, normalizedQuery, pendingTxs, setActiveAccountIndex, setActiveVault, txItems, txMemos]);
 
-    const accountResults: SearchResult[] = accountEntries
-      .filter((account) =>
-        [
-          account.accountName,
-          account.vaultName,
-          account.identity,
-          account.note,
-          ...account.tags,
-        ].some((part) => part.toLowerCase().includes(normalizedQuery)),
-      )
-      .map((account) => ({
-        key: `account:${account.vaultId}:${account.accountIndex}`,
-        section: "accounts",
-        title: account.accountName,
-        subtitle: `${account.vaultName} · ${truncateId(account.identity)}`,
-        identity: account.identity,
-        badgeKind: "account",
-        badgeCode: `A${account.accountIndex + 1}`,
-        onSelect: () => {
-          setActiveVault(account.vaultId);
-          setActiveAccountIndex(account.accountIndex);
-          navigate("/dashboard");
-        },
-      }));
-
-    const contactResults: SearchResult[] = contacts
-      .filter((contact) => [contact.name, contact.identity, contact.note].some((part) => part.toLowerCase().includes(normalizedQuery)))
-      .map((contact) => ({
-        key: `contact:${contact.id}`,
-        section: "contacts",
-        title: contact.name,
-        subtitle: contact.note ? `${truncateId(contact.identity)} · ${contact.note}` : truncateId(contact.identity),
-        identity: contact.identity,
-        badgeKind: "contact",
-        onSelect: () => navigate(`/send?to=${contact.identity}`),
-      }));
-
-    const transactionResults: SearchResult[] = txItems
-      .filter((tx) => {
-        const memo = txMemos[tx.hash] ?? "";
-        const contractLabel = getKnownContractLabel(tx.destination) || getKnownContractLabel(tx.source);
-        return [tx.hash, memo, contractLabel, tx.source ?? "", tx.destination ?? ""].some((part) => part.toLowerCase().includes(normalizedQuery));
-      })
-      .slice(0, 20)
-      .map((tx) => ({
-        key: `tx:${tx.hash}`,
-        section: "transactions",
-        title: txMemos[tx.hash]?.trim() || truncateId(tx.hash, 12, 12),
-        subtitle: `${tx.vaultName} · ${tx.amount} QU`,
-        onSelect: () => {
-          setActiveVault(tx.vaultId);
-          setActiveAccountIndex(tx.accountIndex);
-          navigate(`/history?focus=${tx.hash}`);
-        },
-      }));
-
-    const pendingResults: SearchResult[] = pendingTxs
-      .map((tx) => ({ persisted: tx, record: pendingTxToRecord(tx) }))
-      .filter(({ persisted, record }) => {
-        const memo = txMemos[persisted.hash] ?? "";
-        return [record.hash, memo, record.source ?? "", record.destination ?? "", record.contractName ?? ""].some((part) => part.toLowerCase().includes(normalizedQuery));
-      })
-      .map(({ persisted, record }) => ({
-        key: `pending:${record.hash}`,
-        section: "transactions",
-        title: txMemos[persisted.hash]?.trim() || truncateId(record.hash, 12, 12),
-        subtitle: `${record.contractName ?? "Pending"} · ${record.amount} QU`,
-        onSelect: () => navigate(`/history?focus=${record.hash}`),
-      }));
-
-    const contractResults: SearchResult[] = Object.entries(KNOWN_CONTRACT_ADDRESSES)
-      .filter(([, name]) => name.toLowerCase().includes(normalizedQuery) || normalizedQuery.includes(name.toLowerCase()))
-      .map(([identity, name]) => ({
-        key: `contract:${identity}`,
-        section: "contracts",
-        title: name,
-        subtitle: truncateId(identity),
-        identity,
-        badgeKind: "contract",
-        badgeIcon: <File01Icon size={16} strokeWidth={1.5} aria-hidden="true" />,
-        onSelect: () => navigate(`/send?to=${identity}`),
-      }));
-
-    return [...accountResults, ...contactResults, ...pendingResults, ...transactionResults, ...contractResults];
-  }, [accountEntries, contacts, navigate, normalizedQuery, pendingTxs, setActiveAccountIndex, setActiveVault, txItems, txMemos]);
-
-  const grouped = useMemo(() => ({
-    accounts: results.filter((result) => result.section === "accounts"),
-    contacts: results.filter((result) => result.section === "contacts"),
-    transactions: results.filter((result) => result.section === "transactions"),
-    contracts: results.filter((result) => result.section === "contracts"),
-  }), [results]);
+  const grouped = useMemo(() => groupSearchResults(results), [results]);
 
   return (
     <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -210,61 +98,20 @@ export default function SearchScreen() {
       </div>
 
       {!normalizedQuery && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-          <Search01Icon size={48} strokeWidth={1.5} style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-            Start typing to search
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", opacity: 0.7 }}>
-            Search accounts, contacts, transactions, or contracts
-          </div>
-        </div>
+        <SearchEmptyState
+          title="Start typing to search"
+          description="Search accounts, contacts, transactions, or contracts"
+        />
       )}
 
       {normalizedQuery && results.length === 0 && (
-        <div style={{ textAlign: "center", padding: "var(--space-12) 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-          <Search01Icon size={48} strokeWidth={1.5} style={{ color: "var(--color-text-disabled)", opacity: 0.5 }} />
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)" }}>
-            No results for "{query.trim()}"
-          </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", opacity: 0.7 }}>
-            Try a different name, identity, or hash
-          </div>
-        </div>
+        <SearchEmptyState
+          title={`No results for "${query.trim()}"`}
+          description="Try a different name, identity, or hash"
+        />
       )}
 
-      {(Object.entries(grouped) as Array<[SearchSection, SearchResult[]]>).map(([section, sectionResults]) => (
-        sectionResults.length > 0 ? (
-          <div key={section} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", color: "var(--color-text-disabled)" }}>
-              <span style={{ flexShrink: 0 }}>{SECTION_ICONS[section]}</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500 }}>
-                {SECTION_LABELS[section]}
-              </span>
-            </div>
-            {sectionResults.map((result, index) => (
-              <div key={result.key}>
-                {index > 0 && <Divider style={{ marginBottom: "var(--space-3)" }} />}
-                <button
-                  type="button"
-                  onClick={result.onSelect}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
-                >
-                  <Identicon kind={result.badgeKind ?? "identity"} code={result.badgeCode} icon={result.badgeIcon} seed={result.identity ?? result.key} label={result.title} size={32} radius={8} style={{ flexShrink: 0 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-                      {result.title}
-                    </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", wordBreak: "break-all" }}>
-                      {result.subtitle}
-                    </div>
-                  </div>
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : null
-      ))}
+      <SearchResults grouped={grouped} />
     </AppShell>
   );
 }

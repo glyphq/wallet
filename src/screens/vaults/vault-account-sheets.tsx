@@ -5,7 +5,7 @@ import type { AccountMeta } from "@/store/persisted";
 
 const ACCOUNT_NAME_SUGGESTIONS = [
   "Main", "Trading", "Staking", "Cold Storage", "DeFi", "Savings",
-  "Hot Wallet01Icon", "Treasury", "Operations", "Rewards",
+  "Hot Wallet", "Treasury", "Operations", "Rewards",
 ];
 
 interface AddAccountSheetProps {

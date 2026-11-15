@@ -1,4 +1,5 @@
 import { forwardRef, useId, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
+import { FieldError, FieldLabel } from "./field-parts";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -58,20 +59,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
       {label && (
-        <label
-          htmlFor={inputId}
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
-            color: "var(--color-text-tertiary)",
-            fontWeight: 500,
-            lineHeight: "var(--leading-compact)",
-            letterSpacing: "0.015em",
-            ...labelStyle,
-          }}
-        >
+        <FieldLabel htmlFor={inputId} style={labelStyle}>
           {label}
-        </label>
+        </FieldLabel>
       )}
       {leftElement || rightElement ? (
         <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
@@ -104,18 +94,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         </div>
       ) : inputEl}
       {error && (
-        <span
-          id={errorId}
-          role="alert"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-caption)",
-            color: "var(--color-status-error)",
-            lineHeight: "var(--leading-compact)",
-          }}
-        >
-          {error}
-        </span>
+        <FieldError id={errorId}>{error}</FieldError>
       )}
     </div>
   );

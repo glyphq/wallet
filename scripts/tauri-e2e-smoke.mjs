@@ -62,8 +62,8 @@ async function waitFor(session, predicate, description) {
   throw new Error(`timed out waiting for ${description}; last page source length: ${last.length}`);
 }
 
-async function execute(session, script, args = []) {
-  const value = await request(`/session/${session}/execute/sync`, "POST", { script, args });
+async function execute(session, script, scriptArgs = []) {
+  const value = await request(`/session/${session}/execute/sync`, "POST", { script, args: scriptArgs });
   return value?.value;
 }
 

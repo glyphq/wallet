@@ -130,11 +130,12 @@ function useRuntimeDiagnostics() {
 function usePriceSnapshotRecorder() {
   const { data: latestStats } = useLatestStats();
   const addPriceSnapshot = usePersistedStore((s) => s.addPriceSnapshot);
+  const price = latestStats?.price;
 
   useEffect(() => {
-    if (!latestStats || !Number.isFinite(latestStats.price)) return;
-    addPriceSnapshot({ timestamp: Date.now(), priceUsd: latestStats.price });
-  }, [addPriceSnapshot, latestStats?.price]);
+    if (price === undefined || !Number.isFinite(price)) return;
+    addPriceSnapshot({ timestamp: Date.now(), priceUsd: price });
+  }, [addPriceSnapshot, price]);
 }
 
 function AppHooks() {

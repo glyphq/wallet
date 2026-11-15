@@ -1,4 +1,5 @@
 import { useId, type CSSProperties, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { FieldError, FieldLabel } from "./field-parts";
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -31,19 +32,7 @@ export function Textarea({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
       {label ? (
-        <label
-          htmlFor={fieldId}
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
-            color: "var(--color-text-tertiary)",
-            fontWeight: 500,
-            lineHeight: "var(--leading-compact)",
-            letterSpacing: "0.015em",
-          }}
-        >
-          {label}
-        </label>
+        <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
       ) : null}
       <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
         {leftElement ? (
@@ -108,18 +97,7 @@ export function Textarea({
         </span>
       ) : null}
       {error ? (
-        <span
-          id={errorId}
-          role="alert"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-caption)",
-            lineHeight: "var(--leading-compact)",
-            color: "var(--color-status-error)",
-          }}
-        >
-          {error}
-        </span>
+        <FieldError id={errorId}>{error}</FieldError>
       ) : null}
     </div>
   );

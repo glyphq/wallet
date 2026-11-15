@@ -26,5 +26,3 @@ export const DONATION_IDENTITY =
 if (!isValidIdentity(DONATION_IDENTITY)) {
   throw new Error(`[glyph] DONATION_IDENTITY is not a valid Qubic address: ${DONATION_IDENTITY}`);
 }
-
-export const SPONSOR_NAMES: Record<string, string> = {};

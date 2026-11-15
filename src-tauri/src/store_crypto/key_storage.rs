@@ -1,14 +1,15 @@
-use aes_gcm::aead::{Aead, AeadCore, KeyInit, OsRng};
-use aes_gcm::{Aes256Gcm, Key, Nonce};
+//! Store-key storage: platform credential stores plus permission-restricted
+//! file fallbacks.
+
+use aes_gcm::aead::{KeyInit, OsRng};
+use aes_gcm::{Aes256Gcm, Key};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use std::path::PathBuf;
 use std::sync::OnceLock;
-use tauri::command;
 
 static STORE_KEY_CACHE: OnceLock<[u8; 32]> = OnceLock::new();
 
 const STORE_KEY_TARGET: &str = "glyph-store-key";
-const STORE_VALUE_PREFIX: &str = "enc-v1:";
 const STORE_KEY_FILE: &str = "store-key";
 
 fn store_key_path() -> Result<PathBuf, String> {
@@ -243,7 +244,7 @@ fn migrate_file_key_to_secure_store(encoded: &str) -> Result<Key<Aes256Gcm>, Str
     Ok(key)
 }
 
-fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
+pub(super) fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
     if let Some(bytes) = STORE_KEY_CACHE.get() {
         return Ok(*Key::<Aes256Gcm>::from_slice(bytes));
     }
@@ -318,57 +319,4 @@ fn get_or_create_store_key() -> Result<Key<Aes256Gcm>, String> {
     bytes.copy_from_slice(key.as_slice());
     let _ = STORE_KEY_CACHE.set(bytes);
     Ok(key)
-}
-
-fn encrypt_value(value: &str) -> Result<String, String> {
-    let key = get_or_create_store_key()?;
-    let cipher = Aes256Gcm::new(&key);
-    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-
-    let ciphertext = cipher
-        .encrypt(&nonce, value.as_bytes())
-        .map_err(|_| "store encryption failed".to_string())?;
-
-    let mut payload = Vec::with_capacity(nonce.len() + ciphertext.len());
-    payload.extend_from_slice(nonce.as_slice());
-    payload.extend_from_slice(&ciphertext);
-
-    Ok(format!(
-        "{STORE_VALUE_PREFIX}{}",
-        URL_SAFE_NO_PAD.encode(payload)
-    ))
-}
-
-fn decrypt_value(value: &str) -> Result<String, String> {
-    let Some(encoded) = value.strip_prefix(STORE_VALUE_PREFIX) else {
-        return Ok(value.to_string());
-    };
-
-    let key = get_or_create_store_key()?;
-    let cipher = Aes256Gcm::new(&key);
-    let payload = URL_SAFE_NO_PAD
-        .decode(encoded)
-        .map_err(|e| format!("invalid encrypted metadata payload: {e}"))?;
-    if payload.len() < 13 {
-        return Err("encrypted metadata payload is too short".into());
-    }
-    let (nonce_bytes, ciphertext) = payload.split_at(12);
-    let plaintext = cipher
-        .decrypt(Nonce::from_slice(nonce_bytes), ciphertext)
-        .map_err(|_| "store decryption failed".to_string())?;
-    String::from_utf8(plaintext).map_err(|e| format!("store plaintext is not utf-8: {e}"))
-}
-
-#[command]
-pub async fn encrypt_store_value(value: String) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || encrypt_value(&value))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[command]
-pub async fn decrypt_store_value(value: String) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || decrypt_value(&value))
-        .await
-        .map_err(|e| e.to_string())?
 }

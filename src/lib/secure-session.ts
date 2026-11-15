@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { deriveIdentityFromSeed, identityToPublicKey, publicKeyFromSeed } from "@/lib/crypto";
+import { deriveIdentityFromSeed, publicKeyFromSeed } from "@/lib/crypto";
 import type { Seed } from "@/lib/crypto";
 import type { SessionWallet } from "@/lib/session-wallet";
 import type { GlyphCallbackResponse } from "@/lib/request-schema";
@@ -96,13 +96,6 @@ export async function unlockSecureSession(seeds: Seed[]): Promise<SessionWallet[
   }));
   await invoke("store_session_seeds", { seeds: seeds.map(String) });
   return wallets;
-}
-
-export function restoreSessionWalletsFromIdentities(identities: string[]): SessionWallet[] {
-  return identities.map((identity) => ({
-    identity,
-    publicKey: identityToPublicKey(identity as import("@qubic.org/types").Identity),
-  }));
 }
 
 // ── Signing — seed material remains native-side ────────────────────────────────

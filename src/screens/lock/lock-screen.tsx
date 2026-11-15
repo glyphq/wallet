@@ -3,131 +3,23 @@ import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "motion/react";
-import { AddCircleIcon, ViewIcon, ViewOffIcon, LockKeyholeIcon } from "@/lib/icons";
 import { presets } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
 import { BrandLockup } from "@/components/brand-lockup";
-import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
-import { Input } from "@/components/input";
-import { Identicon } from "@/components/identicon";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { extractMessage, timeAgo } from "@/lib/format";
+import { extractMessage } from "@/lib/format";
 import { unlockBiometricSession, unlockVaultSession } from "@/lib/vault";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionWallet } from "@/lib/session-wallet";
-
-interface FormValues {
-  password: string;
-}
+import { LockForm, type FormValues } from "./lock-form";
+import { LockVaultShelf } from "./lock-vault-shelf";
+import { UnlockingPanel } from "./lock-unlocking-panel";
 
 const PASSWORD_MAX_ATTEMPTS = 5;
 const PASSWORD_LOCKOUT_SECS = 30;
 let biometricFailures = 0;
-
-function VaultShelfRow({
-  vault,
-  selected,
-  onSelect,
-  isLast,
-}: {
-  vault: NonNullable<ReturnType<typeof usePersistedStore.getState>["vaults"][number]>;
-  selected: boolean;
-  onSelect: () => void;
-  isLast: boolean;
-}) {
-  const lastOpened = vault.lastUnlockedAt ? `Last opened ${timeAgo(vault.lastUnlockedAt)}` : "Not opened yet";
-
-  return (
-    <button
-      type="button"
-      className="vault-shelf-row"
-      data-selected={selected ? "true" : "false"}
-      onClick={onSelect}
-      aria-pressed={selected}
-      aria-label={`${vault.name}. ${lastOpened}`}
-      style={{
-        width: "100%",
-        minHeight: 64,
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-3)",
-        padding: "var(--space-3) var(--space-4)",
-        border: "none",
-        borderBottom: isLast ? "none" : "1px solid var(--color-border-subtle)",
-        color: "var(--color-text-primary)",
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "var(--font-sans)",
-        transition: "background var(--duration-fast) var(--ease-out)",
-      }}
-    >
-      <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={9} padding={2} walletIcon={vault.icon} vaultColor={vault.color} />
-      <span style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-        <span
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            fontSize: "var(--text-body)",
-            fontWeight: 600,
-          }}
-        >
-          {vault.name}
-        </span>
-        <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-          {lastOpened}
-        </span>
-      </span>
-      <span
-        aria-hidden="true"
-        style={{
-          width: 18,
-          height: 18,
-          flexShrink: 0,
-          display: "grid",
-          placeItems: "center",
-          borderRadius: "var(--radius-pill)",
-          border: `1px solid ${selected ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-        }}
-      >
-        {selected ? (
-          <span style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: "var(--color-text-primary)" }} />
-        ) : null}
-      </span>
-    </button>
-  );
-}
-
-function PasswordVisibilityButton({
-  visible,
-  onToggle,
-}: {
-  visible: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={visible ? "Hide password" : "Show password"}
-      aria-pressed={visible}
-      style={{
-        border: "none",
-        background: "transparent",
-        padding: 0,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "var(--color-text-tertiary)",
-        cursor: "pointer",
-      }}
-    >
-      {visible ? <ViewOffIcon size={18} strokeWidth={1.5} /> : <ViewIcon size={18} strokeWidth={1.5} />}
-    </button>
-  );
-}
 
 export default function LockScreen() {
   const navigate = useNavigate();
@@ -305,46 +197,7 @@ export default function LockScreen() {
     <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-6)", paddingBottom: "var(--space-6)" }}>
       <AnimatePresence mode="wait">
         {unlocking ? (
-          <motion.div
-            key="unlocking"
-            {...presets.fadeIn}
-            style={{
-              width: "100%",
-              maxWidth: 320,
-              margin: "0 auto",
-              height: "100%",
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "var(--space-4)",
-              textAlign: "center",
-            }}
-          >
-            <BrandLockup align="center" compact iconOnly />
-            <div
-              aria-hidden="true"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 999,
-                border: "2px solid var(--color-border-default)",
-                borderTopColor: "var(--color-accent)",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              Unlocking local session.
-            </p>
-          </motion.div>
+          <UnlockingPanel key="unlocking" />
         ) : (
           <motion.div
             key="form"
@@ -368,103 +221,32 @@ export default function LockScreen() {
                 description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a Vault, then enter its password."}
               />
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
+              <LockVaultShelf
+                vaults={lockedVaults}
+                selectedId={selected.id}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  window.requestAnimationFrame(() => setFocus("password"));
                 }}
-              >
-                <div
-                  role="group"
-                  aria-label="Choose a Vault to unlock"
-                  style={{
-                    maxHeight: lockedVaults.length > 3 ? 194 : undefined,
-                    overflowY: lockedVaults.length > 3 ? "auto" : "hidden",
-                    border: "1px solid var(--color-border-default)",
-                    borderRadius: "var(--radius-card)",
-                    background: "var(--color-bg-surface-2)",
-                  }}
-                >
-                  {lockedVaults.map((vault, index) => (
-                    <VaultShelfRow
-                      key={vault.id}
-                      vault={vault}
-                      selected={vault.id === selected.id}
-                      isLast={index === lockedVaults.length - 1}
-                      onSelect={() => {
-                        setSelectedId(vault.id);
-                        window.requestAnimationFrame(() => setFocus("password"));
-                      }}
-                    />
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="vault-shelf-add"
-                  onClick={() => navigate("/setup")}
-                  aria-label="Add another Vault"
-                >
-                  <span className="vault-shelf-add-icon" aria-hidden="true">
-                    <AddCircleIcon size={17} strokeWidth={1.5} />
-                  </span>
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                    <span style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
-                      Add another Vault
-                    </span>
-                    <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-                      Create new or import existing
-                    </span>
-                  </span>
-                </button>
-              </div>
+                onAdd={() => navigate("/setup")}
+              />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", marginTop: "auto" }}>
-              <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  <div key={shakeKey} className={error ? "lock-shake" : undefined}>
-                    <Input
-                      {...register("password")}
-                      id="wallet-password"
-                      aria-label="Vault password"
-                      type={showPassword ? "text" : "password"}
-                      style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) var(--space-4)" }}
-                      placeholder="Enter the Vault password"
-                      autoComplete="current-password"
-                      error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
-                      disabled={lockoutSecsLeft > 0}
-                      autoFocus
-                      rightElement={<PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />}
-                    />
-                  </div>
-                  <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
-                    <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
-                    {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock Vault"}
-                  </Button>
-                </form>
-
-              {biometricEnabled && bioFailures < 3 ? (
-                <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBiometric} disabled={loading}>
-                  <LockKeyholeIcon size={14} strokeWidth={1.5} />
-                  {isLinux ? "Quick unlock" : "Use biometrics"}
-                </Button>
-              ) : null}
-
-              {biometricEnabled && bioFailures >= 3 ? (
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-caption)",
-                    color: "var(--color-text-tertiary)",
-                    textAlign: "center",
-                  }}
-                >
-                  {isLinux ? "Quick unlock" : "Biometric unlock"} unavailable for this session.
-                </p>
-              ) : null}
-
-            </div>
+            <LockForm
+              register={register}
+              handleSubmit={handleSubmit}
+              onSubmit={onSubmit}
+              showPassword={showPassword}
+              onToggleShowPassword={() => setShowPassword((visible) => !visible)}
+              shakeKey={shakeKey}
+              error={error}
+              lockoutSecsLeft={lockoutSecsLeft}
+              loading={loading}
+              biometricEnabled={biometricEnabled}
+              bioFailures={bioFailures}
+              onBiometric={onBiometric}
+              isLinux={isLinux}
+            />
           </motion.div>
         )}
       </AnimatePresence>

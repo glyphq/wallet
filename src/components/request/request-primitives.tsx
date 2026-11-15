@@ -1,4 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
+import { Button } from "@/components/button";
+import type { AccountMeta } from "@/store/persisted-types";
 
 export function RequestSectionTitle({ children }: { children: ReactNode }) {
   return (
@@ -122,6 +124,96 @@ export function RequestDisclosure({ label, children }: { label: ReactNode; child
   );
 }
 
-export function RequestActionBar({ children }: { children: ReactNode }) {
+function RequestActionBar({ children }: { children: ReactNode }) {
   return <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>{children}</div>;
+}
+
+export function RequestApprovalActions({
+  onReject,
+  onApprove,
+  approveLabel,
+  approveDisabled,
+  approveLoading,
+}: {
+  onReject: () => void;
+  onApprove: () => void;
+  approveLabel: string;
+  approveDisabled?: boolean;
+  approveLoading?: boolean;
+}) {
+  return (
+    <RequestActionBar>
+      <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+        Reject
+      </Button>
+      <Button onClick={onApprove} loading={approveLoading} disabled={approveDisabled} style={{ flex: 1 }}>
+        {approveLabel}
+      </Button>
+    </RequestActionBar>
+  );
+}
+
+const INLINE_NOTICE_COLOR = {
+  error: "var(--color-status-error)",
+  warning: "var(--color-status-warning)",
+} as const;
+
+/** Mono status line used inside previews for validation and transaction errors. */
+export function RequestInlineNotice({ tone, children }: { tone: "error" | "warning"; children: ReactNode }) {
+  return (
+    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: INLINE_NOTICE_COLOR[tone], letterSpacing: "0.05em" }}>
+      {children}
+    </div>
+  );
+}
+
+/** Pill account switcher shown when the dApp did not pin a `from` identity. */
+export function RequestSigningAccountPicker({
+  accounts,
+  selectedIndex,
+  onSelect,
+}: {
+  accounts: AccountMeta[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+}) {
+  return (
+    <div>
+      <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+        {accounts.filter((a) => !a.hidden).map((acc) => (
+          <button
+            key={acc.index}
+            onClick={() => onSelect(acc.index)}
+            style={{
+              fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
+              letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
+              borderRadius: "var(--radius-pill)",
+              border: `1px solid ${acc.index === selectedIndex ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+              background: acc.index === selectedIndex ? "var(--color-text-display)" : "transparent",
+              color: acc.index === selectedIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+              cursor: "pointer",
+            }}
+          >
+            {acc.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Visual checkbox square shared by the high-value confirmation controls. */
+export function RequestCheckboxMark({ checked }: { checked: boolean }) {
+  return (
+    <div style={{
+      width: 14, height: 14, flexShrink: 0,
+      border: `1px solid ${checked ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
+      borderRadius: 2,
+      background: checked ? "var(--color-text-display)" : "none",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {checked && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
+    </div>
+  );
 }

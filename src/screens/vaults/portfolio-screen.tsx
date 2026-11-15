@@ -7,8 +7,9 @@ import { useSessionStore } from "@/store/session";
 import { useVaultBalances } from "@/hooks/use-vault-balances";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { truncateId, formatQu, formatPreferredCurrencyFromQu } from "@/lib/format";
+import { formatQu, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
+import { DistributionBar, PortfolioAccountRow } from "./portfolio-parts";
 
 export default function PortfolioScreen() {
   const navigate = useNavigate();
@@ -106,83 +107,17 @@ export default function PortfolioScreen() {
           Accounts ({visibleAccounts.length})
         </span>
 
-        {accountsWithBalance.map(({ account, identity, balance }, i) => {
-          const pct = totalBalance > 0n && balance !== null
-            ? Math.round(Number((balance * 1000n) / totalBalance) / 10)
-            : 0;
-          return (
-            <div key={account.index} className="stagger-item">
-              {i > 0 && <Divider style={{ marginBottom: "var(--space-4)" }} />}
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-                {identity && <Identicon kind="account" code={`A${account.index + 1}`} seed={identity} label={account.name} size={36} radius={8} style={{ flexShrink: 0 }} />}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-2)" }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
-                      {account.name}
-                    </span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em", flexShrink: 0 }}>
-                      {!allLoaded ? <div className="skeleton" style={{ width: 80, height: 12 }} /> : hideBalances ? "••••••" : balance !== null ? `${formatQu(balance)} QU` : "—"}
-                    </span>
-                  </div>
-                  {identity && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                      {truncateId(identity)}
-                    </span>
-                  )}
-                  {allLoaded && !hideBalances && totalBalance > 0n && balance !== null && (
-                    <div style={{ marginTop: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                      <div style={{ flex: 1, height: 3, background: "var(--color-border-strong)", overflow: "hidden", borderRadius: 0 }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: "var(--color-accent)" }} />
-                      </div>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.04em", width: 32, textAlign: "right", flexShrink: 0 }}>
-                        {pct}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {accountsWithBalance.map((entry, i) => (
+          <PortfolioAccountRow
+            key={entry.account.index}
+            entry={entry}
+            position={i}
+            total={totalBalance}
+            allLoaded={allLoaded}
+            hideBalances={hideBalances}
+          />
+        ))}
       </div>
     </AppShell>
-  );
-}
-
-function DistributionBar({ accounts, total }: {
-  accounts: { account: { index: number; name: string }; balance: bigint | null }[];
-  total: bigint;
-}) {
-  const COLORS = ["var(--color-accent)", "var(--color-status-success)", "var(--color-status-warning)", "var(--color-status-error)", "var(--color-text-secondary)", "var(--color-text-disabled)"];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      <div style={{ height: 8, display: "flex", overflow: "hidden", borderRadius: 0, background: "var(--color-border-strong)" }}>
-        {accounts.map(({ account, balance }, i) => {
-          const pct = balance !== null && total > 0n ? Number((balance * 1000n) / total) / 10 : 0;
-          if (pct === 0) return null;
-          return (
-            <div
-              key={account.index}
-              title={`${account.name}: ${pct}%`}
-              style={{ width: `${pct}%`, height: "100%", background: COLORS[i % COLORS.length] }}
-            />
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2) var(--space-4)" }}>
-        {accounts.map(({ account, balance }, i) => {
-          const pct = balance !== null && total > 0n ? Math.round(Number((balance * 1000n) / total) / 10) : 0;
-          if (pct === 0) return null;
-          return (
-            <div key={account.index} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                {account.name} {pct}%
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }

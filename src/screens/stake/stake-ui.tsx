@@ -4,7 +4,7 @@ import { SquareLock01Icon, SquareUnlock01Icon } from "@/lib/icons";
 
 export type StakeTab = "lock" | "unlock";
 
-export const rowDivider: React.CSSProperties = {
+const rowDivider: React.CSSProperties = {
   margin: "0 calc(var(--space-4) * -1)",
 };
 

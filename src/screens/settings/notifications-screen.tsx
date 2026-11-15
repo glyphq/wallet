@@ -30,9 +30,9 @@ export default function NotificationsScreen() {
     let cancelled = false;
 
     void isEnabled()
-      .then((enabled) => {
+      .then((registered) => {
         if (cancelled) return;
-        if (enabled !== autostartEnabled) updateSettings({ autostartEnabled: enabled });
+        if (registered !== autostartEnabled) updateSettings({ autostartEnabled: registered });
         setAutostartReady(true);
       })
       .catch((error) => {

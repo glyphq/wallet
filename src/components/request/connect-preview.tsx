@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Button } from "@/components/button";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
-import { RequestActionBar, RequestSectionTitle } from "./request-primitives";
+import { RequestApprovalActions, RequestSectionTitle } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
 import type { ConnectApproveResult } from "@/lib/request-approvals";
 import { CheckmarkCircle01Icon } from "@/lib/icons";
@@ -74,7 +73,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
             const isSelected = i === selectedIndex;
             return (
               <button
-                key={i}
+                key={account.index}
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => setSelectedIndex(i)}
@@ -149,14 +148,12 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
         />
       </div>
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={approve} disabled={!selectedWallet} style={{ flex: 1 }}>
-          Connect
-        </Button>
-      </RequestActionBar>
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={approve}
+        approveLabel="Connect"
+        approveDisabled={!selectedWallet}
+      />
     </div>
   );
 }

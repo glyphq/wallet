@@ -27,18 +27,18 @@ type WalletIconOption = {
 };
 
 export const WALLET_ICON_OPTIONS: WalletIconOption[] = [
-  { id: "wallet", label: "Wallet01Icon", Icon: Wallet01Icon },
+  { id: "wallet", label: "Wallet", Icon: Wallet01Icon },
   { id: "wallet-money", label: "Cash", Icon: WalletAdd01Icon },
   { id: "safe", label: "Safe", Icon: SafeIcon },
   { id: "shield", label: "Shield", Icon: ShieldCheckIcon },
   { id: "folder", label: "Folder", Icon: FolderOpenIcon },
   { id: "home", label: "Home", Icon: Home01Icon },
   { id: "buildings", label: "City", Icon: Building01Icon },
-  { id: "compass", label: "Compass01Icon", Icon: Compass01Icon },
-  { id: "star", label: "StarIcon", Icon: StarIcon },
-  { id: "rocket", label: "Rocket01Icon", Icon: Rocket01Icon },
-  { id: "planet", label: "GlobalIcon", Icon: GlobalIcon },
-  { id: "key", label: "Key01Icon", Icon: Key01Icon },
+  { id: "compass", label: "Compass", Icon: Compass01Icon },
+  { id: "star", label: "Star", Icon: StarIcon },
+  { id: "rocket", label: "Rocket", Icon: Rocket01Icon },
+  { id: "planet", label: "Globe", Icon: GlobalIcon },
+  { id: "key", label: "Key", Icon: Key01Icon },
 ];
 
 export const WALLET_COLOR_OPTIONS: { id: VaultColor; label: string; accent: string }[] = [
@@ -55,7 +55,7 @@ export function getWalletIconComponent(icon?: WalletIconId) {
 }
 
 export function getWalletIconLabel(icon?: WalletIconId) {
-  return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.label ?? "Wallet01Icon";
+  return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.label ?? "Wallet";
 }
 
 export function getWalletAccent(color?: VaultColor) {

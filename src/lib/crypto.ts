@@ -1,20 +1,10 @@
 export type { Identity, Seed } from "@qubic.org/types";
-export {
-  toSeed,
-  isIdentity,
-  isSeed,
-  InvalidSeedError,
-  InvalidIdentityError,
-} from "@qubic.org/types";
+export { toSeed, InvalidSeedError } from "@qubic.org/types";
 export {
   generateRandomSeed,
   deriveIdentityFromSeed,
   publicKeyFromSeed,
   identityToPublicKey,
-  publicKeyToIdentity,
-  sign,
-  verify,
-  k12,
 } from "@qubic.org/crypto";
 
 import { identityToPublicKey as _identityToPublicKey } from "@qubic.org/crypto";
