@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useRef, type ReactNode, type Dispatch, type SetStateAction } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { Download01Icon, FilterIcon, RefreshIcon, ChartLineData01Icon, ArrowUpRight01Icon, ArrowDownLeft01Icon, FlashIcon, ShieldAlertIcon, Clock01Icon } from "@/lib/icons";
+import { Download01Icon, FilterIcon, RefreshIcon, ChartLineData01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
@@ -10,267 +10,47 @@ import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { Sheet } from "@/components/sheet";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
-import { usePersistedStore, type PendingTx, type AppSettings, type PriceSnapshot } from "@/store/persisted";
+import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import {
-  useTxHistory,
-  type TxHistoryItem,
-  type TxQueryFilters,
-  DEFAULT_QUERY_FILTERS,
-} from "@/hooks/use-tx-history";
+import { useTxHistory } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { KNOWN_CONTRACT_ADDRESSES, resolveProcedureName } from "@/lib/contracts";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { truncateId, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
-
-// ── Filter types ──────────────────────────────────────────────────────────────
-
-type TxFilters = TxQueryFilters;
-
-const DEFAULT_FILTERS: TxFilters = { ...DEFAULT_QUERY_FILTERS };
-
-const INITIAL_VISIBLE_HISTORY_ROWS = 150;
-const HISTORY_RENDER_PAGE = 100;
-
-// Draft state for text inputs, committed on Apply
-type DraftInputs = {
-  minAmount: string;
-  maxAmount: string;
-  dateFrom: string;
-  dateTo: string;
-  tickFrom: string;
-  tickTo: string;
-};
-
-function toDraft(f: TxFilters): DraftInputs {
-  return { minAmount: f.minAmount, maxAmount: f.maxAmount, dateFrom: f.dateFrom, dateTo: f.dateTo, tickFrom: f.tickFrom, tickTo: f.tickTo };
-}
-
-function sanitize(s: string): string {
-  const n = s.trim();
-  return n && /^\d+$/.test(n) && Number(n) > 0 ? n : "";
-}
-
-function isDefault(f: TxFilters): boolean {
-  return (
-    f.direction === "all" && f.type === "all" &&
-    !f.minAmount && !f.maxAmount && !f.dateFrom && !f.dateTo && !f.tickFrom && !f.tickTo
-  );
-}
-
-// ── Date grouping ──────────────────────────────────────────────────────────────
-
-type TxSection = { label: string; txs: TxHistoryItem[] };
-
-type ExportTx = {
-  hash: string;
-  status: "confirmed" | "pending" | "expired";
-  direction: "in" | "out" | "self" | "unknown";
-  type: "transfer" | "contract";
-  source: string | null;
-  destination: string | null;
-  amount: string;
-  tick: number;
-  timestamp: number | null;
-  isoDate: string;
-  moneyFlew: boolean | null;
-  inputType: number | null;
-  contractName: string;
-  memo: string;
-  tags: string[];
-};
-
-function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
-  if (!txs.length) return [];
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const yesterdayStart = todayStart - 86_400_000;
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
-
-  const today: TxHistoryItem[] = [];
-  const yesterday: TxHistoryItem[] = [];
-  const thisWeek: TxHistoryItem[] = [];
-  const earlier: TxHistoryItem[] = [];
-
-  for (const tx of txs) {
-    const ts = tx.timestamp ?? 0;
-    if (ts >= todayStart) today.push(tx);
-    else if (ts >= yesterdayStart) yesterday.push(tx);
-    else if (ts >= weekStart) thisWeek.push(tx);
-    else earlier.push(tx);
-  }
-
-  const sections: TxSection[] = [];
-  if (today.length) sections.push({ label: "Today", txs: today });
-  if (yesterday.length) sections.push({ label: "Yesterday", txs: yesterday });
-  if (thisWeek.length) sections.push({ label: "This week", txs: thisWeek });
-  if (earlier.length) sections.push({ label: "Earlier", txs: earlier });
-  return sections;
-}
-
-function downloadText(filename: string, body: string, type: string) {
-  const blob = new Blob([body], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function csvCell(value: string | number | boolean | null | string[]): string {
-  const text = Array.isArray(value) ? value.join(";") : String(value ?? "");
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-function toCsv(rows: ExportTx[]): string {
-  const headers: (keyof ExportTx)[] = ["hash", "status", "direction", "type", "source", "destination", "amount", "tick", "timestamp", "isoDate", "moneyFlew", "inputType", "contractName", "memo", "tags"];
-  return [headers.join(","), ...rows.map((row) => headers.map((key) => csvCell(row[key])).join(","))].join("\n");
-}
-
-function matchesPendingFilters(tx: PendingTx, filters: TxFilters, identity: string | null): boolean {
-  if (filters.direction === "in" && tx.destination !== identity) return false;
-  if (filters.direction === "out" && tx.source !== identity) return false;
-  if (filters.type === "transfer" && tx.contractName) return false;
-  if (filters.type === "sc" && !tx.contractName) return false;
-  try {
-    const amount = BigInt(tx.amount || "0");
-    if (filters.minAmount && amount < BigInt(filters.minAmount)) return false;
-    if (filters.maxAmount && amount > BigInt(filters.maxAmount)) return false;
-  } catch { return false; }
-  if (filters.tickFrom && tx.targetTick < Number(filters.tickFrom)) return false;
-  if (filters.tickTo && tx.targetTick > Number(filters.tickTo)) return false;
-  if (filters.dateFrom && tx.broadcastAt < new Date(`${filters.dateFrom}T00:00:00`).getTime()) return false;
-  if (filters.dateTo && tx.broadcastAt > new Date(`${filters.dateTo}T23:59:59.999`).getTime()) return false;
-  return true;
-}
-
-function txDirection(source: string | null, destination: string | null, identity: string | null): ExportTx["direction"] {
-  if (!identity) return "unknown";
-  if (source === identity && destination === identity) return "self";
-  if (destination === identity) return "in";
-  if (source === identity) return "out";
-  return "unknown";
-}
-
-function exportRecordFromTx(tx: TxHistoryItem, identity: string | null, txMemos: Record<string, string>, txTags: Record<string, string[]>): ExportTx {
-  const contractName = tx.contractName ?? (tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined) ?? (tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined) ?? "";
-  return {
-    hash: tx.hash,
-    status: "confirmed",
-    direction: txDirection(tx.source, tx.destination, identity),
-    type: contractName || (tx.inputType ?? 0) > 0 ? "contract" : "transfer",
-    source: tx.source,
-    destination: tx.destination,
-    amount: tx.amount,
-    tick: tx.tickNumber,
-    timestamp: tx.timestamp,
-    isoDate: tx.timestamp ? new Date(tx.timestamp).toISOString() : "",
-    moneyFlew: tx.moneyFlew,
-    inputType: tx.inputType,
-    contractName,
-    memo: txMemos[tx.hash]?.trim() ?? "",
-    tags: txTags[tx.hash] ?? [],
-  };
-}
-
-function exportRecordFromPending(tx: PendingTx, identity: string | null, txMemos: Record<string, string>, txTags: Record<string, string[]>, expired: boolean): ExportTx {
-  return {
-    hash: tx.hash,
-    status: expired ? "expired" : "pending",
-    direction: txDirection(tx.source, tx.destination, identity),
-    type: tx.contractName ? "contract" : "transfer",
-    source: tx.source,
-    destination: tx.destination,
-    amount: tx.amount,
-    tick: tx.targetTick,
-    timestamp: tx.broadcastAt,
-    isoDate: tx.broadcastAt ? new Date(tx.broadcastAt).toISOString() : "",
-    moneyFlew: null,
-    inputType: null,
-    contractName: tx.contractName ?? "",
-    memo: txMemos[tx.hash]?.trim() ?? "",
-    tags: txTags[tx.hash] ?? [],
-  };
-}
-
-// ── Transaction type icon map ───────────────────────────────────────────────────
-
-const TX_TYPE_ICONS: Record<string, typeof ArrowUpRight01Icon> = {
-  sent: ArrowUpRight01Icon,
-  received: ArrowDownLeft01Icon,
-  sc: FlashIcon,
-  failed: ShieldAlertIcon,
-  pending: Clock01Icon,
-};
-
-// ── Activity item ─────────────────────────────────────────────────────────────
-
-function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className, txType }: {
-  onClick: () => void;
-  label: string;
-  labelColor: string;
-  address: string;
-  time: string;
-  amount: string;
-  amountUsd?: string;
-  amountColor: string;
-  className?: string;
-  txType?: "sent" | "received" | "sc" | "failed" | "pending";
-}) {
-  const TypeIcon = txType ? TX_TYPE_ICONS[txType] : null;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={className}
-      style={{
-        display: "flex", alignItems: "center", gap: "var(--space-3)",
-        width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
-      }}
-    >
-      {TypeIcon && (
-        <div style={{
-          flexShrink: 0,
-          width: 48,
-          height: 48,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "var(--radius-control)",
-          background: "var(--color-bg-surface)",
-          color: txType === "failed" ? "var(--color-status-warning)" : txType === "pending" ? "var(--color-text-disabled)" : "var(--color-text-secondary)",
-        }}>
-          <TypeIcon size={20} />
-        </div>
-      )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
-          {label}
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
-          {address}
-        </span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
-          {time}
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
-          {amount}
-        </span>
-        {amountUsd && (
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
-            {amountUsd}
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
+import {
+  DEFAULT_FILTERS,
+  HISTORY_RENDER_PAGE,
+  INITIAL_VISIBLE_HISTORY_ROWS,
+  downloadText,
+  exportRecordFromPending,
+  exportRecordFromTx,
+  groupTxsByDate,
+  isDefault,
+  matchesPendingFilters,
+  sanitize,
+  toCsv,
+  toDraft,
+  type DraftInputs,
+  type TxFilters,
+} from "./history-utils";
+import {
+  ActiveChip,
+  APPLY_BTN,
+  ExportAction,
+  FILTER_FOOTER,
+  FILTER_SHEET_BODY,
+  FILTER_SIDEBAR,
+  FilterHeader,
+  FilterSection,
+  GHOST_BTN,
+  HistoryFilterControls,
+  INPUT_SM,
+  StatusText,
+} from "./history-ui";
+import { ActivityItem } from "./history-activity-item";
+import { GroupedTxs } from "./history-grouped";
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -720,220 +500,5 @@ export default function HistoryScreen() {
         </FilterSection>
       </Sheet>
     </AppShell>
-  );
-}
-
-// ── Shared styles ─────────────────────────────────────────────────────────────
-
-const INPUT_SM: React.CSSProperties = { fontSize: "var(--text-mono-sm)", padding: "var(--space-2) var(--space-3)" };
-
-const FILTER_SIDEBAR: React.CSSProperties = {
-  width: 212,
-  flexShrink: 0,
-  borderRight: "1px solid var(--color-border-subtle)",
-  overflowY: "auto",
-  padding: "var(--space-4) var(--space-3)",
-};
-
-const FILTER_SHEET_BODY: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "var(--space-1)" };
-
-const FILTER_FOOTER: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center" };
-
-const GHOST_BTN: React.CSSProperties = {
-  background: "none", border: "none", cursor: "pointer",
-  fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-text-disabled)", padding: 0,
-};
-
-const APPLY_BTN: React.CSSProperties = {
-  background: "var(--color-text-primary)", border: "none",
-  borderRadius: "var(--radius-sharp)", cursor: "pointer",
-  fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
-  color: "var(--color-bg-base)",
-  padding: "var(--space-2) var(--space-4)",
-};
-
-function FilterSection({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <section style={{ padding: "var(--space-3) 0", borderTop: "1px solid var(--color-border-subtle)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", marginBottom: "var(--space-2)" }}>
-        {label}
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)" }}>{children}</div>
-    </section>
-  );
-}
-
-function FilterHeader({ title, active, onReset }: { title: string; active: boolean; onReset: () => void }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)", paddingBottom: "var(--space-3)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>{title}</div>
-      {active && <button type="button" onClick={onReset} style={GHOST_BTN}>Reset</button>}
-    </div>
-  );
-}
-
-function HistoryFilterControls({
-  filters, draft, groupByCounterparty, commitOnFieldBlur = false, setFilters, setDraft, setGroupByCounterparty,
-}: {
-  filters: TxFilters;
-  draft: DraftInputs;
-  groupByCounterparty: boolean;
-  commitOnFieldBlur?: boolean;
-  setFilters: Dispatch<SetStateAction<TxFilters>>;
-  setDraft: Dispatch<SetStateAction<DraftInputs>>;
-  setGroupByCounterparty: Dispatch<SetStateAction<boolean>>;
-}) {
-  const fieldBlur = (key: keyof DraftInputs) => commitOnFieldBlur ? () => setFilters((f) => ({ ...f, [key]: key.includes("Amount") || key.includes("tick") ? sanitize(draft[key]) : draft[key] })) : undefined;
-  return (
-    <>
-      <FilterSection label="Direction">
-        {(["all", "in", "out"] as const).map((v) => (
-          <FilterChoice key={v} label={v === "all" ? "All" : v === "in" ? "Incoming" : "Outgoing"} active={filters.direction === v} onClick={() => setFilters((f) => ({ ...f, direction: v }))} />
-        ))}
-      </FilterSection>
-      <FilterSection label="Type">
-        {(["all", "transfer", "sc"] as const).map((v) => (
-          <FilterChoice key={v} label={v === "all" ? "All" : v === "sc" ? "SC calls" : "Transfers"} active={filters.type === v} onClick={() => setFilters((f) => ({ ...f, type: v }))} />
-        ))}
-      </FilterSection>
-      <FilterSection label="Date range">
-        <RangeInputs fromValue={draft.dateFrom} fromPlaceholder="From" toValue={draft.dateTo} toPlaceholder="To" type="date" onFromBlur={fieldBlur("dateFrom")} onToBlur={fieldBlur("dateTo")} onFromChange={(v) => setDraft((d) => ({ ...d, dateFrom: v }))} onToChange={(v) => setDraft((d) => ({ ...d, dateTo: v }))} />
-      </FilterSection>
-      <FilterSection label="Amount (QU)">
-        <RangeInputs fromValue={draft.minAmount} fromPlaceholder="Min" toValue={draft.maxAmount} toPlaceholder="Max" onFromBlur={fieldBlur("minAmount")} onToBlur={fieldBlur("maxAmount")} onFromChange={(v) => setDraft((d) => ({ ...d, minAmount: v.replace(/\D/g, "") }))} onToChange={(v) => setDraft((d) => ({ ...d, maxAmount: v.replace(/\D/g, "") }))} />
-      </FilterSection>
-      <FilterSection label="Tick range">
-        <RangeInputs fromValue={draft.tickFrom} fromPlaceholder="From" toValue={draft.tickTo} toPlaceholder="To" onFromBlur={fieldBlur("tickFrom")} onToBlur={fieldBlur("tickTo")} onFromChange={(v) => setDraft((d) => ({ ...d, tickFrom: v.replace(/\D/g, "") }))} onToChange={(v) => setDraft((d) => ({ ...d, tickTo: v.replace(/\D/g, "") }))} />
-      </FilterSection>
-      <FilterSection label="Group by">
-        <FilterChoice label="None" active={!groupByCounterparty} onClick={() => setGroupByCounterparty(false)} />
-        <FilterChoice label="Counterparty" active={groupByCounterparty} onClick={() => setGroupByCounterparty(true)} />
-      </FilterSection>
-    </>
-  );
-}
-
-function RangeInputs({ fromValue, toValue, fromPlaceholder, toPlaceholder, type, onFromChange, onToChange, onFromBlur, onToBlur }: {
-  fromValue: string; toValue: string; fromPlaceholder: string; toPlaceholder: string;
-  type?: "date"; onFromChange: (v: string) => void; onToChange: (v: string) => void; onFromBlur?: () => void; onToBlur?: () => void;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%" }}>
-      <Input type={type} value={fromValue} onChange={(e) => onFromChange(e.target.value)} onBlur={onFromBlur} placeholder={fromPlaceholder} inputMode={type === "date" ? undefined : "numeric"} style={INPUT_SM} containerStyle={{ flex: 1, minWidth: 0 }} />
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>–</span>
-      <Input type={type} value={toValue} onChange={(e) => onToChange(e.target.value)} onBlur={onToBlur} placeholder={toPlaceholder} inputMode={type === "date" ? undefined : "numeric"} style={INPUT_SM} containerStyle={{ flex: 1, minWidth: 0 }} />
-    </div>
-  );
-}
-
-function FilterChoice({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} style={{
-      background: "none",
-      border: "none",
-      borderBottom: `1px solid ${active ? "var(--color-text-primary)" : "var(--color-border-subtle)"}`,
-      cursor: "pointer",
-      fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
-      color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-      padding: "var(--space-2) var(--space-2) var(--space-1)",
-    }}>
-      {label}
-    </button>
-  );
-}
-
-function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <button type="button" onClick={onRemove} style={{
-      background: "none", border: "none", borderBottom: "1px solid var(--color-text-primary)", cursor: "pointer",
-      fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)",
-      color: "var(--color-text-primary)",
-      padding: "var(--space-1) 0",
-      display: "flex", alignItems: "center", gap: "var(--space-1)",
-    }}>
-      {label} <span style={{ fontSize: "var(--text-caption)", lineHeight: 1 }}>✕</span>
-    </button>
-  );
-}
-
-function ExportAction({ label, detail, onClick }: { label: string; detail: string; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} style={{
-      background: "none", border: "none", borderBottom: "1px solid var(--color-border-subtle)", cursor: "pointer",
-      fontFamily: "var(--font-sans)", color: "var(--color-text-primary)",
-      padding: "var(--space-4) 0", display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left",
-    }}>
-      <span style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{label}</span>
-      <span style={{ fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{detail}</span>
-    </button>
-  );
-}
-
-function StatusText({ children, color }: { children: ReactNode; color: string }) {
-  return (
-    <div style={{ textAlign: "center", padding: "var(--space-12) 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color }}>
-      {children}
-    </div>
-  );
-}
-
-// ── Grouped-by-counterparty view ──────────────────────────────────────────────
-
-function GroupedTxs({
-  txs, identity, settings, priceSnapshots, quote, onSelect,
-}: {
-  txs: TxHistoryItem[];
-  identity: string | null;
-  settings: AppSettings;
-  priceSnapshots: PriceSnapshot[];
-  quote: ReturnType<typeof usePreferredCurrencyQuote>;
-  onSelect: (tx: TxHistoryItem) => void;
-}) {
-  const groups = new Map<string, { label: string; txs: TxHistoryItem[]; volume: bigint }>();
-  for (const tx of txs) {
-    const isIn = tx.destination === identity;
-    const key = (isIn ? tx.source : tx.destination) ?? "unknown";
-    const label = KNOWN_CONTRACT_ADDRESSES[key] ?? truncateId(key, 10, 8);
-    const existing = groups.get(key) ?? { label, txs: [], volume: 0n };
-    existing.txs.push(tx);
-    try { existing.volume += BigInt(tx.amount ?? "0"); } catch { /* ignore */ }
-    groups.set(key, existing);
-  }
-  const sorted = [...groups.entries()].sort((a, b) => (a[1].volume > b[1].volume ? -1 : 1));
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      {sorted.map(([key, group]) => (
-        <div key={key}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)", marginBottom: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>{group.label}</span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{group.txs.length} tx · {formatQuCompact(group.volume)} QU</span>
-          </div>
-          {group.txs.map((tx) => {
-            const isIn = tx.destination === identity;
-            const flew = tx.moneyFlew;
-            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
-            const label = !flew ? "Failed" : isIn ? "Received" : "Sent";
-            const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
-            return (
-              <ActivityItem
-                key={tx.hash}
-                className="stagger-item"
-                onClick={() => onSelect(tx)}
-                label={label}
-                labelColor={labelColor}
-                address={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
-                time=""
-                amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                amountUsd={settings.hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
-                amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
-                txType={!flew ? "failed" : isIn ? "received" : "sent"}
-              />
-            );
-          })}
-        </div>
-      ))}
-    </div>
   );
 }

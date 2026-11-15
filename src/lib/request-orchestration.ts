@@ -1,7 +1,9 @@
-import type { ApproveResult } from "@/components/request/transfer-preview";
-import type { SignMessageApproveResult } from "@/components/request/sign-message-preview";
-import type { ConnectApproveResult } from "@/components/request/connect-preview";
-import type { VerifyMessageResult } from "@/components/request/verify-message-preview";
+import type {
+  ApproveResult,
+  ConnectApproveResult,
+  SignMessageApproveResult,
+  VerifyMessageResult,
+} from "@/lib/request-approvals";
 import { buildSignedCallbackEnvelope } from "@/lib/callback-envelope";
 import { signCallbackMessageFromSession } from "@/lib/secure-session";
 import type { GlyphCallbackResponse, GlyphEnvelope } from "@/lib/request-schema";

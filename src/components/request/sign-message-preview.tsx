@@ -7,17 +7,11 @@ import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { SignMessageRequest } from "@/lib/request-schema";
+import type { SignMessageApproveResult } from "@/lib/request-approvals";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { SignMessageRequest } from "@/lib/request-schema";
-
-export interface SignMessageApproveResult {
-  signature: string; // base64-encoded 64-byte SchnorrQ signature
-  publicKey: string; // base64-encoded 32-byte public key
-  identity: string;
-  accountIndex: number;
-}
 
 interface SignMessagePreviewProps {
   request: SignMessageRequest;

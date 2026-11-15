@@ -26,7 +26,7 @@ import {
   CONTRACT_PROCEDURE_NAMES,
 } from "@/lib/contracts";
 import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
-import type { ApproveResult } from "./transfer-preview";
+import type { ApproveResult } from "@/lib/request-approvals";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { base64ToBytes } from "@/lib/base64";

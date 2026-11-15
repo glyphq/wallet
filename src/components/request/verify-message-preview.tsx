@@ -7,14 +7,9 @@ import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
+import type { VerifyMessageResult } from "@/lib/request-approvals";
 
 export type { VerifyMessageRequest } from "@/lib/request-schema";
-
-export interface VerifyMessageResult {
-  valid: boolean;
-  identity: string;
-  accountIndex: number;
-}
 
 interface VerifyMessagePreviewProps {
   request: VerifyMessageRequest;

@@ -5,11 +5,17 @@ import { Button } from "@/components/button";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { Tag } from "@/components/tag";
 import { RequestHeader } from "@/components/request/request-header";
-import { TransferPreview, type ApproveResult } from "@/components/request/transfer-preview";
+import { TransferPreview } from "@/components/request/transfer-preview";
 import { ScCallPreview } from "@/components/request/sc-call-preview";
-import { SignMessagePreview, type SignMessageApproveResult } from "@/components/request/sign-message-preview";
-import { ConnectPreview, type ConnectApproveResult } from "@/components/request/connect-preview";
-import { VerifyMessagePreview, type VerifyMessageResult } from "@/components/request/verify-message-preview";
+import { SignMessagePreview } from "@/components/request/sign-message-preview";
+import { ConnectPreview } from "@/components/request/connect-preview";
+import { VerifyMessagePreview } from "@/components/request/verify-message-preview";
+import type {
+  ApproveResult,
+  ConnectApproveResult,
+  SignMessageApproveResult,
+  VerifyMessageResult,
+} from "@/lib/request-approvals";
 import { saveFileDialog } from "@/lib/save-file";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore, type RequestHistoryItem } from "@/store/persisted";

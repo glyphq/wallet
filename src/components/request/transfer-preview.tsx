@@ -12,17 +12,11 @@ import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
 import type { TransferRequest } from "@/lib/request-schema";
+import type { ApproveResult } from "@/lib/request-approvals";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { TransferRequest } from "@/lib/request-schema";
-
-export interface ApproveResult {
-  txHash: string;
-  targetTick: number;
-  identity: string;
-  accountIndex: number;
-}
 
 interface TransferPreviewProps {
   request: TransferRequest;

@@ -37,9 +37,9 @@ import { formatQu, truncateId, extractMessage } from "@/lib/format";
 import { getVaultAccountIdentity } from "@/lib/accounts";
 import { Identicon } from "@/components/identicon";
 import { Button } from "@/components/button";
-import { Divider } from "@/components/divider";
 import { Input } from "@/components/input";
 import { TextButton } from "@/components/text-button";
+import { RowDivider, StakeTabBar, labelStyle, sectionStyle, valueStyle } from "./stake-ui";
 
 type Tab = "lock" | "unlock";
 type Step = "main" | "confirm" | "sending" | "done" | "error";
@@ -56,32 +56,6 @@ interface Position {
 const idToPk = (id: string) => identityToPublicKey(id as Identity);
 const SC_OPTS = { identityToPublicKey: idToPk };
 
-
-const rowDivider: React.CSSProperties = {
-  margin: "0 calc(var(--space-4) * -1)",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-label)",
-  fontWeight: 500,
-  color: "var(--color-text-disabled)",
-};
-
-const valueStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-label)",
-  color: "var(--color-text-primary)",
-  textAlign: "right",
-};
-
-const sectionStyle: React.CSSProperties = {
-  padding: "0 var(--space-4)",
-};
-
-function RowDivider() {
-  return <Divider style={rowDivider} />;
-}
 
 export default function StakeScreen() {
   const navigate = useNavigate();
@@ -304,60 +278,6 @@ export default function StakeScreen() {
   const remaining = balance !== null ? balance - entered : null;
   const balanceOver = remaining !== null && remaining < 0n;
 
-  // ── Tab bar (shared) ──────────────────────────────────────────────────────
-
-  function TabBar() {
-    const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-      { key: "lock", label: "SquareLock01Icon", icon: <SquareLock01Icon size={14} strokeWidth={1.5} /> },
-      { key: "unlock", label: "Unlock", icon: <SquareUnlock01Icon size={14} strokeWidth={1.5} /> },
-    ];
-    return (
-      <div style={{ position: "relative", display: "flex", background: "var(--color-bg-surface)", borderRadius: "var(--radius-pill)", padding: "var(--space-1)", gap: 2 }}>
-        {tabs.map(({ key, label, icon }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            style={{
-              flex: 1,
-              position: "relative",
-              zIndex: 1,
-              background: "transparent",
-              color: tab === key ? "var(--color-bg-base)" : "var(--color-text-disabled)",
-              border: "none",
-              borderRadius: "var(--radius-pill)",
-              padding: "var(--space-3) 0",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-label)",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "var(--space-2)",
-              transition: "color 0.15s ease",
-            }}
-          >
-            {tab === key && (
-              <motion.span
-                layoutId="stake-tab-pill"
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "var(--radius-pill)",
-                  background: "var(--color-accent)",
-                  zIndex: -1,
-                }}
-              />
-            )}
-            {icon}
-            {label}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
   // ── Main step (SquareLock01Icon / Unlock) ──────────────────────────────────────────────
 
   if (step === "main") {
@@ -365,7 +285,7 @@ export default function StakeScreen() {
       <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
 
-          <TabBar />
+          <StakeTabBar tab={tab} onChange={setTab} />
 
           {tab === "lock" ? (
             <>

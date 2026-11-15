@@ -1068,6 +1068,9 @@ fn validate(uri_str: &str) -> Result<ParsedRequest, String> {
             if input_type < 0 {
                 return Err("sc_call: 'input_type' must be non-negative".into());
             }
+            if input_type > i64::from(u16::MAX) {
+                return Err(format!("sc_call: 'input_type' out of range: {input_type}"));
+            }
             if let Some(amount) = request_value.get("amount") {
                 let amount =
                     parse_positive_i64(amount).ok_or("sc_call: 'amount' must be an integer")?;
@@ -1729,6 +1732,49 @@ mod tests {
         );
 
         assert!(validate(&url).is_ok());
+    }
+
+    fn sc_call_request_url(contract_index: i64, input_type: i64) -> String {
+        use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+
+        let envelope = serde_json::json!({
+            "protocol": REQUEST_PROTOCOL_V2,
+            "request": {
+                "type": "sc_call",
+                "dapp": { "name": "Demo", "origin": "https://demo.app" },
+                "nonce": "5b4bf4a7a53f4f29892892520dcaeffb",
+                "exp": now_secs() + 300,
+                "contract_index": contract_index,
+                "input_type": input_type,
+                "amount": "1",
+            },
+            "callback": null,
+            "redirect_uri": null,
+            "network": { "id": "qubic:mainnet" },
+        });
+        let mut envelope = envelope;
+        let hash_material = serde_json::json!({
+            "protocol": envelope["protocol"].clone(),
+            "request": envelope["request"].clone(),
+            "callback": envelope["callback"].clone(),
+            "redirect_uri": envelope["redirect_uri"].clone(),
+            "network": envelope["network"].clone(),
+        });
+        envelope["request_hash"] = serde_json::Value::String(format!(
+            "sha256:{}",
+            sha256_base64url(&jcs(&hash_material).unwrap())
+        ));
+        format!(
+            "glyph://v2/request?d={}",
+            URL_SAFE_NO_PAD.encode(envelope.to_string())
+        )
+    }
+
+    #[test]
+    fn sc_call_bounds_match_native_signing_types() {
+        assert!(validate(&sc_call_request_url(63, 65_535)).is_ok());
+        assert!(validate(&sc_call_request_url(64, 1)).is_err());
+        assert!(validate(&sc_call_request_url(0, 65_536)).is_err());
     }
 
     #[test]

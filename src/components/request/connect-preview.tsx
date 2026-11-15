@@ -5,20 +5,12 @@ import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
 import { RequestActionBar, RequestSectionTitle } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
+import type { ConnectApproveResult } from "@/lib/request-approvals";
 import { CheckmarkCircle01Icon } from "@/lib/icons";
 import { DappPolicyControls } from "@/components/dapp-policy-controls";
 import { DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
 export type { ConnectRequest } from "@/lib/request-schema";
-
-export interface ConnectApproveResult {
-  identity: string;
-  accountIndex: number;
-  permissions: GlyphPermission[];
-  transferLimitQu?: string;
-  expiryDurationMs?: number;
-  expiresAt?: number;
-}
 
 interface ConnectPreviewProps {
   request: ConnectRequest;

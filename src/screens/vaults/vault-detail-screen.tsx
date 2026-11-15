@@ -1,17 +1,13 @@
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { SeedSurface } from "@/components/setup-flow";
-import { Textarea } from "@/components/textarea";
 import { Sheet } from "@/components/sheet";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { MAX_VAULT_ACCOUNTS, useVaultBalances } from "@/hooks/use-vault-balances";
 import { useSessionStore } from "@/store/session";
 import { deriveIdentityFromSeed, generateRandomSeed, toSeed, InvalidSeedError, type Seed } from "@/lib/crypto";
 import { addToVault, removeFromVault, exportVault, revealVaultSeed, rotateVaultPassword, unlockVaultSession } from "@/lib/vault";
-import { IdentityDisplay } from "@/components/identity-display";
 import { Identicon } from "@/components/identicon";
 import { saveFileDialog } from "@/lib/save-file";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -26,11 +22,16 @@ import {
   PencilEdit01Icon, File02Icon, Key01Icon, ViewOffIcon, ViewIcon, Delete02Icon,
   AddCircleIcon, InformationCircleIcon, CheckmarkCircle01Icon,
 } from "@/lib/icons";
-
-const ACCOUNT_NAME_SUGGESTIONS = [
-  "Main", "Trading", "Staking", "Cold Storage", "DeFi", "Savings",
-  "Hot Wallet01Icon", "Treasury", "Operations", "Rewards",
-];
+import { AccountRow, ActionRow, ActionSection } from "./vault-detail-parts";
+import {
+  AccountMetaSheet,
+  AddAccountSheet,
+  HideAccountSheet,
+  RemoveAccountSheet,
+  RenameAccountSheet,
+} from "./vault-account-sheets";
+import { ExportVaultSheet, RotatePasswordSheet } from "./vault-admin-sheets";
+import { SeedRevealSheet } from "./vault-seed-sheet";
 
 export default function VaultDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -469,232 +470,107 @@ export default function VaultDetailScreen() {
         </Button>
       </div>
 
-      <Sheet open={showExport} onClose={() => setShowExport(false)} title={`Export ${currentVault.name}`}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
-            This file contains your encrypted seed. Keep it safe. Anyone with this file and your password can access your funds.
-          </span>
-          <Button onClick={doExport}>Download01Icon backup file</Button>
-        </div>
-      </Sheet>
+      <ExportVaultSheet
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        vaultName={currentVault.name}
+        onExport={doExport}
+      />
 
       {/* Add account sheet */}
-      <Sheet open={addingAccount} onClose={() => setAddingAccount(false)} title="Add account">
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-              {(["new", "import"] as const).map((mode, i) => (
-                <div key={mode} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  {i > 0 && <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>/</span>}
-                  <button
-                    type="button"
-                    onClick={() => { setAddMode(mode); setAddSeed(""); setAddSeedError(""); }}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.05em", padding: 0, color: addMode === mode ? "var(--color-text-display)" : "var(--color-text-disabled)" }}
-                  >
-                    {mode === "new" ? "New seed" : "Import seed"}
-                  </button>
-                </div>
-              ))}
-          </div>
-          <div>
-            <Input label="Account name" value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. DeFi, Staking" autoFocus style={{ fontFamily: "var(--font-sans)" }} />
-            {(() => {
-              const existing = new Set(currentVault.accounts.map((a) => a.name.toLowerCase()));
-              const q = addName.toLowerCase();
-              const suggestions = ACCOUNT_NAME_SUGGESTIONS.filter(
-                (s) => !existing.has(s.toLowerCase()) && (!q || s.toLowerCase().includes(q)),
-              ).slice(0, 4);
-              if (!suggestions.length) return null;
-              return (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
-                  {suggestions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setAddName(s)}
-                      style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", padding: "2px var(--space-2)" }}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-          {addMode === "import" && (
-            <Input
-              label="Seed (55 lowercase letters)"
-              type="password"
-              value={addSeed}
-              onChange={(e) => { setAddSeed(e.target.value); if (addSeedError) setAddSeedError(""); }}
-              error={addSeedError}
-              placeholder="55 characters, lowercase"
-              autoComplete="off"
-            />
-          )}
-          <Input type="password" label="Vault password" value={addPassword} onChange={(e) => { setAddPassword(e.target.value); setAddError(""); }} onKeyDown={(e) => e.key === "Enter" && !addLoading && doAdd()} error={addError} placeholder="••••••••••" autoComplete="current-password" />
-          <Button onClick={doAdd} loading={addLoading} disabled={!addName.trim() || !addPassword || (addMode === "import" && !addSeed.trim())}>Add account</Button>
-          <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={() => setAddingAccount(false)}>Cancel</Button>
-        </div>
-      </Sheet>
+      <AddAccountSheet
+        open={addingAccount}
+        onClose={() => setAddingAccount(false)}
+        accounts={currentVault.accounts}
+        mode={addMode}
+        setMode={setAddMode}
+        name={addName}
+        setName={setAddName}
+        seed={addSeed}
+        setSeed={setAddSeed}
+        seedError={addSeedError}
+        setSeedError={setAddSeedError}
+        password={addPassword}
+        setPassword={setAddPassword}
+        error={addError}
+        setError={setAddError}
+        loading={addLoading}
+        onAdd={doAdd}
+      />
 
       {/* Rename sheet */}
-      <Sheet open={!!renamingAccount} onClose={() => setRenamingAccount(null)} title="Rename account">
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <Input label="Name" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doRename()} autoFocus style={{ fontFamily: "var(--font-sans)" }} />
-          <Button onClick={doRename} disabled={!renameValue.trim()}>Save</Button>
-        </div>
-      </Sheet>
+      <RenameAccountSheet
+        open={!!renamingAccount}
+        onClose={() => setRenamingAccount(null)}
+        value={renameValue}
+        onChange={setRenameValue}
+        onSave={doRename}
+      />
 
-      <Sheet open={!!editingMeta} onClose={() => setEditingMeta(null)} title="Notes and tags">
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <Input
-            label="Tags"
-            value={metaTags}
-            onChange={(e) => setMetaTags(e.target.value)}
-            placeholder="staking, cold, treasury"
-          />
-          <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Note
-            </span>
-            <textarea
-              value={metaNote}
-              onChange={(e) => setMetaNote(e.target.value)}
-              rows={4}
-              placeholder="Optional note for this account"
-              style={{
-                width: "100%",
-                resize: "vertical",
-                background: "var(--color-bg-surface)",
-                color: "var(--color-text-primary)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
-                padding: "var(--space-3)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-              }}
-            />
-          </label>
-          <Button onClick={saveAccountMeta}>Save</Button>
-        </div>
-      </Sheet>
+      <AccountMetaSheet
+        open={!!editingMeta}
+        onClose={() => setEditingMeta(null)}
+        tags={metaTags}
+        setTags={setMetaTags}
+        note={metaNote}
+        setNote={setMetaNote}
+        onSave={saveAccountMeta}
+      />
 
       {/* Hide confirmation sheet */}
-      <Sheet open={!!hidingAccount} onClose={() => setHidingAccount(null)} title={hidingAccount ? `Hide ${hidingAccount.name}?` : "Hide account"}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-            The account will be removed from the switcher. It can be restored from this screen.
-          </div>
-          <Button onClick={confirmHide}>Hide account</Button>
-        </div>
-      </Sheet>
+      <HideAccountSheet account={hidingAccount} onClose={() => setHidingAccount(null)} onConfirm={confirmHide} />
 
       {/* Remove sheet */}
-      <Sheet open={!!removingAccount} onClose={() => setRemovingAccount(null)} title={removingAccount ? `Remove ${removingAccount.name}?` : "Remove account"}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>This cannot be undone.</div>
-          <Input type="password" label="Vault password" value={removePassword} onChange={(e) => { setRemovePassword(e.target.value); setRemoveError(""); }} onKeyDown={(e) => e.key === "Enter" && doRemove()} error={removeError} placeholder="••••••••••" autoComplete="current-password" autoFocus />
-          <Button variant="danger" shape="sharp" onClick={doRemove} loading={removeLoading} disabled={!removePassword}>Remove account</Button>
-        </div>
-      </Sheet>
+      <RemoveAccountSheet
+        account={removingAccount}
+        onClose={() => setRemovingAccount(null)}
+        password={removePassword}
+        setPassword={setRemovePassword}
+        error={removeError}
+        setError={setRemoveError}
+        loading={removeLoading}
+        onRemove={doRemove}
+      />
 
       {/* Reveal seed sheet */}
-      <Sheet open={!!revealingAccount} onClose={() => setRevealingAccount(null)} title={verifyingBackup ? "Verify seed backup" : revealingAccount ? `Reveal seed for ${revealingAccount.name}` : "Reveal seed"}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          {!revealedSeed ? (
-            <>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-                {verifyingBackup
-                  ? "Unlock once, then type your saved seed to confirm the backup."
-                  : biometricRevealRequired
-                    ? "Use biometric unlock to reveal this account seed."
-                    : "Enter the vault password to decrypt this account seed."}
-              </div>
-              {!biometricRevealRequired && (
-                <Input
-                  type="password"
-                  label="Vault password"
-                  value={revealPassword}
-                  onChange={(e) => { setRevealPassword(e.target.value); setRevealError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && !revealLoading && doRevealSeed()}
-                  error={revealError}
-                  placeholder="••••••••••"
-                  autoComplete="current-password"
-                  autoFocus
-                />
-              )}
-              {biometricRevealRequired && revealError && (
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-                  [{revealError}]
-                </div>
-              )}
-              <Button onClick={doRevealSeed} loading={revealLoading} disabled={!biometricRevealRequired && !revealPassword}>
-                {biometricRevealRequired ? "Use biometric" : verifyingBackup ? "Unlock seed" : "Reveal seed"}
-              </Button>
-            </>
-          ) : (
-            <>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em", lineHeight: 1.6 }}>
-                {seedVisible ? "Shown" : "Hidden"}. Closes in {seedSecsLeft}s.
-              </div>
-              <SeedSurface seed={revealedSeed} revealed={seedVisible} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-                <Button variant="secondary" shape="sharp" onClick={copyRevealedSeed}>
-                  {seedCopied ? "Copied" : "Copy01Icon seed"}
-                </Button>
-                <Button variant="secondary" shape="sharp" onClick={() => setSeedVisible((value) => !value)} aria-pressed={seedVisible}>
-                  {seedVisible ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
-                  {seedVisible ? "Hide" : "Reveal"}
-                </Button>
-              </div>
-              {verifyingBackup ? (
-                <>
-                  <Textarea
-                    value={backupCheck}
-                    onChange={(event) => { setBackupCheck(event.target.value); setBackupCheckStatus("idle"); }}
-                    onKeyDown={(event) => {
-                      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") verifyBackupSeed();
-                    }}
-                    placeholder="Type your saved seed"
-                    aria-label="Saved seed"
-                    technical
-                    style={{ resize: "none", minHeight: 112, borderRadius: "var(--radius-control)", background: "var(--color-bg-input)", overflowWrap: "anywhere" }}
-                  />
-                  {backupCheckStatus !== "idle" ? (
-                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: backupCheckStatus === "match" ? "var(--color-status-success)" : "var(--color-status-error)" }}>
-                      {backupCheckStatus === "match" ? "Backup verified" : "Seed does not match"}
-                    </div>
-                  ) : null}
-                  <Button onClick={verifyBackupSeed} disabled={!backupCheck.trim()}>Verify backup</Button>
-                </>
-              ) : null}
-            </>
-          )}
-        </div>
-      </Sheet>
+      <SeedRevealSheet
+        account={revealingAccount}
+        onClose={() => setRevealingAccount(null)}
+        verifyingBackup={verifyingBackup}
+        biometricRevealRequired={biometricRevealRequired}
+        revealedSeed={revealedSeed}
+        seedVisible={seedVisible}
+        onToggleSeedVisible={() => setSeedVisible((value) => !value)}
+        seedCopied={seedCopied}
+        seedSecsLeft={seedSecsLeft}
+        onCopy={copyRevealedSeed}
+        password={revealPassword}
+        onPasswordChange={(value) => { setRevealPassword(value); setRevealError(""); }}
+        error={revealError}
+        loading={revealLoading}
+        onReveal={doRevealSeed}
+        backupCheck={backupCheck}
+        onBackupCheckChange={(value) => { setBackupCheck(value); setBackupCheckStatus("idle"); }}
+        backupCheckStatus={backupCheckStatus}
+        onVerify={verifyBackupSeed}
+      />
 
       {/* Password rotation sheet */}
-      <Sheet open={showRotate} onClose={() => setShowRotate(false)} title="Change vault password">
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          {rotateDone ? (
-            <>
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
-                Password changed
-              </div>
-              <Button onClick={() => setShowRotate(false)}>Done</Button>
-            </>
-          ) : (
-            <>
-              <Input type="password" label="Current password" value={rotateOldPassword} onChange={(e) => { setRotateOldPassword(e.target.value); setRotateError(""); }} error="" placeholder="••••••••••" autoComplete="current-password" autoFocus />
-              <Input type="password" label="New password" value={rotateNewPassword} onChange={(e) => { setRotateNewPassword(e.target.value); setRotateError(""); }} placeholder="••••••••••" autoComplete="new-password" />
-              <Input type="password" label="Confirm new password" value={rotateConfirm} onChange={(e) => { setRotateConfirm(e.target.value); setRotateError(""); }} onKeyDown={(e) => e.key === "Enter" && !rotateLoading && doRotatePassword()} error={rotateError} placeholder="•••••••••" autoComplete="new-password" />
-              <Button onClick={doRotatePassword} loading={rotateLoading} disabled={!rotateOldPassword || !rotateNewPassword || !rotateConfirm}>
-                Change password
-              </Button>
-            </>
-          )}
-        </div>
-      </Sheet>
+      <RotatePasswordSheet
+        open={showRotate}
+        onClose={() => setShowRotate(false)}
+        done={rotateDone}
+        oldPassword={rotateOldPassword}
+        setOldPassword={setRotateOldPassword}
+        newPassword={rotateNewPassword}
+        setNewPassword={setRotateNewPassword}
+        confirmPassword={rotateConfirm}
+        setConfirmPassword={setRotateConfirm}
+        error={rotateError}
+        setError={setRotateError}
+        loading={rotateLoading}
+        onSubmit={doRotatePassword}
+      />
 
       <Sheet
         open={!!selectedAccount}
@@ -825,185 +701,5 @@ export default function VaultDetailScreen() {
         )}
       </Sheet>
     </AppShell>
-  );
-}
-
-interface AccountRowProps {
-  account: AccountMeta;
-  identity: string | null;
-  isCurrent: boolean;
-  dimmed?: boolean;
-  flashSuccess?: boolean;
-  balance?: bigint | null;
-  hideBalances: boolean;
-  onManage: () => void;
-}
-
-function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, hideBalances, onManage }: AccountRowProps) {
-  const tags = account.tags ?? [];
-  const note = account.note?.trim() ?? "";
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <button
-      type="button"
-      className={`stagger-item${flashSuccess ? " flash-success" : ""}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onManage}
-      style={{
-        opacity: dimmed ? 0.55 : 1,
-        background: hovered ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
-        border: "1px solid var(--color-border-strong)",
-        borderRadius: "var(--radius-sharp)",
-        padding: "var(--space-3)",
-        display: "flex",
-        gap: "var(--space-3)",
-        alignItems: "flex-start",
-        cursor: "pointer",
-        transition: "background 0.12s ease, border-color 0.12s ease",
-      }}
-    >
-      <Identicon kind="account" code={`A${account.index + 1}`} seed={identity ?? account.name} label={account.name} size={40} radius={8} style={{ marginTop: 2, flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)", marginBottom: 2 }}>
-              {account.name}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              ACCOUNT {account.index + 1}
-            </div>
-          </div>
-          {balance !== null && balance !== undefined ? (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>
-              {hideBalances ? "••••••" : formatQu(balance)}
-            </span>
-          ) : (
-            <span
-              style={{
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-mono-sm)",
-                color: "var(--color-text-secondary)",
-                letterSpacing: "0.05em",
-                padding: "var(--space-1) var(--space-2)",
-                flexShrink: 0,
-              }}
-            >
-              Manage
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
-          {isCurrent && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-accent)", letterSpacing: "0.05em" }}>
-              <CheckmarkCircle01Icon size={14} strokeWidth={1.5} aria-hidden="true" /> Active
-            </span>
-          )}
-          {account.hidden && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Hidden
-            </span>
-          )}
-          {tags.map((tag) => (
-            <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              #{tag}
-            </span>
-          ))}
-        </div>
-        {note && (
-          <div style={{ marginTop: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-            {note}
-          </div>
-        )}
-        {identity && (
-          <div style={{ marginTop: "var(--space-3)" }}>
-            <IdentityDisplay identity={identity} showIdenticon={false} />
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function ActionSection({
-  title,
-  danger,
-  children,
-}: {
-  title: string;
-  danger?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-        {title}
-      </div>
-      <div style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function ActionRow({
-  title,
-  description,
-  icon: Icon,
-  selected,
-  disabled,
-  danger,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  icon?: typeof PencilEdit01Icon;
-  selected?: boolean;
-  disabled?: boolean;
-  danger?: boolean;
-  onClick: () => void;
-}) {
-  const muted = disabled && !selected;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-3)",
-        width: "100%",
-        textAlign: "left",
-        background: "transparent",
-        border: "none",
-        borderBottom: "1px solid var(--color-border-subtle)",
-        borderRadius: 0,
-        cursor: disabled ? "default" : "pointer",
-        opacity: muted ? 0.55 : 1,
-        padding: "var(--space-3) 0",
-        transform: "none",
-      }}
-    >
-      {Icon && (
-        <Icon size={18} strokeWidth={1.5} color={danger ? "var(--color-status-error)" : "var(--color-text-secondary)"} aria-hidden="true" />
-      )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: danger ? "var(--color-status-error)" : "var(--color-text-display)" }}>
-          {title}
-        </div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-          {description}
-        </div>
-      </div>
-      {selected ? (
-        <CheckmarkCircle01Icon size={18} strokeWidth={1.5} color="var(--color-accent)" aria-label="Selected" />
-      ) : (
-        <span style={{ width: 18, height: 18, border: "1px solid var(--color-border-strong)", borderRadius: "999px", flexShrink: 0 }} aria-hidden="true" />
-      )}
-    </button>
   );
 }
