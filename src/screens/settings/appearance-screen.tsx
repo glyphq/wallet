@@ -4,9 +4,25 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsDivider, SettingsSectionLabel } from "@/components/settings-section-elements";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { CurrencyPicker } from "./appearance/currency-picker";
+import { OptionSelector } from "@/components/option-selector";
 import { Toggle } from "@/components/toggle";
-import { ThemePicker } from "./appearance/theme-picker";
+
+const CURRENCY_OPTIONS = [
+  { value: "USD", label: "USD" },
+  { value: "EUR", label: "EUR" },
+  { value: "BTC", label: "BTC" },
+] as const;
+
+const THEME_OPTIONS = [
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
+] as const;
+
+const sectionStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--space-3)",
+} as const;
 
 export default function AppearanceScreen() {
   const themeMode = usePersistedStore((s) => s.settings.themeMode);
@@ -15,25 +31,37 @@ export default function AppearanceScreen() {
   const updateSettings = usePersistedStore((s) => s.updateSettings);
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-5) var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", minHeight: 0 }}>
+    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", minHeight: 0 }}>
         <SettingsPageHeader title="Appearance" />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <section style={sectionStyle} aria-label="Currency">
           <SettingsSectionLabel>Currency</SettingsSectionLabel>
-          <CurrencyPicker value={currency} onChange={(id) => updateSettings({ currency: id })} />
-        </div>
+          <OptionSelector
+            label="Currency"
+            value={currency}
+            options={CURRENCY_OPTIONS}
+            columns={3}
+            onChange={(id) => updateSettings({ currency: id })}
+          />
+        </section>
 
         <SettingsDivider fullBleed />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <section style={sectionStyle} aria-label="Theme">
           <SettingsSectionLabel>Theme</SettingsSectionLabel>
-          <ThemePicker value={themeMode} onChange={(id) => updateSettings({ themeMode: id })} />
-        </div>
+          <OptionSelector
+            label="Theme"
+            value={themeMode}
+            options={THEME_OPTIONS}
+            columns={2}
+            onChange={(id) => updateSettings({ themeMode: id })}
+          />
+        </section>
 
         <SettingsDivider fullBleed />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <section style={sectionStyle} aria-label="Privacy">
           <SettingsSectionLabel>Privacy</SettingsSectionLabel>
           <Toggle
             checked={hideBalances}
@@ -41,7 +69,7 @@ export default function AppearanceScreen() {
             description="Mask wallet amounts until you turn this off."
             onChange={(checked) => updateSettings({ hideBalances: checked })}
           />
-        </div>
+        </section>
       </motion.div>
     </AppShell>
   );
