@@ -82,7 +82,6 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
         value={String(selectedIndex)}
         options={accountOptions}
         onChange={(value) => setSelectedIndex(Number(value))}
-        hint={selectedAccount ? truncateId(selectedAccount.identity, 12, 12) : undefined}
       />
 
       <div>
