@@ -210,11 +210,10 @@ export default function HistoryScreen() {
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <section style={{ flexShrink: 0, borderBottom: "1px solid var(--color-border-subtle)", background: "var(--color-bg-base)" }}>
           <AsciiBackdrop
-            style={{ minHeight: 96 }}
             contentStyle={{
               justifyContent: "center",
               alignItems: "stretch",
-              padding: "var(--space-2) var(--screen-padding)",
+              padding: "0 var(--screen-padding)",
             }}
           >
             <HistoryToolbar
