@@ -171,7 +171,14 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
     <div style={{ display: "flex", flexDirection: "column" }}>
       {items.map((item, i) => (
         <div key={item.key} className="stagger-item">
-          {i > 0 && <Divider />}
+          {i > 0 && (
+            <Divider
+              style={{
+                marginInline: "calc(var(--space-4) * -1)",
+                marginBlock: 0,
+              }}
+            />
+          )}
           {item.node}
         </div>
       ))}
