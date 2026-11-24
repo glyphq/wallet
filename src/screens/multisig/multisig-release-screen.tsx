@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/button";
@@ -86,15 +86,6 @@ const CARD: CSSProperties = {
   borderRadius: "var(--radius-sharp)",
   background: "var(--color-bg-surface)",
 };
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }} aria-label={title}>
-      <h2 style={SECTION_LABEL}>{title}</h2>
-      {children}
-    </section>
-  );
-}
 
 function parseWholeQu(text: string): bigint | null {
   const trimmed = text.trim();
@@ -716,7 +707,7 @@ export default function MultisigReleaseScreen() {
             />
 
             {kind === "qubic" ? (
-              <Section title="Amount">
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 <AmountInput
                   label="Amount"
                   autoComplete="off"
@@ -731,7 +722,7 @@ export default function MultisigReleaseScreen() {
                 <p style={BODY_COPY}>
                   Vault QUBIC balance: {formatQu(detail.balance)} QU
                 </p>
-              </Section>
+              </div>
             ) : (
               <>
                 {assetOptions.length === 0 ? (
@@ -779,7 +770,7 @@ export default function MultisigReleaseScreen() {
               </>
             )}
 
-            <Section title="Destination">
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <Input
                 label="Destination"
                 value={destination}
@@ -815,7 +806,7 @@ export default function MultisigReleaseScreen() {
                   {truncateId(destUpper, 10, 10)}
                 </p>
               ) : null}
-            </Section>
+            </div>
 
             <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <h2 style={SECTION_LABEL}>Approval</h2>

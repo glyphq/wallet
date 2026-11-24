@@ -99,15 +99,6 @@ interface AssetOption {
   decimals: number;
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }} aria-label={title}>
-      <h2 style={SECTION_LABEL}>{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 function parseWholeQu(text: string): bigint | null {
   const trimmed = text.trim();
   if (!/^\d+$/.test(trimmed)) return null;
@@ -716,25 +707,23 @@ export default function MultisigDepositScreen() {
         />
 
         {mode === "qubic" ? (
-          <Section title="Amount">
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              <AmountInput
-                label="Amount"
-                autoComplete="off"
-                value={amountText}
-                disabled={sending}
-                onValueChange={(value) => {
-                  setAmountText(value);
-                  setError("");
-                }}
-                placeholder="0"
-                error={qubicError || undefined}
-              />
-              <p style={BODY_COPY}>
-                Wallet balance: {walletBalance !== null ? `${formatQu(walletBalance)} QU` : "—"}
-              </p>
-            </div>
-          </Section>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <AmountInput
+              label="Amount"
+              autoComplete="off"
+              value={amountText}
+              disabled={sending}
+              onValueChange={(value) => {
+                setAmountText(value);
+                setError("");
+              }}
+              placeholder="0"
+              error={qubicError || undefined}
+            />
+            <p style={BODY_COPY}>
+              Wallet balance: {walletBalance !== null ? `${formatQu(walletBalance)} QU` : "—"}
+            </p>
+          </div>
         ) : (
           <>
             {assetOptions.length === 0 ? (
