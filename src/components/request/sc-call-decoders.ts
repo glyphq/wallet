@@ -1,4 +1,4 @@
-import { publicKeyToIdentity } from "@qubic.org/crypto";
+import { decodeFields, MSVAULT, QEARN, QUTIL, type ContractCall, type ContractDefinition } from "@glyph-oss/contracts";
 
 export interface ScCallRecipient {
   identity: string;
@@ -34,65 +34,60 @@ export function base64ToHex(b64: string): string {
   }
 }
 
-function readU32(view: DataView, offset: number): number {
-  return view.getUint32(offset, true);
+function decodeInput(
+  contract: ContractDefinition,
+  call: ContractCall | undefined,
+  bytes: Uint8Array,
+): Record<string, unknown> | null {
+  if (!call) return null;
+  try {
+    return decodeFields(bytes, call.inputFields, contract) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
-function readU64(view: DataView, offset: number): bigint {
-  const lo = view.getUint32(offset, true);
-  const hi = view.getUint32(offset + 4, true);
-  return (BigInt(hi) << 32n) | BigInt(lo);
-}
-
-// Decode QUtil SendToManyV1 payload: 25×32-byte pubkeys + 25×8-byte uint64 amounts (LE)
+/** Decode a QUTIL SendToManyV1 payload from its maintained ABI. */
 export function decodeQUtilSendToMany(bytes: Uint8Array): ScCallRecipient[] | null {
-  if (bytes.length !== 800 + 200) return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const decoded = decodeInput(QUTIL.definition, QUTIL.procedures.SendToManyV1, bytes);
+  if (!decoded) return null;
+
   const results: ScCallRecipient[] = [];
   for (let i = 0; i < 25; i++) {
-    const pubKey = bytes.slice(i * 32, (i + 1) * 32);
-    const amountOffset = 800 + i * 8;
-    const amount = readU64(view, amountOffset);
+    const amount = decoded[`amt${i}`] as bigint;
     if (amount === 0n) continue;
-    try {
-      const identity = publicKeyToIdentity(pubKey) as string;
-      results.push({ identity, amount });
-    } catch {
-      // skip invalid entries
-    }
+    results.push({ identity: decoded[`dst${i}`] as string, amount });
   }
   return results;
 }
 
-// Decode Qearn UnlockInQearn payload: 8-byte uint64 amount + 4-byte uint32 epoch (LE)
+/** Decode a QEARN unlock payload from its maintained ABI. */
 export function decodeQearnUnlock(bytes: Uint8Array): QearnUnlockPayload | null {
-  if (bytes.length < 12) return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const amount = readU64(view, 0);
-  const epoch = readU32(view, 8);
-  return { amount, epoch };
+  const decoded = decodeInput(QEARN.definition, QEARN.procedures.unlock, bytes);
+  if (!decoded) return null;
+  return { amount: decoded.amount as bigint, epoch: decoded.lockedEpoch as number };
 }
 
+
+/** Decode an MSVAULT deposit payload from its maintained ABI. */
 export function decodeMultiSignVaultDeposit(bytes: Uint8Array): MultiSignVaultDepositPayload | null {
-  if (bytes.length < 8) return null;
-  return { vaultId: readU64(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), 0) };
+  const decoded = decodeInput(MSVAULT.definition, MSVAULT.procedures.deposit, bytes);
+  return decoded ? { vaultId: decoded.vaultId as bigint } : null;
 }
 
+/** Decode an MSVAULT resetRelease payload from its maintained ABI. */
 export function decodeMultiSignVaultResetRelease(bytes: Uint8Array): MultiSignVaultResetReleasePayload | null {
-  if (bytes.length < 8) return null;
-  return { vaultId: readU64(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), 0) };
+  const decoded = decodeInput(MSVAULT.definition, MSVAULT.procedures.resetRelease, bytes);
+  return decoded ? { vaultId: decoded.vaultId as bigint } : null;
 }
 
+/** Decode an MSVAULT releaseTo payload from its maintained ABI. */
 export function decodeMultiSignVaultRelease(bytes: Uint8Array): MultiSignVaultReleasePayload | null {
-  if (bytes.length < 48) return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  try {
-    return {
-      vaultId: readU64(view, 0),
-      amount: readU64(view, 8),
-      destination: publicKeyToIdentity(bytes.slice(16, 48)) as string,
-    };
-  } catch {
-    return null;
-  }
+  const decoded = decodeInput(MSVAULT.definition, MSVAULT.procedures.releaseTo, bytes);
+  if (!decoded) return null;
+  return {
+    vaultId: decoded.vaultId as bigint,
+    amount: decoded.amount as bigint,
+    destination: decoded.destination as string,
+  };
 }
