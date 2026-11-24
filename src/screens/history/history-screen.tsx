@@ -208,7 +208,7 @@ export default function HistoryScreen() {
 
       {/* ── Main content column ── */}
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-        <section style={{ flexShrink: 0, borderBottom: "1px solid var(--color-border-subtle)", background: "var(--color-bg-base)" }}>
+        <section style={{ position: "sticky", top: 0, zIndex: 5, flexShrink: 0, borderBottom: "1px solid var(--color-border-subtle)", background: "var(--color-bg-base)" }}>
           <AsciiBackdrop
             contentStyle={{
               justifyContent: "center",
