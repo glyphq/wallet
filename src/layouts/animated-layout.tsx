@@ -179,7 +179,7 @@ function LayoutShell() {
 
       {/* ── Animated page content ── */}
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden" }}>
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence initial={false}>
           <motion.div
             key={location.key}
             {...transition}

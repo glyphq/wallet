@@ -12,7 +12,7 @@ export interface AppShellProps {
 export function AppShell({ children, statusBar, contentStyle, fullBleed }: AppShellProps) {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
-  const { setHeader } = useHeaderSlot();
+  const { setHeader, clearHeader } = useHeaderSlot();
 
   // Push statusBar content to the static header slot in AnimatedLayout
   useEffect(() => {
@@ -20,8 +20,8 @@ export function AppShell({ children, statusBar, contentStyle, fullBleed }: AppSh
     // overwrite it with null when this shell has no status bar of its own.
     if (statusBar === undefined) return;
     setHeader(statusBar);
-    return () => setHeader(null);
-  }, [statusBar, setHeader]);
+    return () => clearHeader(statusBar);
+  }, [statusBar, setHeader, clearHeader]);
 
   useLayoutEffect(() => {
     const saved = sessionStorage.getItem(`scroll:${location.key}`);

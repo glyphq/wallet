@@ -78,7 +78,7 @@ export default function DashboardScreen() {
             justifyContent: "flex-start",
             alignItems: "center",
             gap: "var(--space-3)",
-            padding: "var(--space-2) var(--screen-padding) var(--space-5)",
+            padding: "0 var(--screen-padding) var(--space-5)",
           }}
         >
           {dashboardHeader}

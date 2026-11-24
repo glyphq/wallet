@@ -7,38 +7,70 @@ import { AsciiSpinner } from "@/components/ascii-spinner";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-const SplashScreen = lazy(() => import("@/screens/splash/splash-screen"));
-const LockScreen = lazy(() => import("@/screens/lock/lock-screen"));
-const WelcomeScreen = lazy(() => import("@/screens/setup/welcome-screen"));
-const CreateWalletScreen = lazy(() => import("@/screens/setup/create-wallet-screen"));
-const ImportWalletScreen = lazy(() => import("@/screens/setup/import-wallet-screen"));
-const DashboardScreen = lazy(() => import("@/screens/dashboard/dashboard-screen"));
-const WalletsScreen = lazy(() => import("@/screens/wallets/wallets-screen"));
-const WalletDetailScreen = lazy(() => import("@/screens/wallets/wallet-detail-screen"));
-const PortfolioScreen = lazy(() => import("@/screens/wallets/portfolio-screen"));
-const SendScreen = lazy(() => import("@/screens/send/send-screen"));
-const ScheduledTransfersScreen = lazy(() => import("@/screens/send/scheduled-transfers-screen"));
-const SendManyScreen = lazy(() => import("@/screens/send/send-many-screen"));
-const BurnScreen = lazy(() => import("@/screens/send/burn-screen"));
-const StakeScreen = lazy(() => import("@/screens/stake/stake-screen"));
-const ReceiveScreen = lazy(() => import("@/screens/receive/receive-screen"));
-const PaymentLinkScreen = lazy(() => import("@/screens/receive/payment-link-screen"));
-const HistoryScreen = lazy(() => import("@/screens/history/history-screen"));
-const TxDetailScreen = lazy(() => import("@/screens/history/tx-detail-screen"));
-const AnalyticsScreen = lazy(() => import("@/screens/history/analytics-screen"));
-const ContactsScreen = lazy(() => import("@/screens/contacts/contacts-screen"));
-const SearchScreen = lazy(() => import("@/screens/search/search-screen"));
-const RequestScreen = lazy(() => import("@/screens/request/request-screen"));
-const SettingsScreen = lazy(() => import("@/screens/settings/settings-screen"));
-const DappsScreen = lazy(() => import("@/screens/settings/dapps-screen"));
-const RequestHistoryScreen = lazy(() => import("@/screens/settings/request-history-screen"));
-const SecurityScreen = lazy(() => import("@/screens/settings/security-screen"));
-const AuditLogScreen = lazy(() => import("@/screens/settings/audit-log-screen"));
-const NetworkScreen = lazy(() => import("@/screens/settings/network-screen"));
-const NotificationsScreen = lazy(() => import("@/screens/settings/notifications-screen"));
-const SupportScreen = lazy(() => import("@/screens/settings/support-screen"));
-const DiagnosticsScreen = lazy(() => import("@/screens/settings/diagnostics-screen"));
-const AppearanceScreen = lazy(() => import("@/screens/settings/appearance-screen"));
+const loadSplashScreen = () => import("@/screens/splash/splash-screen");
+const SplashScreen = lazy(loadSplashScreen);
+const loadLockScreen = () => import("@/screens/lock/lock-screen");
+const LockScreen = lazy(loadLockScreen);
+const loadWelcomeScreen = () => import("@/screens/setup/welcome-screen");
+const WelcomeScreen = lazy(loadWelcomeScreen);
+const loadCreateWalletScreen = () => import("@/screens/setup/create-wallet-screen");
+const CreateWalletScreen = lazy(loadCreateWalletScreen);
+const loadImportWalletScreen = () => import("@/screens/setup/import-wallet-screen");
+const ImportWalletScreen = lazy(loadImportWalletScreen);
+const loadDashboardScreen = () => import("@/screens/dashboard/dashboard-screen");
+const DashboardScreen = lazy(loadDashboardScreen);
+const loadWalletsScreen = () => import("@/screens/wallets/wallets-screen");
+const WalletsScreen = lazy(loadWalletsScreen);
+const loadWalletDetailScreen = () => import("@/screens/wallets/wallet-detail-screen");
+const WalletDetailScreen = lazy(loadWalletDetailScreen);
+const loadPortfolioScreen = () => import("@/screens/wallets/portfolio-screen");
+const PortfolioScreen = lazy(loadPortfolioScreen);
+const loadSendScreen = () => import("@/screens/send/send-screen");
+const SendScreen = lazy(loadSendScreen);
+const loadScheduledTransfersScreen = () => import("@/screens/send/scheduled-transfers-screen");
+const ScheduledTransfersScreen = lazy(loadScheduledTransfersScreen);
+const loadSendManyScreen = () => import("@/screens/send/send-many-screen");
+const SendManyScreen = lazy(loadSendManyScreen);
+const loadBurnScreen = () => import("@/screens/send/burn-screen");
+const BurnScreen = lazy(loadBurnScreen);
+const loadStakeScreen = () => import("@/screens/stake/stake-screen");
+const StakeScreen = lazy(loadStakeScreen);
+const loadReceiveScreen = () => import("@/screens/receive/receive-screen");
+const ReceiveScreen = lazy(loadReceiveScreen);
+const loadPaymentLinkScreen = () => import("@/screens/receive/payment-link-screen");
+const PaymentLinkScreen = lazy(loadPaymentLinkScreen);
+const loadHistoryScreen = () => import("@/screens/history/history-screen");
+const HistoryScreen = lazy(loadHistoryScreen);
+const loadTxDetailScreen = () => import("@/screens/history/tx-detail-screen");
+const TxDetailScreen = lazy(loadTxDetailScreen);
+const loadAnalyticsScreen = () => import("@/screens/history/analytics-screen");
+const AnalyticsScreen = lazy(loadAnalyticsScreen);
+const loadContactsScreen = () => import("@/screens/contacts/contacts-screen");
+const ContactsScreen = lazy(loadContactsScreen);
+const loadSearchScreen = () => import("@/screens/search/search-screen");
+const SearchScreen = lazy(loadSearchScreen);
+const loadRequestScreen = () => import("@/screens/request/request-screen");
+const RequestScreen = lazy(loadRequestScreen);
+const loadSettingsScreen = () => import("@/screens/settings/settings-screen");
+const SettingsScreen = lazy(loadSettingsScreen);
+const loadDappsScreen = () => import("@/screens/settings/dapps-screen");
+const DappsScreen = lazy(loadDappsScreen);
+const loadRequestHistoryScreen = () => import("@/screens/settings/request-history-screen");
+const RequestHistoryScreen = lazy(loadRequestHistoryScreen);
+const loadSecurityScreen = () => import("@/screens/settings/security-screen");
+const SecurityScreen = lazy(loadSecurityScreen);
+const loadAuditLogScreen = () => import("@/screens/settings/audit-log-screen");
+const AuditLogScreen = lazy(loadAuditLogScreen);
+const loadNetworkScreen = () => import("@/screens/settings/network-screen");
+const NetworkScreen = lazy(loadNetworkScreen);
+const loadNotificationsScreen = () => import("@/screens/settings/notifications-screen");
+const NotificationsScreen = lazy(loadNotificationsScreen);
+const loadSupportScreen = () => import("@/screens/settings/support-screen");
+const SupportScreen = lazy(loadSupportScreen);
+const loadDiagnosticsScreen = () => import("@/screens/settings/diagnostics-screen");
+const DiagnosticsScreen = lazy(loadDiagnosticsScreen);
+const loadAppearanceScreen = () => import("@/screens/settings/appearance-screen");
+const AppearanceScreen = lazy(loadAppearanceScreen);
 
 function RouteFallback() {
   return (
@@ -77,6 +109,58 @@ function UnlockedRoute() {
   if (!hasWallets) return <Navigate to="/setup" replace />;
   if (isLocked) return <Navigate to="/lock" replace />;
   return <Outlet />;
+}
+
+const SCREEN_LOADERS = [
+  loadSplashScreen,
+  loadLockScreen,
+  loadWelcomeScreen,
+  loadCreateWalletScreen,
+  loadImportWalletScreen,
+  loadDashboardScreen,
+  loadWalletsScreen,
+  loadWalletDetailScreen,
+  loadPortfolioScreen,
+  loadSendScreen,
+  loadScheduledTransfersScreen,
+  loadSendManyScreen,
+  loadBurnScreen,
+  loadStakeScreen,
+  loadReceiveScreen,
+  loadPaymentLinkScreen,
+  loadHistoryScreen,
+  loadTxDetailScreen,
+  loadAnalyticsScreen,
+  loadContactsScreen,
+  loadSearchScreen,
+  loadRequestScreen,
+  loadSettingsScreen,
+  loadDappsScreen,
+  loadRequestHistoryScreen,
+  loadSecurityScreen,
+  loadAuditLogScreen,
+  loadNetworkScreen,
+  loadNotificationsScreen,
+  loadSupportScreen,
+  loadDiagnosticsScreen,
+  loadAppearanceScreen,
+];
+
+let screensPrefetched = false;
+
+/** Warm route chunks during idle so first navigation does not flash a fallback. */
+function prefetchScreens() {
+  if (screensPrefetched) return;
+  screensPrefetched = true;
+  for (const load of SCREEN_LOADERS) void load().catch(() => undefined);
+}
+
+if (typeof window !== "undefined") {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(() => prefetchScreens(), { timeout: 2_500 });
+  } else {
+    window.setTimeout(prefetchScreens, 1_500);
+  }
 }
 
 export const router = createHashRouter([
