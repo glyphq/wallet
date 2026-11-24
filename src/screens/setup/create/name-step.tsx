@@ -1,6 +1,7 @@
 import { Wallet01Icon } from "@/lib/icons";
 import { Input } from "@/components/input";
 import { SetupFlow } from "@/components/setup-flow";
+import { WalletNameChips } from "@/components/wallet-name-chips";
 
 export function NameStep({
   name,
@@ -27,6 +28,7 @@ export function NameStep({
         autoFocus
         error={error}
       />
+      <WalletNameChips value={name} onSelect={onNameChange} />
     </SetupFlow>
   );
 }

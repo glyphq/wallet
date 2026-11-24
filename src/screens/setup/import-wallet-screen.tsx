@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Wallet01Icon } from "@/lib/icons";
 import { Identicon } from "@/components/identicon";
+import { WalletNameChips } from "@/components/wallet-name-chips";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SetupFlow } from "@/components/setup-flow";
 import { deriveIdentityFromSeed, InvalidSeedError, newId, toSeed, type Seed } from "@/lib/crypto";
@@ -157,6 +158,13 @@ export default function ImportWalletScreen() {
             aria-label="Wallet name"
             autoFocus
             error={nameError}
+          />
+          <WalletNameChips
+            value={name}
+            onSelect={(value) => {
+              setName(value);
+              setNameError("");
+            }}
           />
         </SetupFlow>
       ) : null}
