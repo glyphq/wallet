@@ -5,25 +5,27 @@ import { Clock01Icon } from "@/lib/icons";
 import { RequestFooterProvider } from "./request-footer-context";
 import { RequestStatusProvider, useRequestStatus } from "./request-status-context";
 
-export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
+export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar?: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
   const countdown = useLockCountdown();
   const [footerTarget, setFooterTarget] = useState<HTMLElement | null>(null);
   return (
     <RequestStatusProvider expirySecsLeft={expirySecsLeft ?? null}>
     <RequestFooterProvider value={footerTarget}>
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--color-bg-base)" }}>
-      <header
-        style={{
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          minHeight: 48,
-          padding: "var(--space-3) var(--screen-padding)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-        }}
-      >
-        {statusBar}
-      </header>
+      {statusBar ? (
+        <header
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            minHeight: 48,
+            padding: "var(--space-3) var(--screen-padding)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+          }}
+        >
+          {statusBar}
+        </header>
+      ) : null}
 
       {countdown !== null && (
         <div

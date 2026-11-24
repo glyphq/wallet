@@ -4,7 +4,6 @@ import { ScCallPreview } from "@/components/request/sc-call-preview";
 import { SignMessagePreview } from "@/components/request/sign-message-preview";
 import { ConnectPreview } from "@/components/request/connect-preview";
 import { VerifyMessagePreview } from "@/components/request/verify-message-preview";
-import { ScreenHeader } from "@/components/screen-header";
 import type {
   ApproveResult,
   ConnectApproveResult,
@@ -12,7 +11,14 @@ import type {
   VerifyMessageResult,
 } from "@/lib/request-approvals";
 import type { GlyphRequest } from "@/lib/request-schema";
-import { REQUEST_TYPE_LABEL } from "@/lib/request-schema";
+
+const ACTION_PHRASE: Record<GlyphRequest["type"], string> = {
+  transfer: "send QU",
+  sc_call: "call a contract",
+  sign_message: "sign a message",
+  verify_message: "verify a message",
+  connect: "connect",
+};
 import type { SigningAuthorizationContext } from "@/lib/secure-session";
 import { RequestQueueNotice } from "./request-queue-notice";
 import { SheetLayout, StatusLine } from "./sheet-layout";
@@ -41,12 +47,9 @@ export function RequestApprovalView({
   onApproveVerify: (result: VerifyMessageResult) => void | Promise<void>;
   onApproveConnect: (result: ConnectApproveResult) => void | Promise<void>;
 }) {
-  const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
-  const statusBar = <ScreenHeader title={typeLabel} />;
-
   return (
-    <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>
-      <RequestHeader dapp={request.dapp} />
+    <SheetLayout expirySecsLeft={expirySecsLeft}>
+      <RequestHeader dapp={request.dapp} action={ACTION_PHRASE[request.type]} />
       <RequestQueueNotice pendingRequestCount={pendingRequestCount} />
       {actionError && <StatusLine tone="error">{actionError}</StatusLine>}
 
