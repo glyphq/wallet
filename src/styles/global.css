@@ -741,6 +741,7 @@ a:hover {
 
 .vault-dropzone {
   width: 100%;
+  flex: 1;
   min-height: 190px;
   margin: 0;
   padding: var(--space-5);
