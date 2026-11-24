@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick, getLatestTick, getRpcClient } from "@/lib/rpc";
+import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
+import { glyphContractCaller } from "@/lib/api/contracts";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession, transactionSigningIntent } from "@/lib/secure-session";
 import { contractIndexToIdentity } from "@qubic.org/crypto";
@@ -69,11 +70,11 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const { data: tickInfo } = useTickInfo();
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const apiIdentity = useApiCacheIdentity();
   const { data: balanceData } = useBalance(wallet?.identity ?? null);
   const { data: sendToManyFeeData } = useQuery({
-    queryKey: qk.qutilSendManyFee(rpcIdentity),
-    queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
+    queryKey: qk.qutilSendManyFee(apiIdentity),
+    queryFn: () => qUtilGetSendToManyV1Fee(glyphContractCaller),
     staleTime: 60_000,
     enabled: request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
   });
@@ -168,7 +169,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
     setTxError("");
     try {
       const amount = requestAmount;
-      const currentTick = await getLatestTick();
+      const currentTick = await fetchLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
       const authorization = await authorize(selectedIndex, transactionSigningIntent({
         accountIndex: selectedIndex,

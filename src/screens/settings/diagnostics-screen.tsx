@@ -68,8 +68,7 @@ export default function DiagnosticsScreen() {
           <DiagnosticRow label="Current tick" value={tickInfo?.tick != null ? String(tickInfo.tick) : "Waiting for data"} />
           <DiagnosticRow label="Synchronization" value={syncDiff != null ? `${syncDiff} tick${syncDiff === 1 ? "" : "s"} behind` : "Waiting for data"} tone={syncDiff != null && syncDiff > 5 ? "warning" : undefined} />
           <DiagnosticRow label="Last update" value={tickAge != null ? `${tickAge}s ago` : "Waiting for data"} />
-          <DiagnosticRow label="Live RPC" value={settings.network.liveApiUrl} technical />
-          <DiagnosticRow label="Archive RPC" value={settings.network.queryApiUrl} technical />
+          <DiagnosticRow label="Glyph API" value={settings.network.apiUrl} technical />
         </DiagnosticSection>
 
         <DiagnosticSection title="Vault" description="Local Vault activity. No wallet secrets are included here.">

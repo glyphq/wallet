@@ -2,7 +2,7 @@ import { useState } from "react";
 import { usePersistedStore } from "@/store/persisted";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
+import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildTransferFromSession, transactionSigningIntent } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
@@ -85,7 +85,7 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
     setTxError("");
     try {
       const amount = requestAmount;
-      const currentTick = await getLatestTick();
+      const currentTick = await fetchLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
       const authorization = await authorize(selectedIndex, transactionSigningIntent({
         accountIndex: selectedIndex,

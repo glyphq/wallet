@@ -40,8 +40,8 @@ export default function TxDetailScreen() {
   // Look up the tx: check pending first, then history cache
   const pending = hash ? pendingTxs.find((p) => p.hash === hash) : undefined;
   const historyTx = hash && !pending
-    ? (queryClient.getQueriesData<InfiniteData<TxHistoryItem[]>>({ queryKey: ["tx-history"] })
-        .flatMap(([, data]) => data?.pages?.flat() ?? [])
+    ? (queryClient.getQueriesData<InfiniteData<{ items: TxHistoryItem[]; nextCursor: string | null }>>({ queryKey: ["tx-history"] })
+        .flatMap(([, data]) => data?.pages?.flatMap((page) => page.items) ?? [])
         .find((tx) => tx.hash === hash))
     : undefined;
 

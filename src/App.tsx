@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
 import { useShallow } from "zustand/react/shallow";
 import { router } from "@/router";
@@ -11,7 +11,7 @@ import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { useLatestStats } from "@/hooks/use-latest-stats";
-import { configureRpc } from "@/lib/rpc";
+import { configureApiClient, getApiBaseUrl } from "@/lib/api/client";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
 import { TitleBar } from "@/components/title-bar";
@@ -59,17 +59,17 @@ function useAppearance() {
 
 }
 
-function useRpcSync() {
-  const { liveApiUrl, queryApiUrl } = usePersistedStore(
-    useShallow((s) => ({
-      liveApiUrl: s.settings.network.liveApiUrl,
-      queryApiUrl: s.settings.network.queryApiUrl,
-    }))
-  );
+function useNetworkSync() {
+  const apiUrl = usePersistedStore((s) => s.settings.network.apiUrl);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    configureRpc(liveApiUrl, queryApiUrl);
-  }, [liveApiUrl, queryApiUrl]);
+    const previous = getApiBaseUrl();
+    const configured = configureApiClient(apiUrl);
+    // Generated query keys are path-based; clear the cache rather than serving
+    // data cached from a different network under the same keys.
+    if (configured !== previous) queryClient.clear();
+  }, [apiUrl, queryClient]);
 }
 
 function useHideToTray() {
@@ -140,7 +140,7 @@ function usePriceSnapshotRecorder() {
 
 function AppHooks() {
   useAppearance();
-  useRpcSync();
+  useNetworkSync();
   useDeepLink();
   usePayLink();
   useNotificationTriggers();

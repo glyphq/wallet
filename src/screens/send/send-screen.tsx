@@ -98,7 +98,7 @@ export default function SendScreen() {
   ), [navigate]);
 
   const { data: recentTxsData } = useTxHistory(identity || null);
-  const recentTxs = recentTxsData?.pages[0];
+  const recentTxs = recentTxsData?.pages[0]?.items;
 
   const destUpper = normalizeIdentity(destination);
   const matchedContact = contacts.find((c) => c.identity === destUpper);

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
+import { listWalletAssetsOptions } from "@/lib/api/generated/@tanstack/react-query.gen";
 import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
 
 export interface OwnedAssetItem {
   name: string;
@@ -12,33 +11,24 @@ export interface OwnedAssetItem {
   numberOfDecimalPlaces: number;
 }
 
-/** Fetches assets owned by the given identity via the live RPC. */
+/** Fetches assets owned by the given identity via the Glyph API wallet snapshot. */
 export function useOwnedAssets(identity: string | null | undefined) {
   const pollingIntervalMs = usePollingIntervalMs();
-  const rpcIdentity = useRpcCacheIdentity("live");
 
   return useQuery({
-    queryKey: ["owned-assets", rpcIdentity, identity],
-    queryFn: async () => {
-      const result = await getRpcClient().live.getOwnedAssets(identity!);
-      if (!result.ok) throw result.error;
-
-      const items: OwnedAssetItem[] = [];
-      for (const asset of result.value ?? []) {
-        const d = asset.data;
-        const issued = d?.issuedAsset;
-        if (!d || !issued?.name) continue;
-        items.push({
-          name: issued.name,
-          numberOfUnits: d.numberOfUnits ?? "0",
-          issuanceIndex: d.issuanceIndex ?? 0,
-          managingContractIndex: d.managingContractIndex ?? 0,
-          issuerIdentity: issued.issuerIdentity ?? "",
-          numberOfDecimalPlaces: issued.numberOfDecimalPlaces ?? 0,
-        });
-      }
-      return items;
-    },
+    ...listWalletAssetsOptions({
+      path: { identity: identity ?? "" },
+      query: { kind: "owned" },
+    }),
+    select: (response): OwnedAssetItem[] =>
+      (response.data?.owned ?? []).map((asset) => ({
+        name: asset.name,
+        numberOfUnits: String(asset.shares),
+        issuanceIndex: asset.universe_index ?? 0,
+        managingContractIndex: asset.managing_contract_index ?? 0,
+        issuerIdentity: asset.issuer,
+        numberOfDecimalPlaces: asset.decimals ?? 0,
+      })),
     enabled: !!identity,
     staleTime: Math.min(30_000, pollingIntervalMs * 3),
     refetchInterval: Math.max(30_000, pollingIntervalMs * 3),

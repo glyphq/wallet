@@ -7,8 +7,8 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
-import { estimateTargetTick } from "@/lib/rpc";
+import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
+import { estimateTargetTick } from "@/lib/api/network";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QEARN_ADDRESS, QEARN_LOCK_INPUT_TYPE, buildQearnUnlockInput } from "@/lib/contracts";
@@ -47,7 +47,7 @@ export default function StakeScreen() {
   const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
 
   const { data: tickInfo } = useTickInfo();
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const apiIdentity = useApiCacheIdentity();
   const { data: balanceData } = useBalance(identity);
   const balance = balanceData?.balance ?? null;
   const currentEpoch = tickInfo?.epoch ?? null;
@@ -64,7 +64,7 @@ export default function StakeScreen() {
   const [unlockAccountIdx, setUnlockAccountIdx] = useState(settings.activeAccountIndex);
 
   // Lock tab: current epoch info
-  const epochInfo = useEpochLockInfo(rpcIdentity, currentEpoch);
+  const epochInfo = useEpochLockInfo(apiIdentity, currentEpoch);
 
   // Unlock tab: identity for the selected unlock account
   const unlockIdentity = getVaultAccountIdentity(vault, unlockAccountIdx, wallets);
@@ -72,12 +72,12 @@ export default function StakeScreen() {
 
   // Unlock tab: user's locked positions across the last lock period
   const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useStakePositions(
-    rpcIdentity,
+    apiIdentity,
     unlockIdentity,
     currentEpoch,
   );
 
-  const endedStatus = useQearnEndedStatus(rpcIdentity, unlockIdentity);
+  const endedStatus = useQearnEndedStatus(apiIdentity, unlockIdentity);
   const historicalRewards = endedStatus ? endedStatus.fullyRewardedAmount + endedStatus.earlyRewardedAmount : 0n;
   const historicalUnlocked = endedStatus ? endedStatus.fullyUnlockedAmount + endedStatus.earlyUnlockedAmount : 0n;
 

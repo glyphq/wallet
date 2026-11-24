@@ -9,7 +9,10 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
-import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
+import { configureApiClient, getApiBaseUrl } from "@/lib/api/client";
+import { normalizeApiUrl } from "@/lib/api-url";
+import { getStatus } from "@/lib/api/generated";
+import { apiErrorMessage } from "@/lib/api/problems";
 import { identifyNetworkPreset, NETWORK_PRESETS } from "@/lib/network-presets";
 
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
@@ -32,79 +35,72 @@ export default function NetworkScreen() {
   const updateSettings = usePersistedStore((s) => s.updateSettings);
   const queryClient = useQueryClient();
 
-  const [liveUrl, setLiveUrl] = useState(settings.network.liveApiUrl);
-  const [queryUrl, setQueryUrl] = useState(settings.network.queryApiUrl);
+  const [apiUrl, setApiUrl] = useState(settings.network.apiUrl);
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testTick, setTestTick] = useState<number | null>(null);
   const [testError, setTestError] = useState("");
 
   async function testAndSave() {
-    const live = normalizeRpcUrl(liveUrl.trim());
-    const archive = normalizeRpcUrl(queryUrl.trim());
-    if (!live || !archive) {
+    const normalized = normalizeApiUrl(apiUrl);
+    if (!normalized) {
       setTestStatus("error");
-      setTestError("HTTPS URLs are required.");
+      setTestError("An HTTPS API URL is required.");
       return;
     }
+    const previous = getApiBaseUrl();
+    const configured = configureApiClient(normalized);
     setTestStatus("testing");
     setTestTick(null);
     setTestError("");
     try {
-      const client = createQubicClient({ liveBaseUrl: live, archiveBaseUrl: archive });
-      const result = await client.live.getTickInfo();
-      if (!result.ok) throw new Error("bad response");
-      setTestTick(result.value.tick ?? null);
+      const { data } = await getStatus({ throwOnError: true });
+      if (!data?.data) throw new Error("Glyph API returned no status payload");
+      setTestTick(data.data.network?.head ?? data.data.head?.tick ?? null);
       setTestStatus("ok");
-      configureRpc(live, archive);
       updateSettings({
-        network: {
-          ...settings.network,
-          liveApiUrl: live,
-          queryApiUrl: archive,
-          name: identifyNetworkPreset(live, archive),
-        },
+        network: { apiUrl: configured, name: identifyNetworkPreset(configured) },
       });
       queryClient.invalidateQueries();
-    } catch {
+    } catch (error) {
+      configureApiClient(previous);
       setTestStatus("error");
-      setTestError("Could not reach endpoints.");
+      setTestError(apiErrorMessage(error));
     }
   }
 
   function resetToDefaults() {
     const mainnet = NETWORK_PRESETS[0];
-    const defaultLive = mainnet.liveApiUrl ?? "";
-    const defaultQuery = mainnet.queryApiUrl ?? "";
-    setLiveUrl(defaultLive); setQueryUrl(defaultQuery);
-    setTestStatus("idle"); setTestError("");
-    configureRpc(defaultLive, defaultQuery);
-    updateSettings({ network: { liveApiUrl: defaultLive, queryApiUrl: defaultQuery, name: "mainnet" } });
+    const defaultApi = mainnet.apiUrl ?? "";
+    setApiUrl(defaultApi);
+    setTestStatus("idle");
+    setTestError("");
+    configureApiClient(defaultApi);
+    updateSettings({ network: { apiUrl: defaultApi, name: "mainnet" } });
     queryClient.invalidateQueries();
   }
 
   function choosePreset(preset: (typeof NETWORK_PRESETS)[number]) {
-    setTestStatus("idle"); setTestError("");
-    if (preset.liveApiUrl && preset.queryApiUrl) {
-      setLiveUrl(preset.liveApiUrl);
-      setQueryUrl(preset.queryApiUrl);
+    setTestStatus("idle");
+    setTestError("");
+    if (preset.apiUrl) {
+      setApiUrl(preset.apiUrl);
     } else if (preset.id === "testnet") {
-      setLiveUrl("");
-      setQueryUrl("");
+      setApiUrl("");
     }
   }
 
-  const activeNetwork = identifyNetworkPreset(liveUrl, queryUrl);
+  const activeNetwork = identifyNetworkPreset(apiUrl);
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <SettingsPageHeader title="Network" />
 
-        <section style={sectionStyle} aria-label="RPC endpoints">
+        <section style={sectionStyle} aria-label="Glyph API endpoint">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <SettingsSectionLabel>Network</SettingsSectionLabel>
-            <span id="rpc-endpoint-help" style={helperStyle}>
-              HTTPS RPC URLs only.
+            <span id="api-endpoint-help" style={helperStyle}>
+              HTTPS Glyph API origin only. All chain reads and broadcasts use this service.
             </span>
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
@@ -114,10 +110,9 @@ export default function NetworkScreen() {
               </Button>
             ))}
           </div>
-          <Input id="live-api-url" label="Live API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" />
-          <Input id="archive-api-url" label="Archive API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" />
+          <Input id="api-url" label="API URL" type="url" inputMode="url" autoCapitalize="none" aria-describedby="api-endpoint-help" value={apiUrl} onChange={(e) => { setApiUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://api.glyphq.org" />
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            <Button size="md" style={{ width: "auto" }} onClick={testAndSave} disabled={!liveUrl.trim() || !queryUrl.trim() || testStatus === "testing"} aria-busy={testStatus === "testing"}>
+            <Button size="md" style={{ width: "auto" }} onClick={testAndSave} disabled={!apiUrl.trim() || testStatus === "testing"} aria-busy={testStatus === "testing"}>
               {testStatus === "testing" ? "Testing..." : "Test & save"}
             </Button>
             <TextButton onClick={resetToDefaults} tone="muted" style={{ minHeight: 44, padding: "0 var(--space-2)" }}>
@@ -127,6 +122,11 @@ export default function NetworkScreen() {
           {testStatus === "ok" && testTick !== null && (
             <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-success)" }}>
               Connected. Current tick #{testTick}.
+            </span>
+          )}
+          {testStatus === "ok" && testTick === null && (
+            <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-success)" }}>
+              Connected.
             </span>
           )}
           {testStatus === "error" && (

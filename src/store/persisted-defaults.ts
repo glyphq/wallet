@@ -1,3 +1,4 @@
+import { DEFAULT_API_URL } from "@/lib/api-url";
 import type { AppSettings } from "./persisted-types";
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -6,8 +7,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lockOnWindowBlur: false,
   clipboardClearSeconds: 30,
   network: {
-    liveApiUrl: "https://rpc.qubic.org/live/v1",
-    queryApiUrl: "https://rpc.qubic.org/query/v1",
+    apiUrl: DEFAULT_API_URL,
     name: "mainnet",
   },
   activeVaultId: null,

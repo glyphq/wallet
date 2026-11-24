@@ -37,7 +37,7 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
   const currentTick = tickInfo?.tick ?? 0;
   // Always fetch history when there are pending txs — cleanup must run regardless of notification prefs.
   const { data: txHistoryData } = useTxHistory(pendingTxs.length > 0 ? identity : null);
-  const txHistory = txHistoryData?.pages.flat();
+  const txHistory = txHistoryData?.pages.flatMap((page) => page.items);
   const confirmedHashesRef = useRef<Set<string>>(new Set());
   const historyInitializedRef = useRef(false);
 

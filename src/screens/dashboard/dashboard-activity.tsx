@@ -61,7 +61,7 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
 }) {
   const navigate = useNavigate();
   const { data, isLoading } = useTxHistory(identity);
-  const txs = data?.pages[0];
+  const txs = data?.pages[0]?.items;
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const { data: lastProcessedTickData } = useLastProcessedTick();
   const queryClient = useQueryClient();

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
+import { glyphContractCaller } from "@/lib/api/contracts";
 import { qk } from "@/lib/query-keys";
 import {
   qearnGetUserLockStatus,
@@ -15,10 +15,10 @@ export type EpochLockInfo = OkValue<Awaited<ReturnType<typeof qearnGetLockInfoPe
 export type QearnEndedStatus = OkValue<Awaited<ReturnType<typeof qearnGetEndedStatus>>>;
 
 /** Current-epoch Qearn lock totals and reward pool. */
-export function useEpochLockInfo(rpcIdentity: string, currentEpoch: number | null): EpochLockInfo | null {
+export function useEpochLockInfo(apiIdentity: string, currentEpoch: number | null): EpochLockInfo | null {
   const { data } = useQuery({
-    queryKey: qk.qearnEpochInfo(rpcIdentity, currentEpoch),
-    queryFn: () => qearnGetLockInfoPerEpoch(getRpcClient().live, { Epoch: currentEpoch! }),
+    queryKey: qk.qearnEpochInfo(apiIdentity, currentEpoch),
+    queryFn: () => qearnGetLockInfoPerEpoch(glyphContractCaller, { Epoch: currentEpoch! }),
     enabled: !!currentEpoch,
     staleTime: 60_000,
   });
@@ -26,12 +26,12 @@ export function useEpochLockInfo(rpcIdentity: string, currentEpoch: number | nul
 }
 
 /** User's locked positions across the last lock period, ready positions first. */
-export function useStakePositions(rpcIdentity: string, unlockIdentity: string | null, currentEpoch: number | null) {
+export function useStakePositions(apiIdentity: string, unlockIdentity: string | null, currentEpoch: number | null) {
   return useQuery({
-    queryKey: qk.qearnPositions(rpcIdentity, unlockIdentity, currentEpoch),
+    queryKey: qk.qearnPositions(apiIdentity, unlockIdentity, currentEpoch),
     queryFn: async (): Promise<Position[]> => {
       if (!unlockIdentity || !currentEpoch) return [];
-      const live = getRpcClient().live;
+      const live = glyphContractCaller;
 
       const statusResult = await qearnGetUserLockStatus(live, { user: unlockIdentity }, SC_OPTS);
       if (!statusResult.ok || statusResult.value.status === 0n) return [];
@@ -70,10 +70,10 @@ export function useStakePositions(rpcIdentity: string, unlockIdentity: string | 
 }
 
 /** Historical rewards and unlocked totals for the given identity. */
-export function useQearnEndedStatus(rpcIdentity: string, unlockIdentity: string | null): QearnEndedStatus | null {
+export function useQearnEndedStatus(apiIdentity: string, unlockIdentity: string | null): QearnEndedStatus | null {
   const { data } = useQuery({
-    queryKey: ["qearn", "ended-status", rpcIdentity, unlockIdentity],
-    queryFn: () => qearnGetEndedStatus(getRpcClient().live, { user: unlockIdentity! }, SC_OPTS),
+    queryKey: ["qearn", "ended-status", apiIdentity, unlockIdentity],
+    queryFn: () => qearnGetEndedStatus(glyphContractCaller, { user: unlockIdentity! }, SC_OPTS),
     enabled: !!unlockIdentity,
     staleTime: 60_000,
   });

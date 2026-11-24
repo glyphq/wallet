@@ -110,7 +110,7 @@ export default function HistoryScreen() {
     setFilterOpen(false);
   }
 
-  const allTxs = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const allTxs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
   const fetchedHashes = useMemo(() => new Set(allTxs.map((t) => t.hash)), [allTxs]);
   const myPending = useMemo(
     () => pendingTxs.filter((p) => p.source === identity || p.destination === identity),

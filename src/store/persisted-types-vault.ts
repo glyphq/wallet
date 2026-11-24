@@ -64,8 +64,8 @@ export interface VaultMeta {
 }
 
 export interface NetworkConfig {
-  liveApiUrl: string;
-  queryApiUrl: string;
+  /** Glyph API origin; generated SDK paths append `/v1/...`. */
+  apiUrl: string;
   name: "mainnet" | "testnet" | "custom";
 }
 

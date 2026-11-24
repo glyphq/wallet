@@ -1,4 +1,4 @@
-import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
+import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
 
 /** Step machine shared by the send and send-many flows. */
 export type SendStep = "input" | "review" | "sending" | "done" | "error";
@@ -71,7 +71,7 @@ export function sumQuAmounts(amounts: readonly string[]): bigint {
 
 /** Resolves the current and target tick for a broadcast. */
 export async function resolveTargetTick(tickOffset: number): Promise<{ currentTick: number; targetTick: number }> {
-  const currentTick = await getLatestTick();
+  const currentTick = await fetchLatestTick();
   return { currentTick, targetTick: estimateTargetTick(currentTick, tickOffset) };
 }
 

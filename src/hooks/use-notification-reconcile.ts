@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { getRpcClient } from "@/lib/rpc";
+import { listIdentityTransactions } from "@/lib/api/generated";
+import { normalizeApiTransaction } from "@/lib/tx-domain";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -36,24 +37,25 @@ export function useNotificationReconcile() {
       if (!cancelled && lastNotificationScanAt > 0) {
         const results = await Promise.all(
           identities.map(async (identity) => {
-            const result = await getRpcClient().archive.getTransactionsForIdentity({
-              identity,
-              filters: { destination: identity },
-              ranges: { timestamp: { gte: String(Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS)) } },
-              pagination: { size: PAGE_SIZE, offset: 0 },
+            const cutoff = Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS);
+            const { data } = await listIdentityTransactions({
+              path: { identity },
+              query: { limit: PAGE_SIZE },
+              throwOnError: true,
             });
-            if (!result.ok) return false;
 
-            for (const tx of result.value.transactions ?? []) {
-              if (!tx.hash || tx.moneyFlew === false) continue;
+            for (const raw of data.data) {
+              const tx = normalizeApiTransaction(raw);
+              if (!tx?.hash || tx.destination !== identity || !tx.moneyFlew) continue;
+              if (tx.timestamp !== null && tx.timestamp < cutoff) continue;
               await publishNotificationEvent(createNotificationEvent({
                 kind: "received",
                 title: "Funds received",
-                body: `${BigInt(tx.amount ?? "0").toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
+                body: `${BigInt(tx.amount).toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
                 identity,
                 txHash: tx.hash,
                 dedupeKey: `received:${tx.hash}:${identity}`,
-                createdAt: tx.timestamp ? Number(tx.timestamp) : startedAt,
+                createdAt: tx.timestamp ?? startedAt,
               }), { desktop: false });
             }
             return true;

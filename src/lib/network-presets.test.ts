@@ -1,31 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_ARCHIVE_URL, DEFAULT_LIVE_URL } from "@/lib/rpc";
+import { DEFAULT_API_URL } from "@/lib/api-url";
 import { identifyNetworkPreset, NETWORK_PRESETS } from "./network-presets";
 
 describe("network presets", () => {
-  test("includes a nonconfigured testnet aid without URLs", () => {
+  test("includes a nonconfigured testnet aid without a URL", () => {
     expect(NETWORK_PRESETS.map((preset) => preset.id)).toEqual(["mainnet", "testnet", "custom"]);
-    expect(NETWORK_PRESETS[0]).toMatchObject({
-      id: "mainnet",
-      liveApiUrl: DEFAULT_LIVE_URL,
-      queryApiUrl: DEFAULT_ARCHIVE_URL,
-    });
-    expect(NETWORK_PRESETS[1]).toMatchObject({
-      id: "testnet",
-      liveApiUrl: null,
-      queryApiUrl: null,
-    });
+    expect(NETWORK_PRESETS[0]).toMatchObject({ id: "mainnet", apiUrl: DEFAULT_API_URL });
+    expect(NETWORK_PRESETS[1]).toMatchObject({ id: "testnet", apiUrl: null });
   });
 
-  test("identifies only the verified bundled mainnet endpoints as mainnet", () => {
-    expect(identifyNetworkPreset(`${DEFAULT_LIVE_URL}/`, `${DEFAULT_ARCHIVE_URL}/`)).toBe("mainnet");
+  test("identifies only the bundled mainnet endpoint as mainnet", () => {
+    expect(identifyNetworkPreset(`${DEFAULT_API_URL}/`)).toBe("mainnet");
+    expect(identifyNetworkPreset(`${DEFAULT_API_URL}/v1/`)).toBe("mainnet");
   });
 
-  test("does not identify arbitrary endpoints as testnet", () => {
-    expect(identifyNetworkPreset("https://live.example/v1", "https://archive.example/v1")).toBe("custom");
-  });
-
-  test("falls back to custom when endpoints are incomplete", () => {
-    expect(identifyNetworkPreset("", "")).toBe("custom");
+  test("does not identify arbitrary endpoints as mainnet", () => {
+    expect(identifyNetworkPreset("https://api.example/v1")).toBe("custom");
+    expect(identifyNetworkPreset("")).toBe("custom");
   });
 });

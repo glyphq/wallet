@@ -1,31 +1,30 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
+import { listIdentityTransactions } from "@/lib/api/generated";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { buildVaultAnalytics, type AnalyticsTxLike } from "@/lib/history-analytics";
 import { getVaultAccountIdentity } from "@/lib/accounts";
-import { dedupeTxRecords, normalizeArchiveTransaction } from "@/lib/tx-domain";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { dedupeTxRecords, normalizeApiTransaction } from "@/lib/tx-domain";
+import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 20; // cap at 2 000 transactions per identity
 
 async function fetchAllTransactionsForIdentity(identity: string, signal?: AbortSignal): Promise<AnalyticsTxLike[]> {
-  const client = getRpcClient();
   const transactions: AnalyticsTxLike[] = [];
-  let offset = 0;
+  let cursor: string | undefined;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     if (signal?.aborted) break;
-    const result = await client.archive.getTransactionsForIdentity({
-      identity,
-      pagination: { size: PAGE_SIZE, offset },
+    const { data } = await listIdentityTransactions({
+      path: { identity },
+      query: { limit: PAGE_SIZE, cursor },
+      signal,
+      throwOnError: true,
     });
-    if (!result.ok) break;
-    const records = result.value.transactions ?? [];
-    const normalized = records
-      .map(normalizeArchiveTransaction)
+    const normalized = data.data
+      .map(normalizeApiTransaction)
       .filter((tx): tx is NonNullable<typeof tx> => !!tx)
       .map((tx) => ({
         hash: tx.hash,
@@ -36,8 +35,8 @@ async function fetchAllTransactionsForIdentity(identity: string, signal?: AbortS
         moneyFlew: tx.moneyFlew,
       }));
     transactions.push(...normalized);
-    if (records.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
+    if (data.data.length < PAGE_SIZE || !data.meta.next_cursor) break;
+    cursor = data.meta.next_cursor;
   }
 
   return transactions;
@@ -47,7 +46,7 @@ export function useVaultAnalytics() {
   const settings = usePersistedStore((s) => s.settings);
   const vault = usePersistedStore((s) => s.vaults.find((item) => item.id === s.settings.activeVaultId) ?? null);
   const wallets = useSessionStore((s) => s.wallets);
-  const rpcIdentity = useRpcCacheIdentity("archive");
+  const apiIdentity = useApiCacheIdentity();
 
   const identities = useMemo(() => {
     if (!vault) return [] as string[];
@@ -58,7 +57,7 @@ export function useVaultAnalytics() {
   }, [vault, wallets]);
 
   return useQuery({
-    queryKey: ["vault-analytics", settings.activeVaultId, rpcIdentity, identities],
+    queryKey: ["vault-analytics", settings.activeVaultId, apiIdentity, identities],
     queryFn: async ({ signal }) => {
       const all = await Promise.all(identities.map((identity) => fetchAllTransactionsForIdentity(identity, signal)));
       return buildVaultAnalytics(new Set(identities), dedupeTxRecords(all.flat()));

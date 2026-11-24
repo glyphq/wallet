@@ -7,10 +7,10 @@ import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { getRpcClient } from "@/lib/rpc";
+import { glyphContractCaller } from "@/lib/api/contracts";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
@@ -44,10 +44,10 @@ export default function SendManyScreen() {
   const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
   const wallet = wallets[settings.activeAccountIndex] ?? null;
   const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
-  const rpcIdentity = useRpcCacheIdentity("live");
+  const apiIdentity = useApiCacheIdentity();
   const { data: feeData } = useQuery({
-    queryKey: qk.qutilSendManyFee(rpcIdentity),
-    queryFn: () => qUtilGetSendToManyV1Fee(getRpcClient().live),
+    queryKey: qk.qutilSendManyFee(apiIdentity),
+    queryFn: () => qUtilGetSendToManyV1Fee(glyphContractCaller),
     staleTime: 60_000,
   });
   const fee = feeData?.ok ? feeData.value.fee : null;
@@ -58,7 +58,7 @@ export default function SendManyScreen() {
   const quote = usePreferredCurrencyQuote();
   const price = stats?.price;
   const { data: recentTxsData } = useTxHistory(identity || null);
-  const recentTxs = recentTxsData?.pages[0];
+  const recentTxs = recentTxsData?.pages[0]?.items;
 
   const [step, setStep] = useState<SendStep>("input");
   const [recipients, setRecipients] = useState<Recipient[]>([emptyRecipient()]);

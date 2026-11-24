@@ -1,9 +1,23 @@
-import type { AppSettings } from "./persisted-types";
+import type { AppSettings, NetworkConfig } from "./persisted-types";
+import { DEFAULT_API_URL, normalizeApiUrl } from "@/lib/api-url";
 import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
 import {
   sanitizeCustomPriceFeedUrl,
   sanitizePollingInterval,
 } from "./persisted-sanitizers";
+
+function sanitizeNetworkConfig(value: unknown, current: NetworkConfig): NetworkConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return current;
+  const record = value as { apiUrl?: unknown };
+  const apiUrl = typeof record.apiUrl === "string" ? normalizeApiUrl(record.apiUrl) : null;
+  // Legacy settings stored live/query RPC URLs and no Glyph API URL. Those
+  // endpoints are no longer used, so fall back to the bundled mainnet API.
+  if (!apiUrl) return current;
+  return {
+    apiUrl,
+    name: apiUrl === DEFAULT_API_URL ? "mainnet" : "custom",
+  };
+}
 
 /** Merges persisted settings over defaults and sanitizes every externally-sourced field. */
 export function mergeSettings(value: unknown, current: AppSettings): AppSettings {
@@ -18,6 +32,7 @@ export function mergeSettings(value: unknown, current: AppSettings): AppSettings
     : current.approvedDapps;
   return {
     ...settingsBase,
+    network: sanitizeNetworkConfig(settingsBase.network, current.network),
     approvedDapps,
     autoLockMinutes:
       typeof settingsBase.autoLockMinutes === "number" && Number.isInteger(settingsBase.autoLockMinutes)

@@ -6,9 +6,10 @@ import { AppShell } from "@/layouts/app-shell";
 import { Input } from "@/components/input";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { getRpcClient } from "@/lib/rpc";
+import { listIdentityTransactions } from "@/lib/api/generated";
+import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { getAccountIdentity } from "@/lib/accounts";
-import { normalizeArchiveTransaction } from "@/lib/tx-domain";
+import { normalizeApiTransaction } from "@/lib/tx-domain";
 import { buildSearchResults, groupSearchResults } from "./search-results";
 import { SearchResults } from "./search-results-view";
 import { SearchEmptyState } from "./search-empty-state";
@@ -42,19 +43,20 @@ export default function SearchScreen() {
     })),
   ).filter((account) => account.identity);
 
+  const apiIdentity = useApiCacheIdentity();
   const txQueries = useQueries({
     queries: accountEntries.map((account) => ({
-      queryKey: ["search-history", account.identity],
+      queryKey: ["search-history", apiIdentity, account.identity],
       enabled: !!normalizedQuery && !!account.identity,
       staleTime: 60_000,
       queryFn: async () => {
-        const result = await getRpcClient().archive.getTransactionsForIdentity({
-          identity: account.identity,
-          pagination: { size: 25, offset: 0 },
+        const { data } = await listIdentityTransactions({
+          path: { identity: account.identity },
+          query: { limit: 25 },
+          throwOnError: true,
         });
-        if (!result.ok) return [];
-        return (result.value.transactions ?? [])
-          .map(normalizeArchiveTransaction)
+        return data.data
+          .map(normalizeApiTransaction)
           .filter((tx): tx is NonNullable<typeof tx> => !!tx)
           .map((tx) => ({
             ...tx,

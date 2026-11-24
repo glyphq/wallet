@@ -62,8 +62,7 @@ export function useDebugBundle({
       recentAuditEvents: auditEvents.slice(0, 25),
     },
     network: {
-      liveApiUrl: settings.network.liveApiUrl,
-      queryApiUrl: settings.network.queryApiUrl,
+      apiUrl: settings.network.apiUrl,
       currentTick: tickInfo?.tick ?? null,
       epoch: tickInfo?.epoch ?? null,
       lastProcessedTick,
