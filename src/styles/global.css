@@ -1052,3 +1052,12 @@ a:hover {
   border-radius: calc(var(--radius-sharp) + 4px);
   opacity: 0.3;
 }
+
+/* ── ASCII reveal tokens ────────────────────────────────────────────────────── */
+
+.page-shell {
+  --ascii-font: var(--font-mono);
+  --ascii-skeleton: var(--color-text-tertiary);
+  --ascii-glyph: var(--color-text-tertiary);
+  --ascii-accent: var(--color-accent);
+}

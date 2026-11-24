@@ -24,6 +24,7 @@
         "@tauri-apps/plugin-store": "^2.4.4",
         "@tauri-apps/plugin-updater": "^2.10.1",
         "@zxing/browser": "^0.2.1",
+        "ascii-reveal": "^0.3.0",
         "asciify-engine": "^4.33.0",
         "boring-avatars": "^2.0.4",
         "motion": "^12.42.2",
@@ -494,6 +495,8 @@
     "argue-cli": ["argue-cli@3.2.0", "", {}, "sha512-VipTB0gXgGIFO2Rg9yEVN5wLt2AurJcZqDbgmYSwPwsykhLrQhs240/bfceev4w68lI8JshoOJIk9uW7tFzROw=="],
 
     "array-union": ["array-union@2.1.0", "", {}, "sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw=="],
+
+    "ascii-reveal": ["ascii-reveal@0.3.0", "", { "peerDependencies": { "react": ">=17", "react-dom": ">=17" }, "optionalPeers": ["react", "react-dom"] }, "sha512-u8wBHB+D2rvb8mGqWifSBqEgIXy1TOkqL4dp2GMbjQS6XLCZ2jQnVKwbmdA7ugLbDoYQ5O6+ESc8XlbBD4dQjw=="],
 
     "asciify-engine": ["asciify-engine@4.33.0", "", { "dependencies": { "figlet": "^1.11.0", "gifenc": "^1.0.3", "gifuct-js": "^2.1.2", "mediabunny": "^1.56.0" }, "bin": { "asciify-engine": "dist/cli.js" } }, "sha512-aCNR12TpnxLtCi8JtuEtYHjW6ed0aLW+l+pBp36GUTjDWb9WO+BdN6Y2xRTH5epf2LEc0lw++0MB/3/Z8iwuMA=="],
 

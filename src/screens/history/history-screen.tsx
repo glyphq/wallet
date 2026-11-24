@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
+import { AsciiReveal } from "ascii-reveal";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTxHistory } from "@/hooks/use-tx-history";
@@ -35,8 +36,8 @@ import {
   HistoryEmptyState,
   HistoryLoadMore,
   HistoryLoadingMoreRows,
-  HistoryLoadingRows,
 } from "./history-list-states";
+import { HistorySkeletonRows } from "./history-skeleton";
 import { HistoryFilterSheet } from "./history-filter-sheet";
 import { HistoryExportSheet } from "./history-export-sheet";
 import { HistoryMemoExportSheet } from "./history-memo-export-sheet";
@@ -108,6 +109,7 @@ export default function HistoryScreen() {
   }
 
   const allTxs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+  const initialLoading = isLoading && allTxs.length === 0;
   const fetchedHashes = useMemo(() => new Set(allTxs.map((t) => t.hash)), [allTxs]);
   const myPending = useMemo(
     () => pendingTxs.filter((p) => p.source === identity || p.destination === identity),
@@ -227,18 +229,28 @@ export default function HistoryScreen() {
         </div>
       )}
 
+      <AsciiReveal
+        loading={initialLoading}
+        revealOnMount={false}
+        shimmer={false}
+        duration="fast"
+        style={{ display: "flex", flexDirection: "column", flex: 1 }}
+      >
+      {initialLoading ? (
+        <HistorySkeletonRows />
+      ) : (
+        <>
       {/* States */}
-      {isLoading && <HistoryLoadingRows />}
       {isError && <StatusText color="var(--color-status-error)">Network error</StatusText>}
-      {!isLoading && !isError && filteredPending.length === 0 && filteredTxs.length === 0 && (
+      {!isError && filteredPending.length === 0 && filteredTxs.length === 0 && (
         <HistoryEmptyState hasAnyActivity={allTxs.length === 0 && visiblePending.length === 0} />
       )}
 
       {/* Transaction rows */}
-      {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
+      {!isError && groupByCounterparty && filteredTxs.length > 0 && (
         <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
-      {!isLoading && !isError && !groupByCounterparty && (
+      {!isError && !groupByCounterparty && (
         <HistoryTxList
           pending={filteredPending}
           sections={visibleSections}
@@ -250,15 +262,21 @@ export default function HistoryScreen() {
         />
       )}
 
-      {!isLoading && !isError && hasHiddenLoadedTxs && (
+      {!isError && hasHiddenLoadedTxs && (
         <HistoryLoadMore
           visibleCount={visibleConfirmedTxs.length}
           totalCount={filteredTxs.length}
           onShowOlder={showOlderLoadedTxs}
         />
       )}
+        </>
+      )}
 
       {/* Infinite scroll */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {isFetchingNextPage && <HistoryLoadingMoreRows />}
+      {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
+      </AsciiReveal>
       <div ref={sentinelRef} style={{ height: 1 }} />
       {isFetchingNextPage && <HistoryLoadingMoreRows />}
       {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
