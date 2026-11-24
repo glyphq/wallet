@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigate, useOutlet } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { pageTransition, sectionTransition } from "@/lib/animations";
+import { LockKeyholeIcon } from "@/lib/icons";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
@@ -139,26 +140,6 @@ function LayoutShell() {
         <AsciiPageHeader borderBottom={cur !== "/dashboard"}>{resolvedHeader}</AsciiPageHeader>
       )}
 
-      {/* ── Lock countdown banner ── */}
-      {countdown !== null && (
-        <div
-          aria-live="polite"
-          style={{
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "var(--space-2) var(--screen-padding)",
-            background: "var(--color-bg-surface)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.04em" }}>
-            Locking in {countdown}s
-          </span>
-        </div>
-      )}
-
       {/* ── Animated page content ── */}
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden" }}>
         <AnimatePresence initial={false}>
@@ -169,6 +150,45 @@ function LayoutShell() {
           >
             {element}
           </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {countdown !== null && (
+            <motion.div
+              key="lock-countdown"
+              role="status"
+              aria-live="polite"
+              aria-label={`Locking in ${countdown} seconds`}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              style={{ position: "absolute", top: "var(--space-3)", right: "var(--space-3)", zIndex: 30, pointerEvents: "none" }}
+            >
+              <div
+                className="lock-countdown corner-frame"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  padding: "6px 10px",
+                  background: "var(--color-bg-elevated)",
+                  border: "1px solid var(--color-border-strong)",
+                  borderRadius: "var(--radius-sharp)",
+                  boxShadow: "var(--shadow-floating)",
+                  color: "var(--color-status-warning)",
+                }}
+              >
+                <LockKeyholeIcon size={13} strokeWidth={1.5} aria-hidden="true" />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  Locking in
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-status-warning)" }}>
+                  {countdown}s
+                </span>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
