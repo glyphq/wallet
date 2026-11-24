@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { motion } from "motion/react";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -8,12 +8,14 @@ export interface PageBannerProps {
   eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
+  children?: ReactNode;
+  style?: CSSProperties;
 }
 
 /** Top-of-page ASCII banner, sized to 25% of the viewport height. */
-export function PageBanner({ eyebrow, title, description }: PageBannerProps) {
+export function PageBanner({ eyebrow, title, description, children, style }: PageBannerProps) {
   return (
-    <header className="page-banner">
+    <header className="page-banner" style={style}>
       <AsciiBackdrop
         style={{ height: "100%" }}
         contentStyle={{
@@ -28,6 +30,7 @@ export function PageBanner({ eyebrow, title, description }: PageBannerProps) {
           {eyebrow ? <span className="page-banner-eyebrow">{eyebrow}</span> : null}
           <h1 className="page-banner-title">{title}</h1>
           {description ? <p className="page-banner-description">{description}</p> : null}
+          {children}
         </motion.div>
       </AsciiBackdrop>
     </header>

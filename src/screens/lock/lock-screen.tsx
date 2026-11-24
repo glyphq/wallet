@@ -207,7 +207,17 @@ export default function LockScreen() {
         <UnlockingPanel />
       ) : (
         <>
-          <PageBanner title={bannerTitle} description={bannerDescription} />
+          <PageBanner
+            title={bannerTitle}
+            description={bannerDescription}
+            style={view === "unlock" ? { flex: "0 0 auto", height: "auto", minHeight: "var(--height-page-banner)" } : undefined}
+          >
+            {view === "unlock" ? (
+              <div style={{ marginTop: "var(--space-3)", width: "100%" }}>
+                <LockWalletFocus wallet={selected} />
+              </div>
+            ) : null}
+          </PageBanner>
           <PageFrame
             actions={view === "unlock" ? (
               <LockForm
@@ -236,21 +246,7 @@ export default function LockScreen() {
               </Button>
             )}
           >
-            {view === "unlock" ? (
-              <div
-                style={{
-                  flex: 1,
-                  width: "100%",
-                  maxWidth: 340,
-                  margin: "0 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <LockWalletFocus wallet={selected} />
-              </div>
-            ) : (
+            {view === "switch" ? (
               <div style={{ width: "100%", maxWidth: 340, margin: "0 auto" }}>
                 <LockWalletShelf
                   wallets={lockedWallets}
@@ -263,7 +259,7 @@ export default function LockScreen() {
                   onAdd={() => navigate("/setup")}
                 />
               </div>
-            )}
+            ) : null}
           </PageFrame>
         </>
       )}
