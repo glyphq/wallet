@@ -234,13 +234,13 @@ export default function LockScreen() {
       )}
     />
   ) : (
-    <div style={{ display: "flex", gap: "var(--space-3)" }}>
-      <Button variant="ghost" size="md" style={{ flex: 1 }} onClick={() => setView("unlock")}>
-        Back to unlock
-      </Button>
-      <Button size="md" style={{ flex: 1 }} onClick={() => navigate("/setup")}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <Button size="md" style={{ width: "100%" }} onClick={() => navigate("/setup")}>
         <AddCircleIcon size={18} aria-hidden="true" />
         Add wallet
+      </Button>
+      <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
+        Back to unlock
       </Button>
     </div>
   );
