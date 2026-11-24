@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { background, wordField } from "asciify-engine/kit";
+import { ditherImage } from "asciify-engine/kit";
+import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 
-/** Animated ASCII wordmark used on the splash screen. */
+/** Animated ASCII rendering of the Glyph mark for the splash screen. */
 export function AsciiLogo() {
   const hostRef = useRef<HTMLDivElement>(null);
 
@@ -9,17 +10,15 @@ export function AsciiLogo() {
     const host = hostRef.current;
     if (!host) return;
 
-    let handle: ReturnType<typeof background> | null = null;
+    let handle: ReturnType<typeof ditherImage> | null = null;
     try {
-      handle = background(host, {
-        preset: wordField,
-        text: "GLYPH",
-        palette: "#a0a4a5",
-        speed: 0.9,
-        opacity: 0.95,
-        cursor: "trail",
-        dither: 0,
-        look: { scene: "orb" },
+      handle = ditherImage(host, {
+        mark: "glyph",
+        cellSize: 5,
+        tones: ["transparent", "#a0a4a5"],
+        reveal: "visible",
+        duration: 1_100,
+        label: "Glyph",
         lazy: false,
       });
     } catch {
@@ -34,7 +33,14 @@ export function AsciiLogo() {
       ref={hostRef}
       aria-label="Glyph"
       role="img"
-      style={{ width: "min(340px, 82vw)", height: 150, position: "relative", overflow: "hidden" }}
-    />
+      style={{ width: 156, height: 156, position: "relative", overflow: "hidden" }}
+    >
+      <img
+        src={glyphOnDark}
+        alt=""
+        aria-hidden="true"
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+      />
+    </div>
   );
 }
