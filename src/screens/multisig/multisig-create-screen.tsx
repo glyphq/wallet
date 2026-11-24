@@ -153,7 +153,7 @@ export default function MultisigCreateScreen() {
   const balance = balanceData?.balance ?? null;
   const { data: tickInfo } = useTickInfo();
 
-  const [step, setStep] = useState<"edit" | "owners" | "review">("edit");
+  const [step, setStep] = useState<"edit" | "owners" | "add-owner" | "review">("edit");
   const [name, setName] = useState("");
   const [extraOwners, setExtraOwners] = useState<string[]>([""]);
   const [ownerRowIds, setOwnerRowIds] = useState<number[]>([0]);
@@ -163,6 +163,9 @@ export default function MultisigCreateScreen() {
   const [formError, setFormError] = useState("");
   const [preflightError, setPreflightError] = useState("");
   const [ownerPickerIndex, setOwnerPickerIndex] = useState<number | null>(null);
+  const [addOwnerDraft, setAddOwnerDraft] = useState("");
+  const [addOwnerError, setAddOwnerError] = useState("");
+  const [addOwnerPickerOpen, setAddOwnerPickerOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -247,15 +250,42 @@ export default function MultisigCreateScreen() {
     setPreflightError("");
   }
 
-  function addOwner() {
-    if (checking || sending) return;
+  function openAddOwner() {
+    if (checking || sending || ownerCount >= MSVAULT_MAX_OWNERS) return;
+    setAddOwnerDraft("");
+    setAddOwnerError("");
     setOwnerPickerIndex(null);
-    if (ownerCount >= MSVAULT_MAX_OWNERS) return;
+    setStep("add-owner");
+  }
+
+  function saveOwner() {
+    if (checking || sending) return;
+    const value = addOwnerDraft.trim().toUpperCase();
+    if (!value) {
+      setAddOwnerError("Owner address is required.");
+      return;
+    }
+    if (!isValidIdentity(value)) {
+      setAddOwnerError("Invalid address.");
+      return;
+    }
+    if (value === activeUpper || extraOwners.some((owner) => owner.trim().toUpperCase() === value)) {
+      setAddOwnerError("Owner already added.");
+      return;
+    }
+    if (ownerCount >= MSVAULT_MAX_OWNERS) {
+      setAddOwnerError(`A vault can have at most ${MSVAULT_MAX_OWNERS} owners.`);
+      return;
+    }
+
     const rowId = nextOwnerRowId.current++;
-    setExtraOwners((current) => [...current, ""]);
+    setExtraOwners((current) => [...current, value]);
     setOwnerRowIds((current) => [...current, rowId]);
     setOwnerErrors((current) => [...current, ""]);
     setRequiredApprovals(defaultRequiredApprovals(Math.max(2, ownerCount + 1)));
+    setAddOwnerDraft("");
+    setAddOwnerError("");
+    setStep("owners");
   }
 
   function removeOwner(index: number) {
@@ -416,6 +446,83 @@ export default function MultisigCreateScreen() {
     </div>
   );
 
+  if (step === "add-owner" && addOwnerPickerOpen) {
+    return (
+      <IdentityPickerScreen
+        title="Choose owner"
+        contacts={contacts}
+        accounts={pickerAccounts}
+        onSelect={(ownerIdentity) => {
+          setAddOwnerDraft(ownerIdentity);
+          setAddOwnerError("");
+          setAddOwnerPickerOpen(false);
+        }}
+        onClose={() => setAddOwnerPickerOpen(false)}
+      />
+    );
+  }
+
+  if (step === "add-owner") {
+    const normalizedDraft = addOwnerDraft.trim().toUpperCase();
+    const draftName = normalizedDraft && isValidIdentity(normalizedDraft)
+      ? identityDisplayName(normalizedDraft, contacts, wallet, accounts)
+      : null;
+    return (
+      <AppShell
+        fullBleed
+        statusBar={<ScreenHeader title="Add owner" onBack={() => setStep("owners")} backAriaLabel="Back to manage owners" />}
+        contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}
+      >
+        <PageFrame
+          actions={(
+            <Button
+              size="md"
+              onClick={saveOwner}
+              disabled={!addOwnerDraft.trim()}
+              style={{ width: "100%" }}
+            >
+              <AddCircleIcon size={18} strokeWidth={1.5} aria-hidden="true" />
+              Add owner
+            </Button>
+          )}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", width: "100%", maxWidth: 480, margin: "0 auto" }}>
+            <p style={BODY_COPY}>
+              Add a Qubic identity that can approve releases from this vault.
+            </p>
+            <Input
+              label="Owner address"
+              value={addOwnerDraft}
+              onChange={(event) => {
+                setAddOwnerDraft(event.target.value);
+                setAddOwnerError("");
+              }}
+              placeholder="Identity address"
+              autoComplete="off"
+              autoFocus
+              error={addOwnerError || undefined}
+              rightElement={(
+                <button
+                  type="button"
+                  onClick={() => setAddOwnerPickerOpen(true)}
+                  aria-label="Choose owner from contacts or accounts"
+                  style={{ border: 0, background: "transparent", padding: 0, display: "flex", color: "var(--color-text-tertiary)", cursor: "pointer" }}
+                >
+                  <UserGroupIcon size={18} aria-hidden="true" />
+                </button>
+              )}
+            />
+            {draftName ? (
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-accent)" }}>
+                {draftName}
+              </span>
+            ) : null}
+          </div>
+        </PageFrame>
+      </AppShell>
+    );
+  }
+
   if (step === "owners" && ownerPickerIndex !== null) {
     return (
       <IdentityPickerScreen
@@ -444,7 +551,7 @@ export default function MultisigCreateScreen() {
               <Button
                 variant="secondary"
                 size="md"
-                onClick={addOwner}
+                onClick={openAddOwner}
                 disabled={ownerCount >= MSVAULT_MAX_OWNERS}
                 style={{ width: "100%" }}
               >
