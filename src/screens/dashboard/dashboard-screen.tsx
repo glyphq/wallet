@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { MoreHorizontalIcon, Search01Icon, LockKeyholeIcon } from "@/lib/icons";
+import { MoreHorizontalIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
-import { IconButton } from "@/components/icon-button";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { ScreenHeader } from "@/components/screen-header";
 import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
@@ -29,7 +28,6 @@ export default function DashboardScreen() {
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const isLocked = useSessionStore((s) => s.isLocked);
-  const lock = useSessionStore((s) => s.lock);
   const accounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -69,28 +67,8 @@ export default function DashboardScreen() {
   }, [isLocked, navigate]);
 
   const dashboardHeader = useMemo(() => (
-    <ScreenHeader
-      leading={<ShellWalletSwitcher />}
-      title="Dashboard"
-      action={
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-          <IconButton
-            label="Lock wallet"
-            framed
-            onClick={() => {
-              lock();
-              navigate("/lock", { replace: true });
-            }}
-          >
-            <LockKeyholeIcon size={19} strokeWidth={1.5} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Search" framed onClick={() => navigate("/search")}>
-            <Search01Icon size={20} strokeWidth={1.5} aria-hidden="true" />
-          </IconButton>
-        </div>
-      }
-    />
-  ), [lock, navigate]);
+    <ScreenHeader leading={<ShellWalletSwitcher />} title="Dashboard" />
+  ), []);
 
   return (
     <AppShell fullBleed>
