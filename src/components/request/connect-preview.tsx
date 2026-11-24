@@ -89,7 +89,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
       <div>
         <FieldLabel>Permissions</FieldLabel>
-        <div style={{ marginTop: "var(--space-2)", borderTop: "1px solid var(--color-border-subtle)" }}>
+        <div style={{ marginTop: "var(--space-2)" }}>
           {requestedPerms.length > 0 ? requestedPerms.map((permission) => (
             <Toggle
               key={permission}
