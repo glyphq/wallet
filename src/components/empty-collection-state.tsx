@@ -1,23 +1,7 @@
-const ACTIVITY_ICON = [
-  "  +---------------+",
-  "  |  <-       ->  |",
-  "  |      ..       |",
-  "  |  ->       <-  |",
-  "  +---------------+",
-].join("\n");
+import { Exchange01Icon, Search01Icon } from "@/lib/icons";
 
-const SEARCH_ICON = [
-  "   .-------.",
-  "  /         \\",
-  " |   /---\\   |",
-  "  \\  \\___/  /",
-  "   '-------'",
-  "       |",
-  "       '",
-].join("\n");
-
-/** Static ASCII illustration for empty collections. */
-export function AsciiEmptyState({
+/** Shared empty state for activity and search collections. */
+export function EmptyCollectionState({
   title,
   description,
   icon = "activity",
@@ -26,6 +10,8 @@ export function AsciiEmptyState({
   description: string;
   icon?: "activity" | "search";
 }) {
+  const Icon = icon === "search" ? Search01Icon : Exchange01Icon;
+
   return (
     <div
       style={{
@@ -37,20 +23,12 @@ export function AsciiEmptyState({
         textAlign: "center",
       }}
     >
-      <pre
+      <Icon
+        size={28}
+        strokeWidth={1.5}
         aria-hidden="true"
-        style={{
-          margin: 0,
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          lineHeight: 1.35,
-          color: "var(--color-text-tertiary)",
-          opacity: 0.7,
-          userSelect: "none",
-        }}
-      >
-        {icon === "search" ? SEARCH_ICON : ACTIVITY_ICON}
-      </pre>
+        style={{ color: "var(--color-text-tertiary)" }}
+      />
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
         <span
           style={{

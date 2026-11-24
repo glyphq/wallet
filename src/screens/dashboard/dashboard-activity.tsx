@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Divider } from "@/components/divider";
-import { AsciiEmptyState } from "@/components/ascii-empty-state";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { usePersistedStore } from "@/store/persisted";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
@@ -102,7 +102,7 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
 
   if (!hasAny) {
     return (
-      <AsciiEmptyState
+      <EmptyCollectionState
         title="No activity yet"
         description="Incoming and outgoing transactions will appear here."
       />

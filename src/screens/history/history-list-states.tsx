@@ -1,5 +1,5 @@
 import { Button } from "@/components/button";
-import { AsciiEmptyState } from "@/components/ascii-empty-state";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 
 
 export function HistoryLoadingRows() {
@@ -37,14 +37,14 @@ export function HistoryLoadingMoreRows() {
 export function HistoryEmptyState({ hasAnyActivity }: { hasAnyActivity: boolean }) {
   if (hasAnyActivity) {
     return (
-      <AsciiEmptyState
+      <EmptyCollectionState
         title="No activity yet"
         description="Incoming and outgoing transactions will appear here."
       />
     );
   }
   return (
-    <AsciiEmptyState
+    <EmptyCollectionState
       icon="search"
       title="No matching activity"
       description="Try a different address, hash, or filter."
