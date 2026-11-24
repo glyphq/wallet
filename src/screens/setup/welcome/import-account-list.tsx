@@ -16,8 +16,8 @@ export function ImportAccountList({
     <div
       style={{
         background: "var(--color-bg-surface)",
-        border: "1px solid var(--color-border-default)",
-        borderRadius: "var(--radius-sheet)",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: "var(--radius-sharp)",
         padding: "var(--space-4)",
         maxHeight: 220,
         overflowY: "auto",
@@ -55,8 +55,8 @@ export function ImportAccountList({
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: 999,
-                  border: `1px solid ${selected ? "var(--color-accent)" : "var(--color-border-default)"}`,
-                  color: selected ? "var(--color-accent)" : "var(--color-text-tertiary)",
+                  border: `1px solid ${selected ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
+                  color: selected ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "var(--text-mono-sm)",
                   flexShrink: 0,

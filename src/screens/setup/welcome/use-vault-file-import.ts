@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { readTextFile } from "@tauri-apps/plugin-fs";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { newId } from "@/lib/crypto";
 import { parseSignedExportEnvelope } from "@/lib/export-format";
@@ -33,8 +32,6 @@ export function useVaultFileImport() {
   const [importFileError, setImportFileError] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
-  const [importWalletIcon, setImportWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
-  const [importWalletColor, setImportWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
 
   function resetImportFileError() {
     setImportFileError("");
@@ -72,8 +69,6 @@ export function useVaultFileImport() {
     }
     setImportPw("");
     setImportError("");
-    setImportWalletColor(envelopePayload.color ?? DEFAULT_WALLET_COLOR);
-    setImportWalletIcon(envelopePayload.icon ?? DEFAULT_WALLET_ICON);
   }
 
   function failImport() {
@@ -92,13 +87,11 @@ export function useVaultFileImport() {
     }
   }
 
-  async function importPath(path: string) {
-    resetImportFileError();
-    try {
-      await loadImportText(await readTextFile(path));
-    } catch {
-      failImport();
-    }
+  function cancelImport() {
+    setImportData(null);
+    setImportPw("");
+    setImportError("");
+    setImportFileError("");
   }
 
   function openFilePicker() {
@@ -146,8 +139,8 @@ export function useVaultFileImport() {
       addVault({
         id: newVaultId,
         name: importData.name,
-        color: importWalletColor,
-        icon: importWalletIcon,
+        color: importData.color,
+        icon: importData.icon ?? DEFAULT_WALLET_ICON,
         kind: "seeded",
         createdAt: Date.now(),
         lastUnlockedAt: Date.now(),
@@ -177,15 +170,11 @@ export function useVaultFileImport() {
     importFileError,
     importLoading,
     selectedIndices,
-    importWalletIcon,
-    setImportWalletIcon,
-    importWalletColor,
-    setImportWalletColor,
     importNeedsSelection,
     importDisabled,
     openFilePicker,
     importFile,
-    importPath,
+    cancelImport,
     toggleAccount,
     doImport,
   };

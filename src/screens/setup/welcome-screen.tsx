@@ -5,7 +5,7 @@ import { PageBanner, PageFrame } from "@/components/page-header";
 import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { ImportVaultSheet } from "./welcome/import-vault-sheet";
+import { ImportVaultStep } from "./welcome/import-vault-step";
 import { Notice } from "./welcome/notice";
 import { useVaultFileImport } from "./welcome/use-vault-file-import";
 import { VaultFileDrop } from "./welcome/vault-file-drop";
@@ -18,6 +18,8 @@ export default function WelcomeScreen() {
   const isLocked = useSessionStore((s) => s.isLocked);
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
   const importFlow = useVaultFileImport();
+
+  if (importFlow.importData) return <ImportVaultStep flow={importFlow} />;
 
   return (
     <LandscapeOnboarding>
@@ -73,7 +75,6 @@ export default function WelcomeScreen() {
         </div>
       </PageFrame>
 
-      <ImportVaultSheet flow={importFlow} />
     </LandscapeOnboarding>
   );
 }
