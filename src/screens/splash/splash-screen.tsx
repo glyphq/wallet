@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "@/components/button";
 import { AsciiLogo } from "@/components/ascii-logo";
+import { AsciiSpinner } from "@/components/ascii-spinner";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -75,17 +76,20 @@ export default function SplashScreen() {
     <div style={{ position: "fixed", inset: 0, background: "var(--color-bg-canvas)", overflow: "hidden", userSelect: "none" }}>
       {hydrationStatus === "loading" ? (
         <div
-          role="status"
-          aria-label="Loading Glyph Wallet"
           style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-6)", padding: "var(--space-8)" }}
         >
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}>
             <AsciiLogo />
           </motion.div>
 
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-tertiary)" }}>
-            {status}
-          </span>
+          {checkingVisible || updater.installing ? (
+            <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
+              <AsciiSpinner size={80} />
+              <span className="sr-only">{status}</span>
+            </div>
+          ) : (
+            <span role="status" aria-live="polite" className="sr-only">{status}</span>
+          )}
 
           {minElapsed && updater.update && !updateDeferred ? (
             <div
