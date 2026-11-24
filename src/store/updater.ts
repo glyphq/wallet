@@ -26,8 +26,8 @@ interface UpdaterStoreState {
   lastError: string;
   initialized: boolean;
   init: () => Promise<void>;
+  checkForUpdates: () => Promise<void>;
   install: () => Promise<void>;
-  resetError: () => void;
 }
 
 function updaterErrorMessage(prefix: string, error: unknown): string {
@@ -63,15 +63,13 @@ export const useUpdaterStore = create<UpdaterStoreState>()((set, get) => ({
     }
 
     let context: UpdaterContext | null = null;
+    let contextError: string | null = null;
     if (contextResult.status === "fulfilled") {
       context = contextResult.value;
       set({ context });
     } else {
       const detail = updaterErrorMessage("Unable to determine updater context", contextResult.reason);
-      // Safe fallback: disable auto-update so the UI hides the update button.
-      // We deliberately avoid guessing the platform/packageKind — an incorrect
-      // guess (e.g. "windows"/"nsis" on Linux AppImage) would cause the updater
-      // to attempt an install that cannot succeed.
+      contextError = detail;
       context = {
         platform: "linux",
         packageKind: "system_package",
@@ -90,7 +88,28 @@ export const useUpdaterStore = create<UpdaterStoreState>()((set, get) => ({
       });
     }
 
-    if (context && !context.supportsAutoUpdate) {
+    if (!context.supportsAutoUpdate) {
+      set({
+        checking: false,
+        upToDate: false,
+        checkError: contextError !== null,
+        update: null,
+        lastCheckedAt: Date.now(),
+        lastError: contextError ?? context.reason ?? "",
+      });
+      return;
+    }
+
+    await get().checkForUpdates();
+  },
+
+  checkForUpdates: async () => {
+    const context = get().context;
+    if (!context) {
+      set({ checking: false, checkError: true, upToDate: false, update: null, lastError: "Updater context is unavailable." });
+      return;
+    }
+    if (!context.supportsAutoUpdate) {
       set({
         checking: false,
         upToDate: false,
@@ -102,6 +121,7 @@ export const useUpdaterStore = create<UpdaterStoreState>()((set, get) => ({
       return;
     }
 
+    set({ checking: true, checkError: false, installError: false, update: null, upToDate: false, lastError: "" });
     try {
       const update = await check();
       set({
@@ -162,5 +182,4 @@ export const useUpdaterStore = create<UpdaterStoreState>()((set, get) => ({
     }
   },
 
-  resetError: () => set({ lastError: "", checkError: false, installError: false }),
 }));

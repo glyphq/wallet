@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigate, useOutlet } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { pageTransition, sectionTransition } from "@/lib/animations";
-import { LockKeyholeIcon } from "@/lib/icons";
+import { Download01Icon, LockKeyholeIcon } from "@/lib/icons";
+import { useUpdaterStore } from "@/store/updater";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
@@ -62,7 +63,7 @@ function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname === "/wallets/switch") return false;
   if (pathname.startsWith("/contacts/")) return false;
-  if (pathname.startsWith("/settings/")) return false;
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) return false;
   return true;
 }
 
@@ -111,13 +112,20 @@ function LayoutShell() {
   const element = useOutlet();
   const { header } = useHeaderSlot();
   const countdown = useLockCountdown();
+  const update = useUpdaterStore((s) => s.update);
+  const updaterContext = useUpdaterStore((s) => s.context);
+  const installing = useUpdaterStore((s) => s.installing);
+  const updateProgress = useUpdaterStore((s) => s.progress);
+  const installUpdate = useUpdaterStore((s) => s.install);
   const cur = location.pathname;
   const show = showHeader(cur);
   const showNav = showBottomNav(cur);
   const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
-  const resolvedHeader = header ?? (cur === "/wallets/switch"
+  const resolvedHeader = header ?? (cur === "/settings"
+    ? <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} backAriaLabel="Back to dashboard" />
+    : cur === "/wallets/switch"
     ? <ScreenHeader title="Switch wallet" onBack={() => navigate(-1)} />
     : routeTitle
       ? backTarget
@@ -153,41 +161,82 @@ function LayoutShell() {
           </motion.div>
         </AnimatePresence>
 
-        <AnimatePresence>
-          {countdown !== null && (
-            <motion.div
-              key="lock-countdown"
-              role="status"
-              aria-live="polite"
-              aria-label={`Locking in ${countdown} seconds`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 30, pointerEvents: "none", display: "flex", justifyContent: "center" }}
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-2)",
-                  padding: "4px 10px",
-                  background: "var(--color-bg-nav)",
-                  borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
-                  color: "var(--color-status-warning)",
-                }}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
+          <AnimatePresence>
+            {update && updaterContext?.supportsAutoUpdate && showNav && !sheetsOpen ? (
+              <motion.div
+                key="app-update"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                style={{ pointerEvents: "auto" }}
               >
-                <LockKeyholeIcon size={13} strokeWidth={1.5} aria-hidden="true" />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                  Locking in
-                </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-status-warning)" }}>
-                  {countdown}s
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <button
+                  type="button"
+                  onClick={() => void installUpdate()}
+                  disabled={installing}
+                  aria-label={installing ? `Installing Glyph ${update.version}` : `Install Glyph ${update.version}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-2)",
+                    padding: "4px 10px",
+                    border: 0,
+                    background: "var(--color-bg-nav)",
+                    borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+                    color: "var(--color-accent)",
+                    cursor: installing ? "default" : "pointer",
+                  }}
+                >
+                  <Download01Icon size={13} aria-hidden="true" />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Update
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-accent)" }}>
+                    {installing ? updateProgress > 0 ? `${updateProgress}%` : "Installing" : `v${update.version}`}
+                  </span>
+                </button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {countdown !== null && (
+              <motion.div
+                key="lock-countdown"
+                role="status"
+                aria-live="polite"
+                aria-label={`Locking in ${countdown} seconds`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                style={{ pointerEvents: "none" }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-2)",
+                    padding: "4px 10px",
+                    background: "var(--color-bg-nav)",
+                    borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+                    color: "var(--color-status-warning)",
+                  }}
+                >
+                  <LockKeyholeIcon size={13} strokeWidth={1.5} aria-hidden="true" />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Locking in
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-status-warning)" }}>
+                    {countdown}s
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* ── Anchored bottom nav ── */}

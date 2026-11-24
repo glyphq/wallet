@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "@/components/button";
+import { Clock01Icon, Download01Icon } from "@/lib/icons";
 import { AsciiLogo } from "@/components/ascii-logo";
 import { AsciiSpinner } from "@/components/ascii-spinner";
 import { useUpdater } from "@/hooks/use-updater";
@@ -75,49 +76,54 @@ export default function SplashScreen() {
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--color-bg-canvas)", overflow: "hidden", userSelect: "none" }}>
       {hydrationStatus === "loading" ? (
-        <div
-          style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-6)", padding: "var(--space-8)" }}
-        >
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}>
-            <AsciiLogo />
-          </motion.div>
+        <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "var(--space-6)",
+              padding: "var(--space-8) var(--screen-padding)",
+            }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}>
+              <AsciiLogo />
+            </motion.div>
 
-          {checkingVisible || updater.installing ? (
-            <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 104 }}>
-              <AsciiSpinner size={104} />
-              <span className="sr-only">{status}</span>
-            </div>
-          ) : (
-            <span role="status" aria-live="polite" className="sr-only">{status}</span>
-          )}
-
-          {minElapsed && updater.update && !updateDeferred ? (
-            <div
-              style={{
-                width: "100%",
-                maxWidth: 320,
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-3)",
-                padding: "var(--space-4)",
-                border: "1px solid var(--color-border-subtle)",
-                background: "var(--color-bg-surface)",
-              }}
-            >
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)", textAlign: "center" }}>
+            {minElapsed && updater.update && !updateDeferred ? (
+              <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)", textAlign: "center" }}>
                 Glyph {updater.update.version} is ready to install.
               </span>
-              <Button size="md" onClick={() => void updater.install()} disabled={updater.installing}>
-                {updater.installing ? `Installing ${updater.progress}%` : "Update now"}
-              </Button>
-              <Button size="md" variant="secondary" onClick={() => setUpdateDeferred(true)} disabled={updater.installing}>
-                Later
-              </Button>
-              {updater.installError ? (
-                <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)", textAlign: "center" }}>
-                  {updater.lastError || "Update failed. Try again later."}
-                </span>
-              ) : null}
+            ) : checkingVisible || updater.installing ? (
+              <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 104 }}>
+                <AsciiSpinner size={104} />
+                <span className="sr-only">{status}</span>
+              </div>
+            ) : (
+              <span role="status" aria-live="polite" className="sr-only">{status}</span>
+            )}
+          </div>
+
+          {minElapsed && updater.update && !updateDeferred ? (
+            <div style={{ flexShrink: 0, padding: "var(--space-4) var(--screen-padding) var(--space-6)", borderTop: "1px solid var(--color-border-subtle)", background: "var(--color-bg-canvas)" }}>
+              <div style={{ width: "100%", maxWidth: 360, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                <Button size="md" style={{ width: "100%" }} onClick={() => void updater.install()} loading={updater.installing}>
+                  <Download01Icon size={16} aria-hidden="true" />
+                  {updater.installing ? updater.progress > 0 ? `Installing ${updater.progress}%` : "Installing" : "Update now"}
+                </Button>
+                <Button size="md" variant="secondary" style={{ width: "100%" }} onClick={() => setUpdateDeferred(true)} disabled={updater.installing}>
+                  <Clock01Icon size={16} aria-hidden="true" />
+                  Later
+                </Button>
+                {updater.installError ? (
+                  <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)", textAlign: "center" }}>
+                    {updater.lastError || "Update failed. Try again later."}
+                  </span>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>
