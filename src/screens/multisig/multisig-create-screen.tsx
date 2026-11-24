@@ -31,7 +31,7 @@ import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { AddCircleIcon, CheckmarkCircle01Icon, UserGroupIcon } from "@/lib/icons";
+import { AddCircleIcon, ArrowLeft01Icon, CheckmarkCircle01Icon, UserGroupIcon } from "@/lib/icons";
 import { IdentityPickerScreen } from "@/components/identity-picker";
 import {
   FeeRow,
@@ -432,6 +432,7 @@ export default function MultisigCreateScreen() {
           setSubmitError("");
         }}
       >
+        <ArrowLeft01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
         Back
       </Button>
       <Button
@@ -441,6 +442,7 @@ export default function MultisigCreateScreen() {
         disabled={!canSubmit}
         onClick={() => void submit()}
       >
+        <AddCircleIcon size={16} strokeWidth={1.5} aria-hidden="true" />
         Create vault
       </Button>
     </div>
