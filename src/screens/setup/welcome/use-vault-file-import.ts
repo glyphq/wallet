@@ -158,6 +158,8 @@ export function useVaultFileImport() {
     importNeedsSelection,
     importDisabled,
     openFilePicker,
+    importFile,
+    importPath,
     toggleAccount,
     doImport,
   };

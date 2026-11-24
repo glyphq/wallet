@@ -710,6 +710,11 @@ a:hover {
   background: var(--color-bg-base);
 }
 
+/* The banner already draws the divider; avoid stacking a second line. */
+.page-banner + .page-frame {
+  border-top: 0;
+}
+
 .page-frame-content {
   flex: 1;
   min-height: 0;
@@ -730,6 +735,65 @@ a:hover {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
+}
+
+/* ── Vault file drop target ────────────────────────────────────────────────── */
+
+.vault-dropzone {
+  width: 100%;
+  min-height: 190px;
+  margin: 0;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  appearance: none;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.vault-dropzone:hover,
+.vault-dropzone[data-drag="true"] {
+  border-color: var(--color-text-tertiary);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+.vault-dropzone[data-drag="true"] {
+  border-color: var(--color-accent);
+}
+
+.vault-dropzone-icon {
+  color: var(--color-text-tertiary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.vault-dropzone:hover .vault-dropzone-icon,
+.vault-dropzone[data-drag="true"] .vault-dropzone-icon {
+  color: var(--color-text-primary);
+}
+
+.vault-dropzone-title {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: var(--leading-compact);
+  letter-spacing: 0.01em;
+}
+
+.vault-dropzone-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--color-text-tertiary);
 }
 
 /* ── Landing button treatment ─────────────────────────────────────────────── */
