@@ -17,6 +17,9 @@ export function MarbleAvatar({ seed, size, square = true }: MarbleAvatarProps) {
         display: "block",
         width: size,
         height: size,
+        borderRadius: Math.max(4, Math.round(size * 0.3)),
+        overflow: "hidden",
+        lineHeight: 0,
         background: "var(--color-bg-surface-2)",
       }}
     >

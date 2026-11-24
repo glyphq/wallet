@@ -25,7 +25,7 @@ export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: 
           minHeight: 52,
         }}
       >
-        <div style={{ flexShrink: 0 }}>{leading}</div>
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>{leading}</div>
         <h1
           style={{
             margin: 0,

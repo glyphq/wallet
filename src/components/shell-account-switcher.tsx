@@ -161,11 +161,12 @@ export function ShellAccountSwitcher() {
         aria-expanded={open}
         onClick={toggle}
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
           justifyContent: "center",
           width: 32,
           height: 32,
+          lineHeight: 0,
           padding: 0,
           border: 0,
           background: "transparent",
