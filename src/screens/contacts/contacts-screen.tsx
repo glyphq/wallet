@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { AddCircleIcon, Download01Icon, Search01Icon } from "@/lib/icons";
@@ -17,6 +17,8 @@ import { contactsToCsv, contactsToJson, parseContactImport } from "./contacts-tr
 
 export default function ContactsScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromSettings = location.pathname.startsWith("/settings/contacts");
   const contacts = usePersistedStore((state) => state.contacts);
   const addContact = usePersistedStore((state) => state.addContact);
   const updateContact = usePersistedStore((state) => state.updateContact);
@@ -167,8 +169,8 @@ export default function ContactsScreen() {
       statusBar={
           <ScreenHeader
           title="Contacts"
-          onBack={() => navigate("/history")}
-          backAriaLabel="Back to history"
+          onBack={() => navigate(fromSettings ? "/settings" : "/history")}
+          backAriaLabel={fromSettings ? "Back to settings" : "Back to history"}
           action={<div style={{ display: "flex", gap: "var(--space-2)" }}><IconButton label="Import or export contacts" title="Import or export contacts" onClick={() => setTransferring(true)} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><Download01Icon size={20} strokeWidth={1.5} aria-hidden="true" /></IconButton><IconButton label="Add contact" title="Add contact" onClick={openAdd} style={{ color: "var(--color-text-primary)", background: "var(--color-bg-surface)", borderColor: "var(--color-border-subtle)" }}><AddCircleIcon size={21} strokeWidth={1.5} aria-hidden="true" /></IconButton></div>}
         />
       }
