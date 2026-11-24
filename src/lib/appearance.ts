@@ -11,7 +11,6 @@ export const FONT_PAIRS: FontPair[] = [
   { id: "default",       name: "Geist",          sans: "'Geist', system-ui, sans-serif",            mono: "'Geist Mono', monospace" },
   { id: "inter",         name: "Inter",          sans: "'Inter', system-ui, sans-serif",            mono: "'JetBrains Mono', monospace" },
   { id: "ibm-plex",      name: "IBM Plex",       sans: "'IBM Plex Sans', system-ui, sans-serif",    mono: "'IBM Plex Mono', monospace" },
-  { id: "space-grotesk", name: "Space Grotesk",  sans: "'Space Grotesk', system-ui, sans-serif",    mono: "'Space Mono', monospace" },
   { id: "fira",          name: "Fira",           sans: "'Fira Sans', system-ui, sans-serif",        mono: "'Fira Code', monospace" },
   { id: "jetbrains",     name: "JetBrains",      sans: "'Inter', system-ui, sans-serif",            mono: "'JetBrains Mono', monospace" },
 ];

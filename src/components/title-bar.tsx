@@ -36,6 +36,7 @@ function WinBtn({
             : "var(--color-bg-elevated)"
           : "transparent",
         border: "none",
+        borderRadius: 0,
         cursor: "pointer",
         color: hovered && danger ? "var(--color-text-inverse)" : hovered ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
         transition: "background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out)",
@@ -84,76 +85,90 @@ export function TitleBar() {
       data-tauri-drag-region
       style={{
         height: "var(--height-titlebar)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        background: "var(--color-bg-header)",
         flexShrink: 0,
+        background: "var(--color-bg-header)",
+        borderBottom: "1px solid var(--color-border-subtle)",
         userSelect: "none",
       }}
     >
       <div
+        className="app-titlebar-frame corner-frame"
         data-tauri-drag-region
         style={{
+          width: "100%",
+          maxWidth: 1280,
+          height: "100%",
+          margin: "0 auto",
+          padding: "0 var(--screen-padding)",
           display: "flex",
           alignItems: "center",
-          gap: "var(--space-3)",
-          padding: "0 calc(var(--screen-padding) + 2px)",
-          pointerEvents: "none",
+          justifyContent: "space-between",
+          borderLeft: "1px solid var(--color-border-subtle)",
+          borderRight: "1px solid var(--color-border-subtle)",
         }}
       >
-        <img
-          src={logo}
-          width={18}
-          height={18}
-          alt=""
-          aria-hidden="true"
-          data-tauri-drag-region
-          style={{ flexShrink: 0 }}
-        />
-        <span
+        <div
           data-tauri-drag-region
           style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
-            fontWeight: 500,
-            letterSpacing: "0.03em",
-            color: "var(--color-text-primary)",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-3)",
+            pointerEvents: "none",
           }}
         >
-          Wallet
-        </span>
-      </div>
-
-      {win ? (
-        <div style={{ display: "flex", height: "100%" }}>
-          <WinBtn onClick={() => void win.minimize()} label="Minimize">
-            <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
-              <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </WinBtn>
-
-          <WinBtn onClick={() => void win.toggleMaximize()} label={maximized ? "Restore" : "Maximize"}>
-            {maximized ? (
-              <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
-                <rect x="1" y="3" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                <path d="M3 3V1h7v7H8" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-            ) : (
-              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-                <rect x="1" y="1" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-            )}
-          </WinBtn>
-
-          <WinBtn onClick={() => void win.close()} label="Close" danger>
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </WinBtn>
+          <img
+            src={logo}
+            width={26}
+            height={26}
+            alt=""
+            aria-hidden="true"
+            data-tauri-drag-region
+            style={{ flexShrink: 0 }}
+          />
+          <span
+            data-tauri-drag-region
+            style={{
+              fontFamily: "'Geist', system-ui, sans-serif",
+              fontSize: 16,
+              fontWeight: 500,
+              letterSpacing: "-0.01em",
+              color: "var(--color-text-primary)",
+            }}
+          >
+            Wallet
+          </span>
         </div>
-      ) : null}
+
+        {win ? (
+          <div style={{ display: "flex", height: "100%", marginRight: "calc(var(--screen-padding) * -1)" }}>
+            <WinBtn onClick={() => void win.minimize()} label="Minimize">
+              <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
+                <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </WinBtn>
+
+            <WinBtn onClick={() => void win.toggleMaximize()} label={maximized ? "Restore" : "Maximize"}>
+              {maximized ? (
+                <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
+                  <rect x="1" y="3" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M3 3V1h7v7H8" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                  <rect x="1" y="1" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                </svg>
+              )}
+            </WinBtn>
+
+            <WinBtn onClick={() => void win.close()} label="Close" danger>
+              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
+                <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </WinBtn>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

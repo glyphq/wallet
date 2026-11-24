@@ -648,14 +648,22 @@ a:hover {
 .onboarding-inner {
   z-index: 1;
   --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", monospace;
   position: relative;
   width: 85%;
   height: 85%;
   min-height: 0;
-  overflow: hidden;
+  padding: clamp(24px, 4vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
   isolation: isolate;
   border: 1px solid var(--color-border-subtle);
-  background: var(--color-bg-base);
+  background: color-mix(in srgb, var(--color-bg-base) 80%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .onboarding-inner::before {
@@ -678,6 +686,12 @@ a:hover {
     linear-gradient(#000 0 0) right bottom / 14px 14px no-repeat;
 }
 
+
+.app-titlebar-frame {
+  --corner-size: 8px;
+  --corner-inset: 2px;
+  --corner-color: var(--color-text-tertiary);
+}
 
 /* ── Landing button treatment ─────────────────────────────────────────────── */
 
@@ -755,4 +769,17 @@ a:hover {
   .glyph-btn:active:not(:disabled) {
     transform: none;
   }
+}
+
+/* Landing controls are flat: no inset/offset elevation. */
+.glyph-btn[data-variant] {
+  box-shadow: none;
+}
+
+.glyph-btn:hover:not(:disabled) {
+  border-color: transparent;
+}
+
+.glyph-btn:active:not(:disabled) {
+  box-shadow: none;
 }

@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
     <LandscapeOnboarding>
       <motion.div
         {...presets.fadeIn}
-        style={{ width: "100%", maxWidth: 380, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
+        style={{ width: "100%", maxWidth: 380, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-6)", textAlign: "center" }}
       >
         {hasVaults ? (
           <button
@@ -49,9 +49,10 @@ export default function WelcomeScreen() {
           </button>
         ) : null}
 
-        <BrandLockup size={42} iconOnly />
+        <BrandLockup size={42} iconOnly align="center" />
 
         <FlowHeader
+          align="center"
           title="Set up your Vault"
           description="Create a new Vault, restore a seed, or import an existing Vault file."
         />
@@ -74,9 +75,6 @@ export default function WelcomeScreen() {
           </Button>
         </div>
 
-        <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", lineHeight: "var(--leading-body)", color: "var(--color-text-tertiary)" }}>
-          Keys stay encrypted on this device. Glyph cannot recover a forgotten password or seed.
-        </p>
       </motion.div>
 
       <ImportVaultSheet flow={importFlow} />

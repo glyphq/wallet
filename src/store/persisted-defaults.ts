@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: "dark",
   debugMode: false,
   biometricVaultIds: [],
-  fontPair: "space-grotesk",
+  fontPair: "default",
   accentColor: "green",
   customScheme: null,
   notificationsEnabled: false,
