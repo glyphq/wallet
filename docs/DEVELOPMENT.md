@@ -433,9 +433,9 @@ CI Rust compilation is a platform matrix, but it is not a full GUI, installer, c
 
 ### Network-derived state
 
-- Put endpoint calls and client setup in `src/lib/rpc.ts` or the appropriate domain helper.
-- Use TanStack Query hooks in `src/hooks/`.
-- Include endpoint identity in query keys when cached results depend on the configured server.
+- Call generated SDK functions from `src/lib/api/generated/`; keep client setup in `src/lib/api/client.ts`.
+- Use generated TanStack Query options or wrap generated keys in `src/hooks/`.
+- Include the API origin identity for hand-written query keys; the whole cache is cleared when the configured origin changes.
 - Apply polling profiles rather than creating independent high-frequency timers.
 
 ### Persisted state
