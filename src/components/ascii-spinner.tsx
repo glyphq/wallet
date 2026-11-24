@@ -2,7 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import { statusOrb } from "asciify-engine/kit";
 
 /** Engine-drawn loading spinner that inherits the splash palette. */
-export function AsciiSpinner({ size = 72 }: { size?: number }) {
+export function AsciiSpinner({ size = 104 }: { size?: number }) {
   const hostRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {

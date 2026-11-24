@@ -83,8 +83,8 @@ export default function SplashScreen() {
           </motion.div>
 
           {checkingVisible || updater.installing ? (
-            <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
-              <AsciiSpinner size={80} />
+            <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 104 }}>
+              <AsciiSpinner size={104} />
               <span className="sr-only">{status}</span>
             </div>
           ) : (
