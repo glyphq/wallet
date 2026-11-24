@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft01Icon, ArrowRight01Icon, ViewIcon, ViewOffIcon, LockKeyholeIcon, ShieldCheckIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
-import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { StepProgress } from "@/components/step-progress";
+import { PageBanner, PageFrame } from "@/components/page-header";
+import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
 import { stepMotion } from "@/lib/animations";
 import { MIN_PASSWORD_LENGTH, passwordStrength } from "@/lib/password-strength";
 
@@ -36,58 +37,59 @@ export function SetupFlow({
   error,
 }: SetupFlowProps) {
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: 480,
-        margin: "0 auto",
-        height: "100%",
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-6)",
-      }}
-    >
-      <StepProgress current={current} total={total} />
-      <motion.div
-        key={current}
-        {...stepMotion}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-6)",
-        }}
+    <LandscapeOnboarding>
+      <PageBanner title={title} />
+      <PageFrame
+        actions={(
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {secondaryActions}
+            <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
+              {primaryLabel}
+              <ArrowRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+            </Button>
+            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
+              <ArrowLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+              Back
+            </Button>
+          </div>
+        )}
       >
         <div
           style={{
-            flex: 1,
+            width: "100%",
+            maxWidth: 480,
+            margin: "0 auto",
+            height: "100%",
             minHeight: 0,
-            overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: "var(--space-6)",
-            paddingRight: "var(--space-1)",
+            gap: "var(--space-5)",
           }}
         >
-          <FlowHeader title={title} />
-          {children}
-          {error ? <SetupError>{error}</SetupError> : null}
+          <StepProgress current={current} total={total} />
+          <motion.div
+            key={current}
+            {...stepMotion}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-5)",
+                paddingRight: "var(--space-1)",
+              }}
+            >
+              {children}
+              {error ? <SetupError>{error}</SetupError> : null}
+            </div>
+          </motion.div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
-          {secondaryActions}
-          <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
-            {primaryLabel}
-            <ArrowRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
-            <ArrowLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-            Back
-          </Button>
-        </div>
-      </motion.div>
-    </div>
+      </PageFrame>
+    </LandscapeOnboarding>
   );
 }
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Full-width page shell for onboarding and future header-led screens. */
+/** Full-height page shell used by header-led onboarding screens. */
 export function LandscapeOnboarding({ children }: { children: ReactNode }) {
-  return <div className="onboarding-page">{children}</div>;
+  return <div className="page-shell">{children}</div>;
 }

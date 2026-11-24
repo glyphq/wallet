@@ -1,4 +1,3 @@
-import { FullPage } from "@/layouts/full-page";
 import { BackupStep } from "./create/backup-step";
 import { ConfirmBackupStep } from "./create/confirm-backup-step";
 import { NameStep } from "./create/name-step";
@@ -9,7 +8,7 @@ export default function CreateVaultScreen() {
   const flow = useCreateVaultFlow();
 
   return (
-    <FullPage centered={false} style={{ paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
+    <>
       {flow.step === 1 ? (
         <NameStep
           name={flow.name}
@@ -68,6 +67,6 @@ export default function CreateVaultScreen() {
           onBack={flow.back}
         />
       ) : null}
-    </FullPage>
+    </>
   );
 }

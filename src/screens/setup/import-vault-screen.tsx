@@ -4,7 +4,6 @@ import { Wallet01Icon } from "@/lib/icons";
 import { Identicon } from "@/components/identicon";
 import { Input } from "@/components/input";
 import { PasswordFields, passwordsAreValid, SetupFlow } from "@/components/setup-flow";
-import { FullPage } from "@/layouts/full-page";
 import { deriveIdentityFromSeed, InvalidSeedError, newId, toSeed, type Seed } from "@/lib/crypto";
 import { truncateId } from "@/lib/format";
 import { unlockSecureSession } from "@/lib/secure-session";
@@ -103,7 +102,7 @@ export default function ImportVaultScreen() {
   }
 
   return (
-    <FullPage centered={false} style={{ paddingTop: "var(--space-8)", paddingBottom: "var(--space-8)" }}>
+    <>
       {step === 1 ? (
         <SetupFlow
           current={1}
@@ -190,6 +189,6 @@ export default function ImportVaultScreen() {
           />
         </SetupFlow>
       ) : null}
-    </FullPage>
+    </>
   );
 }
