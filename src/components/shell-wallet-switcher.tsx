@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
@@ -87,7 +87,7 @@ export function ShellWalletSwitcher() {
         type="button"
         aria-label={`Switch wallet. Current wallet: ${activeWallet.name}`}
         onClick={() => setOpen(true)}
-        className="glyph-avatar-btn"
+        className="glyph-avatar-btn corner-frame"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -95,9 +95,12 @@ export function ShellWalletSwitcher() {
           width: 32,
           height: 32,
           padding: 0,
-          borderRadius: "var(--radius-pill)",
+          borderRadius: "var(--radius-sharp)",
+          boxShadow: "none",
+          "--corner-size": "6px",
+          "--corner-inset": "2px",
           cursor: "pointer",
-        }}
+        } as CSSProperties}
       >
         <Identicon kind="wallet" seed={`${activeWallet.id}:${activeWallet.color}`} label={activeWallet.name} size={32} radius={12} />
       </button>

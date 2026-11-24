@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { MoreHorizontalIcon, Search01Icon, LockKeyholeIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { IconButton } from "@/components/icon-button";
+import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { ScreenHeader } from "@/components/screen-header";
 import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 import { usePersistedStore } from "@/store/persisted";
@@ -75,6 +76,7 @@ export default function DashboardScreen() {
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
           <IconButton
             label="Lock wallet"
+            framed
             onClick={() => {
               lock();
               navigate("/lock", { replace: true });
@@ -82,7 +84,7 @@ export default function DashboardScreen() {
           >
             <LockKeyholeIcon size={19} strokeWidth={1.5} aria-hidden="true" />
           </IconButton>
-          <IconButton label="Search" onClick={() => navigate("/search")}>
+          <IconButton label="Search" framed onClick={() => navigate("/search")}>
             <Search01Icon size={20} strokeWidth={1.5} aria-hidden="true" />
           </IconButton>
         </div>
@@ -91,32 +93,48 @@ export default function DashboardScreen() {
   ), [lock, navigate]);
 
   return (
-    <AppShell statusBar={dashboardHeader} contentStyle={{ padding: "var(--space-4)" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell statusBar={dashboardHeader} fullBleed>
+      <section style={{ borderBottom: "1px solid var(--color-border-subtle)", background: "var(--color-bg-base)" }}>
+        <AsciiBackdrop
+          style={{ minHeight: 300 }}
+          contentStyle={{
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "var(--space-3)",
+            padding: "var(--space-6) var(--space-4) var(--space-5)",
+          }}
+        >
+          <div className="asciify-clear" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+            <AccountSelector
+              wallet={wallet}
+              activeIndex={activeIndex}
+              accounts={accounts}
+              identity={identity}
+              onSelect={setActiveAccountIndex}
+            />
+          </div>
 
-        {/* Hero: account + balance */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>
-          <AccountSelector
-            wallet={wallet}
-            activeIndex={activeIndex}
-            accounts={accounts}
-            identity={identity}
-            onSelect={setActiveAccountIndex}
-          />
+          <div className="asciify-clear" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
+            <BalanceDisplay
+              balance={balance?.balance}
+              loading={balanceLoading}
+              hidden={settings.hideBalances}
+              fiatValue={balanceFiat}
+              priceChange24h={priceChange24h}
+            />
+          </div>
 
-          <BalanceDisplay
-            balance={balance?.balance}
-            loading={balanceLoading}
-            hidden={settings.hideBalances}
-            fiatValue={balanceFiat}
-            priceChange24h={priceChange24h}
-          />
+          <div className="asciify-clear" style={{ width: "100%" }}>
+            <OwnedAssetChips assets={ownedAssets ?? []} hidden={settings.hideBalances} />
+          </div>
 
-          <OwnedAssetChips assets={ownedAssets ?? []} hidden={settings.hideBalances} />
+          <div className="asciify-clear">
+            <PrimaryActions onSend={() => navigate("/send")} onReceive={() => navigate("/receive")} />
+          </div>
+        </AsciiBackdrop>
+      </section>
 
-          <PrimaryActions onSend={() => navigate("/send")} onReceive={() => navigate("/receive")} />
-        </div>
-
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "var(--space-4)" }}>
         {/* Recent activity card */}
         <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-2)" }}>
