@@ -2,6 +2,7 @@ import { lazy, Suspense, type ComponentType } from "react";
 import { createHashRouter, Navigate, Outlet } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { AsciiSpinner } from "@/components/ascii-spinner";
 
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -46,7 +47,7 @@ function RouteFallback() {
       aria-label="Loading screen"
       style={{ height: "100%", display: "grid", placeItems: "center", background: "var(--color-bg-base)" }}
     >
-      <div className="skeleton" style={{ width: 40, height: 40, borderRadius: "var(--radius-pill)" }} />
+      <AsciiSpinner size={104} />
     </div>
   );
 }
