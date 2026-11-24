@@ -574,8 +574,6 @@ export default function MultisigCreateScreen() {
 
         {step === "edit" ? (
           <>
-            <p style={BODY_COPY}>Owners approve releases before the vault moves funds.</p>
-
             <section aria-label="Vault details" style={SECTION_STYLE}>
               <Input
                 label="Vault name"
@@ -589,7 +587,6 @@ export default function MultisigCreateScreen() {
             </section>
 
             <section aria-label="Owners" style={SECTION_STYLE}>
-              <p style={LABEL_STYLE}>Owners</p>
               <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
                 <FramedAvatar seed={identity ?? activeAccountName} size={34} />
                 <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
