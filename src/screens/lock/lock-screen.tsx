@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
-import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon } from "@/lib/icons";
+import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon, Notification01Icon } from "@/lib/icons";
 import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
@@ -24,6 +24,34 @@ const PASSWORD_MAX_ATTEMPTS = 5;
 const PASSWORD_LOCKOUT_SECS = 30;
 let biometricFailures = 0;
 
+function PendingRequestNotch({ count }: { count: number }) {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "var(--space-2)",
+        padding: "4px 10px",
+        background: "var(--color-bg-nav)",
+        borderLeft: "1px solid var(--color-border-subtle)",
+        borderTop: "1px solid var(--color-border-subtle)",
+        borderRight: "1px solid var(--color-border-subtle)",
+        borderBottom: "none",
+        borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+        color: "var(--color-accent)",
+      }}
+    >
+      <Notification01Icon size={13} aria-hidden="true" />
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-accent)", fontWeight: 600 }}>
+        {count}
+      </span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        {count === 1 ? "pending request" : "pending requests"}
+      </span>
+    </div>
+  );
+}
+
 export default function LockScreen() {
   const navigate = useNavigate();
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
@@ -37,7 +65,8 @@ export default function LockScreen() {
   const passwordAttempts = usePersistedStore((s) => s.passwordAttempts);
   const setPasswordAttempts = usePersistedStore((s) => s.setPasswordAttempts);
   const unlock = useSessionStore((s) => s.unlock);
-  const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
+  const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
+  const hasPendingRequest = pendingRequestCount > 0;
 
   const lockedWallets = wallets
     .slice()
@@ -261,6 +290,7 @@ export default function LockScreen() {
             description={view === "switch" ? bannerDescription : undefined}
             centered={view === "unlock"}
             showBrand={view !== "unlock"}
+            bottomNotch={hasPendingRequest ? <PendingRequestNotch count={pendingRequestCount} /> : undefined}
             style={
               view === "unlock"
                 ? { flex: 1, minHeight: 0, height: "auto", borderBottom: "none" }

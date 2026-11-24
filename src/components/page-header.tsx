@@ -12,10 +12,11 @@ export interface PageBannerProps {
   style?: CSSProperties;
   centered?: boolean;
   showBrand?: boolean;
+  bottomNotch?: ReactNode;
 }
 
 /** Top-of-page ASCII banner, sized to 25% of the viewport height. */
-export function PageBanner({ eyebrow, title, description, children, style, centered = false, showBrand = true }: PageBannerProps) {
+export function PageBanner({ eyebrow, title, description, children, style, centered = false, showBrand = true, bottomNotch }: PageBannerProps) {
   return (
     <header className="page-banner" style={style}>
       <AsciiBackdrop
@@ -35,6 +36,11 @@ export function PageBanner({ eyebrow, title, description, children, style, cente
           {children}
         </motion.div>
       </AsciiBackdrop>
+      {bottomNotch ? (
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 3, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
+          {bottomNotch}
+        </div>
+      ) : null}
     </header>
   );
 }
