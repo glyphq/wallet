@@ -40,6 +40,30 @@ import {
   identityDisplayName,
 } from "./multisig-ui";
 
+function ApprovalRecordedNotch() {
+  return (
+    <div
+      role="status"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "var(--space-2)",
+        padding: "4px 10px",
+        border: "1px solid var(--color-border-subtle)",
+        borderBottom: 0,
+        background: "var(--color-bg-base)",
+        borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+        color: "var(--color-accent)",
+      }}
+    >
+      <CheckmarkCircle01Icon size={13} strokeWidth={1.5} aria-hidden="true" />
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        Approval recorded
+      </span>
+    </div>
+  );
+}
+
 interface ApprovalParams {
   kind: MsvaultReleaseKind;
   amount: bigint | null;
@@ -410,7 +434,11 @@ export default function MultisigApprovalScreen() {
   );
 
   return (
-    <MultisigFlowShell statusBar={header} footer={footer}>
+    <MultisigFlowShell
+      statusBar={header}
+      footer={footer}
+      notch={supportedByMe ? <ApprovalRecordedNotch /> : undefined}
+    >
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <MultisigAccountSelect
           wallet={wallet}
@@ -483,11 +511,6 @@ export default function MultisigApprovalScreen() {
             </p>
           ) : null}
 
-          {supportedByMe ? (
-            <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
-              Your approval is already recorded.
-            </p>
-          ) : null}
           {replacesOther ? (
             <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
               {proposal.kind === "qubic"
