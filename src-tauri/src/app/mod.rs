@@ -5,7 +5,6 @@
 //! steps live here so each concern (plugins, state, tray, windows) stays small
 //! and independently reviewable.
 
-pub(crate) mod approval_window;
 pub(crate) mod builder;
 pub(crate) mod launch;
 pub(crate) mod plugins;

@@ -59,23 +59,6 @@ impl NativeSessionState {
             .collect();
     }
 
-    pub fn public_accounts(&self) -> Result<Vec<(String, [u8; 32])>, String> {
-        let guard = self
-            .seeds
-            .lock()
-            .map_err(|_| "native session unavailable".to_string())?;
-        let mut accounts = Vec::with_capacity(guard.len());
-        for seed in guard.iter() {
-            let seed = std::str::from_utf8(seed)
-                .map_err(|_| "session seed is invalid UTF-8".to_string())?;
-            accounts.push((
-                crate::qubic_native::derive_identity_from_seed(seed)?,
-                crate::qubic_native::public_key_from_seed(seed)?,
-            ));
-        }
-        Ok(accounts)
-    }
-
     pub fn clear(&self) {
         let mut guard = self
             .seeds

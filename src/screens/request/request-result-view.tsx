@@ -2,7 +2,6 @@ import { Button } from "@/components/button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Tag } from "@/components/tag";
 import type { RequestSuccessState } from "@/lib/request-orchestration";
-import { useReviewMode } from "./review-mode";
 import { ActionFooter, DetailBlock, SheetLayout, StatusLine } from "./sheet-layout";
 
 export type CopyStatus = "idle" | "success" | "error";
@@ -31,9 +30,8 @@ export function RequestResultView({
 }) {
   const { detailLabel, tagLabel } = successLabels(success);
 
-  const { approvalWindow } = useReviewMode();
   return (
-    <SheetLayout statusBar={approvalWindow ? null : <ScreenHeader title="Request complete" onBack={onReturn} backAriaLabel="Return to app" />}>
+    <SheetLayout statusBar={<ScreenHeader title="Request complete" onBack={onReturn} backAriaLabel="Return to app" />}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
         <div>
           <Tag variant={success.kind === "verify" && success.detail !== "VALID" ? "error" : "success"}>{tagLabel}</Tag>

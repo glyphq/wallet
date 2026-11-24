@@ -24,11 +24,7 @@ pub(crate) fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
                 Err(()) => false,
             };
             if accepted {
-                let target = app
-                    .get_webview_window(crate::app::approval_window::LABEL)
-                    .filter(|window| window.is_visible().unwrap_or(false))
-                    .or_else(|| app.get_webview_window("main"));
-                if let Some(window) = target {
+                if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
                 }

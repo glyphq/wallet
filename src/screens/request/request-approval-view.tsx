@@ -16,7 +16,6 @@ import { REQUEST_TYPE_LABEL } from "@/lib/request-schema";
 import type { SigningAuthorizationContext } from "@/lib/secure-session";
 import { RequestQueueNotice } from "./request-queue-notice";
 import { SheetLayout, StatusLine } from "./sheet-layout";
-import { useReviewMode } from "./review-mode";
 
 /** Active request review: dApp header, queue/error notices, and the type-specific preview. */
 export function RequestApprovalView({
@@ -45,8 +44,7 @@ export function RequestApprovalView({
   onApproveConnect: (result: ConnectApproveResult) => void | Promise<void>;
 }) {
   const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
-  const { approvalWindow } = useReviewMode();
-  const statusBar = approvalWindow ? null : <ScreenHeader title={typeLabel} onBack={onDismiss} backAriaLabel="Close without rejecting" />;
+  const statusBar = <ScreenHeader title={typeLabel} onBack={onDismiss} backAriaLabel="Close without rejecting" />;
 
   return (
     <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>

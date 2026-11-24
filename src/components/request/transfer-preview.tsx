@@ -21,14 +21,12 @@ import type { TransferRequest } from "@/lib/request-schema";
 import type { TransactionPreviewProps } from "./request-preview-props";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
-import { useReviewMode } from "@/screens/request/review-mode";
 
 export type { TransferRequest } from "@/lib/request-schema";
 
 export function TransferPreview({ request, onApprove, onReject, authorize }: TransactionPreviewProps<TransferRequest>) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
-  const { approvalWindow } = useReviewMode();
 
   const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
@@ -123,10 +121,10 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: approvalWindow ? "var(--space-3)" : "var(--space-6)", flex: 1, minHeight: approvalWindow ? 0 : "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
       {/* Amount — primary element */}
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: approvalWindow ? 34 : "var(--text-display)", lineHeight: approvalWindow ? 1 : undefined, color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
           {formatQu(request.amount)}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>QU</div>
@@ -151,18 +149,16 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
           label="To"
           value={toContact ? `${toContact.name} · ${truncateId(request.to, 10, 10)}` : truncateId(request.to, 10, 10)}
         />
-        {!approvalWindow && <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />}
-        {!approvalWindow && <RequestDetailRow label="Fee" value="None" />}
+        <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
+        <RequestDetailRow label="Fee" value="None" />
       </div>
 
-      {!approvalWindow && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <RequestSectionTitle>Preflight</RequestSectionTitle>
-          <RequestDetailRow label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
-          <RequestDetailRow label="Balance after" value={projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—"} />
-          <RequestDetailRow label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
-        </div>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <RequestSectionTitle>Preflight</RequestSectionTitle>
+        <RequestDetailRow label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
+        <RequestDetailRow label="Balance after" value={projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—"} />
+        <RequestDetailRow label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
+      </div>
 
       {requestAmount === null && (
         <RequestInlineNotice tone="error">The request amount is invalid.</RequestInlineNotice>
@@ -180,7 +176,7 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
       )}
       {txError && <RequestInlineNotice tone="error">{txError}</RequestInlineNotice>}
 
-      {(!approvalWindow || !policyDecision.allowed) && <DappPolicyStatus decision={policyDecision} />}
+      <DappPolicyStatus decision={policyDecision} />
 
       {needsHighValueConfirmation && (
         <button

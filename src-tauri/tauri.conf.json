@@ -28,29 +28,6 @@
         "decorations": false,
         "dragDropEnabled": false,
         "devtools": false
-      },
-      {
-        "label": "approval",
-        "title": "Glyph Approval",
-        "url": "index.html",
-        "width": 720,
-        "height": 420,
-        "minWidth": 120,
-        "minHeight": 82,
-        "maxWidth": 720,
-        "maxHeight": 420,
-        "resizable": false,
-        "minimizable": false,
-        "maximizable": false,
-        "fullscreen": false,
-        "center": true,
-        "decorations": false,
-        "visible": false,
-        "focus": false,
-        "skipTaskbar": true,
-        "dragDropEnabled": false,
-        "devtools": false,
-        "alwaysOnTop": true
       }
     ],
     "security": {

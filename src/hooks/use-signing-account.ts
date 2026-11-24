@@ -19,9 +19,8 @@ export interface SigningAccount {
 export function useSigningAccount(from?: string): SigningAccount {
   const accounts = useSessionStore((s) => s.accounts);
   const settings = usePersistedStore((s) => s.settings);
-  const unlockedWalletId = useSessionStore((s) => s.unlockedWalletId);
   const wallet = usePersistedStore((s) =>
-    s.wallets.find((w) => w.id === unlockedWalletId) ?? s.wallets.find((w) => w.id === s.settings.activeWalletId) ?? null,
+    s.wallets.find((w) => w.id === s.settings.activeWalletId) ?? null,
   );
 
   const [selectedIndex, setSelectedIndex] = useState(settings.activeAccountIndex);
@@ -32,10 +31,7 @@ export function useSigningAccount(from?: string): SigningAccount {
     setSelectedIndex(settings.activeAccountIndex);
   }, [settings.activeAccountIndex]);
 
-  const nameAt = (i: number) => {
-    const account = accounts[i];
-    return account?.accountName ?? wallet?.accounts.find((a) => a.identity === account?.identity)?.name ?? `Account ${i + 1}`;
-  };
+  const nameAt = (i: number) => wallet?.accounts.find((a) => a.index === i)?.name ?? `Account ${i + 1}`;
 
   if (accounts.length === 0) {
     return { account: null, wallet, accountName: "", fromError: null, selectedIndex: 0, setSelectedIndex, showPicker: false };
@@ -48,7 +44,7 @@ export function useSigningAccount(from?: string): SigningAccount {
         account: null,
         wallet,
         accountName: "",
-        fromError: "Address not in the unlocked wallet",
+        fromError: "Address not in this wallet",
         selectedIndex: -1,
         setSelectedIndex,
         showPicker: false,

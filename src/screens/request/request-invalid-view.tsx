@@ -1,7 +1,6 @@
 import { Button } from "@/components/button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Tag } from "@/components/tag";
-import { useReviewMode } from "./review-mode";
 import { ActionFooter, SheetLayout, StatusLine } from "./sheet-layout";
 
 /**
@@ -17,9 +16,8 @@ export function RequestInvalidView({
   onBack: () => void;
   onBackToApp: () => void;
 }) {
-  const { approvalWindow } = useReviewMode();
   return (
-    <SheetLayout statusBar={approvalWindow ? null : <ScreenHeader title="Request" onBack={onBack} />}>
+    <SheetLayout statusBar={<ScreenHeader title="Request" onBack={onBack} />}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: "100%" }}>
         <Tag variant="error">Invalid request</Tag>
         <StatusLine tone="error">{error}</StatusLine>

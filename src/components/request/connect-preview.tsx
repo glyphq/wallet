@@ -8,7 +8,6 @@ import type { ConnectApproveResult } from "@/lib/request-approvals";
 import { CheckmarkCircle01Icon } from "@/lib/icons";
 import { DappPolicyControls } from "@/components/dapp-policy-controls";
 import { DAPP_PERMISSION_LABELS, DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
-import { useReviewMode } from "@/screens/request/review-mode";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
@@ -21,9 +20,7 @@ interface ConnectPreviewProps {
 export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
   const accounts = useSessionStore((s) => s.accounts);
   const settings = usePersistedStore((s) => s.settings);
-  const { approvalWindow } = useReviewMode();
-  const unlockedWalletId = useSessionStore((s) => s.unlockedWalletId);
-  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === unlockedWalletId) ?? s.wallets.find((v) => v.id === s.settings.activeWalletId));
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
 
   const [selectedIndex, setSelectedIndex] = useState(settings.activeAccountIndex);
 
@@ -59,14 +56,13 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   const grantsTransferLike = requestedPerms.some((p) => (p === "transfer" || p === "sc_call") && grantedPerms.has(p));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: approvalWindow ? "var(--space-3)" : "var(--space-6)", flex: 1, minHeight: approvalWindow ? 0 : "100%" }}>
-      <div style={{ display: "grid", gridTemplateColumns: approvalWindow ? "minmax(0, 1fr) minmax(0, 1fr)" : "minmax(0, 1fr)", gap: approvalWindow ? "var(--space-5)" : "var(--space-3)", alignContent: "start" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
       {/* Account picker */}
       <div>
         <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Account</RequestSectionTitle></div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {accounts.map((sessionAccount, i) => {
-            const account = wallet?.accounts.find((candidate) => candidate.identity === sessionAccount.identity) ?? wallet?.accounts[i];
+            const account = wallet?.accounts[i];
             if (!account) return null;
             const isSelected = i === selectedIndex;
             return (
@@ -134,9 +130,6 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
         </div>
       )}
 
-      </div>
-
-      {!approvalWindow && (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
         <RequestSectionTitle>Limits</RequestSectionTitle>
         <DappPolicyControls
@@ -148,7 +141,6 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
           idPrefix="connect-dapp-policy"
         />
       </div>
-      )}
 
       <RequestApprovalActions
         onReject={onReject}

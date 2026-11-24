@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Button } from "@/components/button";
 import type { AccountMeta } from "@/store/persisted-types";
-import { useReviewMode } from "@/screens/request/review-mode";
 
 export function RequestSectionTitle({ children }: { children: ReactNode }) {
   return (
@@ -126,31 +125,7 @@ export function RequestDisclosure({ label, children }: { label: ReactNode; child
 }
 
 function RequestActionBar({ children }: { children: ReactNode }) {
-  const { approvalWindow } = useReviewMode();
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: approvalWindow ? "column" : "row",
-        gap: "var(--space-2)",
-        marginTop: "auto",
-        paddingTop: approvalWindow ? "var(--space-3)" : "var(--space-6)",
-        ...(approvalWindow
-          ? {
-              position: "sticky",
-              bottom: 0,
-              zIndex: 5,
-              marginInline: "calc(var(--screen-padding) * -1)",
-              padding: "var(--space-3) var(--screen-padding)",
-              background: "var(--color-bg-base)",
-              borderTop: "1px solid var(--color-border-subtle)",
-            }
-          : {}),
-      }}
-    >
-      {children}
-    </div>
-  );
+  return <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>{children}</div>;
 }
 
 export function RequestApprovalActions({

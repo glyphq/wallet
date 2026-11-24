@@ -14,11 +14,6 @@ pub(crate) fn handle_event(window: &tauri::Window, event: &tauri::WindowEvent) {
     }
 
     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-        if window.label() == crate::app::approval_window::LABEL {
-            api.prevent_close();
-            let _ = window.hide();
-            return;
-        }
         let hide = window
             .app_handle()
             .state::<HideToTrayState>()
