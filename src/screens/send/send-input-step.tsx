@@ -1,28 +1,26 @@
 import type { ReactNode, RefObject } from "react";
-import { ArrowUpRight01Icon, UserCircleIcon, UserGroupIcon } from "@/lib/icons";
+import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
+import { ApprovalAddress } from "@/components/request/approval-address";
 import { Button } from "@/components/button";
 import { ContactPicker } from "@/components/contact-picker";
-import { EmbeddedInput } from "@/components/embedded-input";
+import { Input } from "@/components/input";
 import { TextButton } from "@/components/text-button";
-import { formatQu, type DisplayCurrency } from "@/lib/format";
+import { formatQu } from "@/lib/format";
 import type { AddressSuggestion } from "@/lib/address-intelligence";
 import type { Contact } from "@/store/persisted";
 import { SendStepPanel } from "./send-step-panel";
-import { AddressSuggestionsOverlay, Numpad, labelStyle } from "./send-ui";
+import { AddressSuggestionsOverlay, labelStyle } from "./send-ui";
 
 export interface SendInputStepProps {
   statusBar: ReactNode;
   accountName: string;
+  identity: string;
   draftRestored: boolean;
   onDismissDraft: () => void;
   amountStr: string;
-  usdMode: boolean;
-  usdStr: string;
   amountError: string;
   fiatEquiv: string | null;
-  displayCurrency: DisplayCurrency;
-  onToggleCurrency: () => void;
-  onNumpad: (key: string) => void;
+  onAmountChange: (value: string) => void;
   onMax: (() => void) | undefined;
   balance: bigint | null;
   destination: string;
@@ -44,20 +42,17 @@ export interface SendInputStepProps {
   onClosePicker: () => void;
 }
 
-/** Send entry step: numpad amount, recipient field, suggestions, pickers. */
+/** Standard wallet send form: source, recipient, amount, review. */
 export function SendInputStep({
   statusBar,
   accountName,
+  identity,
   draftRestored,
   onDismissDraft,
   amountStr,
-  usdMode,
-  usdStr,
   amountError,
   fiatEquiv,
-  displayCurrency,
-  onToggleCurrency,
-  onNumpad,
+  onAmountChange,
   onMax,
   balance,
   destination,
@@ -80,122 +75,96 @@ export function SendInputStep({
 }: SendInputStepProps) {
   return (
     <SendStepPanel minHeight="min-content" scroll="y" statusBar={statusBar}>
-      <div style={{ display: "flex", justifyContent: "center", paddingTop: "var(--space-3)" }}>
-        <span style={{ ...labelStyle, color: "var(--color-text-tertiary)" }}>From {accountName}</span>
-      </div>
-
-      {/* Amount display */}
-      <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: "var(--space-1)", position: "relative", overflow: "hidden", width: "100%" }}>
-
-        {/* Draft notice */}
-        {draftRestored && (
-          <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-            <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "var(--text-label)" }}>Draft restored</span>
-            <button type="button" onClick={onDismissDraft} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-status-warning)", fontSize: "0.625rem", padding: 0 }}>✕</button>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1 }}>
+        {draftRestored ? (
+          <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", padding: "var(--space-2) var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)", background: "var(--color-bg-surface)" }}>
+            <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Draft restored</span>
+            <TextButton onClick={onDismissDraft} tone="muted">Dismiss</TextButton>
           </div>
-        )}
+        ) : null}
 
-        <span style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: (() => {
-            const raw = usdMode ? usdStr : amountStr;
-            if (!raw) return "var(--text-display)";
-            const len = raw.length + (usdMode ? 1 : 0); // +1 for $
-            if (len <= 6) return "3.5rem";
-            if (len <= 9) return "2.75rem";
-            if (len <= 12) return "2.125rem";
-            return "1.75rem";
-          })(),
-          fontWeight: 700,
-          color: amountError ? "var(--color-status-error)" : (usdMode ? usdStr : amountStr) ? "var(--color-text-display)" : "var(--color-text-disabled)",
-          letterSpacing: "-0.03em", lineHeight: 1.1, minHeight: "3.5rem",
-          transition: "color 0.15s, font-size 0.15s",
-        }}>
-          {usdMode
-            ? (usdStr ? `$${Number(usdStr).toLocaleString()}` : "$0")
-            : (amountStr ? Number(amountStr).toLocaleString() : "0")
-          }
-        </span>
+        <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" />
 
-        <TextButton onClick={onToggleCurrency} tone="muted">
-          {usdMode
-            ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
-            : (fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : displayCurrency)
-          }
-        </TextButton>
-
-        {amountError && (
-          <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)" }}>{amountError}</span>
-        )}
-      </div>
-
-      {/* Recipient */}
-      <div style={{ flex: "0 0 auto", position: "relative" }}>
-        <div style={{
-          background: "var(--color-bg-surface)",
-          borderRadius: "var(--radius-card)",
-          padding: "var(--space-4) var(--space-4)",
-          boxShadow: "var(--shadow-surface)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <UserCircleIcon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-            <EmbeddedInput
-              ref={destRef}
-              autoComplete="off"
-              value={destination}
-              onChange={(e) => onChangeDestination(e.target.value)}
-              placeholder="Enter address or contact"
-              onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = "var(--color-text-secondary)"; }}
-              onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
-              style={{ flex: 1 }}
-            />
-            {canOpenPicker && (
-              <button onClick={onOpenPicker}
-                style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
-                <UserGroupIcon size={16} />
+        <div style={{ position: "relative" }}>
+          <Input
+            ref={destRef}
+            label="Recipient"
+            value={destination}
+            onChange={(event) => onChangeDestination(event.target.value)}
+            placeholder="Address or contact"
+            autoComplete="off"
+            error={destError || undefined}
+            rightElement={canOpenPicker ? (
+              <button
+                type="button"
+                onClick={onOpenPicker}
+                aria-label="Choose contact or account"
+                style={{ border: 0, background: "transparent", padding: 0, display: "flex", color: "var(--color-text-tertiary)", cursor: "pointer" }}
+              >
+                <UserGroupIcon size={18} aria-hidden="true" />
               </button>
-            )}
+            ) : undefined}
+          />
+          {destination.trim() ? (
+            <AddressSuggestionsOverlay
+              suggestions={suggestions}
+              currentIdentity={destUpper}
+              onSelect={onSelectDestination}
+              maxHeight={240}
+              animated
+            />
+          ) : null}
+          {!destError && matchedContactName ? (
+            <span style={{ display: "block", marginTop: "var(--space-1)", paddingLeft: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-accent)" }}>
+              {matchedContactName}
+            </span>
+          ) : null}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <Input
+            label="Amount"
+            value={amountStr}
+            onChange={(event) => onAmountChange(event.target.value.replace(/[^\d]/g, ""))}
+            placeholder="0"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={20}
+            error={amountError || undefined}
+            rightElement={<span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: "var(--color-text-tertiary)" }}>QUBIC</span>}
+          />
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)", minHeight: 18 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+              {fiatEquiv ?? "\u00a0"}
+            </span>
+            {onMax ? <TextButton onClick={onMax} tone="muted">Use max</TextButton> : null}
           </div>
         </div>
 
-        {/* Suggestions overlay */}
-        {destination.trim() && (
-          <AddressSuggestionsOverlay
-            suggestions={suggestions}
-            currentIdentity={destUpper}
-            onSelect={onSelectDestination}
-            maxHeight={240}
-            animated
-          />
-        )}
-        {!destError && matchedContactName && (
-          <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{matchedContactName}</span>
-        )}
-        {destError && (
-          <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{destError}</span>
-        )}
+        {balance !== null ? (
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Available balance</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em" }}>
+              {formatQu(balance)} QUBIC
+            </span>
+          </div>
+        ) : null}
       </div>
 
-      {/* Available balance */}
-      {balance !== null && (
-        <div style={{ flex: "0 0 auto", textAlign: "center", paddingBottom: "var(--space-1)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-            {formatQu(balance)} available
-          </span>
-        </div>
-      )}
-
-      {/* Numpad */}
-      <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "flex-end", paddingTop: 0 }}>
-        <Numpad onPress={onNumpad} onMax={onMax} />
-      </div>
-
-      {/* Actions */}
-      <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <Button onClick={onReview} disabled={!canReview}>
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-            Review <ArrowUpRight01Icon size={16} strokeWidth={2} />
-          </span>
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          zIndex: 5,
+          marginInline: "calc(var(--space-4) * -1)",
+          padding: "var(--space-3) var(--space-4)",
+          borderTop: "1px solid var(--color-border-subtle)",
+          background: "var(--color-bg-base)",
+        }}
+      >
+        <Button onClick={onReview} disabled={!canReview} style={{ width: "100%" }}>
+          Review transfer
+          <ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" />
         </Button>
       </div>
 

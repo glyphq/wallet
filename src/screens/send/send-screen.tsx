@@ -26,7 +26,6 @@ import {
 import { SendHeader } from "./send-header";
 import { SendInputStep } from "./send-input-step";
 import { SendReviewStep } from "./send-review-step";
-import { useSendNumpadInput } from "./use-send-numpad";
 import { useSendPrefill } from "./use-send-prefill";
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -71,8 +70,6 @@ export default function SendScreen() {
   const [highValueVerifying, setHighValueVerifying] = useState(false);
   const [memo, setMemo] = useState("");
   const [showPicker, setShowPicker] = useState(false);
-  const [usdMode, setUsdMode] = useState(false);
-  const [usdStr, setUsdStr] = useState("");
   const [sending, setSending] = useState(false);
   const destRef = useRef<HTMLInputElement>(null);
 
@@ -119,11 +116,6 @@ export default function SendScreen() {
     });
   }, [txHash]);
 
-  const handleNumpad = useSendNumpadInput({
-    active: step === "input", usdMode, price, usdStr,
-    setUsdStr, setAmountStr, setAmountError, onEnter: goReview,
-  });
-
   function validateInputs(): boolean {
     let ok = true;
     if (!account) { setDestError("Account locked"); destRef.current?.focus(); return false; }
@@ -148,19 +140,8 @@ export default function SendScreen() {
 
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
 
-  function toggleCurrency() {
-    if (!usdMode && price && amountStr) {
-      setUsdStr((Number(amountStr) * price).toFixed(2));
-    }
-    if (usdMode && price && usdStr) {
-      const n = parseFloat(usdStr);
-      if (!isNaN(n) && n > 0) setAmountStr(Math.round(n / price).toString());
-    }
-    setUsdMode((v) => !v);
-  }
-
   const handleMax = balance !== null
-    ? () => { setAmountStr(balance.toString()); setAmountError(""); if (price) setUsdStr((Number(balance) * price).toFixed(2)); }
+    ? () => { setAmountStr(balance.toString()); setAmountError(""); }
     : undefined;
 
   async function send() {
@@ -194,16 +175,13 @@ export default function SendScreen() {
       <SendInputStep
         statusBar={sendHeader}
         accountName={accountName}
+        identity={identity}
         draftRestored={draftRestored}
         onDismissDraft={dismissDraft}
         amountStr={amountStr}
-        usdMode={usdMode}
-        usdStr={usdStr}
         amountError={amountError}
         fiatEquiv={fiatEquiv}
-        displayCurrency={quote.currency}
-        onToggleCurrency={toggleCurrency}
-        onNumpad={handleNumpad}
+        onAmountChange={(value) => { setAmountStr(value); setAmountError(""); }}
         onMax={handleMax}
         balance={balance}
         destination={destination}
