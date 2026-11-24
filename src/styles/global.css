@@ -1011,5 +1011,6 @@ a:hover {
 }
 
 .recent-activity-panel::before {
+  border-radius: calc(var(--radius-sharp) + 4px);
   opacity: 0.28;
 }
