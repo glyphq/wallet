@@ -286,6 +286,8 @@ export default function SendScreen() {
         amountStr={amountStr}
         matchedContactName={matchedContact?.name ?? null}
         destUpper={destUpper}
+        accountName={accountName}
+        identity={identity}
         txHash={txHash}
         savedTargetTick={savedTargetTick}
         currentTick={tickInfo?.tick ?? 0}

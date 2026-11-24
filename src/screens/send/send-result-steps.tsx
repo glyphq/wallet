@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/button";
-import { DetailRow } from "@/components/detail-row";
+import { Input } from "@/components/input";
 import { TxMemoField } from "@/components/tx-memo-field";
-import {
-  Bookmark01Icon, CheckmarkCircle01Icon, Clock01Icon, FlashIcon,
-  ShieldAlertIcon, UserCircleIcon,
-} from "@/lib/icons";
-import { formatQu, truncateId } from "@/lib/format";
-import { SendDoneActions, TxStatusDetailRow } from "./send-result";
+import { ApprovalAddress } from "@/components/request/approval-address";
+import { ApprovalAmount } from "@/components/request/approval-amount";
+import { ApprovalDisclosure, ApprovalField } from "@/components/request/approval-field";
+import { CheckmarkCircle01Icon, RefreshIcon, ShieldAlertIcon } from "@/lib/icons";
+import { watchStatusColor, watchStatusLabel, type WatchResult } from "./send-flow";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
+import { useHideAppChrome } from "@/layouts/chrome-visibility";
+import { SendDoneActions } from "./send-result";
 import { SendStepPanel } from "./send-step-panel";
-import { StatusSpinner, GhostActionButton, labelStyle, rowGroupStyle, thinDividerStyle } from "./send-ui";
-import type { WatchResult } from "./send-flow";
+import { SendStepFooter, StatusSpinner } from "./send-ui";
 
 export interface SendSendingStepProps {
   amountStr: string;
@@ -21,16 +22,23 @@ export interface SendSendingStepProps {
 
 /** Send broadcast-in-flight step. */
 export function SendSendingStep({ amountStr, matchedContactName, destUpper }: SendSendingStepProps) {
+  useHideAppChrome();
   return (
     <SendStepPanel centered gap="var(--space-5)" ariaLive="polite" ariaBusy>
-      <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-        <StatusSpinner size={20} />
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting transfer</div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-            {formatQu(amountStr)} to {matchedContactName ?? truncateId(destUpper)}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          <StatusSpinner size={20} />
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>
+              Broadcasting transfer
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: 2 }}>
+              Waiting for the network to accept the transaction.
+            </div>
           </div>
         </div>
+        <ApprovalAmount amount={BigInt(amountStr)} />
+        <ApprovalAddress label="To" identity={destUpper} name={matchedContactName ?? undefined} compact="long" />
       </div>
     </SendStepPanel>
   );
@@ -40,6 +48,8 @@ export interface SendDoneStepProps {
   amountStr: string;
   matchedContactName: string | null;
   destUpper: string;
+  accountName: string;
+  identity: string;
   txHash: string;
   savedTargetTick: number;
   currentTick: number;
@@ -48,11 +58,13 @@ export interface SendDoneStepProps {
   onSaveContact: (name: string) => void;
 }
 
-/** Send receipt step with confirmation watch, contact save, and note. */
+/** Send receipt with confirmation status, optional contact save, and note. */
 export function SendDoneStep({
   amountStr,
   matchedContactName,
   destUpper,
+  accountName,
+  identity,
   txHash,
   savedTargetTick,
   currentTick,
@@ -60,8 +72,14 @@ export function SendDoneStep({
   destIsKnownContact,
   onSaveContact,
 }: SendDoneStepProps) {
+  useHideAppChrome();
   const [saveName, setSaveName] = useState("");
   const [saved, setSaved] = useState(false);
+
+  const progressText = watchResult === "pending"
+    ? pendingTxProgress(savedTargetTick, currentTick).timingText
+    : null;
+  const statusText = progressText ?? watchStatusLabel(watchResult);
 
   function submitContact() {
     if (!saveName.trim()) return;
@@ -70,77 +88,63 @@ export function SendDoneStep({
   }
 
   return (
-    <SendStepPanel scroll="auto" gap="var(--space-3)">
-      {/* Amount */}
-      <header style={{ paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        <span style={{ ...labelStyle, color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}><CheckmarkCircle01Icon size={16} /> Transaction sent</span>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-          {formatQu(amountStr)}
-        </div>
-      </header>
+    <SendStepPanel scroll="y" gap="var(--space-5)">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent)" }}>
+          <CheckmarkCircle01Icon size={15} aria-hidden="true" />
+          Transaction sent
+        </span>
 
-      {/* Details */}
-      <section aria-label="Broadcast receipt" style={rowGroupStyle}>
-        <DetailRow
-          icon={<UserCircleIcon size={16} />}
-          label="To"
-          value={matchedContactName ?? truncateId(destUpper)}
-          mono={!matchedContactName}
-          valueColor={matchedContactName ? "var(--color-accent)" : undefined}
-        />
-        <div style={thinDividerStyle} />
-        <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(txHash)} />
-        <div style={thinDividerStyle} />
-        <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
-        <div style={thinDividerStyle} />
-        <TxStatusDetailRow status={watchResult} idleColor="var(--color-text-secondary)" targetTick={savedTargetTick} currentTick={currentTick} />
-      </section>
+        <ApprovalAmount amount={BigInt(amountStr)} />
 
-      {/* Save contact */}
-      {!destIsKnownContact && !saved && (
-        <form onSubmit={(e) => { e.preventDefault(); submitContact(); }} style={{
-          borderTop: "1px solid var(--color-border-subtle)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-          padding: "var(--space-3) 0",
-          display: "flex", alignItems: "center", gap: "var(--space-3)",
-        }}>
-          <Bookmark01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-          <input aria-label="Contact name" autoComplete="off" value={saveName}
-            onChange={(e) => setSaveName(e.target.value)}
-            placeholder="Save as contact"
-            style={{
-              flex: 1, background: "none", border: "none", outline: "none",
-              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-              color: "var(--color-text-display)", padding: 0, minWidth: 0,
-            }}
-          />
-          <button type="submit" disabled={!saveName.trim()}
-            style={{
-              background: "none", border: "none", cursor: saveName.trim() ? "pointer" : "default",
-              fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-              color: saveName.trim() ? "var(--color-accent)" : "var(--color-text-disabled)",
-              padding: 0, flexShrink: 0,
-            }}>
-            Save
-          </button>
-        </form>
-      )}
-      {saved && (
-        <div style={{
-          borderTop: "1px solid var(--color-border-subtle)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-          padding: "var(--space-3) 0",
-          display: "flex", alignItems: "center", gap: "var(--space-3)",
-        }}>
-          <CheckmarkCircle01Icon size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Contact saved</span>
-        </div>
-      )}
+        <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" />
+        <ApprovalAddress label="To" identity={destUpper} name={matchedContactName ?? undefined} compact="long" />
 
-      {/* Notes */}
-      <TxMemoField hash={txHash} />
+        <ApprovalField label="Status">
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: watchStatusColor(watchResult, "var(--color-text-secondary)") }}>
+            {statusText}
+          </span>
+        </ApprovalField>
 
-      <div style={{ flex: 1 }} />
+        <ApprovalDisclosure label="Transaction details">
+          <ApprovalField label="Hash">
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)", overflowWrap: "anywhere" }}>
+              {txHash}
+            </span>
+          </ApprovalField>
+          <ApprovalField label="Target tick">
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>{savedTargetTick}</span>
+          </ApprovalField>
+        </ApprovalDisclosure>
+
+        {!destIsKnownContact && !saved ? (
+          <form onSubmit={(event) => { event.preventDefault(); submitContact(); }}>
+            <Input
+              label="Save as contact"
+              value={saveName}
+              onChange={(event) => setSaveName(event.target.value)}
+              placeholder="Contact name"
+              autoComplete="off"
+              rightElement={(
+                <button
+                  type="submit"
+                  disabled={!saveName.trim()}
+                  style={{ border: 0, background: "transparent", padding: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: saveName.trim() ? "var(--color-accent)" : "var(--color-text-disabled)", cursor: saveName.trim() ? "pointer" : "default" }}
+                >
+                  Save
+                </button>
+              )}
+            />
+          </form>
+        ) : null}
+        {saved ? (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--color-accent)" }}>
+            Contact saved
+          </span>
+        ) : null}
+
+        <TxMemoField hash={txHash} />
+      </div>
 
       <SendDoneActions />
     </SendStepPanel>
@@ -154,25 +158,38 @@ export interface SendErrorStepProps {
 
 /** Send broadcast-failure step. */
 export function SendErrorStep({ txError, onRetry }: SendErrorStepProps) {
+  useHideAppChrome();
   const navigate = useNavigate();
   return (
-    <SendStepPanel centered gap="var(--space-5)" role="alert">
-      <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "flex-start", gap: "var(--space-4)" }}>
-        <ShieldAlertIcon size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcast failed</div>
-          <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-            {txError || "The transaction could not be broadcast."}
-          </p>
-          <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)", lineHeight: 1.5 }}>
-            Your draft was kept so you can review and try again.
-          </p>
+    <SendStepPanel scroll="y" gap="var(--space-5)" role="alert">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+          <ShieldAlertIcon size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>
+              Broadcast failed
+            </div>
+            <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-body)" }}>
+              {txError || "The transaction could not be broadcast."}
+            </p>
+          </div>
         </div>
+        <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-tertiary)", lineHeight: "var(--leading-body)" }}>
+          Your draft was kept so you can review and try again.
+        </p>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", paddingTop: "var(--space-2)" }}>
-        <Button onClick={onRetry}>Review and try again</Button>
-        <GhostActionButton onClick={() => navigate("/dashboard")}>Cancel</GhostActionButton>
-      </div>
+
+      <SendStepFooter>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <Button onClick={onRetry}>
+            <RefreshIcon size={16} aria-hidden="true" />
+            Review and try again
+          </Button>
+          <Button variant="secondary" onClick={() => navigate("/dashboard")}>
+            Cancel
+          </Button>
+        </div>
+      </SendStepFooter>
     </SendStepPanel>
   );
 }

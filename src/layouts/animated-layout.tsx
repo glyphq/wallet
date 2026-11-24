@@ -14,6 +14,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
+import { ChromeVisibilityProvider, useChromeVisibility } from "./chrome-visibility";
 
 // ── Route helpers ────────────────────────────────────────────────────────────
 
@@ -111,6 +112,7 @@ function LayoutShell() {
   const navigate = useNavigate();
   const element = useOutlet();
   const { header } = useHeaderSlot();
+  const { hidden: chromeHidden } = useChromeVisibility();
   const countdown = useLockCountdown();
   const update = useUpdaterStore((s) => s.update);
   const updaterContext = useUpdaterStore((s) => s.context);
@@ -118,8 +120,8 @@ function LayoutShell() {
   const updateProgress = useUpdaterStore((s) => s.progress);
   const installUpdate = useUpdaterStore((s) => s.install);
   const cur = location.pathname;
-  const show = showHeader(cur);
-  const showNav = showBottomNav(cur);
+  const show = !chromeHidden && showHeader(cur);
+  const showNav = !chromeHidden && showBottomNav(cur);
   const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
@@ -267,7 +269,9 @@ export function AnimatedLayout() {
   return (
     <SheetStateProvider>
       <HeaderSlotProvider>
-        <LayoutShell />
+        <ChromeVisibilityProvider>
+          <LayoutShell />
+        </ChromeVisibilityProvider>
       </HeaderSlotProvider>
     </SheetStateProvider>
   );

@@ -5,6 +5,7 @@ import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalField } from "@/components/request/approval-field";
 import { MoneySend01Icon } from "@/lib/icons";
 import { formatQu } from "@/lib/format";
+import { useHideAppChrome } from "@/layouts/chrome-visibility";
 import { SendStepPanel } from "./send-step-panel";
 import { SendStepFooter } from "./send-ui";
 
@@ -52,6 +53,8 @@ export function SendReviewStep({
   canSign,
   onSend,
 }: SendReviewStepProps) {
+  useHideAppChrome();
+
   const reviewAmount = BigInt(amountStr);
   const balanceAfter = balance === null ? null : balance - reviewAmount;
   const sendDisabled = !canSign || hasPendingTx || (needsHighValueConfirmation && !highValueVerified);
@@ -62,16 +65,16 @@ export function SendReviewStep({
         <ApprovalAmount amount={reviewAmount} />
 
         <ApprovalAddress
-          label="To"
-          identity={destUpper}
-          name={matchedContactName ?? undefined}
-          compact="long"
-        />
-        <ApprovalAddress
           label="From"
           identity={identity}
           name={accountName}
           compact="short"
+        />
+        <ApprovalAddress
+          label="To"
+          identity={destUpper}
+          name={matchedContactName ?? undefined}
+          compact="long"
         />
 
         {balanceAfter !== null ? (

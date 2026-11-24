@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router";
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
-import { ShieldAlertIcon, ShieldCheckIcon } from "@/lib/icons";
+import { Clock01Icon, Home01Icon, ShieldAlertIcon, ShieldCheckIcon } from "@/lib/icons";
 import { watchStatusColor, watchStatusLabel, type WatchResult } from "./send-flow";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
-import { GhostActionButton, StatusSpinner } from "./send-ui";
+import { SendStepFooter, StatusSpinner } from "./send-ui";
 
 /** Status row shared by send and send-many receipts. */
 export function TxStatusDetailRow(
@@ -38,9 +38,17 @@ export function TxStatusDetailRow(
 export function SendDoneActions() {
   const navigate = useNavigate();
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-      <Button onClick={() => navigate("/dashboard")}>Done</Button>
-      <GhostActionButton onClick={() => navigate("/history")}>View history</GhostActionButton>
-    </div>
+    <SendStepFooter>
+      <div style={{ display: "flex", gap: "var(--space-3)", width: "100%" }}>
+        <Button onClick={() => navigate("/dashboard")} style={{ flex: 1 }}>
+          <Home01Icon size={16} aria-hidden="true" />
+          Done
+        </Button>
+        <Button variant="secondary" onClick={() => navigate("/history")} style={{ flex: 1 }}>
+          <Clock01Icon size={16} aria-hidden="true" />
+          History
+        </Button>
+      </div>
+    </SendStepFooter>
   );
 }
