@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import glyphOnLight from "@/assets/brand/glyph-on-light.png";
-import { LockKeyholeIcon, Moon02Icon, Sun01Icon } from "@/lib/icons";
+import { LockKeyholeIcon } from "@/lib/icons";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -41,7 +41,6 @@ export function TitleBar() {
     [],
   );
   const themeMode = usePersistedStore((state) => state.settings.themeMode);
-  const updateSettings = usePersistedStore((state) => state.updateSettings);
   const isLocked = useSessionStore((state) => state.isLocked);
   const lock = useSessionStore((state) => state.lock);
   const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
@@ -106,13 +105,6 @@ export function TitleBar() {
               <LockKeyholeIcon size={14} />
             </WinBtn>
           ) : null}
-
-          <WinBtn
-            onClick={() => updateSettings({ themeMode: themeMode === "dark" ? "light" : "dark" })}
-            label={themeMode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-          >
-            {themeMode === "dark" ? <Sun01Icon size={14} /> : <Moon02Icon size={14} />}
-          </WinBtn>
 
           <WinBtn
             onClick={() => void win.minimize()}
