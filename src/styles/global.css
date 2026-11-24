@@ -1053,3 +1053,31 @@ a:hover {
 .lock-countdown::before {
   opacity: 0.35;
 }
+
+/* ── Error recovery ────────────────────────────────────────────────────────── */
+
+.error-details {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-3);
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.error-details pre {
+  margin: var(--space-3) 0 0;
+  max-height: 30vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}

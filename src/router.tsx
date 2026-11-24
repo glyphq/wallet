@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { createHashRouter, Navigate, Outlet } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorBoundary, RouteErrorBoundary } from "@/components/error-boundary";
 import { AsciiSpinner } from "@/components/ascii-spinner";
 
 import { usePersistedStore } from "@/store/persisted";
@@ -163,6 +163,7 @@ if (typeof window !== "undefined") {
 export const router = createHashRouter([
   {
     element: <AnimatedLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: "/", element: <Screen component={SplashScreen} /> },
       { path: "/lock", element: <Screen component={LockScreen} /> },
