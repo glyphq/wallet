@@ -41,7 +41,7 @@ export function RankedList({ items }: { items: RankedItem[] }) {
             borderTop: index > 0 ? "1px solid var(--color-border-subtle)" : undefined,
           }}
         >
-          <Identicon kind="identity" seed={item.id} label={item.primary} size={36} radius={9} style={{ flexShrink: 0, opacity: item.kind === "contract" ? 0.82 : 1 }} />
+          <Identicon kind="identity" seed={item.id} label={item.primary} size={36} style={{ flexShrink: 0, opacity: item.kind === "contract" ? 0.82 : 1 }} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {item.primary}

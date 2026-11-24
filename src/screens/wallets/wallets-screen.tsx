@@ -5,13 +5,11 @@ import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { usePersistedStore, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { unlockWalletSession, verifyWalletPassword } from "@/lib/wallet";
+import { verifyWalletPassword } from "@/lib/wallet";
 import { newId } from "@/lib/crypto";
-import { recordAuditEvent } from "@/lib/audit-log";
 import { WalletList } from "./wallet-list";
 import {
   WalletActionSheet,
-  SwitchWalletSheet,
   RenameWalletSheet,
   DeleteWalletSheet,
   ImportWalletSheet,
@@ -28,20 +26,12 @@ export default function WalletsScreen() {
   const addWallet = usePersistedStore((s) => s.addWallet);
   const updateWallet = usePersistedStore((s) => s.updateWallet);
   const removeWallet = usePersistedStore((s) => s.removeWallet);
-  const touchWalletUnlocked = usePersistedStore((s) => s.touchWalletUnlocked);
-  const unlock = useSessionStore((s) => s.unlock);
   const sessionLock = useSessionStore((s) => s.lock);
   const resetSessionForSetup = useSessionStore((s) => s.resetForSetup);
 
   // Action sheet
   const [actionWallet, setActionWallet] = useState<WalletMeta | null>(null);
   const [recentlySwitchedId, setRecentlySwitchedId] = useState<string | null>(null);
-
-  // Switch
-  const [switchingWallet, setSwitchingWallet] = useState<WalletMeta | null>(null);
-  const [switchPassword, setSwitchPassword] = useState("");
-  const [switchError, setSwitchError] = useState("");
-  const [switchLoading, setSwitchLoading] = useState(false);
 
   // Rename
   const [renamingWallet, setRenamingWallet] = useState<WalletMeta | null>(null);
@@ -63,49 +53,11 @@ export default function WalletsScreen() {
   // ─── Actions ───
 
   function openActions(wallet: WalletMeta) {
-    if (switchLoading) return;
     setActionWallet(wallet);
   }
 
   function openSwitch(wallet: WalletMeta) {
-    if (switchLoading) return;
-    setActionWallet(null);
-    setSwitchingWallet(wallet);
-    setSwitchPassword("");
-    setSwitchError("");
-  }
-
-  async function doSwitch() {
-    if (!switchingWallet || switchLoading) return;
-    setSwitchLoading(true);
-    setSwitchError("");
-    try {
-      const wallets = await unlockWalletSession(switchingWallet.encryptedData!, switchPassword);
-      unlock(switchingWallet.id, wallets);
-      setActiveWallet(switchingWallet.id);
-      touchWalletUnlocked(switchingWallet.id);
-      setRecentlySwitchedId(switchingWallet.id);
-      recordAuditEvent({
-        kind: "unlock_succeeded",
-        status: "success",
-        title: "Wallet switched",
-        detail: switchingWallet.name,
-        walletId: switchingWallet.id,
-      });
-      setSwitchingWallet(null);
-      navigate("/dashboard", { replace: true });
-    } catch {
-      recordAuditEvent({
-        kind: "unlock_failed",
-        status: "failure",
-        title: "Wallet switch failed",
-        detail: switchingWallet.name,
-        walletId: switchingWallet.id,
-      });
-      setSwitchError("Wrong password");
-    } finally {
-      setSwitchLoading(false);
-    }
+    navigate(`/wallets/switch?wallet=${encodeURIComponent(wallet.id)}`);
   }
 
   function openRename(wallet: WalletMeta) {
@@ -213,11 +165,11 @@ export default function WalletsScreen() {
           Wallet management
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-        <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")} disabled={switchLoading}>
+        <Button size="sm" style={{ width: "auto" }} onClick={() => navigate("/setup/create")}>
           <AddCircleIcon size={18} aria-hidden="true" />
           New wallet
         </Button>
-        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openImportPicker} disabled={switchLoading}>
+        <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={openImportPicker}>
           <FolderOpenIcon size={18} aria-hidden="true" />
           Import wallet
         </Button>
@@ -230,8 +182,6 @@ export default function WalletsScreen() {
         <WalletList
           wallets={wallets}
           activeWalletId={settings.activeWalletId}
-          switchLoading={switchLoading}
-          switchingWalletId={switchingWallet?.id ?? null}
           recentlySwitchedId={recentlySwitchedId}
           onSelect={(wallet) => (wallet.id === settings.activeWalletId ? navigate(`/wallets/${wallet.id}`) : openSwitch(wallet))}
           onOpenActions={openActions}
@@ -246,16 +196,6 @@ export default function WalletsScreen() {
         onSwitch={openSwitch}
         onRename={openRename}
         onDelete={openDelete}
-      />
-
-      <SwitchWalletSheet
-        wallet={switchingWallet}
-        password={switchPassword}
-        onPasswordChange={(value) => { setSwitchPassword(value); setSwitchError(""); }}
-        error={switchError}
-        loading={switchLoading}
-        onClose={() => setSwitchingWallet(null)}
-        onSwitch={doSwitch}
       />
 
       <RenameWalletSheet

@@ -39,34 +39,16 @@ export default function WelcomeScreen() {
               <KeyRoundIcon size={18} strokeWidth={1.5} aria-hidden="true" />
               Restore from seed
             </Button>
+            {hasWallets ? (
+              <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => navigate(isLocked ? "/lock" : "/dashboard")}>
+                <ArrowLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+                Back to wallet
+              </Button>
+            ) : null}
           </div>
         )}
       >
         <div style={{ width: "100%", maxWidth: 380, margin: "0 auto", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "center" }}>
-          {hasWallets ? (
-            <button
-              type="button"
-              onClick={() => navigate(isLocked ? "/lock" : "/dashboard")}
-              style={{
-                alignSelf: "center",
-                minHeight: 44,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-                padding: 0,
-                border: 0,
-                background: "transparent",
-                color: "var(--color-text-secondary)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body-compact)",
-                cursor: "pointer",
-              }}
-            >
-              <ArrowLeft01Icon size={17} strokeWidth={1.5} aria-hidden="true" />
-              Back to wallet
-            </button>
-          ) : null}
-
           <WalletFileDrop flow={importFlow} />
 
           {hasPendingRequest ? <Notice tone="warning">A request is waiting.</Notice> : null}

@@ -6,8 +6,6 @@ import type { WalletMeta } from "@/store/persisted";
 interface WalletListProps {
   wallets: WalletMeta[];
   activeWalletId: string | null;
-  switchLoading: boolean;
-  switchingWalletId: string | null;
   recentlySwitchedId: string | null;
   onSelect: (wallet: WalletMeta) => void;
   onOpenActions: (wallet: WalletMeta) => void;
@@ -17,8 +15,6 @@ interface WalletListProps {
 export function WalletList({
   wallets,
   activeWalletId,
-  switchLoading,
-  switchingWalletId,
   recentlySwitchedId,
   onSelect,
   onOpenActions,
@@ -30,7 +26,6 @@ export function WalletList({
       {sorted.map((wallet) => {
         const isActive = wallet.id === activeWalletId;
         const visibleCount = wallet.accounts.filter((a) => !a.hidden).length;
-        const isSwitching = switchLoading && switchingWalletId === wallet.id;
 
         return (
           <div
@@ -49,15 +44,13 @@ export function WalletList({
             <button
               type="button"
               onClick={() => onSelect(wallet)}
-              disabled={switchLoading}
-              aria-busy={isSwitching || undefined}
               style={{
                 display: "flex", alignItems: "center", gap: "var(--space-3)",
-                background: "none", border: "none", cursor: switchLoading ? "not-allowed" : "pointer",
+                background: "none", border: "none", cursor: "pointer",
                 flex: 1, minWidth: 0, textAlign: "left", padding: 0,
               }}
             >
-              <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} radius={10} style={{ flexShrink: 0 }} walletIcon={wallet.icon} walletColor={wallet.color} />
+              <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} style={{ flexShrink: 0 }} walletIcon={wallet.icon} walletColor={wallet.color} />
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                   <span style={{
@@ -72,9 +65,7 @@ export function WalletList({
                   fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
                   color: "var(--color-text-disabled)",
                 }}>
-                  {isSwitching
-                    ? <span role="status" aria-live="polite">Unlocking wallet…</span>
-                    : `${visibleCount} ${visibleCount === 1 ? "account" : "accounts"} · Unlocked ${timeAgo(wallet.lastUnlockedAt).toLowerCase()}`}
+                  {`${visibleCount} ${visibleCount === 1 ? "account" : "accounts"} · Unlocked ${timeAgo(wallet.lastUnlockedAt).toLowerCase()}`}
                 </span>
               </div>
               {isActive && (
@@ -88,9 +79,8 @@ export function WalletList({
               type="button"
               aria-label="Wallet options"
               onClick={() => onOpenActions(wallet)}
-              disabled={switchLoading}
               style={{
-                background: "none", border: "none", cursor: switchLoading ? "not-allowed" : "pointer",
+                background: "none", border: "none", cursor: "pointer",
                 color: "var(--color-text-disabled)", padding: "var(--space-2)",
                 flexShrink: 0, display: "flex", alignItems: "center",
               }}

@@ -67,38 +67,6 @@ export function WalletActionSheet({
   );
 }
 
-interface SwitchWalletSheetProps {
-  wallet: WalletMeta | null;
-  password: string;
-  onPasswordChange: (value: string) => void;
-  error: string;
-  loading: boolean;
-  onClose: () => void;
-  onSwitch: () => void;
-}
-
-export function SwitchWalletSheet({ wallet, password, onPasswordChange, error, loading, onClose, onSwitch }: SwitchWalletSheetProps) {
-  return (
-    <Sheet open={!!wallet} onClose={() => { if (!loading) onClose(); }} title={`Unlock ${wallet?.name ?? ""}`}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <Input
-          type="password"
-          label="Password"
-          value={password}
-          onChange={(e) => onPasswordChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !loading && onSwitch()}
-          error={error}
-          placeholder="••••••••••"
-          autoComplete="current-password"
-          autoFocus
-          disabled={loading}
-        />
-        <Button onClick={onSwitch} loading={loading} disabled={!password}>Unlock</Button>
-      </div>
-    </Sheet>
-  );
-}
-
 interface RenameWalletSheetProps {
   wallet: WalletMeta | null;
   value: string;

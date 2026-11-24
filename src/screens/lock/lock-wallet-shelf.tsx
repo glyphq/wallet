@@ -1,4 +1,3 @@
-import { AddCircleIcon } from "@/lib/icons";
 import { Identicon } from "@/components/identicon";
 import { timeAgo } from "@/lib/format";
 import type { usePersistedStore } from "@/store/persisted";
@@ -43,7 +42,7 @@ function WalletShelfRow({
         transition: "background var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out)",
       }}
     >
-      <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} radius={4} padding={2} walletIcon={wallet.icon} walletColor={wallet.color} />
+      <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} padding={2} walletIcon={wallet.icon} walletColor={wallet.color} />
       <span style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
         <span
           style={{
@@ -68,12 +67,10 @@ export function LockWalletShelf({
   wallets,
   selectedId,
   onSelect,
-  onAdd,
 }: {
   wallets: Wallet[];
   selectedId: string;
   onSelect: (id: string) => void;
-  onAdd: () => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -96,50 +93,6 @@ export function LockWalletShelf({
           />
         ))}
       </div>
-      <button
-        type="button"
-        className="wallet-shelf-add"
-        onClick={onAdd}
-        aria-label="Add another wallet"
-        style={{
-          width: "100%",
-          minHeight: 54,
-          display: "flex",
-          alignItems: "center",
-          gap: "var(--space-3)",
-          padding: "var(--space-3) var(--space-4)",
-          border: "1px dashed var(--color-border-subtle)",
-          borderRadius: "var(--radius-sharp)",
-          background: "transparent",
-          textAlign: "left",
-          cursor: "pointer",
-          color: "var(--color-text-secondary)",
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            width: 36,
-            height: 36,
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-            border: "1px dashed var(--color-border-strong)",
-            borderRadius: "var(--radius-sharp)",
-            color: "var(--color-text-tertiary)",
-          }}
-        >
-          <AddCircleIcon size={17} strokeWidth={1.5} />
-        </span>
-        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-          <span style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
-            Add another wallet
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-            Create new or import existing
-          </span>
-        </span>
-      </button>
     </div>
   );
 }

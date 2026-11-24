@@ -34,6 +34,7 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
 
 const HEADER_TITLES: [string, string][] = [
   ["/dashboard", "Dashboard"],
+  ["/wallets/switch", "Switch wallet"],
   ["/wallets/:id/portfolio", "Portfolio"],
   ["/wallets", "Wallets"],
   ["/wallets/", "Wallet details"],
@@ -58,6 +59,7 @@ function showHeader(pathname: string): boolean {
 
 function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
+  if (pathname === "/wallets/switch") return false;
   if (pathname.startsWith("/settings/")) return false;
   return true;
 }
@@ -113,11 +115,13 @@ function LayoutShell() {
   const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
-  const resolvedHeader = header ?? (routeTitle
-    ? backTarget
-      ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} />
-      : <ScreenHeader leading={<ShellWalletSwitcher />} title={routeTitle} />
-    : null);
+  const resolvedHeader = header ?? (cur === "/wallets/switch"
+    ? <ScreenHeader title="Switch wallet" onBack={() => navigate(-1)} />
+    : routeTitle
+      ? backTarget
+        ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} />
+        : <ScreenHeader leading={<ShellWalletSwitcher />} title={routeTitle} />
+      : null);
 
   const prevRef = useRef(cur);
   const prev = prevRef.current;

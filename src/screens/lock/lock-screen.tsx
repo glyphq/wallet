@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { AnimatePresence, motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
-import { Exchange01Icon } from "@/lib/icons";
+import { IconButton } from "@/components/icon-button";
+import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon } from "@/lib/icons";
 import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
+import { stepMotion } from "@/lib/animations";
 import { unlockBiometricSession, unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -101,6 +104,14 @@ export default function LockScreen() {
   function startLockout() {
     setPasswordLockoutUntil(Date.now() + PASSWORD_LOCKOUT_SECS * 1000);
     startCountdown(PASSWORD_LOCKOUT_SECS);
+  }
+
+  function cycleWallet(direction: -1 | 1) {
+    if (lockedWallets.length < 2) return;
+    const index = lockedWallets.findIndex((wallet) => wallet.id === selected.id);
+    const next = lockedWallets[(index + direction + lockedWallets.length) % lockedWallets.length];
+    setSelectedId(next.id);
+    setView("unlock");
   }
 
   async function finishUnlock(wallets: SessionAccount[]) {
@@ -223,9 +234,15 @@ export default function LockScreen() {
       )}
     />
   ) : (
-    <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
-      Back to unlock
-    </Button>
+    <div style={{ display: "flex", gap: "var(--space-3)" }}>
+      <Button variant="ghost" size="md" style={{ flex: 1 }} onClick={() => setView("unlock")}>
+        Back to unlock
+      </Button>
+      <Button size="md" style={{ flex: 1 }} onClick={() => navigate("/setup")}>
+        <AddCircleIcon size={18} aria-hidden="true" />
+        Add wallet
+      </Button>
+    </div>
   );
 
   return (
@@ -233,7 +250,12 @@ export default function LockScreen() {
       {unlocking ? (
         <UnlockingPanel />
       ) : (
-        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={view}
+            {...stepMotion}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+          >
           <PageBanner
             title={view === "switch" ? bannerTitle : undefined}
             description={view === "switch" ? bannerDescription : undefined}
@@ -246,8 +268,26 @@ export default function LockScreen() {
             }
           >
             {view === "unlock" ? (
-              <div style={{ marginTop: "var(--space-3)", width: "100%" }}>
+              <div style={{ marginTop: "var(--space-3)", width: "100%", position: "relative" }}>
+                {lockedWallets.length > 1 ? (
+                  <IconButton
+                    label="Previous wallet"
+                    onClick={() => cycleWallet(-1)}
+                    style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36 }}
+                  >
+                    <ChevronLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+                  </IconButton>
+                ) : null}
                 <LockWalletFocus wallet={selected} />
+                {lockedWallets.length > 1 ? (
+                  <IconButton
+                    label="Next wallet"
+                    onClick={() => cycleWallet(1)}
+                    style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36 }}
+                  >
+                    <ChevronRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+                  </IconButton>
+                ) : null}
               </div>
             ) : null}
           </PageBanner>
@@ -261,9 +301,8 @@ export default function LockScreen() {
                   onSelect={(id) => {
                     setSelectedId(id);
                     setView("unlock");
-                    window.requestAnimationFrame(() => setFocus("password"));
+                    window.setTimeout(() => setFocus("password"), 240);
                   }}
-                  onAdd={() => navigate("/setup")}
                 />
               </div>
             </div>
@@ -272,7 +311,8 @@ export default function LockScreen() {
           <div className="page-frame-actions">
             <div className="page-frame-actions-inner">{actions}</div>
           </div>
-        </div>
+          </motion.div>
+        </AnimatePresence>
       )}
     </FullPage>
   );

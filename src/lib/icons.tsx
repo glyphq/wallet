@@ -1,6 +1,8 @@
 import type { ComponentType, SVGProps } from "react";
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   ArrowDownLeft,
   ArrowDownToLine,
@@ -76,6 +78,8 @@ function createIcon(Icon: GravityIcon) {
 }
 
 export const AddCircleIcon = createIcon(CirclePlus);
+export const ChevronLeft01Icon = createIcon(ChevronLeft);
+export const ChevronRight01Icon = createIcon(ChevronRight);
 export const ArrowDown01Icon = createIcon(ChevronDown);
 export const ArrowLeft01Icon = createIcon(ArrowLeft);
 export const ArrowRight01Icon = createIcon(ArrowRight);

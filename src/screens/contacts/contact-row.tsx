@@ -9,7 +9,7 @@ export function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: 
   return (
     <article className={highlighted ? "flash-success" : undefined} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", padding: "var(--space-4) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", minWidth: 0, flex: "1 1 180px" }}>
-        <Identicon kind="identity" seed={contact.identity} label={contact.name} size={40} radius={10} style={{ flexShrink: 0 }} />
+        <Identicon kind="identity" seed={contact.identity} label={contact.name} size={40} style={{ flexShrink: 0 }} />
         <div style={{ minWidth: 0 }}>
           <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600 }}>{contact.name}</strong>
           <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em" }}>{truncateId(contact.identity)}</span>

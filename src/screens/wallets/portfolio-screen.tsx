@@ -51,7 +51,7 @@ export default function PortfolioScreen() {
   return (
     <AppShell contentStyle={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-        <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} radius={10} style={{ flexShrink: 0 }} walletIcon={wallet.icon} walletColor={wallet.color} />
+        <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} style={{ flexShrink: 0 }} walletIcon={wallet.icon} walletColor={wallet.color} />
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {wallet.name}

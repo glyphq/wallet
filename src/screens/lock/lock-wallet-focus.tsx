@@ -16,9 +16,6 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
         seed={`${wallet.id}:${wallet.color}`}
         label={wallet.name}
         size={96}
-        radius={4}
-        square
-        ascii
         style={{ flexShrink: 0 }}
       />
       <span
