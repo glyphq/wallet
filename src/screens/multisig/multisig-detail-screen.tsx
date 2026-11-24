@@ -617,23 +617,19 @@ export default function MultisigDetailScreen() {
       ) : null}
 
       <Section title="Owners">
-        <div className="settings-menu corner-frame" style={{ display: "flex", flexDirection: "column" }}>
-          {detail.owners.map((owner, index) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minWidth: 0 }}>
+          {detail.owners.map((owner) => (
             <div
               key={owner}
-              className="settings-menu-row"
-              style={{ cursor: "default", gap: "var(--space-3)", alignItems: "center" }}
+              style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}
             >
               <FramedAvatar seed={owner} size={30} />
               <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
-                    <IdentityName identity={owner} contacts={contacts} wallet={wallet} sessionAccounts={sessionAccounts} />
-                  </span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
+                  <IdentityName identity={owner} contacts={contacts} wallet={wallet} sessionAccounts={sessionAccounts} />
                 </span>
                 <span style={MONO_META} title={owner}>{truncateId(owner, 10, 10)}</span>
               </div>
-              <span style={MONO_META}>Owner {index + 1}</span>
             </div>
           ))}
         </div>
