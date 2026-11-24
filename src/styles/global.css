@@ -1052,19 +1052,3 @@ a:hover {
   border-radius: calc(var(--radius-sharp) + 4px);
   opacity: 0.3;
 }
-
-/* ── Receive address ─────────────────────────────────────────────────────────── */
-
-.receive-address-box {
-  --corner-size: 8px;
-  --corner-inset: 2px;
-  --corner-color: var(--color-text-tertiary);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sharp);
-  background: var(--color-bg-surface);
-}
-
-.receive-address-box::before {
-  opacity: 0.24;
-}

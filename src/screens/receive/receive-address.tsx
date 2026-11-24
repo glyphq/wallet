@@ -19,20 +19,6 @@ export function ReceiveAddress({ identity }: { identity: string }) {
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", width: "100%" }}>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "var(--color-text-tertiary)",
-        }}
-      >
-        Your address
-      </span>
-
-      <div
-        className="receive-address-box corner-frame"
-        style={{
-          width: "100%",
           maxWidth: 340,
           textAlign: "center",
           wordBreak: "break-all",
@@ -44,7 +30,7 @@ export function ReceiveAddress({ identity }: { identity: string }) {
         }}
       >
         {identity}
-      </div>
+      </span>
 
       <Button
         variant="secondary"

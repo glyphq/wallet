@@ -16,7 +16,7 @@ export function ReceiveQrCard({ identity, hideBalances }: { identity: string; hi
       style={{
         background: QR_BG,
         borderRadius: "var(--radius-sharp)",
-        padding: "var(--space-4)",
+        padding: "var(--space-2)",
         position: "relative",
         cursor: hideBalances && !qrRevealed ? "pointer" : "default",
       }}

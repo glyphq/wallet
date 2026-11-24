@@ -12,7 +12,7 @@ import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote"
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
-import { AccountSelector } from "./dashboard-account-selector";
+import { AccountSelector } from "@/components/account-selector";
 import { BalanceDisplay, OwnedAssetChips } from "./dashboard-balance";
 import { MoreActions, PrimaryActions } from "./dashboard-actions";
 import { RecentTxs } from "./dashboard-activity";

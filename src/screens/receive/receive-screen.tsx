@@ -1,4 +1,5 @@
 import { AppShell } from "@/layouts/app-shell";
+import { AccountSelector } from "@/components/account-selector";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getWalletAccountIdentity } from "@/lib/accounts";
@@ -8,6 +9,7 @@ import { ReceiveEmptyState } from "./receive-empty-state";
 
 export default function ReceiveScreen() {
   const settings = usePersistedStore((s) => s.settings);
+  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const accounts = useSessionStore((s) => s.accounts);
 
@@ -21,32 +23,27 @@ export default function ReceiveScreen() {
         style={{
           flex: 1,
           minHeight: 0,
-          overflowY: "auto",
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          gap: "var(--space-5)",
-          padding: "var(--space-6) var(--space-4)",
+          gap: "var(--space-4)",
+          padding: "var(--space-4)",
         }}
       >
         {identity ? (
           <>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--color-text-tertiary)",
-                }}
-              >
-                Scan to receive QU
-              </span>
-              <div className="receive-qr-frame corner-frame">
-                <ReceiveQrCard identity={identity} hideBalances={hideBalances} />
-              </div>
+            <AccountSelector
+              wallet={wallet ?? null}
+              activeIndex={activeIndex}
+              accounts={accounts}
+              identity={identity}
+              onSelect={setActiveAccountIndex}
+            />
+
+            <div className="receive-qr-frame corner-frame">
+              <ReceiveQrCard identity={identity} hideBalances={hideBalances} />
             </div>
 
             <ReceiveAddress identity={identity} />
