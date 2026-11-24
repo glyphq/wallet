@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import { AddCircleIcon, Delete02Icon, UserGroupIcon } from "@/lib/icons";
-import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Input } from "@/components/input";
 import { Tag } from "@/components/tag";
@@ -66,7 +65,6 @@ export function MultisigOwnersEditor({
   ownerRowIds,
   ownerErrors,
   ownerCount,
-  requiredApprovals,
   maxOwners,
   formError,
   preflightError,
@@ -74,7 +72,6 @@ export function MultisigOwnersEditor({
   onAddOwner,
   onRemoveOwner,
   onPickOwner,
-  onApprovalsChange,
 }: {
   activeAccountName: string;
   identity: string | null;
@@ -82,7 +79,6 @@ export function MultisigOwnersEditor({
   ownerRowIds: number[];
   ownerErrors: string[];
   ownerCount: number;
-  requiredApprovals: number;
   maxOwners: number;
   formError: string;
   preflightError: string;
@@ -90,13 +86,11 @@ export function MultisigOwnersEditor({
   onAddOwner: () => void;
   onRemoveOwner: (index: number) => void;
   onPickOwner: (index: number) => void;
-  onApprovalsChange: (count: number) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", width: "100%", maxWidth: 480, margin: "0 auto" }}>
       <p style={BODY_COPY}>
-        Owner 1 is {activeAccountName}. Add at least one more signer, then choose how many
-        approvals are required before the vault can release funds.
+        Owner 1 is {activeAccountName}. Add at least one more signer for this vault.
       </p>
 
       <div style={OWNER_CARD_STYLE}>
@@ -167,24 +161,6 @@ export function MultisigOwnersEditor({
           <AddCircleIcon size={14} strokeWidth={1.5} aria-hidden="true" />
           Add owner
         </TextButton>
-      </div>
-
-
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        <DropdownSelect
-          id="multisig-approvals"
-          label="Approvals required"
-          value={String(requiredApprovals)}
-          options={Array.from({ length: ownerCount - 1 }, (_, index) => index + 2).map((count) => ({
-            value: String(count),
-            label: `${count} of ${Math.max(2, ownerCount)}`,
-          }))}
-          onChange={(value) => onApprovalsChange(Number(value))}
-        />
-        <p style={CAPTION_COPY}>
-          Every owner must approve the same release before funds can move.
-        </p>
       </div>
 
       <InlineError message={formError} />

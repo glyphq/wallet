@@ -3,6 +3,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/button";
+import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Input } from "@/components/input";
 import { Tag } from "@/components/tag";
@@ -450,7 +451,6 @@ export default function MultisigCreateScreen() {
             ownerRowIds={ownerRowIds}
             ownerErrors={ownerErrors}
             ownerCount={ownerCount}
-            requiredApprovals={approvalsValue}
             maxOwners={MSVAULT_MAX_OWNERS}
             formError={formError && !formError.startsWith("Vault name") ? formError : ""}
             preflightError={preflightError}
@@ -458,7 +458,6 @@ export default function MultisigCreateScreen() {
             onAddOwner={addOwner}
             onRemoveOwner={removeOwner}
             onPickOwner={setOwnerPickerIndex}
-            onApprovalsChange={setRequiredApprovals}
           />
         </PageFrame>
       </AppShell>
@@ -500,17 +499,32 @@ export default function MultisigCreateScreen() {
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: 500, color: "var(--color-text-primary)" }}>
                       {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
                     </span>
-                    {ownerCount >= 2 ? (
-                      <Tag>{`${approvalsValue} of ${ownerCount} approvals`}</Tag>
-                    ) : (
-                      <Tag variant="warning">Needs another owner</Tag>
-                    )}
+                    {ownerCount < 2 ? <Tag variant="warning">Needs another owner</Tag> : null}
                   </span>
                   <span style={CAPTION_COPY}>
-                    Includes {activeAccountName}. Manage owners to add signers or change approvals.
+                    Includes {activeAccountName}. Manage owners to add or remove signers.
                   </span>
                 </div>
               </div>
+            </section>
+
+            <section aria-label="Approvals" style={SECTION_STYLE}>
+              <DropdownSelect
+                id="multisig-approvals"
+                label="Approvals required"
+                value={String(approvalsValue)}
+                options={Array.from(
+                  { length: approvalsUpper - 1 },
+                  (_, index) => index + 2,
+                ).map((count) => ({
+                  value: String(count),
+                  label: `${count} of ${Math.max(2, ownerCount)}`,
+                }))}
+                onChange={(value) => setRequiredApprovals(Number(value))}
+              />
+              <p style={BODY_COPY}>
+                Every owner must approve the same release before funds can move.
+              </p>
             </section>
 
             <section aria-label="Fees" style={SECTION_STYLE}>
