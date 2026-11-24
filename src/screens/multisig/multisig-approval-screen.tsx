@@ -27,7 +27,7 @@ import { MSVAULT_REVOKE_FEE, ownerIndex, type MsvaultReleaseKind } from "@/lib/m
 import { qk } from "@/lib/query-keys";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
-import { ArrowLeft01Icon } from "@/lib/icons";
+import { ArrowLeft01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { ApprovalAddress } from "@/components/request/approval-address";
 import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalField } from "@/components/request/approval-field";
@@ -402,6 +402,7 @@ export default function MultisigApprovalScreen() {
           disabled={approvalActionsDisabled}
           onClick={() => void approve()}
         >
+          <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
           {isOwner ? "Approve release" : "Only owners can approve"}
         </Button>
       )}
@@ -421,9 +422,9 @@ export default function MultisigApprovalScreen() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-section)", lineHeight: "var(--leading-tight)", color: "var(--color-text-secondary)" }}>
             <span style={{ fontWeight: 600, color: "var(--color-text-display)" }}>
-              {proposal.approvals} {proposal.approvals === 1 ? "owner" : "owners"}
+              {proposal.approvals === 1 ? "An owner" : `${proposal.approvals} owners`}
             </span>{" "}
-            want to release{" "}
+            {proposal.approvals === 1 ? "wants" : "want"} to release{" "}
             <span style={{ fontWeight: 500, color: "var(--color-text-primary)" }}>
               {proposal.kind === "asset" && proposal.asset
                 ? <AssetMetaLabel asset={proposal.asset} amount={proposal.amount} />
@@ -453,14 +454,27 @@ export default function MultisigApprovalScreen() {
 
           <ApprovalAddress label="Destination" identity={proposal.destination} name={destinationName} compact="long" />
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <FeeRow label="Current approvals" value={`${proposal.approvals} of ${proposal.requiredApprovals}`} />
-            <FeeRow label="After approval" value={`${proposal.approvals + 1} of ${proposal.requiredApprovals}`} />
-            <FeeRow
-              label="Release fee"
-              value={feesQuery.isLoading ? "Loading fees…" : fees ? `${formatQu(fees.releaseFee)} QU` : "Fees unavailable"}
-            />
-            <FeeRow label="Vault QUBIC after release" value={`${formatQu(vaultAfterRelease)} QU`} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <ApprovalField label="Current approvals">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
+                {proposal.approvals} of {proposal.requiredApprovals}
+              </span>
+            </ApprovalField>
+            <ApprovalField label="After approval">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
+                {proposal.approvals + 1} of {proposal.requiredApprovals}
+              </span>
+            </ApprovalField>
+            <ApprovalField label="Release fee">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
+                {feesQuery.isLoading ? "Loading fees…" : fees ? `${formatQu(fees.releaseFee)} QU` : "Fees unavailable"}
+              </span>
+            </ApprovalField>
+            <ApprovalField label="Vault QUBIC after release">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                {formatQu(vaultAfterRelease)} QU
+              </span>
+            </ApprovalField>
           </div>
 
           {proposal.kind === "asset" ? (
