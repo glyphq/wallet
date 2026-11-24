@@ -137,7 +137,7 @@ export default function LockScreen() {
   }
 
   function cycleWallet(direction: WalletChangeDirection) {
-    if (lockedWallets.length < 2) return;
+    if (loading || unlocking || lockedWallets.length < 2) return;
     const index = lockedWallets.findIndex((wallet) => wallet.id === selected.id);
     const next = lockedWallets[(index + direction + lockedWallets.length) % lockedWallets.length];
     setWalletDirection(direction);
@@ -321,6 +321,7 @@ export default function LockScreen() {
                   <IconButton
                     label="Previous wallet"
                     onClick={() => cycleWallet(-1)}
+                    disabled={loading || unlocking}
                     style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, zIndex: 1, pointerEvents: "auto" }}
                   >
                     <ChevronLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
@@ -331,6 +332,7 @@ export default function LockScreen() {
                   <IconButton
                     label="Next wallet"
                     onClick={() => cycleWallet(1)}
+                    disabled={loading || unlocking}
                     style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, zIndex: 1, pointerEvents: "auto" }}
                   >
                     <ChevronRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
