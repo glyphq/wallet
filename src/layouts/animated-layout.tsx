@@ -84,6 +84,7 @@ function headerTitleFromPath(pathname: string): string | null {
   if (pathname === "/multisig/new") return "New multisig";
   if (pathname.startsWith("/multisig/") && pathname.endsWith("/deposit")) return "Deposit";
   if (pathname.startsWith("/multisig/") && pathname.endsWith("/release")) return "Release";
+  if (pathname.startsWith("/multisig/") && pathname.endsWith("/approvals")) return "Pending approvals";
   if (pathname.startsWith("/multisig/")) return "Multisig vault";
 
   for (const [prefix, title] of HEADER_TITLES) {
@@ -96,7 +97,7 @@ function headerTitleFromPath(pathname: string): string | null {
 
 function backTargetFromPath(pathname: string): string | null {
   if (pathname === "/multisig/new") return "/multisig";
-  if (pathname.startsWith("/multisig/") && (pathname.endsWith("/deposit") || pathname.endsWith("/release"))) {
+  if (pathname.startsWith("/multisig/") && (pathname.endsWith("/deposit") || pathname.endsWith("/release") || pathname.endsWith("/approvals"))) {
     return pathname.slice(0, pathname.lastIndexOf("/"));
   }
   if (pathname.startsWith("/multisig/")) return "/multisig";

@@ -47,6 +47,8 @@ const loadMultisigDepositScreen = () => import("@/screens/multisig/multisig-depo
 const MultisigDepositScreen = lazy(loadMultisigDepositScreen);
 const loadMultisigReleaseScreen = () => import("@/screens/multisig/multisig-release-screen");
 const MultisigReleaseScreen = lazy(loadMultisigReleaseScreen);
+const loadMultisigApprovalsScreen = () => import("@/screens/multisig/multisig-approvals-screen");
+const MultisigApprovalsScreen = lazy(loadMultisigApprovalsScreen);
 const loadReceiveScreen = () => import("@/screens/receive/receive-screen");
 const ReceiveScreen = lazy(loadReceiveScreen);
 const loadHistoryScreen = () => import("@/screens/history/history-screen");
@@ -144,6 +146,7 @@ const SCREEN_LOADERS = [
   loadMultisigDetailScreen,
   loadMultisigDepositScreen,
   loadMultisigReleaseScreen,
+  loadMultisigApprovalsScreen,
   loadReceiveScreen,
   loadHistoryScreen,
   loadTxDetailScreen,
@@ -209,6 +212,7 @@ export const router = createHashRouter([
           { path: "/multisig/:id", element: <Screen component={MultisigDetailScreen} /> },
           { path: "/multisig/:id/deposit", element: <Screen component={MultisigDepositScreen} /> },
           { path: "/multisig/:id/release", element: <Screen component={MultisigReleaseScreen} /> },
+          { path: "/multisig/:id/approvals", element: <Screen component={MultisigApprovalsScreen} /> },
           { path: "/receive", element: <Screen component={ReceiveScreen} /> },
           { path: "/history", element: <Screen component={HistoryScreen} /> },
           { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },

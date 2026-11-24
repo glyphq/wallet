@@ -3,7 +3,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Tag } from "@/components/tag";
-import { Alert01Icon } from "@/lib/icons";
+import { Alert01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { useMsvaultAssetMeta } from "@/hooks/use-msvault";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
@@ -61,7 +61,7 @@ export function MultisigFlowShell({ children, footer, notch, statusBar }: { chil
           {children}
         </div>
         {notch ? (
-          <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", pointerEvents: "none", marginBottom: -1 }}>
+          <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", pointerEvents: "auto", marginBottom: -1 }}>
             {notch}
           </div>
         ) : null}
@@ -314,5 +314,35 @@ export function MultisigNotch({ children }: { children: string }) {
         {children}
       </span>
     </div>
+  );
+}
+
+/** Clickable pending-approval counter styled like shell info notches. */
+export function PendingApprovalsNotch({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${count} pending approval${count === 1 ? "" : "s"}`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "var(--space-2)",
+        padding: "4px 10px",
+        border: 0,
+        background: "var(--color-bg-nav)",
+        borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+        color: "var(--color-accent)",
+        cursor: "pointer",
+      }}
+    >
+      <CheckmarkCircle01Icon size={13} strokeWidth={1.5} aria-hidden="true" />
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        Pending
+      </span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-accent)" }}>
+        {count}
+      </span>
+    </button>
   );
 }
