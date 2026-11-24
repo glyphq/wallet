@@ -985,14 +985,28 @@ a:hover {
 }
 
 .settings-menu-icon {
+  --corner-size: 5px;
+  --corner-inset: -3px;
+  --corner-color: var(--color-text-tertiary);
   width: 30px;
   height: 30px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sharp);
-  background: var(--color-bg-base);
+  color: var(--color-text-tertiary);
+}
+
+.settings-menu-icon::before {
+  opacity: 0.35;
+}
+
+.settings-menu-icon.corner-frame:hover::before,
+.settings-menu-icon.corner-frame:focus-visible::before,
+.settings-menu-row:hover .settings-menu-icon::before {
+  opacity: 0.35;
+}
+
+.settings-menu-row:hover .settings-menu-icon {
   color: var(--color-text-tertiary);
 }
 
@@ -1176,15 +1190,6 @@ a:hover {
   font-size: var(--text-caption);
   color: var(--color-text-tertiary);
   letter-spacing: 0.02em;
-}
-
-.contact-row-note {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text-secondary);
-  font-family: var(--font-sans);
-  font-size: var(--text-caption);
 }
 
 .contact-row-actions {

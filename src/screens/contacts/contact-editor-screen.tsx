@@ -31,7 +31,6 @@ export default function ContactEditorScreen() {
 
   const [name, setName] = useState(contact?.name ?? "");
   const [identity, setIdentity] = useState(contact?.identity ?? "");
-  const [note, setNote] = useState(contact?.note ?? "");
   const [tags, setTags] = useState((contact?.tags ?? []).join(", "));
   const [identityError, setIdentityError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -52,7 +51,6 @@ export default function ContactEditorScreen() {
       updateContact(contact.id, {
         name: name.trim(),
         identity: identity.trim(),
-        note: note.trim(),
         tags: parseTags(tags),
       });
       navigate(backTo, { replace: true, state: { savedContactId: contact.id } });
@@ -64,7 +62,6 @@ export default function ContactEditorScreen() {
       id: contactId,
       name: name.trim(),
       identity: identity.trim(),
-      note: note.trim(),
       tags: parseTags(tags),
       addedAt: Date.now(),
       lastUsedAt: 0,
@@ -142,8 +139,6 @@ export default function ContactEditorScreen() {
               setIdentity(value);
               setIdentityError("");
             }}
-            note={note}
-            onNote={setNote}
             tags={tags}
             onTags={setTags}
             identityError={identityError}

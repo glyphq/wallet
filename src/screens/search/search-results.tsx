@@ -108,12 +108,12 @@ export function buildSearchResults({
     }));
 
   const contactResults: SearchResult[] = contacts
-    .filter((contact) => [contact.name, contact.identity, contact.note].some((part) => part.toLowerCase().includes(query)))
+    .filter((contact) => [contact.name, contact.identity].some((part) => part.toLowerCase().includes(query)))
     .map((contact) => ({
       key: `contact:${contact.id}`,
       section: "contacts",
       title: contact.name,
-      subtitle: contact.note ? `${truncateId(contact.identity)} · ${contact.note}` : truncateId(contact.identity),
+      subtitle: truncateId(contact.identity),
       identity: contact.identity,
       badgeKind: "contact",
       onSelect: () => navigate(`/send?to=${contact.identity}`),

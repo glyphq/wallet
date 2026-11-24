@@ -145,7 +145,6 @@ export interface Contact {
   id: string;
   name: string;
   identity: string;
-  note: string;
   addedAt: number;
   lastUsedAt: number;
   tags?: string[];

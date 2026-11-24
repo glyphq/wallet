@@ -74,7 +74,7 @@ export function buildAddressSuggestions({
       {
         identity: contact.identity,
         label: contact.name,
-        secondary: contact.note || "Contact",
+        secondary: (contact.tags ?? []).map((tag) => `#${tag}`).join(" ") || "Contact",
         kind: "contact",
       },
       300 + Math.floor(contact.lastUsedAt / 1_000_000_000_000),

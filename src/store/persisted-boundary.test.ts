@@ -273,7 +273,7 @@ describe("persisted boundary helpers", () => {
     expect(mergePersistedState([], currentState()).pendingTxs).toEqual([]);
 
     const merged = mergePersistedState({
-      contacts: [{ id: "valid", name: "Name", identity: "IDENTITY", note: "", addedAt: 1, lastUsedAt: 2 }, { id: 1 }],
+      contacts: [{ id: "valid", name: "Name", identity: "IDENTITY", addedAt: 1, lastUsedAt: 2 }, { id: 1 }],
       pendingTxs: [{ hash: "h", source: "s", destination: "d", amount: "1", targetTick: 1, broadcastAt: 1 }, { hash: "broken" }],
       scheduledTransfers: [{ id: "s", label: "Scheduled", sourceIdentity: "SOURCE", destination: "DESTINATION", amount: "1", intervalDays: 1, nextRunAt: 1, createdAt: 1, enabled: true }, { id: "broken" }],
     }, currentState());

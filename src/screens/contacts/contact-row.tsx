@@ -15,7 +15,6 @@ export function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: 
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
           <strong className="contact-row-name">{contact.name}</strong>
           <span className="contact-row-address">{truncateId(contact.identity)}</span>
-          {contact.note ? <span className="contact-row-note">{contact.note}</span> : null}
           {tags.length > 0 ? (
             <span className="contact-row-tags">{tags.map((tag) => `#${tag}`).join("  ")}</span>
           ) : null}

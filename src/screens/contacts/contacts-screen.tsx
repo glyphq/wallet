@@ -24,7 +24,6 @@ export default function ContactsScreen() {
       const query = search.trim().toLowerCase();
       return contact.name.toLowerCase().includes(query)
         || contact.identity.toLowerCase().includes(query)
-        || contact.note.toLowerCase().includes(query)
         || (contact.tags ?? []).some((tag) => tag.includes(query));
     })
     .sort((left, right) => {

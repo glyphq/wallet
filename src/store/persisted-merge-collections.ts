@@ -9,17 +9,21 @@ type TxTags = PersistedState["txTags"];
 
 export function mergeContacts(value: unknown, current: Contacts): Contacts {
   if (!Array.isArray(value)) return current;
-  return value.filter(
-    (contact): contact is Contacts[number] =>
-      !!contact &&
-      typeof contact === "object" &&
-      typeof contact.id === "string" &&
-      typeof contact.name === "string" &&
-      typeof contact.identity === "string" &&
-      typeof contact.note === "string" &&
-      typeof contact.addedAt === "number" &&
-      typeof contact.lastUsedAt === "number"
-  );
+  return value
+    .filter(
+      (contact): contact is Contacts[number] =>
+        !!contact &&
+        typeof contact === "object" &&
+        typeof contact.id === "string" &&
+        typeof contact.name === "string" &&
+        typeof contact.identity === "string" &&
+        typeof contact.addedAt === "number" &&
+        typeof contact.lastUsedAt === "number"
+    )
+    .map((contact) => {
+      const { note: _note, ...rest } = contact as typeof contact & { note?: unknown };
+      return rest;
+    });
 }
 
 export function mergePendingTxs(value: unknown, current: PendingTxs): PendingTxs {

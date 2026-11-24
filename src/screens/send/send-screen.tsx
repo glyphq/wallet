@@ -202,7 +202,7 @@ export default function SendScreen() {
   }
 
   function saveContact(name: string) {
-    addContact({ id: newId(), name, identity: destUpper, note: "", addedAt: Date.now(), lastUsedAt: Date.now() });
+    addContact({ id: newId(), name, identity: destUpper, addedAt: Date.now(), lastUsedAt: Date.now() });
   }
 
   if (step === "input") {

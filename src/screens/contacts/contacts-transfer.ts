@@ -6,7 +6,7 @@ export function contactsToJson(contacts: Contact[]): string {
 }
 
 export function contactsToCsv(contacts: Contact[]): string {
-  const rows = [["name", "identity", "note", "tags"], ...contacts.map((contact) => [contact.name, contact.identity, contact.note, (contact.tags ?? []).join(" ")])];
+  const rows = [["name", "identity", "tags"], ...contacts.map((contact) => [contact.name, contact.identity, (contact.tags ?? []).join(" ")])];
   return `${rows.map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
 }
 
@@ -44,13 +44,12 @@ function normalizeImportedContact(value: unknown): Contact | null {
   const name = typeof record.name === "string" ? record.name.trim().slice(0, 80) : "";
   const identity = typeof record.identity === "string" ? record.identity.trim() : "";
   if (!name || !isValidIdentity(identity)) return null;
-  const note = typeof record.note === "string" ? record.note.trim().slice(0, 500) : "";
   const tags: string[] = Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === "string") : typeof record.tags === "string" ? record.tags.split(/[\s,]+/) : [];
-  return { id: newId(), name, identity, note, tags: tags.map((tag) => tag.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean).slice(0, 20), addedAt: Date.now(), lastUsedAt: 0 };
+  return { id: newId(), name, identity, tags: tags.map((tag) => tag.trim().replace(/^#+/, "").toLowerCase()).filter(Boolean).slice(0, 20), addedAt: Date.now(), lastUsedAt: 0 };
 }
 
 function portableContact(contact: Contact) {
-  return { name: contact.name, identity: contact.identity, note: contact.note, tags: contact.tags ?? [] };
+  return { name: contact.name, identity: contact.identity, tags: contact.tags ?? [] };
 }
 
 function csvCell(value: string): string {
