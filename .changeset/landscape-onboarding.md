@@ -2,4 +2,4 @@
 "glyph": minor
 ---
 
-Move the desktop window to a 1280×720 landscape baseline with maximize support, and rebuild onboarding on the landing site's graphite palette and button treatment. The welcome screen now uses a centered 80% inner frame with an animated ASCII backdrop, set in Space Grotesk. Route screens load lazily, cutting the initial JavaScript payload and keeping the ASCII engine off non-onboarding routes.
+Restore the fixed 380×680 portrait window while keeping the landing-inspired design: framed custom title bar with close only, Gravity UI icons, Geist/Geist Mono typography, flat landing buttons, graphite palette, and the centered onboarding surface with its ASCII backdrop. Route screens remain lazily loaded.

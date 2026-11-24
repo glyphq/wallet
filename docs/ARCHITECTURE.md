@@ -567,12 +567,11 @@ The Windows updater uses quiet installation. Linux AppImage update handling adju
 
 The main window is constrained to a desktop-wallet form factor:
 
-- Initial size: 380 by 680
-- Minimum: 360 by 640
-- Maximum: 420 by 760
+- Fixed size: 380 by 680
+- Resizing not enabled
 - Decorations disabled
 - Packaged developer tools disabled
-- Maximize and fullscreen not enabled by default
+- Maximize and fullscreen not enabled
 
 ### Content Security Policy
 
@@ -591,7 +590,7 @@ Remote scripts are not permitted by the configured CSP. The HTTPS connection all
 
 The main window receives only the declared Tauri capabilities, including:
 
-- Basic window close, minimize, drag, maximize toggle, and fullscreen operations
+- Basic window close and drag operations
 - External opener
 - Store get, set, load, save, and delete
 - Deep-link handling
