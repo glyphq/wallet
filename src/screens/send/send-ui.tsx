@@ -100,3 +100,22 @@ export function AddressSuggestionsOverlay({
     </div>
   );
 }
+
+/** Sticky footer for send-flow actions. */
+export function SendStepFooter({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        position: "sticky",
+        bottom: 0,
+        zIndex: 5,
+        marginInline: "calc(var(--space-4) * -1)",
+        padding: "var(--space-3) var(--space-4)",
+        borderTop: "1px solid var(--color-border-subtle)",
+        background: "var(--color-bg-base)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}

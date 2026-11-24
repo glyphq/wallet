@@ -252,15 +252,11 @@ export default function SendScreen() {
     return (
       <SendReviewStep
         amountStr={amountStr}
-        fiatEquiv={fiatEquiv}
-        price={price}
         matchedContactName={matchedContact?.name ?? null}
         destUpper={destUpper}
         accountName={accountName}
         identity={identity}
         balance={balance}
-        tickInfo={tickInfo}
-        tickOffset={settings.tickOffset}
         hasPendingTx={hasPendingTx}
         needsHighValueConfirmation={needsHighValueConfirmation}
         highValueVerified={highValueVerified}
@@ -274,7 +270,6 @@ export default function SendScreen() {
         sending={sending}
         canSign={!!account && !!tickInfo}
         onSend={send}
-        onEdit={() => setStep("input")}
       />
     );
   }
