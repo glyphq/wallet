@@ -6,7 +6,6 @@ import { Button } from "@/components/button";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Input } from "@/components/input";
-import { Tag } from "@/components/tag";
 import { PageFrame } from "@/components/page-header";
 import { ScreenHeader } from "@/components/screen-header";
 import { TextButton } from "@/components/text-button";
@@ -736,35 +735,6 @@ export default function MultisigCreateScreen() {
               )}
             </section>
 
-            <div
-              role="status"
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-                gap: "var(--space-2)",
-                padding: "var(--space-2) var(--space-3)",
-                border: "1px solid var(--color-status-warning)",
-                borderRadius: "var(--radius-sharp)",
-                background: "var(--color-status-warning-soft)",
-              }}
-            >
-              <Tag variant="warning">Holding fee</Tag>
-              <span
-                style={{
-                  flex: "1 1 160px",
-                  minWidth: 0,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-caption)",
-                  lineHeight: "var(--leading-body)",
-                  color: "var(--color-status-warning)",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                A vault that cannot pay its holding fee closes, and its assets may become unrecoverable.
-              </span>
-            </div>
-
             {pending ? (
               <p style={CAPTION_COPY}>You have a pending transaction. Wait for it to confirm before creating another vault.</p>
             ) : null}
@@ -778,11 +748,24 @@ export default function MultisigCreateScreen() {
                 </TextButton>
               </div>
             ) : null}
+
+            <p
+              role="status"
+              style={{
+                margin: "var(--space-2) 0 0",
+                textAlign: "center",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-caption)",
+                lineHeight: "var(--leading-body)",
+                color: "var(--color-status-warning)",
+                overflowWrap: "anywhere",
+              }}
+            >
+              A vault that cannot pay its holding fee closes, and its assets may become unrecoverable.
+            </p>
           </>
         )}
       </div>
-
-
     </MultisigFlowShell>
   );
 }
