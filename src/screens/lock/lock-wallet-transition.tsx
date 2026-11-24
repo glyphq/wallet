@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { transition } from "@/lib/animations";
 import type { WalletMeta } from "@/store/persisted";
 import { LockWalletFocus } from "./lock-wallet-focus";
@@ -10,14 +10,41 @@ const SLIDE = 103;
 const ROTATE = 2;
 const SCALE = 0.98;
 
+const slideVariants: Variants = {
+  enter: (direction: WalletChangeDirection) => ({
+    x: `${direction * SLIDE}%`,
+    rotate: direction * ROTATE,
+    scale: SCALE,
+    opacity: 0,
+  }),
+  center: {
+    x: "0%",
+    rotate: 0,
+    scale: 1,
+    opacity: 1,
+    transition: transition.enter,
+  },
+  exit: (direction: WalletChangeDirection) => ({
+    x: `${direction * -SLIDE}%`,
+    rotate: direction * -ROTATE,
+    scale: SCALE,
+    opacity: 0,
+    transition: transition.enter,
+  }),
+};
+
+const fadeVariants: Variants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1, transition: transition.quick },
+  exit: { opacity: 0, transition: transition.quick },
+};
+
 /**
  * Swaps the whole locked-wallet card when the selection changes.
  *
- * The outgoing card slides fully out to one side while the incoming card slides
- * in from the other, both rendered together (AnimatePresence `sync`). The cards
- * share one grid cell, so the row keeps the taller card's height for the whole
- * transition and the surrounding arrows never move. The wrapper clips the slide
- * and keeps vertical slack so the subtle rotation is not cut off.
+ * `AnimatePresence custom` is deliberately passed the current direction: the
+ * outgoing card keeps its previous render's props, so using the component prop
+ * directly in `exit` made a left/right switch replay the previous direction.
  */
 export function LockWalletTransition({
   wallet,
@@ -42,18 +69,14 @@ export function LockWalletTransition({
         paddingBlock: "var(--space-2)",
       }}
     >
-      <AnimatePresence mode="sync" initial={animateOnMount}>
+      <AnimatePresence mode="sync" custom={direction} initial={animateOnMount}>
         <motion.div
           key={wallet.id}
-          initial={reduceMotion
-            ? { opacity: 0 }
-            : { x: `${direction * SLIDE}%`, rotate: direction * ROTATE, scale: SCALE }}
-          animate={reduceMotion
-            ? { opacity: 1, transition: transition.quick }
-            : { x: "0%", rotate: 0, scale: 1, transition: transition.enter }}
-          exit={reduceMotion
-            ? { opacity: 0, transition: transition.quick }
-            : { x: `${direction * -SLIDE}%`, rotate: direction * -ROTATE, scale: SCALE, transition: transition.enter }}
+          custom={direction}
+          variants={reduceMotion ? fadeVariants : slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
           style={{ gridArea: "1 / 1", width: "100%", willChange: "transform, opacity" }}
         >
           <LockWalletFocus wallet={wallet} />
