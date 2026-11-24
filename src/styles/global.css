@@ -463,30 +463,6 @@ a:hover {
   to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes success-flash {
-  0% { background-color: transparent; }
-  30% { background-color: rgba(52, 199, 89, 0.08); }
-  100% { background-color: transparent; }
-}
-
-.flash-success {
-  animation: success-flash 0.75s ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-
-  .flash-success,
-  .lock-shake {
-    animation: none !important;
-  }
-}
-
 /* ── Header-led onboarding pages ──────────────────────────────────────────── */
 
 .page-shell {

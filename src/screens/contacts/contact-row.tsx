@@ -5,11 +5,11 @@ import { Identicon } from "@/components/identicon";
 import type { Contact } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
 
-export function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: Contact; highlighted: boolean; onSend: () => void; onEdit: () => void }) {
+export function ContactRow({ contact, onSend, onEdit }: { contact: Contact; onSend: () => void; onEdit: () => void }) {
   const tags = contact.tags ?? [];
 
   return (
-    <article className={`contact-row${highlighted ? " flash-success" : ""}`}>
+    <article className="contact-row">
       <div className="contact-row-identity">
         <Identicon kind="identity" seed={contact.identity} label={contact.name} size={36} style={{ flexShrink: 0 }} />
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>

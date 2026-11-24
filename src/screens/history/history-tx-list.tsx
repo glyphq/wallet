@@ -6,14 +6,13 @@ import { ActivityItem } from "./history-activity-item";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 
 export function HistoryTxList({
-  pending, txs, identity, currentTick, hideBalances, pendingHashes, onSelect,
+  pending, txs, identity, currentTick, hideBalances, onSelect,
 }: {
   pending: PendingTx[];
   txs: TxHistoryItem[];
   identity: string | null;
   currentTick: number;
   hideBalances: boolean;
-  pendingHashes: Set<string>;
   onSelect: (hash: string) => void;
 }) {
   return (
@@ -35,7 +34,6 @@ export function HistoryTxList({
           tx={tx}
           identity={identity}
           hideBalances={hideBalances}
-          flash={pendingHashes.has(tx.hash)}
           onSelect={onSelect}
         />
       ))}
@@ -76,12 +74,11 @@ function PendingTxRow({
 }
 
 function ConfirmedTxRow({
-  tx, identity, hideBalances, flash, onSelect,
+  tx, identity, hideBalances, onSelect,
 }: {
   tx: TxHistoryItem;
   identity: string | null;
   hideBalances: boolean;
-  flash: boolean;
   onSelect: (hash: string) => void;
 }) {
   const isIn = tx.destination === identity;
@@ -101,7 +98,7 @@ function ConfirmedTxRow({
 
   return (
     <ActivityItem
-      className={`stagger-item${flash ? " flash-success" : ""}`}
+      className="stagger-item"
       onClick={() => onSelect(tx.hash)}
       label={label}
       labelColor={labelColor}

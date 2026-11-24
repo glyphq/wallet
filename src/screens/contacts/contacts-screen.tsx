@@ -14,7 +14,6 @@ export default function ContactsScreen() {
   const location = useLocation();
   const fromSettings = location.pathname.startsWith("/settings/contacts");
   const routeSuffix = fromSettings ? "?from=settings" : "";
-  const savedContactId = (location.state as { savedContactId?: string } | null)?.savedContactId ?? null;
   const contacts = usePersistedStore((state) => state.contacts);
   const [search, setSearch] = useState("");
 
@@ -78,7 +77,6 @@ export default function ContactsScreen() {
                 <ContactRow
                   key={contact.id}
                   contact={contact}
-                  highlighted={savedContactId === contact.id}
                   onSend={() => navigate(`/send?to=${contact.identity}`)}
                   onEdit={() => navigate(`/contacts/${contact.id}/edit${routeSuffix}`)}
                 />

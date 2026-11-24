@@ -67,7 +67,6 @@ export default function WalletDetailScreen() {
         sessionWallets={sessionWallets}
         balances={walletBalances}
         hideBalances={settings.hideBalances}
-        newlyAddedIndex={addAccount.newlyAddedIndex}
         onAdd={addAccount.openAdd}
         onManage={openAccountMenu}
       />

@@ -31,7 +31,6 @@ export default function WalletsScreen() {
 
   // Action sheet
   const [actionWallet, setActionWallet] = useState<WalletMeta | null>(null);
-  const [recentlySwitchedId, setRecentlySwitchedId] = useState<string | null>(null);
 
   // Rename
   const [renamingWallet, setRenamingWallet] = useState<WalletMeta | null>(null);
@@ -69,7 +68,6 @@ export default function WalletsScreen() {
   function doRename() {
     if (!renamingWallet || !renameValue.trim()) return;
     updateWallet(renamingWallet.id, { name: renameValue.trim() });
-    setRecentlySwitchedId(renamingWallet.id);
     setRenamingWallet(null);
   }
 
@@ -182,7 +180,6 @@ export default function WalletsScreen() {
         <WalletList
           wallets={wallets}
           activeWalletId={settings.activeWalletId}
-          recentlySwitchedId={recentlySwitchedId}
           onSelect={(wallet) => (wallet.id === settings.activeWalletId ? navigate(`/wallets/${wallet.id}`) : openSwitch(wallet))}
           onOpenActions={openActions}
         />

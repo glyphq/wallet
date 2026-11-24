@@ -62,7 +62,6 @@ export function IdentityDisplay({ identity, style, showIdenticon = true }: Ident
         {showIdenticon && !expanded && <Identicon kind="identity" seed={identity} size={18} style={{ flexShrink: 0 }} />}
         <motion.button
           animate={{ opacity: flash ? 0.6 : 1 }}
-          className={flash ? "flash-success" : ""}
           transition={transition.quick}
           onClick={toggle}
           aria-label={expanded ? `Address: ${identity} — click to collapse` : `Copy address ${truncateId(identity, 10, 10)}`}

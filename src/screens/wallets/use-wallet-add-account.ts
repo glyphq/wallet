@@ -10,7 +10,6 @@ export function useWalletAddAccount(wallet: WalletMeta | undefined, isActive: bo
   const sessionUnlock = useSessionStore((s) => s.unlock);
 
   const [addingAccount, setAddingAccount] = useState(false);
-  const [newlyAddedIndex, setNewlyAddedIndex] = useState<number | null>(null);
   const [addMode, setAddMode] = useState<"new" | "import">("new");
   const [addName, setAddName] = useState("");
   const [addSeed, setAddSeed] = useState("");
@@ -66,7 +65,6 @@ export function useWalletAddAccount(wallet: WalletMeta | undefined, isActive: bo
         const wallets = await unlockWalletSession(newEncrypted, addPassword);
         sessionUnlock(wallet.id, wallets);
       }
-      setNewlyAddedIndex(newIndex);
       setAddingAccount(false);
     } catch {
       setAddError("Wrong password");
@@ -78,7 +76,6 @@ export function useWalletAddAccount(wallet: WalletMeta | undefined, isActive: bo
   return {
     addingAccount,
     setAddingAccount,
-    newlyAddedIndex,
     addMode,
     setAddMode,
     addName,

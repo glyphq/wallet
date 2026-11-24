@@ -14,7 +14,6 @@ interface WalletAccountListProps {
   sessionWallets: SessionAccount[];
   balances: Record<string, bigint> | undefined;
   hideBalances: boolean;
-  newlyAddedIndex?: number | null;
   onAdd: () => void;
   onManage: (account: AccountMeta) => void;
 }
@@ -27,7 +26,6 @@ export function WalletAccountList({
   sessionWallets,
   balances,
   hideBalances,
-  newlyAddedIndex,
   onAdd,
   onManage,
 }: WalletAccountListProps) {
@@ -67,7 +65,6 @@ export function WalletAccountList({
           account={account}
           identity={getAccountIdentity(account, isActive ? (sessionWallets[account.index] ?? null) : null)}
           isCurrent={isActive && activeAccountIndex === account.index}
-          flashSuccess={newlyAddedIndex === account.index}
           balance={isActive && balances ? balances[getAccountIdentity(account, sessionWallets[account.index] ?? null) ?? ""] ?? null : null}
           hideBalances={hideBalances}
           onManage={() => onManage(account)}

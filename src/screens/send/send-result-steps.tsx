@@ -72,7 +72,7 @@ export function SendDoneStep({
   return (
     <SendStepPanel scroll="auto" gap="var(--space-3)">
       {/* Amount */}
-      <header className="flash-success" style={{ paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      <header style={{ paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
         <span style={{ ...labelStyle, color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}><CheckmarkCircle01Icon size={16} /> Transaction sent</span>
         <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
           {formatQu(amountStr)}

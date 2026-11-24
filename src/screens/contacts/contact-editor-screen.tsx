@@ -53,7 +53,7 @@ export default function ContactEditorScreen() {
         identity: identity.trim(),
         tags: parseTags(tags),
       });
-      navigate(backTo, { replace: true, state: { savedContactId: contact.id } });
+      navigate(backTo, { replace: true });
       return;
     }
 
@@ -66,7 +66,7 @@ export default function ContactEditorScreen() {
       addedAt: Date.now(),
       lastUsedAt: 0,
     });
-    navigate(backTo, { replace: true, state: { savedContactId: contactId } });
+    navigate(backTo, { replace: true });
   }
 
   function remove() {

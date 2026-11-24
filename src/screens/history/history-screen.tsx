@@ -123,7 +123,6 @@ export default function HistoryScreen() {
   );
 
   const filteredTxs = allTxs;
-  const pendingHashes = useMemo(() => new Set(pendingTxs.map((p) => p.hash)), [pendingTxs]);
   const visibleConfirmedTxs = useMemo(
     () => filteredTxs.slice(0, visibleConfirmedCount),
     [filteredTxs, visibleConfirmedCount],
@@ -247,7 +246,6 @@ export default function HistoryScreen() {
           identity={identity}
           currentTick={currentTick}
           hideBalances={settings.hideBalances}
-          pendingHashes={pendingHashes}
           onSelect={(hash) => navigate(`/tx/${hash}`)}
         />
       )}

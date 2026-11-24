@@ -10,13 +10,12 @@ export interface AccountRowProps {
   identity: string | null;
   isCurrent: boolean;
   dimmed?: boolean;
-  flashSuccess?: boolean;
   balance?: bigint | null;
   hideBalances: boolean;
   onManage: () => void;
 }
 
-export function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess, balance, hideBalances, onManage }: AccountRowProps) {
+export function AccountRow({ account, identity, isCurrent, dimmed, balance, hideBalances, onManage }: AccountRowProps) {
   const tags = account.tags ?? [];
   const note = account.note?.trim() ?? "";
   const [hovered, setHovered] = useState(false);
@@ -24,7 +23,7 @@ export function AccountRow({ account, identity, isCurrent, dimmed, flashSuccess,
   return (
     <button
       type="button"
-      className={`stagger-item${flashSuccess ? " flash-success" : ""}`}
+      className="stagger-item"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={onManage}

@@ -43,7 +43,7 @@ export function BurnDoneStep({ amountStr, txHash, savedTargetTick }: BurnDoneSte
   return (
     <SendStepPanel scroll="auto" gap="var(--space-3)">
       {/* Amount */}
-      <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+      <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "var(--space-3)" }}>
           <FireIcon size={64} style={{ color: "var(--color-status-error)" }} />
         </div>

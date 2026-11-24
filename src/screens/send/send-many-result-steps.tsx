@@ -59,7 +59,7 @@ export function SendManyDoneStep({
   return (
     <SendStepPanel scroll="auto" gap="var(--space-3)">
       {/* Amount */}
-      <div className="flash-success" style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
+      <div style={{ textAlign: "center", paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-accent)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
           {formatQu(totalAmount)} QU
         </div>

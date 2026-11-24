@@ -6,7 +6,6 @@ import type { WalletMeta } from "@/store/persisted";
 interface WalletListProps {
   wallets: WalletMeta[];
   activeWalletId: string | null;
-  recentlySwitchedId: string | null;
   onSelect: (wallet: WalletMeta) => void;
   onOpenActions: (wallet: WalletMeta) => void;
 }
@@ -15,7 +14,6 @@ interface WalletListProps {
 export function WalletList({
   wallets,
   activeWalletId,
-  recentlySwitchedId,
   onSelect,
   onOpenActions,
 }: WalletListProps) {
@@ -30,7 +28,7 @@ export function WalletList({
         return (
           <div
             key={wallet.id}
-            className={`stagger-item${recentlySwitchedId === wallet.id ? " flash-success" : ""}`}
+            className="stagger-item"
             style={{
               display: "flex", alignItems: "center", gap: "var(--space-3)",
               padding: "var(--space-3) var(--space-4)",
