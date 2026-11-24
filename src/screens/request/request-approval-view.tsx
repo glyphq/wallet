@@ -13,7 +13,7 @@ import type {
 import type { GlyphRequest } from "@/lib/request-schema";
 
 const ACTION_PHRASE: Record<GlyphRequest["type"], string> = {
-  transfer: "send QU",
+  transfer: "send QUBIC",
   sc_call: "call a contract",
   sign_message: "sign a message",
   verify_message: "verify a message",

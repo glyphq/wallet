@@ -7,7 +7,7 @@ import type { ConnectRequest } from "@/lib/request-schema";
 import type { ConnectApproveResult } from "@/lib/request-approvals";
 import { Link01Icon } from "@/lib/icons";
 import { DropdownSelect } from "@/components/dropdown-select";
-import { MarbleAvatar } from "@/components/marble-avatar";
+import { FramedAvatar } from "@/components/framed-avatar";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
@@ -35,7 +35,7 @@ export function ConnectPreview({ onApprove, onReject }: ConnectPreviewProps) {
   const accountOptions = accounts.map((sessionAccount, index) => ({
     value: String(index),
     label: truncateId(sessionAccount.identity, 8, 8),
-    icon: <MarbleAvatar seed={sessionAccount.identity} size={22} />,
+    icon: <FramedAvatar seed={sessionAccount.identity} size={28} />,
   }));
 
   return (

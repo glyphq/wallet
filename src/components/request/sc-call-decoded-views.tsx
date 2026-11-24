@@ -1,39 +1,10 @@
 import { formatQu, truncateId } from "@/lib/format";
-import { RequestSectionTitle } from "./request-primitives";
 import type {
   MultiSignVaultDepositPayload,
   MultiSignVaultReleasePayload,
   MultiSignVaultResetReleasePayload,
   QearnUnlockPayload,
-  ScCallRecipient,
 } from "./sc-call-decoders";
-
-/** Recipient breakdown for decoded QUtil SendToMany payloads. */
-export function ScCallRecipients({ recipients }: { recipients: ScCallRecipient[] }) {
-  if (recipients.length === 0) return null;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-      <RequestSectionTitle>Recipients ({recipients.length})</RequestSectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", maxHeight: 180, overflowY: "auto" }}>
-        {recipients.map((r) => (
-          <div key={r.identity} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-4)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.03em" }}>
-              {truncateId(r.identity, 10, 10)}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
-              {formatQu(r.amount)} QU
-            </span>
-          </div>
-        ))}
-      </div>
-      {recipients.length > 4 && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em", textAlign: "right" }}>
-          scroll ↑↓ to see all {recipients.length}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /**
  * One-line human summary for recognised contract calls.

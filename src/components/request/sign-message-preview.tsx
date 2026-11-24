@@ -3,6 +3,7 @@ import { useSigningAccount } from "@/hooks/use-signing-account";
 import { messageSigningIntent, signMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
+import { PencilEdit01Icon } from "@/lib/icons";
 import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice, RequestSigningAccountPicker } from "./request-primitives";
 import { RequestMessageContent } from "./request-message-content";
 import type { SignMessageRequest } from "@/lib/request-schema";
@@ -90,6 +91,7 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
         onReject={onReject}
         onApprove={approve}
         approveLabel="Sign message"
+        approveIcon={<PencilEdit01Icon size={16} aria-hidden="true" />}
         approveLoading={processing}
         approveDisabled={!account || !!fromError}
       />

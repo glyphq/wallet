@@ -1275,3 +1275,48 @@ a:hover {
 .dropdown-trigger:focus-within {
   --corner-color: var(--color-accent);
 }
+
+/* Avatar corner frame without the interactive hover transition. */
+.avatar-frame {
+  --corner-size: 6px;
+  --corner-inset: 0px;
+  --corner-color: var(--color-border-strong);
+}
+
+.avatar-frame::before {
+  opacity: 0.8;
+}
+
+.avatar-frame:hover::before,
+.avatar-frame:focus-visible::before {
+  opacity: 0.8;
+}
+
+/* ── Approval disclosure ───────────────────────────────────────────────────── */
+
+.approval-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.approval-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.approval-disclosure-chevron {
+  display: inline-flex;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.approval-disclosure[open] .approval-disclosure-chevron {
+  transform: rotate(180deg);
+}

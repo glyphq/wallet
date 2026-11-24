@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
 import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
+import { ShieldCheckIcon } from "@/lib/icons";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice } from "./request-primitives";
@@ -91,6 +92,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
         onReject={onReject}
         onApprove={handleVerify}
         approveLabel="Verify and respond"
+        approveIcon={<ShieldCheckIcon size={16} aria-hidden="true" />}
         approveLoading={processing}
         approveDisabled={invalidKey}
       />

@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { StickyFooter } from "@/components/sticky-footer";
-import { Clock01Icon } from "@/lib/icons";
 import { RequestFooterProvider } from "./request-footer-context";
 import { RequestStatusProvider, useRequestStatus } from "./request-status-context";
 
@@ -107,7 +106,6 @@ export function RequestExpiryNotch({ seconds }: { seconds: number }) {
         color: warning ? "var(--color-status-error)" : "var(--color-status-warning)",
       }}
     >
-      <Clock01Icon size={13} aria-hidden="true" />
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
         Request expires in
       </span>

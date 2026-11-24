@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
-import { useTickInfo } from "@/hooks/use-tick-info";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
@@ -24,24 +23,19 @@ import {
   MSVAULT_RESET_RELEASE_INPUT_TYPE,
   CONTRACT_NAMES,
   CONTRACT_PROCEDURE_NAMES,
+  decodeProcedureInputValues,
 } from "@/lib/contracts";
 import { truncateId, formatQu } from "@/lib/format";
-import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { base64ToBytes } from "@/lib/base64";
+import type { DecodedValue } from "@glyph-oss/contracts";
+import { Rocket01Icon } from "@/lib/icons";
 import { qk } from "@/lib/query-keys";
+import { RequestApprovalActions, RequestInlineNotice, RequestSigningAccountPicker } from "./request-primitives";
+import { ApprovalAmount } from "./approval-amount";
+import { ApprovalAddress } from "./approval-address";
+import { ApprovalDisclosure, ApprovalField } from "./approval-field";
+import { ScCallDecodedHeadline } from "./sc-call-decoded-views";
 import {
-  RequestApprovalActions,
-  RequestCheckboxMark,
-  RequestDetailRow,
-  RequestInlineNotice,
-  RequestSectionTitle,
-  RequestSigningAccountPicker,
-} from "./request-primitives";
-import { ScCallAdvancedDetails } from "./sc-call-advanced-details";
-import { ScCallContractSummary } from "./sc-call-contract-summary";
-import { ScCallDecodedHeadline, ScCallRecipients } from "./sc-call-decoded-views";
-import {
-  base64ToHex,
   decodeMultiSignVaultDeposit,
   decodeMultiSignVaultRelease,
   decodeMultiSignVaultResetRelease,
@@ -53,17 +47,22 @@ import type { ScCallRequest } from "@/lib/request-schema";
 
 export type { ScCallRequest } from "@/lib/request-schema";
 
+function formatDecodedValue(value: DecodedValue): string {
+  if (typeof value === "bigint") return value.toString();
+  if (value instanceof Uint8Array) return `0x${Array.from(value).map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  if (Array.isArray(value)) return value.map(formatDecodedValue).join(", ");
+  if (value && typeof value === "object") return JSON.stringify(value, (_key, nested) => typeof nested === "bigint" ? nested.toString() : nested);
+  return String(value);
+}
+
 export function ScCallPreview({ request, onApprove, onReject, authorize }: TransactionPreviewProps<ScCallRequest>) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
-  const [highValueConfirmed, setHighValueConfirmed] = useState(false);
 
   const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
-  const settings = usePersistedStore((s) => s.settings);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const { data: tickInfo } = useTickInfo();
   const apiIdentity = useApiCacheIdentity();
   const { data: balanceData } = useBalance(account?.identity ?? null);
   const { data: sendToManyFeeData } = useQuery({
@@ -80,17 +79,17 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const hasAmount = requestAmount > 0n;
   const sendToManyFee = sendToManyFeeData?.ok ? sendToManyFeeData.value.fee : null;
   const tickOffset = request.tick_offset ?? 10;
-  const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
-  const needsHighValueConfirmation = requestAmount > 0n && exceedsHighValueThreshold(requestAmount, settings.highValueSendThreshold);
   const contractName = CONTRACT_NAMES[request.contract_index] ?? `Contract #${request.contract_index}`;
-  const inputTypeLabel = CONTRACT_PROCEDURE_NAMES[`${request.contract_index}:${request.input_type}`] ?? `Procedure ${request.input_type}`;
+  const procedureName = CONTRACT_PROCEDURE_NAMES[`${request.contract_index}:${request.input_type}`] ?? "Unknown procedure";
   const destination: Identity = contractIndexToIdentity(request.contract_index);
   const payloadBytes = useMemo(
     () => (request.payload ? base64ToBytes(request.payload) : new Uint8Array(0)),
     [request.payload],
   );
-  const payloadHex = request.payload ? base64ToHex(request.payload) : null;
-  const payloadByteCount = payloadBytes.length;
+  const decodedInput = useMemo(
+    () => decodeProcedureInputValues(request.contract_index, request.input_type, payloadBytes),
+    [request.contract_index, request.input_type, payloadBytes],
+  );
   const decodedMultiSigDeposit = useMemo(() => {
     if (request.contract_index === MSVAULT_CONTRACT_INDEX && request.input_type === MSVAULT_DEPOSIT_INPUT_TYPE && payloadBytes.length > 0) {
       return decodeMultiSignVaultDeposit(payloadBytes);
@@ -136,7 +135,6 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       ? "Could not fetch the current QUtil fee estimate."
       : null;
   const insufficientBalance = balance !== null && requestAmount > balance;
-  const balanceAfterDisplay = projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—";
 
   async function approve() {
     if (!account) return;
@@ -173,7 +171,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         amount: amount.toString(),
         targetTick: tick,
         broadcastAt: Date.now(),
-        contractName: `${contractName} · ${inputTypeLabel}`,
+        contractName: `${contractName} · ${procedureName}`,
       });
 
       await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex }, authorization);
@@ -185,15 +183,42 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0 }}>
-      {/* Contract — primary element */}
-      <ScCallContractSummary
-        contractName={contractName}
-        inputTypeLabel={inputTypeLabel}
-        amountQu={hasAmount ? formatQu(requestAmount) : null}
-      />
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: 0 }}>
+      {hasAmount ? <ApprovalAmount amount={requestAmount} /> : null}
 
-      {decodedSendToMany && <ScCallRecipients recipients={decodedSendToMany} />}
+      {showPicker && wallet ? (
+        <RequestSigningAccountPicker
+          accounts={wallet.accounts}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
+        />
+      ) : null}
+
+      {fromError ? <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice> : null}
+
+      {!fromError ? <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" /> : null}
+
+      <ApprovalField label="Contract">
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-compact)", color: "var(--color-text-primary)" }}>{contractName}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.04em", color: "var(--color-text-tertiary)" }}>({truncateId(destination as string, 8, 8)})</span>
+          </div>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-compact)", color: "var(--color-text-secondary)" }}>{procedureName}</span>
+        </div>
+      </ApprovalField>
+
+      {decodedInput ? (
+        <ApprovalDisclosure label="Decoded input">
+          {Object.entries(decodedInput).map(([field, value]) => (
+            <ApprovalField key={field} label={field}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.03em", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)", overflowWrap: "anywhere" }}>
+                {formatDecodedValue(value)}
+              </span>
+            </ApprovalField>
+          ))}
+        </ApprovalDisclosure>
+      ) : null}
 
       <ScCallDecodedHeadline
         requestAmount={requestAmount}
@@ -206,74 +231,31 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         decodedMultiSigResetRelease={decodedMultiSigResetRelease}
       />
 
-      {/* Account picker (shown when dApp didn't specify `from`) */}
-      {showPicker && wallet && (
-        <RequestSigningAccountPicker
-          accounts={wallet?.accounts ?? []}
-          selectedIndex={selectedIndex}
-          onSelect={setSelectedIndex}
-        />
-      )}
+      {decodedSendToMany ? (
+        <ApprovalField label="Recipients">
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>{decodedSendToMany.length} recipients</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)" }}>· {formatQu(recipientsTotal)} QUBIC</span>
+        </ApprovalField>
+      ) : null}
 
-      {/* fromError: dApp specified an identity not in this wallet */}
-      {fromError && <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>}
+      {hasAmount && projectedBalance !== null ? (
+        <ApprovalField label="Remaining balance">
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)", letterSpacing: "0.03em" }}>{formatQu(projectedBalance)} QUBIC</span>
+        </ApprovalField>
+      ) : null}
 
-      {/* Detail rows */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {!fromError && <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
-        <RequestDetailRow label="To" value={truncateId(destination as string, 10, 10)} />
-        {hasAmount && <RequestDetailRow label="Balance after" value={balanceAfterDisplay} />}
-      </div>
-
-      {decodedSendToMany && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <RequestSectionTitle>Totals</RequestSectionTitle>
-          <RequestDetailRow label="Recipients" value={`${formatQu(recipientsTotal)} QU`} />
-          <RequestDetailRow label="QUtil fee" value={contractFee !== null ? `${formatQu(contractFee)} QU` : "Unavailable"} />
-        </div>
-      )}
-
-      {(payloadHex !== null || targetTick !== null) && (
-        <ScCallAdvancedDetails
-          payloadHex={payloadHex}
-          payloadByteCount={payloadByteCount}
-          targetTick={targetTick}
-        />
-      )}
-
-      {insufficientBalance && (
-        <RequestInlineNotice tone="error">The selected account does not have enough balance for this request.</RequestInlineNotice>
-      )}
-      {hasPendingTx && !insufficientBalance && (
-        <RequestInlineNotice tone="warning">
-          This account already has a pending transfer. Wait for confirmation before sending another one.
-        </RequestInlineNotice>
-      )}
-      {qUtilAmountWarning && <RequestInlineNotice tone="warning">{qUtilAmountWarning}</RequestInlineNotice>}
-      {txError && <RequestInlineNotice tone="error">{txError}</RequestInlineNotice>}
-
-      {needsHighValueConfirmation && (
-        <div
-          role="checkbox"
-          aria-checked={highValueConfirmed}
-          tabIndex={0}
-          onClick={() => setHighValueConfirmed((value) => !value)}
-          onKeyDown={(e) => e.key === " " && setHighValueConfirmed((value) => !value)}
-          style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none" }}
-        >
-          <RequestCheckboxMark checked={highValueConfirmed} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            I understand this is a high-value contract call.
-          </span>
-        </div>
-      )}
+      {insufficientBalance ? <RequestInlineNotice tone="error">The selected account does not have enough balance for this request.</RequestInlineNotice> : null}
+      {hasPendingTx && !insufficientBalance ? <RequestInlineNotice tone="warning">This account already has a pending transfer. Wait for confirmation before sending another one.</RequestInlineNotice> : null}
+      {qUtilAmountWarning ? <RequestInlineNotice tone="warning">{qUtilAmountWarning}</RequestInlineNotice> : null}
+      {txError ? <RequestInlineNotice tone="error">{txError}</RequestInlineNotice> : null}
 
       <RequestApprovalActions
         onReject={onReject}
         onApprove={approve}
         approveLabel="Sign and send"
+        approveIcon={<Rocket01Icon size={16} aria-hidden="true" />}
         approveLoading={processing}
-        approveDisabled={!account || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}
+        approveDisabled={!account || !!fromError || insufficientBalance || hasPendingTx}
       />
     </div>
   );

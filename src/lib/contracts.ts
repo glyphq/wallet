@@ -1,9 +1,13 @@
 import {
   CONTRACT_HANDLES,
+  CONTRACTS_BY_INDEX,
   MSVAULT,
   QEARN,
   QUTIL,
+  decodeFields,
+  getProcedure,
   type ContractCall,
+  type DecodedStruct,
 } from "@glyph-oss/contracts";
 
 /** Display names differ from the canonical on-chain contract names. */
@@ -110,3 +114,19 @@ export const MSVAULT_RELEASE_TO_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.rele
 export const MSVAULT_RESET_RELEASE_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.resetRelease!);
 
 export { MSVAULT, QEARN, QUTIL };
+
+/** Decode a procedure payload into its declared input fields, when the ABI knows the call. */
+export function decodeProcedureInputValues(
+  contractIndex: number,
+  inputType: number,
+  payload: Uint8Array,
+): DecodedStruct | null {
+  const contract = CONTRACTS_BY_INDEX[contractIndex];
+  if (!contract) return null;
+  try {
+    const call = getProcedure(contract, inputType);
+    return decodeFields(payload, call.inputFields, contract, { idFormat: "identity" });
+  } catch {
+    return null;
+  }
+}

@@ -4,10 +4,10 @@ import type { AccountMeta } from "@/store/persisted-types";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { StickyFooter } from "@/components/sticky-footer";
 import { RequestExpiryNotch, RequestQueueNotch } from "@/screens/request/sheet-layout";
-import { MarbleAvatar } from "@/components/marble-avatar";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { truncateId } from "@/lib/format";
 import { useRequestStatus } from "@/screens/request/request-status-context";
-import { CheckmarkCircle01Icon, DisconnectIcon } from "@/lib/icons";
+import { DisconnectIcon } from "@/lib/icons";
 
 export function RequestSectionTitle({ children }: { children: ReactNode }) {
   return (
@@ -162,7 +162,7 @@ export function RequestApprovalActions({
   return (
     <RequestActionBar>
       <Button onClick={onApprove} loading={approveLoading} disabled={approveDisabled} style={{ flex: 1 }}>
-        {approveIcon ?? <CheckmarkCircle01Icon size={16} aria-hidden="true" />}
+        {approveIcon}
         {approveLabel}
       </Button>
       <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
@@ -205,22 +205,11 @@ export function RequestSigningAccountPicker({
       options={visible.map((account) => ({
         value: String(account.index),
         label: account.identity ? truncateId(account.identity, 8, 8) : account.name,
-        icon: <MarbleAvatar seed={account.identity ?? String(account.index)} size={22} />,
+        icon: <FramedAvatar seed={account.identity ?? String(account.index)} size={28} />,
       }))}
       onChange={(value) => onSelect(Number(value))}
     />
   );
 }
 
-/** Framed checkbox mark shared by the high-value confirmation controls. */
-export function RequestCheckboxMark({ checked }: { checked: boolean }) {
-  return (
-    <div
-      className="request-checkbox corner-frame"
-      data-checked={checked ? "true" : "false"}
-      style={{ width: 16, height: 16, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
-    >
-      {checked && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-accent-contrast)", lineHeight: 1 }}>✓</span>}
-    </div>
-  );
-}
+
