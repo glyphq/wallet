@@ -12,7 +12,6 @@ import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote"
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
-import { AccountSelector } from "@/components/account-selector";
 import { BalanceDisplay } from "@/components/balance-display";
 import { OwnedAssetChips } from "./dashboard-balance";
 import { MoreActions, PrimaryActions } from "./dashboard-actions";
@@ -25,7 +24,6 @@ export default function DashboardScreen() {
 
   const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const isLocked = useSessionStore((s) => s.isLocked);
   const accounts = useSessionStore((s) => s.accounts);
@@ -82,16 +80,6 @@ export default function DashboardScreen() {
             padding: "var(--space-4) var(--screen-padding) var(--space-5)",
           }}
         >
-          <div className="asciify-clear" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-            <AccountSelector
-              wallet={wallet}
-              activeIndex={activeIndex}
-              accounts={accounts}
-              identity={identity}
-              onSelect={setActiveAccountIndex}
-            />
-          </div>
-
           <div className="asciify-clear" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
             <BalanceDisplay
               balance={balance?.balance}

@@ -12,7 +12,7 @@ import { extractMessage, formatQu } from "@/lib/format";
 import type { MsvaultListEntry } from "@/lib/msvault";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { MultisigAccountSelect, VaultId } from "./multisig-ui";
+import { VaultId } from "./multisig-ui";
 
 const PAGE_STYLE = {
   display: "flex",
@@ -191,7 +191,6 @@ export default function MultisigScreen() {
 
   const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const accounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -211,13 +210,6 @@ export default function MultisigScreen() {
   return (
     <AppShell>
       <div style={PAGE_STYLE}>
-        <MultisigAccountSelect
-          wallet={wallet}
-          accounts={accounts}
-          activeIndex={activeIndex}
-          onSelect={setActiveAccountIndex}
-        />
-
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <p style={INTRO_COPY}>Shared vaults release funds only after the required owners approve.</p>
           <Button size="md" onClick={createVault} style={{ width: "100%" }}>

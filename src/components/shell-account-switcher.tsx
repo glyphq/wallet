@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { CheckmarkCircle01Icon } from "@/lib/icons";
+import { AnimatePresence, motion } from "motion/react";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { truncateId } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
@@ -11,6 +11,7 @@ interface MenuPosition {
   left: number;
   top: number;
   width: number;
+  maxHeight: number;
 }
 
 /** Header account avatar and switcher for the active wallet. */
@@ -72,11 +73,13 @@ export function ShellAccountSwitcher() {
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const width = 220;
+    const width = window.innerWidth - 16;
+    const top = rect.bottom + 6;
     setMenu({
-      left: Math.min(Math.max(8, rect.left), window.innerWidth - width - 8),
-      top: rect.bottom + 6,
+      left: 8,
+      top,
       width,
+      maxHeight: Math.min(320, window.innerHeight - top - 16),
     });
     setOpen(true);
   }
@@ -86,67 +89,79 @@ export function ShellAccountSwitcher() {
     setOpen(false);
   }
 
-  const menuNode = open && menu
+  const menuNode = menu
     ? createPortal(
-        <div
-          ref={menuRef}
-          role="listbox"
-          aria-label="Choose account"
-          style={{
-            position: "fixed",
-            left: menu.left,
-            top: menu.top,
-            width: menu.width,
-            zIndex: 1000,
-            padding: "var(--space-1)",
-            background: "var(--color-bg-elevated)",
-            border: "1px solid var(--color-border-strong)",
-            borderRadius: "var(--radius-card)",
-            boxShadow: "var(--shadow-floating)",
-          }}
-        >
-          {visibleAccounts.map((account) => {
-            const accountIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
-            const isActive = account.index === settings.activeAccountIndex;
-            return (
-              <button
-                key={account.index}
-                type="button"
-                role="option"
-                aria-selected={isActive}
-                onClick={() => select(account.index)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-3)",
-                  width: "100%",
-                  padding: "var(--space-2) var(--space-3)",
-                  border: 0,
-                  borderRadius: "var(--radius-sharp)",
-                  background: isActive ? "var(--color-bg-surface)" : "transparent",
-                  color: "inherit",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-              >
-                <FramedAvatar seed={accountIdentity ?? account.name} size={28} />
-                <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                    {account.name}
-                  </span>
-                  {accountIdentity ? (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.04em" }}>
-                      {truncateId(accountIdentity, 8, 8)}
+        <AnimatePresence>
+          {open ? (
+            <motion.div
+              ref={menuRef}
+              role="listbox"
+              aria-label="Choose account"
+              className="corner-frame"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              style={{
+                position: "fixed",
+                left: menu.left,
+                top: menu.top,
+                width: menu.width,
+                maxHeight: menu.maxHeight,
+                overflowY: "auto",
+                zIndex: 1000,
+                padding: "var(--space-2)",
+                background: "var(--color-bg-elevated)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: "var(--radius-sharp)",
+                boxShadow: "var(--shadow-floating)",
+                "--corner-color": "var(--color-text-tertiary)",
+                "--corner-size": "10px",
+                "--corner-inset": "-3px",
+              } as CSSProperties}
+            >
+              {visibleAccounts.map((account) => {
+                const accountIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
+                const isActive = account.index === settings.activeAccountIndex;
+                return (
+                  <button
+                    key={account.index}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onClick={() => select(account.index)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-3)",
+                      width: "100%",
+                      padding: "var(--space-2) var(--space-3)",
+                      border: 0,
+                      borderRadius: "var(--radius-sharp)",
+                      background: isActive ? "var(--color-bg-surface)" : "transparent",
+                      boxShadow: isActive ? "inset 2px 0 0 var(--color-accent)" : undefined,
+                      color: "inherit",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <FramedAvatar seed={accountIdentity ?? account.name} size={28} />
+                    <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                        {account.name}
+                      </span>
+                      {accountIdentity ? (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.04em" }}>
+                          {truncateId(accountIdentity, 8, 8)}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
-                </span>
-                {isActive ? (
-                  <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>,
+                  </button>
+                );
+              })}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>,
         document.body,
       )
     : null;

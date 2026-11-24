@@ -8,6 +8,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { Input } from "@/components/input";
 import { PageFrame } from "@/components/page-header";
 import { ScreenHeader } from "@/components/screen-header";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { TextButton } from "@/components/text-button";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
@@ -36,7 +37,6 @@ import { IdentityPickerScreen } from "@/components/identity-picker";
 import {
   FeeRow,
   IdentityName,
-  MultisigAccountSelect,
   MultisigFlowShell,
   MultisigNotch,
   identityDisplayName,
@@ -133,7 +133,6 @@ export default function MultisigCreateScreen() {
   const contacts = usePersistedStore((s) => s.contacts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const accounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -294,16 +293,6 @@ export default function MultisigCreateScreen() {
     setOwnerErrors((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
     setRequiredApprovals(defaultRequiredApprovals(Math.max(2, ownerCount - 1)));
     setPreflightError("");
-  }
-
-  function selectAccount(index: number) {
-    if (sending || checking) return;
-    setActiveAccountIndex(index);
-    setStep("edit");
-    setFormError("");
-    setPreflightError("");
-    setSubmitError("");
-    setOwnerErrors((current) => current.map(() => ""));
   }
 
   async function goReview() {
@@ -472,7 +461,7 @@ export default function MultisigCreateScreen() {
     return (
       <AppShell
         fullBleed
-        statusBar={<ScreenHeader title="Add owner" onBack={() => setStep("owners")} backAriaLabel="Back to manage owners" />}
+        statusBar={<ScreenHeader title="Add owner" onBack={() => setStep("owners")} backAriaLabel="Back to manage owners" action={<ShellAccountSwitcher />} />}
         contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}
       >
         <PageFrame
@@ -529,7 +518,7 @@ export default function MultisigCreateScreen() {
     return (
       <AppShell
         fullBleed
-        statusBar={<ScreenHeader title="Manage owners" onBack={() => setStep("edit")} backAriaLabel="Back to new multisig" />}
+        statusBar={<ScreenHeader title="Manage owners" onBack={() => setStep("edit")} backAriaLabel="Back to new multisig" action={<ShellAccountSwitcher />} />}
         contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}
       >
         <PageFrame
@@ -576,13 +565,6 @@ export default function MultisigCreateScreen() {
       notch={step === "edit" && ownerCount < 2 ? <MultisigNotch>Needs another owner</MultisigNotch> : undefined}
     >
       <div style={PAGE_STYLE}>
-        <MultisigAccountSelect
-          wallet={wallet}
-          accounts={accounts}
-          activeIndex={activeIndex}
-          onSelect={selectAccount}
-        />
-
         {step === "edit" ? (
           <>
             <section aria-label="Vault details" style={SECTION_STYLE}>

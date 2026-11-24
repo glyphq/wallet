@@ -1,9 +1,7 @@
 import type { ReactNode, RefObject } from "react";
 import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
-import { DropdownSelect } from "@/components/dropdown-select";
-import { FramedAvatar } from "@/components/framed-avatar";
 import { IdentityPickerScreen } from "@/components/identity-picker";
-import { formatQu, truncateId } from "@/lib/format";
+import { formatQu } from "@/lib/format";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { ChoiceChips } from "@/components/choice-chips";
@@ -15,9 +13,6 @@ import { AddressSuggestionsOverlay, labelStyle, SendStepFooter } from "./send-ui
 
 export interface SendInputStepProps {
   statusBar: ReactNode;
-  sourceAccounts: { index: number; identity: string; name: string }[];
-  selectedAccountIndex: number;
-  onSelectAccount: (index: number) => void;
   draftRestored: boolean;
   onDismissDraft: () => void;
   amountStr: string;
@@ -54,9 +49,6 @@ export interface SendInputStepProps {
 /** Standard wallet send form: source, recipient, amount, review. */
 export function SendInputStep({
   statusBar,
-  sourceAccounts,
-  selectedAccountIndex,
-  onSelectAccount,
   draftRestored,
   onDismissDraft,
   amountStr,
@@ -89,8 +81,6 @@ export function SendInputStep({
   onOpenPicker,
   onClosePicker,
 }: SendInputStepProps) {
-  const selectedSourceAccount = sourceAccounts.find((account) => account.index === selectedAccountIndex) ?? sourceAccounts[0];
-
   if (showPicker) {
     return (
       <IdentityPickerScreen
@@ -112,18 +102,6 @@ export function SendInputStep({
             <TextButton onClick={onDismissDraft} tone="muted">Dismiss</TextButton>
           </div>
         ) : null}
-
-        <DropdownSelect
-          id="send-account"
-          label={selectedSourceAccount?.name ?? "Account"}
-          value={String(selectedAccountIndex)}
-          options={sourceAccounts.map((account) => ({
-            value: String(account.index),
-            label: truncateId(account.identity, 8, 8),
-            icon: <FramedAvatar seed={account.identity} size={28} />,
-          }))}
-          onChange={(value) => onSelectAccount(Number(value))}
-        />
 
         <div style={{ position: "relative" }}>
           <Input

@@ -46,7 +46,6 @@ import {
   AssetMetaLabel,
   FeeRow,
   HoldingFeeWarning,
-  MultisigAccountSelect,
   MultisigFlowShell,
   VaultId,
   identityDisplayName,
@@ -186,7 +185,6 @@ export default function MultisigReleaseScreen() {
   const contacts = usePersistedStore((s) => s.contacts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const sessionAccounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -540,13 +538,6 @@ export default function MultisigReleaseScreen() {
   return (
     <MultisigFlowShell footer={footer}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <MultisigAccountSelect
-          wallet={wallet}
-          accounts={sessionAccounts}
-          activeIndex={settings.activeAccountIndex}
-          onSelect={setActiveAccountIndex}
-        />
-
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           <span style={SECTION_LABEL}>{review ? "Approve release from" : "Request release from"}</span>
           <span style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", flexWrap: "wrap", minWidth: 0 }}>

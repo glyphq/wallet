@@ -7,6 +7,7 @@ import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { TextButton } from "@/components/text-button";
 import { useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useLatestStats } from "@/hooks/use-latest-stats";
@@ -23,7 +24,6 @@ import {
   AssetMetaLabel,
   HoldingFeeWarning,
   IdentityName,
-  MultisigAccountSelect,
   PendingApprovalsNotch,
   MultisigFlowShell,
   VaultId,
@@ -94,7 +94,6 @@ export default function MultisigDetailScreen() {
   const wallets = usePersistedStore((s) => s.wallets);
   const contacts = usePersistedStore((s) => s.contacts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const sessionAccounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -122,6 +121,7 @@ export default function MultisigDetailScreen() {
       <ScreenHeader
         title={!vaultId ? "Vault not found" : detail?.name.trim() || "Multisig vault"}
         onBack={() => navigate("/multisig")}
+        action={<ShellAccountSwitcher />}
       />
     ),
     [detail, navigate, vaultId],
@@ -233,13 +233,6 @@ export default function MultisigDetailScreen() {
       ) : undefined}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-      <MultisigAccountSelect
-        wallet={wallet}
-        accounts={sessionAccounts}
-        activeIndex={settings.activeAccountIndex}
-        onSelect={setActiveAccountIndex}
-      />
-
       {!isOwner ? (
         <InlineNotice tone="info">
           You are not an owner. You can deposit, but only owners can approve releases.

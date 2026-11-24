@@ -1,7 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AppShell } from "@/layouts/app-shell";
-import { DropdownSelect } from "@/components/dropdown-select";
-import { FramedAvatar } from "@/components/framed-avatar";
 import { Tag } from "@/components/tag";
 import { Alert01Icon } from "@/lib/icons";
 import { useMsvaultAssetMeta } from "@/hooks/use-msvault";
@@ -78,39 +76,6 @@ export function MultisigFlowShell({ children, footer, notch, statusBar }: { chil
         ) : null}
       </div>
     </AppShell>
-  );
-}
-
-/** Compact account switcher shared by the multisig screens. */
-export function MultisigAccountSelect({
-  wallet,
-  accounts,
-  activeIndex,
-  onSelect,
-}: {
-  wallet: WalletMeta | null;
-  accounts: SessionAccount[];
-  activeIndex: number;
-  onSelect: (index: number) => void;
-}) {
-  const visibleAccounts = wallet?.accounts.filter((account) => !account.hidden).sort((a, b) => a.index - b.index) ?? [];
-  if (visibleAccounts.length <= 1) return null;
-
-  return (
-    <DropdownSelect
-      id="multisig-account"
-      label="Account"
-      value={String(activeIndex)}
-      options={visibleAccounts.map((account) => {
-        const identity = getWalletAccountIdentity(wallet, account.index, accounts);
-        return {
-          value: String(account.index),
-          label: account.name,
-          icon: <FramedAvatar seed={identity ?? account.name} size={28} />,
-        };
-      })}
-      onChange={(value) => onSelect(Number(value))}
-    />
   );
 }
 

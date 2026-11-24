@@ -5,6 +5,7 @@ import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { Tag } from "@/components/tag";
 import { useMsvaultDetail } from "@/hooks/use-msvault";
 import { usePersistedStore } from "@/store/persisted";
@@ -12,7 +13,7 @@ import { useSessionStore } from "@/store/session";
 import { MsvaultInactiveError } from "@/lib/api/msvault";
 import { extractMessage, formatQu, truncateId } from "@/lib/format";
 import type { MsvaultProposal } from "@/lib/msvault";
-import { AssetMetaLabel, MultisigAccountSelect, VaultId, identityDisplayName } from "./multisig-ui";
+import { AssetMetaLabel, VaultId, identityDisplayName } from "./multisig-ui";
 
 const SECTION_LABEL: CSSProperties = {
   margin: 0,
@@ -131,7 +132,6 @@ export default function MultisigApprovalsScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const wallets = usePersistedStore((s) => s.wallets);
   const contacts = usePersistedStore((s) => s.contacts);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const sessionAccounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -149,6 +149,7 @@ export default function MultisigApprovalsScreen() {
       title="Pending approvals"
       onBack={() => navigate(`/multisig/${rawId}`)}
       backAriaLabel="Back to vault"
+      action={<ShellAccountSwitcher />}
     />
   );
 
@@ -208,13 +209,6 @@ export default function MultisigApprovalsScreen() {
       statusBar={header}
       contentStyle={{ padding: "var(--space-4)", paddingBottom: "var(--space-8)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
     >
-      <MultisigAccountSelect
-        wallet={wallet}
-        accounts={sessionAccounts}
-        activeIndex={settings.activeAccountIndex}
-        onSelect={setActiveAccountIndex}
-      />
-
       {detail.proposals.length === 0 ? (
         <EmptyCollectionState title="No pending approvals" description="Releases requested by owners appear here." icon="activity" />
       ) : (

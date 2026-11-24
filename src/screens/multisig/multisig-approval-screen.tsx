@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { ScreenHeader } from "@/components/screen-header";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { TextButton } from "@/components/text-button";
 import { useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
@@ -35,7 +36,6 @@ import {
   AssetMetaLabel,
   FeeRow,
   HoldingFeeWarning,
-  MultisigAccountSelect,
   MultisigFlowShell,
   identityDisplayName,
 } from "./multisig-ui";
@@ -132,7 +132,6 @@ export default function MultisigApprovalScreen() {
   const contacts = usePersistedStore((s) => s.contacts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const sessionAccounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -163,6 +162,7 @@ export default function MultisigApprovalScreen() {
       title="Approval request"
       onBack={() => navigate(`/multisig/${rawId}/approvals`)}
       backAriaLabel="Back to pending approvals"
+      action={<ShellAccountSwitcher />}
     />
   );
 
@@ -355,7 +355,7 @@ export default function MultisigApprovalScreen() {
     };
     return (
       <MultisigFlowShell
-        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} />}
+        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} action={<ShellAccountSwitcher />} />}
         footer={(
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button onClick={() => void withdraw()} loading={resetSending} disabled={!fees || resetSending || hasPending || !isOwner} style={{ width: "100%" }}>
@@ -440,13 +440,6 @@ export default function MultisigApprovalScreen() {
       notch={supportedByMe ? <ApprovalRecordedNotch /> : undefined}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <MultisigAccountSelect
-          wallet={wallet}
-          accounts={sessionAccounts}
-          activeIndex={settings.activeAccountIndex}
-          onSelect={setActiveAccountIndex}
-        />
-
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-section)", lineHeight: "var(--leading-tight)", color: "var(--color-text-secondary)" }}>
             <span style={{ fontWeight: 600, color: "var(--color-text-display)" }}>

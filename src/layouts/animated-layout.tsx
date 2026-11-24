@@ -143,10 +143,10 @@ function LayoutShell() {
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
   const resolvedHeader = header ?? (cur === "/settings"
-    ? <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} backAriaLabel="Back to dashboard" />
+    ? <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} backAriaLabel="Back to dashboard" action={<ShellAccountSwitcher />} />
     : routeTitle
       ? backTarget
-        ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} />
+        ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} action={<ShellAccountSwitcher />} />
         : <ScreenHeader leading={<ShellAccountSwitcher />} title={routeTitle} />
       : null);
 

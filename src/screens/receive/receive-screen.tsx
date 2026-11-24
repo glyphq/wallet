@@ -1,5 +1,4 @@
 import { AppShell } from "@/layouts/app-shell";
-import { AccountSelector } from "@/components/account-selector";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getWalletAccountIdentity } from "@/lib/accounts";
@@ -9,7 +8,6 @@ import { ReceiveEmptyState } from "./receive-empty-state";
 
 export default function ReceiveScreen() {
   const settings = usePersistedStore((s) => s.settings);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const accounts = useSessionStore((s) => s.accounts);
 
@@ -34,14 +32,6 @@ export default function ReceiveScreen() {
       >
         {identity ? (
           <>
-            <AccountSelector
-              wallet={wallet ?? null}
-              activeIndex={activeIndex}
-              accounts={accounts}
-              identity={identity}
-              onSelect={setActiveAccountIndex}
-            />
-
             <div className="receive-qr-frame corner-frame">
               <ReceiveQrCard identity={identity} hideBalances={hideBalances} />
             </div>

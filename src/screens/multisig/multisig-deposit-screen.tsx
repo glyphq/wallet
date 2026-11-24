@@ -52,7 +52,6 @@ import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import {
   AssetMetaLabel,
   FeeRow,
-  MultisigAccountSelect,
   MultisigFlowShell,
   VaultId,
 } from "./multisig-ui";
@@ -135,7 +134,6 @@ export default function MultisigDepositScreen() {
   const wallets = usePersistedStore((s) => s.wallets);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const sessionAccounts = useSessionStore((s) => s.accounts);
 
   const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
@@ -673,13 +671,6 @@ export default function MultisigDepositScreen() {
   return (
     <MultisigFlowShell footer={footer}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <MultisigAccountSelect
-          wallet={wallet}
-          accounts={sessionAccounts}
-          activeIndex={settings.activeAccountIndex}
-          onSelect={setActiveAccountIndex}
-        />
-
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           <span style={SECTION_LABEL}>Deposit to</span>
           <span style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", flexWrap: "wrap", minWidth: 0 }}>

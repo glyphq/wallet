@@ -43,7 +43,6 @@ export default function SendScreen() {
   const saveTxDraft = useSessionStore((s) => s.saveTxDraft);
   const clearTxDraft = useSessionStore((s) => s.clearTxDraft);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const account = accounts[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
@@ -76,10 +75,6 @@ export default function SendScreen() {
 
   const accountName = wallet?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
-  const sourceAccounts = (wallet?.accounts ?? [])
-    .filter((a) => !a.hidden)
-    .map((a) => ({ index: a.index, identity: getWalletAccountIdentity(wallet ?? null, a.index, accounts) ?? "", name: a.name }))
-    .filter((a) => a.identity);
   const walletAccountTargets = (wallet?.accounts ?? [])
     .filter((a) => !a.hidden)
     .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
@@ -189,9 +184,6 @@ export default function SendScreen() {
     return (
       <SendInputStep
         statusBar={sendHeader}
-        sourceAccounts={sourceAccounts}
-        selectedAccountIndex={settings.activeAccountIndex}
-        onSelectAccount={setActiveAccountIndex}
         draftRestored={draftRestored}
         onDismissDraft={dismissDraft}
         amountStr={amountStr}
