@@ -95,7 +95,7 @@ function PendingTxRow({
       labelColor={labelColor}
       address={address}
       time={time}
-      amount={hideBalances ? "••••••" : `−${formatQuCompact(tx.amount)}`}
+      amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
       amountUsd={hideBalances || !pendingSnapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: pendingSnapshot.priceUsd, ...quote }).text}
       amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
       txType={expired ? "failed" : "pending"}

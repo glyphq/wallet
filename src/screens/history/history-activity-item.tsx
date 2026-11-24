@@ -21,52 +21,122 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
   txType?: "sent" | "received" | "sc" | "failed" | "pending";
 }) {
   const TypeIcon = txType ? TX_TYPE_ICONS[txType] : null;
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={`history-row${className ? ` ${className}` : ""}`}
       style={{
-        display: "flex", alignItems: "center", gap: "var(--space-3)",
-        width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-3)",
+        width: "100%",
+        minHeight: 64,
+        background: "none",
+        border: "none",
+        borderRadius: "var(--radius-sharp)",
+        cursor: "pointer",
+        padding: "var(--space-3) var(--space-2)",
+        margin: "0 calc(var(--space-2) * -1)",
+        textAlign: "left",
       }}
     >
       {TypeIcon && (
-        <div style={{
-          flexShrink: 0,
-          width: 48,
-          height: 48,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "var(--radius-sharp)",
-          border: "1px solid var(--color-border-subtle)",
-          background: "var(--color-bg-surface)",
-          color: txType === "failed" ? "var(--color-status-warning)" : txType === "pending" ? "var(--color-text-disabled)" : "var(--color-text-secondary)",
-        }}>
-          <TypeIcon size={20} />
+        <div
+          style={{
+            flexShrink: 0,
+            width: 40,
+            height: 40,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "var(--radius-sharp)",
+            border: "1px solid var(--color-border-subtle)",
+            background: "var(--color-bg-surface)",
+            color: txType === "failed"
+              ? "var(--color-status-warning)"
+              : txType === "pending"
+                ? "var(--color-text-tertiary)"
+                : "var(--color-text-secondary)",
+          }}
+        >
+          <TypeIcon size={18} aria-hidden="true" />
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: labelColor }}>
-          {label}
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", minWidth: 0 }}>
+          <span
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-body-compact)",
+              fontWeight: 500,
+              color: labelColor,
+            }}
+          >
+            {label}
+          </span>
+          {time ? (
+            <span
+              style={{
+                flexShrink: 0,
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-caption)",
+                color: "var(--color-text-tertiary)",
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {time}
+            </span>
+          ) : null}
+        </div>
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-mono-sm)",
+            color: "var(--color-text-tertiary)",
+            letterSpacing: "0.04em",
+          }}
+        >
           {address}
         </span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>
-          {time}
-        </span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: amountColor, fontVariantNumeric: "tabular-nums" }}>
+
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-body-compact)",
+            fontWeight: 500,
+            color: amountColor,
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
+          }}
+        >
           {amount}
         </span>
-        {amountUsd && (
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", fontVariantNumeric: "tabular-nums" }}>
+        {amountUsd ? (
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-caption)",
+              color: "var(--color-text-tertiary)",
+              fontVariantNumeric: "tabular-nums",
+              whiteSpace: "nowrap",
+            }}
+          >
             {amountUsd}
           </span>
-        )}
+        ) : null}
       </div>
     </button>
   );

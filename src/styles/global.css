@@ -1023,6 +1023,7 @@ a:hover {
   transition: background-color var(--duration-fast) var(--ease-out);
 }
 
-.history-row:hover {
+.history-row:hover,
+.history-row:focus-visible {
   background: var(--color-bg-surface);
 }
