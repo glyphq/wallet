@@ -38,6 +38,9 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
 
 const HEADER_TITLES: [string, string][] = [
   ["/dashboard", "Dashboard"],
+  ["/accounts/add", "Add account"],
+  ["/accounts/", "Account"],
+  ["/accounts", "Accounts"],
   ["/wallets/:id/portfolio", "Portfolio"],
   ["/wallets", "Wallets"],
   ["/wallets/", "Wallet details"],
@@ -62,6 +65,7 @@ function showHeader(pathname: string): boolean {
 
 function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
+  if (pathname === "/accounts" || pathname.startsWith("/accounts/")) return false;
   if (pathname.startsWith("/multisig/")) return false;
   if (pathname.startsWith("/contacts/")) return false;
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return false;
@@ -95,6 +99,8 @@ function headerTitleFromPath(pathname: string): string | null {
 }
 
 function backTargetFromPath(pathname: string): string | null {
+  if (pathname === "/accounts") return "/dashboard";
+  if (pathname.startsWith("/accounts/")) return "/accounts";
   if (pathname === "/multisig/new") return "/multisig";
   if (pathname.startsWith("/multisig/") && pathname.endsWith("/approval")) {
     return `/multisig/${pathname.slice("/multisig/".length, -"/approval".length)}/approvals`;
@@ -116,6 +122,7 @@ function backTargetFromPath(pathname: string): string | null {
 /** Returns true when both paths are within the same top-level section. */
 function isSameSection(a: string, b: string): boolean {
   if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
+  if (a.startsWith("/accounts") && b.startsWith("/accounts")) return true;
   if (a.startsWith("/wallets") && b.startsWith("/wallets")) return true;
   if (a.startsWith("/setup") && b.startsWith("/setup")) return true;
   if (a.startsWith("/multisig") && b.startsWith("/multisig")) return true;

@@ -25,6 +25,12 @@ const loadWalletDetailScreen = () => import("@/screens/wallets/wallet-detail-scr
 const WalletDetailScreen = lazy(loadWalletDetailScreen);
 const loadPortfolioScreen = () => import("@/screens/wallets/portfolio-screen");
 const PortfolioScreen = lazy(loadPortfolioScreen);
+const loadAccountsScreen = () => import("@/screens/accounts/accounts-screen");
+const AccountsScreen = lazy(loadAccountsScreen);
+const loadAccountAddScreen = () => import("@/screens/accounts/account-add-screen");
+const AccountAddScreen = lazy(loadAccountAddScreen);
+const loadAccountDetailScreen = () => import("@/screens/accounts/account-detail-screen");
+const AccountDetailScreen = lazy(loadAccountDetailScreen);
 const loadSendScreen = () => import("@/screens/send/send-screen");
 const SendScreen = lazy(loadSendScreen);
 const loadScheduledTransfersScreen = () => import("@/screens/send/scheduled-transfers-screen");
@@ -135,6 +141,9 @@ const SCREEN_LOADERS = [
   loadWalletsScreen,
   loadWalletDetailScreen,
   loadPortfolioScreen,
+  loadAccountsScreen,
+  loadAccountAddScreen,
+  loadAccountDetailScreen,
   loadSendScreen,
   loadScheduledTransfersScreen,
   loadSendManyScreen,
@@ -201,6 +210,9 @@ export const router = createHashRouter([
           { path: "/wallets", element: <Screen component={WalletsScreen} /> },
           { path: "/wallets/:id", element: <Screen component={WalletDetailScreen} /> },
           { path: "/wallets/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
+          { path: "/accounts", element: <Screen component={AccountsScreen} /> },
+          { path: "/accounts/add", element: <Screen component={AccountAddScreen} /> },
+          { path: "/accounts/:index", element: <Screen component={AccountDetailScreen} /> },
           { path: "/send", element: <Screen component={SendScreen} /> },
           { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
           { path: "/send-many", element: <Screen component={SendManyScreen} /> },

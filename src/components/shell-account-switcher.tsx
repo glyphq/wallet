@@ -1,21 +1,29 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useNavigate } from "react-router";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { Button } from "@/components/button";
+import { Settings01Icon } from "@/lib/icons";
 import { truncateId } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-interface MenuPosition {
+interface AccountMenu {
   left: number;
   top: number;
   width: number;
-  maxHeight: number;
+  height: number;
+  originLeft: number;
+  originTop: number;
+  originWidth: number;
+  originHeight: number;
 }
 
-/** Header account avatar and switcher for the active wallet. */
+/** Header account avatar and fullscreen account switcher. */
 export function ShellAccountSwitcher() {
+  const navigate = useNavigate();
   const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
@@ -34,34 +42,19 @@ export function ShellAccountSwitcher() {
   const activeName = activeAccount?.name ?? `Account ${settings.activeAccountIndex + 1}`;
 
   const [open, setOpen] = useState(false);
-  const [menu, setMenu] = useState<MenuPosition | null>(null);
+  const [menu, setMenu] = useState<AccountMenu | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    const onPointer = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node) && !buttonRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
         buttonRef.current?.focus();
       }
     };
-    window.addEventListener("resize", close);
-    window.addEventListener("scroll", close, true);
-    document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("resize", close);
-      window.removeEventListener("scroll", close, true);
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
   if (!wallet || !identity) return null;
@@ -73,13 +66,15 @@ export function ShellAccountSwitcher() {
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const width = window.innerWidth - 16;
-    const top = rect.bottom + 6;
     setMenu({
-      left: 8,
-      top,
-      width,
-      maxHeight: Math.min(320, window.innerHeight - top - 16),
+      left: 0,
+      top: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      originLeft: rect.left,
+      originTop: rect.top,
+      originWidth: rect.width,
+      originHeight: rect.height,
     });
     setOpen(true);
   }
@@ -89,76 +84,139 @@ export function ShellAccountSwitcher() {
     setOpen(false);
   }
 
-  const menuNode = menu
+  const overlay = menu
     ? createPortal(
         <AnimatePresence>
           {open ? (
             <motion.div
-              ref={menuRef}
-              role="listbox"
-              aria-label="Choose account"
-              className="corner-frame"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              style={{
-                position: "fixed",
+              key="accounts"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Accounts"
+              initial={{
+                left: menu.originLeft,
+                top: menu.originTop,
+                width: menu.originWidth,
+                height: menu.originHeight,
+                borderRadius: 8,
+                opacity: 0.85,
+              }}
+              animate={{
                 left: menu.left,
                 top: menu.top,
                 width: menu.width,
-                maxHeight: menu.maxHeight,
-                overflowY: "auto",
-                zIndex: 1000,
-                padding: "var(--space-2)",
-                background: "var(--color-bg-elevated)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
-                boxShadow: "var(--shadow-floating)",
-                "--corner-color": "var(--color-text-tertiary)",
-                "--corner-size": "10px",
-                "--corner-inset": "-3px",
-              } as CSSProperties}
+                height: menu.height,
+                borderRadius: 0,
+                opacity: 1,
+              }}
+              exit={{
+                left: menu.originLeft,
+                top: menu.originTop,
+                width: menu.originWidth,
+                height: menu.originHeight,
+                borderRadius: 8,
+                opacity: 0,
+              }}
+              transition={{ type: "spring", stiffness: 380, damping: 40 }}
+              style={{
+                position: "fixed",
+                zIndex: 1001,
+                overflow: "hidden",
+                background: "var(--color-bg-base)",
+                display: "flex",
+              }}
             >
-              {visibleAccounts.map((account) => {
-                const accountIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
-                const isActive = account.index === settings.activeAccountIndex;
-                return (
-                  <button
-                    key={account.index}
-                    type="button"
-                    role="option"
-                    aria-selected={isActive}
-                    onClick={() => select(account.index)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "var(--space-3)",
-                      width: "100%",
-                      padding: "var(--space-2) var(--space-3)",
-                      border: 0,
-                      borderRadius: "var(--radius-sharp)",
-                      background: isActive ? "var(--color-bg-surface)" : "transparent",
-                      boxShadow: isActive ? "inset 2px 0 0 var(--color-accent)" : undefined,
-                      color: "inherit",
-                      cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <FramedAvatar seed={accountIdentity ?? account.name} size={28} />
-                    <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                        {account.name}
-                      </span>
-                      {accountIdentity ? (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.04em" }}>
-                          {truncateId(accountIdentity, 8, 8)}
-                        </span>
-                      ) : null}
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0, transition: { delay: 0.1, duration: 0.18 } }}
+                exit={{ opacity: 0, transition: { duration: 0.08 } }}
+                style={{ display: "flex", width: "100%", height: "100%", flexDirection: "column" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flex: 1,
+                    minHeight: 0,
+                    width: "100%",
+                    maxWidth: 720,
+                    flexDirection: "column",
+                    margin: "0 auto",
+                    padding: "var(--space-4) var(--screen-padding) 0",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-section)", lineHeight: "var(--leading-tight)", letterSpacing: "0.02em", color: "var(--color-text-primary)" }}>
+                      Accounts
                     </span>
-                  </button>
-                );
-              })}
+                  </div>
+
+                  <div role="listbox" aria-label="Choose account" style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", gap: "var(--space-2)", overflowY: "auto", paddingTop: "var(--space-3)" }}>
+                    {visibleAccounts.map((account) => {
+                      const accountIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
+                      const isActive = account.index === settings.activeAccountIndex;
+                      return (
+                        <button
+                          key={account.index}
+                          type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          onClick={() => select(account.index)}
+                          className={isActive ? "corner-frame" : undefined}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "var(--space-3)",
+                            width: "100%",
+                            minHeight: 64,
+                            padding: "var(--space-3)",
+                            border: 0,
+                            borderRadius: "var(--radius-sharp)",
+                            background: isActive ? "var(--color-bg-surface)" : "transparent",
+                            color: "inherit",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            "--corner-color": "var(--color-accent)",
+                            "--corner-size": "10px",
+                            "--corner-inset": "3px",
+                          } as CSSProperties}
+                        >
+                          <FramedAvatar seed={accountIdentity ?? account.name} size={34} />
+                          <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
+                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                              {account.name}
+                            </span>
+                            {accountIdentity ? (
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.04em" }}>
+                                {truncateId(accountIdentity, 8, 8)}
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ flexShrink: 0, width: "100%", marginTop: "var(--space-3)", padding: "var(--space-3) var(--screen-padding)", borderTop: "1px solid var(--color-border-subtle)" }}>
+                  <div style={{ display: "flex", width: "100%", maxWidth: 720, flexDirection: "column", gap: "var(--space-2)", margin: "0 auto" }}>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      style={{ width: "100%" }}
+                      onClick={() => {
+                        setOpen(false);
+                        navigate("/accounts");
+                      }}
+                    >
+                      <Settings01Icon size={15} strokeWidth={1.5} aria-hidden="true" />
+                      Manage accounts
+                    </Button>
+                    <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setOpen(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           ) : null}
         </AnimatePresence>,
@@ -172,7 +230,7 @@ export function ShellAccountSwitcher() {
         ref={buttonRef}
         type="button"
         aria-label={`Switch account. Current account: ${activeName}`}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
         aria-expanded={open}
         onClick={toggle}
         style={{
@@ -181,8 +239,8 @@ export function ShellAccountSwitcher() {
           justifyContent: "center",
           width: 32,
           height: 32,
-          lineHeight: 0,
           padding: 0,
+          lineHeight: 0,
           border: 0,
           background: "transparent",
           borderRadius: "var(--radius-sharp)",
@@ -191,7 +249,7 @@ export function ShellAccountSwitcher() {
       >
         <FramedAvatar seed={identity} size={32} />
       </button>
-      {menuNode}
+      {overlay}
     </>
   );
 }
