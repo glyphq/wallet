@@ -155,13 +155,13 @@ export function RequestApprovalActions({
 }) {
   return (
     <RequestActionBar>
-      <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-        <DisconnectIcon size={15} aria-hidden="true" />
-        Reject
-      </Button>
       <Button onClick={onApprove} loading={approveLoading} disabled={approveDisabled} style={{ flex: 1 }}>
         {approveIcon ?? <CheckmarkCircle01Icon size={16} aria-hidden="true" />}
         {approveLabel}
+      </Button>
+      <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+        <DisconnectIcon size={15} aria-hidden="true" />
+        Reject
       </Button>
     </RequestActionBar>
   );

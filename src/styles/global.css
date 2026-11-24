@@ -1240,3 +1240,38 @@ a:hover {
 .dropdown-option[aria-selected="true"] {
   color: var(--color-accent);
 }
+
+.dropdown-trigger {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-surface);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.dropdown-trigger:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-text-tertiary);
+}
+
+.dropdown-trigger:focus-within {
+  border-color: var(--color-accent);
+}
+
+.dropdown-trigger[data-disabled="true"] {
+  opacity: 0.55;
+}
+
+.dropdown-menu {
+  background: var(--color-bg-elevated);
+}
+
+.dropdown-option:hover {
+  background: var(--color-bg-hover);
+}
+
+.dropdown-option[aria-selected="true"] {
+  background: var(--color-accent-muted);
+}

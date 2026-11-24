@@ -134,7 +134,7 @@ export function DropdownSelect({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 0 }}>
       <FieldLabel htmlFor={selectId}>{label}</FieldLabel>
-      <div className="glyph-field corner-frame" style={{ opacity: disabled ? 0.55 : 1 }}>
+      <div className="dropdown-trigger" data-disabled={disabled ? "true" : undefined}>
         <button
           ref={buttonRef}
           id={selectId}
@@ -152,11 +152,10 @@ export function DropdownSelect({
             justifyContent: "space-between",
             gap: "var(--space-3)",
             width: "100%",
-            minHeight: "var(--height-input)",
+            minHeight: 48,
             padding: "0 var(--space-4)",
             border: 0,
-            borderRadius: 2,
-            background: "var(--color-bg-surface)",
+            background: "transparent",
             color: "var(--color-text-primary)",
             fontFamily: "var(--font-mono)",
             fontSize: "var(--text-mono-sm)",
