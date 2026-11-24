@@ -1,5 +1,6 @@
 import { Button } from "@/components/button";
-import { StatusText } from "./history-ui";
+import { AsciiEmptyState } from "@/components/ascii-empty-state";
+
 
 export function HistoryLoadingRows() {
   return (
@@ -36,14 +37,19 @@ export function HistoryLoadingMoreRows() {
 export function HistoryEmptyState({ hasAnyActivity }: { hasAnyActivity: boolean }) {
   if (hasAnyActivity) {
     return (
-      <div style={{ textAlign: "center", padding: "var(--space-12) 0" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", marginBottom: "var(--space-3)" }}>
-          No transactions yet
-        </div>
-      </div>
+      <AsciiEmptyState
+        title="No activity yet"
+        description="Incoming and outgoing transactions will appear here."
+      />
     );
   }
-  return <StatusText color="var(--color-text-disabled)">No results</StatusText>;
+  return (
+    <AsciiEmptyState
+      icon="search"
+      title="No matching activity"
+      description="Try a different address, hash, or filter."
+    />
+  );
 }
 
 export function HistoryLoadMore({ visibleCount, totalCount, onShowOlder }: { visibleCount: number; totalCount: number; onShowOlder: () => void }) {

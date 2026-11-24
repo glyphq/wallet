@@ -116,9 +116,9 @@ export default function DashboardScreen() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "var(--space-4)" }}>
         {/* Recent activity card */}
-        <div style={{ background: "var(--color-bg-surface)", borderRadius: "var(--radius-card)", padding: "var(--space-4)" }}>
+        <div className="recent-activity-panel corner-frame">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 500, color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Recent activity
             </span>
             <button
@@ -126,8 +126,8 @@ export default function DashboardScreen() {
               aria-label="View all activity"
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                color: "var(--color-text-secondary)", padding: 0,
+                fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 500,
+                color: "var(--color-text-secondary)", padding: 0, letterSpacing: "0.04em", textTransform: "uppercase",
                 display: "flex", alignItems: "center", gap: "var(--space-1)",
               }}
             >

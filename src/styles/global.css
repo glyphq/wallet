@@ -997,3 +997,19 @@ a:hover {
   border-color: var(--color-border-strong);
   background: var(--color-bg-surface);
 }
+
+/* ── Dashboard panels ───────────────────────────────────────────────────────── */
+
+.recent-activity-panel {
+  --corner-color: var(--color-text-tertiary);
+  --corner-size: 8px;
+  --corner-inset: 3px;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-surface);
+}
+
+.recent-activity-panel::before {
+  opacity: 0.28;
+}
