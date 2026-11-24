@@ -20,7 +20,6 @@ export function ShellWalletSwitcher() {
       type="button"
       aria-label={`Switch wallet. Current wallet: ${activeWallet.name}`}
       onClick={() => navigate("/wallets/switch")}
-      className="glyph-avatar-btn corner-frame"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -28,10 +27,10 @@ export function ShellWalletSwitcher() {
         width: 32,
         height: 32,
         padding: 0,
+        border: 0,
+        background: "transparent",
         borderRadius: "var(--radius-sharp)",
         boxShadow: "none",
-        "--corner-size": "6px",
-        "--corner-inset": "2px",
         cursor: "pointer",
       } as CSSProperties}
     >

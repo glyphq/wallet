@@ -83,7 +83,7 @@ export function MarbleAvatar({ seed, size, square = true, ascii = true }: Marble
   }, [ascii, seed, size, square]);
 
   return (
-    <span aria-hidden="true" style={{ position: "relative", display: "block", width: size, height: size }}>
+    <span aria-hidden="true" style={{ position: "relative", display: "block", width: size, height: size, background: "var(--color-bg-surface-2)" }}>
       {ascii ? (
         <span
           ref={hostRef}
