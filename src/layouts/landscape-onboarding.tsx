@@ -1,12 +1,6 @@
 import type { ReactNode } from "react";
-import { AsciiBackdrop } from "@/components/ascii-backdrop";
 
-/** Centered onboarding surface over a full-window ASCII field. */
+/** Full-width page shell for onboarding and future header-led screens. */
 export function LandscapeOnboarding({ children }: { children: ReactNode }) {
-  return (
-    <div className="onboarding-landscape">
-      <AsciiBackdrop />
-      <div className="onboarding-inner">{children}</div>
-    </div>
-  );
+  return <div className="onboarding-page">{children}</div>;
 }

@@ -1,10 +1,9 @@
 import { useNavigate } from "react-router";
-import { motion } from "motion/react";
 import { AddCircleIcon, ArrowLeft01Icon, FolderOpenIcon, KeyRoundIcon } from "@/lib/icons";
-import { presets } from "@/lib/animations";
 import { BrandLockup } from "@/components/brand-lockup";
 import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
+import { PageHeader } from "@/components/page-header";
 import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -21,16 +20,13 @@ export default function WelcomeScreen() {
 
   return (
     <LandscapeOnboarding>
-      <motion.div
-        {...presets.fadeIn}
-        style={{ width: "100%", maxWidth: 380, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-6)", textAlign: "center" }}
-      >
+      <PageHeader>
         {hasVaults ? (
           <button
             type="button"
             onClick={() => navigate(isLocked ? "/lock" : "/dashboard")}
             style={{
-              alignSelf: "flex-start",
+              alignSelf: "center",
               minHeight: 44,
               display: "inline-flex",
               alignItems: "center",
@@ -57,9 +53,6 @@ export default function WelcomeScreen() {
           description="Create a new Vault, restore a seed, or import an existing Vault file."
         />
 
-        {hasPendingRequest ? <Notice tone="warning">A request is waiting.</Notice> : null}
-        {importFlow.importFileError ? <Notice tone="error">{importFlow.importFileError}</Notice> : null}
-
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <Button onClick={() => navigate("/setup/create")}>
             <AddCircleIcon size={18} strokeWidth={1.5} aria-hidden="true" />
@@ -74,8 +67,12 @@ export default function WelcomeScreen() {
             Import Vault file
           </Button>
         </div>
+      </PageHeader>
 
-      </motion.div>
+      <div className="onboarding-body">
+        {hasPendingRequest ? <Notice tone="warning">A request is waiting.</Notice> : null}
+        {importFlow.importFileError ? <Notice tone="error">{importFlow.importFileError}</Notice> : null}
+      </div>
 
       <ImportVaultSheet flow={importFlow} />
     </LandscapeOnboarding>

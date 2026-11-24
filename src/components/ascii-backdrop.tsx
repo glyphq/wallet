@@ -9,9 +9,9 @@ interface ClearRect {
 }
 
 /**
- * Landing-style drifting ASCII field behind onboarding copy. The field fades
- * out behind headline and paragraph line boxes; reduced-motion and WebGL2
- * failures leave the content untouched.
+ * Landing-style drifting ASCII field behind copy. The field lives in a sibling
+ * layer so content height drives the container, and fades out behind headline
+ * and paragraph line boxes. Unsupported WebGL2 leaves the content untouched.
  */
 export function AsciiBackdrop({ children, style, contentStyle }: { children?: ReactNode; style?: CSSProperties; contentStyle?: CSSProperties }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -20,13 +20,12 @@ export function AsciiBackdrop({ children, style, contentStyle }: { children?: Re
   useEffect(() => {
     const host = hostRef.current;
     const copy = copyRef.current;
-    if (!host) return;
+    if (!host || !copy) return;
 
     let clearRects: ClearRect[] = [];
     let clearKey = "";
 
     const measureClear = () => {
-      if (!copy) return clearRects;
       const hostRect = host.getBoundingClientRect();
       const copyRect = copy.getBoundingClientRect();
       const key = [
@@ -41,7 +40,7 @@ export function AsciiBackdrop({ children, style, contentStyle }: { children?: Re
       if (key === clearKey) return clearRects;
 
       const rects: ClearRect[] = [];
-      for (const element of copy.querySelectorAll("h2, p, .asciify-clear")) {
+      for (const element of copy.querySelectorAll("h1, h2, p, .asciify-clear")) {
         const range = document.createRange();
         range.selectNodeContents(element);
         for (const rect of range.getClientRects()) {
@@ -81,20 +80,18 @@ export function AsciiBackdrop({ children, style, contentStyle }: { children?: Re
   }, []);
 
   return (
-    <div ref={hostRef} style={{ position: "absolute", inset: 0, overflow: "hidden", ...style }}>
+    <div style={{ position: "relative", ...style }}>
+      <div ref={hostRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }} />
       {children ? (
         <div
           ref={copyRef}
           style={{
             position: "relative",
             zIndex: 1,
-            height: "100%",
-            minHeight: 0,
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
             gap: "var(--space-10)",
-            padding: "clamp(32px, 5vw, 72px)",
             ...contentStyle,
           }}
         >

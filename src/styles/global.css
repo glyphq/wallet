@@ -631,61 +631,43 @@ a:hover {
   }
 }
 
-/* ── Landscape onboarding ─────────────────────────────────────────────────── */
+/* ── Header-led onboarding pages ──────────────────────────────────────────── */
 
-.onboarding-landscape {
-  position: relative;
-  isolation: isolate;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  overflow: hidden;
-  background: var(--color-bg-base);
-}
-
-.onboarding-inner {
-  z-index: 1;
+.onboarding-page {
   --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
   --font-sans: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", monospace;
-  position: relative;
-  width: 85%;
-  height: 85%;
+  width: 100%;
+  height: 100%;
   min-height: 0;
-  padding: clamp(24px, 4vw, 48px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-  isolation: isolate;
-  border: 1px solid var(--color-border-subtle);
-  background: color-mix(in srgb, var(--color-bg-base) 80%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  overflow-y: auto;
+  background: var(--color-bg-base);
 }
 
-.onboarding-inner::before {
+.page-header {
+  position: relative;
+  isolation: isolate;
+  min-height: 320px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.page-header::after {
   content: "";
   position: absolute;
-  inset: 5px;
-  z-index: 2;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 72px;
   pointer-events: none;
-  border: 1px solid currentColor;
-  opacity: 0.08;
-  -webkit-mask:
-    linear-gradient(#000 0 0) left top / 14px 14px no-repeat,
-    linear-gradient(#000 0 0) right top / 14px 14px no-repeat,
-    linear-gradient(#000 0 0) left bottom / 14px 14px no-repeat,
-    linear-gradient(#000 0 0) right bottom / 14px 14px no-repeat;
-  mask:
-    linear-gradient(#000 0 0) left top / 14px 14px no-repeat,
-    linear-gradient(#000 0 0) right top / 14px 14px no-repeat,
-    linear-gradient(#000 0 0) left bottom / 14px 14px no-repeat,
-    linear-gradient(#000 0 0) right bottom / 14px 14px no-repeat;
+  background: linear-gradient(transparent, var(--color-bg-base));
 }
 
+.onboarding-body {
+  padding: var(--space-4) var(--screen-padding) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 
 .app-titlebar-frame {
   --corner-size: 8px;
