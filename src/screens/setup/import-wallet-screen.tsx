@@ -146,26 +146,28 @@ export default function ImportWalletScreen() {
               </span>
             </div>
           ) : null}
-          <Input
-            leftElement={<Wallet01Icon size={18} strokeWidth={1.5} />}
-            value={name}
-            onChange={(event) => {
-              setName(event.target.value);
-              setNameError("");
-            }}
-            onKeyDown={(event) => event.key === "Enter" && continueFromName()}
-            placeholder="Wallet name"
-            aria-label="Wallet name"
-            autoFocus
-            error={nameError}
-          />
-          <WalletNameChips
-            value={name}
-            onSelect={(value) => {
-              setName(value);
-              setNameError("");
-            }}
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <Input
+              leftElement={<Wallet01Icon size={18} strokeWidth={1.5} />}
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setNameError("");
+              }}
+              onKeyDown={(event) => event.key === "Enter" && continueFromName()}
+              placeholder="Wallet name"
+              aria-label="Wallet name"
+              autoFocus
+              error={nameError}
+            />
+            <WalletNameChips
+              value={name}
+              onSelect={(value) => {
+                setName(value);
+                setNameError("");
+              }}
+            />
+          </div>
         </SetupFlow>
       ) : null}
 
