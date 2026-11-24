@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Button } from "@/components/button";
+import { AsciiPageHeader } from "@/components/ascii-page-header";
 import { Settings01Icon } from "@/lib/icons";
 import { truncateId } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
@@ -66,11 +67,14 @@ export function ShellAccountSwitcher() {
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
+    const titlebarHeight = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--height-titlebar"),
+    ) || 0;
     setMenu({
       left: 0,
-      top: 0,
+      top: titlebarHeight,
       width: window.innerWidth,
-      height: window.innerHeight,
+      height: window.innerHeight - titlebarHeight,
       originLeft: rect.left,
       originTop: rect.top,
       originWidth: rect.width,
@@ -132,6 +136,12 @@ export function ShellAccountSwitcher() {
                 exit={{ opacity: 0, transition: { duration: 0.08 } }}
                 style={{ display: "flex", width: "100%", height: "100%", flexDirection: "column" }}
               >
+                <AsciiPageHeader>
+                  <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-section)", lineHeight: "var(--leading-tight)", fontWeight: 400, letterSpacing: "0.04em", color: "var(--color-text-primary)" }}>
+                    Accounts
+                  </span>
+                </AsciiPageHeader>
+
                 <div
                   style={{
                     display: "flex",
@@ -141,16 +151,10 @@ export function ShellAccountSwitcher() {
                     maxWidth: 720,
                     flexDirection: "column",
                     margin: "0 auto",
-                    padding: "var(--space-4) var(--screen-padding) 0",
+                    padding: "var(--space-3) var(--screen-padding) 0",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-section)", lineHeight: "var(--leading-tight)", letterSpacing: "0.02em", color: "var(--color-text-primary)" }}>
-                      Accounts
-                    </span>
-                  </div>
-
-                  <div role="listbox" aria-label="Choose account" style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", gap: "var(--space-2)", overflowY: "auto", paddingTop: "var(--space-3)" }}>
+                  <div role="listbox" aria-label="Choose account" style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", gap: "var(--space-2)", overflowY: "auto" }}>
                     {visibleAccounts.map((account) => {
                       const accountIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
                       const isActive = account.index === settings.activeAccountIndex;
