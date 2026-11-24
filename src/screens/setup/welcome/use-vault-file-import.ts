@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { newId } from "@/lib/crypto";
 import { parseSignedExportEnvelope } from "@/lib/export-format";
@@ -35,55 +36,80 @@ export function useVaultFileImport() {
   const [importWalletIcon, setImportWalletIcon] = useState<WalletIconId>(DEFAULT_WALLET_ICON);
   const [importWalletColor, setImportWalletColor] = useState<VaultColor>(DEFAULT_WALLET_COLOR);
 
-  function openFilePicker() {
+  function resetImportFileError() {
     setImportFileError("");
+  }
+
+  async function loadImportText(text: string) {
+    const parsed = await parseSignedExportEnvelope<{
+      glyph: number;
+      name: string;
+      color: VaultColor;
+      icon?: WalletIconId;
+      accounts: AccountMeta[];
+      vault: VaultData;
+    }>(text, "vault");
+    const envelopePayload = parsed.payload;
+    if (envelopePayload.glyph !== 1 || !envelopePayload.vault || !envelopePayload.name?.trim()) {
+      throw new Error("bad format");
+    }
+    const accounts: AccountMeta[] = envelopePayload.accounts ?? [];
+    setImportData({
+      name: envelopePayload.name,
+      color: envelopePayload.color ?? DEFAULT_WALLET_COLOR,
+      icon: envelopePayload.icon ?? DEFAULT_WALLET_ICON,
+      accounts,
+      vault: envelopePayload.vault as VaultData,
+      formatVersion: parsed.version,
+      signatureVerified: parsed.verified,
+      legacy: parsed.legacy,
+    });
+    if (accounts.length > MAX_VAULT_ACCOUNTS) {
+      const sorted = [...accounts].sort((a, b) => a.index - b.index);
+      setSelectedIndices(new Set(sorted.slice(0, MAX_VAULT_ACCOUNTS).map((account) => account.index)));
+    } else {
+      setSelectedIndices(new Set());
+    }
+    setImportPw("");
+    setImportError("");
+    setImportWalletColor(envelopePayload.color ?? DEFAULT_WALLET_COLOR);
+    setImportWalletIcon(envelopePayload.icon ?? DEFAULT_WALLET_ICON);
+  }
+
+  function failImport() {
+    setImportData(null);
+    setImportPw("");
+    setImportError("");
+    setImportFileError("Invalid or unsupported Vault file. Choose a Glyph export and try again.");
+  }
+
+  async function importFile(file: File) {
+    resetImportFileError();
+    try {
+      await loadImportText(await file.text());
+    } catch {
+      failImport();
+    }
+  }
+
+  async function importPath(path: string) {
+    resetImportFileError();
+    try {
+      await loadImportText(await readTextFile(path));
+    } catch {
+      failImport();
+    }
+  }
+
+  function openFilePicker() {
+    resetImportFileError();
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json,application/json";
-    input.onchange = async () => {
+    input.onchange = () => {
       const file = input.files?.[0];
       if (!file) return;
-      try {
-        const text = await file.text();
-        const parsed = await parseSignedExportEnvelope<{
-          glyph: number;
-          name: string;
-          color: VaultColor;
-          icon?: WalletIconId;
-          accounts: AccountMeta[];
-          vault: VaultData;
-        }>(text, "vault");
-        const envelopePayload = parsed.payload;
-        if (envelopePayload.glyph !== 1 || !envelopePayload.vault || !envelopePayload.name?.trim()) {
-          throw new Error("bad format");
-        }
-        const accounts: AccountMeta[] = envelopePayload.accounts ?? [];
-        setImportData({
-          name: envelopePayload.name,
-          color: envelopePayload.color ?? DEFAULT_WALLET_COLOR,
-          icon: envelopePayload.icon ?? DEFAULT_WALLET_ICON,
-          accounts,
-          vault: envelopePayload.vault as VaultData,
-          formatVersion: parsed.version,
-          signatureVerified: parsed.verified,
-          legacy: parsed.legacy,
-        });
-        if (accounts.length > MAX_VAULT_ACCOUNTS) {
-          const sorted = [...accounts].sort((a, b) => a.index - b.index);
-          setSelectedIndices(new Set(sorted.slice(0, MAX_VAULT_ACCOUNTS).map((account) => account.index)));
-        } else {
-          setSelectedIndices(new Set());
-        }
-        setImportPw("");
-        setImportError("");
-        setImportWalletColor(envelopePayload.color ?? DEFAULT_WALLET_COLOR);
-        setImportWalletIcon(envelopePayload.icon ?? DEFAULT_WALLET_ICON);
-      } catch {
-        setImportData(null);
-        setImportPw("");
-        setImportError("");
-        setImportFileError("Invalid or unsupported Vault file. Choose a Glyph export and try again.");
-      }
+      void importFile(file);
     };
     input.click();
   }

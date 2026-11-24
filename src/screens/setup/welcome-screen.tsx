@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { AddCircleIcon, ArrowLeft01Icon, FolderOpenIcon, KeyRoundIcon } from "@/lib/icons";
+import { AddCircleIcon, ArrowLeft01Icon, KeyRoundIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { PageBanner, PageFrame } from "@/components/page-header";
 import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
@@ -8,6 +8,7 @@ import { useSessionStore } from "@/store/session";
 import { ImportVaultSheet } from "./welcome/import-vault-sheet";
 import { Notice } from "./welcome/notice";
 import { useVaultFileImport } from "./welcome/use-vault-file-import";
+import { VaultFileDrop } from "./welcome/vault-file-drop";
 
 const actionsStyle = { display: "flex", flexDirection: "column" as const, gap: "var(--space-3)" };
 
@@ -37,10 +38,6 @@ export default function WelcomeScreen() {
               <KeyRoundIcon size={18} strokeWidth={1.5} aria-hidden="true" />
               Restore from seed
             </Button>
-            <Button variant="ghost" size="md" onClick={importFlow.openFilePicker}>
-              <FolderOpenIcon size={18} strokeWidth={1.5} aria-hidden="true" />
-              Import Vault file
-            </Button>
           </div>
         )}
       >
@@ -68,6 +65,8 @@ export default function WelcomeScreen() {
               Back to Vault
             </button>
           ) : null}
+
+          <VaultFileDrop flow={importFlow} />
 
           {hasPendingRequest ? <Notice tone="warning">A request is waiting.</Notice> : null}
           {importFlow.importFileError ? <Notice tone="error">{importFlow.importFileError}</Notice> : null}
