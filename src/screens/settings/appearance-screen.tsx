@@ -4,6 +4,7 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsDivider, SettingsSectionLabel } from "@/components/settings-section-elements";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
+import { Moon02Icon, Sun01Icon } from "@/lib/icons";
 import { OptionSelector } from "@/components/option-selector";
 import { Toggle } from "@/components/toggle";
 
@@ -14,8 +15,8 @@ const CURRENCY_OPTIONS = [
 ] as const;
 
 const THEME_OPTIONS = [
-  { value: "dark", label: "Dark" },
-  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark", icon: <Moon02Icon size={14} strokeWidth={1.5} aria-hidden="true" /> },
+  { value: "light", label: "Light", icon: <Sun01Icon size={14} strokeWidth={1.5} aria-hidden="true" /> },
 ] as const;
 
 const sectionStyle = {

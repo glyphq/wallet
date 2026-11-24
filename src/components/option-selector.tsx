@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/button";
 
 export interface OptionSelectorOption<T extends string> {
   value: T;
   label: string;
+  icon?: ReactNode;
 }
 
 export interface OptionSelectorProps<T extends string> {
@@ -41,6 +43,7 @@ export function OptionSelector<T extends string>({
           style={{ width: "100%" }}
           onClick={() => onChange(option.value)}
         >
+          {option.icon}
           {option.label}
         </Button>
       ))}
