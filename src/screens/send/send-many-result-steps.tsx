@@ -41,6 +41,7 @@ export interface SendManyDoneStepProps {
   recipientCount: number;
   txHash: string;
   savedTargetTick: number;
+  currentTick: number;
   watchResult: WatchResult;
 }
 
@@ -50,6 +51,7 @@ export function SendManyDoneStep({
   recipientCount,
   txHash,
   savedTargetTick,
+  currentTick,
   watchResult,
 }: SendManyDoneStepProps) {
   const linearGroupStyle: React.CSSProperties = { display: "flex", flexDirection: "column" };
@@ -73,7 +75,7 @@ export function SendManyDoneStep({
         <Divider />
         <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
         <Divider />
-        <TxStatusDetailRow status={watchResult} idleColor="var(--color-text-disabled)" />
+        <TxStatusDetailRow status={watchResult} idleColor="var(--color-text-disabled)" targetTick={savedTargetTick} currentTick={currentTick} />
       </div>
 
       <TxMemoField hash={txHash} />

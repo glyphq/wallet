@@ -1,4 +1,5 @@
 import { resolveProcedureName } from "@/lib/contracts";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { truncateId } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
 import type { PendingTx } from "@/store/persisted";
@@ -8,10 +9,12 @@ export function isPendingTx(detail: TxHistoryItem | PendingTx): detail is Pendin
 }
 
 export function describePendingTx(tx: PendingTx, currentTick: number) {
-  const expired = currentTick > 0 && currentTick > tx.targetTick;
+  const progress = pendingTxProgress(tx.targetTick, currentTick);
+  const expired = progress.phase === "expired";
   return {
+    progress,
     expired,
-    statusLabel: expired ? "Failed" : "Pending",
+    statusLabel: progress.label,
     statusColor: expired ? "var(--color-status-error)" : "var(--color-status-warning)",
     amountColor: expired ? "var(--color-text-disabled)" : "var(--color-accent)",
     displayTo: tx.contractName ? tx.contractName : truncateId(tx.destination ?? "—"),

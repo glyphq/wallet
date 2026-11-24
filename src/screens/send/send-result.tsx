@@ -3,20 +3,31 @@ import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
 import { ShieldAlertIcon, ShieldCheckIcon } from "@/lib/icons";
 import { watchStatusColor, watchStatusLabel, type WatchResult } from "./send-flow";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { GhostActionButton, StatusSpinner } from "./send-ui";
 
 /** Status row shared by send and send-many receipts. */
-export function TxStatusDetailRow({ status, idleColor }: { status: WatchResult; idleColor: string }) {
+export function TxStatusDetailRow(
+  { status, idleColor, targetTick, currentTick }: {
+    status: WatchResult;
+    idleColor: string;
+    targetTick?: number;
+    currentTick?: number;
+  },
+) {
   const icon = status === "confirmed"
     ? <ShieldCheckIcon size={16} style={{ color: "var(--color-accent)" }} />
     : status === "failed"
       ? <ShieldAlertIcon size={16} style={{ color: "var(--color-status-error)" }} />
       : <StatusSpinner />;
+  const progressText = status === "pending" && targetTick !== undefined && currentTick !== undefined
+    ? pendingTxProgress(targetTick, currentTick).timingText
+    : null;
   return (
     <DetailRow
       icon={icon}
       label="Status"
-      value={watchStatusLabel(status)}
+      value={progressText ?? watchStatusLabel(status)}
       mono={false}
       valueColor={watchStatusColor(status, idleColor)}
     />

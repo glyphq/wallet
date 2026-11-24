@@ -42,6 +42,7 @@ export interface SendDoneStepProps {
   destUpper: string;
   txHash: string;
   savedTargetTick: number;
+  currentTick: number;
   watchResult: WatchResult;
   destIsKnownContact: boolean;
   onSaveContact: (name: string) => void;
@@ -54,6 +55,7 @@ export function SendDoneStep({
   destUpper,
   txHash,
   savedTargetTick,
+  currentTick,
   watchResult,
   destIsKnownContact,
   onSaveContact,
@@ -91,7 +93,7 @@ export function SendDoneStep({
         <div style={thinDividerStyle} />
         <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
         <div style={thinDividerStyle} />
-        <TxStatusDetailRow status={watchResult} idleColor="var(--color-text-secondary)" />
+        <TxStatusDetailRow status={watchResult} idleColor="var(--color-text-secondary)" targetTick={savedTargetTick} currentTick={currentTick} />
       </section>
 
       {/* Save contact */}

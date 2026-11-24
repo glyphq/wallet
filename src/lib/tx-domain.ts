@@ -116,7 +116,7 @@ export function normalizeApiTransaction(tx: ApiTransactionLike): TxRecord | null
   };
 }
 
-function parseEventBody(body: unknown): Record<string, unknown> | null {
+export function parseEventBody(body: unknown): Record<string, unknown> | null {
   if (typeof body === "string") {
     try {
       const parsed: unknown = JSON.parse(body);

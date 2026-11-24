@@ -5,7 +5,7 @@ import { identityToPublicKey } from "@/lib/crypto";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
-import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import type { Identity } from "@qubic.org/types";
 
@@ -19,7 +19,7 @@ export function useVaultBalances() {
   const wallets = useSessionStore((s) => s.wallets);
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
-  const pollingIntervalMs = usePollingIntervalMs();
+
   const apiIdentity = useApiCacheIdentity();
 
   const liveIdentities = wallets.slice(0, MAX_VAULT_ACCOUNTS).map((w) => w.identity);
@@ -47,7 +47,6 @@ export function useVaultBalances() {
       return map;
     },
     enabled: identities.length > 0,
-    refetchInterval: pollingIntervalMs,
-    refetchIntervalInBackground: true,
+    staleTime: 5_000,
   });
 }

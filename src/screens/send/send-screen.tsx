@@ -9,6 +9,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { broadcastTx } from "@/lib/broadcast";
+import { subscribeTxResolution } from "@/lib/tx-resolution-events";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { verifyVaultPassword } from "@/lib/vault";
 import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
@@ -116,11 +117,11 @@ export default function SendScreen() {
 
   // Watch for confirmation (always active after send)
   useEffect(() => {
-    if (!txHash || watchResult !== "pending") return;
-    const found = recentTxs?.find((t) => t.hash === txHash);
-    if (found) { setWatchResult(found.moneyFlew === false ? "failed" : "confirmed"); return; }
-    if (tickInfo?.tick && savedTargetTick && tickInfo.tick > savedTargetTick + 30) setWatchResult("failed");
-  }, [txHash, recentTxs, tickInfo, savedTargetTick, watchResult]);
+    if (!txHash) return;
+    return subscribeTxResolution(txHash, (resolution) => {
+      setWatchResult(resolution.status === "failed" ? "failed" : "confirmed");
+    });
+  }, [txHash]);
 
   const handleNumpad = useSendNumpadInput({
     active: step === "input", usdMode, price, usdStr,
@@ -300,6 +301,7 @@ export default function SendScreen() {
         destUpper={destUpper}
         txHash={txHash}
         savedTargetTick={savedTargetTick}
+        currentTick={tickInfo?.tick ?? 0}
         watchResult={watchResult}
         destIsKnownContact={destIsKnownContact}
         onSaveContact={saveContact}

@@ -8,6 +8,7 @@ import { useTxHistory } from "@/hooks/use-tx-history";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { truncateId, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { KNOWN_CONTRACT_ADDRESSES, resolveProcedureName } from "@/lib/contracts";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
 
 function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor }: {
   onClick: () => void;
@@ -68,9 +69,6 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
   const quote = usePreferredCurrencyQuote();
 
-  const isExpired = (p: { targetTick: number }) =>
-    lastProcessedTick > 0 && lastProcessedTick >= p.targetTick;
-
   useEffect(() => {
     if (!lastProcessedTick || !identity) return;
     const hasReady = pendingTxs.some(
@@ -115,8 +113,9 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
 
   myPending.forEach((p) => {
     const isIn = p.destination === activeIdentity;
-    const expired = isExpired(p);
-    const label = expired ? "Failed" : "Pending";
+    const progress = pendingTxProgress(p.targetTick, lastProcessedTick);
+    const expired = progress.phase === "expired";
+    const label = progress.label;
     const labelColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
     const amountColor = expired ? "var(--color-text-disabled)" : "var(--color-status-warning)";
     const address = p.contractName ?? truncateId(isIn ? p.source : p.destination);
@@ -127,7 +126,7 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         label={label}
         labelColor={labelColor}
         address={address}
-        time={formatDate(p.broadcastAt) || `Target tick ${p.targetTick}`}
+        time={progress.timingText}
         amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(p.amount ?? "0")} QU`}
         amountColor={amountColor}
       />,

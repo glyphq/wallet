@@ -182,7 +182,7 @@ Lock clears this native state synchronously before a `glyph:lock` event tells th
 
 ### TanStack Query state
 
-Network-derived balances, tick data, owned assets, transaction history, and related API results live in the query cache. The generated client points at one configured Glyph API origin, and the query cache is cleared when that origin changes so data from another service is never reused.
+Network-derived balances, tick data, owned assets, transaction history, and related API results live in the query cache. The generated client points at one configured Glyph API origin, and the query cache is cleared when that origin changes so data from another service is never reused. Stream-backed resources load once and are then updated or invalidated by tick, market, and identity feeds.
 
 ## 7. Persistent storage architecture
 
@@ -367,27 +367,28 @@ The frontend uses a generated Glyph API client for every chain read and broadcas
 
 The Glyph API supplies current network state, paginated history, decoded events, typed contract queries, and signed-transaction broadcast. Contract reads are sent as hex input to `/v1/live/contracts/{index}/query`; the typed contract helpers only encode and decode payloads.
 
-### Query and polling profiles
+### Live streams and fallbacks
 
-Default polling intervals depend on application visibility and lock state:
+The renderer loads each resource once, then follows Glyph SSE feeds:
 
-| State | Default polling interval |
-| --- | ---: |
-| Active window | 5 seconds |
-| Background window | 10 seconds |
-| Hidden to tray | 15 seconds |
-| Locked | 20 seconds |
+| Feed | Updates |
+| --- | --- |
+| `/v1/stream/ticks` | Cached head, epoch, last-processed tick, network health, expiry |
+| `/v1/stream?types=price,market` | Price and market-cap cards |
+| `/v1/stream?types=transaction,event&identity={id}` | History, balances, assets, analytics, received notifications, confirmations |
 
-Persisted values are sanitized to a range of 2 through 60 seconds. Owned-asset queries enforce a minimum 30-second refresh interval.
+One shared connection is kept per identity, regardless of how many hooks subscribe. EventSource reconnects automatically; `open`, `lag`, window focus, and network-online events trigger a reconciliation fetch, as does the initial mount. Query caches are updated or invalidated from the stream rather than on a fixed interval. Polling remains only for resources with no stream: the optional custom price feed and external Coinbase exchange rates. Persisted polling profiles apply to those fallbacks.
+
+Balances and owned assets do not have a dedicated snapshot stream. They load once and are invalidated by identity transaction/event frames, with a per-identity throttle so a busy account cannot cause unbounded contract queries.
 
 ### Standard transfer flow
 
 1. The renderer validates source, recipient, amount, balance, and pending-transaction guard.
-2. It fetches the current tick and adds the configured offset, default 10.
+2. It reads the current tick and adds the configured offset, default 10.
 3. Native Rust constructs and signs the transaction.
 4. The renderer broadcasts it to the Glyph API.
 5. A local pending record is retained.
-6. Archive and event queries reconcile it to confirmed, failed, or expired.
+6. The identity transaction stream resolves it to confirmed, failed, or expired; lifecycle is read on connect, reconnect, lag, or focus to cover missed frames.
 
 Only one outgoing pending operation is allowed per source identity. This is an application-level guard, not a Qubic protocol lock.
 
@@ -399,7 +400,13 @@ History merges:
 - Recent decoded event results for the initial time window
 - Local pending records
 
-The frontend deduplicates merged results. Event supplementation mainly covers approximately two weeks of recent activity. Archive indexing delays can still produce temporary gaps.
+The first page is loaded from the API. New transactions and contract effects invalidate the active identity's history query; the query no longer polls on a timer. The frontend deduplicates merged results. Event supplementation mainly covers approximately two weeks of recent activity. Archive indexing delays can still produce temporary gaps.
+
+### Confirmation push
+
+Pending transactions are resolved from the shared identity feed, not by polling history. The wallet matches inserted transaction hashes and reads `/v1/transactions/{hash}/lifecycle` for the money-flow verdict. Lifecycle is also read when a stream opens, reconnects, reports `lag`, or when the app becomes visible or online, so a dropped frame or offline window cannot leave a transaction pending forever. Transaction-history queries are invalidated after resolution but are not used as the confirmation mechanism.
+
+The tick feed advances the cached head used by expiry. A pending transaction expires when the streamed tick passes `targetTick + 30`, independent of transaction-stream health.
 
 ### Local transaction metadata
 

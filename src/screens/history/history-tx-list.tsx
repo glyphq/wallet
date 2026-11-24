@@ -5,7 +5,8 @@ import type { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-q
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
 import type { PendingTx, PriceSnapshot } from "@/store/persisted";
 import { ActivityItem } from "./history-activity-item";
-import { isPendingTxExpired, type TxSection } from "./history-utils";
+import type { TxSection } from "./history-utils";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
 
 export function HistoryTxList({
   pending, sections, identity, currentTick, hideBalances, pendingHashes, priceSnapshots, quote, onSelect,
@@ -77,16 +78,13 @@ function PendingTxRow({
   onSelect: (hash: string) => void;
 }) {
   const isIn = tx.destination === identity;
-  const expired = isPendingTxExpired(tx, currentTick);
+  const progress = pendingTxProgress(tx.targetTick, currentTick);
+  const expired = progress.phase === "expired";
   const pendingSnapshot = findClosestPriceSnapshot(tx.broadcastAt, priceSnapshots);
-  const label = expired ? "Failed" : "Pending";
+  const label = progress.label;
   const labelColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
   const address = tx.contractName ?? (isIn ? truncateId(tx.source) : truncateId(tx.destination));
-  const time = expired
-    ? `Expired at tick ${tx.targetTick}`
-    : currentTick > 0
-      ? `ETA ~${Math.max(1, tx.targetTick - currentTick)}s`
-      : `Target tick ${tx.targetTick}`;
+  const time = progress.timingText;
 
   return (
     <ActivityItem

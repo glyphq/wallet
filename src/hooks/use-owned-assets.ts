@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { listWalletAssetsOptions } from "@/lib/api/generated/@tanstack/react-query.gen";
-import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+import { listWalletAssets } from "@/lib/api/generated";
+import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 
 export interface OwnedAssetItem {
   name: string;
@@ -11,15 +11,17 @@ export interface OwnedAssetItem {
   numberOfDecimalPlaces: number;
 }
 
-/** Fetches assets owned by the given identity via the Glyph API wallet snapshot. */
+/** Fetches assets owned by the given identity; refreshed by identity stream invalidations. */
 export function useOwnedAssets(identity: string | null | undefined) {
-  const pollingIntervalMs = usePollingIntervalMs();
+  const apiIdentity = useApiCacheIdentity();
 
   return useQuery({
-    ...listWalletAssetsOptions({
-      path: { identity: identity ?? "" },
+    queryKey: ["owned-assets", apiIdentity, identity ?? ""],
+    queryFn: async () => (await listWalletAssets({
+      path: { identity: identity! },
       query: { kind: "owned" },
-    }),
+      throwOnError: true,
+    })).data,
     select: (response): OwnedAssetItem[] =>
       (response.data?.owned ?? []).map((asset) => ({
         name: asset.name,
@@ -30,8 +32,6 @@ export function useOwnedAssets(identity: string | null | undefined) {
         numberOfDecimalPlaces: asset.decimals ?? 0,
       })),
     enabled: !!identity,
-    staleTime: Math.min(30_000, pollingIntervalMs * 3),
-    refetchInterval: Math.max(30_000, pollingIntervalMs * 3),
-    refetchIntervalInBackground: true,
+    staleTime: 30_000,
   });
 }

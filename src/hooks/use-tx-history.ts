@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listIdentityEvents, listIdentityTransactions } from "@/lib/api/generated";
 import { qk } from "@/lib/query-keys";
-import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import {
   dedupeTxRecords,
@@ -85,7 +85,7 @@ export function useTxHistory(
   identity: string | null | undefined,
   queryFilters: TxQueryFilters = DEFAULT_QUERY_FILTERS,
 ) {
-  const pollingIntervalMs = usePollingIntervalMs();
+
   const apiIdentity = useApiCacheIdentity();
   const { direction, type, minAmount, maxAmount, dateFrom, dateTo, tickFrom, tickTo } = queryFilters;
 
@@ -141,8 +141,6 @@ export function useTxHistory(
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     initialPageParam: undefined as string | undefined,
     enabled: !!identity,
-    staleTime: Math.min(5_000, pollingIntervalMs),
-    refetchInterval: Math.max(10_000, pollingIntervalMs),
-    refetchIntervalInBackground: true,
+    staleTime: 30_000,
   });
 }

@@ -434,9 +434,10 @@ CI Rust compilation is a platform matrix, but it is not a full GUI, installer, c
 ### Network-derived state
 
 - Call generated SDK functions from `src/lib/api/generated/`; keep client setup in `src/lib/api/client.ts`.
-- Use generated TanStack Query options or wrap generated keys in `src/hooks/`.
-- Include the API origin identity for hand-written query keys; the whole cache is cleared when the configured origin changes.
-- Apply polling profiles rather than creating independent high-frequency timers.
+- Subscribe through `src/lib/api/stream-broker.ts`; it shares one SSE connection per feed or identity.
+- Load each resource once, then update or invalidate its query from tick, market, or identity frames.
+- Keep periodic polling only for sources without a stream, such as external exchange rates or a custom price feed.
+- Clear the query cache when the configured API origin changes.
 
 ### Persisted state
 

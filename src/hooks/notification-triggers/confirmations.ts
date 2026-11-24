@@ -1,15 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { QueryClient } from "@tanstack/react-query";
-import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useTxHistory } from "@/hooks/use-tx-history";
+import { usePendingTransactionStream } from "@/hooks/use-pending-transaction-stream";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { formatQu } from "@/lib/format";
+import { emitTxResolution } from "@/lib/tx-resolution-events";
+import type { TxResolution } from "@/lib/tx-resolution";
 import type { PendingTx } from "@/store/persisted";
 import type { TxAlert } from "@/store/session";
 
 export interface TransactionResolutionTriggerInput {
-  identity: string | null;
   pendingTxs: PendingTx[];
   removePendingTx: (hash: string) => void;
   addTxAlert: (alert: TxAlert) => void;
@@ -19,10 +19,9 @@ export interface TransactionResolutionTriggerInput {
   onMissedConfirmations: boolean;
 }
 
-/** Resolves pending txs via tick progress and tx history; notifies on confirmation, failure, and expiry. */
+/** Resolves pending txs from the SSE transaction feed; notifies on confirmation, failure, and expiry. */
 export function useTransactionResolutionTriggers(input: TransactionResolutionTriggerInput) {
   const {
-    identity,
     pendingTxs,
     removePendingTx,
     addTxAlert,
@@ -31,109 +30,82 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
     onConfirmed,
     onMissedConfirmations,
   } = input;
-  const { data: lastProcessedTickData } = useLastProcessedTick();
-  const lastProcessedTick = lastProcessedTickData?.tickNumber ?? 0;
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
-  // Always fetch history when there are pending txs — cleanup must run regardless of notification prefs.
-  const { data: txHistoryData } = useTxHistory(pendingTxs.length > 0 ? identity : null);
-  const txHistory = txHistoryData?.pages.flatMap((page) => page.items);
-  const confirmedHashesRef = useRef<Set<string>>(new Set());
-  const historyInitializedRef = useRef(false);
+  const resolvedHashesRef = useRef<Set<string>>(new Set());
 
-  // Reset history tracking when the active account changes so we don't fire
-  // false "Confirmed" notifications for the new account's existing history.
+  // Drop remembered hashes once they leave the pending set, so a hash re-added
+  // after a manual retry can resolve again.
+  const pendingHashes = pendingTxs.map((tx) => tx.hash).join("\n");
   useEffect(() => {
-    historyInitializedRef.current = false;
-    confirmedHashesRef.current = new Set();
-  }, [identity]);
+    const live = new Set(pendingHashes ? pendingHashes.split("\n") : []);
+    for (const hash of resolvedHashesRef.current) {
+      if (!live.has(hash)) resolvedHashesRef.current.delete(hash);
+    }
+  }, [pendingHashes]);
 
-  // Immediately refresh history when a pending tx's target tick is processed
-  useEffect(() => {
-    if (!lastProcessedTick || !identity) return;
-    const hasReady = pendingTxs.some((p) => lastProcessedTick >= p.targetTick);
-    if (hasReady) queryClient.invalidateQueries({ queryKey: ["tx-history"] });
-  }, [lastProcessedTick, pendingTxs, identity, queryClient]);
+  const resolve = useCallback((pending: PendingTx, resolution: TxResolution) => {
+    if (resolvedHashesRef.current.has(pending.hash)) return;
+    resolvedHashesRef.current.add(pending.hash);
 
-  // Confirmed: tx appeared in history — always remove; notify if enabled.
-  useEffect(() => {
-    if (!txHistory) return;
+    removePendingTx(pending.hash);
+    emitTxResolution(resolution);
+    queryClient.invalidateQueries({ queryKey: ["tx-history"] });
 
-    const historyHashSet = new Set(txHistory.map((t) => t.hash).filter(Boolean) as string[]);
-
-    if (!historyInitializedRef.current) {
-      historyInitializedRef.current = true;
-      // On first load, silently remove pending txs already in history (no notification).
-      for (const p of pendingTxs) {
-        if (historyHashSet.has(p.hash)) {
-          confirmedHashesRef.current.add(p.hash);
-          removePendingTx(p.hash);
-        }
+    const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
+    if (resolution.status === "confirmed") {
+      if (enabled && onConfirmed) {
+        publishNotificationEvent(createNotificationEvent({
+          kind: "confirmed",
+          title: "Transaction confirmed",
+          body: `${label} confirmed on chain`,
+          identity: pending.source,
+          txHash: pending.hash,
+          dedupeKey: `resolved:${pending.hash}:confirmed`,
+        })).catch(() => {});
       }
       return;
     }
 
-    const historyMap = new Map<string, (typeof txHistory)[number]>();
-    for (const t of txHistory) {
-      if (t.hash) historyMap.set(t.hash, t);
-    }
-
-    for (const pending of pendingTxs) {
-      if (confirmedHashesRef.current.has(pending.hash)) continue;
-      const histTx = historyMap.get(pending.hash);
-      if (!histTx) continue;
-      confirmedHashesRef.current.add(pending.hash);
-      removePendingTx(pending.hash);
-      const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
-      if (histTx.moneyFlew) {
-        if (enabled && onConfirmed) {
-          publishNotificationEvent(createNotificationEvent({
-            kind: "confirmed",
-            title: "Transaction confirmed",
-            body: `${label} confirmed on chain`,
-            identity: pending.source,
-            txHash: pending.hash,
-            dedupeKey: `resolved:${pending.hash}:confirmed`,
-          })).catch(() => {});
-        }
-      } else {
-        addTxAlert({ id: pending.hash, label, reason: "failed" });
-        if (enabled && onMissedConfirmations) {
-          publishNotificationEvent(createNotificationEvent({
-            kind: "failed",
-            title: "Transaction failed",
-            body: `${label} could not be completed`,
-            identity: pending.source,
-            txHash: pending.hash,
-            dedupeKey: `resolved:${pending.hash}:failed`,
-          })).catch(() => {});
-        }
+    if (resolution.status === "failed") {
+      addTxAlert({ id: pending.hash, label, reason: "failed" });
+      if (enabled && onMissedConfirmations) {
+        publishNotificationEvent(createNotificationEvent({
+          kind: "failed",
+          title: "Transaction failed",
+          body: `${label} could not be completed`,
+          identity: pending.source,
+          txHash: pending.hash,
+          dedupeKey: `resolved:${pending.hash}:failed`,
+        })).catch(() => {});
       }
+      return;
     }
-  }, [txHistory, enabled, onConfirmed, onMissedConfirmations]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Expired: tx never appeared in history after target tick + 30 live ticks — always remove; notify if enabled.
-  // Uses the live tick (same source as targetTick) so this fires reliably even if the archive lags.
+    addTxAlert({ id: pending.hash, label, reason: "expired" });
+    if (enabled && onMissedConfirmations) {
+      publishNotificationEvent(createNotificationEvent({
+        kind: "expired",
+        title: "Transaction expired",
+        body: `${label} timed out and was dropped`,
+        identity: pending.source,
+        txHash: pending.hash,
+        dedupeKey: `resolved:${pending.hash}:expired`,
+      })).catch(() => {});
+    }
+  }, [addTxAlert, enabled, onConfirmed, onMissedConfirmations, queryClient, removePendingTx]);
+
+  usePendingTransactionStream({ pendingTxs, onResolution: resolve });
+
+  // Expiry needs the live tick, not transaction history. It still runs if SSE
+  // is unavailable or the transaction never reaches the index.
   useEffect(() => {
     if (!currentTick) return;
     for (const pending of pendingTxs) {
-      if (confirmedHashesRef.current.has(pending.hash)) continue;
+      if (resolvedHashesRef.current.has(pending.hash)) continue;
       if (currentTick > pending.targetTick + 30) {
-        confirmedHashesRef.current.add(pending.hash);
-        removePendingTx(pending.hash);
-        const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
-        addTxAlert({ id: pending.hash, label, reason: "expired" });
-        if (enabled && onMissedConfirmations) {
-          publishNotificationEvent(createNotificationEvent({
-            kind: "expired",
-            title: "Transaction expired",
-            body: `${label} timed out and was dropped`,
-            identity: pending.source,
-            txHash: pending.hash,
-            dedupeKey: `resolved:${pending.hash}:expired`,
-          })).catch(() => {});
-        }
+        resolve(pending, { hash: pending.hash, status: "expired", moneyFlew: null, includedTick: null });
       }
     }
-  }, [currentTick, pendingTxs, enabled, onMissedConfirmations]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentTick, pendingTxs, resolve]);
 }

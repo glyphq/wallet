@@ -16,7 +16,7 @@ export function PendingTxDetail({
   snapshot: PriceSnapshot | null;
   fiatValue: string;
 }) {
-  const { statusLabel, statusColor, amountColor, displayTo } = describePendingTx(tx, currentTick);
+  const { statusLabel, statusColor, amountColor, displayTo, progress } = describePendingTx(tx, currentTick);
 
   return (
     <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -42,6 +42,8 @@ export function PendingTxDetail({
         <DetailRow icon={<Wallet01Icon size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={tx.destination ?? undefined} />
         <div style={DIVIDER} />
         <DetailRow icon={<Clock01Icon size={16} />} label="Target tick" value={String(tx.targetTick)} mono={false} />
+        <div style={DIVIDER} />
+        <DetailRow icon={<Clock01Icon size={16} />} label="Progress" value={progress.timingText} valueColor="var(--color-text-secondary)" />
         <div style={DIVIDER} />
         <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
       </div>

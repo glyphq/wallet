@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { buildPayload, type PayloadField } from "@qubic.org/tx";
 import type { Identity } from "@qubic.org/types";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
+import { useTickInfo } from "@/hooks/use-tick-info";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
@@ -12,6 +13,7 @@ import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { glyphContractCaller } from "@/lib/api/contracts";
 import { broadcastTx } from "@/lib/broadcast";
+import { subscribeTxResolution } from "@/lib/tx-resolution-events";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
 import { extractMessage } from "@/lib/format";
@@ -53,6 +55,7 @@ export default function SendManyScreen() {
   const fee = feeData?.ok ? feeData.value.fee : null;
   const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
   const { data: balanceData } = useBalance(identity || null);
+  const { data: tickInfo } = useTickInfo();
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
   const quote = usePreferredCurrencyQuote();
@@ -70,6 +73,13 @@ export default function SendManyScreen() {
   const [sending, setSending] = useState(false);
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
   const identityRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+
+  useEffect(() => {
+    if (!txHash) return;
+    return subscribeTxResolution(txHash, (resolution) => {
+      setWatchResult(resolution.status === "failed" ? "failed" : "confirmed");
+    });
+  }, [txHash]);
 
   const vaultAccountTargets = (vault?.accounts ?? [])
     .filter((a) => !a.hidden)
@@ -234,6 +244,7 @@ export default function SendManyScreen() {
         recipientCount={recipients.length}
         txHash={txHash}
         savedTargetTick={savedTargetTick}
+        currentTick={tickInfo?.tick ?? 0}
         watchResult={watchResult}
       />
     );

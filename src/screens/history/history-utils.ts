@@ -1,5 +1,6 @@
 import { DEFAULT_QUERY_FILTERS, type TxHistoryItem, type TxQueryFilters } from "@/hooks/use-tx-history";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import type { PendingTx } from "@/store/persisted";
 
 export type TxFilters = TxQueryFilters;
@@ -36,7 +37,7 @@ export function isDefault(f: TxFilters): boolean {
 }
 
 export function isPendingTxExpired(tx: PendingTx, currentTick: number): boolean {
-  return currentTick > 0 && currentTick > tx.targetTick;
+  return pendingTxProgress(tx.targetTick, currentTick).phase === "expired";
 }
 
 export type TxSection = { label: string; txs: TxHistoryItem[] };

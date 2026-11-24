@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { getStatus } from "@/lib/api/generated";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getStatus, type GetStatusResponse } from "@/lib/api/generated";
 import { getStatusQueryKey } from "@/lib/api/generated/@tanstack/react-query.gen";
-import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
+import { subscribeTickStream } from "@/lib/api/stream-broker";
+import { applyTickToStatus } from "@/lib/api/stream-cache";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 
 /** Current peer head and epoch reported by the Glyph API. Used as the network heartbeat. */
@@ -13,12 +15,18 @@ export interface TickInfo {
   reachable: boolean;
 }
 
-/** Polls `/v1/status` and projects the peer head into the shape the app expects. */
+/** Loads `/v1/status` once, then advances the cached head from the tick stream. */
 export function useTickInfo() {
-  const pollingIntervalMs = usePollingIntervalMs();
   const apiIdentity = useApiCacheIdentity();
+  const queryClient = useQueryClient();
+  const queryKey = [...getStatusQueryKey(), apiIdentity];
+
+  useEffect(() => subscribeTickStream(apiIdentity, (tick) => {
+    queryClient.setQueryData<GetStatusResponse>(queryKey, (previous) => applyTickToStatus(previous, tick));
+  }), [apiIdentity, queryClient, queryKey.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return useQuery({
-    queryKey: [...getStatusQueryKey(), apiIdentity],
+    queryKey,
     queryFn: async () => (await getStatus({ throwOnError: true })).data,
     select: (response): TickInfo => {
       const status = response?.data;
@@ -32,7 +40,7 @@ export function useTickInfo() {
         reachable: network?.reachable ?? true,
       };
     },
-    refetchInterval: pollingIntervalMs,
-    refetchIntervalInBackground: true,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
 }
