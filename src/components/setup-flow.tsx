@@ -114,6 +114,7 @@ export function SeedSurface({
 }) {
   return (
     <div
+      className="seed-surface corner-frame"
       aria-label={revealed ? "Recovery seed" : "Recovery seed hidden"}
       style={{
         width: "100%",
@@ -122,9 +123,6 @@ export function SeedSurface({
         alignItems: "center",
         justifyContent: "center",
         padding: "var(--space-4)",
-        border: "1px solid var(--color-border-subtle)",
-        borderRadius: "var(--radius-control)",
-        background: "var(--color-bg-surface-2)",
         overflow: "hidden",
       }}
     >

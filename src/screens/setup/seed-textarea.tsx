@@ -39,8 +39,6 @@ export function SeedTextarea({
       style={{
         resize: "none",
         minHeight: 136,
-        borderRadius: "var(--radius-control)",
-        background: "var(--color-bg-input)",
         overflowWrap: "anywhere",
         filter: revealed ? "none" : "blur(6px)",
         transition: "filter var(--duration-fast) var(--ease-out)",
