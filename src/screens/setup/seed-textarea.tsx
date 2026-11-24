@@ -47,13 +47,3 @@ export function SeedTextarea({
     />
   );
 }
-
-/** Full-width toggle that unmasks a seed entry field. */
-export function SeedRevealButton({ revealed, onToggle }: { revealed: boolean; onToggle: () => void }) {
-  return (
-    <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={onToggle} aria-pressed={revealed}>
-      {revealed ? <ViewOffIcon size={18} strokeWidth={1.5} aria-hidden="true" /> : <ViewIcon size={18} strokeWidth={1.5} aria-hidden="true" />}
-      {revealed ? "Hide entered seed" : "Reveal entered seed"}
-    </Button>
-  );
-}

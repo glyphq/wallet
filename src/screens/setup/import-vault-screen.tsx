@@ -11,7 +11,7 @@ import { createVault } from "@/lib/vault";
 import { DEFAULT_WALLET_COLOR, DEFAULT_WALLET_ICON } from "@/lib/wallet-appearance";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { SeedRevealButton, SeedTextarea } from "./seed-textarea";
+import { SeedTextarea } from "./seed-textarea";
 
 type Step = 1 | 2 | 3;
 
@@ -119,7 +119,8 @@ export default function ImportVaultScreen() {
             placeholder="55 lowercase letters"
             ariaLabel="Recovery seed"
             autoCapitalize="none"
-            revealed={seedInputRevealed}
+            revealed
+            obscure={false}
             error={seedError}
           />
         </SetupFlow>
