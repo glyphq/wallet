@@ -3,7 +3,6 @@ import { createHashRouter, Navigate, Outlet } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 
-import SplashScreen from "@/screens/splash/splash-screen";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
