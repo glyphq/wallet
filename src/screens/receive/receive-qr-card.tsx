@@ -15,7 +15,7 @@ export function ReceiveQrCard({ identity, hideBalances }: { identity: string; hi
       aria-label={hideBalances ? (qrRevealed ? "Hide QR code" : "Reveal QR code") : undefined}
       style={{
         background: QR_BG,
-        borderRadius: "var(--radius-card)",
+        borderRadius: "var(--radius-sharp)",
         padding: "var(--space-4)",
         position: "relative",
         cursor: hideBalances && !qrRevealed ? "pointer" : "default",
@@ -37,7 +37,7 @@ export function ReceiveQrCard({ identity, hideBalances }: { identity: string; hi
         style={{ display: "block", filter: hideBalances && !qrRevealed ? "blur(12px)" : "none", transition: "filter 0.15s ease" }}
       />
       {hideBalances && !qrRevealed && (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-qr-overlay)", borderRadius: "var(--radius-card)" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-qr-overlay)", borderRadius: "var(--radius-sharp)" }}>
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-bg-base)" }}>
             Tap or hover to reveal
           </span>

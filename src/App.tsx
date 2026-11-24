@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { RouterProvider } from "react-router";
 import { router } from "@/router";
 import { useDeepLink } from "@/hooks/use-deep-link";
-import { usePayLink } from "@/hooks/use-pay-link";
 import { usePersistedStore } from "@/store/persisted";
 import { THEME_VARS, getThemeVars } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
@@ -127,7 +126,6 @@ function AppHooks() {
   useAppearance();
   useNetworkSync();
   useDeepLink();
-  usePayLink();
   useNotificationTriggers();
   useNotificationReconcile();
   useHideToTray();

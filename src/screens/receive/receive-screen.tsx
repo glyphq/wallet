@@ -1,8 +1,8 @@
 import { AppShell } from "@/layouts/app-shell";
-import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { getWalletAccountIdentity } from "@/lib/accounts";
+import { ReceiveAddress } from "./receive-address";
 import { ReceiveQrCard } from "./receive-qr-card";
 import { ReceiveEmptyState } from "./receive-empty-state";
 
@@ -30,17 +30,31 @@ export default function ReceiveScreen() {
           padding: "var(--space-6) var(--space-4)",
         }}
       >
-        <div style={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-5)" }}>
-          {identity ? (
-            <>
-              <ReceiveQrCard identity={identity} hideBalances={hideBalances} />
-              <IdentityDisplay identity={identity} style={{ textAlign: "center", maxWidth: 300 }} />
-            </>
-          ) : (
-            <ReceiveEmptyState />
-          )}
-        </div>
-      </motion.div>
+        {identity ? (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono-sm)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--color-text-tertiary)",
+                }}
+              >
+                Scan to receive QU
+              </span>
+              <div className="receive-qr-frame corner-frame">
+                <ReceiveQrCard identity={identity} hideBalances={hideBalances} />
+              </div>
+            </div>
+
+            <ReceiveAddress identity={identity} />
+          </>
+        ) : (
+          <ReceiveEmptyState />
+        )}
+      </div>
     </AppShell>
   );
 }

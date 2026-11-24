@@ -35,7 +35,7 @@ Create wallets, manage Qubic addresses, send and receive QU, follow your activit
 | | What it gives you |
 | --- | --- |
 | **Your wallets, organized** | Create or import wallets, keep Qubic accounts together, and make them easy to recognize with names, colors, icons, and notes. |
-| **QU without the guesswork** | Send to an address, contact, or multiple recipients. Receive with a QR code or payment link. Review the amount and remaining balance before you sign. |
+| **QU without the guesswork** | Send to an address, contact, or multiple recipients. Receive with a QR code or copyable address. Review the amount and remaining balance before you sign. |
 | **Activity with context** | Searchable history, local memos, tags, contacts, saved transfer templates, exports, and account-level activity make your wallet easier to understand over time. |
 | **Connected apps on your terms** | Open supported `glyph://` requests from Qubic apps and services, then review connection, transfer, contract-call, signing, and verification requests in Glyph. |
 
@@ -51,7 +51,7 @@ Your dashboard keeps balances, recent activity, owned assets, approximate fiat v
 
 - Send QU to an address or a saved contact.
 - Send to multiple recipients in one reviewed flow.
-- Share an address, QR code, or payment link to receive QU.
+- Share an address or QR code to receive QU.
 - Track transactions from broadcast through confirmation, expiry, or failure.
 - Keep local notes and reusable transfer templates for recurring payments.
 

@@ -24,7 +24,6 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/burn", "send"],
   ["/stake", "send"],
   ["/receive", "receive"],
-  ["/payment-link", "receive"],
   ["/history", "history"],
   ["/analytics", "history"],
   ["/contacts", "history"],
@@ -43,7 +42,6 @@ const HEADER_TITLES: [string, string][] = [
   ["/send", "Send"],
   ["/burn", "Burn"],
   ["/stake", "Stake"],
-  ["/payment-link", "Payment link"],
   ["/receive", "Receive"],
   ["/tx/", "Transaction"],
   ["/analytics", "Analytics"],
@@ -88,7 +86,6 @@ function backTargetFromPath(pathname: string): string | null {
   }
   if (pathname.startsWith("/wallets/")) return "/wallets";
   if (pathname === "/send/scheduled" || pathname === "/send-many" || pathname === "/burn") return "/send";
-  if (pathname === "/payment-link") return "/receive";
   if (pathname.startsWith("/tx/") || pathname === "/analytics") return "/history";
   if (pathname === "/search") return "/dashboard";
   return null;

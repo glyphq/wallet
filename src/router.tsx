@@ -37,8 +37,6 @@ const loadStakeScreen = () => import("@/screens/stake/stake-screen");
 const StakeScreen = lazy(loadStakeScreen);
 const loadReceiveScreen = () => import("@/screens/receive/receive-screen");
 const ReceiveScreen = lazy(loadReceiveScreen);
-const loadPaymentLinkScreen = () => import("@/screens/receive/payment-link-screen");
-const PaymentLinkScreen = lazy(loadPaymentLinkScreen);
 const loadHistoryScreen = () => import("@/screens/history/history-screen");
 const HistoryScreen = lazy(loadHistoryScreen);
 const loadTxDetailScreen = () => import("@/screens/history/tx-detail-screen");
@@ -127,7 +125,6 @@ const SCREEN_LOADERS = [
   loadBurnScreen,
   loadStakeScreen,
   loadReceiveScreen,
-  loadPaymentLinkScreen,
   loadHistoryScreen,
   loadTxDetailScreen,
   loadAnalyticsScreen,
@@ -185,7 +182,6 @@ export const router = createHashRouter([
           { path: "/burn", element: <Screen component={BurnScreen} /> },
           { path: "/stake", element: <Screen component={StakeScreen} /> },
           { path: "/receive", element: <Screen component={ReceiveScreen} /> },
-          { path: "/payment-link", element: <Screen component={PaymentLinkScreen} /> },
           { path: "/history", element: <Screen component={HistoryScreen} /> },
           { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },
           { path: "/analytics", element: <Screen component={AnalyticsScreen} /> },

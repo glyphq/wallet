@@ -250,22 +250,11 @@ The Scheduled screen stores local transfer templates with a source, destination,
 
 Treat the schedule as a reminder and template, not as a standing payment instruction.
 
-## 10. Receiving and payment links
+## 10. Receiving
 
 ### Receive screen
 
 Select an account to display its address and QR code. Confirm the displayed address before sharing it.
-
-### Create a payment link
-
-Glyph can create:
-
-- A web link such as `https://wallet.glyphq.org/pay?...`
-- A deep link such as `glyph://pay?to=...&amount=...&label=...`
-
-A payment link pre-fills a send form. It does not authorize, sign, or broadcast a transaction. The payer must still unlock the wallet, review the request, and approve it.
-
-Copied payment links are not automatically removed from the clipboard.
 
 ## 11. Transaction history, analytics, and search
 
@@ -332,10 +321,7 @@ Exiting drops the process-held session data. Lock explicitly clears the native s
 
 ## 14. External requests and `glyph://` links
 
-Glyph recognizes two public deep-link routes:
-
-- `glyph://pay?...` for payment prefill
-- `glyph://v1/request?...` for structured dApp requests
+Glyph recognizes `glyph://v1/request?...` for structured dApp requests.
 
 Windows and Linux protocol launches pass through a small broker that validates the URL shape before starting the wallet. The wallet then performs full semantic validation.
 
@@ -361,7 +347,7 @@ Current validation includes:
 - Request expiry no more than one hour in the future
 - A persisted nonce replay window of one hour
 - Qubic address, amount, contract, and payload validation
-- A maximum queue of 16 pending requests and 16 pending payment links
+- A maximum queue of 16 pending requests
 
 The nonce is consumed when Glyph accepts a request for review. Closing or rejecting the request means the same nonce cannot be retried for one hour.
 
@@ -492,7 +478,7 @@ Before signing:
 1. Verify the source account and available balance.
 2. Verify the complete recipient address.
 3. Confirm the QU amount, contract action, fee, and target tick.
-4. Treat payment links and dApp requests as untrusted input.
+4. Treat dApp requests as untrusted input.
 5. Remember that local memos and labels are not on-chain instructions.
 
 Before sharing diagnostics or exports:

@@ -16,7 +16,6 @@ import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
-import { parseScannedSendPayload } from "@/lib/scan-payload";
 import {
   hasPendingFromAccount, normalizeIdentity, resolveTargetTick, validateQuAmount,
   type SendStep, type WatchResult,
@@ -153,20 +152,12 @@ export default function SendScreen() {
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
 
   function applyScannedPayload(raw: string) {
-    const parsed = parseScannedSendPayload(raw);
-    if (!parsed) {
-      setQrIntakeError("Unsupported QR. Use a Glyph payment link or a Qubic address.");
+    const identity = raw.trim().toUpperCase();
+    if (!isValidIdentity(identity)) {
+      setQrIntakeError("Unsupported QR. Use a Qubic address.");
       return;
     }
-
-    if (parsed.kind === "identity") {
-      setDestination(parsed.identity);
-    } else {
-      setDestination(parsed.to);
-      setAmountStr(parsed.amount ?? "");
-      setUsdMode(false);
-      setUsdStr("");
-    }
+    setDestination(identity);
     setDestError("");
     setAmountError("");
     setQrIntakeError("");
