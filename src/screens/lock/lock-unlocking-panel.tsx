@@ -1,11 +1,12 @@
 import { motion } from "motion/react";
+import { AsciiSpinner } from "@/components/ascii-spinner";
 import { presets } from "@/lib/animations";
-import { BrandLockup } from "@/components/brand-lockup";
 
 export function UnlockingPanel() {
   return (
     <motion.div
       {...presets.fadeIn}
+      role="status"
       style={{
         width: "100%",
         maxWidth: 320,
@@ -20,18 +21,7 @@ export function UnlockingPanel() {
         textAlign: "center",
       }}
     >
-      <BrandLockup align="center" compact iconOnly />
-      <div
-        aria-hidden="true"
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 999,
-          border: "2px solid var(--color-border-default)",
-          borderTopColor: "var(--color-accent)",
-          animation: "spin 0.8s linear infinite",
-        }}
-      />
+      <AsciiSpinner size={104} />
       <p
         style={{
           margin: 0,
