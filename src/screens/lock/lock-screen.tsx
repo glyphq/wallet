@@ -208,8 +208,8 @@ export default function LockScreen() {
       ) : (
         <>
           <PageBanner
-            title={bannerTitle}
-            description={bannerDescription}
+            title={view === "switch" ? bannerTitle : undefined}
+            description={view === "switch" ? bannerDescription : undefined}
             style={view === "unlock" ? { flex: "0 0 auto", height: "auto", minHeight: "var(--height-page-banner)" } : undefined}
           >
             {view === "unlock" ? (

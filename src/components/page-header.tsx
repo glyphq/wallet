@@ -6,7 +6,7 @@ import { presets } from "@/lib/animations";
 
 export interface PageBannerProps {
   eyebrow?: ReactNode;
-  title: ReactNode;
+  title?: ReactNode;
   description?: ReactNode;
   children?: ReactNode;
   style?: CSSProperties;
@@ -28,7 +28,7 @@ export function PageBanner({ eyebrow, title, description, children, style }: Pag
         <motion.div {...presets.slideUp} className="page-banner-copy">
           <BrandLockup size={34} iconOnly align="center" />
           {eyebrow ? <span className="page-banner-eyebrow">{eyebrow}</span> : null}
-          <h1 className="page-banner-title">{title}</h1>
+          {title ? <h1 className="page-banner-title">{title}</h1> : null}
           {description ? <p className="page-banner-description">{description}</p> : null}
           {children}
         </motion.div>

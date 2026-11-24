@@ -14,7 +14,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
         kind="wallet"
         seed={`${wallet.id}:${wallet.color}`}
         label={wallet.name}
-        size={48}
+        size={64}
         radius={4}
         square
         style={{ flexShrink: 0 }}
@@ -26,7 +26,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
           fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-body)",
+          fontSize: "var(--text-section)",
           fontWeight: 600,
           color: "var(--color-text-primary)",
         }}
