@@ -155,11 +155,11 @@ export default function MultisigCreateScreen() {
 
   const [step, setStep] = useState<"edit" | "owners" | "add-owner" | "review">("edit");
   const [name, setName] = useState("");
-  const [extraOwners, setExtraOwners] = useState<string[]>([""]);
-  const [ownerRowIds, setOwnerRowIds] = useState<number[]>([0]);
+  const [extraOwners, setExtraOwners] = useState<string[]>([]);
+  const [ownerRowIds, setOwnerRowIds] = useState<number[]>([]);
   const nextOwnerRowId = useRef(1);
   const [requiredApprovals, setRequiredApprovals] = useState(defaultRequiredApprovals(2));
-  const [ownerErrors, setOwnerErrors] = useState<string[]>([""]);
+  const [ownerErrors, setOwnerErrors] = useState<string[]>([]);
   const [formError, setFormError] = useState("");
   const [preflightError, setPreflightError] = useState("");
   const [addOwnerDraft, setAddOwnerDraft] = useState("");
@@ -371,7 +371,8 @@ export default function MultisigCreateScreen() {
     && balance !== null
     && !insufficientBalance
     && !pending
-    && !checking;
+    && !checking
+    && ownerCount >= 2;
   const canSubmit =
     !!identity
     && !!fees
@@ -383,7 +384,8 @@ export default function MultisigCreateScreen() {
     && !sending;
 
   let continueHint = "";
-  if (pending) continueHint = "You have a pending transaction. Wait for it to confirm.";
+  if (ownerCount < 2) continueHint = "Add at least one more owner.";
+  else if (pending) continueHint = "You have a pending transaction. Wait for it to confirm.";
   else if (feesQuery.isLoading) continueHint = "Loading fees…";
   else if (feesError) continueHint = "Fees unavailable";
   else if (balanceLoading) continueHint = "Loading balance…";
@@ -601,19 +603,23 @@ export default function MultisigCreateScreen() {
             </section>
 
             <section aria-label="Approvals" style={SECTION_STYLE}>
-              <DropdownSelect
-                id="multisig-approvals"
-                label="Approvals required"
-                value={String(approvalsValue)}
-                options={Array.from(
-                  { length: approvalsUpper - 1 },
-                  (_, index) => index + 2,
-                ).map((count) => ({
-                  value: String(count),
-                  label: `${count} of ${Math.max(2, ownerCount)}`,
-                }))}
-                onChange={(value) => setRequiredApprovals(Number(value))}
-              />
+              {ownerCount >= 2 ? (
+                <DropdownSelect
+                  id="multisig-approvals"
+                  label="Approvals required"
+                  value={String(approvalsValue)}
+                  options={Array.from(
+                    { length: approvalsUpper - 1 },
+                    (_, index) => index + 2,
+                  ).map((count) => ({
+                    value: String(count),
+                    label: `${count} of ${Math.max(2, ownerCount)}`,
+                  }))}
+                  onChange={(value) => setRequiredApprovals(Number(value))}
+                />
+              ) : (
+                <p style={BODY_COPY}>Add another owner to choose how many approvals are required.</p>
+              )}
               <p style={BODY_COPY}>
                 Every owner must approve the same release before funds can move.
               </p>
