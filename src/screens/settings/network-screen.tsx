@@ -60,7 +60,7 @@ export default function NetworkScreen() {
       updateSettings({
         network: { apiUrl: configured, name: identifyNetworkPreset(configured) },
       });
-      queryClient.invalidateQueries();
+      queryClient.clear();
     } catch (error) {
       configureApiClient(previous);
       setTestStatus("error");
@@ -76,7 +76,7 @@ export default function NetworkScreen() {
     setTestError("");
     configureApiClient(defaultApi);
     updateSettings({ network: { apiUrl: defaultApi, name: "mainnet" } });
-    queryClient.invalidateQueries();
+    queryClient.clear();
   }
 
   function choosePreset(preset: (typeof NETWORK_PRESETS)[number]) {
