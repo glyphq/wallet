@@ -22,6 +22,7 @@ const result: GlyphCallbackResponse = {
   type: "connect",
   nonce: "request-nonce",
   identity: "IDENTITY",
+  permissions: ["transfer"],
 };
 
 describe("callback envelope", () => {

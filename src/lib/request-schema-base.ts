@@ -10,6 +10,8 @@ function isBase64(value: string): boolean {
   return /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value);
 }
 
+export const permissionSchema = z.enum(["transfer", "sc_call", "sign_message"]);
+
 export const dappMetaSchema = z.object({
   name: z.string().max(256).optional().default(""),
   origin: z.string().max(2048),

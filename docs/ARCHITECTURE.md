@@ -511,7 +511,7 @@ Requests received while locked remain queued and are presented after unlock.
 
 ### Approval semantics
 
-Every transfer, contract call, message-sign, verify, and connect request requires explicit review. A connection shares only the selected account identity and does not create a transport session or authorize any later action.
+Every transfer, contract call, message-sign, verify, and connect request requires explicit review. A connection shares the selected account identity and echoes the requested permission labels for protocol compatibility, but the wallet does not store or enforce a permission policy and every later request is reviewed again.
 
 ### Result delivery
 

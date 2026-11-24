@@ -335,7 +335,7 @@ Structured requests can ask Glyph to:
 - Verify a message
 - Connect a dApp after choosing the address to share
 
-Every actionable request requires manual review. A connection shares only the selected address; it never grants silent transaction or signing access, and every later request is reviewed again.
+Every actionable request requires manual review. A connection shares the selected address; it never grants silent transaction or signing access, and every later request is reviewed again. Requested permission labels are echoed for dApp compatibility but are not used to filter or authorize requests.
 
 ### Request safety rules
 

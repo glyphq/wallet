@@ -4,6 +4,7 @@ import {
   baseRequestSchema,
   binaryDataSchema,
   dappMetaSchema,
+  permissionSchema,
   tickOffsetSchema,
 } from "./request-schema-base";
 import {
@@ -47,6 +48,8 @@ const verifyMessageRequestSchema = baseRequestSchema.extend({
 const connectRequestSchema = baseRequestSchema
   .extend({
     type: z.literal("connect"),
+    /** Legacy wire field echoed back on connect; it does not authorize future requests. */
+    permissions: z.array(permissionSchema).optional(),
   })
   .passthrough();
 
@@ -61,6 +64,7 @@ export const glyphRequestSchema = z.discriminatedUnion("type", [
 export type DappMeta = z.infer<typeof dappMetaSchema>;
 export type TransferRequest = z.infer<typeof transferRequestSchema>;
 export type ScCallRequest = z.infer<typeof scCallRequestSchema>;
+export type GlyphPermission = z.infer<typeof permissionSchema>;
 export type SignMessageRequest = z.infer<typeof signMessageRequestSchema>;
 export type VerifyMessageRequest = z.infer<typeof verifyMessageRequestSchema>;
 export type ConnectRequest = z.infer<typeof connectRequestSchema>;

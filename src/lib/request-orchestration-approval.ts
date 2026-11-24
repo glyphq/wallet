@@ -64,6 +64,7 @@ export function buildApprovalArtifacts(envelope: GlyphEnvelope, approval: Reques
           type: "connect",
           nonce: envelope.request.nonce,
           identity: approval.approve.identity,
+          permissions: approval.approve.permissions,
         },
         success: { kind: "connect", detail: approval.approve.identity },
         history: { resultKind: "connect", resultDetail: approval.approve.identity },

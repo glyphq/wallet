@@ -1,3 +1,5 @@
+import type { GlyphPermission } from "@/lib/request-schema";
+
 /** Result of approving a reviewed transfer request. */
 export interface ApproveResult {
   txHash: string;
@@ -18,6 +20,8 @@ export interface SignMessageApproveResult {
 export interface ConnectApproveResult {
   identity: string;
   accountIndex: number;
+  /** Echoed to the dApp for wire compatibility; the wallet reviews every action. */
+  permissions: GlyphPermission[];
 }
 
 /** Result of verifying a message signature in the review UI. */

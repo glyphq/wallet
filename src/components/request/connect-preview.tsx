@@ -17,7 +17,7 @@ interface ConnectPreviewProps {
   onReject: () => void;
 }
 
-export function ConnectPreview({ onApprove, onReject }: ConnectPreviewProps) {
+export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
   const accounts = useSessionStore((s) => s.accounts);
   const settings = usePersistedStore((s) => s.settings);
   const [selectedIndex, setSelectedIndex] = useState(settings.activeAccountIndex);
@@ -29,7 +29,7 @@ export function ConnectPreview({ onApprove, onReject }: ConnectPreviewProps) {
 
   function approve() {
     if (!selectedAccount) return;
-    onApprove({ identity: selectedAccount.identity, accountIndex: selectedIndex });
+    onApprove({ identity: selectedAccount.identity, accountIndex: selectedIndex, permissions: request.permissions ?? [] });
   }
 
   const accountOptions = accounts.map((sessionAccount, index) => ({

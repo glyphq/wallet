@@ -12,6 +12,7 @@ async function makePayload(network: GlyphNetworkBinding): Promise<string> {
     dapp: { name: "Demo", origin: "https://demo.app" },
     nonce: "replay-network-regression",
     exp: Math.floor(Date.now() / 1000) + 3600,
+    permissions: ["transfer" as const],
   };
   const envelope = {
     protocol: REQUEST_PROTOCOL_V2,

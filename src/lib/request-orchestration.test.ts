@@ -157,8 +157,8 @@ describe("request orchestration", () => {
   test("Connect and Verify each single-sign their approved callback", async () => {
     const cases = [
       {
-        approval: { kind: "connect" as const, approve: { identity: "ID1", accountIndex: 1 } },
-        request: { type: "connect" as const, dapp: { name: "Demo", origin: "https://demo.app" }, nonce: "nonce-connect" },
+        approval: { kind: "connect" as const, approve: { identity: "ID1", accountIndex: 1, permissions: ["transfer" as const] } },
+        request: { type: "connect" as const, dapp: { name: "Demo", origin: "https://demo.app" }, nonce: "nonce-connect", permissions: ["transfer" as const] },
       },
       {
         approval: { kind: "verify" as const, approve: { valid: true, identity: "EXTERNAL", accountIndex: 1 } },
@@ -183,6 +183,9 @@ describe("request orchestration", () => {
       expect(callbackSignatures).toHaveLength(1);
       expect(callbackSignatures[0]?.accountIndex).toBe(1);
       expect(JSON.parse(added[0].callbackBody ?? "{}").proof.algorithm).toBe("qubic-schnorrq-sha256");
+      if (testCase.approval.kind === "connect") {
+        expect(JSON.parse(added[0].callbackBody ?? "{}").result.permissions).toEqual(["transfer"]);
+      }
       expect(posts).toHaveLength(1);
     }
   });

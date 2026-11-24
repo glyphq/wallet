@@ -59,7 +59,7 @@ Your dashboard keeps balances, recent activity, owned assets, approximate fiat v
 
 Glyph can receive supported deep links from connected Qubic apps and services. Requests are shown in the wallet so you can inspect the relevant account, action, amount, and details before choosing to continue or decline.
 
-Every request is reviewed individually. Connecting a dApp shares only the selected address and never pre-authorizes future actions. Read [External requests and Glyph links](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links) for request behavior and limitations.
+Every request is reviewed individually. Connecting a dApp shares only the selected address and never pre-authorizes future actions. The requested permission list is echoed to the dApp for wire compatibility but is not stored or enforced by the wallet. Read [External requests and Glyph links](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links) for request behavior and limitations.
 
 ## Download and install
 
