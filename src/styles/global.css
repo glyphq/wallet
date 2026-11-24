@@ -1284,22 +1284,6 @@ a:hover {
   --corner-color: var(--color-accent);
 }
 
-/* Avatar corner frame without the interactive hover transition. */
-.avatar-frame {
-  --corner-size: 6px;
-  --corner-inset: 0px;
-  --corner-color: var(--color-border-strong);
-}
-
-.avatar-frame::before {
-  opacity: 0.8;
-}
-
-.avatar-frame:hover::before,
-.avatar-frame:focus-visible::before {
-  opacity: 0.8;
-}
-
 /* ── Approval disclosure ───────────────────────────────────────────────────── */
 
 .approval-disclosure summary {
