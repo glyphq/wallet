@@ -23,7 +23,6 @@ export function RequestApprovalView({
   pendingRequestCount,
   actionError,
   expirySecsLeft,
-  onDismiss,
   onReject,
   authorize,
   onApprove,
@@ -35,7 +34,6 @@ export function RequestApprovalView({
   pendingRequestCount: number;
   actionError: string | null;
   expirySecsLeft: number | null;
-  onDismiss: () => void;
   onReject: () => void;
   authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
   onApprove: (result: ApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
@@ -44,7 +42,7 @@ export function RequestApprovalView({
   onApproveConnect: (result: ConnectApproveResult) => void | Promise<void>;
 }) {
   const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
-  const statusBar = <ScreenHeader title={typeLabel} onBack={onDismiss} backAriaLabel="Close without rejecting" />;
+  const statusBar = <ScreenHeader title={typeLabel} />;
 
   return (
     <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>

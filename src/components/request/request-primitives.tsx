@@ -1,6 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Button } from "@/components/button";
 import type { AccountMeta } from "@/store/persisted-types";
+import { DropdownSelect } from "@/components/dropdown-select";
+import { StickyFooter } from "@/components/sticky-footer";
+import { RequestExpiryNotch } from "@/screens/request/sheet-layout";
+import { useRequestStatus } from "@/screens/request/request-status-context";
+import { CheckmarkCircle01Icon, DisconnectIcon } from "@/lib/icons";
 
 export function RequestSectionTitle({ children }: { children: ReactNode }) {
   return (
@@ -125,7 +130,12 @@ export function RequestDisclosure({ label, children }: { label: ReactNode; child
 }
 
 function RequestActionBar({ children }: { children: ReactNode }) {
-  return <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>{children}</div>;
+  const { expirySecsLeft } = useRequestStatus();
+  return (
+    <StickyFooter notch={expirySecsLeft !== null ? <RequestExpiryNotch seconds={expirySecsLeft} /> : undefined}>
+      {children}
+    </StickyFooter>
+  );
 }
 
 export function RequestApprovalActions({
@@ -134,19 +144,23 @@ export function RequestApprovalActions({
   approveLabel,
   approveDisabled,
   approveLoading,
+  approveIcon,
 }: {
   onReject: () => void;
   onApprove: () => void;
   approveLabel: string;
   approveDisabled?: boolean;
   approveLoading?: boolean;
+  approveIcon?: ReactNode;
 }) {
   return (
     <RequestActionBar>
       <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+        <DisconnectIcon size={15} aria-hidden="true" />
         Reject
       </Button>
       <Button onClick={onApprove} loading={approveLoading} disabled={approveDisabled} style={{ flex: 1 }}>
+        {approveIcon ?? <CheckmarkCircle01Icon size={16} aria-hidden="true" />}
         {approveLabel}
       </Button>
     </RequestActionBar>
@@ -167,7 +181,7 @@ export function RequestInlineNotice({ tone, children }: { tone: "error" | "warni
   );
 }
 
-/** Pill account switcher shown when the dApp did not pin a `from` identity. */
+/** Account switcher shown when the dApp did not pin a `from` identity. */
 export function RequestSigningAccountPicker({
   accounts,
   selectedIndex,
@@ -177,29 +191,17 @@ export function RequestSigningAccountPicker({
   selectedIndex: number;
   onSelect: (index: number) => void;
 }) {
+  const visible = accounts.filter((account) => !account.hidden);
   return (
-    <div>
-      <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-        {accounts.filter((a) => !a.hidden).map((acc) => (
-          <button
-            key={acc.index}
-            onClick={() => onSelect(acc.index)}
-            style={{
-              fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-              letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
-              borderRadius: "var(--radius-pill)",
-              border: `1px solid ${acc.index === selectedIndex ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-              background: acc.index === selectedIndex ? "var(--color-text-display)" : "transparent",
-              color: acc.index === selectedIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-              cursor: "pointer",
-            }}
-          >
-            {acc.name}
-          </button>
-        ))}
-      </div>
-    </div>
+    <DropdownSelect
+      label="Sign as"
+      value={String(selectedIndex)}
+      options={visible.map((account) => ({
+        value: String(account.index),
+        label: account.name || `Account ${account.index + 1}`,
+      }))}
+      onChange={(value) => onSelect(Number(value))}
+    />
   );
 }
 

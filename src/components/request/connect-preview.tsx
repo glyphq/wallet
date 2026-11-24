@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { truncateId } from "@/lib/format";
-import { RequestApprovalActions, RequestSectionTitle } from "./request-primitives";
+import { RequestApprovalActions } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
 import type { ConnectApproveResult } from "@/lib/request-approvals";
-import { CheckmarkCircle01Icon } from "@/lib/icons";
+import { Link01Icon } from "@/lib/icons";
+import { DropdownSelect } from "@/components/dropdown-select";
+import { FieldLabel } from "@/components/field-parts";
+import { Toggle } from "@/components/toggle";
 import { DappPolicyControls } from "@/components/dapp-policy-controls";
 import { DAPP_PERMISSION_LABELS, DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
 export type { ConnectRequest } from "@/lib/request-schema";
+
+const PERMISSION_DESCRIPTIONS: Record<string, string> = {
+  transfer: "Send QU from the connected account",
+  sc_call: "Call contracts from the connected account",
+  sign_message: "Sign messages with the connected account",
+};
 
 interface ConnectPreviewProps {
   request: ConnectRequest;
@@ -30,6 +39,10 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   const [expiryDurationMs, setExpiryDurationMs] = useState<number | undefined>(DEFAULT_DAPP_EXPIRY_DURATION_MS);
 
   const selectedAccount = accounts[selectedIndex] ?? null;
+
+  useEffect(() => {
+    if (accounts.length > 0 && !accounts[selectedIndex]) setSelectedIndex(0);
+  }, [accounts, selectedIndex]);
 
   function togglePerm(p: string) {
     setGrantedPerms((prev) => {
@@ -55,97 +68,63 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   const grantsTransferLike = requestedPerms.some((p) => (p === "transfer" || p === "sc_call") && grantedPerms.has(p));
 
+  const accountOptions = accounts.map((sessionAccount, index) => {
+    const meta = wallet?.accounts.find((account) => account.identity === sessionAccount.identity) ?? wallet?.accounts[index];
+    return {
+      value: String(index),
+      label: `${meta?.name ?? `Account ${index + 1}`} · ${truncateId(sessionAccount.identity, 6, 6)}`,
+    };
+  });
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      {/* Account picker */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
+      <DropdownSelect
+        id="connect-account"
+        label="Account"
+        value={String(selectedIndex)}
+        options={accountOptions}
+        onChange={(value) => setSelectedIndex(Number(value))}
+        hint={selectedAccount ? truncateId(selectedAccount.identity, 12, 12) : undefined}
+      />
+
       <div>
-        <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Account</RequestSectionTitle></div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {accounts.map((sessionAccount, i) => {
-            const account = wallet?.accounts[i];
-            if (!account) return null;
-            const isSelected = i === selectedIndex;
-            return (
-              <button
-                key={account.index}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => setSelectedIndex(i)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "var(--space-4)",
-                  padding: "var(--space-3) 0",
-                  background: "none",
-                  border: "none",
-                  borderBottom: `1px solid ${isSelected ? "var(--color-border-strong)" : "var(--color-border-subtle)"}`,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  width: "100%",
-                }}
-              >
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                  {account.name}
-                </span>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  {isSelected ? (
-                    <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
-                  ) : null}
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                    {truncateId(sessionAccount.identity, 10, 10)}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+        <FieldLabel>Permissions</FieldLabel>
+        <div style={{ marginTop: "var(--space-2)", borderTop: "1px solid var(--color-border-subtle)" }}>
+          {requestedPerms.length > 0 ? requestedPerms.map((permission) => (
+            <Toggle
+              key={permission}
+              label={DAPP_PERMISSION_LABELS[permission] ?? permission}
+              description={PERMISSION_DESCRIPTIONS[permission]}
+              checked={grantedPerms.has(permission)}
+              onChange={() => togglePerm(permission)}
+            />
+          )) : (
+            <p style={{ margin: "var(--space-3) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
+              No permissions requested. This only shares your selected account address.
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Requested permissions — user can deselect individual permissions */}
-      {requestedPerms.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <div>
-            <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Permissions</RequestSectionTitle></div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              {requestedPerms.map((p) => {
-                const granted = grantedPerms.has(p);
-                return (
-                  <button
-                    key={p}
-                    onClick={() => togglePerm(p)}
-                    style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
-                  >
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: granted ? "var(--color-text-display)" : "var(--color-text-disabled)", letterSpacing: "0.05em", minWidth: 20 }}>
-                      {granted ? "On" : "Off"}
-                    </span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: granted ? "var(--color-text-primary)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                      {DAPP_PERMISSION_LABELS[p] ?? p}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div>
+        <FieldLabel>Access</FieldLabel>
+        <div style={{ marginTop: "var(--space-2)" }}>
+          <DappPolicyControls
+            transferLimitQu={transferLimitQu}
+            expiryDurationMs={expiryDurationMs}
+            onTransferLimitChange={setTransferLimitQu}
+            onExpiryDurationChange={setExpiryDurationMs}
+            showLimit={grantsTransferLike}
+            idPrefix="connect-dapp-policy"
+          />
         </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        <RequestSectionTitle>Limits</RequestSectionTitle>
-        <DappPolicyControls
-          transferLimitQu={transferLimitQu}
-          expiryDurationMs={expiryDurationMs}
-          onTransferLimitChange={setTransferLimitQu}
-          onExpiryDurationChange={setExpiryDurationMs}
-          showLimit={grantsTransferLike}
-          idPrefix="connect-dapp-policy"
-        />
       </div>
 
       <RequestApprovalActions
         onReject={onReject}
         onApprove={approve}
         approveLabel="Connect"
+        approveIcon={<Link01Icon size={16} aria-hidden="true" />}
         approveDisabled={!selectedAccount}
       />
     </div>

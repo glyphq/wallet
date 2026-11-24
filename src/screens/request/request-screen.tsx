@@ -82,12 +82,6 @@ export default function RequestScreen() {
     addRequestHistoryItem,
   });
 
-  // Dismiss without notifying the dApp — used by the BACK button so navigating
-  // away doesn't send a spurious rejection to the dApp.
-  function dismiss() {
-    shiftPendingRequest();
-  }
-
   const orchestrationDeps: RequestOrchestrationDeps = {
     now: Date.now,
     makeRequestHistoryId,
@@ -291,7 +285,6 @@ export default function RequestScreen() {
       pendingRequestCount={pendingRequestCount}
       actionError={actionError}
       expirySecsLeft={expirySecsLeft}
-      onDismiss={dismiss}
       onReject={reject}
       authorize={authorizeForRequest}
       onApprove={handleApprove}
