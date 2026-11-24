@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { messageSigningIntent, signMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
-import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { PencilEdit01Icon } from "@/lib/icons";
-import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice, RequestSigningAccountPicker } from "./request-primitives";
-import { RequestMessageContent } from "./request-message-content";
+import { RequestApprovalActions, RequestInlineNotice, RequestSigningAccountPicker } from "./request-primitives";
+import { ApprovalAddress } from "./approval-address";
+import { ApprovalMessage } from "./approval-message";
 import type { SignMessageRequest } from "@/lib/request-schema";
 import type { SignMessageApproveResult } from "@/lib/request-approvals";
 
@@ -62,8 +62,8 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0 }}>
-      <RequestMessageContent
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
+      <ApprovalMessage
         title={request.data ? "Data to sign" : "Message"}
         data={request.data}
         message={request.message}
@@ -71,18 +71,14 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
       />
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
-      {showPicker && wallet && (
-        <RequestSigningAccountPicker
-          accounts={wallet?.accounts ?? []}
-          selectedIndex={selectedIndex}
-          onSelect={setSelectedIndex}
-        />
-      )}
+      {showPicker && wallet ? (
+        <RequestSigningAccountPicker accounts={wallet.accounts} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
+      ) : null}
 
       {fromError ? (
         <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>
       ) : (
-        <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />
+        <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" />
       )}
 
       {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}

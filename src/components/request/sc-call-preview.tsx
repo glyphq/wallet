@@ -199,13 +199,12 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       {!fromError ? <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" /> : null}
 
       <ApprovalField label="Contract">
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-compact)", color: "var(--color-text-primary)" }}>{contractName}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.04em", color: "var(--color-text-tertiary)" }}>({truncateId(destination as string, 8, 8)})</span>
-          </div>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-compact)", color: "var(--color-text-secondary)" }}>{procedureName}</span>
-        </div>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-compact)", color: "var(--color-text-primary)" }}>{contractName}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.04em", color: "var(--color-text-tertiary)" }}>({truncateId(destination as string, 8, 8)})</span>
+      </ApprovalField>
+
+      <ApprovalField label="Procedure">
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-compact)", color: "var(--color-text-primary)" }}>{procedureName}</span>
       </ApprovalField>
 
       {decodedInput ? (

@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
-import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
 import { ShieldCheckIcon } from "@/lib/icons";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
-import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice } from "./request-primitives";
-import { RequestMessageContent } from "./request-message-content";
+import { RequestApprovalActions, RequestInlineNotice } from "./request-primitives";
+import { ApprovalAddress } from "./approval-address";
+import { ApprovalField } from "./approval-field";
+import { ApprovalMessage } from "./approval-message";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
 import type { VerifyMessageResult } from "@/lib/request-approvals";
 
@@ -65,24 +66,28 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const invalidKey = claimedIdentity === null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0 }}>
-      <RequestMessageContent
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
+      <ApprovalMessage
         title={request.data ? "Data to verify" : "Message"}
         data={request.data}
         message={request.message}
         dataByteCount={dataByteCount}
-        plainTextMaxHeight={160}
       />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <RequestDetailRow
+      {!invalidKey ? (
+        <ApprovalAddress
           label="Signer"
-          value={invalidKey ? "Invalid public key" : truncateId(claimedIdentity!, 10, 10)}
-          valueColor={invalidKey ? "var(--color-status-error)" : undefined}
-          badge={!invalidKey ? (isOwnIdentity ? "Your address" : "Other address") : undefined}
+          identity={claimedIdentity!}
+          name={isOwnIdentity ? "Your address" : "Other address"}
+          compact="long"
         />
-        <RequestDetailRow label="Signature" value={truncateId(request.signature, 10, 10)} />
-      </div>
+      ) : null}
+
+      <ApprovalField label="Signature">
+        <span title={request.signature} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em", color: "var(--color-text-secondary)", overflowWrap: "anywhere" }}>
+          {request.signature}
+        </span>
+      </ApprovalField>
 
       {invalidKey && <RequestInlineNotice tone="error">Invalid public key</RequestInlineNotice>}
 
