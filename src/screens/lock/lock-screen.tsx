@@ -57,7 +57,8 @@ export default function LockScreen() {
   const [unlocking, setUnlocking] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
 
-  const { register, handleSubmit, setValue, setFocus } = useForm<FormValues>();
+  const { register, handleSubmit, setValue, setFocus, watch } = useForm<FormValues>();
+  const passwordEntered = !!watch("password")?.trim();
 
   useEffect(() => () => {
     if (lockoutRef.current) clearInterval(lockoutRef.current);
@@ -128,7 +129,7 @@ export default function LockScreen() {
   }
 
   async function onSubmit({ password }: FormValues) {
-    if (!selected || lockoutSecsLeft > 0) return;
+    if (!selected || !password.trim() || lockoutSecsLeft > 0) return;
     setLoading(true);
     setError("");
     try {
@@ -220,6 +221,7 @@ export default function LockScreen() {
                 bioFailures={bioFailures}
                 onBiometric={onBiometric}
                 isLinux={isLinux}
+                passwordEntered={passwordEntered}
                 secondaryAction={(
                   <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setView("switch")}>
                     Switch wallet

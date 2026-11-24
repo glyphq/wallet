@@ -20,6 +20,7 @@ export function LockForm({
   bioFailures,
   onBiometric,
   isLinux,
+  passwordEntered,
   secondaryAction,
 }: {
   register: UseFormRegister<FormValues>;
@@ -33,12 +34,19 @@ export function LockForm({
   bioFailures: number;
   onBiometric: () => void;
   isLinux: boolean;
+  passwordEntered: boolean;
   secondaryAction?: ReactNode;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%" }}>
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div style={{ paddingBottom: "var(--space-3)", borderBottom: "1px solid var(--color-border-subtle)" }}>
+        <div
+          style={{
+            marginInline: "calc(var(--space-4) * -1)",
+            paddingInline: "var(--space-4)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+          }}
+        >
           <div key={shakeKey} className={error ? "lock-shake" : undefined}>
             <Input
               {...register("password")}
@@ -56,7 +64,7 @@ export function LockForm({
           </div>
         </div>
         {secondaryAction}
-        <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
+        <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0 || !passwordEntered}>
           <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
           {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
         </Button>
