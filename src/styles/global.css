@@ -753,7 +753,7 @@ a:hover {
   appearance: none;
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-sharp);
-  background: var(--color-bg-surface);
+  background: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
   color: var(--color-text-secondary);
   text-align: center;
   cursor: pointer;
@@ -766,7 +766,7 @@ a:hover {
 .vault-dropzone:hover,
 .vault-dropzone[data-drag="true"] {
   border-color: var(--color-text-tertiary);
-  background: var(--color-bg-elevated);
+  background: color-mix(in srgb, var(--color-bg-elevated) 68%, transparent);
   color: var(--color-text-primary);
 }
 
@@ -795,6 +795,26 @@ a:hover {
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm);
   color: var(--color-text-tertiary);
+}
+
+@keyframes vault-drop-nudge {
+  0%,
+  100% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+.vault-dropzone[data-drag="true"] .vault-dropzone-icon {
+  animation: vault-drop-nudge 900ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-dropzone[data-drag="true"] .vault-dropzone-icon {
+    animation: none;
+  }
 }
 
 /* ── Landing button treatment ─────────────────────────────────────────────── */
