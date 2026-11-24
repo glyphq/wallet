@@ -972,15 +972,6 @@ a:hover {
   color: var(--color-text-tertiary);
 }
 
-.settings-menu-icon::before {
-  opacity: 0.35;
-}
-
-.settings-menu-icon.corner-frame:hover::before,
-.settings-menu-icon.corner-frame:focus-visible::before,
-.settings-menu-row:hover .settings-menu-icon::before {
-  opacity: 0.35;
-}
 
 .settings-menu-row:hover .settings-menu-icon {
   color: var(--color-text-tertiary);
