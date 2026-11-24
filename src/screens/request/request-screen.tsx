@@ -7,7 +7,7 @@ import { saveFileDialog } from "@/lib/save-file";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { copyToClipboard } from "@/lib/clipboard";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { parseGlyphEnvelope } from "@/lib/request-schema";
+import { parseGlyphEnvelope, type GlyphEnvelope } from "@/lib/request-schema";
 import {
   approveRequest,
   deliverRequestResult,
@@ -25,15 +25,17 @@ import type {
   VerifyMessageResult,
 } from "@/lib/request-approvals";
 import { Button } from "@/components/button";
+import { ArrowRight01Icon, Home01Icon } from "@/lib/icons";
 import { StatusLine } from "./sheet-layout";
 import { RequestApprovalView } from "./request-approval-view";
+import { RequestTechnicalDetails } from "./request-technical-details";
 import { RequestTerminalView, type CopyStatus } from "./request-terminal-view";
 import { useRequestExpiry } from "./use-request-expiry";
 
-function successLabels(success: RequestSuccessState): { detailLabel: string; tagLabel: string; tone: "success" | "error" } {
-  const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Address";
-  const tagLabel = success.kind === "tx" ? "Sent" : success.kind === "message" ? "Signed" : success.kind === "verify" ? (success.detail === "VALID" ? "Valid" : "Invalid") : "Connected";
-  return { detailLabel, tagLabel, tone: success.kind === "verify" && success.detail !== "VALID" ? "error" : "success" };
+function successLabels(success: RequestSuccessState): { detailLabel: string } {
+  return {
+    detailLabel: success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Address",
+  };
 }
 
 export default function RequestScreen() {
@@ -51,22 +53,15 @@ export default function RequestScreen() {
   const envelope = parseResult.envelope;
   const parseError = parseResult.error;
   const [success, setSuccess] = useState<RequestSuccessState | null>(null);
+  const [completedEnvelope, setCompletedEnvelope] = useState<GlyphEnvelope | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const copyResetTimeoutRef = useRef<number | null>(null);
   const callbackPayloadRef = useRef<string | null>(null);
   const callbackAuthorizationRef = useRef<SigningAuthorizationContext | null>(null);
-  const successRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
   }, [pendingRequest, success, navigate]);
-
-  // A new request can arrive while the completion view is open. The active
-  // queue head takes precedence so the wallet does not strand it behind a
-  // stale success state.
-  useEffect(() => {
-    if (success && pendingRequest && pendingRequest !== successRequestRef.current) setSuccess(null);
-  }, [pendingRequest, success]);
 
   useEffect(() => {
     setCopyStatus("idle");
@@ -110,14 +105,13 @@ export default function RequestScreen() {
 
   const [actionError, setActionError] = useState<string | null>(null);
 
-  function showSuccessIfQueueIsEmpty(state: RequestSuccessState) {
-    // completePendingRequest shifts synchronously after a successful response.
-    // When another request is already queued, render it immediately instead of
-    // holding the screen on the previous request's completion view.
-    if (useSessionStore.getState().pendingRequests.length === 0) {
-      successRequestRef.current = pendingRequest;
+  async function completeApproval(action: () => Promise<RequestSuccessState>) {
+    return completePendingRequest(action, shiftPendingRequest, (state) => {
+      // Commit the completion view before removing the active request. If more
+      // requests are queued, the result page offers a Next request action.
+      setCompletedEnvelope(envelope);
       setSuccess(state);
-    }
+    });
   }
 
   async function authorizeForRequest(accountIndex: number, intent: string): Promise<SigningAuthorizationContext> {
@@ -156,11 +150,9 @@ export default function RequestScreen() {
     callbackAuthorizationRef.current = authorization;
     setActionError(null);
     try {
-      const state = await completePendingRequest(
+      await completeApproval(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, wallets }),
-        shiftPendingRequest,
       );
-      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -172,11 +164,9 @@ export default function RequestScreen() {
     callbackAuthorizationRef.current = authorization;
     setActionError(null);
     try {
-      const state = await completePendingRequest(
+      await completeApproval(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, wallets }),
-        shiftPendingRequest,
       );
-      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -188,11 +178,9 @@ export default function RequestScreen() {
     setActionError(null);
     try {
       await authorizeForRequest(0, "callback:response");
-      const state = await completePendingRequest(
+      await completeApproval(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, wallets }),
-        shiftPendingRequest,
       );
-      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -204,11 +192,9 @@ export default function RequestScreen() {
     setActionError(null);
     try {
       await authorizeForRequest(result.accountIndex, "callback:response");
-      const state = await completePendingRequest(
+      await completeApproval(
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, wallets }),
-        shiftPendingRequest,
       );
-      showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");
     }
@@ -251,6 +237,9 @@ export default function RequestScreen() {
 
   if (success) {
     const labels = successLabels(success);
+    const queueNotice = pendingRequest ? (
+      <StatusLine tone="muted">A request is waiting in the queue.</StatusLine>
+    ) : null;
     const callbackAccessory = !success.hasCallback ? (
       <Button
         variant="secondary"
@@ -285,13 +274,18 @@ export default function RequestScreen() {
     return (
       <RequestTerminalView
         title="Request complete"
-        tag={labels.tagLabel}
-        tone={labels.tone}
         detailLabel={labels.detailLabel}
         detail={success.detail}
-        accessory={callbackAccessory}
-        primaryLabel="Return to app"
-        onPrimary={() => navigate("/dashboard")}
+        accessory={(
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {queueNotice}
+            {callbackAccessory}
+          </div>
+        )}
+        technical={<RequestTechnicalDetails kind="success" envelope={completedEnvelope} callbackStatus={success.callbackStatus} requestHistoryId={success.requestHistoryId} />}
+        primaryLabel={pendingRequest ? "Next request" : "Return to app"}
+        primaryIcon={pendingRequest ? <ArrowRight01Icon size={16} aria-hidden="true" /> : <Home01Icon size={16} aria-hidden="true" />}
+        onPrimary={() => pendingRequest ? setSuccess(null) : navigate("/dashboard")}
       />
     );
   }
@@ -300,12 +294,12 @@ export default function RequestScreen() {
     return (
       <RequestTerminalView
         title="Request expired"
-        tag="Expired"
-        tone="warning"
         detailLabel="dApp"
         detail={expiredRequest.dappName}
         description="This request expired before you made a decision. Nothing was approved and no callback was sent. The outcome is saved in request history."
+        technical={<RequestTechnicalDetails kind="expired" item={expiredRequest} />}
         primaryLabel="Continue"
+        primaryIcon={<ArrowRight01Icon size={16} aria-hidden="true" />}
         onPrimary={continueAfterExpiry}
       />
     );
@@ -314,11 +308,11 @@ export default function RequestScreen() {
   if (!envelope) {
     return (
       <RequestTerminalView
-        title="Request"
-        tag="Invalid request"
-        tone="error"
+        title="Invalid request"
         description={parseError ?? "The request could not be read."}
+        technical={<RequestTechnicalDetails kind="invalid" error={parseError} raw={pendingRequest} />}
         primaryLabel="Back to app"
+        primaryIcon={<Home01Icon size={16} aria-hidden="true" />}
         onPrimary={() => { shiftPendingRequest(); navigate("/dashboard"); }}
       />
     );

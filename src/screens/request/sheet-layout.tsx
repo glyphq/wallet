@@ -49,7 +49,7 @@ export function SheetLayout({ statusBar, children, expirySecsLeft, pendingReques
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: "var(--space-5) var(--screen-padding)",
+          padding: "var(--space-5) var(--screen-padding) var(--space-8)",
           display: "flex",
           flexDirection: "column",
           gap: "var(--space-6)",
