@@ -617,9 +617,6 @@ export default function MultisigCreateScreen() {
               ) : (
                 <p style={BODY_COPY}>Add another owner to choose how many approvals are required.</p>
               )}
-              <p style={BODY_COPY}>
-                Every owner must approve the same release before funds can move.
-              </p>
             </section>
 
             <section aria-label="Fees" style={SECTION_STYLE}>
