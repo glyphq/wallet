@@ -10,10 +10,12 @@ export interface PageBannerProps {
   description?: ReactNode;
   children?: ReactNode;
   style?: CSSProperties;
+  centered?: boolean;
+  showBrand?: boolean;
 }
 
 /** Top-of-page ASCII banner, sized to 25% of the viewport height. */
-export function PageBanner({ eyebrow, title, description, children, style }: PageBannerProps) {
+export function PageBanner({ eyebrow, title, description, children, style, centered = false, showBrand = true }: PageBannerProps) {
   return (
     <header className="page-banner" style={style}>
       <AsciiBackdrop
@@ -22,11 +24,11 @@ export function PageBanner({ eyebrow, title, description, children, style }: Pag
           zIndex: 2,
           height: "100%",
           padding: "var(--space-5) var(--screen-padding) var(--space-4)",
-          justifyContent: "flex-end",
+          justifyContent: centered ? "center" : "flex-end",
         }}
       >
         <motion.div {...presets.slideUp} className="page-banner-copy">
-          <BrandLockup size={34} iconOnly align="center" />
+          {showBrand ? <BrandLockup size={34} iconOnly align="center" /> : null}
           {eyebrow ? <span className="page-banner-eyebrow">{eyebrow}</span> : null}
           {title ? <h1 className="page-banner-title">{title}</h1> : null}
           {description ? <p className="page-banner-description">{description}</p> : null}

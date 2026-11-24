@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { Exchange01Icon } from "@/lib/icons";
-import { PageBanner, PageFrame } from "@/components/page-header";
+import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
 import { unlockBiometricSession, unlockWalletSession } from "@/lib/wallet";
@@ -201,16 +201,49 @@ export default function LockScreen() {
       ? "Unlock to review a pending request."
       : "Enter the password for your last used wallet.";
 
+  const actions = view === "unlock" ? (
+    <LockForm
+      register={register}
+      handleSubmit={handleSubmit}
+      onSubmit={onSubmit}
+      shakeKey={shakeKey}
+      error={error}
+      lockoutSecsLeft={lockoutSecsLeft}
+      loading={loading}
+      biometricEnabled={biometricEnabled}
+      bioFailures={bioFailures}
+      onBiometric={onBiometric}
+      isLinux={isLinux}
+      passwordEntered={passwordEntered}
+      secondaryAction={(
+        <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setView("switch")}>
+          <Exchange01Icon size={18} aria-hidden="true" />
+          Switch wallet
+        </Button>
+      )}
+    />
+  ) : (
+    <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
+      Back to unlock
+    </Button>
+  );
+
   return (
     <FullPage centered={false} style={{ padding: 0 }}>
       {unlocking ? (
         <UnlockingPanel />
       ) : (
-        <>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <PageBanner
             title={view === "switch" ? bannerTitle : undefined}
             description={view === "switch" ? bannerDescription : undefined}
-            style={view === "unlock" ? { flex: "0 0 auto", height: "auto", minHeight: "var(--height-page-banner)" } : undefined}
+            centered={view === "unlock"}
+            showBrand={view !== "unlock"}
+            style={
+              view === "unlock"
+                ? { flex: 1, minHeight: 0, height: "auto", borderBottom: "none" }
+                : { borderBottom: "1px solid var(--color-border-subtle)" }
+            }
           >
             {view === "unlock" ? (
               <div style={{ marginTop: "var(--space-3)", width: "100%" }}>
@@ -218,35 +251,9 @@ export default function LockScreen() {
               </div>
             ) : null}
           </PageBanner>
-          <PageFrame
-            actions={view === "unlock" ? (
-              <LockForm
-                register={register}
-                handleSubmit={handleSubmit}
-                onSubmit={onSubmit}
-                shakeKey={shakeKey}
-                error={error}
-                lockoutSecsLeft={lockoutSecsLeft}
-                loading={loading}
-                biometricEnabled={biometricEnabled}
-                bioFailures={bioFailures}
-                onBiometric={onBiometric}
-                isLinux={isLinux}
-                passwordEntered={passwordEntered}
-                secondaryAction={(
-                  <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setView("switch")}>
-                    <Exchange01Icon size={18} aria-hidden="true" />
-                    Switch wallet
-                  </Button>
-                )}
-              />
-            ) : (
-              <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
-                Back to unlock
-              </Button>
-            )}
-          >
-            {view === "switch" ? (
+
+          {view === "switch" ? (
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--space-4)" }}>
               <div style={{ width: "100%", maxWidth: 340, margin: "0 auto" }}>
                 <LockWalletShelf
                   wallets={lockedWallets}
@@ -259,9 +266,13 @@ export default function LockScreen() {
                   onAdd={() => navigate("/setup")}
                 />
               </div>
-            ) : null}
-          </PageFrame>
-        </>
+            </div>
+          ) : null}
+
+          <div className="page-frame-actions">
+            <div className="page-frame-actions-inner">{actions}</div>
+          </div>
+        </div>
       )}
     </FullPage>
   );
