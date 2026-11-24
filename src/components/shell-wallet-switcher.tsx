@@ -102,7 +102,7 @@ export function ShellWalletSwitcher() {
           cursor: "pointer",
         } as CSSProperties}
       >
-        <Identicon kind="wallet" seed={`${activeWallet.id}:${activeWallet.color}`} label={activeWallet.name} size={32} radius={12} />
+        <Identicon kind="wallet" seed={`${activeWallet.id}:${activeWallet.color}`} label={activeWallet.name} size={32} radius={4} />
       </button>
 
       <Sheet
