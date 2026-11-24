@@ -28,9 +28,7 @@ export function useCreateVaultFlow() {
   const [passwordsVisible, setPasswordsVisible] = useState(false);
   const [backupSeedRevealed, setBackupSeedRevealed] = useState(false);
   const [backupSeedHandled, setBackupSeedHandled] = useState(false);
-  const [confirmationRevealed, setConfirmationRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [acknowledged, setAcknowledged] = useState(false);
   const [nameError, setNameError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
   const [setupError, setSetupError] = useState("");
@@ -87,7 +85,6 @@ export function useCreateVaultFlow() {
 
   function continueFromBackup() {
     setBackupSeedRevealed(false);
-    setConfirmationRevealed(false);
     setStep(3);
   }
 
@@ -149,10 +146,6 @@ export function useCreateVaultFlow() {
     backupSeedRevealed,
     backupSeedHandled,
     copied,
-    acknowledged,
-    toggleAcknowledged: () => setAcknowledged((value) => !value),
-    confirmationRevealed,
-    toggleConfirmationRevealed: () => setConfirmationRevealed((value) => !value),
     setupError,
     loading,
     passwordValid,

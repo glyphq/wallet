@@ -203,17 +203,15 @@ export function RequestSigningAccountPicker({
   );
 }
 
-/** Visual checkbox square shared by the high-value confirmation controls. */
+/** Framed checkbox mark shared by the high-value confirmation controls. */
 export function RequestCheckboxMark({ checked }: { checked: boolean }) {
   return (
-    <div style={{
-      width: 14, height: 14, flexShrink: 0,
-      border: `1px solid ${checked ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-      borderRadius: 2,
-      background: checked ? "var(--color-text-display)" : "none",
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      {checked && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
+    <div
+      className="request-checkbox corner-frame"
+      data-checked={checked ? "true" : "false"}
+      style={{ width: 16, height: 16, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+    >
+      {checked && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-accent-contrast)", lineHeight: 1 }}>✓</span>}
     </div>
   );
 }

@@ -96,9 +96,9 @@ export function Textarea({
           {hint}
         </span>
       ) : null}
-      {error ? (
-        <FieldError id={errorId}>{error}</FieldError>
-      ) : null}
+      <div className="field-error-slot">
+        {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+      </div>
     </div>
   );
 }

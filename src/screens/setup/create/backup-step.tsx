@@ -1,36 +1,32 @@
 import { CheckmarkCircle01Icon, Copy01Icon, ViewIcon, ViewOffIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { SeedSurface, SetupFlow } from "@/components/setup-flow";
-import { AcknowledgeCheckbox } from "./acknowledge-checkbox";
 
 export function BackupStep({
   seed,
   revealed,
   copied,
-  acknowledged,
   backupHandled,
   onCopy,
   onToggleReveal,
-  onToggleAcknowledged,
   onContinue,
   onBack,
 }: {
   seed: string;
   revealed: boolean;
   copied: boolean;
-  acknowledged: boolean;
   backupHandled: boolean;
   onCopy: () => void;
   onToggleReveal: () => void;
-  onToggleAcknowledged: () => void;
   onContinue: () => void;
   onBack: () => void;
 }) {
   return (
     <SetupFlow
       title="Back up your seed"
+      description="Copy it to your chosen secure location or reveal it to record offline. You will confirm it on the next step."
       primaryLabel="Continue"
-      primaryDisabled={!acknowledged || !backupHandled}
+      primaryDisabled={!backupHandled}
       onPrimary={onContinue}
       onBack={onBack}
       secondaryActions={
@@ -46,16 +42,7 @@ export function BackupStep({
         </div>
       }
     >
-      <p style={{ margin: 0, fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
-        Copy it to your chosen secure location or reveal it to record offline. You will confirm it on the next step.
-      </p>
-      <SeedSurface
-        seed={seed}
-        revealed={revealed}
-      />
-      <AcknowledgeCheckbox checked={acknowledged} onToggle={onToggleAcknowledged}>
-        I stored this seed safely
-      </AcknowledgeCheckbox>
+      <SeedSurface seed={seed} revealed={revealed} />
     </SetupFlow>
   );
 }

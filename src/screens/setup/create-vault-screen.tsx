@@ -27,11 +27,9 @@ export default function CreateVaultScreen() {
           seed={flow.seed}
           revealed={flow.backupSeedRevealed}
           copied={flow.copied}
-          acknowledged={flow.acknowledged}
           backupHandled={flow.backupSeedHandled}
           onCopy={flow.copySeed}
           onToggleReveal={flow.toggleBackupSeed}
-          onToggleAcknowledged={flow.toggleAcknowledged}
           onContinue={flow.continueFromBackup}
           onBack={flow.back}
         />
@@ -41,12 +39,10 @@ export default function CreateVaultScreen() {
         <ConfirmBackupStep
           confirmation={flow.confirmation}
           confirmationError={flow.confirmationError}
-          revealed={flow.confirmationRevealed}
           onConfirmationChange={(value) => {
             flow.setConfirmation(value);
             flow.setConfirmationError("");
           }}
-          onToggleReveal={flow.toggleConfirmationRevealed}
           onConfirm={flow.confirmBackup}
           onBack={flow.back}
         />

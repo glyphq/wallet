@@ -10,6 +10,7 @@ import { MIN_PASSWORD_LENGTH, passwordStrength } from "@/lib/password-strength";
 
 interface SetupFlowProps {
   title: ReactNode;
+  description?: ReactNode;
   children: ReactNode;
   primaryLabel: string;
   onPrimary: () => void;
@@ -22,6 +23,7 @@ interface SetupFlowProps {
 
 export function SetupFlow({
   title,
+  description,
   children,
   primaryLabel,
   onPrimary,
@@ -33,7 +35,7 @@ export function SetupFlow({
 }: SetupFlowProps) {
   return (
     <LandscapeOnboarding>
-      <PageBanner title={title} />
+      <PageBanner title={title} description={description} />
       <PageFrame
         actions={(
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -214,26 +216,11 @@ export function PasswordFields({
         autoComplete="new-password"
         error={mismatch ? "Passwords do not match" : undefined}
       />
-      {password ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }} aria-label={`Password strength: ${strength.label}`}>
-          <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }} aria-hidden="true">
-            {[0, 1, 2, 3].map((index) => (
-              <span
-                key={index}
-                style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 999,
-                  background: index <= strength.level ? "var(--color-text-secondary)" : "var(--color-border-default)",
-                }}
-              />
-            ))}
-          </div>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            {strength.label}
-          </span>
-        </div>
-      ) : null}
+      <div style={{ display: "flex", justifyContent: "flex-end" }} aria-label={`Password strength: ${strength.label}`}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: password.length > 0 ? strength.color : "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>
+          {strength.label}
+        </span>
+      </div>
     </div>
   );
 }

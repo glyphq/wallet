@@ -11,6 +11,7 @@ export function SeedTextarea({
   ariaLabel,
   autoCapitalize,
   revealed,
+  obscure = true,
   error,
 }: {
   value: string;
@@ -20,6 +21,7 @@ export function SeedTextarea({
   ariaLabel: string;
   autoCapitalize?: string;
   revealed: boolean;
+  obscure?: boolean;
   error?: string;
 }) {
   return (
@@ -40,7 +42,7 @@ export function SeedTextarea({
         resize: "none",
         minHeight: 136,
         overflowWrap: "anywhere",
-        filter: revealed ? "none" : "blur(6px)",
+        filter: !obscure || revealed ? "none" : "blur(6px)",
         transition: "filter var(--duration-fast) var(--ease-out)",
       }}
     />

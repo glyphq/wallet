@@ -91,9 +91,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           </div>
         ) : null}
       </div>
-      {error && (
-        <FieldError id={errorId}>{error}</FieldError>
-      )}
+      <div className="field-error-slot">
+        {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+      </div>
     </div>
   );
 });
