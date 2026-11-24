@@ -216,10 +216,26 @@ export function PasswordFields({
         autoComplete="new-password"
         error={mismatch ? "Passwords do not match" : undefined}
       />
-      <div style={{ display: "flex", justifyContent: "flex-end" }} aria-label={`Password strength: ${strength.label}`}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: password.length > 0 ? strength.color : "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>
-          {strength.label}
-        </span>
+      <div
+        role="meter"
+        aria-valuemin={0}
+        aria-valuemax={3}
+        aria-valuenow={strength.level}
+        aria-label={`Password strength: ${strength.label}`}
+        style={{ display: "flex", gap: "var(--space-1)" }}
+      >
+        {[0, 1, 2, 3].map((index) => (
+          <span
+            key={index}
+            aria-hidden="true"
+            style={{
+              flex: 1,
+              height: 3,
+              borderRadius: 999,
+              background: password.length > 0 && index <= strength.level ? strength.color : "var(--color-border-default)",
+            }}
+          />
+        ))}
       </div>
     </div>
   );
