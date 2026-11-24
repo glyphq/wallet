@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
+import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { BalanceDisplay } from "@/components/balance-display";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
@@ -45,6 +46,7 @@ import {
   HoldingFeeWarning,
   IdentityName,
   MultisigAccountSelect,
+  MultisigFlowShell,
   VaultId,
   identityDisplayName,
 } from "./multisig-ui";
@@ -480,17 +482,34 @@ export default function MultisigDetailScreen() {
     ? formatPreferredCurrencyFromQu(detail.balance, { usdPrice: stats.price, ...quote }).text
     : undefined;
 
+  const vaultFooter = (
+    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+      <Button
+        size="md"
+        style={{ width: "auto", flex: "1 1 140px" }}
+        disabled={actionsDisabled}
+        onClick={() => navigate(`/multisig/${rawId}/deposit`)}
+      >
+        <Download01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+        Deposit
+      </Button>
+      <Button
+        size="md"
+        variant="secondary"
+        style={{ width: "auto", flex: "1 1 140px" }}
+        disabled={!isOwner || actionsDisabled}
+        onClick={() => navigate(`/multisig/${rawId}/release`)}
+        title={!isOwner ? "Only owners can request releases." : undefined}
+      >
+        <ArrowUpRight01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+        Request release
+      </Button>
+    </div>
+  );
+
   return (
-    <AppShell
-      statusBar={header}
-      contentStyle={{
-        padding: "var(--space-4)",
-        paddingBottom: "var(--space-8)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-5)",
-      }}
-    >
+    <MultisigFlowShell statusBar={header} footer={vaultFooter}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <MultisigAccountSelect
         wallet={wallet}
         accounts={sessionAccounts}
@@ -504,35 +523,58 @@ export default function MultisigDetailScreen() {
         </InlineNotice>
       ) : null}
 
-      <section aria-label="Vault balance" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2) 0" }}>
-        <span style={SECTION_LABEL}>Vault balance</span>
-        <BalanceDisplay
-          balance={detail.balance}
-          loading={false}
-          hidden={settings.hideBalances}
-          fiatValue={fiatValue}
-          priceChange24h={null}
-        />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
-          <span style={MONO_META}>{detail.requiredApprovals} of {detail.owners.length} approvals</span>
-          <VaultId id={detail.id} />
-        </div>
-        {feesQuery.isLoading ? (
-          <span style={MONO_META}>Loading fees…</span>
-        ) : feesQuery.isError || !fees ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            <span role="alert" style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>Fees unavailable</span>
-            <TextButton onClick={() => void feesQuery.refetch()}>Retry</TextButton>
+      <section
+        aria-label="Vault balance"
+        style={{
+          marginInline: "calc(-1 * var(--screen-padding))",
+          borderBottom: "1px solid var(--color-border-subtle)",
+          background: "var(--color-bg-base)",
+        }}
+      >
+        <AsciiBackdrop
+          style={{ minHeight: 220 }}
+          contentStyle={{
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            padding: "var(--space-5) var(--screen-padding)",
+          }}
+        >
+          <div className="asciify-clear">
+            <span style={SECTION_LABEL}>Vault balance</span>
           </div>
-        ) : (
-          <span style={MONO_META}>
-            {coverage !== null
-              ? coverage > 0n
-                ? `Holding fee covered for ${coverage.toString()} epochs`
-                : "Below holding fee"
-              : "No holding fee"}
-          </span>
-        )}
+          <div className="asciify-clear">
+            <BalanceDisplay
+              balance={detail.balance}
+              loading={false}
+              hidden={settings.hideBalances}
+              fiatValue={fiatValue}
+              priceChange24h={null}
+            />
+          </div>
+          <div className="asciify-clear" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
+            <span style={MONO_META}>{detail.requiredApprovals} of {detail.owners.length} approvals</span>
+            <VaultId id={detail.id} />
+          </div>
+          <div className="asciify-clear">
+            {feesQuery.isLoading ? (
+              <span style={MONO_META}>Loading fees…</span>
+            ) : feesQuery.isError || !fees ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                <span role="alert" style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>Fees unavailable</span>
+                <TextButton onClick={() => void feesQuery.refetch()}>Retry</TextButton>
+              </div>
+            ) : (
+              <span style={MONO_META}>
+                {coverage !== null
+                  ? coverage > 0n
+                    ? `Holding fee covered for ${coverage.toString()} epochs`
+                    : "Below holding fee"
+                  : "No holding fee"}
+              </span>
+            )}
+          </div>
+        </AsciiBackdrop>
       </section>
 
       <Section title="Assets">
@@ -575,29 +617,6 @@ export default function MultisigDetailScreen() {
       {detail.assets.length > 0 && detail.balance < MSVAULT_REVOKE_FEE ? (
         <InlineNotice tone="warning">Asset releases need at least 100 QU in the vault.</InlineNotice>
       ) : null}
-
-      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-        <Button
-          size="md"
-          style={{ width: "auto", flex: "1 1 140px" }}
-          disabled={actionsDisabled}
-          onClick={() => navigate(`/multisig/${rawId}/deposit`)}
-        >
-          <Download01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
-          Deposit
-        </Button>
-        <Button
-          size="md"
-          variant="secondary"
-          style={{ width: "auto", flex: "1 1 140px" }}
-          disabled={!isOwner || actionsDisabled}
-          onClick={() => navigate(`/multisig/${rawId}/release`)}
-          title={!isOwner ? "Only owners can request releases." : undefined}
-        >
-          <ArrowUpRight01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
-          Request release
-        </Button>
-      </div>
 
       <Section title="Owners">
         <div className="settings-menu corner-frame" style={{ display: "flex", flexDirection: "column" }}>
@@ -679,7 +698,7 @@ export default function MultisigDetailScreen() {
           </>
         )}
       </Section>
-
-    </AppShell>
+      </div>
+    </MultisigFlowShell>
   );
 }

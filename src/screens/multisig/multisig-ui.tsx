@@ -36,9 +36,9 @@ const CAPTION_COPY: CSSProperties = {
 };
 
 /** Fixed-footer multisig flow shell; the body scrolls independently. */
-export function MultisigFlowShell({ children, footer, notch }: { children: ReactNode; footer?: ReactNode; notch?: ReactNode }) {
+export function MultisigFlowShell({ children, footer, notch, statusBar }: { children: ReactNode; footer?: ReactNode; notch?: ReactNode; statusBar?: ReactNode }) {
   return (
-    <AppShell fullBleed contentStyle={{ overflow: "hidden", padding: 0 }}>
+    <AppShell fullBleed statusBar={statusBar} contentStyle={{ overflow: "hidden", padding: 0 }}>
       <div
         style={{
           display: "flex",
