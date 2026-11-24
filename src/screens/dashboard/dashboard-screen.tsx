@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { MoreHorizontalIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { ScreenHeader } from "@/components/screen-header";
@@ -121,19 +120,6 @@ export default function DashboardScreen() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 500, color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Recent activity
             </span>
-            <button
-              onClick={() => navigate("/history")}
-              aria-label="View all activity"
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontWeight: 500,
-                color: "var(--color-text-secondary)", padding: 0, letterSpacing: "0.04em", textTransform: "uppercase",
-                display: "flex", alignItems: "center", gap: "var(--space-1)",
-              }}
-            >
-              View all
-              <MoreHorizontalIcon size={14} strokeWidth={1.5} />
-            </button>
           </div>
           <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} price={stats?.price} />
         </div>
