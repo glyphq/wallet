@@ -6,6 +6,7 @@ import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
+import { TitleBar } from "@/components/title-bar";
 import { ScreenHeader } from "@/components/screen-header";
 import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
