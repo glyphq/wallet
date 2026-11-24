@@ -37,7 +37,6 @@ import {
   HoldingFeeWarning,
   MultisigAccountSelect,
   MultisigFlowShell,
-  VaultId,
   identityDisplayName,
 } from "./multisig-ui";
 
@@ -349,8 +348,7 @@ export default function MultisigApprovalScreen() {
             This removes only this account's approval. The reset fee is paid by this account and is not refundable.
           </p>
           <div className="corner-frame" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)", background: "var(--color-bg-surface)" }}>
-            <FeeRow label="Vault" value={<VaultId id={detail.id} />} />
-            <FeeRow
+              <FeeRow
               label="Release"
               value={proposal.kind === "asset" && proposal.asset
                 ? <AssetMetaLabel asset={proposal.asset} amount={proposal.amount} />
@@ -434,9 +432,6 @@ export default function MultisigApprovalScreen() {
             to{" "}
             <span style={{ fontWeight: 500, color: "var(--color-text-primary)" }}>{destinationName}</span>.
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>
-            {proposal.approvals} of {proposal.requiredApprovals} approvals · vault #{detail.id.toString()}
-          </div>
         </div>
 
         {!isOwner ? (
@@ -456,13 +451,6 @@ export default function MultisigApprovalScreen() {
             </ApprovalField>
           )}
 
-          <ApprovalField label="Vault">
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
-              {detail.name.trim() || "Unnamed vault"}
-            </span>
-            <VaultId id={detail.id} />
-          </ApprovalField>
-
           <ApprovalAddress label="Destination" identity={proposal.destination} name={destinationName} compact="long" />
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -470,7 +458,6 @@ export default function MultisigApprovalScreen() {
             <FeeRow label="After approval" value={`${proposal.approvals + 1} of ${proposal.requiredApprovals}`} />
             <FeeRow
               label="Release fee"
-              hint="Paid by this account"
               value={feesQuery.isLoading ? "Loading fees…" : fees ? `${formatQu(fees.releaseFee)} QU` : "Fees unavailable"}
             />
             <FeeRow label="Vault QUBIC after release" value={`${formatQu(vaultAfterRelease)} QU`} />
