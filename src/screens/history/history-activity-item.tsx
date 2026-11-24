@@ -51,7 +51,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: "var(--radius-sharp)",
+            borderRadius: 2,
             border: "1px solid var(--color-border-subtle)",
             background: "var(--color-bg-surface)",
             color: txType === "failed"

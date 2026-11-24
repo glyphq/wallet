@@ -1,19 +1,15 @@
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
-import { formatQuCompact, formatDate, formatPreferredCurrencyFromQu, truncateId } from "@/lib/format";
-import { findClosestPriceSnapshot } from "@/lib/history-analytics";
-import type { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { formatQuCompact, formatDate, truncateId } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
-import type { AppSettings, PriceSnapshot } from "@/store/persisted";
+import type { AppSettings } from "@/store/persisted";
 import { ActivityItem } from "./history-activity-item";
 
 export function GroupedTxs({
-  txs, identity, settings, priceSnapshots, quote, onSelect,
+  txs, identity, settings, onSelect,
 }: {
   txs: TxHistoryItem[];
   identity: string | null;
   settings: AppSettings;
-  priceSnapshots: PriceSnapshot[];
-  quote: ReturnType<typeof usePreferredCurrencyQuote>;
   onSelect: (tx: TxHistoryItem) => void;
 }) {
   const groups = new Map<string, { label: string; txs: TxHistoryItem[]; volume: bigint }>();
@@ -39,7 +35,6 @@ export function GroupedTxs({
           {group.txs.map((tx) => {
             const isIn = tx.destination === identity;
             const flew = tx.moneyFlew;
-            const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
             const label = !flew ? "Failed" : isIn ? "Received" : "Sent";
             const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
             return (
@@ -52,7 +47,6 @@ export function GroupedTxs({
                 address={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
                 time=""
                 amount={settings.hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-                amountUsd={settings.hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
                 amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
                 txType={!flew ? "failed" : isIn ? "received" : "sent"}
               />

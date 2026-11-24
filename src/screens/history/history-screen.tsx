@@ -8,7 +8,6 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import {
   DEFAULT_FILTERS,
@@ -55,9 +54,7 @@ export default function HistoryScreen() {
 
   const txMemos = usePersistedStore((s) => s.txMemos);
   const txTags = usePersistedStore((s) => s.txTags);
-  const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
 
-  const quote = usePreferredCurrencyQuote();
 
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   useEffect(() => {
@@ -249,7 +246,7 @@ export default function HistoryScreen() {
 
       {/* Transaction rows */}
       {!isLoading && !isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} priceSnapshots={priceSnapshots} quote={quote} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
+        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
       )}
       {!isLoading && !isError && !groupByCounterparty && (
         <HistoryTxList
@@ -259,8 +256,6 @@ export default function HistoryScreen() {
           currentTick={currentTick}
           hideBalances={settings.hideBalances}
           pendingHashes={pendingHashes}
-          priceSnapshots={priceSnapshots}
-          quote={quote}
           onSelect={(hash) => navigate(`/tx/${hash}`)}
         />
       )}

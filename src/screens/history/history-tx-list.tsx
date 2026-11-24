@@ -1,15 +1,13 @@
 import { KNOWN_CONTRACT_ADDRESSES, resolveProcedureName } from "@/lib/contracts";
-import { truncateId, formatQuCompact, formatDate, formatPreferredCurrencyFromQu } from "@/lib/format";
-import { findClosestPriceSnapshot } from "@/lib/history-analytics";
-import type { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { truncateId, formatQuCompact, formatDate } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
-import type { PendingTx, PriceSnapshot } from "@/store/persisted";
+import type { PendingTx } from "@/store/persisted";
 import { ActivityItem } from "./history-activity-item";
 import type { TxSection } from "./history-utils";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 
 export function HistoryTxList({
-  pending, sections, identity, currentTick, hideBalances, pendingHashes, priceSnapshots, quote, onSelect,
+  pending, sections, identity, currentTick, hideBalances, pendingHashes, onSelect,
 }: {
   pending: PendingTx[];
   sections: TxSection[];
@@ -17,8 +15,6 @@ export function HistoryTxList({
   currentTick: number;
   hideBalances: boolean;
   pendingHashes: Set<string>;
-  priceSnapshots: PriceSnapshot[];
-  quote: ReturnType<typeof usePreferredCurrencyQuote>;
   onSelect: (hash: string) => void;
 }) {
   return (
@@ -30,8 +26,6 @@ export function HistoryTxList({
           identity={identity}
           currentTick={currentTick}
           hideBalances={hideBalances}
-          priceSnapshots={priceSnapshots}
-          quote={quote}
           onSelect={onSelect}
         />
       ))}
@@ -56,8 +50,6 @@ export function HistoryTxList({
               identity={identity}
               hideBalances={hideBalances}
               flash={pendingHashes.has(tx.hash)}
-              priceSnapshots={priceSnapshots}
-              quote={quote}
               onSelect={onSelect}
             />
           ))}
@@ -68,20 +60,17 @@ export function HistoryTxList({
 }
 
 function PendingTxRow({
-  tx, identity, currentTick, hideBalances, priceSnapshots, quote, onSelect,
+  tx, identity, currentTick, hideBalances, onSelect,
 }: {
   tx: PendingTx;
   identity: string | null;
   currentTick: number;
   hideBalances: boolean;
-  priceSnapshots: PriceSnapshot[];
-  quote: ReturnType<typeof usePreferredCurrencyQuote>;
   onSelect: (hash: string) => void;
 }) {
   const isIn = tx.destination === identity;
   const progress = pendingTxProgress(tx.targetTick, currentTick);
   const expired = progress.phase === "expired";
-  const pendingSnapshot = findClosestPriceSnapshot(tx.broadcastAt, priceSnapshots);
   const label = progress.label;
   const labelColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
   const address = tx.contractName ?? (isIn ? truncateId(tx.source) : truncateId(tx.destination));
@@ -96,7 +85,6 @@ function PendingTxRow({
       address={address}
       time={time}
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-      amountUsd={hideBalances || !pendingSnapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: pendingSnapshot.priceUsd, ...quote }).text}
       amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
       txType={expired ? "failed" : "pending"}
     />
@@ -104,14 +92,12 @@ function PendingTxRow({
 }
 
 function ConfirmedTxRow({
-  tx, identity, hideBalances, flash, priceSnapshots, quote, onSelect,
+  tx, identity, hideBalances, flash, onSelect,
 }: {
   tx: TxHistoryItem;
   identity: string | null;
   hideBalances: boolean;
   flash: boolean;
-  priceSnapshots: PriceSnapshot[];
-  quote: ReturnType<typeof usePreferredCurrencyQuote>;
   onSelect: (hash: string) => void;
 }) {
   const isIn = tx.destination === identity;
@@ -127,7 +113,6 @@ function ConfirmedTxRow({
   const address = isSc
     ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown")))
     : truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown"));
-  const snapshot = findClosestPriceSnapshot(tx.timestamp, priceSnapshots);
   const txType = !flew ? "failed" as const : isSc ? "sc" as const : isIn ? "received" as const : "sent" as const;
 
   return (
@@ -139,7 +124,6 @@ function ConfirmedTxRow({
       address={address}
       time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
-      amountUsd={hideBalances || !snapshot ? undefined : formatPreferredCurrencyFromQu(tx.amount, { usdPrice: snapshot.priceUsd, ...quote }).text}
       amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
       txType={txType}
     />
