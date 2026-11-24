@@ -34,8 +34,11 @@ export function Textarea({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
-      {label ? (
-        <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
+      {label || error ? (
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)", minWidth: 0 }}>
+          {label ? <FieldLabel htmlFor={fieldId}>{label}</FieldLabel> : <span />}
+          {error ? <FieldError id={errorId} style={{ textAlign: "right" }}>{error}</FieldError> : null}
+        </div>
       ) : null}
       <div className="glyph-field corner-frame" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
         {leftElement ? (
@@ -100,9 +103,6 @@ export function Textarea({
           {hint}
         </span>
       ) : null}
-      <div className="field-error-slot">
-        {error ? <FieldError id={errorId}>{error}</FieldError> : null}
-      </div>
     </div>
   );
 }

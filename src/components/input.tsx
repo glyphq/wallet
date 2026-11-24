@@ -9,12 +9,10 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leftElement?: ReactNode;
   rightElement?: ReactNode;
   technical?: boolean;
-  /** Reserve the error line even when no error is shown. */
-  reserveErrorSpace?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, className, reserveErrorSpace = true, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, className, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -60,11 +58,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
-      {label && (
-        <FieldLabel htmlFor={inputId} style={labelStyle}>
-          {label}
-        </FieldLabel>
-      )}
+      {label || error ? (
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)", minWidth: 0 }}>
+          {label ? <FieldLabel htmlFor={inputId} style={labelStyle}>{label}</FieldLabel> : <span />}
+          {error ? <FieldError id={errorId} style={{ textAlign: "right" }}>{error}</FieldError> : null}
+        </div>
+      ) : null}
       <div className="glyph-field corner-frame" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
         {leftElement ? (
           <div
@@ -93,11 +92,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           </div>
         ) : null}
       </div>
-      {reserveErrorSpace || error ? (
-        <div className="field-error-slot">
-          {error ? <FieldError id={errorId}>{error}</FieldError> : null}
-        </div>
-      ) : null}
     </div>
   );
 });

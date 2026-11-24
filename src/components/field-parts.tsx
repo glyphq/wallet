@@ -29,9 +29,10 @@ export function FieldLabel({ htmlFor, children, style }: FieldLabelProps) {
 export interface FieldErrorProps {
   id?: string;
   children: ReactNode;
+  style?: CSSProperties;
 }
 
-export function FieldError({ id, children }: FieldErrorProps) {
+export function FieldError({ id, children, style }: FieldErrorProps) {
   return (
     <span
       id={id}
@@ -41,6 +42,7 @@ export function FieldError({ id, children }: FieldErrorProps) {
         fontSize: "var(--text-caption)",
         color: "var(--color-status-error)",
         lineHeight: "var(--leading-compact)",
+        ...style,
       }}
     >
       {children}

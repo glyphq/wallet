@@ -65,7 +65,6 @@ export default function ContactsScreen() {
           containerStyle={{ width: "100%" }}
           style={{ fontFamily: "var(--font-sans)" }}
           leftElement={<Search01Icon size={18} strokeWidth={1.5} />}
-          reserveErrorSpace={false}
         />
 
         <SettingsDivider fullBleed />

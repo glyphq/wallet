@@ -159,7 +159,6 @@ export default function ImportWalletScreen() {
               aria-label="Wallet name"
               autoFocus
               error={nameError}
-              reserveErrorSpace={false}
             />
             <WalletNameChips
               value={name}
