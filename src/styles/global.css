@@ -1175,54 +1175,6 @@ a:hover {
   flex-shrink: 0;
 }
 
-.contacts-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: 260px;
-  padding: var(--space-6);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sharp);
-  background: var(--color-bg-surface);
-  text-align: center;
-}
-
-.contacts-empty-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-caption);
-  color: var(--color-text-tertiary);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* ── Approved dApps ───────────────────────────────────────────────────────── */
-
-.dapps-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.dapp-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  width: auto;
-  margin-inline: calc(var(--space-4) * -1);
-  padding: var(--space-3) var(--space-4);
-  border: 0;
-  background: transparent;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  text-align: left;
-}
-
-.dapp-row + .dapp-row {
-  border-top: 1px solid var(--color-border-subtle);
-}
-
 /* ── Request history ───────────────────────────────────────────────────────── */
 
 .request-history-list {

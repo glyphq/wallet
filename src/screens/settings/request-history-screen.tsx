@@ -5,6 +5,7 @@ import { ChevronRight01Icon, Delete02Icon } from "@/lib/icons";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { PageFrame } from "@/components/page-header";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { formatDate } from "@/lib/format";
@@ -49,11 +50,10 @@ export default function RequestHistoryScreen() {
       <PageFrame actions={actions}>
         <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           {requestHistory.length === 0 ? (
-            <section aria-label="Request history" style={{ padding: "var(--space-8) 0" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                No requests yet
-              </span>
-            </section>
+            <EmptyCollectionState
+              title="No requests yet"
+              description="Requests from connected dApps will appear here."
+            />
           ) : (
             <div className="request-history-list" aria-label="Request history">
               {requestHistory.map((item) => (

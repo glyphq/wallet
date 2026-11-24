@@ -12,7 +12,7 @@ import { getAccountIdentity } from "@/lib/accounts";
 import { normalizeApiTransaction } from "@/lib/tx-domain";
 import { buildSearchResults, groupSearchResults } from "./search-results";
 import { SearchResults } from "./search-results-view";
-import { SearchEmptyState } from "./search-empty-state";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 
 export default function SearchScreen() {
   const navigate = useNavigate();
@@ -100,14 +100,16 @@ export default function SearchScreen() {
       </div>
 
       {!normalizedQuery && (
-        <SearchEmptyState
+        <EmptyCollectionState
+          icon="search"
           title="Start typing to search"
           description="Search accounts, contacts, transactions, or contracts"
         />
       )}
 
       {normalizedQuery && results.length === 0 && (
-        <SearchEmptyState
+        <EmptyCollectionState
+          icon="search"
           title={`No results for "${query.trim()}"`}
           description="Try a different name, address, or hash"
         />

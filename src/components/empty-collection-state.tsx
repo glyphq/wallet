@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { Loupe, Plot } from "@lucasmarkes/hairline/react";
+import { Hub, Loupe, Plot } from "@lucasmarkes/hairline/react";
 
 const FIGURE_STYLE = {
   width: 180,
@@ -12,7 +12,7 @@ const FIGURE_STYLE = {
   "--hairline-stroke": "0.8px",
 } as CSSProperties;
 
-/** Shared empty state for activity and search collections. */
+/** Shared hairline empty state for collection screens. */
 export function EmptyCollectionState({
   title,
   description,
@@ -20,9 +20,9 @@ export function EmptyCollectionState({
 }: {
   title: string;
   description: string;
-  icon?: "activity" | "search";
+  icon?: "activity" | "search" | "contacts";
 }) {
-  const Figure = icon === "search" ? Loupe : Plot;
+  const Figure = icon === "search" ? Loupe : icon === "contacts" ? Hub : Plot;
 
   return (
     <div

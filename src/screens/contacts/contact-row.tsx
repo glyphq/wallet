@@ -1,5 +1,4 @@
 import { Edit02Icon, SentIcon } from "@/lib/icons";
-import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
 import { Identicon } from "@/components/identicon";
 import type { Contact } from "@/store/persisted";
@@ -29,26 +28,5 @@ export function ContactRow({ contact, onSend, onEdit }: { contact: Contact; onSe
         </IconButton>
       </div>
     </article>
-  );
-}
-
-export function EmptyState({ hasContacts, onAdd }: { hasContacts: boolean; onAdd: () => void }) {
-  return (
-    <section className="contacts-empty corner-frame">
-      <span className="contacts-empty-label">
-        {hasContacts ? "No matches" : "No contacts"}
-      </span>
-      <strong style={{ color: "var(--color-text-primary)", fontSize: "var(--text-title)", fontWeight: 400, fontFamily: "var(--font-display)", letterSpacing: "0.04em" }}>
-        {hasContacts ? "Nothing found." : "Build your address book."}
-      </strong>
-      <p style={{ margin: 0, maxWidth: 300, color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)" }}>
-        {hasContacts ? "Try a different name, address, note, or tag." : "Save trusted recipients so sending stays quick and accurate."}
-      </p>
-      {!hasContacts ? (
-        <Button variant="secondary" size="md" style={{ width: "auto", marginTop: "var(--space-2)" }} onClick={onAdd}>
-          Add contact
-        </Button>
-      ) : null}
-    </section>
   );
 }
