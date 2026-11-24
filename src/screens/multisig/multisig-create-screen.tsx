@@ -39,6 +39,7 @@ import {
   IdentityName,
   MultisigAccountSelect,
   MultisigFlowShell,
+  MultisigNotch,
   identityDisplayName,
 } from "./multisig-ui";
 import { MultisigOwnersEditor } from "./multisig-owners-editor";
@@ -439,9 +440,20 @@ export default function MultisigCreateScreen() {
       >
         <PageFrame
           actions={(
-            <Button size="md" onClick={() => setStep("edit")} style={{ width: "100%" }}>
-              Done
-            </Button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={addOwner}
+                disabled={ownerCount >= MSVAULT_MAX_OWNERS}
+                style={{ width: "100%" }}
+              >
+                Add owner
+              </Button>
+              <Button size="md" onClick={() => setStep("edit")} style={{ width: "100%" }}>
+                Done
+              </Button>
+            </div>
           )}
         >
           <MultisigOwnersEditor
@@ -450,12 +462,9 @@ export default function MultisigCreateScreen() {
             extraOwners={extraOwners}
             ownerRowIds={ownerRowIds}
             ownerErrors={ownerErrors}
-            ownerCount={ownerCount}
-            maxOwners={MSVAULT_MAX_OWNERS}
             formError={formError && !formError.startsWith("Vault name") ? formError : ""}
             preflightError={preflightError}
             onOwnerChange={handleOwnerChange}
-            onAddOwner={addOwner}
             onRemoveOwner={removeOwner}
             onPickOwner={setOwnerPickerIndex}
           />
@@ -465,7 +474,10 @@ export default function MultisigCreateScreen() {
   }
 
   return (
-    <MultisigFlowShell footer={footer}>
+    <MultisigFlowShell
+      footer={footer}
+      notch={step === "edit" && ownerCount < 2 ? <MultisigNotch>Needs another owner</MultisigNotch> : undefined}
+    >
       <div style={PAGE_STYLE}>
         <MultisigAccountSelect
           wallet={wallet}
@@ -499,7 +511,6 @@ export default function MultisigCreateScreen() {
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: 500, color: "var(--color-text-primary)" }}>
                       {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
                     </span>
-                    {ownerCount < 2 ? <Tag variant="warning">Needs another owner</Tag> : null}
                   </span>
                   <span style={CAPTION_COPY}>
                     Includes {activeAccountName}. Manage owners to add or remove signers.

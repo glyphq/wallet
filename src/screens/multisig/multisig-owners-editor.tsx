@@ -1,38 +1,9 @@
-import type { CSSProperties } from "react";
-import { AddCircleIcon, Delete02Icon, UserGroupIcon } from "@/lib/icons";
+import { truncateId } from "@/lib/format";
+import { Delete02Icon, UserGroupIcon } from "@/lib/icons";
+import { FieldLabel } from "@/components/field-parts";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Input } from "@/components/input";
 import { Tag } from "@/components/tag";
-import { TextButton } from "@/components/text-button";
-
-const BODY_COPY: CSSProperties = {
-  margin: 0,
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-body-compact)",
-  lineHeight: "var(--leading-body)",
-  color: "var(--color-text-secondary)",
-};
-
-const CAPTION_COPY: CSSProperties = {
-  margin: 0,
-  fontFamily: "var(--font-mono)",
-  fontSize: "var(--text-caption)",
-  lineHeight: "var(--leading-compact)",
-  color: "var(--color-text-tertiary)",
-  minWidth: 0,
-  overflowWrap: "anywhere",
-};
-
-const OWNER_CARD_STYLE: CSSProperties = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "var(--space-3)",
-  minWidth: 0,
-  padding: "var(--space-3)",
-  background: "var(--color-bg-surface)",
-  border: "1px solid var(--color-border-subtle)",
-  borderRadius: "var(--radius-sharp)",
-};
 
 function InlineError({ message, warning = false }: { message: string; warning?: boolean }) {
   if (!message) return null;
@@ -64,12 +35,9 @@ export function MultisigOwnersEditor({
   extraOwners,
   ownerRowIds,
   ownerErrors,
-  ownerCount,
-  maxOwners,
   formError,
   preflightError,
   onOwnerChange,
-  onAddOwner,
   onRemoveOwner,
   onPickOwner,
 }: {
@@ -78,40 +46,27 @@ export function MultisigOwnersEditor({
   extraOwners: string[];
   ownerRowIds: number[];
   ownerErrors: string[];
-  ownerCount: number;
-  maxOwners: number;
   formError: string;
   preflightError: string;
   onOwnerChange: (index: number, value: string) => void;
-  onAddOwner: () => void;
   onRemoveOwner: (index: number) => void;
   onPickOwner: (index: number) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", width: "100%", maxWidth: 480, margin: "0 auto" }}>
-      <p style={BODY_COPY}>
-        Owner 1 is {activeAccountName}. Add at least one more signer for this vault.
-      </p>
-
-      <div style={OWNER_CARD_STYLE}>
-        <FramedAvatar seed={identity ?? activeAccountName} size={34} />
-        <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-          <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
-            <span
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body-compact)",
-                fontWeight: 500,
-                color: "var(--color-text-primary)",
-                minWidth: 0,
-                overflowWrap: "anywhere",
-              }}
-            >
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 0 }}>
+        <FieldLabel>Owner 1</FieldLabel>
+        <div className="corner-frame" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 48, padding: "0 var(--space-3)", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)", background: "var(--color-bg-surface)" }}>
+          <FramedAvatar seed={identity ?? activeAccountName} size={28} />
+          <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
               {activeAccountName}
             </span>
-            <Tag>You</Tag>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)" }}>
+              {identity ? truncateId(identity, 10, 10) : "No active account"}
+            </span>
           </span>
-          <span style={CAPTION_COPY}>{identity ?? "No active account"}</span>
+          <Tag>You</Tag>
         </div>
       </div>
 
@@ -151,17 +106,6 @@ export function MultisigOwnersEditor({
           />
         );
       })}
-
-      <div>
-        <TextButton
-          onClick={onAddOwner}
-          disabled={ownerCount >= maxOwners}
-          aria-label="Add owner"
-        >
-          <AddCircleIcon size={14} strokeWidth={1.5} aria-hidden="true" />
-          Add owner
-        </TextButton>
-      </div>
 
       <InlineError message={formError} />
       <InlineError message={preflightError} warning />

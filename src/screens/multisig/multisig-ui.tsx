@@ -3,6 +3,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Tag } from "@/components/tag";
+import { UserGroupIcon } from "@/lib/icons";
 import { useMsvaultAssetMeta } from "@/hooks/use-msvault";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
@@ -35,7 +36,7 @@ const CAPTION_COPY: CSSProperties = {
 };
 
 /** Fixed-footer multisig flow shell; the body scrolls independently. */
-export function MultisigFlowShell({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+export function MultisigFlowShell({ children, footer, notch }: { children: ReactNode; footer?: ReactNode; notch?: ReactNode }) {
   return (
     <AppShell fullBleed contentStyle={{ overflow: "hidden", padding: 0 }}>
       <div
@@ -59,6 +60,11 @@ export function MultisigFlowShell({ children, footer }: { children: ReactNode; f
         >
           {children}
         </div>
+        {notch ? (
+          <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", pointerEvents: "none", marginBottom: -1 }}>
+            {notch}
+          </div>
+        ) : null}
         {footer ? (
           <div
             style={{
@@ -284,5 +290,29 @@ export function AssetMetaLabel({ asset, amount }: { asset: MsvaultAssetRef; amou
       ) : null}
       <span style={{ color: amount !== undefined ? "var(--color-text-secondary)" : undefined }}>{name}</span>
     </span>
+  );
+}
+
+
+/** Small status notch attached above the fixed footer, matching shell info tabs. */
+export function MultisigNotch({ children }: { children: string }) {
+  return (
+    <div
+      role="status"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "var(--space-2)",
+        padding: "4px 10px",
+        background: "var(--color-bg-nav)",
+        borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+        color: "var(--color-status-warning)",
+      }}
+    >
+      <UserGroupIcon size={13} strokeWidth={1.5} aria-hidden="true" />
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        {children}
+      </span>
+    </div>
   );
 }
