@@ -1027,3 +1027,15 @@ a:hover {
 .history-row:focus-visible {
   background: var(--color-bg-surface);
 }
+
+/* ── History transaction icons ──────────────────────────────────────────────── */
+
+.history-tx-icon {
+  --corner-size: 5px;
+  --corner-inset: 2px;
+  --corner-color: var(--color-text-tertiary);
+}
+
+.history-tx-icon::before {
+  opacity: 0.24;
+}

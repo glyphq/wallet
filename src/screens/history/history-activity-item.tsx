@@ -44,6 +44,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
     >
       {TypeIcon && (
         <div
+          className="history-tx-icon corner-frame"
           style={{
             flexShrink: 0,
             width: 40,

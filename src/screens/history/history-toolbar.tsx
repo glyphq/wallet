@@ -19,16 +19,16 @@ export function HistoryToolbar({
       title="History"
       action={
         <>
-          <IconButton label="View analytics" onClick={onViewAnalytics}>
+          <IconButton framed label="View analytics" onClick={onViewAnalytics}>
             <ChartLineData01Icon size={20} aria-hidden="true" />
           </IconButton>
-          <IconButton label="Export history" onClick={onExport} disabled={exportDisabled}>
+          <IconButton framed label="Export history" onClick={onExport} disabled={exportDisabled}>
             <Download01Icon size={20} aria-hidden="true" />
           </IconButton>
-          <IconButton label={hasActiveFilters ? "Filter history, filters active" : "Filter history"} onClick={onFilter}>
+          <IconButton framed label={hasActiveFilters ? "Filter history, filters active" : "Filter history"} onClick={onFilter}>
             <FilterIcon size={20} aria-hidden="true" />
           </IconButton>
-          <IconButton label="Refresh history" onClick={onRefresh}>
+          <IconButton framed label="Refresh history" onClick={onRefresh}>
             <RefreshIcon size={20} aria-hidden="true" />
           </IconButton>
         </>
