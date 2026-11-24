@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { TextButton } from "@/components/text-button";
 import { useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
@@ -162,7 +161,6 @@ export default function MultisigApprovalScreen() {
       title="Approval request"
       onBack={() => navigate(`/multisig/${rawId}/approvals`)}
       backAriaLabel="Back to pending approvals"
-      leading={<ShellAccountSwitcher />}
     />
   );
 
@@ -355,7 +353,7 @@ export default function MultisigApprovalScreen() {
     };
     return (
       <MultisigFlowShell
-        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} leading={<ShellAccountSwitcher />} />}
+        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} />}
         footer={(
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button onClick={() => void withdraw()} loading={resetSending} disabled={!fees || resetSending || hasPending || !isOwner} style={{ width: "100%" }}>

@@ -30,10 +30,13 @@ const ACCOUNT_SELECTOR_PREFIXES = [
   "/history",
   "/analytics",
   "/stake",
-  "/multisig",
 ];
 
 function showsAccountSelector(pathname: string): boolean {
+  // The account is chosen on the multisig list and create screens; vault pages
+  // inherit that context and must not repeat the switcher.
+  if (pathname === "/multisig" || pathname === "/multisig/new") return true;
+  if (pathname.startsWith("/multisig/")) return false;
   return ACCOUNT_SELECTOR_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

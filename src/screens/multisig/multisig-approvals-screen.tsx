@@ -5,7 +5,6 @@ import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { Tag } from "@/components/tag";
 import { useMsvaultDetail } from "@/hooks/use-msvault";
 import { usePersistedStore } from "@/store/persisted";
@@ -149,7 +148,6 @@ export default function MultisigApprovalsScreen() {
       title="Pending approvals"
       onBack={() => navigate(`/multisig/${rawId}`)}
       backAriaLabel="Back to vault"
-      leading={<ShellAccountSwitcher />}
     />
   );
 

@@ -7,7 +7,6 @@ import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { TextButton } from "@/components/text-button";
 import { useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useLatestStats } from "@/hooks/use-latest-stats";
@@ -121,7 +120,6 @@ export default function MultisigDetailScreen() {
       <ScreenHeader
         title={!vaultId ? "Vault not found" : detail?.name.trim() || "Multisig vault"}
         onBack={() => navigate("/multisig")}
-        leading={<ShellAccountSwitcher />}
       />
     ),
     [detail, navigate, vaultId],
