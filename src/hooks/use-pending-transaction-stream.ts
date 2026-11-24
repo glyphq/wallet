@@ -55,6 +55,16 @@ export function usePendingTransactionStream({ pendingTxs, onResolution }: Pendin
     if (pendingHashesKey) void reconcile();
   }, [pendingHashesKey, apiIdentity, reconcile]);
 
+  // The lifecycle endpoint is authoritative. Poll while a transaction is
+  // pending so a silently dropped SSE connection cannot leave it unresolved.
+  useEffect(() => {
+    if (!pendingHashesKey) return;
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") void reconcile();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [pendingHashesKey, reconcile]);
+
   const sources = [...new Set(pendingTxs.map((tx) => tx.source))].sort();
   const sourcesKey = sources.join("\n");
 

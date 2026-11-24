@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -9,7 +9,6 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { isValidIdentity } from "@/lib/crypto";
 import { broadcastTx } from "@/lib/broadcast";
-import { subscribeTxResolution } from "@/lib/tx-resolution-events";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { verifyWalletPassword } from "@/lib/wallet";
 import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
@@ -19,9 +18,9 @@ import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { fiatInputToQubic, fiatPerQubic, qubicToFiatInput } from "@/lib/amount-currency";
 import {
   hasPendingFromAccount, normalizeIdentity, resolveTargetTick, validateQuAmount,
-  type SendStep, type WatchResult,
+  type SendStep,
 } from "./send-flow";
-import { SendErrorStep, SendSendingStep } from "./send-result-steps";
+import { SendErrorStep } from "./send-result-steps";
 import { SendHeader } from "./send-header";
 import { SendInputStep } from "./send-input-step";
 import { SendReviewStep } from "./send-review-step";
@@ -61,10 +60,7 @@ export default function SendScreen() {
   const [fiatInput, setFiatInput] = useState("");
   const [destError, setDestError] = useState("");
   const [amountError, setAmountError] = useState("");
-  const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
-  const [savedTargetTick, setSavedTargetTick] = useState(0);
-  const [watchResult, setWatchResult] = useState<WatchResult>("pending");
   const [highValuePassword, setHighValuePassword] = useState("");
   const [highValuePasswordError, setHighValuePasswordError] = useState("");
   const [highValueVerified, setHighValueVerified] = useState(false);
@@ -112,14 +108,6 @@ export default function SendScreen() {
   const price = stats?.price;
   const fiatEquiv = price && amountStr ? formatPreferredCurrencyFromQu(amountStr, { usdPrice: price, ...quote }).text : null;
   const canToggleAmountUnit = fiatPerQubic(price, quote) !== null;
-
-  // Watch for confirmation (always active after send)
-  useEffect(() => {
-    if (!txHash) return;
-    return subscribeTxResolution(txHash, (resolution) => {
-      setWatchResult(resolution.status === "confirmed" ? "confirmed" : "failed");
-    });
-  }, [txHash]);
 
   function validateInputs(): boolean {
     let ok = true;
@@ -179,7 +167,6 @@ export default function SendScreen() {
   async function send() {
     if (!account) return;
     setSending(true);
-    setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
       const { currentTick, targetTick } = await resolveTargetTick(settings.tickOffset);
@@ -187,8 +174,8 @@ export default function SendScreen() {
       await broadcastTx(encoded);
       addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
-      setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending");
       if (memo.trim()) setTxMemo(hash, memo.trim());
+      navigate("/dashboard");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
@@ -262,22 +249,6 @@ export default function SendScreen() {
         sending={sending}
         canSign={!!account && !!tickInfo}
         onSend={send}
-      />
-    );
-  }
-
-  if (step === "sending") {
-    return (
-      <SendSendingStep
-        amountStr={amountStr}
-        matchedContactName={matchedContact?.name ?? null}
-        destUpper={destUpper}
-        accountName={accountName}
-        identity={identity}
-        txHash={txHash}
-        savedTargetTick={savedTargetTick}
-        currentTick={tickInfo?.tick ?? 0}
-        watchResult={watchResult}
       />
     );
   }
