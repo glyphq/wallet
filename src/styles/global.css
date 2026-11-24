@@ -787,7 +787,7 @@ a:hover {
 
 /* ── Wallet name suggestions ───────────────────────────────────────────────── */
 
-.wallet-name-chips {
+.choice-chips {
   width: 100%;
   max-width: 260px;
   margin-inline: 0;
@@ -799,22 +799,22 @@ a:hover {
   gap: var(--space-2);
 }
 
-.wallet-name-chip.corner-frame {
+.choice-chip.corner-frame {
   --corner-size: 6px;
   --corner-inset: 2px;
   --corner-color: var(--color-text-tertiary);
 }
 
-.wallet-name-chip.corner-frame::before {
+.choice-chip.corner-frame::before {
   opacity: 0.24;
 }
 
-.wallet-name-chip.corner-frame:hover::before,
-.wallet-name-chip.corner-frame[data-selected="true"]::before {
+.choice-chip.corner-frame:hover::before,
+.choice-chip.corner-frame[data-selected="true"]::before {
   opacity: 0.5;
 }
 
-.wallet-name-chip {
+.choice-chip {
   min-height: 32px;
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-subtle);
@@ -831,8 +831,13 @@ a:hover {
     background-color var(--duration-fast) var(--ease-out);
 }
 
-.wallet-name-chip:hover,
-.wallet-name-chip[data-selected="true"] {
+.choice-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.choice-chip:hover:not(:disabled),
+.choice-chip[data-selected="true"] {
   color: var(--color-text-primary);
   border-color: var(--color-border-strong);
   background: var(--color-bg-surface);

@@ -16,6 +16,7 @@ import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
+import { fiatInputToQubic, fiatPerQubic, qubicToFiatInput } from "@/lib/amount-currency";
 import {
   hasPendingFromAccount, normalizeIdentity, resolveTargetTick, validateQuAmount,
   type SendStep, type WatchResult,
@@ -46,6 +47,7 @@ export default function SendScreen() {
   const saveTxDraft = useSessionStore((s) => s.saveTxDraft);
   const clearTxDraft = useSessionStore((s) => s.clearTxDraft);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
+  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const account = accounts[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
@@ -58,6 +60,8 @@ export default function SendScreen() {
   const [step, setStep] = useState<SendStep>("input");
   const [destination, setDestination] = useState(() => searchParams.get("to") ?? "");
   const [amountStr, setAmountStr] = useState(() => searchParams.get("amount") ?? "");
+  const [amountUnit, setAmountUnit] = useState<"qubic" | "fiat">("qubic");
+  const [fiatInput, setFiatInput] = useState("");
   const [destError, setDestError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [txHash, setTxHash] = useState("");
@@ -79,6 +83,10 @@ export default function SendScreen() {
 
   const accountName = wallet?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
+  const sourceAccounts = (wallet?.accounts ?? [])
+    .filter((a) => !a.hidden)
+    .map((a) => ({ index: a.index, identity: getWalletAccountIdentity(wallet ?? null, a.index, accounts) ?? "", name: a.name }))
+    .filter((a) => a.identity);
   const walletAccountTargets = (wallet?.accounts ?? [])
     .filter((a) => !a.hidden)
     .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
@@ -107,6 +115,7 @@ export default function SendScreen() {
 
   const price = stats?.price;
   const fiatEquiv = price && amountStr ? formatPreferredCurrencyFromQu(amountStr, { usdPrice: price, ...quote }).text : null;
+  const canToggleAmountUnit = fiatPerQubic(price, quote) !== null;
 
   // Watch for confirmation (always active after send)
   useEffect(() => {
@@ -140,9 +149,36 @@ export default function SendScreen() {
 
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
 
-  const handleMax = balance !== null
-    ? () => { setAmountStr(balance.toString()); setAmountError(""); }
-    : undefined;
+  function handleAmountChange(value: string) {
+    setAmountStr(value);
+    setAmountError("");
+    if (amountUnit === "fiat") setFiatInput(qubicToFiatInput(value, price, quote));
+  }
+
+  function handleFiatInputChange(value: string) {
+    setFiatInput(value);
+    setAmountError("");
+    setAmountStr(fiatInputToQubic(value, price, quote));
+  }
+
+  function toggleAmountUnit() {
+    if (amountUnit === "fiat") {
+      setAmountUnit("qubic");
+      return;
+    }
+    if (!canToggleAmountUnit) return;
+    setFiatInput(qubicToFiatInput(amountStr, price, quote));
+    setAmountUnit("fiat");
+  }
+
+  function handlePercent(percent: 25 | 50 | 75 | 100) {
+    if (balance === null) return;
+    const next = percent === 100 ? balance : (balance * BigInt(percent)) / 100n;
+    const value = next.toString();
+    setAmountStr(value);
+    setAmountError("");
+    setFiatInput(qubicToFiatInput(value, price, quote));
+  }
 
   async function send() {
     if (!account) return;
@@ -174,15 +210,22 @@ export default function SendScreen() {
     return (
       <SendInputStep
         statusBar={sendHeader}
-        accountName={accountName}
-        identity={identity}
+        sourceAccounts={sourceAccounts}
+        selectedAccountIndex={settings.activeAccountIndex}
+        onSelectAccount={setActiveAccountIndex}
         draftRestored={draftRestored}
         onDismissDraft={dismissDraft}
         amountStr={amountStr}
         amountError={amountError}
         fiatEquiv={fiatEquiv}
-        onAmountChange={(value) => { setAmountStr(value); setAmountError(""); }}
-        onMax={handleMax}
+        amountUnit={amountUnit}
+        fiatInput={fiatInput}
+        currencyLabel={quote.currency}
+        canToggleAmountUnit={canToggleAmountUnit}
+        onAmountChange={handleAmountChange}
+        onFiatInputChange={handleFiatInputChange}
+        onToggleAmountUnit={toggleAmountUnit}
+        onPercent={handlePercent}
         balance={balance}
         destination={destination}
         destUpper={destUpper}
@@ -197,7 +240,7 @@ export default function SendScreen() {
         onReview={goReview}
         canReview={!!account}
         contacts={contacts}
-        accounts={walletAccountTargets}
+        pickerAccounts={walletAccountTargets}
         showPicker={showPicker}
         onOpenPicker={() => setShowPicker(true)}
         onClosePicker={() => setShowPicker(false)}

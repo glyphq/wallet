@@ -1,11 +1,13 @@
 import type { ReactNode, RefObject } from "react";
 import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
-import { ApprovalAddress } from "@/components/request/approval-address";
+import { DropdownSelect } from "@/components/dropdown-select";
+import { FramedAvatar } from "@/components/framed-avatar";
+import { formatQu, truncateId } from "@/lib/format";
 import { Button } from "@/components/button";
 import { ContactPicker } from "@/components/contact-picker";
 import { Input } from "@/components/input";
+import { ChoiceChips } from "@/components/choice-chips";
 import { TextButton } from "@/components/text-button";
-import { formatQu } from "@/lib/format";
 import type { AddressSuggestion } from "@/lib/address-intelligence";
 import type { Contact } from "@/store/persisted";
 import { SendStepPanel } from "./send-step-panel";
@@ -13,15 +15,22 @@ import { AddressSuggestionsOverlay, labelStyle } from "./send-ui";
 
 export interface SendInputStepProps {
   statusBar: ReactNode;
-  accountName: string;
-  identity: string;
+  sourceAccounts: { index: number; identity: string; name: string }[];
+  selectedAccountIndex: number;
+  onSelectAccount: (index: number) => void;
   draftRestored: boolean;
   onDismissDraft: () => void;
   amountStr: string;
   amountError: string;
   fiatEquiv: string | null;
+  amountUnit: "qubic" | "fiat";
+  fiatInput: string;
+  currencyLabel: string;
+  canToggleAmountUnit: boolean;
   onAmountChange: (value: string) => void;
-  onMax: (() => void) | undefined;
+  onFiatInputChange: (value: string) => void;
+  onToggleAmountUnit: () => void;
+  onPercent: (percent: 25 | 50 | 75 | 100) => void;
   balance: bigint | null;
   destination: string;
   destUpper: string;
@@ -36,7 +45,7 @@ export interface SendInputStepProps {
   onReview: () => void;
   canReview: boolean;
   contacts: Contact[];
-  accounts: { name: string; identity: string }[];
+  pickerAccounts: { name: string; identity: string }[];
   showPicker: boolean;
   onOpenPicker: () => void;
   onClosePicker: () => void;
@@ -45,15 +54,22 @@ export interface SendInputStepProps {
 /** Standard wallet send form: source, recipient, amount, review. */
 export function SendInputStep({
   statusBar,
-  accountName,
-  identity,
+  sourceAccounts,
+  selectedAccountIndex,
+  onSelectAccount,
   draftRestored,
   onDismissDraft,
   amountStr,
   amountError,
   fiatEquiv,
+  amountUnit,
+  fiatInput,
+  currencyLabel,
+  canToggleAmountUnit,
   onAmountChange,
-  onMax,
+  onFiatInputChange,
+  onToggleAmountUnit,
+  onPercent,
   balance,
   destination,
   destUpper,
@@ -68,11 +84,13 @@ export function SendInputStep({
   onReview,
   canReview,
   contacts,
-  accounts,
+  pickerAccounts,
   showPicker,
   onOpenPicker,
   onClosePicker,
 }: SendInputStepProps) {
+  const selectedSourceAccount = sourceAccounts.find((account) => account.index === selectedAccountIndex) ?? sourceAccounts[0];
+
   return (
     <SendStepPanel minHeight="min-content" scroll="y" statusBar={statusBar}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1 }}>
@@ -83,7 +101,17 @@ export function SendInputStep({
           </div>
         ) : null}
 
-        <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" />
+        <DropdownSelect
+          id="send-account"
+          label={selectedSourceAccount?.name ?? "Account"}
+          value={String(selectedAccountIndex)}
+          options={sourceAccounts.map((account) => ({
+            value: String(account.index),
+            label: truncateId(account.identity, 8, 8),
+            icon: <FramedAvatar seed={account.identity} size={28} />,
+          }))}
+          onChange={(value) => onSelectAccount(Number(value))}
+        />
 
         <div style={{ position: "relative" }}>
           <Input
@@ -124,20 +152,40 @@ export function SendInputStep({
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <Input
             label="Amount"
-            value={amountStr}
-            onChange={(event) => onAmountChange(event.target.value.replace(/[^\d]/g, ""))}
+            value={amountUnit === "qubic" ? amountStr : fiatInput}
+            onChange={(event) => {
+              const value = event.target.value.replace(amountUnit === "qubic" ? /[^\d]/g : /[^\d.]/g, "");
+              if (amountUnit === "qubic") onAmountChange(value);
+              else onFiatInputChange(value);
+            }}
             placeholder="0"
-            inputMode="numeric"
+            inputMode={amountUnit === "qubic" ? "numeric" : "decimal"}
             autoComplete="off"
-            maxLength={20}
+            maxLength={amountUnit === "qubic" ? 20 : 24}
             error={amountError || undefined}
-            rightElement={<span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: "var(--color-text-tertiary)" }}>QUBIC</span>}
+            rightElement={(
+              <button
+                type="button"
+                onClick={onToggleAmountUnit}
+                disabled={amountUnit === "qubic" && !canToggleAmountUnit}
+                aria-label="Switch amount currency"
+                style={{ border: 0, background: "transparent", padding: 0, display: "flex", alignItems: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: canToggleAmountUnit ? "var(--color-accent)" : "var(--color-text-tertiary)", cursor: canToggleAmountUnit ? "pointer" : "not-allowed" }}
+              >
+                {amountUnit === "qubic" ? "QUBIC" : currencyLabel}
+              </button>
+            )}
           />
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)", minHeight: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)", flexWrap: "wrap", minHeight: 26 }}>
+            <ChoiceChips
+              label="Amount percentage"
+              options={([25, 50, 75, 100] as const).map((percent) => ({ value: percent, label: percent === 100 ? "MAX" : `${percent}%` }))}
+              onSelect={onPercent}
+              disabled={balance === null}
+              style={{ maxWidth: "none", width: "auto" }}
+            />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-              {fiatEquiv ?? "\u00a0"}
+              {amountUnit === "qubic" ? (fiatEquiv ?? "") : (amountStr ? `${formatQu(amountStr)} QUBIC` : "")}
             </span>
-            {onMax ? <TextButton onClick={onMax} tone="muted">Use max</TextButton> : null}
           </div>
         </div>
 
@@ -173,7 +221,7 @@ export function SendInputStep({
         onClose={onClosePicker}
         onSelect={onPickerSelect}
         contacts={contacts}
-        accounts={accounts}
+        accounts={pickerAccounts}
       />
     </SendStepPanel>
   );
