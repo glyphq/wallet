@@ -119,7 +119,7 @@ export default function SendScreen() {
   useEffect(() => {
     if (!txHash) return;
     return subscribeTxResolution(txHash, (resolution) => {
-      setWatchResult(resolution.status === "failed" ? "failed" : "confirmed");
+      setWatchResult(resolution.status === "confirmed" ? "confirmed" : "failed");
     });
   }, [txHash]);
 
