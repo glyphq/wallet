@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import glyphOnLight from "@/assets/brand/glyph-on-light.png";
@@ -29,7 +29,18 @@ function WinBtn({
   );
 }
 
+function useRouteHash() {
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const sync = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+  return hash;
+}
+
 export function TitleBar() {
+  const routeHash = useRouteHash();
   // Vite previews, component tests, and browser-based accessibility checks do
   // not have Tauri's window bridge. Keep the app shell usable in those
   // environments instead of throwing while the title bar mounts.
@@ -40,6 +51,9 @@ export function TitleBar() {
   const themeMode = usePersistedStore((state) => state.settings.themeMode);
   const updateSettings = usePersistedStore((state) => state.updateSettings);
   const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
+
+  // The splash owns the whole window while it checks updates and hydrates.
+  if (routeHash === "" || routeHash === "#/" || routeHash === "#") return null;
 
   return (
     <div
