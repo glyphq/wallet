@@ -1,21 +1,10 @@
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
+import { HistorySkeletonRows } from "./history-skeleton";
 
 
 export function HistoryLoadingMoreRows() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-4) 0" }}>
-      {[140, 160, 120].map((w) => (
-        <div key={w} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div className="skeleton" style={{ width: w, height: 16 }} />
-            <div className="skeleton" style={{ width: 100, height: 12 }} />
-          </div>
-          <div className="skeleton" style={{ width: 80, height: 16 }} />
-        </div>
-      ))}
-    </div>
-  );
+  return <HistorySkeletonRows />;
 }
 
 export function HistoryEmptyState({ hasAnyActivity }: { hasAnyActivity: boolean }) {

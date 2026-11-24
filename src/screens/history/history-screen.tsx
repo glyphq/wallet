@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
-import { motion } from "motion/react";
-import { presets } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { AsciiReveal } from "ascii-reveal";
 import { usePersistedStore } from "@/store/persisted";
@@ -16,7 +14,6 @@ import {
   downloadText,
   exportRecordFromPending,
   exportRecordFromTx,
-  groupTxsByDate,
   isDefault,
   isPendingTxExpired,
   matchesPendingFilters,
@@ -131,10 +128,6 @@ export default function HistoryScreen() {
     () => filteredTxs.slice(0, visibleConfirmedCount),
     [filteredTxs, visibleConfirmedCount],
   );
-  const visibleSections = useMemo(
-    () => groupTxsByDate(visibleConfirmedTxs),
-    [visibleConfirmedTxs],
-  );
   const hasHiddenLoadedTxs = filteredTxs.length > visibleConfirmedCount;
   const hasActive = !isDefault(filters);
   const exportRows = useMemo(
@@ -217,10 +210,7 @@ export default function HistoryScreen() {
       {/* ── Main content column ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
 
-      <motion.div
-        {...presets.fadeIn}
-        style={{ display: "flex", flexDirection: "column", flex: 1 }}
-      >
+      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
 
       {/* Active filter chips */}
       {chips.length > 0 && (
@@ -253,7 +243,7 @@ export default function HistoryScreen() {
       {!isError && !groupByCounterparty && (
         <HistoryTxList
           pending={filteredPending}
-          sections={visibleSections}
+          txs={visibleConfirmedTxs}
           identity={identity}
           currentTick={currentTick}
           hideBalances={settings.hideBalances}
@@ -277,11 +267,8 @@ export default function HistoryScreen() {
       {isFetchingNextPage && <HistoryLoadingMoreRows />}
       {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
       </AsciiReveal>
-      <div ref={sentinelRef} style={{ height: 1 }} />
-      {isFetchingNextPage && <HistoryLoadingMoreRows />}
-      {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
 
-      </motion.div>
+      </div>
       </div>{/* end main content column */}
 
       <HistoryFilterSheet

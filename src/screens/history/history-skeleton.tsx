@@ -13,6 +13,7 @@ export function HistorySkeletonRows() {
             gap: "var(--space-3)",
             minHeight: 64,
             padding: "var(--space-3) var(--space-2)",
+            margin: "0 calc(var(--space-2) * -1)",
           }}
         >
           <AsciiSkeleton
@@ -29,7 +30,7 @@ export function HistorySkeletonRows() {
               as="div"
               variant="scan"
               lines={1}
-              widths={["55%"]}
+              widths={[90]}
               animate={false}
               seed={index + 11}
             />
@@ -38,7 +39,7 @@ export function HistorySkeletonRows() {
               as="div"
               variant="scan"
               lines={1}
-              widths={["82%"]}
+              widths={[150]}
               animate={false}
               seed={index + 21}
             />
@@ -56,7 +57,7 @@ export function HistorySkeletonRows() {
               as="div"
               variant="scan"
               lines={1}
-              widths={[40]}
+              widths={[80]}
               animate={false}
               seed={index + 41}
             />

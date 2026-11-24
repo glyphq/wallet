@@ -1,24 +1,31 @@
+import { AsciiSkeleton } from "ascii-reveal";
 import { Button } from "@/components/button";
 
 export function AnalyticsSkeleton() {
   return (
     <div role="status" aria-label="Loading analytics" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <div style={{ padding: "var(--space-3) 0 var(--space-6)", borderBottom: "1px solid var(--color-border-default)" }}>
-        <div className="skeleton" style={{ width: 72, height: 12 }} />
-        <div className="skeleton" style={{ width: "62%", height: 38, marginTop: "var(--space-3)" }} />
-        <div className="skeleton" style={{ width: "100%", height: 8, marginTop: "var(--space-6)", borderRadius: 999 }} />
+        <AsciiSkeleton as="div" variant="scan" rows={1} width={72} height={12} animate={false} />
+        <div style={{ marginTop: "var(--space-3)" }}>
+          <AsciiSkeleton as="div" variant="scan" rows={2} width="62%" height={38} animate={false} seed={2} />
+        </div>
+        <div style={{ marginTop: "var(--space-6)" }}>
+          <AsciiSkeleton as="div" variant="scan" rows={1} width="100%" height={8} animate={false} seed={3} />
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-3)" }}>
-          <div className="skeleton" style={{ width: 92, height: 28 }} />
-          <div className="skeleton" style={{ width: 92, height: 28 }} />
+          <AsciiSkeleton as="div" variant="scan" rows={1} width={92} height={28} animate={false} seed={4} />
+          <AsciiSkeleton as="div" variant="scan" rows={1} width={92} height={28} animate={false} seed={5} />
         </div>
       </div>
       <div style={{ display: "flex", gap: "var(--space-2)", paddingBottom: "var(--space-5)", borderBottom: "1px solid var(--color-border-default)" }}>
-        <div className="skeleton" style={{ width: 112, height: 20 }} />
-        <div className="skeleton" style={{ width: 132, height: 20 }} />
+        <AsciiSkeleton as="div" variant="scan" rows={1} width={112} height={20} animate={false} seed={6} />
+        <AsciiSkeleton as="div" variant="scan" rows={1} width={132} height={20} animate={false} seed={7} />
       </div>
       <div style={{ padding: "var(--space-4) 0" }}>
-        <div className="skeleton" style={{ width: 120, height: 18 }} />
-        <div className="skeleton" style={{ width: "100%", height: 150, marginTop: "var(--space-4)" }} />
+        <AsciiSkeleton as="div" variant="scan" rows={1} width={120} height={18} animate={false} seed={8} />
+        <div style={{ marginTop: "var(--space-4)" }}>
+          <AsciiSkeleton as="div" variant="scan" rows={4} width="100%" height={150} animate={false} seed={9} />
+        </div>
       </div>
     </div>
   );

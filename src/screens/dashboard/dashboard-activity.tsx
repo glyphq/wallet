@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Divider } from "@/components/divider";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
+import { AsciiReveal, AsciiSkeleton } from "ascii-reveal";
 import { usePersistedStore } from "@/store/persisted";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
@@ -55,6 +56,23 @@ function ActivityItem({ onClick, label, labelColor, address, time, amount, amoun
   );
 }
 
+function RecentSkeleton() {
+  return (
+    <div aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "var(--space-3) 0" }}>
+      {[0, 1, 2].map((index) => (
+        <div key={index} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+          <div style={{ flex: 1 }}>
+            <AsciiSkeleton as="div" variant="scan" lines={1} widths={["48%"]} animate={false} seed={index + 1} />
+            <div style={{ height: 5 }} />
+            <AsciiSkeleton as="div" variant="scan" lines={1} widths={["76%"]} animate={false} seed={index + 11} />
+          </div>
+          <AsciiSkeleton as="div" variant="scan" lines={1} widths={[64]} animate={false} seed={index + 21} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   identity: string | null;
   activeIdentity: string | null;
@@ -84,30 +102,7 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
   const recent = (txs ?? []).slice(0, 5 - Math.min(myPending.length, 3));
   const hasAny = myPending.length > 0 || recent.length > 0;
 
-  if (isLoading && !hasAny) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
-        {["skeleton-1", "skeleton-2", "skeleton-3"].map((key) => (
-          <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div className="skeleton" style={{ width: 80, height: 12 }} />
-              <div className="skeleton" style={{ width: 120, height: 10 }} />
-            </div>
-            <div className="skeleton" style={{ width: 64, height: 12 }} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (!hasAny) {
-    return (
-      <EmptyCollectionState
-        title="No activity yet"
-        description="Incoming and outgoing transactions will appear here."
-      />
-    );
-  }
+  const initialLoading = isLoading && !hasAny;
 
   const items: { key: string; node: React.ReactNode }[] = [];
 
@@ -167,21 +162,39 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
     });
   });
 
+
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      {items.map((item, i) => (
-        <div key={item.key} className="stagger-item">
-          {i > 0 && (
-            <Divider
-              style={{
-                marginInline: "calc(var(--space-4) * -1)",
-                marginBlock: 0,
-              }}
-            />
-          )}
-          {item.node}
+    <AsciiReveal
+      loading={initialLoading}
+      revealOnMount={false}
+      shimmer={false}
+      duration="fast"
+      style={{ display: "flex", flexDirection: "column", flex: 1 }}
+    >
+      {initialLoading ? (
+        <RecentSkeleton />
+      ) : !hasAny ? (
+        <EmptyCollectionState
+          title="No activity yet"
+          description="Incoming and outgoing transactions will appear here."
+        />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {items.map((item, i) => (
+            <div key={item.key}>
+              {i > 0 && (
+                <Divider
+                  style={{
+                    marginInline: "calc(var(--space-4) * -1)",
+                    marginBlock: 0,
+                  }}
+                />
+              )}
+              {item.node}
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </AsciiReveal>
   );
 }

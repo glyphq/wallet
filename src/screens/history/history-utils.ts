@@ -40,8 +40,6 @@ export function isPendingTxExpired(tx: PendingTx, currentTick: number): boolean 
   return pendingTxProgress(tx.targetTick, currentTick).phase === "expired";
 }
 
-export type TxSection = { label: string; txs: TxHistoryItem[] };
-
 export type ExportTx = {
   hash: string;
   status: "confirmed" | "pending" | "expired";
@@ -60,34 +58,6 @@ export type ExportTx = {
   tags: string[];
 };
 
-export function groupTxsByDate(txs: TxHistoryItem[]): TxSection[] {
-  if (!txs.length) return [];
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const yesterdayStart = todayStart - 86_400_000;
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
-
-  const today: TxHistoryItem[] = [];
-  const yesterday: TxHistoryItem[] = [];
-  const thisWeek: TxHistoryItem[] = [];
-  const earlier: TxHistoryItem[] = [];
-
-  for (const tx of txs) {
-    const ts = tx.timestamp ?? 0;
-    if (ts >= todayStart) today.push(tx);
-    else if (ts >= yesterdayStart) yesterday.push(tx);
-    else if (ts >= weekStart) thisWeek.push(tx);
-    else earlier.push(tx);
-  }
-
-  const sections: TxSection[] = [];
-  if (today.length) sections.push({ label: "Today", txs: today });
-  if (yesterday.length) sections.push({ label: "Yesterday", txs: yesterday });
-  if (thisWeek.length) sections.push({ label: "This week", txs: thisWeek });
-  if (earlier.length) sections.push({ label: "Earlier", txs: earlier });
-  return sections;
-}
 
 export function downloadText(filename: string, body: string, type: string) {
   const blob = new Blob([body], { type });

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router";
+import { AsciiReveal } from "ascii-reveal";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { useWalletAnalytics } from "@/hooks/use-wallet-analytics";
@@ -25,62 +26,56 @@ export default function AnalyticsScreen() {
       statusBar={<ScreenHeader title="Analytics" onBack={() => navigate("/history")} backAriaLabel="Back to history" />}
       contentStyle={{ padding: "var(--space-5)", gap: 0 }}
     >
-      {isLoading && !analytics && <AnalyticsSkeleton />}
+      <AsciiReveal
+        loading={isLoading && !analytics}
+        revealOnMount={false}
+        shimmer={false}
+        duration="fast"
+        style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+      >
+        {isLoading && !analytics ? (
+          <AnalyticsSkeleton />
+        ) : !analytics ? (
+          <EmptyAnalytics onViewHistory={() => navigate("/history")} />
+        ) : (
+          <>
+            <OverviewCard
+              netFlow={analytics.netFlow}
+              incoming={analytics.totalIncoming}
+              outgoing={analytics.totalOutgoing}
+            />
 
-      {!isLoading && !analytics && (
-        <EmptyAnalytics onViewHistory={() => navigate("/history")} />
-      )}
+            <MetricShelf
+              transactionCount={analytics.txCount}
+              averageAmount={analytics.avgTxAmount}
+            />
 
-      {analytics && (
-        <>
-          <OverviewCard
-            netFlow={analytics.netFlow}
-            incoming={analytics.totalIncoming}
-            outgoing={analytics.totalOutgoing}
-          />
+            {analytics.monthlySummaries.length > 0 && (
+              <ReportSection title="Monthly flow" description="Incoming and outgoing volume by month">
+                <MonthlyBars summaries={analytics.monthlySummaries} />
+              </ReportSection>
+            )}
 
-          <MetricShelf
-            transactionCount={analytics.txCount}
-            averageAmount={analytics.avgTxAmount}
-          />
+            {analytics.biggestCounterparties.length > 0 && (
+              <ReportSection title="Top counterparties" description="Your highest-volume connections">
+                <RankedList items={buildCounterpartyItems(analytics.biggestCounterparties)} />
+              </ReportSection>
+            )}
 
-          {analytics.monthlySummaries.length > 0 && (
-            <ReportSection
-              title="Monthly flow"
-              description="Incoming and outgoing volume by month"
-            >
-              <MonthlyBars summaries={analytics.monthlySummaries} />
-            </ReportSection>
-          )}
+            {analytics.contractUsage.length > 0 && (
+              <ReportSection title="Contract activity" description="Smart contracts used by this wallet">
+                <RankedList items={buildContractItems(analytics.contractUsage)} />
+              </ReportSection>
+            )}
 
-          {analytics.biggestCounterparties.length > 0 && (
-            <ReportSection
-              title="Top counterparties"
-              description="Your highest-volume connections"
-            >
-              <RankedList items={buildCounterpartyItems(analytics.biggestCounterparties)} />
-            </ReportSection>
-          )}
-
-          {analytics.contractUsage.length > 0 && (
-            <ReportSection
-              title="Contract activity"
-              description="Smart contracts used by this wallet"
-            >
-              <RankedList items={buildContractItems(analytics.contractUsage)} />
-            </ReportSection>
-          )}
-
-          {analytics.dailyActivity.length > 0 && (
-            <ReportSection
-              title="Activity"
-              description="Transactions during the last 12 weeks"
-            >
-              <ActivityHeatmap days={analytics.dailyActivity} />
-            </ReportSection>
-          )}
-        </>
-      )}
+            {analytics.dailyActivity.length > 0 && (
+              <ReportSection title="Activity" description="Transactions during the last 12 weeks">
+                <ActivityHeatmap days={analytics.dailyActivity} />
+              </ReportSection>
+            )}
+          </>
+        )}
+      </AsciiReveal>
 
       {priceAlerts.length > 0 && (
         <ReportSection

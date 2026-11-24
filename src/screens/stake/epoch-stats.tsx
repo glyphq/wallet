@@ -1,3 +1,4 @@
+import { AsciiReveal, AsciiSkeleton } from "ascii-reveal";
 import { FlashIcon } from "@/lib/icons";
 import { formatQu } from "@/lib/format";
 import { RowDivider, sectionStyle } from "./stake-ui";
@@ -42,25 +43,33 @@ export function EpochStats({ currentEpoch, epochProgress, ticksRemaining, epochI
         </div>
       )}
       <RowDivider />
-      {epochInfo ? (
-        <>
-          <StatRow label="Total locked" tone="primary" value={`${formatQu(epochInfo.currentLockedAmount)} QU`} />
-          <RowDivider />
-          <StatRow label="Reward pool" tone="accent" value={`${formatQu(epochInfo.currentBonusAmount)} QU`} />
-        </>
-      ) : (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-            <div className="skeleton" style={{ width: 100, height: 14 }} />
-            <div className="skeleton" style={{ width: 140, height: 14 }} />
-          </div>
-          <RowDivider />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
-            <div className="skeleton" style={{ width: 100, height: 14 }} />
-            <div className="skeleton" style={{ width: 120, height: 14 }} />
-          </div>
-        </>
-      )}
+      <AsciiReveal
+        loading={!epochInfo}
+        revealOnMount={false}
+        shimmer={false}
+        duration="fast"
+        style={{ display: "flex", flexDirection: "column" }}
+      >
+        {epochInfo ? (
+          <>
+            <StatRow label="Total locked" tone="primary" value={`${formatQu(epochInfo.currentLockedAmount)} QU`} />
+            <RowDivider />
+            <StatRow label="Reward pool" tone="accent" value={`${formatQu(epochInfo.currentBonusAmount)} QU`} />
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[100]} animate={false} />
+              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[140]} animate={false} seed={2} />
+            </div>
+            <RowDivider />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[100]} animate={false} seed={3} />
+              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[120]} animate={false} seed={4} />
+            </div>
+          </>
+        )}
+      </AsciiReveal>
     </div>
   );
 }

@@ -3,14 +3,13 @@ import { truncateId, formatQuCompact, formatDate } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
 import type { PendingTx } from "@/store/persisted";
 import { ActivityItem } from "./history-activity-item";
-import type { TxSection } from "./history-utils";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 
 export function HistoryTxList({
-  pending, sections, identity, currentTick, hideBalances, pendingHashes, onSelect,
+  pending, txs, identity, currentTick, hideBalances, pendingHashes, onSelect,
 }: {
   pending: PendingTx[];
-  sections: TxSection[];
+  txs: TxHistoryItem[];
   identity: string | null;
   currentTick: number;
   hideBalances: boolean;
@@ -30,30 +29,15 @@ export function HistoryTxList({
         />
       ))}
 
-      {sections.map((section) => (
-        <div key={section.label}>
-          <div style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-mono-sm)",
-            fontWeight: 500,
-            color: "var(--color-text-tertiary)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            padding: "var(--space-3) 0 var(--space-2)",
-          }}>
-            {section.label}
-          </div>
-          {section.txs.map((tx) => (
-            <ConfirmedTxRow
-              key={tx.hash}
-              tx={tx}
-              identity={identity}
-              hideBalances={hideBalances}
-              flash={pendingHashes.has(tx.hash)}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
+      {txs.map((tx) => (
+        <ConfirmedTxRow
+          key={tx.hash}
+          tx={tx}
+          identity={identity}
+          hideBalances={hideBalances}
+          flash={pendingHashes.has(tx.hash)}
+          onSelect={onSelect}
+        />
       ))}
     </div>
   );
