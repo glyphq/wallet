@@ -552,6 +552,33 @@ export default function MultisigDetailScreen() {
               priceChange24h={null}
             />
           </div>
+          {detail.assets.length > 0 ? (
+            <div className="asciify-clear" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-2)", marginTop: "var(--space-1)", maxWidth: "100%" }}>
+              {detail.assets.map((balance) => (
+                <span
+                  key={`${balance.asset.issuer}:${balance.asset.assetName.toString()}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-1)",
+                    padding: "var(--space-1) var(--space-3)",
+                    background: "var(--color-bg-surface)",
+                    borderRadius: "var(--radius-pill)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--text-mono-sm)",
+                    color: "var(--color-text-secondary)",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {settings.hideBalances ? (
+                    <>••• {balance.asset.name || "Asset"}</>
+                  ) : (
+                    <AssetMetaLabel asset={balance.asset} amount={balance.amount} />
+                  )}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="asciify-clear" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
             <span style={MONO_META}>{detail.requiredApprovals} of {detail.owners.length} approvals</span>
             <VaultId id={detail.id} />
@@ -576,35 +603,6 @@ export default function MultisigDetailScreen() {
           </div>
         </AsciiBackdrop>
       </section>
-
-      <Section title="Assets">
-        {detail.assets.length === 0 ? (
-          <span style={BODY_COPY}>No assets</span>
-        ) : (
-          detail.assets.map((balance) => (
-            <div
-              key={`${balance.asset.issuer}:${balance.asset.assetName.toString()}`}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "30px minmax(0, 1fr)",
-                alignItems: "center",
-                columnGap: "var(--space-3)",
-                minWidth: 0,
-              }}
-            >
-              <FramedAvatar seed={`asset:${balance.asset.issuer}:${balance.asset.name}`} size={30} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
-                  <AssetMetaLabel asset={balance.asset} amount={balance.amount} />
-                </span>
-                <span style={MONO_META} title={balance.asset.issuer}>
-                  {truncateId(balance.asset.issuer, 8, 8)}
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </Section>
 
       {fees ? (
         <HoldingFeeWarning
