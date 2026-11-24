@@ -38,20 +38,22 @@ export function LockForm({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%" }}>
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <div key={shakeKey} className={error ? "lock-shake" : undefined}>
-          <Input
-            {...register("password")}
-            id="wallet-password"
-            aria-label="Wallet password"
-            type="password"
-            leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
-            style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) 48px" }}
-            placeholder="Enter the wallet password"
-            autoComplete="current-password"
-            error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
-            disabled={lockoutSecsLeft > 0}
-            autoFocus
-          />
+        <div style={{ paddingBottom: "var(--space-3)", borderBottom: "1px solid var(--color-border-subtle)" }}>
+          <div key={shakeKey} className={error ? "lock-shake" : undefined}>
+            <Input
+              {...register("password")}
+              id="wallet-password"
+              aria-label="Wallet password"
+              type="password"
+              leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
+              style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) 48px" }}
+              placeholder="Enter the wallet password"
+              autoComplete="current-password"
+              error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
+              disabled={lockoutSecsLeft > 0}
+              autoFocus
+            />
+          </div>
         </div>
         {secondaryAction}
         <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
