@@ -29,7 +29,6 @@ export default function ImportVaultScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsVisible, setPasswordsVisible] = useState(false);
-  const [seedInputRevealed, setSeedInputRevealed] = useState(false);
   const [seedError, setSeedError] = useState("");
   const [nameError, setNameError] = useState("");
   const [setupError, setSetupError] = useState("");
@@ -109,9 +108,6 @@ export default function ImportVaultScreen() {
           primaryLabel="Continue"
           onPrimary={validateSeed}
           onBack={back}
-          secondaryActions={
-            <SeedRevealButton revealed={seedInputRevealed} onToggle={() => setSeedInputRevealed((value) => !value)} />
-          }
         >
           <SeedTextarea
             value={seedInput}

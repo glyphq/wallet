@@ -1,5 +1,4 @@
-import { KeyRoundIcon, ViewIcon, ViewOffIcon } from "@/lib/icons";
-import { Button } from "@/components/button";
+import { KeyRoundIcon } from "@/lib/icons";
 import { Textarea } from "@/components/textarea";
 
 /** Masked recovery-seed entry shared by the create and restore flows. */
