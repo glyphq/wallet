@@ -97,8 +97,8 @@ export function useDeepLink() {
     }).catch(() => {});
 
     // Cold start: wait for the persisted store to hydrate before reading the Rust-side queue.
-    // Without this, vaults.length = 0 at first render (pre-hydration), which would
-    // cause routing to settle before the persisted vault state is available.
+    // Without this, wallets.length = 0 at first render (pre-hydration), which would
+    // cause routing to settle before the persisted wallet state is available.
     async function checkPending() {
       try {
         await applyPayload();

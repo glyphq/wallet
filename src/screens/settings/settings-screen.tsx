@@ -174,7 +174,7 @@ export default function SettingsScreen() {
             </span>
           )}
         </div>
-        {/* SquareLock01Icon Vault */}
+        {/* SquareLock01Icon Wallet */}
         <Button
           variant="primary"
           size="lg"
@@ -190,7 +190,7 @@ export default function SettingsScreen() {
           }}
         >
           <LockKeyholeIcon size={16} strokeWidth={1.5} style={{ color: "var(--color-accent-contrast)" }} />
-          SquareLock01Icon Vault
+          SquareLock01Icon Wallet
         </Button>
       </motion.div>
     </AppShell>

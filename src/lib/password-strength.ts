@@ -1,4 +1,4 @@
-/** Minimum length for a new or rotated vault password. */
+/** Minimum length for a new or rotated wallet password. */
 export const MIN_PASSWORD_LENGTH = 10;
 
 export interface PasswordStrength {

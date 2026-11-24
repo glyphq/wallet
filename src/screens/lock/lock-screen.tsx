@@ -9,12 +9,12 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { FlowHeader } from "@/components/flow-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
-import { unlockBiometricSession, unlockVaultSession } from "@/lib/vault";
+import { unlockBiometricSession, unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import type { SessionWallet } from "@/lib/session-wallet";
+import type { SessionAccount } from "@/lib/session-account";
 import { LockForm, type FormValues } from "./lock-form";
-import { LockVaultShelf } from "./lock-vault-shelf";
+import { LockWalletShelf } from "./lock-wallet-shelf";
 import { UnlockingPanel } from "./lock-unlocking-panel";
 
 const PASSWORD_MAX_ATTEMPTS = 5;
@@ -25,10 +25,10 @@ export default function LockScreen() {
   const navigate = useNavigate();
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
 
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
-  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
-  const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
+  const setActiveWallet = usePersistedStore((s) => s.setActiveWallet);
+  const touchWalletUnlocked = usePersistedStore((s) => s.touchWalletUnlocked);
   const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
   const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
   const passwordAttempts = usePersistedStore((s) => s.passwordAttempts);
@@ -36,18 +36,18 @@ export default function LockScreen() {
   const unlock = useSessionStore((s) => s.unlock);
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
 
-  const lockedVaults = vaults
+  const lockedWallets = wallets
     .slice()
     .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   useEffect(() => {
-    if (vaults.length > 0 && lockedVaults.length === 0) {
+    if (wallets.length > 0 && lockedWallets.length === 0) {
       navigate("/setup", { replace: true });
     }
-  }, [vaults.length, lockedVaults.length, navigate]);
+  }, [wallets.length, lockedWallets.length, navigate]);
 
-  const [selectedId, setSelectedId] = useState<string>(() => lockedVaults[0]?.id ?? "");
-  const selected = lockedVaults.find((vault) => vault.id === selectedId) ?? lockedVaults[0];
-  const biometricEnabled = selected ? (settings.biometricVaultIds ?? []).includes(selected.id) : false;
+  const [selectedId, setSelectedId] = useState<string>(() => lockedWallets[0]?.id ?? "");
+  const selected = lockedWallets.find((wallet) => wallet.id === selectedId) ?? lockedWallets[0];
+  const biometricEnabled = selected ? (settings.biometricWalletIds ?? []).includes(selected.id) : false;
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,17 +102,17 @@ export default function LockScreen() {
     startCountdown(PASSWORD_LOCKOUT_SECS);
   }
 
-  async function finishUnlock(wallets: SessionWallet[]) {
+  async function finishUnlock(wallets: SessionAccount[]) {
     if (!selected) return;
-    setActiveVault(selected.id);
+    setActiveWallet(selected.id);
     unlock(selected.id, wallets);
-    touchVaultUnlocked(selected.id);
+    touchWalletUnlocked(selected.id);
     recordAuditEvent({
       kind: "unlock_succeeded",
       status: "success",
-      title: "Vault unlocked",
+      title: "Wallet unlocked",
       detail: selected.name,
-      vaultId: selected.id,
+      walletId: selected.id,
     });
     biometricFailures = 0;
     setPasswordAttempts(0);
@@ -123,8 +123,8 @@ export default function LockScreen() {
 
   async function doUnlock(password: string) {
     if (!selected || !selected.encryptedData) return;
-    const wallets = await unlockVaultSession(selected.encryptedData, password);
-    await invoke("disable_biometric", { vaultId: selected.id }).catch(() => {});
+    const wallets = await unlockWalletSession(selected.encryptedData, password);
+    await invoke("disable_biometric", { walletId: selected.id }).catch(() => {});
     await finishUnlock(wallets);
   }
 
@@ -140,7 +140,7 @@ export default function LockScreen() {
         status: "failure",
         title: "Unlock failed",
         detail: selected.name,
-        vaultId: selected.id,
+        walletId: selected.id,
       });
       const nextAttempts = passwordAttempts + 1;
       setPasswordAttempts(nextAttempts);
@@ -163,7 +163,7 @@ export default function LockScreen() {
     setLoading(true);
     setError("");
     if (!selected.encryptedData) {
-      setError("Vault data is missing. Re-import the Vault and try again.");
+      setError("Wallet data is missing. Re-import the wallet and try again.");
       setLoading(false);
       return;
     }
@@ -176,7 +176,7 @@ export default function LockScreen() {
         status: "failure",
         title: "Biometric unlock failed",
         detail: selected.name,
-        vaultId: selected.id,
+        walletId: selected.id,
       });
       const nextFailures = bioFailures + 1;
       biometricFailures = nextFailures;
@@ -217,12 +217,12 @@ export default function LockScreen() {
               <BrandLockup align="center" compact iconOnly />
               <FlowHeader
                 align="center"
-                title="Unlock Vault"
-                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a Vault, then enter its password."}
+                title="Unlock wallet"
+                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a wallet, then enter its password."}
               />
 
-              <LockVaultShelf
-                vaults={lockedVaults}
+              <LockWalletShelf
+                wallets={lockedWallets}
                 selectedId={selected.id}
                 onSelect={(id) => {
                   setSelectedId(id);

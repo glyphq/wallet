@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { buildVaultAnalytics } from "@/lib/history-analytics";
+import { buildWalletAnalytics } from "@/lib/history-analytics";
 
-describe("buildVaultAnalytics", () => {
+describe("buildWalletAnalytics", () => {
   test("sorts monthly summaries chronologically instead of by localized label", () => {
-    const analytics = buildVaultAnalytics(
+    const analytics = buildWalletAnalytics(
       new Set(["ME"]),
       [
         {

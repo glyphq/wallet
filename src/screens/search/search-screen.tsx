@@ -18,25 +18,25 @@ export default function SearchScreen() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
 
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const contacts = usePersistedStore((s) => s.contacts);
   const txMemos = usePersistedStore((s) => s.txMemos);
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
+  const setActiveWallet = usePersistedStore((s) => s.setActiveWallet);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const normalizedQuery = query.trim().toLowerCase();
-  const accountEntries = vaults.flatMap((vault) =>
-    vault.accounts.map((account) => ({
-      vaultId: vault.id,
-      vaultName: vault.name,
+  const accountEntries = wallets.flatMap((wallet) =>
+    wallet.accounts.map((account) => ({
+      walletId: wallet.id,
+      walletName: wallet.name,
       accountIndex: account.index,
       accountName: account.name,
       identity:
         getAccountIdentity(
           account,
-          vault.id === settings.activeVaultId ? (wallets[account.index] ?? null) : null,
+          wallet.id === settings.activeWalletId ? (accounts[account.index] ?? null) : null,
         ) ?? account.identity ?? "",
       note: account.note ?? "",
       tags: account.tags ?? [],
@@ -61,8 +61,8 @@ export default function SearchScreen() {
           .map((tx) => ({
             ...tx,
             accountIndex: account.accountIndex,
-            vaultId: account.vaultId,
-            vaultName: account.vaultName,
+            walletId: account.walletId,
+            walletName: account.walletName,
             identity: account.identity,
           }));
       },
@@ -79,9 +79,9 @@ export default function SearchScreen() {
     txMemos,
     query: normalizedQuery,
     navigate,
-    setActiveVault,
+    setActiveWallet,
     setActiveAccountIndex,
-  }), [accountEntries, contacts, navigate, normalizedQuery, pendingTxs, setActiveAccountIndex, setActiveVault, txItems, txMemos]);
+  }), [accountEntries, contacts, navigate, normalizedQuery, pendingTxs, setActiveAccountIndex, setActiveWallet, txItems, txMemos]);
 
   const grouped = useMemo(() => groupSearchResults(results), [results]);
 
@@ -90,7 +90,7 @@ export default function SearchScreen() {
       <div style={{ position: "relative" }}>
         <Search01Icon size={18} strokeWidth={1.5} style={{ position: "absolute", left: "var(--space-3)", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-disabled)", pointerEvents: "none", zIndex: 1 }} />
         <Input
-          aria-label="Search Vault"
+          aria-label="Search wallet"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search contacts, accounts, transactions, contracts"
@@ -109,7 +109,7 @@ export default function SearchScreen() {
       {normalizedQuery && results.length === 0 && (
         <SearchEmptyState
           title={`No results for "${query.trim()}"`}
-          description="Try a different name, identity, or hash"
+          description="Try a different name, address, or hash"
         />
       )}
 

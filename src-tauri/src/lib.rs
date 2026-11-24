@@ -8,7 +8,7 @@ pub mod link_broker;
 mod qubic_native;
 mod session_crypto;
 mod store_crypto;
-mod vault_crypto;
+mod wallet_crypto;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

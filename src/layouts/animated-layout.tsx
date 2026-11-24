@@ -8,7 +8,7 @@ import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
 import { TitleBar } from "@/components/title-bar";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
+import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 
@@ -28,15 +28,15 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/analytics", "history"],
   ["/contacts", "history"],
   ["/search", "history"],
-  ["/vaults", "home"],
+  ["/wallets", "home"],
   ["/settings", "settings"],
 ];
 
 const HEADER_TITLES: [string, string][] = [
   ["/dashboard", "Dashboard"],
-  ["/vaults/:id/portfolio", "Portfolio"],
-  ["/vaults", "Vaults"],
-  ["/vaults/", "Vault details"],
+  ["/wallets/:id/portfolio", "Portfolio"],
+  ["/wallets", "Wallets"],
+  ["/wallets/", "Wallet details"],
   ["/send/scheduled", "Scheduled transfers"],
   ["/send-many", "Send many"],
   ["/send", "Send"],
@@ -90,10 +90,10 @@ function headerTitleFromPath(pathname: string): string | null {
 }
 
 function backTargetFromPath(pathname: string): string | null {
-  if (pathname.endsWith("/portfolio") && pathname.startsWith("/vaults/")) {
+  if (pathname.endsWith("/portfolio") && pathname.startsWith("/wallets/")) {
     return pathname.slice(0, -"/portfolio".length);
   }
-  if (pathname.startsWith("/vaults/")) return "/vaults";
+  if (pathname.startsWith("/wallets/")) return "/wallets";
   if (pathname === "/send/scheduled" || pathname === "/send-many" || pathname === "/burn") return "/send";
   if (pathname === "/payment-link") return "/receive";
   if (pathname.startsWith("/tx/") || pathname === "/analytics") return "/history";
@@ -104,7 +104,7 @@ function backTargetFromPath(pathname: string): string | null {
 /** Returns true when both paths are within the same top-level section. */
 function isSameSection(a: string, b: string): boolean {
   if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
-  if (a.startsWith("/vaults") && b.startsWith("/vaults")) return true;
+  if (a.startsWith("/wallets") && b.startsWith("/wallets")) return true;
   if (a.startsWith("/setup") && b.startsWith("/setup")) return true;
   return false;
 }
@@ -126,7 +126,7 @@ function LayoutShell() {
   const resolvedHeader = header ?? (routeTitle
     ? backTarget
       ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} />
-      : <ScreenHeader leading={<ShellVaultSwitcher />} title={routeTitle} />
+      : <ScreenHeader leading={<ShellWalletSwitcher />} title={routeTitle} />
     : null);
 
   const prevRef = useRef(cur);

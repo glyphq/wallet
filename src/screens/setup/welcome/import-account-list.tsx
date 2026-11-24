@@ -1,8 +1,8 @@
 import { Fragment } from "react";
-import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
+import { MAX_WALLET_ACCOUNTS } from "@/hooks/use-wallet-balances";
 import type { AccountMeta } from "@/store/persisted";
 
-/** Scrollable account checklist shown when an export holds more accounts than a Vault can take. */
+/** Scrollable account checklist shown when an export holds more accounts than a Wallet can take. */
 export function ImportAccountList({
   accounts,
   selectedIndices,
@@ -25,7 +25,7 @@ export function ImportAccountList({
     >
       {[...accounts].sort((a, b) => a.index - b.index).map((account, index, sorted) => {
         const selected = selectedIndices.has(account.index);
-        const atLimit = !selected && selectedIndices.size >= MAX_VAULT_ACCOUNTS;
+        const atLimit = !selected && selectedIndices.size >= MAX_WALLET_ACCOUNTS;
         return (
           <Fragment key={account.index}>
             <button

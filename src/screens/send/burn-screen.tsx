@@ -7,8 +7,8 @@ import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
 import { extractMessage } from "@/lib/format";
-import { verifyVaultPassword } from "@/lib/vault";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { verifyWalletPassword } from "@/lib/wallet";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import {
   hasPendingFromAccount, resolveTargetTick, targetTickLabel, validateQuAmount,
 } from "./send-flow";
@@ -19,13 +19,13 @@ type BurnStep = "input" | "confirm" | "sending" | "done" | "error";
 
 export default function BurnScreen() {
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const wallets = useSessionStore((s) => s.wallets);
-  const wallet = wallets[settings.activeAccountIndex] ?? null;
-  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
-  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
+  const accounts = useSessionStore((s) => s.accounts);
+  const account = accounts[settings.activeAccountIndex] ?? null;
+  const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts) ?? "";
+  const accountName = wallet?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
   const { data: tickInfo } = useTickInfo();
   const { data: balanceData } = useBalance(identity || null);
@@ -53,18 +53,18 @@ export default function BurnScreen() {
       setAmountError(validation.error); amountRef.current?.focus(); return;
     }
     setAmountError("");
-    if (settings.requirePasswordForBurn && vault?.encryptedData) {
+    if (settings.requirePasswordForBurn && wallet?.encryptedData) {
       setNeedsPassword(true);
     }
     setStep("confirm");
   }
 
   async function send() {
-    if (!wallet) return;
+    if (!wallet || !account) return;
     setSending(true);
-    if (needsPassword && vault?.encryptedData) {
+    if (needsPassword && wallet?.encryptedData) {
       try {
-        await verifyVaultPassword(vault.encryptedData, burnPassword);
+        await verifyWalletPassword(wallet.encryptedData, burnPassword);
       } catch {
         setBurnPasswordError("Password did not unlock this wallet");
         setSending(false);
@@ -75,7 +75,7 @@ export default function BurnScreen() {
   }
 
   async function finalizeSend() {
-    if (!wallet) return;
+    if (!account) return;
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
@@ -106,7 +106,7 @@ export default function BurnScreen() {
         amountRef={amountRef}
         onAmountChange={(value) => { setAmountStr(value); setAmountError(""); }}
         onConfirm={goConfirm}
-        canReview={!!amountStr.trim() && !!wallet && !!tickInfo}
+        canReview={!!amountStr.trim() && !!account && !!tickInfo}
       />
     );
   }
@@ -125,7 +125,7 @@ export default function BurnScreen() {
         onSend={send}
         sending={sending}
         hasPendingTx={hasPendingTx}
-        canSend={!!wallet && !!tickInfo}
+        canSend={!!account && !!tickInfo}
         onCancel={() => setStep("input")}
       />
     );

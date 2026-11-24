@@ -1,13 +1,13 @@
-import type { VaultMeta } from "@/store/persisted";
-import type { SessionWallet } from "@/lib/session-wallet";
+import type { WalletMeta } from "@/store/persisted";
+import type { SessionAccount } from "@/lib/session-account";
 import { AccountPicker } from "./account-picker";
 import { PositionsSummary } from "./positions-summary";
 import { PositionsList } from "./positions-list";
 import type { Position } from "./stake-model";
 
 interface UnlockPanelProps {
-  vault: VaultMeta | null;
-  wallets: SessionWallet[];
+  wallet: WalletMeta | null;
+  sessionAccounts: SessionAccount[];
   unlockAccountIdx: number;
   onSelectAccount: (index: number) => void;
   currentEpoch: number | null;
@@ -22,8 +22,8 @@ interface UnlockPanelProps {
 
 /** Unlock tab: account selector, position summary, and position list. */
 export function UnlockPanel({
-  vault,
-  wallets,
+  wallet,
+  sessionAccounts,
   unlockAccountIdx,
   onSelectAccount,
   currentEpoch,
@@ -35,15 +35,15 @@ export function UnlockPanel({
   onReviewUnlock,
   onSwitchToLock,
 }: UnlockPanelProps) {
-  const visibleAccounts = vault?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
+  const visibleAccounts = wallet?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
 
   return (
     <>
       <AccountPicker
-        vault={vault}
+        wallet={wallet}
         accounts={visibleAccounts}
         selectedIndex={unlockAccountIdx}
-        wallets={wallets}
+        sessionAccounts={sessionAccounts}
         onSelect={onSelectAccount}
       />
 

@@ -1,5 +1,5 @@
 import type { GlyphCallbackResponse, GlyphEnvelope } from "@/lib/request-schema";
-import type { VaultMeta } from "@/store/persisted";
+import type { WalletMeta } from "@/store/persisted";
 import {
   buildSignedCallbackBody,
   deliverRequestResult,
@@ -72,7 +72,7 @@ export async function approveRequest(
   input: {
     envelope: GlyphEnvelope;
     approval: RequestApprovalResult;
-    vaults: VaultMeta[];
+    wallets: WalletMeta[];
   },
 ): Promise<RequestSuccessState> {
   const requestHistoryId = deps.makeRequestHistoryId();
@@ -99,7 +99,7 @@ export async function approveRequest(
     callbackUrl,
     callbackBody,
     history,
-    vaults: input.vaults,
+    wallets: input.wallets,
   });
 
   const initialState: RequestSuccessState = {

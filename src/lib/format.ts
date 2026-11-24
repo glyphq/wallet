@@ -1,4 +1,4 @@
-/** Shorten a Qubic identity or hash for display. head + tail chars, separated by "…". */
+/** Shorten a Qubic address or hash for display. head + tail chars, separated by "…". */
 export function truncateId(id: string, head = 8, tail = 8): string {
   const chars = Array.from(id);
   if (!id || chars.length <= head + tail) return id;

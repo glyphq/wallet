@@ -61,17 +61,15 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const [txError, setTxError] = useState("");
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
 
-  const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
+  const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
-  const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
-  const vault = vaults.find((v) => v.id === settings.activeVaultId);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const { data: tickInfo } = useTickInfo();
   const apiIdentity = useApiCacheIdentity();
-  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const { data: balanceData } = useBalance(account?.identity ?? null);
   const { data: sendToManyFeeData } = useQuery({
     queryKey: qk.qutilSendManyFee(apiIdentity),
     queryFn: () => qUtilGetSendToManyV1Fee(glyphContractCaller),
@@ -79,7 +77,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
     enabled: request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
   });
 
-  const identity = wallet?.identity ?? "";
+  const identity = account?.identity ?? "";
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const requestAmount = (() => { try { return request.amount != null ? BigInt(request.amount) : 0n; } catch { return 0n; } })();
@@ -152,7 +150,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   });
 
   async function approve() {
-    if (!wallet) return;
+    if (!account) return;
     const freshPolicyDecision = evaluateDappPermission({
       approvedDapps,
       origin: request.dapp.origin,
@@ -232,15 +230,15 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       />
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
-      {showPicker && vault && (
+      {showPicker && wallet && (
         <RequestSigningAccountPicker
-          accounts={vault.accounts}
+          accounts={wallet?.accounts ?? []}
           selectedIndex={selectedIndex}
           onSelect={setSelectedIndex}
         />
       )}
 
-      {/* fromError: dApp specified an identity not in this vault */}
+      {/* fromError: dApp specified an identity not in this wallet */}
       {fromError && <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>}
 
       {/* Detail rows */}
@@ -300,7 +298,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         onApprove={approve}
         approveLabel="Sign and send"
         approveLoading={processing}
-        approveDisabled={!wallet || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
+        approveDisabled={!account || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
       />
     </div>
   );

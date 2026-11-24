@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
-import { useVaultAnalytics } from "@/hooks/use-vault-analytics";
+import { useWalletAnalytics } from "@/hooks/use-wallet-analytics";
 import { usePersistedStore } from "@/store/persisted";
 import { formatDate } from "@/lib/format";
 import { buildContractItems, buildCounterpartyItems } from "./analytics-helpers";
@@ -13,7 +13,7 @@ import { DataRow, RankedList, ReportSection } from "./analytics-table";
 
 export default function AnalyticsScreen() {
   const navigate = useNavigate();
-  const { data: analytics, isLoading } = useVaultAnalytics();
+  const { data: analytics, isLoading } = useWalletAnalytics();
   const notificationEvents = usePersistedStore((s) => s.notificationEvents);
   const priceAlerts = useMemo(
     () => notificationEvents.filter((event) => event.kind === "price_alert").slice(0, 10),

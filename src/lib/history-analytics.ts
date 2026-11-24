@@ -36,7 +36,7 @@ export interface DailyActivityStat {
   count: number;
 }
 
-export interface VaultAnalyticsSummary {
+export interface WalletAnalyticsSummary {
   netFlow: bigint;
   totalIncoming: bigint;
   totalOutgoing: bigint;
@@ -62,7 +62,7 @@ export function findClosestPriceSnapshot(timestamp: number | null, snapshots: Pr
   return best;
 }
 
-export function buildVaultAnalytics(identitySet: Set<string>, txs: AnalyticsTxLike[]): VaultAnalyticsSummary {
+export function buildWalletAnalytics(identitySet: Set<string>, txs: AnalyticsTxLike[]): WalletAnalyticsSummary {
   let totalIncoming = 0n;
   let totalOutgoing = 0n;
   let txCount = 0;

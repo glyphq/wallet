@@ -28,13 +28,10 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
-  const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
+  const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
-  const vault = usePersistedStore((s) =>
-    s.vaults.find((v) => v.id === s.settings.activeVaultId)
-  );
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
-  const identity = wallet?.identity ?? "";
+  const identity = account?.identity ?? "";
   const dataByteCount = useMemo(() => {
     if (!request.data) return null;
     try {
@@ -51,7 +48,7 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
   });
 
   async function approve() {
-    if (!wallet) return;
+    if (!account) return;
     const freshPolicyDecision = evaluateDappPermission({
       approvedDapps,
       origin: request.dapp.origin,
@@ -94,9 +91,9 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
       />
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
-      {showPicker && vault && (
+      {showPicker && wallet && (
         <RequestSigningAccountPicker
-          accounts={vault.accounts}
+          accounts={wallet?.accounts ?? []}
           selectedIndex={selectedIndex}
           onSelect={setSelectedIndex}
         />
@@ -117,7 +114,7 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
         onApprove={approve}
         approveLabel="Sign message"
         approveLoading={processing}
-        approveDisabled={!wallet || !!fromError || !policyDecision.allowed}
+        approveDisabled={!account || !!fromError || !policyDecision.allowed}
       />
     </div>
   );

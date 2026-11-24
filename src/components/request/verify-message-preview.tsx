@@ -20,7 +20,7 @@ interface VerifyMessagePreviewProps {
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const activeAccountIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
 
   const publicKeyBytes = useMemo(() => base64ToBytes(request.public_key), [request.public_key]);
@@ -41,7 +41,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
     }
   }, [publicKeyBytes]);
 
-  const isOwnIdentity = claimedIdentity !== null && wallets.some((w) => w.identity === claimedIdentity);
+  const isOwnIdentity = claimedIdentity !== null && accounts.some((w) => w.identity === claimedIdentity);
 
   async function handleVerify() {
     setProcessing(true);
@@ -78,7 +78,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
           label="Signer"
           value={invalidKey ? "Invalid public key" : truncateId(claimedIdentity!, 10, 10)}
           valueColor={invalidKey ? "var(--color-status-error)" : undefined}
-          badge={!invalidKey ? (isOwnIdentity ? "Your Vault" : "Other identity") : undefined}
+          badge={!invalidKey ? (isOwnIdentity ? "Your address" : "Other address") : undefined}
         />
         <RequestDetailRow label="Signature" value={truncateId(request.signature, 10, 10)} />
       </div>

@@ -17,7 +17,7 @@ export default function SplashScreen() {
   const [hydrationAttempt, setHydrationAttempt] = useState(0);
   const [minElapsed, setMinElapsed] = useState(false);
   const [updateDeferred, setUpdateDeferred] = useState(false);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const isLocked = useSessionStore((s) => s.isLocked);
   const updater = useUpdater();
 
@@ -51,10 +51,10 @@ export default function SplashScreen() {
     if (!hydrated || !minElapsed || hydrationStatus !== "loading") return;
     if (updater.checking || updater.installing) return;
     if (updater.update && !updateDeferred) return;
-    if (vaults.length === 0) navigate("/setup", { replace: true });
+    if (wallets.length === 0) navigate("/setup", { replace: true });
     else if (isLocked) navigate("/lock", { replace: true });
     else navigate("/dashboard", { replace: true });
-  }, [hydrated, minElapsed, hydrationStatus, updater.checking, updater.installing, updater.update, updateDeferred, vaults.length, isLocked, navigate]);
+  }, [hydrated, minElapsed, hydrationStatus, updater.checking, updater.installing, updater.update, updateDeferred, wallets.length, isLocked, navigate]);
 
   function retryHydration() {
     setHydrationStatus("loading");
@@ -69,7 +69,7 @@ export default function SplashScreen() {
       ? `Installing update… ${updater.progress}%`
       : updater.update && !updateDeferred
         ? `Glyph ${updater.update.version} is available`
-        : "Loading your Vault";
+        : "Loading your wallet";
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--color-bg-canvas)", overflow: "hidden", userSelect: "none" }}>
@@ -132,10 +132,10 @@ export default function SplashScreen() {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", alignItems: "center" }}>
             <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "var(--text-title)", lineHeight: "var(--leading-tight)", letterSpacing: "-0.025em", fontWeight: 600, color: "var(--color-text-primary)" }}>
-              {hydrationStatus === "error" ? "Vault data could not be read" : "Still loading your Vault"}
+              {hydrationStatus === "error" ? "Wallet data could not be read" : "Still loading your wallet"}
             </h1>
             <p style={{ margin: 0, maxWidth: 320, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)" }}>
-              Your encrypted Vault data has not changed. You can try loading it again safely.
+              Your encrypted wallet data has not changed. You can try loading it again safely.
             </p>
           </div>
 

@@ -7,4 +7,4 @@ export const MAX_AUDIT_EVENTS = 500;
 export const MAX_REQUEST_HISTORY = 200;
 export const MAX_PRICE_SNAPSHOTS = 2_000;
 export const MAX_RUNTIME_ISSUES = 100;
-export const MAX_ACCOUNTS_PER_VAULT = 16;
+export const MAX_ACCOUNTS_PER_WALLET = 16;

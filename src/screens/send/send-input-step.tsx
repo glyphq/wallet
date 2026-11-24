@@ -153,7 +153,7 @@ export function SendInputStep({
               autoComplete="off"
               value={destination}
               onChange={(e) => onChangeDestination(e.target.value)}
-              placeholder="Enter identity or contact"
+              placeholder="Enter address or contact"
               onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = "var(--color-text-secondary)"; }}
               onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
               style={{ flex: 1 }}

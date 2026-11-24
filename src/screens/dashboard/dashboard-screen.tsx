@@ -4,7 +4,7 @@ import { MoreHorizontalIcon, Search01Icon, LockKeyholeIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { IconButton } from "@/components/icon-button";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
+import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -12,7 +12,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { AccountSelector } from "./dashboard-account-selector";
 import { BalanceDisplay, OwnedAssetChips } from "./dashboard-balance";
 import { MoreActions, PrimaryActions } from "./dashboard-actions";
@@ -23,17 +23,17 @@ import { RecentTxs } from "./dashboard-activity";
 export default function DashboardScreen() {
   const navigate = useNavigate();
 
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
 
   const isLocked = useSessionStore((s) => s.isLocked);
   const lock = useSessionStore((s) => s.lock);
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
 
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
+  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0] ?? null;
   const activeIndex = settings.activeAccountIndex;
-  const identity = getVaultAccountIdentity(vault, activeIndex, wallets);
+  const identity = getWalletAccountIdentity(wallet, activeIndex, accounts);
 
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
   const { data: stats } = useLatestStats();
@@ -69,12 +69,12 @@ export default function DashboardScreen() {
 
   const dashboardHeader = useMemo(() => (
     <ScreenHeader
-      leading={<ShellVaultSwitcher />}
+      leading={<ShellWalletSwitcher />}
       title="Dashboard"
       action={
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
           <IconButton
-            label="Lock Vault"
+            label="Lock wallet"
             onClick={() => {
               lock();
               navigate("/lock", { replace: true });
@@ -97,9 +97,9 @@ export default function DashboardScreen() {
         {/* Hero: account + balance */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>
           <AccountSelector
-            vault={vault}
+            wallet={wallet}
             activeIndex={activeIndex}
-            wallets={wallets}
+            accounts={accounts}
             identity={identity}
             onSelect={setActiveAccountIndex}
           />

@@ -57,7 +57,7 @@ import {
   TrashBin,
   TriangleExclamation,
   TriangleThunderbolt,
-  Vault,
+  Vault as SafeGlyphIcon,
   Wallet,
 } from "@gravity-ui/icons";
 
@@ -128,7 +128,7 @@ export const GlobalIcon = createIcon(Globe);
 export const QrCodeIcon = createIcon(QrCode);
 export const RefreshIcon = createIcon(ArrowRotateRight);
 export const Rocket01Icon = createIcon(Rocket);
-export const SafeIcon = createIcon(Vault);
+export const SafeIcon = createIcon(SafeGlyphIcon);
 export const SentIcon = createIcon(PaperPlane);
 export const Settings01Icon = createIcon(Gear);
 export const ShieldCheckIcon = createIcon(ShieldCheck);

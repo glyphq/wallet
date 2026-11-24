@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { deriveIdentityFromSeed, publicKeyFromSeed } from "@/lib/crypto";
 import type { Seed } from "@/lib/crypto";
-import type { SessionWallet } from "@/lib/session-wallet";
+import type { SessionAccount } from "@/lib/session-account";
 import type { GlyphCallbackResponse } from "@/lib/request-schema";
 
 interface BuildTxParams {
@@ -86,9 +86,9 @@ export async function clearSecureSession() {
   await invoke("clear_session_seeds").catch(() => {});
 }
 
-export async function unlockSecureSession(seeds: Seed[]): Promise<SessionWallet[]> {
+export async function unlockSecureSession(seeds: Seed[]): Promise<SessionAccount[]> {
   // This bridge is restricted to a seed the user has just generated or entered
-  // during setup. Encrypted-vault unlocks use `unlockVaultSession`, which keeps
+  // during setup. Encrypted-wallet unlocks use `unlockWalletSession`, which keeps
   // decrypted seed material inside the native process.
   const wallets = seeds.map((seed) => ({
     identity: deriveIdentityFromSeed(seed),

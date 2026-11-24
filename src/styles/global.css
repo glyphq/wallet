@@ -428,23 +428,23 @@ a:hover {
   box-shadow: var(--shadow-elevated);
 }
 
-.vault-shelf-row {
+.wallet-shelf-row {
   background: transparent;
 }
 
-.vault-shelf-row[data-selected="true"] {
+.wallet-shelf-row[data-selected="true"] {
   background: var(--color-bg-surface);
 }
 
-.vault-shelf-row:hover {
+.wallet-shelf-row:hover {
   background: var(--color-bg-hover);
 }
 
-.vault-shelf-row:active {
+.wallet-shelf-row:active {
   background: var(--color-bg-press);
 }
 
-.vault-shelf-add {
+.wallet-shelf-add {
   width: 100%;
   min-height: 54px;
   display: flex;
@@ -459,16 +459,16 @@ a:hover {
   transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.vault-shelf-add:hover {
+.wallet-shelf-add:hover {
   border-color: var(--color-border-strong);
   background: var(--color-bg-hover);
 }
 
-.vault-shelf-add:active {
+.wallet-shelf-add:active {
   background: var(--color-bg-press);
 }
 
-.vault-shelf-add-icon {
+.wallet-shelf-add-icon {
   width: 36px;
   height: 36px;
   display: grid;
@@ -737,9 +737,9 @@ a:hover {
   margin: 0 auto;
 }
 
-/* ── Vault file drop target ────────────────────────────────────────────────── */
+/* ── Wallet backup drop target ────────────────────────────────────────────────── */
 
-.vault-dropzone {
+.wallet-dropzone {
   width: 100%;
   flex: 1;
   min-height: 190px;
@@ -763,41 +763,41 @@ a:hover {
     color var(--duration-fast) var(--ease-out);
 }
 
-.vault-dropzone:hover,
-.vault-dropzone[data-drag="true"] {
+.wallet-dropzone:hover,
+.wallet-dropzone[data-drag="true"] {
   border-color: var(--color-text-tertiary);
   background: color-mix(in srgb, var(--color-bg-elevated) 68%, transparent);
   color: var(--color-text-primary);
 }
 
-.vault-dropzone[data-drag="true"] {
+.wallet-dropzone[data-drag="true"] {
   border-color: var(--color-accent);
 }
 
-.vault-dropzone-icon {
+.wallet-dropzone-icon {
   color: var(--color-text-tertiary);
   transition: color var(--duration-fast) var(--ease-out);
 }
 
-.vault-dropzone:hover .vault-dropzone-icon,
-.vault-dropzone[data-drag="true"] .vault-dropzone-icon {
+.wallet-dropzone:hover .wallet-dropzone-icon,
+.wallet-dropzone[data-drag="true"] .wallet-dropzone-icon {
   color: var(--color-text-primary);
 }
 
-.vault-dropzone-title {
+.wallet-dropzone-title {
   font-family: var(--font-sans);
   font-size: 0.875rem;
   line-height: var(--leading-compact);
   letter-spacing: 0.01em;
 }
 
-.vault-dropzone-hint {
+.wallet-dropzone-hint {
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm);
   color: var(--color-text-tertiary);
 }
 
-@keyframes vault-drop-nudge {
+@keyframes wallet-drop-nudge {
   0%,
   100% {
     transform: translateY(-2px);
@@ -807,12 +807,12 @@ a:hover {
   }
 }
 
-.vault-dropzone[data-drag="true"] .vault-dropzone-icon {
-  animation: vault-drop-nudge 900ms ease-in-out infinite;
+.wallet-dropzone[data-drag="true"] .wallet-dropzone-icon {
+  animation: wallet-drop-nudge 900ms ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vault-dropzone[data-drag="true"] .vault-dropzone-icon {
+  .wallet-dropzone[data-drag="true"] .wallet-dropzone-icon {
     animation: none;
   }
 }

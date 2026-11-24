@@ -19,7 +19,7 @@ export interface SponsorTransparencyData {
   latestContributors: Sponsor[];
 }
 
-/** Qubic identity that receives donation QU for Glyph development. */
+/** Qubic address that receives donation QU for Glyph development. */
 export const DONATION_IDENTITY =
   "GLYPHEPREMKMQFAOYQFJQWASTSEBQPIQYNBFLMOUCDLRHQEFAHGUDVCHSZEE";
 

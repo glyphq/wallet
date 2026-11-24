@@ -19,7 +19,7 @@ import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1F
 import { extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import {
   hasPendingFromAccount, normalizeIdentity, resolveTargetTick, validateQuAmount,
@@ -42,10 +42,10 @@ export default function SendManyScreen() {
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const settings = usePersistedStore((s) => s.settings);
-  const wallets = useSessionStore((s) => s.wallets);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
-  const wallet = wallets[settings.activeAccountIndex] ?? null;
-  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
+  const accounts = useSessionStore((s) => s.accounts);
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
+  const account = accounts[settings.activeAccountIndex] ?? null;
+  const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts) ?? "";
   const apiIdentity = useApiCacheIdentity();
   const { data: feeData } = useQuery({
     queryKey: qk.qutilSendManyFee(apiIdentity),
@@ -81,11 +81,11 @@ export default function SendManyScreen() {
     });
   }, [txHash]);
 
-  const vaultAccountTargets = (vault?.accounts ?? [])
+  const walletAccountTargets = (wallet?.accounts ?? [])
     .filter((a) => !a.hidden)
-    .map((a) => ({ name: a.name, identity: a.identity ?? wallets[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
+    .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
     .filter((a) => a.identity && a.identity !== identity);
-  const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
+  const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
   const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
 
   function setField(index: number, field: Partial<Recipient>) {
@@ -94,10 +94,10 @@ export default function SendManyScreen() {
 
   const suggestionsByIndex = useMemo(
     () => recipients.map((r) => buildAddressSuggestions({
-      query: r.identity, contacts, accounts: vaultAccountTargets,
+      query: r.identity, contacts, accounts: walletAccountTargets,
       currentIdentity: identity, recentIdentities: recentRecipientIdentities,
     })),
-    [contacts, identity, recentRecipientIdentities, recipients, vaultAccountTargets],
+    [contacts, identity, recentRecipientIdentities, recipients, walletAccountTargets],
   );
 
   function addRecipient() {
@@ -115,9 +115,9 @@ export default function SendManyScreen() {
 
   function validateAll(): boolean {
     let ok = true;
-    if (!wallet) { setFormError("Account locked"); return false; }
+    if (!account) { setFormError("Account locked"); return false; }
     const updated = recipients.map((r) => {
-      const identityError = isValidIdentity(normalizeIdentity(r.identity)) ? "" : "Invalid identity";
+      const identityError = isValidIdentity(normalizeIdentity(r.identity)) ? "" : "Invalid address";
       const amountError = validateQuAmount(r.amount, {
         invalidMessage: "Invalid amount",
         insufficientMessage: "Invalid amount",
@@ -148,7 +148,7 @@ export default function SendManyScreen() {
   const needsHighValueConfirmation = exceedsHighValueThreshold(totalAmount, settings.highValueSendThreshold);
 
   async function send() {
-    if (!wallet || fee === null) return;
+    if (!account || fee === null) return;
     setSending(true);
     setStep("sending");
     try {
@@ -176,7 +176,7 @@ export default function SendManyScreen() {
         const contact = contacts.find((c) => c.identity === id);
         if (contact) updateContact(contact.id, { lastUsedAt: Date.now() });
       });
-      addPendingTx({ hash, source: wallet.identity, destination: QUTIL_ADDRESS, amount: total.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Send to Many" });
+      addPendingTx({ hash, source: account.identity, destination: QUTIL_ADDRESS, amount: total.toString(), targetTick, broadcastAt: Date.now(), contractName: "QUtil · Send to Many" });
       setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
@@ -191,7 +191,7 @@ export default function SendManyScreen() {
       <SendManyInputStep
         recipients={recipients}
         contacts={contacts}
-        accounts={vaultAccountTargets}
+        accounts={walletAccountTargets}
         price={price}
         quote={quote}
         balance={balance}
@@ -209,7 +209,7 @@ export default function SendManyScreen() {
           id: newId(), identity: r.identity, amount: r.amount, identityError: "", amountError: "",
         })))}
         onReview={goReview}
-        canReview={recipients.length > 0 && !!wallet}
+        canReview={recipients.length > 0 && !!account}
       />
     );
   }
@@ -226,7 +226,7 @@ export default function SendManyScreen() {
         highValueConfirmed={highValueConfirmed}
         onConfirmHighValue={() => setHighValueConfirmed(true)}
         sending={sending}
-        canSend={!!wallet && fee !== null}
+        canSend={!!account && fee !== null}
         onSend={send}
         onEdit={() => setStep("input")}
       />

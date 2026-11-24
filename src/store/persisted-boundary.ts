@@ -1,5 +1,5 @@
 import type { PersistedState } from "./persisted-types";
-import { mergeVaults } from "./persisted-merge-vaults";
+import { mergeWallets } from "./persisted-merge-wallets";
 import {
   mergeContacts,
   mergePendingTxs,
@@ -17,7 +17,7 @@ import {
 import { mergeSettings } from "./persisted-merge-settings";
 
 export {
-  MAX_ACCOUNTS_PER_VAULT,
+  MAX_ACCOUNTS_PER_WALLET,
   MAX_NOTIFICATION_EVENTS,
   MAX_PENDING_TXS,
   MAX_SCHEDULED_TRANSFERS,
@@ -37,13 +37,28 @@ export function mergePersistedState(
   persistedState: unknown,
   currentState: PersistedState
 ): PersistedState {
-  const ps: Partial<PersistedState> =
+  const ps: Partial<PersistedState> & {
+    /** Pre-wallet naming kept so existing installs hydrate without losing data. */
+    vaults?: unknown;
+    settings?: Partial<PersistedState["settings"]> & {
+      activeVaultId?: unknown;
+      biometricVaultIds?: unknown;
+    };
+  } =
     persistedState && typeof persistedState === "object" && !Array.isArray(persistedState)
-      ? persistedState as Partial<PersistedState>
+      ? persistedState as typeof ps
       : {};
+  const legacySettings = ps.settings;
+  const settingsValue = ps.settings
+    ? {
+        ...ps.settings,
+        activeWalletId: ps.settings.activeWalletId ?? legacySettings?.activeVaultId ?? null,
+        biometricWalletIds: ps.settings.biometricWalletIds ?? legacySettings?.biometricVaultIds ?? [],
+      }
+    : ps.settings;
   return {
     ...currentState,
-    vaults: mergeVaults(ps.vaults, currentState.vaults),
+    wallets: mergeWallets(ps.wallets ?? ps.vaults, currentState.wallets),
     contacts: mergeContacts(ps.contacts, currentState.contacts),
     pendingTxs: mergePendingTxs(ps.pendingTxs, currentState.pendingTxs),
     txMemos: mergeTxMemos(ps.txMemos, currentState.txMemos),
@@ -83,6 +98,6 @@ export function mergePersistedState(
       ps.exportSigningKey && typeof ps.exportSigningKey === "object" && !Array.isArray(ps.exportSigningKey)
         ? ps.exportSigningKey
         : currentState.exportSigningKey,
-    settings: mergeSettings(ps.settings, currentState.settings),
+    settings: mergeSettings(settingsValue, currentState.settings),
   };
 }

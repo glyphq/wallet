@@ -10,7 +10,7 @@ import { type TxHistoryItem } from "@/hooks/use-tx-history";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import { findClosestPriceSnapshot } from "@/lib/history-analytics";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { isPendingTx } from "./tx-detail-helpers";
 import { PendingTxDetail } from "./tx-detail-pending";
 import { ConfirmedTxDetail } from "./tx-detail-confirmed";
@@ -21,8 +21,8 @@ export default function TxDetailScreen() {
   const queryClient = useQueryClient();
 
   const settings = usePersistedStore((s) => s.settings);
-  const vaults = usePersistedStore((s) => s.vaults);
-  const wallets = useSessionStore((s) => s.wallets);
+  const wallets = usePersistedStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const txMemos = usePersistedStore((s) => s.txMemos);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
@@ -31,8 +31,8 @@ export default function TxDetailScreen() {
   const hideBalances = settings.hideBalances;
   const quote = usePreferredCurrencyQuote();
 
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
-  const identity = getVaultAccountIdentity(vault, settings.activeAccountIndex, wallets);
+  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0] ?? null;
+  const identity = getWalletAccountIdentity(wallet, settings.activeAccountIndex, accounts);
 
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;

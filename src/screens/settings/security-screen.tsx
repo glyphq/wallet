@@ -9,7 +9,7 @@ import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { SettingsSwitch } from "@/components/settings-switch";
 import { usePersistedStore } from "@/store/persisted";
-import { verifyVaultPassword } from "@/lib/vault";
+import { verifyWalletPassword } from "@/lib/wallet";
 import { extractMessage } from "@/lib/format";
 
 const TIMEOUT_OPTIONS = [
@@ -75,13 +75,13 @@ export default function SecurityScreen() {
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
 
   const { autoLockMinutes, lockOnWindowBlur, lockOnSleep, clipboardClearSeconds,
     requirePasswordForBurn, requireBiometricForSeedReveal } = settings;
-  const biometricVaultIds = settings.biometricVaultIds ?? [];
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
-  const bioEnabled = vault ? biometricVaultIds.includes(vault.id) : false;
+  const biometricWalletIds = settings.biometricWalletIds ?? [];
+  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0];
+  const bioEnabled = wallet ? biometricWalletIds.includes(wallet.id) : false;
 
   const [bioAvailable, setBioAvailable] = useState<boolean | null>(null);
   const [enabling, setEnabling] = useState(false);
@@ -99,24 +99,24 @@ export default function SecurityScreen() {
   }, [enabling]);
 
   async function handleEnable() {
-    if (!vault) return;
+    if (!wallet) return;
     setEnableLoading(true); setEnableError("");
-    if (!vault.encryptedData) { setEnableError("Vault data missing"); setEnableLoading(false); return; }
-    try { await verifyVaultPassword(vault.encryptedData, enablePw); }
+    if (!wallet.encryptedData) { setEnableError("Wallet data missing"); setEnableLoading(false); return; }
+    try { await verifyWalletPassword(wallet.encryptedData, enablePw); }
     catch { setEnableError("Wrong password"); setEnableLoading(false); return; }
     const pw = enablePw; setEnablePw("");
     try {
-      await invoke("enable_biometric", { vaultId: vault.id, vaultData: vault.encryptedData, password: pw });
-      updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
+      await invoke("enable_biometric", { walletId: wallet.id, walletData: wallet.encryptedData, password: pw });
+      updateSettings({ biometricWalletIds: [...biometricWalletIds, wallet.id] });
       setEnabling(false);
     } catch (e) { setEnableError(`Secure storage failed: ${extractMessage(e)}`); }
     finally { setEnableLoading(false); }
   }
 
   async function handleDisable() {
-    if (!vault) return;
-    try { await invoke("disable_biometric", { vaultId: vault.id }); } catch { /* ok */ }
-    updateSettings({ biometricVaultIds: biometricVaultIds.filter((id) => id !== vault.id) });
+    if (!wallet) return;
+    try { await invoke("disable_biometric", { walletId: wallet.id }); } catch { /* ok */ }
+    updateSettings({ biometricWalletIds: biometricWalletIds.filter((id) => id !== wallet.id) });
   }
 
   function setLockTimeout(minutes: number) {
@@ -183,14 +183,14 @@ export default function SecurityScreen() {
           )}
         </section>
 
-        {bioAvailable && vault && (
+        {bioAvailable && wallet && (
           <>
             <SettingsDivider />
             <section style={sectionStyle} aria-label="Biometric unlock">
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <SettingsSectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SettingsSectionLabel>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
-                  {bioEnabled ? `Enabled for ${vault.name}` : `Enable faster unlock for ${vault.name}`}
+                  {bioEnabled ? `Enabled for ${wallet.name}` : `Enable faster unlock for ${wallet.name}`}
                 </span>
               </div>
               {bioEnabled ? (
@@ -218,7 +218,7 @@ export default function SecurityScreen() {
                 </div>
               ) : (
                 <Button variant="secondary" size="md" onClick={() => setEnabling(true)}>
-                  Enable for {vault.name}
+                  Enable for {wallet.name}
                 </Button>
               )}
             </section>

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { DEFAULT_SETTINGS } from "./persisted-defaults";
 import {
   MAX_NOTIFICATION_EVENTS,
-  MAX_ACCOUNTS_PER_VAULT,
+  MAX_ACCOUNTS_PER_WALLET,
   MAX_PENDING_TXS,
   MAX_SCHEDULED_TRANSFERS,
   MAX_TX_MEMOS,
@@ -16,7 +16,7 @@ import type { NotificationEvent, PersistedState } from "./persisted-types";
 
 function currentState(): PersistedState {
   return {
-    vaults: [],
+    wallets: [],
     settings: DEFAULT_SETTINGS,
     contacts: [],
     pendingTxs: [],
@@ -34,12 +34,12 @@ function currentState(): PersistedState {
     exportSigningKey: null,
     setPasswordLockoutUntil: () => undefined,
     setPasswordAttempts: () => undefined,
-    addVault: () => undefined,
-    updateVault: () => undefined,
-    removeVault: () => undefined,
-    setActiveVault: () => undefined,
+    addWallet: () => undefined,
+    updateWallet: () => undefined,
+    removeWallet: () => undefined,
+    setActiveWallet: () => undefined,
     setActiveAccountIndex: () => undefined,
-    touchVaultUnlocked: () => undefined,
+    touchWalletUnlocked: () => undefined,
     updateSettings: () => undefined,
     addContact: () => undefined,
     updateContact: () => undefined,
@@ -183,7 +183,7 @@ describe("persisted boundary helpers", () => {
           autoLockMinutes: 0,
           autostartEnabled: true,
         },
-        vaults: [
+        wallets: [
           {
             id: "seeded",
             name: "Seeded",
@@ -233,9 +233,33 @@ describe("persisted boundary helpers", () => {
       transferLimitQu: "2500",
       expiresAt: 60_001,
     });
-    expect(merged.vaults[0]?.encryptedData).toEqual({ should: "be removed" });
-    expect(merged.vaults[0]?.accounts[0]?.tags).toEqual(["ok"]);
+    expect(merged.wallets[0]?.encryptedData).toEqual({ should: "be removed" });
+    expect(merged.wallets[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);
+  });
+
+  test("hydrates legacy vault state under the wallet keys", () => {
+    const merged = mergePersistedState(
+      {
+        vaults: [
+          {
+            id: "w1",
+            name: "Main",
+            color: "slate",
+            createdAt: 1,
+            lastUnlockedAt: 2,
+            encryptedData: null,
+            accounts: [{ index: 0, name: "Main", addedAt: 1, hidden: false }],
+          },
+        ],
+        settings: { activeVaultId: "w1", biometricVaultIds: ["w1"] },
+      },
+      currentState()
+    );
+
+    expect(merged.wallets[0]?.id).toBe("w1");
+    expect(merged.settings.activeWalletId).toBe("w1");
+    expect(merged.settings.biometricWalletIds).toEqual(["w1"]);
   });
 
   test("defaults the startup setting for existing persisted state", () => {
@@ -264,12 +288,12 @@ describe("persisted boundary helpers", () => {
     const pending = { hash: "h", source: "s", destination: "d", amount: "1", targetTick: 1, broadcastAt: 1 };
     const scheduled = { id: "s", label: "Scheduled", sourceIdentity: "SOURCE", destination: "DESTINATION", amount: "1", intervalDays: 1, nextRunAt: 1, createdAt: 1, enabled: true };
     const merged = mergePersistedState({
-      vaults: [{ id: "vault", name: "Vault", color: "sky", createdAt: 1, lastUnlockedAt: 1, encryptedData: null, accounts: Array.from({ length: MAX_ACCOUNTS_PER_VAULT + 1 }, (_, index) => ({ ...account, index })) }],
+      wallets: [{ id: "wallet", name: "Wallet", color: "sky", createdAt: 1, lastUnlockedAt: 1, encryptedData: null, accounts: Array.from({ length: MAX_ACCOUNTS_PER_WALLET + 1 }, (_, index) => ({ ...account, index })) }],
       pendingTxs: Array.from({ length: MAX_PENDING_TXS + 1 }, (_, index) => ({ ...pending, hash: `h-${index}` })),
       scheduledTransfers: Array.from({ length: MAX_SCHEDULED_TRANSFERS + 1 }, (_, index) => ({ ...scheduled, id: `s-${index}` })),
     }, currentState());
 
-    expect(merged.vaults[0]?.accounts).toHaveLength(MAX_ACCOUNTS_PER_VAULT);
+    expect(merged.wallets[0]?.accounts).toHaveLength(MAX_ACCOUNTS_PER_WALLET);
     expect(merged.pendingTxs).toHaveLength(MAX_PENDING_TXS);
     expect(merged.scheduledTransfers).toHaveLength(MAX_SCHEDULED_TRANSFERS);
   });

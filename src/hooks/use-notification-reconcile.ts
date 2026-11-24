@@ -10,14 +10,14 @@ const STARTUP_RECEIVED_LOOKBACK_MS = 24 * 60 * 60 * 1000; // 24 h
 const PAGE_SIZE = 50;
 
 export function useNotificationReconcile() {
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
   const setLastNotificationScanAt = usePersistedStore((s) => s.setLastNotificationScanAt);
 
   const identities = useMemo(() => {
-    const live = wallets.map((wallet) => wallet.identity);
+    const live = accounts.map((account) => account.identity);
     return live.length > 0 ? live : cachedIdentities;
-  }, [wallets, cachedIdentities]);
+  }, [accounts, cachedIdentities]);
 
   const identitiesKey = identities.join("|");
   const runKeyRef = useRef<string>("");

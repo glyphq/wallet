@@ -3,15 +3,15 @@ import { ArrowDown01Icon } from "@/lib/icons";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { truncateId } from "@/lib/format";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 
-type Vault = NonNullable<ReturnType<typeof usePersistedStore.getState>["vaults"][number]>;
-type Wallets = ReturnType<typeof useSessionStore.getState>["wallets"];
+type Wallet = NonNullable<ReturnType<typeof usePersistedStore.getState>["wallets"][number]>;
+type SessionAccounts = ReturnType<typeof useSessionStore.getState>["accounts"];
 
-export function AccountSelector({ vault, activeIndex, wallets, identity, onSelect }: {
-  vault: Vault | null;
+export function AccountSelector({ wallet, activeIndex, accounts, identity, onSelect }: {
+  wallet: Wallet | null;
   activeIndex: number;
-  wallets: Wallets;
+  accounts: SessionAccounts;
   identity: string | null;
   onSelect: (index: number) => void;
 }) {
@@ -19,7 +19,7 @@ export function AccountSelector({ vault, activeIndex, wallets, identity, onSelec
   const ref = useRef<HTMLDivElement>(null);
 
   const visibleAccounts =
-    vault?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
+    wallet?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
 
   useEffect(() => {
     if (!open) return;
@@ -38,7 +38,7 @@ export function AccountSelector({ vault, activeIndex, wallets, identity, onSelec
     );
   }
 
-  const accountName = vault?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`;
+  const accountName = wallet?.accounts[activeIndex]?.name ?? `Account ${activeIndex + 1}`;
 
   if (visibleAccounts.length <= 1) {
     return (
@@ -75,7 +75,7 @@ export function AccountSelector({ vault, activeIndex, wallets, identity, onSelec
         >
           {visibleAccounts.map((account) => {
             const isActive = account.index === activeIndex;
-            const accIdentity = getVaultAccountIdentity(vault, account.index, wallets);
+            const accIdentity = getWalletAccountIdentity(wallet, account.index, accounts);
             return (
               <button
                 key={account.index}

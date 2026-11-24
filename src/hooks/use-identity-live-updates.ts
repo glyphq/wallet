@@ -11,8 +11,8 @@ import { useSessionStore } from "@/store/session";
 const REFRESH_THROTTLE_MS = 1_500;
 
 function invalidateIdentityData(queryClient: QueryClient, apiIdentity: string, identities: Set<string>) {
-  void queryClient.invalidateQueries({ queryKey: ["vault-balances"] });
-  void queryClient.invalidateQueries({ queryKey: ["vault-analytics"] });
+  void queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
+  void queryClient.invalidateQueries({ queryKey: ["wallet-analytics"] });
   for (const identity of identities) {
     void queryClient.invalidateQueries({ queryKey: ["owned-assets", apiIdentity, identity] });
     void queryClient.invalidateQueries({ queryKey: ["tx-history", apiIdentity, identity] });
@@ -41,7 +41,7 @@ function transferBody(body: unknown): TransferBody | null {
  * received-transfer notifications. No periodic balance/history polling.
  */
 export function useIdentityLiveUpdates() {
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
   const isLocked = useSessionStore((s) => s.isLocked);
   const apiIdentity = useApiCacheIdentity();
@@ -62,7 +62,7 @@ export function useIdentityLiveUpdates() {
 
   const identities = isLocked
     ? (notifyWhenLocked ? cachedIdentities : [])
-    : wallets.map((wallet) => wallet.identity);
+    : accounts.map((account) => account.identity);
   const identitiesKey = identities.join("|");
 
   const pendingRef = useRef<Set<string>>(new Set());

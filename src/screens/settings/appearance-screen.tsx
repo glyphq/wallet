@@ -38,7 +38,7 @@ export default function AppearanceScreen() {
           <SettingsToggleRow
             checked={hideBalances}
             label="Hide balances"
-            description="Mask Vault amounts until you turn this off."
+            description="Mask wallet amounts until you turn this off."
             onChange={(checked) => updateSettings({ hideBalances: checked })}
           />
         </div>

@@ -1,5 +1,5 @@
 export const qk = {
-  vaultBalances: (apiIdentity: string, identities: string[]) => ["vault-balances", apiIdentity, identities] as const,
+  walletBalances: (apiIdentity: string, identities: string[]) => ["wallet-balances", apiIdentity, identities] as const,
   txHistory: (apiIdentity: string, identity: string | null) => ["tx-history", apiIdentity, identity] as const,
   tickInfo: (apiIdentity: string) => ["tick-info", apiIdentity] as const,
   lastProcessedTick: (apiIdentity: string) => ["last-processed-tick", apiIdentity] as const,

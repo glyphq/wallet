@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown01Icon } from "@/lib/icons";
 import { truncateId } from "@/lib/format";
-import { getVaultAccountIdentity } from "@/lib/accounts";
-import type { AccountMeta, VaultMeta } from "@/store/persisted";
-import type { SessionWallet } from "@/lib/session-wallet";
+import { getWalletAccountIdentity } from "@/lib/accounts";
+import type { AccountMeta, WalletMeta } from "@/store/persisted";
+import type { SessionAccount } from "@/lib/session-account";
 
 interface AccountPickerProps {
-  vault: VaultMeta | null;
+  wallet: WalletMeta | null;
   accounts: AccountMeta[];
   selectedIndex: number;
-  wallets: SessionWallet[];
+  sessionAccounts: SessionAccount[];
   onSelect: (index: number) => void;
 }
 
-/** Dropdown for choosing which vault account's positions to view on the unlock tab. */
-export function AccountPicker({ vault, accounts, selectedIndex, wallets, onSelect }: AccountPickerProps) {
+/** Dropdown for choosing which wallet account's positions to view on the unlock tab. */
+export function AccountPicker({ wallet, accounts, selectedIndex, sessionAccounts, onSelect }: AccountPickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -40,7 +40,7 @@ export function AccountPicker({ vault, accounts, selectedIndex, wallets, onSelec
         }}
       >
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-          {vault?.accounts.find((a) => a.index === selectedIndex)?.name ?? `Account ${selectedIndex + 1}`}
+          {wallet?.accounts.find((a) => a.index === selectedIndex)?.name ?? `Account ${selectedIndex + 1}`}
         </span>
         <ArrowDown01Icon
           size={12}
@@ -56,7 +56,7 @@ export function AccountPicker({ vault, accounts, selectedIndex, wallets, onSelec
         }}>
           {accounts.map((account) => {
             const isActive = account.index === selectedIndex;
-            const accIdentity = getVaultAccountIdentity(vault, account.index, wallets);
+            const accIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
             return (
               <button
                 key={account.index}

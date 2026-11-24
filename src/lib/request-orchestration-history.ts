@@ -1,14 +1,14 @@
 import type { GlyphEnvelope } from "@/lib/request-schema";
-import type { RequestHistoryItem, VaultMeta } from "@/store/persisted";
+import type { RequestHistoryItem, WalletMeta } from "@/store/persisted";
 import type { RequestOrchestrationDeps } from "./request-orchestration-types";
 
 export function makeRequestHistoryId() {
   return `req_${crypto.randomUUID()}`;
 }
 
-function getAccountNameForIdentity(vaults: VaultMeta[], identity: string) {
-  for (const vault of vaults) {
-    const account = vault.accounts.find((candidate) => candidate.identity === identity);
+function getAccountNameForIdentity(wallets: WalletMeta[], identity: string) {
+  for (const wallet of wallets) {
+    const account = wallet.accounts.find((candidate) => candidate.identity === identity);
     if (account) return account.name;
   }
   return undefined;
@@ -45,7 +45,7 @@ export function addApprovedRequestHistory(
     callbackUrl: string | null;
     callbackBody: string;
     history: Pick<RequestHistoryItem, "resultKind" | "resultDetail">;
-    vaults: VaultMeta[];
+    wallets: WalletMeta[];
   }
 ) {
   deps.addRequestHistoryItem({
@@ -56,7 +56,7 @@ export function addApprovedRequestHistory(
     dappOrigin: input.envelope.request.dapp.origin,
     action: "approved",
     accountIdentity: input.identity,
-    accountName: getAccountNameForIdentity(input.vaults, input.identity),
+    accountName: getAccountNameForIdentity(input.wallets, input.identity),
     resultKind: input.history.resultKind,
     resultDetail: input.history.resultDetail,
     callbackStatus: input.callbackUrl ? "pending" : "none",

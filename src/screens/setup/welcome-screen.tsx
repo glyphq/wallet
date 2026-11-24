@@ -5,27 +5,27 @@ import { PageBanner, PageFrame } from "@/components/page-header";
 import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { ImportVaultStep } from "./welcome/import-vault-step";
+import { ImportWalletStep } from "./welcome/import-wallet-step";
 import { Notice } from "./welcome/notice";
-import { useVaultFileImport } from "./welcome/use-vault-file-import";
-import { VaultFileDrop } from "./welcome/vault-file-drop";
+import { useWalletFileImport } from "./welcome/use-wallet-file-import";
+import { WalletFileDrop } from "./welcome/wallet-file-drop";
 
 const actionsStyle = { display: "flex", flexDirection: "column" as const, gap: "var(--space-3)" };
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
-  const hasVaults = usePersistedStore((s) => s.vaults.length > 0);
+  const hasWallets = usePersistedStore((s) => s.wallets.length > 0);
   const isLocked = useSessionStore((s) => s.isLocked);
   const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
-  const importFlow = useVaultFileImport();
+  const importFlow = useWalletFileImport();
 
-  if (importFlow.importData) return <ImportVaultStep flow={importFlow} />;
+  if (importFlow.importData) return <ImportWalletStep flow={importFlow} />;
 
   return (
     <LandscapeOnboarding>
       <PageBanner
-        title="Set up your Vault"
-        description="Create a new Vault, restore a seed, or import an existing Vault file."
+        title="Set up your wallet"
+        description="Create a new wallet, restore a seed, or import an existing wallet backup."
       />
 
       <PageFrame
@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
           <div style={actionsStyle}>
             <Button onClick={() => navigate("/setup/create")}>
               <AddCircleIcon size={18} strokeWidth={1.5} aria-hidden="true" />
-              Create Vault
+              Create wallet
             </Button>
             <Button variant="secondary" onClick={() => navigate("/setup/import")}>
               <KeyRoundIcon size={18} strokeWidth={1.5} aria-hidden="true" />
@@ -43,7 +43,7 @@ export default function WelcomeScreen() {
         )}
       >
         <div style={{ width: "100%", maxWidth: 380, margin: "0 auto", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "center" }}>
-          {hasVaults ? (
+          {hasWallets ? (
             <button
               type="button"
               onClick={() => navigate(isLocked ? "/lock" : "/dashboard")}
@@ -63,11 +63,11 @@ export default function WelcomeScreen() {
               }}
             >
               <ArrowLeft01Icon size={17} strokeWidth={1.5} aria-hidden="true" />
-              Back to Vault
+              Back to wallet
             </button>
           ) : null}
 
-          <VaultFileDrop flow={importFlow} />
+          <WalletFileDrop flow={importFlow} />
 
           {hasPendingRequest ? <Notice tone="warning">A request is waiting.</Notice> : null}
           {importFlow.importFileError ? <Notice tone="error">{importFlow.importFileError}</Notice> : null}

@@ -89,7 +89,7 @@ export function RecipientRow({
             onFocus={onFocus}
             onBlur={onBlur}
             onKeyDown={(e) => e.key === "Enter" && onEnter()}
-            placeholder={totalCount > 1 ? `Recipient ${index + 1}` : "Identity or contact"}
+            placeholder={totalCount > 1 ? `Recipient ${index + 1}` : "Address or contact"}
             style={{ flex: 1 }}
           />
           {canOpenPicker && (
@@ -152,7 +152,7 @@ export function RecipientRow({
   );
 }
 
-/** Sheet listing contacts and vault accounts for a recipient slot. */
+/** Sheet listing contacts and wallet accounts for a recipient slot. */
 export function RecipientPickerSheet({
   open,
   contacts,

@@ -25,7 +25,7 @@ export default function DiagnosticsScreen() {
   const clearRuntimeIssues = usePersistedStore((s) => s.clearRuntimeIssues);
   const auditEvents = usePersistedStore((s) => s.auditEvents);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const contacts = usePersistedStore((s) => s.contacts);
   const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
 
@@ -36,7 +36,7 @@ export default function DiagnosticsScreen() {
   const updater = useUpdater();
   const { storageUsed, storageQuota, deviceDiagnostics } = useDeviceDiagnostics();
 
-  const totalAccounts = useMemo(() => vaults.reduce((sum, vault) => sum + vault.accounts.length, 0), [vaults]);
+  const totalAccounts = useMemo(() => wallets.reduce((sum, wallet) => sum + wallet.accounts.length, 0), [wallets]);
   const recentIssues = runtimeIssues.slice(0, 10);
   const syncDiff = tickInfo?.tick != null && lastProcessedTick?.tickNumber != null ? tickInfo.tick - lastProcessedTick.tickNumber : null;
   const tickAge = tickUpdatedAt ? Math.round((Date.now() - tickUpdatedAt) / 1000) : null;
@@ -54,7 +54,7 @@ export default function DiagnosticsScreen() {
     tickInfo,
     totalAccounts,
     updater,
-    vaultsCount: vaults.length,
+    walletsCount: wallets.length,
   });
 
   return (
@@ -71,8 +71,8 @@ export default function DiagnosticsScreen() {
           <DiagnosticRow label="Glyph API" value={settings.network.apiUrl} technical />
         </DiagnosticSection>
 
-        <DiagnosticSection title="Vault" description="Local Vault activity. No wallet secrets are included here.">
-          <DiagnosticRow label="Vaults" value={String(vaults.length)} />
+        <DiagnosticSection title="Wallet" description="Local wallet activity. No wallet secrets are included here.">
+          <DiagnosticRow label="Wallets" value={String(wallets.length)} />
           <DiagnosticRow label="Accounts" value={String(totalAccounts)} />
           <DiagnosticRow label="Contacts" value={String(contacts.length)} />
           <DiagnosticRow label="Pending requests" value={pendingRequestCount > 0 ? String(pendingRequestCount) : "None"} tone={pendingRequestCount > 0 ? "warning" : undefined} />

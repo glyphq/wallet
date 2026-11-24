@@ -40,25 +40,25 @@ afterAll(() => {
 
 describe("signed export envelopes", () => {
   test("round-trips a payload with a verifiable signature", async () => {
-    const envelope = await exportFormat.createSignedExportEnvelope("vault", { glyph: 1, name: "Main" });
+    const envelope = await exportFormat.createSignedExportEnvelope("wallet", { glyph: 1, name: "Main" });
     const parsed = await exportFormat.parseSignedExportEnvelope<{ glyph: number; name: string }>(
       JSON.stringify(envelope),
-      "vault",
+      "wallet",
     );
 
     expect(parsed.verified).toBe(true);
     expect(parsed.legacy).toBe(false);
     expect(parsed.version).toBe(2);
-    expect(parsed.exportType).toBe("vault");
+    expect(parsed.exportType).toBe("wallet");
     expect(parsed.payload).toEqual({ glyph: 1, name: "Main" });
   });
 
   test("marks a payload changed after signing as unverified", async () => {
-    const envelope = await exportFormat.createSignedExportEnvelope("vault", { name: "Main" });
+    const envelope = await exportFormat.createSignedExportEnvelope("wallet", { name: "Main" });
     const tampered = { ...envelope, payload: { name: "Changed" } };
     const parsed = await exportFormat.parseSignedExportEnvelope<{ name: string }>(
       JSON.stringify(tampered),
-      "vault",
+      "wallet",
     );
 
     expect(parsed.verified).toBe(false);
@@ -66,23 +66,23 @@ describe("signed export envelopes", () => {
   });
 
   test("rejects a signature that does not match the payload hash", async () => {
-    const envelope = await exportFormat.createSignedExportEnvelope("vault", { name: "Main" });
+    const envelope = await exportFormat.createSignedExportEnvelope("wallet", { name: "Main" });
     const forged = {
       ...envelope,
       meta: { ...envelope.meta, signature: btoa("x".repeat(32)) },
     };
 
     await expect(
-      exportFormat.parseSignedExportEnvelope(JSON.stringify(forged), "vault"),
+      exportFormat.parseSignedExportEnvelope(JSON.stringify(forged), "wallet"),
     ).rejects.toThrow(/integrity/);
   });
 
   test("does not verify an envelope created for another export type", async () => {
-    const envelope = await exportFormat.createSignedExportEnvelope("vault", { name: "Main" });
+    const envelope = await exportFormat.createSignedExportEnvelope("wallet", { name: "Main" });
     const parsed = await exportFormat.parseSignedExportEnvelope(JSON.stringify(envelope), "contacts");
 
     expect(parsed.verified).toBe(false);
-    expect(parsed.exportType).toBe("vault");
+    expect(parsed.exportType).toBe("wallet");
   });
 
   test("returns envelopes unverified when this installation has no signing key", async () => {
@@ -94,10 +94,47 @@ describe("signed export envelopes", () => {
     expect(parsed.legacy).toBe(false);
   });
 
+  test("verifies envelopes written with the legacy vault discriminator", async () => {
+    const secret = btoa("0123456789abcdef0123456789abcdef");
+    persisted.usePersistedStore.setState({
+      exportSigningKey: { kty: "oct", k: secret, alg: "HS256", key_ops: ["sign", "verify"], ext: true },
+    });
+    const payload = { glyph: 1, name: "Old" };
+    const payloadText = JSON.stringify(payload);
+    const payloadHash = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payloadText)))));
+    const key = await crypto.subtle.importKey(
+      "raw",
+      Uint8Array.from(atob(secret), (ch) => ch.charCodeAt(0)),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const signature = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`vault:123:${payloadHash}`)))));
+    const parsed = await exportFormat.parseSignedExportEnvelope<{ glyph: number; name: string }>(
+      JSON.stringify({
+        meta: {
+          schema: "glyph_export",
+          version: 2,
+          exportType: "vault",
+          createdAt: 123,
+          signatureAlgorithm: "HMAC-SHA256",
+          payloadHash,
+          signature,
+        },
+        payload,
+      }),
+      "wallet",
+    );
+
+    expect(parsed.verified).toBe(true);
+    expect(parsed.exportType).toBe("vault");
+    expect(parsed.payload).toEqual(payload);
+  });
+
   test("treats a bare payload as a legacy export", async () => {
     const parsed = await exportFormat.parseSignedExportEnvelope<{ name: string }>(
       JSON.stringify({ name: "Legacy" }),
-      "vault",
+      "wallet",
     );
 
     expect(parsed.legacy).toBe(true);

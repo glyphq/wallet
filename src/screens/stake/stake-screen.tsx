@@ -13,7 +13,7 @@ import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QEARN_ADDRESS, QEARN_LOCK_INPUT_TYPE, buildQearnUnlockInput } from "@/lib/contracts";
 import { extractMessage, formatQu } from "@/lib/format";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { StakeTabBar, type StakeTab } from "./stake-ui";
 import {
   QEARN_MIN_LOCK,
@@ -37,14 +37,14 @@ export default function StakeScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
-  const wallets = useSessionStore((s) => s.wallets);
-  const wallet = wallets[settings.activeAccountIndex] ?? null;
-  const identity = wallet?.identity ?? null;
+  const accounts = useSessionStore((s) => s.accounts);
+  const account = accounts[settings.activeAccountIndex] ?? null;
+  const identity = account?.identity ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === (identity ?? ""));
 
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
+  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0] ?? null;
 
   const { data: tickInfo } = useTickInfo();
   const apiIdentity = useApiCacheIdentity();
@@ -67,7 +67,7 @@ export default function StakeScreen() {
   const epochInfo = useEpochLockInfo(apiIdentity, currentEpoch);
 
   // Unlock tab: identity for the selected unlock account
-  const unlockIdentity = getVaultAccountIdentity(vault, unlockAccountIdx, wallets);
+  const unlockIdentity = getWalletAccountIdentity(wallet, unlockAccountIdx, accounts);
   const unlockIsActiveAccount = unlockAccountIdx === settings.activeAccountIndex;
 
   // Unlock tab: user's locked positions across the last lock period
@@ -81,7 +81,7 @@ export default function StakeScreen() {
   const historicalRewards = endedStatus ? endedStatus.fullyRewardedAmount + endedStatus.earlyRewardedAmount : 0n;
   const historicalUnlocked = endedStatus ? endedStatus.fullyUnlockedAmount + endedStatus.earlyUnlockedAmount : 0n;
 
-  const actionsDisabled = !wallet || !tickInfo || hasPendingTx;
+  const actionsDisabled = !account || !tickInfo || hasPendingTx;
 
   function goLockConfirm() {
     const trimmed = amountStr.trim();
@@ -102,7 +102,7 @@ export default function StakeScreen() {
   }
 
   async function sendLock() {
-    if (!wallet || !tickInfo) return;
+    if (!account || !tickInfo) return;
     setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
@@ -122,7 +122,7 @@ export default function StakeScreen() {
 
       addPendingTx({
         hash,
-        source: wallet.identity,
+        source: account.identity,
         destination: QEARN_ADDRESS,
         amount: amount.toString(),
         targetTick,
@@ -139,7 +139,7 @@ export default function StakeScreen() {
   }
 
   async function sendUnlock() {
-    if (!wallet || !tickInfo || !unlockTarget) return;
+    if (!account || !tickInfo || !unlockTarget) return;
     setStep("sending");
     try {
       const { inputType, payload } = buildQearnUnlockInput({
@@ -162,7 +162,7 @@ export default function StakeScreen() {
 
       addPendingTx({
         hash,
-        source: wallet.identity,
+        source: account.identity,
         destination: QEARN_ADDRESS,
         amount: "0",
         targetTick,
@@ -213,8 +213,8 @@ export default function StakeScreen() {
             />
           ) : (
             <UnlockPanel
-              vault={vault}
-              wallets={wallets}
+              wallet={wallet}
+              sessionAccounts={accounts}
               unlockAccountIdx={unlockAccountIdx}
               onSelectAccount={setUnlockAccountIdx}
               currentEpoch={currentEpoch}

@@ -8,7 +8,7 @@ import { DappListItem } from "./dapps/dapp-list-item";
 
 export default function DappsScreen() {
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const revokeDapp = usePersistedStore((s) => s.revokeDapp);
   const revokeDappPermission = usePersistedStore((s) => s.revokeDappPermission);
   const setDappAllowedIdentities = usePersistedStore((s) => s.setDappAllowedIdentities);
@@ -19,8 +19,8 @@ export default function DappsScreen() {
     .sort((a, b) => (b.lastUsedAt ?? b.approvedAt) - (a.lastUsedAt ?? a.approvedAt));
 
   function getIdentityLabel(identity: string) {
-    for (const vault of vaults) {
-      const account = vault.accounts.find((candidate) => candidate.identity === identity);
+    for (const wallet of wallets) {
+      const account = wallet.accounts.find((candidate) => candidate.identity === identity);
       if (account) return `${account.name} · ${truncateId(identity, 8, 4)}`;
     }
     return truncateId(identity, 8, 4);

@@ -58,7 +58,7 @@ describe("request orchestration", () => {
     const success = await approveRequest(deps, {
       envelope: transferEnvelope,
       approval: { kind: "tx", approve: { txHash: "tx-1", targetTick: 42, identity: "ID1", accountIndex: 0 } },
-      vaults: [{ id: "v1", name: "Vault", accounts: [{ index: 0, name: "Main", identity: "ID1" }] }],
+      wallets: [{ id: "v1", name: "Wallet", accounts: [{ index: 0, name: "Main", identity: "ID1" }] }],
     });
 
     expect(success.kind).toBe("tx");
@@ -141,7 +141,7 @@ describe("request orchestration", () => {
         kind: "message",
         approve: { signature: "USER_MESSAGE_SIGNATURE", publicKey: "USER_PUBLIC_KEY", identity: "ID1", accountIndex: 2 },
       },
-      vaults: [{ id: "v1", name: "Vault", accounts: [{ index: 2, name: "Main", identity: "ID1" }] }],
+      wallets: [{ id: "v1", name: "Wallet", accounts: [{ index: 2, name: "Main", identity: "ID1" }] }],
     });
 
     const body = JSON.parse(added[0].callbackBody ?? "{}");
@@ -178,7 +178,7 @@ describe("request orchestration", () => {
           request_hash: `sha256:${testCase.request.nonce.padEnd(43, "x")}`,
         },
         approval: testCase.approval,
-        vaults: [{ id: "v1", name: "Vault", accounts: [{ index: 1, name: "Main", identity: "ID1" }] }],
+        wallets: [{ id: "v1", name: "Wallet", accounts: [{ index: 1, name: "Main", identity: "ID1" }] }],
       });
       expect(callbackSignatures).toHaveLength(1);
       expect(callbackSignatures[0]?.accountIndex).toBe(1);

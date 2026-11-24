@@ -34,8 +34,8 @@ export interface SearchResult {
 }
 
 export interface SearchAccountEntry {
-  vaultId: string;
-  vaultName: string;
+  walletId: string;
+  walletName: string;
   accountIndex: number;
   accountName: string;
   identity: string;
@@ -48,8 +48,8 @@ export interface SearchTxItem {
   amount: string;
   source?: string | null;
   destination?: string | null;
-  vaultId: string;
-  vaultName: string;
+  walletId: string;
+  walletName: string;
   accountIndex: number;
 }
 
@@ -63,7 +63,7 @@ interface SearchResultSources {
 
 interface SearchResultActions {
   navigate: (path: string) => void;
-  setActiveVault: (id: string | null) => void;
+  setActiveWallet: (id: string | null) => void;
   setActiveAccountIndex: (index: number) => void;
 }
 
@@ -77,7 +77,7 @@ export function buildSearchResults({
   txMemos,
   query,
   navigate,
-  setActiveVault,
+  setActiveWallet,
   setActiveAccountIndex,
 }: SearchResultInput): SearchResult[] {
   if (!query) return [];
@@ -86,22 +86,22 @@ export function buildSearchResults({
     .filter((account) =>
       [
         account.accountName,
-        account.vaultName,
+        account.walletName,
         account.identity,
         account.note,
         ...account.tags,
       ].some((part) => part.toLowerCase().includes(query)),
     )
     .map((account) => ({
-      key: `account:${account.vaultId}:${account.accountIndex}`,
+      key: `account:${account.walletId}:${account.accountIndex}`,
       section: "accounts",
       title: account.accountName,
-      subtitle: `${account.vaultName} · ${truncateId(account.identity)}`,
+      subtitle: `${account.walletName} · ${truncateId(account.identity)}`,
       identity: account.identity,
       badgeKind: "account",
       badgeCode: `A${account.accountIndex + 1}`,
       onSelect: () => {
-        setActiveVault(account.vaultId);
+        setActiveWallet(account.walletId);
         setActiveAccountIndex(account.accountIndex);
         navigate("/dashboard");
       },
@@ -130,9 +130,9 @@ export function buildSearchResults({
       key: `tx:${tx.hash}`,
       section: "transactions",
       title: txMemos[tx.hash]?.trim() || truncateId(tx.hash, 12, 12),
-      subtitle: `${tx.vaultName} · ${tx.amount} QU`,
+      subtitle: `${tx.walletName} · ${tx.amount} QU`,
       onSelect: () => {
-        setActiveVault(tx.vaultId);
+        setActiveWallet(tx.walletId);
         setActiveAccountIndex(tx.accountIndex);
         navigate(`/history?focus=${tx.hash}`);
       },

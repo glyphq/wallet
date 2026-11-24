@@ -63,7 +63,7 @@ export default function ContactsScreen() {
 
   function validateIdentity(identity: string): boolean {
     if (!isValidIdentity(identity)) {
-      setIdentityError("Enter a valid Qubic identity.");
+      setIdentityError("Enter a valid Qubic address.");
       return false;
     }
     setIdentityError("");
@@ -180,7 +180,7 @@ export default function ContactsScreen() {
             label="Search contacts"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Name, identity, note, or tag"
+            placeholder="Name, address, note, or tag"
             containerStyle={{ width: "100%" }}
             style={{ fontFamily: "var(--font-sans)" }}
             leftElement={<Search01Icon size={18} strokeWidth={1.5} />}

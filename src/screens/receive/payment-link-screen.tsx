@@ -6,7 +6,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { Input } from "@/components/input";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { buildLinks, eyebrowStyle, sectionStyle, type PaymentLinkMode } from "./payment-link-utils";
 import { PaymentLinkAccountOptions } from "./payment-link-account-options";
 import { PaymentLinkPreview } from "./payment-link-preview";
@@ -15,13 +15,13 @@ import { PaymentLinkUnavailable } from "./payment-link-unavailable";
 
 export default function PaymentLinkScreen() {
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) =>
-    s.vaults.find((v) => v.id === s.settings.activeVaultId),
+  const wallet = usePersistedStore((s) =>
+    s.wallets.find((v) => v.id === s.settings.activeWalletId),
   );
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
 
   const defaultIdentity =
-    getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
+    getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts) ?? "";
 
   const [to, setTo] = useState(defaultIdentity);
   const [amount, setAmount] = useState("");
@@ -50,17 +50,17 @@ export default function PaymentLinkScreen() {
     }
   }
 
-  // Account selector — all visible accounts across the vault
+  // Account selector — all visible accounts across the wallet
   const accountOptions = useMemo(() => {
-    if (!vault) return [];
-    return vault.accounts
+    if (!wallet) return [];
+    return wallet.accounts
       .filter((a) => !a.hidden)
       .map((a) => ({
         name: a.name,
-        identity: getVaultAccountIdentity(vault, a.index, wallets) ?? "",
+        identity: getWalletAccountIdentity(wallet, a.index, accounts) ?? "",
       }))
       .filter((a) => a.identity.length === 60);
-  }, [vault, wallets]);
+  }, [wallet, accounts]);
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
@@ -123,7 +123,7 @@ export default function PaymentLinkScreen() {
             />
 
             <section aria-labelledby="receive-identity-heading" style={sectionStyle}>
-              <span id="receive-identity-heading" style={eyebrowStyle}>Receiving identity</span>
+              <span id="receive-identity-heading" style={eyebrowStyle}>Receiving address</span>
               <p style={{ margin: 0, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", lineHeight: 1.5, wordBreak: "break-all" }}>
                 {to.trim().toUpperCase()}
               </p>

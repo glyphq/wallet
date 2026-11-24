@@ -15,10 +15,10 @@ import {
   Wallet01Icon,
   WalletAdd01Icon,
 } from "@/lib/icons";
-import type { VaultColor, WalletIconId } from "@/store/persisted";
+import type { WalletColor, WalletIconId } from "@/store/persisted";
 
 export const DEFAULT_WALLET_ICON: WalletIconId = "wallet";
-export const DEFAULT_WALLET_COLOR: VaultColor = "slate";
+export const DEFAULT_WALLET_COLOR: WalletColor = "slate";
 
 type WalletIconOption = {
   id: WalletIconId;
@@ -41,7 +41,7 @@ export const WALLET_ICON_OPTIONS: WalletIconOption[] = [
   { id: "key", label: "Key", Icon: Key01Icon },
 ];
 
-export const WALLET_COLOR_OPTIONS: { id: VaultColor; label: string; accent: string }[] = [
+export const WALLET_COLOR_OPTIONS: { id: WalletColor; label: string; accent: string }[] = [
   { id: "slate", label: "Accent", accent: "var(--color-wallet-accent-slate)" },
   { id: "sky", label: "Sky", accent: "var(--color-wallet-accent-sky)" },
   { id: "emerald", label: "Emerald", accent: "var(--color-wallet-accent-emerald)" },
@@ -58,7 +58,7 @@ export function getWalletIconLabel(icon?: WalletIconId) {
   return WALLET_ICON_OPTIONS.find((option) => option.id === icon)?.label ?? "Wallet";
 }
 
-export function getWalletAccent(color?: VaultColor) {
+export function getWalletAccent(color?: WalletColor) {
   return WALLET_COLOR_OPTIONS.find((option) => option.id === color)?.accent ?? "var(--color-wallet-accent-slate)";
 }
 

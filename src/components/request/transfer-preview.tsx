@@ -28,19 +28,17 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
 
-  const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
+  const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
-  const vaults = usePersistedStore((s) => s.vaults);
   const settings = usePersistedStore((s) => s.settings);
-  const vault = vaults.find((v) => v.id === settings.activeVaultId);
   const contacts = usePersistedStore((s) => s.contacts);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const { data: tickInfo } = useTickInfo();
-  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const { data: balanceData } = useBalance(account?.identity ?? null);
 
-  const identity = wallet?.identity ?? "";
+  const identity = account?.identity ?? "";
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const requestAmount = (() => { try { return BigInt(request.amount); } catch { return null; } })();
@@ -62,13 +60,13 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
   const likelyFailures = [
     requestAmount === null ? "Malformed amount in the request body." : null,
     policyDecision.reason,
-    invalidDestination ? "Destination identity checksum is invalid." : null,
+    invalidDestination ? "Destination address checksum is invalid." : null,
     insufficientBalance ? "Current account balance does not cover the requested transfer." : null,
     hasPendingTx ? "This account already has a pending transfer and cannot queue another one yet." : null,
   ].filter((item): item is string => !!item);
 
   async function approve() {
-    if (!wallet || requestAmount === null) return;
+    if (!account || requestAmount === null) return;
     const freshPolicyDecision = evaluateDappPermission({
       approvedDapps,
       origin: request.dapp.origin,
@@ -133,15 +131,15 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
       </div>
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
-      {showPicker && vault && (
+      {showPicker && wallet && (
         <RequestSigningAccountPicker
-          accounts={vault.accounts}
+          accounts={wallet?.accounts ?? []}
           selectedIndex={selectedIndex}
           onSelect={setSelectedIndex}
         />
       )}
 
-      {/* fromError: dApp specified an identity not in this vault */}
+      {/* fromError: dApp specified an identity not in this wallet */}
       {fromError && <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice>}
 
       {/* Detail rows */}
@@ -166,7 +164,7 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
         <RequestInlineNotice tone="error">The request amount is invalid.</RequestInlineNotice>
       )}
       {invalidDestination && (
-        <RequestInlineNotice tone="error">The destination identity is invalid.</RequestInlineNotice>
+        <RequestInlineNotice tone="error">The destination address is invalid.</RequestInlineNotice>
       )}
       {insufficientBalance && (
         <RequestInlineNotice tone="error">The selected account does not have enough balance for this transfer.</RequestInlineNotice>
@@ -203,7 +201,7 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
         onApprove={approve}
         approveLabel="Sign and send"
         approveLoading={processing}
-        approveDisabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
+        approveDisabled={!account || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
       />
     </div>
   );

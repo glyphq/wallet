@@ -72,10 +72,10 @@ export function LockForm({
           <Input
             {...register("password")}
             id="wallet-password"
-            aria-label="Vault password"
+            aria-label="Wallet password"
             type={showPassword ? "text" : "password"}
             style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) var(--space-4)" }}
-            placeholder="Enter the Vault password"
+            placeholder="Enter the wallet password"
             autoComplete="current-password"
             error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
             disabled={lockoutSecsLeft > 0}
@@ -85,7 +85,7 @@ export function LockForm({
         </div>
         <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
           <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
-          {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock Vault"}
+          {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
         </Button>
       </form>
 

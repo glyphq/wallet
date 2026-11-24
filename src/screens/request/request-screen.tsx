@@ -36,7 +36,7 @@ export default function RequestScreen() {
   const pendingRequest = useSessionStore((s) => s.pendingRequests[0] ?? null);
   const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
   const shiftPendingRequest = useSessionStore((s) => s.shiftPendingRequest);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const networkName = usePersistedStore((s) => s.settings.network.name);
   const approveDapp = usePersistedStore((s) => s.approveDapp);
   const addRequestHistoryItem = usePersistedStore((s) => s.addRequestHistoryItem);
@@ -156,7 +156,7 @@ export default function RequestScreen() {
     setActionError(null);
     try {
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "tx", approve: result }, wallets }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -172,7 +172,7 @@ export default function RequestScreen() {
     setActionError(null);
     try {
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "message", approve: result }, wallets }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -188,7 +188,7 @@ export default function RequestScreen() {
     try {
       await authorizeForRequest(0, "callback:response");
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "verify", approve: result }, wallets }),
         shiftPendingRequest,
       );
       showSuccessIfQueueIsEmpty(state);
@@ -204,7 +204,7 @@ export default function RequestScreen() {
     try {
       await authorizeForRequest(result.accountIndex, "callback:response");
       const state = await completePendingRequest(
-        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, vaults }),
+        () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, wallets }),
         shiftPendingRequest,
       );
       approveDapp({

@@ -1,9 +1,12 @@
 import { usePersistedStore } from "@/store/persisted";
 
+/** Pre-rename export discriminator; read-only compatibility for existing backups. */
+const LEGACY_WALLET_EXPORT_TYPE = "vault";
+
 export interface SignedExportMeta {
   schema: "glyph_export";
   version: 2;
-  exportType: "vault" | "contacts";
+  exportType: "wallet" | "contacts";
   createdAt: number;
   signatureAlgorithm: "HMAC-SHA256";
   payloadHash: string;
@@ -14,6 +17,13 @@ export interface SignedExportEnvelope<T> {
   meta: SignedExportMeta;
   payload: T;
 }
+
+type RawSignedExportEnvelope<T> = {
+  meta: Omit<SignedExportMeta, "exportType"> & {
+    exportType: SignedExportMeta["exportType"] | typeof LEGACY_WALLET_EXPORT_TYPE;
+  };
+  payload: T;
+};
 
 async function ensureExportSigningSecret(): Promise<string> {
   const store = usePersistedStore.getState();
@@ -87,7 +97,7 @@ export async function createSignedExportEnvelope<T>(exportType: SignedExportMeta
 export interface ParsedExport<T> {
   payload: T;
   version: number;
-  exportType: SignedExportMeta["exportType"] | "legacy";
+  exportType: SignedExportMeta["exportType"] | typeof LEGACY_WALLET_EXPORT_TYPE | "legacy";
   verified: boolean;
   legacy: boolean;
 }
@@ -100,7 +110,7 @@ export async function parseSignedExportEnvelope<T>(raw: string, expectedType: Si
     "meta" in parsed &&
     "payload" in parsed
   ) {
-    const envelope = parsed as SignedExportEnvelope<T>;
+    const envelope = parsed as RawSignedExportEnvelope<T>;
     const payloadText = JSON.stringify(envelope.payload);
     const payloadHash = await sha256(payloadText);
     const store = usePersistedStore.getState();
@@ -108,14 +118,18 @@ export async function parseSignedExportEnvelope<T>(raw: string, expectedType: Si
     const secret = key?.k && typeof key.k === "string"
       ? key.k
       : "";
+    const actualType = envelope.meta?.exportType;
+    const typeMatches =
+      actualType === expectedType ||
+      (expectedType === "wallet" && actualType === LEGACY_WALLET_EXPORT_TYPE);
     const schemaOk =
       envelope.meta?.schema === "glyph_export" &&
       envelope.meta?.version === 2 &&
-      envelope.meta?.exportType === expectedType &&
+      typeMatches &&
       envelope.meta?.payloadHash === payloadHash;
     let verified = false;
     if (schemaOk && secret) {
-      const sigOk = await verifySignature(secret, `${expectedType}:${envelope.meta.createdAt}:${payloadHash}`, envelope.meta.signature);
+      const sigOk = await verifySignature(secret, `${actualType}:${envelope.meta.createdAt}:${payloadHash}`, envelope.meta.signature);
       if (!sigOk) throw new Error("Export file failed integrity check — file may be corrupted or tampered");
       verified = true;
     }

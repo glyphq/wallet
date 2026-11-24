@@ -7,7 +7,7 @@ import { ActionFooter, DetailBlock, SheetLayout, StatusLine } from "./sheet-layo
 export type CopyStatus = "idle" | "success" | "error";
 
 function successLabels(success: RequestSuccessState): { detailLabel: string; tagLabel: string } {
-  const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Identity";
+  const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Address";
   const tagLabel = success.kind === "tx" ? "Sent" : success.kind === "message" ? "Signed" : success.kind === "verify" ? (success.detail === "VALID" ? "Valid" : "Invalid") : "Connected";
   return { detailLabel, tagLabel };
 }

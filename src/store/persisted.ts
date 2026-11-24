@@ -6,7 +6,7 @@ import type { PersistedState } from "./persisted-types";
 import { tauriStorage } from "./persisted-storage";
 import { createActivityActions } from "./persisted-actions-activity";
 import { createDappActions } from "./persisted-actions-dapps";
-import { createVaultActions } from "./persisted-actions-vaults";
+import { createWalletActions } from "./persisted-actions-wallets";
 
 export type {
   AccountMeta,
@@ -28,16 +28,16 @@ export type {
   RuntimeIssue,
   ScheduledTransfer,
   ThemeMode,
-  VaultColor,
+  WalletColor,
   WalletIconId,
-  VaultMeta,
+  WalletMeta,
 } from "./persisted-types";
 
 /** Zustand store backed by Tauri LazyStore (`glyph.json` on disk). Survives app restarts. */
 export const usePersistedStore = create<PersistedState>()(
   persist(
     (set) => ({
-      vaults: [],
+      wallets: [],
       settings: DEFAULT_SETTINGS,
       contacts: [],
       pendingTxs: [],
@@ -54,7 +54,7 @@ export const usePersistedStore = create<PersistedState>()(
       passwordAttempts: 0,
       exportSigningKey: null,
 
-      ...createVaultActions(set),
+      ...createWalletActions(set),
       ...createDappActions(set),
       ...createActivityActions(set),
     }),

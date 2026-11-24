@@ -202,13 +202,13 @@ export function SendManyInputStep({
       <Sheet open={importOpen} onClose={() => { setImportOpen(false); setImportError(""); setImportText(""); }} title="Paste recipients">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-            CSV: identity, amount, label. JSON arrays with identity and amount.
+            CSV: address, amount, label. JSON arrays with address and amount.
           </div>
           <Textarea
             value={importText}
             onChange={(e) => { setImportText(e.target.value); setImportError(""); }}
             rows={6}
-            placeholder={"identity,amount,label\nABC...,1000,Treasury"}
+            placeholder={"address,amount,label\nABC...,1000,Treasury"}
             style={{ minHeight: 144 }}
           />
           {importError && (

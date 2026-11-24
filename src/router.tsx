@@ -9,12 +9,12 @@ import { useSessionStore } from "@/store/session";
 const SplashScreen = lazy(() => import("@/screens/splash/splash-screen"));
 const LockScreen = lazy(() => import("@/screens/lock/lock-screen"));
 const WelcomeScreen = lazy(() => import("@/screens/setup/welcome-screen"));
-const CreateVaultScreen = lazy(() => import("@/screens/setup/create-vault-screen"));
-const ImportVaultScreen = lazy(() => import("@/screens/setup/import-vault-screen"));
+const CreateWalletScreen = lazy(() => import("@/screens/setup/create-wallet-screen"));
+const ImportWalletScreen = lazy(() => import("@/screens/setup/import-wallet-screen"));
 const DashboardScreen = lazy(() => import("@/screens/dashboard/dashboard-screen"));
-const VaultsScreen = lazy(() => import("@/screens/vaults/vaults-screen"));
-const VaultDetailScreen = lazy(() => import("@/screens/vaults/vault-detail-screen"));
-const PortfolioScreen = lazy(() => import("@/screens/vaults/portfolio-screen"));
+const WalletsScreen = lazy(() => import("@/screens/wallets/wallets-screen"));
+const WalletDetailScreen = lazy(() => import("@/screens/wallets/wallet-detail-screen"));
+const PortfolioScreen = lazy(() => import("@/screens/wallets/portfolio-screen"));
 const SendScreen = lazy(() => import("@/screens/send/send-screen"));
 const ScheduledTransfersScreen = lazy(() => import("@/screens/send/scheduled-transfers-screen"));
 const SendManyScreen = lazy(() => import("@/screens/send/send-many-screen"));
@@ -67,13 +67,13 @@ function Screen({ component: C }: { component: ComponentType }) {
  */
 function UnlockedRoute() {
   const isLocked = useSessionStore((state) => state.isLocked);
-  const hasVaults = usePersistedStore((state) => state.vaults.length > 0);
+  const hasWallets = usePersistedStore((state) => state.wallets.length > 0);
 
   // Never render persisted account data before hydration has completed.
   if (!usePersistedStore.persist.hasHydrated()) {
     return <Screen component={SplashScreen} />;
   }
-  if (!hasVaults) return <Navigate to="/setup" replace />;
+  if (!hasWallets) return <Navigate to="/setup" replace />;
   if (isLocked) return <Navigate to="/lock" replace />;
   return <Outlet />;
 }
@@ -85,15 +85,15 @@ export const router = createHashRouter([
       { path: "/", element: <Screen component={SplashScreen} /> },
       { path: "/lock", element: <Screen component={LockScreen} /> },
       { path: "/setup", element: <Screen component={WelcomeScreen} /> },
-      { path: "/setup/create", element: <Screen component={CreateVaultScreen} /> },
-      { path: "/setup/import", element: <Screen component={ImportVaultScreen} /> },
+      { path: "/setup/create", element: <Screen component={CreateWalletScreen} /> },
+      { path: "/setup/import", element: <Screen component={ImportWalletScreen} /> },
       {
         element: <UnlockedRoute />,
         children: [
           { path: "/dashboard", element: <Screen component={DashboardScreen} /> },
-          { path: "/vaults", element: <Screen component={VaultsScreen} /> },
-          { path: "/vaults/:id", element: <Screen component={VaultDetailScreen} /> },
-          { path: "/vaults/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
+          { path: "/wallets", element: <Screen component={WalletsScreen} /> },
+          { path: "/wallets/:id", element: <Screen component={WalletDetailScreen} /> },
+          { path: "/wallets/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
           { path: "/send", element: <Screen component={SendScreen} /> },
           { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
           { path: "/send-many", element: <Screen component={SendManyScreen} /> },

@@ -16,14 +16,14 @@ export function NameStep({
   onBack: () => void;
 }) {
   return (
-    <SetupFlow title="Name your Vault" primaryLabel="Continue" onPrimary={onContinue} onBack={onBack}>
+    <SetupFlow title="Name your wallet" primaryLabel="Continue" onPrimary={onContinue} onBack={onBack}>
       <Input
         leftElement={<Wallet01Icon size={18} strokeWidth={1.5} />}
         value={name}
         onChange={(event) => onNameChange(event.target.value)}
         onKeyDown={(event) => event.key === "Enter" && onContinue()}
-        placeholder="Vault name"
-        aria-label="Vault name"
+        placeholder="Wallet name"
+        aria-label="Wallet name"
         autoFocus
         error={error}
       />

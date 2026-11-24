@@ -6,11 +6,11 @@ import { Link01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
-import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
+import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 import { IdentityDisplay } from "@/components/identity-display";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { ReceiveQrCard } from "./receive-qr-card";
 import { ReceiveEmptyState } from "./receive-empty-state";
 
@@ -18,16 +18,16 @@ export default function ReceiveScreen() {
   const navigate = useNavigate();
 
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
-  const wallets = useSessionStore((s) => s.wallets);
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
+  const accounts = useSessionStore((s) => s.accounts);
 
   const activeIndex = settings.activeAccountIndex;
-  const identity = getVaultAccountIdentity(vault ?? null, activeIndex, wallets);
+  const identity = getWalletAccountIdentity(wallet ?? null, activeIndex, accounts);
   const hideBalances = settings.hideBalances;
 
   const header = useMemo(() => (
     <ScreenHeader
-      leading={<ShellVaultSwitcher />}
+      leading={<ShellWalletSwitcher />}
       title="Receive"
       action={
         <IconButton label="Create payment link" onClick={() => navigate("/payment-link")}>

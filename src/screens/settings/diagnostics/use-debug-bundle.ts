@@ -21,7 +21,7 @@ export function useDebugBundle({
   tickInfo,
   totalAccounts,
   updater,
-  vaultsCount,
+  walletsCount,
 }: {
   auditEvents: AuditEvent[];
   contactsCount: number;
@@ -35,7 +35,7 @@ export function useDebugBundle({
   tickInfo: ReturnType<typeof useTickInfo>["data"];
   totalAccounts: number;
   updater: ReturnType<typeof useUpdater>;
-  vaultsCount: number;
+  walletsCount: number;
 }) {
   const bundle = useMemo(() => ({
     exportedAt: new Date().toISOString(),
@@ -69,10 +69,10 @@ export function useDebugBundle({
       latestPriceUsd: latestStats?.price ?? null,
       activeAddresses: latestStats?.activeAddresses ?? null,
     },
-    counts: { vaults: vaultsCount, contacts: contactsCount, accounts: totalAccounts },
+    counts: { wallets: walletsCount, contacts: contactsCount, accounts: totalAccounts },
     settings: { ...settings, exportSigningPrivateJwk: settings.exportSigningPrivateJwk ? "[redacted]" : null },
     exportSigningKey: usePersistedStore.getState().exportSigningKey ? "[redacted]" : null,
-  }), [auditEvents, contactsCount, deviceDiagnostics, lastProcessedTick, latestStats?.activeAddresses, latestStats?.price, pendingRequestCount, pendingTxCount, recentIssues, settings, tickInfo?.epoch, tickInfo?.tick, totalAccounts, updater, vaultsCount]);
+  }), [auditEvents, contactsCount, deviceDiagnostics, lastProcessedTick, latestStats?.activeAddresses, latestStats?.price, pendingRequestCount, pendingTxCount, recentIssues, settings, tickInfo?.epoch, tickInfo?.tick, totalAccounts, updater, walletsCount]);
 
   async function exportBundle() {
     await saveFileDialog(`glyph-debug-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(bundle, null, 2));

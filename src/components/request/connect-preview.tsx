@@ -24,9 +24,9 @@ const PERMISSION_LABELS: Record<string, string> = {
 };
 
 export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
 
   const [selectedIndex, setSelectedIndex] = useState(settings.activeAccountIndex);
 
@@ -35,7 +35,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   const [transferLimitQu, setTransferLimitQu] = useState("");
   const [expiryDurationMs, setExpiryDurationMs] = useState<number | undefined>(DEFAULT_DAPP_EXPIRY_DURATION_MS);
 
-  const selectedWallet = wallets[selectedIndex] ?? null;
+  const selectedAccount = accounts[selectedIndex] ?? null;
 
   function togglePerm(p: string) {
     setGrantedPerms((prev) => {
@@ -46,11 +46,11 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   }
 
   function approve() {
-    if (!selectedWallet) return;
+    if (!selectedAccount) return;
     const permissions = requestedPerms.filter((p) => grantedPerms.has(p)) as GlyphPermission[];
     const sanitizedLimit = sanitizeTransferLimitQu(transferLimitQu);
     onApprove({
-      identity: selectedWallet.identity,
+      identity: selectedAccount.identity,
       accountIndex: selectedIndex,
       permissions,
       transferLimitQu: sanitizedLimit,
@@ -67,8 +67,8 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
       <div>
         <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Account</RequestSectionTitle></div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {wallets.map((w, i) => {
-            const account = vault?.accounts[i];
+          {accounts.map((sessionAccount, i) => {
+            const account = wallet?.accounts[i];
             if (!account) return null;
             const isSelected = i === selectedIndex;
             return (
@@ -99,7 +99,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
                     <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" style={{ color: "var(--color-accent)", flexShrink: 0 }} />
                   ) : null}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-                    {truncateId(w.identity, 10, 10)}
+                    {truncateId(sessionAccount.identity, 10, 10)}
                   </span>
                 </div>
               </button>
@@ -152,7 +152,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
         onReject={onReject}
         onApprove={approve}
         approveLabel="Connect"
-        approveDisabled={!selectedWallet}
+        approveDisabled={!selectedAccount}
       />
     </div>
   );

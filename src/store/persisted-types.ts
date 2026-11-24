@@ -11,8 +11,8 @@ import type {
   AppSettings,
   ApprovedDapp,
   Contact,
-  VaultMeta,
-} from "./persisted-types-vault";
+  WalletMeta,
+} from "./persisted-types-wallet";
 
 export type {
   AccountMeta,
@@ -23,10 +23,10 @@ export type {
   FontPairId,
   NetworkConfig,
   ThemeMode,
-  VaultColor,
-  VaultMeta,
+  WalletColor,
+  WalletMeta,
   WalletIconId,
-} from "./persisted-types-vault";
+} from "./persisted-types-wallet";
 export type {
   AuditEvent,
   AuditEventKind,
@@ -42,7 +42,7 @@ export type {
 } from "./persisted-types-activity";
 
 export interface PersistedState {
-  vaults: VaultMeta[];
+  wallets: WalletMeta[];
   settings: AppSettings;
   contacts: Contact[];
   pendingTxs: PendingTx[];
@@ -61,19 +61,19 @@ export interface PersistedState {
   passwordLockoutUntil: number;
   /** Number of consecutive failed password attempts — persists across restarts. */
   passwordAttempts: number;
-  /** HMAC signing key for vault export envelopes — stored separately from settings for isolation. */
+  /** HMAC signing key for wallet export envelopes — stored separately from settings for isolation. */
   exportSigningKey: JsonWebKey | null;
   setPasswordLockoutUntil: (until: number) => void;
   setPasswordAttempts: (n: number) => void;
-  addVault: (vault: VaultMeta) => void;
-  updateVault: (id: string, updates: Partial<Omit<VaultMeta, "id">>) => void;
-  /** Removes the vault; if it was active, falls back to the first remaining vault (or null). */
-  removeVault: (id: string) => void;
-  /** Sets the active vault and resets `activeAccountIndex` to 0. */
-  setActiveVault: (id: string | null) => void;
+  addWallet: (wallet: WalletMeta) => void;
+  updateWallet: (id: string, updates: Partial<Omit<WalletMeta, "id">>) => void;
+  /** Removes the wallet; if it was active, falls back to the first remaining wallet (or null). */
+  removeWallet: (id: string) => void;
+  /** Sets the active wallet and resets `activeAccountIndex` to 0. */
+  setActiveWallet: (id: string | null) => void;
   setActiveAccountIndex: (index: number) => void;
-  /** Stamps `lastUnlockedAt` with the current time — used to sort vaults by recency. */
-  touchVaultUnlocked: (id: string) => void;
+  /** Stamps `lastUnlockedAt` with the current time — used to sort wallets by recency. */
+  touchWalletUnlocked: (id: string) => void;
   updateSettings: (updates: Partial<AppSettings>) => void;
   addContact: (contact: Contact) => void;
   updateContact: (id: string, updates: Partial<Omit<Contact, "id">>) => void;

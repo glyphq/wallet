@@ -83,7 +83,7 @@ export const presets = {
   },
 } as const;
 
-// ── Step motion (multi-step flows: send, stake, create vault) ────────────────
+// ── Step motion (multi-step flows: send, stake, create wallet) ────────────────
 
 /**
  * Standard step transition for wizard-like flows.

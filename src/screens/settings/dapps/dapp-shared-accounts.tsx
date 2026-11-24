@@ -44,7 +44,7 @@ export function DappSharedAccounts({
       ) : (
         <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", minHeight: 44 }}>
           <span style={{ color: "var(--color-text-tertiary)" }}><UserIcon /></span>
-          All accounts in this Vault
+          All accounts in this wallet
         </span>
       )}
     </div>

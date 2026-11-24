@@ -100,7 +100,7 @@ export default function NotificationsScreen() {
 
         {/* Master toggle */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <SettingsSwitch label="Notifications" description="Show desktop notifications for Vault events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
+          <SettingsSwitch label="Notifications" description="Show desktop notifications for wallet events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
@@ -135,7 +135,7 @@ export default function NotificationsScreen() {
           <SettingsDivider />
           <SettingsSwitch label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
           <SettingsDivider />
-          <SettingsSwitch label="Notify when locked" description="Allow notifications while the vault is locked" checked={notifyWhenLocked} onChange={() => updateSettings({ notifyWhenLocked: !notifyWhenLocked })} disabled={!enabled} />
+          <SettingsSwitch label="Notify when locked" description="Allow notifications while the wallet is locked" checked={notifyWhenLocked} onChange={() => updateSettings({ notifyWhenLocked: !notifyWhenLocked })} disabled={!enabled} />
         </div>
       </motion.div>
     </AppShell>

@@ -11,10 +11,10 @@ import { isValidIdentity, newId } from "@/lib/crypto";
 import { broadcastTx } from "@/lib/broadcast";
 import { subscribeTxResolution } from "@/lib/tx-resolution-events";
 import { buildTransferFromSession } from "@/lib/secure-session";
-import { verifyVaultPassword } from "@/lib/vault";
+import { verifyWalletPassword } from "@/lib/wallet";
 import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { parseScannedSendPayload } from "@/lib/scan-payload";
 import {
@@ -37,21 +37,21 @@ export default function SendScreen() {
   const [searchParams] = useSearchParams();
 
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const contacts = usePersistedStore((s) => s.contacts);
   const addContact = usePersistedStore((s) => s.addContact);
   const updateContact = usePersistedStore((s) => s.updateContact);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const txDraft = useSessionStore((s) => s.txDraft);
   const saveTxDraft = useSessionStore((s) => s.saveTxDraft);
   const clearTxDraft = useSessionStore((s) => s.clearTxDraft);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
 
-  const wallet = wallets[settings.activeAccountIndex] ?? null;
+  const account = accounts[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
-  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
+  const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts) ?? "";
   const { data: balanceData } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
@@ -83,13 +83,13 @@ export default function SendScreen() {
     searchParams, step, draft: txDraft, clearDraft: clearTxDraft, setDestination, setAmountStr,
   });
 
-  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
+  const accountName = wallet?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
-  const vaultAccountTargets = (vault?.accounts ?? [])
+  const walletAccountTargets = (wallet?.accounts ?? [])
     .filter((a) => !a.hidden)
-    .map((a) => ({ name: a.name, identity: a.identity ?? wallets[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
+    .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
     .filter((a) => a.identity && a.identity !== identity);
-  const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
+  const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
   const sendHeader = useMemo(() => (
     <SendHeader
       onSendMany={() => navigate("/send-many")}
@@ -108,8 +108,8 @@ export default function SendScreen() {
   const needsHighValueConfirmation = exceedsHighValueThreshold(amountValue, settings.highValueSendThreshold);
   const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
   const suggestions = useMemo(
-    () => buildAddressSuggestions({ query: destination, contacts, accounts: vaultAccountTargets, currentIdentity: identity, recentIdentities: recentRecipientIdentities }),
-    [contacts, destination, identity, recentRecipientIdentities, vaultAccountTargets],
+    () => buildAddressSuggestions({ query: destination, contacts, accounts: walletAccountTargets, currentIdentity: identity, recentIdentities: recentRecipientIdentities }),
+    [contacts, destination, identity, recentRecipientIdentities, walletAccountTargets],
   );
 
   const price = stats?.price;
@@ -130,8 +130,8 @@ export default function SendScreen() {
 
   function validateInputs(): boolean {
     let ok = true;
-    if (!wallet) { setDestError("Account locked"); destRef.current?.focus(); return false; }
-    if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); destRef.current?.focus(); ok = false; } else setDestError("");
+    if (!account) { setDestError("Account locked"); destRef.current?.focus(); return false; }
+    if (!isValidIdentity(destUpper)) { setDestError("Invalid address"); destRef.current?.focus(); ok = false; } else setDestError("");
     const amountValidation = validateQuAmount(amountStr, {
       balance,
       invalidMessage: "Enter an amount",
@@ -143,9 +143,9 @@ export default function SendScreen() {
   }
 
   async function verifyHighValue() {
-    if (!vault?.encryptedData || !highValuePassword) return;
+    if (!wallet?.encryptedData || !highValuePassword) return;
     setHighValueVerifying(true); setHighValuePasswordError("");
-    try { await verifyVaultPassword(vault.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
+    try { await verifyWalletPassword(wallet.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
     catch { setHighValuePasswordError("Wrong password"); }
     finally { setHighValueVerifying(false); }
   }
@@ -155,7 +155,7 @@ export default function SendScreen() {
   function applyScannedPayload(raw: string) {
     const parsed = parseScannedSendPayload(raw);
     if (!parsed) {
-      setQrIntakeError("Unsupported QR. Use a Glyph payment link or a Qubic identity.");
+      setQrIntakeError("Unsupported QR. Use a Glyph payment link or a Qubic address.");
       return;
     }
 
@@ -189,7 +189,7 @@ export default function SendScreen() {
     : undefined;
 
   async function send() {
-    if (!wallet) return;
+    if (!account) return;
     setSending(true);
     setStep("sending");
     try {
@@ -242,9 +242,9 @@ export default function SendScreen() {
         onSelectDestination={(value) => { setDestination(value); setDestError(""); }}
         onPickerSelect={(value) => { setDestination(value); setDestError(""); setShowPicker(false); }}
         onReview={goReview}
-        canReview={!!wallet}
+        canReview={!!account}
         contacts={contacts}
-        accounts={vaultAccountTargets}
+        accounts={walletAccountTargets}
         showPicker={showPicker}
         onOpenPicker={() => setShowPicker(true)}
         onClosePicker={() => setShowPicker(false)}
@@ -280,7 +280,7 @@ export default function SendScreen() {
         memo={memo}
         onMemoChange={setMemo}
         sending={sending}
-        canSign={!!wallet && !!tickInfo}
+        canSign={!!account && !!tickInfo}
         onSend={send}
         onEdit={() => setStep("input")}
       />

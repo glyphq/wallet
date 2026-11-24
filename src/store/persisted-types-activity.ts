@@ -62,7 +62,7 @@ export type AuditEventKind =
   | "unlock_succeeded"
   | "unlock_failed"
   | "seed_revealed"
-  | "vault_exported"
+  | "wallet_exported"
   | "contacts_exported"
   | "request_received"
   | "request_approved"
@@ -76,7 +76,7 @@ export interface AuditEvent {
   status: "success" | "failure" | "info";
   title: string;
   detail: string;
-  vaultId?: string;
+  walletId?: string;
   accountIndex?: number;
 }
 

@@ -8,7 +8,7 @@ import { useSessionStore } from "@/store/session";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import {
   DEFAULT_FILTERS,
   HISTORY_RENDER_PAGE,
@@ -48,9 +48,9 @@ export default function HistoryScreen() {
   const navigate = useNavigate();
   const settings = usePersistedStore((s) => s.settings);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const wallets = useSessionStore((s) => s.wallets);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
-  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets);
+  const accounts = useSessionStore((s) => s.accounts);
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
+  const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts);
 
   const txMemos = usePersistedStore((s) => s.txMemos);
   const txTags = usePersistedStore((s) => s.txTags);

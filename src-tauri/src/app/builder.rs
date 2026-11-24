@@ -1,7 +1,7 @@
 //! Tauri builder assembly: plugins, managed state, setup, window events and
 //! the command handler registration.
 
-use crate::{biometric, commands, session_crypto, store_crypto, vault_crypto};
+use crate::{biometric, commands, session_crypto, store_crypto, wallet_crypto};
 
 use super::{launch, plugins, setup, window};
 
@@ -35,14 +35,14 @@ pub(crate) fn run() {
             commands::app::get_updater_context,
             store_crypto::encrypt_store_value,
             store_crypto::decrypt_store_value,
-            vault_crypto::encrypt_vault,
-            vault_crypto::unlock_vault_session,
-            vault_crypto::verify_vault_password,
-            vault_crypto::add_seed_to_vault,
-            vault_crypto::remove_seed_from_vault,
-            vault_crypto::select_vault_accounts,
-            vault_crypto::rotate_vault_password,
-            vault_crypto::reveal_vault_seed,
+            wallet_crypto::encrypt_wallet,
+            wallet_crypto::unlock_wallet_session,
+            wallet_crypto::verify_wallet_password,
+            wallet_crypto::add_seed_to_wallet,
+            wallet_crypto::remove_seed_from_wallet,
+            wallet_crypto::select_wallet_accounts,
+            wallet_crypto::rotate_wallet_password,
+            wallet_crypto::reveal_wallet_seed,
             session_crypto::store_session_seeds,
             session_crypto::clear_session_seeds,
             session_crypto::sign_transaction,

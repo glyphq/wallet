@@ -2,18 +2,18 @@ import { describe, expect, test } from "bun:test";
 import { exceedsHighValueThreshold, requiresBiometricSeedReveal } from "@/lib/session-policies";
 
 describe("requiresBiometricSeedReveal", () => {
-  test("requires biometrics only when enabled for the selected vault", () => {
-    expect(requiresBiometricSeedReveal(true, ["vault-a"], "vault-a")).toBe(true);
+  test("requires biometrics only when enabled for the selected wallet", () => {
+    expect(requiresBiometricSeedReveal(true, ["wallet-a"], "wallet-a")).toBe(true);
   });
 
   test("falls back to password when the preference is off", () => {
-    expect(requiresBiometricSeedReveal(false, ["vault-a"], "vault-a")).toBe(false);
+    expect(requiresBiometricSeedReveal(false, ["wallet-a"], "wallet-a")).toBe(false);
   });
 
-  test("falls back to password when the vault is not enrolled", () => {
-    expect(requiresBiometricSeedReveal(true, ["vault-a"], "vault-b")).toBe(false);
-    expect(requiresBiometricSeedReveal(true, [], "vault-a")).toBe(false);
-    expect(requiresBiometricSeedReveal(true, ["vault-a"], null)).toBe(false);
+  test("falls back to password when the wallet is not enrolled", () => {
+    expect(requiresBiometricSeedReveal(true, ["wallet-a"], "wallet-b")).toBe(false);
+    expect(requiresBiometricSeedReveal(true, [], "wallet-a")).toBe(false);
+    expect(requiresBiometricSeedReveal(true, ["wallet-a"], null)).toBe(false);
   });
 });
 

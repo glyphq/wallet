@@ -28,7 +28,7 @@ export function PasswordStep({
   return (
     <SetupFlow
       title="Set a password"
-      primaryLabel="Create Vault"
+      primaryLabel="Create wallet"
       primaryDisabled={!passwordValid}
       primaryLoading={loading}
       onPrimary={onSubmit}
