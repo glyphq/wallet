@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { background, drift } from "asciify-engine/kit";
+import { background, fluid } from "asciify-engine/kit";
 import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 
 /** Animated ASCII field with the Glyph mark rotating above it on the splash. */
@@ -15,11 +15,11 @@ export function AsciiLogo() {
     let handle: ReturnType<typeof background> | null = null;
     try {
       handle = background(host, {
-        preset: drift,
+        preset: fluid,
         palette: "#8f8d86",
-        cellSize: 11,
-        speed: 0.8,
-        opacity: 0.35,
+        cellSize: 10,
+        speed: 1.5,
+        opacity: 0.45,
         mark: "glyph",
         cursor: "trail",
         dither: 0,
@@ -34,15 +34,27 @@ export function AsciiLogo() {
   }, []);
 
   return (
-    <div style={{ position: "relative", width: 240, height: 180, overflow: "hidden", display: "grid", placeItems: "center" }}>
-      <div ref={hostRef} aria-hidden="true" style={{ position: "absolute", inset: 0 }} />
+    <div style={{ position: "relative", width: 260, height: 200, overflow: "hidden", display: "grid", placeItems: "center" }}>
+      <div
+        ref={hostRef}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          WebkitMaskImage: "radial-gradient(ellipse at center, #000 32%, transparent 72%)",
+          maskImage: "radial-gradient(ellipse at center, #000 32%, transparent 72%)",
+        }}
+      />
       <motion.img
         src={glyphOnDark}
         alt=""
         aria-hidden="true"
-        animate={reduceMotion ? undefined : { rotate: 360 }}
-        transition={reduceMotion ? undefined : { duration: 28, repeat: Infinity, ease: "linear" }}
-        style={{ position: "relative", zIndex: 1, width: 108, height: 108, objectFit: "contain" }}
+        animate={reduceMotion ? undefined : { rotate: 360, scale: [1, 1.04, 1] }}
+        transition={{
+          rotate: { duration: 16, repeat: Infinity, ease: "linear" },
+          scale: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
+        }}
+        style={{ position: "relative", zIndex: 1, width: 116, height: 116, objectFit: "contain" }}
       />
     </div>
   );
