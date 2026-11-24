@@ -1,12 +1,13 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigate, useOutlet } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { pageTransition } from "@/lib/animations";
+import { pageTransition, sectionTransition } from "@/lib/animations";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
 import { TitleBar } from "@/components/title-bar";
+import { AsciiPageHeader } from "@/components/ascii-page-header";
 import { ScreenHeader } from "@/components/screen-header";
 import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
@@ -52,14 +53,6 @@ const HEADER_TITLES: [string, string][] = [
   ["/search", "Search"],
   ["/settings", "Settings"],
 ];
-
-/** Instant transition — no animation for lateral navigation within a section. */
-const instantTransition = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0 },
-} as const;
 
 function showHeader(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname) || ROUTE_OWNED_HEADERS.has(pathname)) return false;
@@ -134,8 +127,8 @@ function LayoutShell() {
   const prev = prevRef.current;
   useLayoutEffect(() => { prevRef.current = cur; }, [cur]);
 
-  // Use instant transition for lateral navigation within a section
-  const transition = isSameSection(prev, cur) ? instantTransition : pageTransition;
+  // Keep the shell header still while the page content moves within a section.
+  const transition = isSameSection(prev, cur) ? sectionTransition : pageTransition;
 
   return (
     <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
@@ -143,18 +136,7 @@ function LayoutShell() {
 
       {/* ── Static header ── */}
       {show && resolvedHeader && (
-        <header
-          style={{
-            flexShrink: 0,
-            height: "var(--height-header)",
-            display: "flex",
-            alignItems: "center",
-            padding: "0 var(--screen-padding)",
-            background: "var(--color-bg-header)",
-          }}
-        >
-          {resolvedHeader}
-        </header>
+        <AsciiPageHeader>{resolvedHeader}</AsciiPageHeader>
       )}
 
       {/* ── Lock countdown banner ── */}

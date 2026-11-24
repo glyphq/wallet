@@ -35,6 +35,7 @@ export function AsciiBackdrop({ children, style, contentStyle }: { children?: Re
         hostRect.height,
         copyRect.width,
         copyRect.height,
+        copy.textContent,
         document.fonts.status,
       ].join(":");
       if (key === clearKey) return clearRects;

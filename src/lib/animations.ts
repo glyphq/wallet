@@ -11,6 +11,14 @@
 
 import type { Transition } from "motion/react";
 
+/** Subtle in-section page change: content lifts while the shell header stays put. */
+export const sectionTransition = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4 },
+  transition: { duration: 0.16, ease: "easeOut" },
+} as const;
+
 // ── Easing curves ────────────────────────────────────────────────────────────
 
 /** Material-style ease-out — decelerating entrance */
