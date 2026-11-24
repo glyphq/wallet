@@ -62,8 +62,9 @@ export default function SplashScreen() {
     void usePersistedStore.persist.rehydrate();
   }
 
-  const status = updater.checking
-    ? "Checking for updates"
+  const checkingVisible = updater.checking || !minElapsed;
+  const status = checkingVisible
+    ? "Checking for updates…"
     : updater.installing
       ? `Installing update… ${updater.progress}%`
       : updater.update && !updateDeferred
@@ -86,7 +87,7 @@ export default function SplashScreen() {
             {status}
           </span>
 
-          {updater.update && !updateDeferred ? (
+          {minElapsed && updater.update && !updateDeferred ? (
             <div
               style={{
                 width: "100%",
