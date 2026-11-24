@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import { AddCircleIcon, Delete02Icon, UserGroupIcon } from "@/lib/icons";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
 import { Tag } from "@/components/tag";
 import { TextButton } from "@/components/text-button";
@@ -125,41 +124,37 @@ export function MultisigOwnersEditor({
       {extraOwners.map((owner, index) => {
         const ownerNumber = index + 2;
         return (
-          <div key={ownerRowIds[index]} style={{ display: "flex", alignItems: "flex-end", gap: "var(--space-2)", minWidth: 0 }}>
-            <Input
-              containerStyle={{ flex: 1, minWidth: 0 }}
-              label={`Owner ${ownerNumber}`}
-              value={owner}
-              onChange={(event) => onOwnerChange(index, event.target.value)}
-              placeholder="Identity address"
-              error={ownerErrors[index] || undefined}
-              autoComplete="off"
-              rightElement={(
+          <Input
+            key={ownerRowIds[index]}
+            containerStyle={{ minWidth: 0 }}
+            label={`Owner ${ownerNumber}`}
+            value={owner}
+            onChange={(event) => onOwnerChange(index, event.target.value)}
+            placeholder="Identity address"
+            error={ownerErrors[index] || undefined}
+            autoComplete="off"
+            style={{ paddingRight: 84 }}
+            rightElement={(
+              <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                 <button
                   type="button"
                   onClick={() => onPickOwner(index)}
                   aria-label={`Choose owner ${ownerNumber}`}
-                  style={{
-                    border: 0,
-                    background: "transparent",
-                    padding: 0,
-                    display: "flex",
-                    color: "var(--color-text-tertiary)",
-                    cursor: "pointer",
-                  }}
+                  style={{ border: 0, background: "transparent", padding: 0, display: "flex", color: "var(--color-text-tertiary)", cursor: "pointer" }}
                 >
                   <UserGroupIcon size={18} aria-hidden="true" />
                 </button>
-              )}
-            />
-            <IconButton
-              label={`Remove owner ${ownerNumber}`}
-              onClick={() => onRemoveOwner(index)}
-              style={{ marginBottom: 1, flexShrink: 0 }}
-            >
-              <Delete02Icon size={18} aria-hidden="true" />
-            </IconButton>
-          </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveOwner(index)}
+                  aria-label={`Remove owner ${ownerNumber}`}
+                  style={{ border: 0, background: "transparent", padding: 0, display: "flex", color: "var(--color-text-tertiary)", cursor: "pointer" }}
+                >
+                  <Delete02Icon size={18} aria-hidden="true" />
+                </button>
+              </span>
+            )}
+          />
         );
       })}
 

@@ -100,17 +100,6 @@ const VALUE_STYLE = {
   overflowWrap: "anywhere",
 } as const;
 
-const OWNER_CARD_STYLE = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "var(--space-3)",
-  minWidth: 0,
-  padding: "var(--space-3)",
-  background: "var(--color-bg-surface)",
-  border: "1px solid var(--color-border-subtle)",
-  borderRadius: "var(--radius-sharp)",
-} as const;
-
 function ErrorBlock({ message }: { message: string }) {
   if (!message) return null;
   return (
@@ -502,36 +491,28 @@ export default function MultisigCreateScreen() {
               />
             </section>
 
-              <section aria-label="Owners" style={SECTION_STYLE}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)" }}>
-                  <p style={LABEL_STYLE}>Owners</p>
-                  <span style={CAPTION_COPY}>{ownerCount} of {MSVAULT_MAX_OWNERS}</span>
-                </div>
-  
-                <div style={OWNER_CARD_STYLE}>
-                  <FramedAvatar seed={identity ?? activeAccountName} size={34} />
-                  <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-                    <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          fontSize: "var(--text-body-compact)",
-                          fontWeight: 500,
-                          color: "var(--color-text-primary)",
-                          minWidth: 0,
-                          overflowWrap: "anywhere",
-                        }}
-                      >
-                        {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
-                      </span>
+            <section aria-label="Owners" style={SECTION_STYLE}>
+              <p style={LABEL_STYLE}>Owners</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
+                <FramedAvatar seed={identity ?? activeAccountName} size={34} />
+                <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
+                  <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                      {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
+                    </span>
+                    {ownerCount >= 2 ? (
                       <Tag>{`${approvalsValue} of ${ownerCount} approvals`}</Tag>
-                    </span>
-                    <span style={CAPTION_COPY}>
-                      Owner 1 is {activeAccountName}. Use Manage owners to add signers and set how many approvals are required.
-                    </span>
-                  </div>
+                    ) : (
+                      <Tag variant="warning">Needs another owner</Tag>
+                    )}
+                  </span>
+                  <span style={CAPTION_COPY}>
+                    Includes {activeAccountName}. Manage owners to add signers or change approvals.
+                  </span>
                 </div>
-              </section>
+              </div>
+            </section>
+
             <section aria-label="Fees" style={SECTION_STYLE}>
               {feesError ? (
                 <FeeRow
