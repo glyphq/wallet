@@ -1,56 +1,18 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { useEffect, useState, type DragEvent } from "react";
 import { FolderOpenIcon } from "@/lib/icons";
 import type { VaultFileImport } from "./use-vault-file-import";
 
-function containsPoint(element: HTMLElement, x: number, y: number) {
-  const rect = element.getBoundingClientRect();
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-}
-
 /** Drag-and-drop target for Vault export files, with click and keyboard fallbacks. */
 export function VaultFileDrop({ flow }: { flow: VaultFileImport }) {
-  const zoneRef = useRef<HTMLButtonElement>(null);
-  const flowRef = useRef(flow);
-  flowRef.current = flow;
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
-
-    let disposed = false;
-    let unlisten: (() => void) | undefined;
-
-    void getCurrentWebview()
-      .onDragDropEvent(({ payload }) => {
-        if (payload.type === "leave") {
-          setDragging(false);
-          return;
-        }
-
-        const zone = zoneRef.current;
-        if (!zone) return;
-
-        const scale = window.devicePixelRatio || 1;
-        const inside = containsPoint(zone, payload.position.x / scale, payload.position.y / scale);
-        setDragging(inside);
-
-        if (payload.type === "drop" && inside) {
-          const path = payload.paths[0];
-          if (path) void flowRef.current.importPath(path);
-        }
-      })
-      .then((stop) => {
-        if (disposed) stop();
-        else unlisten = stop;
-      })
-      .catch(() => {
-        // Native drag events are unavailable; the DOM handlers below still work.
-      });
-
+    const ignoreOutside = (event: globalThis.DragEvent) => event.preventDefault();
+    window.addEventListener("dragover", ignoreOutside);
+    window.addEventListener("drop", ignoreOutside);
     return () => {
-      disposed = true;
-      unlisten?.();
+      window.removeEventListener("dragover", ignoreOutside);
+      window.removeEventListener("drop", ignoreOutside);
     };
   }, []);
 
@@ -58,16 +20,15 @@ export function VaultFileDrop({ flow }: { flow: VaultFileImport }) {
     event.preventDefault();
     setDragging(false);
     const file = event.dataTransfer.files.item(0);
-    if (file) void flowRef.current.importFile(file);
+    if (file) void flow.importFile(file);
   }
 
   return (
     <button
-      ref={zoneRef}
       type="button"
       className="vault-dropzone corner-frame"
       data-drag={dragging ? "true" : "false"}
-      onClick={() => flowRef.current.openFilePicker()}
+      onClick={() => flow.openFilePicker()}
       onDragEnter={(event) => {
         event.preventDefault();
         setDragging(true);
