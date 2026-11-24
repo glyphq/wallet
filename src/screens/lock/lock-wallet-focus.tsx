@@ -1,5 +1,5 @@
 import { Identicon } from "@/components/identicon";
-import { formatDate, timeAgo } from "@/lib/format";
+import { timeAgo } from "@/lib/format";
 import type { usePersistedStore } from "@/store/persisted";
 
 type Wallet = NonNullable<ReturnType<typeof usePersistedStore.getState>["wallets"][number]>;
@@ -8,7 +8,6 @@ type Wallet = NonNullable<ReturnType<typeof usePersistedStore.getState>["wallets
 export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
   const lastOpened = wallet.lastUnlockedAt ? `Last unlocked ${timeAgo(wallet.lastUnlockedAt)}` : "Not unlocked yet";
   const accountCount = wallet.accounts.length;
-  const createdAt = wallet.createdAt ? formatDate(wallet.createdAt) : "—";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", textAlign: "center" }}>
@@ -46,23 +45,24 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
         {lastOpened}
       </span>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", marginTop: "var(--space-2)" }}>
-        <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Accounts
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
-            {accountCount}
-          </span>
+      <div
+        className="lock-wallet-accounts corner-frame"
+        style={{
+          marginTop: "var(--space-2)",
+          padding: "6px 12px",
+          border: "1px solid var(--color-border-subtle)",
+          borderRadius: "var(--radius-sharp)",
+          background: "var(--color-bg-surface)",
+          display: "flex",
+          alignItems: "baseline",
+          gap: "var(--space-2)",
+        }}
+      >
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
+          {accountCount}
         </span>
-        <span aria-hidden="true" style={{ width: 1, height: 24, background: "var(--color-border-subtle)" }} />
-        <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Created
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
-            {createdAt}
-          </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          {accountCount === 1 ? "account" : "accounts"}
         </span>
       </div>
     </div>

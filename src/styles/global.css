@@ -1045,3 +1045,13 @@ a:hover {
 .lock-wallet-list::before {
   opacity: 0.24;
 }
+
+.lock-wallet-accounts {
+  --corner-size: 6px;
+  --corner-inset: 2px;
+  --corner-color: var(--color-text-tertiary);
+}
+
+.lock-wallet-accounts::before {
+  opacity: 0.28;
+}
