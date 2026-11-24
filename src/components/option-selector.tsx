@@ -38,9 +38,14 @@ export function OptionSelector<T extends string>({
           key={option.value}
           role="radio"
           aria-checked={option.value === value}
-          variant={option.value === value ? "primary" : "secondary"}
+          variant="secondary"
           size="sm"
-          style={{ width: "100%" }}
+          style={{
+            width: "100%",
+            ...(option.value === value
+              ? { borderColor: "var(--color-accent)", color: "var(--color-accent)" }
+              : undefined),
+          }}
           onClick={() => onChange(option.value)}
         >
           {option.icon}
