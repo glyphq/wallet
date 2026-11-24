@@ -41,7 +41,6 @@ import {
   HoldingFeeWarning,
   IdentityName,
   MultisigAccountSelect,
-  MultisigConfirmSheet,
   VaultId,
   identityDisplayName,
 } from "./multisig-ui";
@@ -426,6 +425,55 @@ export default function MultisigDetailScreen() {
     );
   }
 
+  if (resetTarget) {
+    const closeReset = () => {
+      if (resetSending) return;
+      setResetTarget(null);
+      setResetError("");
+    };
+    return (
+      <AppShell
+        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} />}
+        contentStyle={{ padding: "var(--space-4)", paddingBottom: "var(--space-8)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
+      >
+        <p style={BODY_COPY}>
+          This removes only this account's approval. The reset fee is paid by this account and is
+          not refundable.
+        </p>
+
+        <div className="corner-frame" style={CARD}>
+          <FeeRow label="Vault" value={<VaultId id={detail.id} />} />
+          <FeeRow
+            label="Release"
+            value={
+              resetTarget.kind === "asset" && resetTarget.asset ? (
+                <AssetMetaLabel asset={resetTarget.asset} amount={resetTarget.amount} />
+              ) : (
+                `${formatQu(resetTarget.amount)} QU`
+              )
+            }
+          />
+          <FeeRow
+            label="Destination"
+            value={identityDisplayName(resetTarget.destination, contacts, wallet, sessionAccounts)}
+          />
+          <FeeRow label="Reset fee" value={fees ? `${formatQu(fees.releaseResetFee)} QU` : "Fees unavailable"} />
+        </div>
+
+        {resetError ? <p role="alert" style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>{resetError}</p> : null}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <Button onClick={() => void sendReset(resetTarget)} loading={resetSending} disabled={!fees || resetSending} style={{ width: "100%" }}>
+            Withdraw approval
+          </Button>
+          <Button variant="secondary" size="md" onClick={closeReset} disabled={resetSending} style={{ width: "100%" }}>
+            Cancel
+          </Button>
+        </div>
+      </AppShell>
+    );
+  }
+
   const coverage = fees ? vaultHoldingCoverage(detail.balance, fees.holdingFee) : null;
   const qubicProposals = detail.proposals.filter((proposal) => proposal.kind === "qubic");
   const assetProposals = detail.proposals.filter((proposal) => proposal.kind === "asset");
@@ -647,42 +695,6 @@ export default function MultisigDetailScreen() {
         )}
       </Section>
 
-      {resetTarget ? (
-        <MultisigConfirmSheet
-          open
-          title="Withdraw approval"
-          description="This removes only this account's approval. The reset fee is paid by this account and is not refundable."
-          details={
-            <>
-              <FeeRow label="Vault" value={<VaultId id={detail.id} />} />
-              <FeeRow
-                label="Release"
-                value={
-                  resetTarget.kind === "asset" && resetTarget.asset ? (
-                    <AssetMetaLabel asset={resetTarget.asset} amount={resetTarget.amount} />
-                  ) : (
-                    `${formatQu(resetTarget.amount)} QU`
-                  )
-                }
-              />
-              <FeeRow
-                label="Destination"
-                value={identityDisplayName(resetTarget.destination, contacts, wallet, sessionAccounts)}
-              />
-            </>
-          }
-          feeLabel={fees ? `${formatQu(fees.releaseResetFee)} QU` : "Fees unavailable"}
-          confirmLabel="Withdraw approval"
-          sending={resetSending}
-          error={resetError}
-          onConfirm={() => void sendReset(resetTarget)}
-          onClose={() => {
-            if (resetSending) return;
-            setResetTarget(null);
-            setResetError("");
-          }}
-        />
-      ) : null}
     </AppShell>
   );
 }

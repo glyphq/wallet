@@ -1,13 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AppShell } from "@/layouts/app-shell";
-import { Button } from "@/components/button";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { Sheet } from "@/components/sheet";
 import { Tag } from "@/components/tag";
 import { useMsvaultAssetMeta } from "@/hooks/use-msvault";
 import { getWalletAccountIdentity } from "@/lib/accounts";
-import { formatQu, truncateId } from "@/lib/format";
+import { truncateId } from "@/lib/format";
 import {
   MSVAULT_REVOKE_FEE,
   formatAssetAmount,
@@ -27,14 +25,6 @@ const MONO_VALUE: CSSProperties = {
   textAlign: "right",
 };
 
-const BODY_COPY: CSSProperties = {
-  margin: 0,
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-body-compact)",
-  lineHeight: "var(--leading-body)",
-  color: "var(--color-text-secondary)",
-};
-
 const CAPTION_COPY: CSSProperties = {
   margin: 0,
   fontFamily: "var(--font-mono)",
@@ -43,25 +33,6 @@ const CAPTION_COPY: CSSProperties = {
   color: "var(--color-text-tertiary)",
   overflowWrap: "anywhere",
 };
-
-function ErrorText({ error }: { error: string }) {
-  if (!error) return null;
-  return (
-    <p
-      role="alert"
-      style={{
-        margin: 0,
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-caption)",
-        lineHeight: "var(--leading-compact)",
-        color: "var(--color-status-error)",
-        overflowWrap: "anywhere",
-      }}
-    >
-      {error}
-    </p>
-  );
-}
 
 /** Fixed-footer multisig flow shell; the body scrolls independently. */
 export function MultisigFlowShell({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
@@ -313,110 +284,5 @@ export function AssetMetaLabel({ asset, amount }: { asset: MsvaultAssetRef; amou
       ) : null}
       <span style={{ color: amount !== undefined ? "var(--color-text-secondary)" : undefined }}>{name}</span>
     </span>
-  );
-}
-
-/** Grant or withdraw MSVAULT management rights for one asset. */
-export function MultisigAssetAccessSheet({
-  open,
-  mode,
-  asset,
-  amount,
-  fee,
-  onClose,
-  onConfirm,
-  sending,
-  error,
-}: {
-  open: boolean;
-  mode: "grant" | "revoke";
-  asset: MsvaultAssetRef;
-  amount: bigint;
-  fee: bigint;
-  onClose: () => void;
-  onConfirm: () => void;
-  sending: boolean;
-  error: string;
-}) {
-  const { data } = useMsvaultAssetMeta(asset);
-  const name = data?.name || asset.name || "Asset";
-  const formattedAmount = formatAssetAmount(amount, data?.decimals ?? 0);
-  const granting = mode === "grant";
-
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={granting ? "Grant asset access" : "Withdraw asset access"}
-      footer={
-        <Button onClick={onConfirm} loading={sending} style={{ width: "100%" }}>
-          {granting ? "Grant access" : "Withdraw access"}
-        </Button>
-      }
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <p style={BODY_COPY}>
-          {granting
-            ? "This gives MSVAULT management rights over these shares, but does not deposit them yet. Deposit after the grant is confirmed."
-            : "Management of these shares returns to QX. Only the shares listed here are withdrawn."}
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <FeeRow label="Asset" value={name} />
-          <FeeRow label="Shares" value={formattedAmount} />
-          <FeeRow label="Fee" value={fee > 0n ? `${formatQu(fee)} QU` : "None"} />
-        </div>
-        {!granting ? (
-          <p style={CAPTION_COPY}>
-            The {formatQu(fee > 0n ? fee : MSVAULT_REVOKE_FEE)} QU fee is paid by this account and is not refundable.
-          </p>
-        ) : null}
-        <ErrorText error={error} />
-      </div>
-    </Sheet>
-  );
-}
-
-/** Generic confirmation sheet for fee-bearing or destructive vault actions. */
-export function MultisigConfirmSheet({
-  open,
-  title,
-  description,
-  details,
-  feeLabel,
-  confirmLabel,
-  onConfirm,
-  onClose,
-  sending,
-  error,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  details?: ReactNode;
-  feeLabel: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onClose: () => void;
-  sending: boolean;
-  error: string;
-}) {
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={title}
-      footer={
-        <Button onClick={onConfirm} loading={sending} style={{ width: "100%" }}>
-          {confirmLabel}
-        </Button>
-      }
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <p style={BODY_COPY}>{description}</p>
-        {details ? <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>{details}</div> : null}
-        {feeLabel ? <FeeRow label="Fee" value={feeLabel} /> : null}
-        <ErrorText error={error} />
-      </div>
-    </Sheet>
   );
 }

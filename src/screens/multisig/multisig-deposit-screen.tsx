@@ -53,7 +53,6 @@ import {
   AssetMetaLabel,
   FeeRow,
   MultisigAccountSelect,
-  MultisigAssetAccessSheet,
   MultisigFlowShell,
   VaultId,
 } from "./multisig-ui";
@@ -604,6 +603,76 @@ export default function MultisigDepositScreen() {
     return `${formatQu(value)} QU`;
   };
 
+  const accessAmount =
+    accessMode === "grant"
+      ? (grantAmount ?? rawAssetAmount ?? 0n)
+      : (managedBalance ?? 0n);
+
+  if (accessMode && selectedOption) {
+    const granting = accessMode === "grant";
+    return (
+      <MultisigFlowShell
+        footer={(
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <Button
+              onClick={() => {
+                if (granting) void submitGrant();
+                else void submitRevoke();
+              }}
+              loading={accessSending}
+              disabled={accessSending}
+              style={{ width: "100%" }}
+            >
+              {granting ? "Grant access" : "Withdraw access"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={accessSending}
+              onClick={() => {
+                setAccessMode(null);
+                setAccessError("");
+              }}
+              style={{ width: "100%" }}
+            >
+              Back
+            </Button>
+          </div>
+        )}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <span style={SECTION_LABEL}>{granting ? "Asset access" : "Withdraw asset access"}</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-section)", color: "var(--color-text-primary)" }}>
+              {granting ? "Grant management rights" : "Return management to QX"}
+            </span>
+            <span style={{ ...BODY_COPY, color: "var(--color-text-tertiary)" }}>
+              {detail.name.trim() || "Unnamed vault"}
+            </span>
+          </div>
+
+          <div className="corner-frame" style={CARD}>
+            <FeeRow label="Asset" value={<AssetMetaLabel asset={selectedOption.asset} />} />
+            <FeeRow label="Shares" value={<AssetMetaLabel asset={selectedOption.asset} amount={accessAmount} />} />
+            <FeeRow label="Fee" value={granting ? "None" : `${formatQu(MSVAULT_REVOKE_FEE)} QU`} />
+          </div>
+
+          <p style={BODY_COPY}>
+            {granting
+              ? "This gives MSVAULT management rights over these shares, but does not deposit them yet. Deposit after the grant is confirmed."
+              : "Management of these shares returns to QX. Only the shares listed here are withdrawn."}
+          </p>
+          {!granting ? (
+            <p style={{ ...BODY_COPY, color: "var(--color-text-tertiary)" }}>
+              The {formatQu(MSVAULT_REVOKE_FEE)} QU fee is paid by this account and is not refundable.
+            </p>
+          ) : null}
+          {accessError ? <p role="alert" style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>{accessError}</p> : null}
+        </div>
+      </MultisigFlowShell>
+    );
+  }
+
   const accountFee =
     mode === "asset" && assetAction === "grant" ? 0n : depositFee;
   const accountTotal = mode === "qubic" ? qubicTotal : accountFee;
@@ -844,30 +913,6 @@ export default function MultisigDepositScreen() {
         ) : null}
       </div>
 
-      {accessMode && selectedOption ? (
-        <MultisigAssetAccessSheet
-          open
-          mode={accessMode}
-          asset={selectedOption.asset}
-          amount={
-            accessMode === "grant"
-              ? (grantAmount ?? rawAssetAmount ?? 0n)
-              : (managedBalance ?? 0n)
-          }
-          fee={accessMode === "revoke" ? MSVAULT_REVOKE_FEE : 0n}
-          sending={accessSending}
-          error={accessError}
-          onConfirm={() => {
-            if (accessMode === "grant") void submitGrant();
-            else void submitRevoke();
-          }}
-          onClose={() => {
-            if (accessSending) return;
-            setAccessMode(null);
-            setAccessError("");
-          }}
-        />
-      ) : null}
     </MultisigFlowShell>
   );
 }

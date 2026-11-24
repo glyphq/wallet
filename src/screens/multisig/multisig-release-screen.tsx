@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/button";
 import { ChoiceChips } from "@/components/choice-chips";
-import { ContactPicker } from "@/components/contact-picker";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { Input } from "@/components/input";
@@ -26,6 +25,7 @@ import {
   MSVAULT_RELEASE_ASSET_TO_INPUT_TYPE,
   MSVAULT_RELEASE_TO_INPUT_TYPE,
 } from "@/lib/contracts";
+import { IdentityPickerScreen } from "@/components/identity-picker";
 import { isValidIdentity } from "@/lib/crypto";
 import { extractMessage, formatQu, truncateId } from "@/lib/format";
 import {
@@ -529,6 +529,22 @@ export default function MultisigReleaseScreen() {
     );
   }
 
+  if (pickerOpen) {
+    return (
+      <IdentityPickerScreen
+        title="Choose recipient"
+        contacts={contacts}
+        accounts={pickerAccounts}
+        onSelect={(selectedIdentity) => {
+          setDestination(selectedIdentity);
+          setShowErrors(false);
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
+    );
+  }
+
   return (
     <MultisigFlowShell footer={footer}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -860,19 +876,6 @@ export default function MultisigReleaseScreen() {
           <p style={BODY_COPY}>Only owners can request or approve releases.</p>
         ) : null}
       </div>
-
-      <ContactPicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(selectedIdentity) => {
-          setDestination(selectedIdentity);
-          setShowErrors(false);
-          setPickerOpen(false);
-        }}
-        contacts={contacts}
-        accounts={pickerAccounts}
-        title="Choose recipient"
-      />
     </MultisigFlowShell>
   );
 }

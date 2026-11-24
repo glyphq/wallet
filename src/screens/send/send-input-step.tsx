@@ -2,9 +2,9 @@ import type { ReactNode, RefObject } from "react";
 import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { IdentityPickerScreen } from "@/components/identity-picker";
 import { formatQu, truncateId } from "@/lib/format";
 import { Button } from "@/components/button";
-import { ContactPicker } from "@/components/contact-picker";
 import { Input } from "@/components/input";
 import { ChoiceChips } from "@/components/choice-chips";
 import { TextButton } from "@/components/text-button";
@@ -90,6 +90,18 @@ export function SendInputStep({
   onClosePicker,
 }: SendInputStepProps) {
   const selectedSourceAccount = sourceAccounts.find((account) => account.index === selectedAccountIndex) ?? sourceAccounts[0];
+
+  if (showPicker) {
+    return (
+      <IdentityPickerScreen
+        title="Choose recipient"
+        contacts={contacts}
+        accounts={pickerAccounts}
+        onSelect={onPickerSelect}
+        onClose={onClosePicker}
+      />
+    );
+  }
 
   return (
     <SendStepPanel minHeight="min-content" scroll="y" statusBar={statusBar}>
@@ -199,6 +211,8 @@ export function SendInputStep({
         ) : null}
       </div>
 
+
+
       <SendStepFooter>
         <Button onClick={onReview} disabled={!canReview} style={{ width: "100%" }}>
           Review transfer
@@ -206,13 +220,7 @@ export function SendInputStep({
         </Button>
       </SendStepFooter>
 
-      <ContactPicker
-        open={showPicker}
-        onClose={onClosePicker}
-        onSelect={onPickerSelect}
-        contacts={contacts}
-        accounts={pickerAccounts}
-      />
+
     </SendStepPanel>
   );
 }

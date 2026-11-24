@@ -1,14 +1,13 @@
 import { useRef, useState } from "react";
+import { AppShell } from "@/layouts/app-shell";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/button";
-import { ContactPicker, type PickerAccount } from "@/components/contact-picker";
-import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
 import { Tag } from "@/components/tag";
+import { PageFrame } from "@/components/page-header";
+import { ScreenHeader } from "@/components/screen-header";
 import { TextButton } from "@/components/text-button";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
@@ -32,7 +31,8 @@ import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { AddCircleIcon, Delete02Icon, UserGroupIcon } from "@/lib/icons";
+import { UserGroupIcon } from "@/lib/icons";
+import { IdentityPickerScreen } from "@/components/identity-picker";
 import {
   FeeRow,
   IdentityName,
@@ -40,6 +40,7 @@ import {
   MultisigFlowShell,
   identityDisplayName,
 } from "./multisig-ui";
+import { MultisigOwnersEditor } from "./multisig-owners-editor";
 
 const MAX_NAME_BYTES = 32;
 const MAX_VAULTS_PER_OWNER = 8;
@@ -161,7 +162,7 @@ export default function MultisigCreateScreen() {
   const balance = balanceData?.balance ?? null;
   const { data: tickInfo } = useTickInfo();
 
-  const [step, setStep] = useState<"edit" | "review">("edit");
+  const [step, setStep] = useState<"edit" | "owners" | "review">("edit");
   const [name, setName] = useState("");
   const [extraOwners, setExtraOwners] = useState<string[]>([""]);
   const [ownerRowIds, setOwnerRowIds] = useState<number[]>([0]);
@@ -170,8 +171,7 @@ export default function MultisigCreateScreen() {
   const [ownerErrors, setOwnerErrors] = useState<string[]>([""]);
   const [formError, setFormError] = useState("");
   const [preflightError, setPreflightError] = useState("");
-  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const [ownersOpen, setOwnersOpen] = useState(false);
+  const [ownerPickerIndex, setOwnerPickerIndex] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -180,7 +180,7 @@ export default function MultisigCreateScreen() {
   const approvalsUpper = Math.max(2, ownerCount);
   const approvalsValue = Math.min(Math.max(requiredApprovals, 2), approvalsUpper);
 
-  const pickerAccounts: PickerAccount[] = [];
+  const pickerAccounts: { name: string; identity: string }[] = [];
   if (wallet) {
     for (const account of [...wallet.accounts].filter((item) => !item.hidden).sort((a, b) => a.index - b.index)) {
       if (account.index === activeIndex) continue;
@@ -223,7 +223,7 @@ export default function MultisigCreateScreen() {
     });
     setOwnerErrors(nextOwnerErrors);
     if (nextOwnerErrors.some(Boolean)) {
-      setOwnersOpen(true);
+      setStep("owners");
       valid = false;
     }
 
@@ -258,6 +258,7 @@ export default function MultisigCreateScreen() {
 
   function addOwner() {
     if (checking || sending) return;
+    setOwnerPickerIndex(null);
     if (ownerCount >= MSVAULT_MAX_OWNERS) return;
     const rowId = nextOwnerRowId.current++;
     setExtraOwners((current) => [...current, ""]);
@@ -268,17 +269,12 @@ export default function MultisigCreateScreen() {
 
   function removeOwner(index: number) {
     if (checking || sending) return;
+    setOwnerPickerIndex(null);
     setExtraOwners((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
     setOwnerRowIds((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
     setOwnerErrors((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
     setRequiredApprovals(defaultRequiredApprovals(Math.max(2, ownerCount - 1)));
     setPreflightError("");
-  }
-
-  function chooseOwner(value: string) {
-    if (pickerIndex === null) return;
-    handleOwnerChange(pickerIndex, value);
-    setPickerIndex(null);
   }
 
   function selectAccount(index: number) {
@@ -391,7 +387,7 @@ export default function MultisigCreateScreen() {
       <Button
         variant="secondary"
         size="md"
-        onClick={() => setOwnersOpen(true)}
+        onClick={() => setStep("owners")}
         disabled={checking || sending}
         style={{ width: "100%" }}
       >
@@ -429,6 +425,57 @@ export default function MultisigCreateScreen() {
     </div>
   );
 
+  if (step === "owners" && ownerPickerIndex !== null) {
+    return (
+      <IdentityPickerScreen
+        title="Choose owner"
+        contacts={contacts}
+        accounts={pickerAccounts}
+        onSelect={(ownerIdentity) => {
+          handleOwnerChange(ownerPickerIndex, ownerIdentity);
+          setOwnerPickerIndex(null);
+        }}
+        onClose={() => setOwnerPickerIndex(null)}
+      />
+    );
+  }
+
+  if (step === "owners") {
+    return (
+      <AppShell
+        fullBleed
+        statusBar={<ScreenHeader title="Manage owners" onBack={() => setStep("edit")} backAriaLabel="Back to new multisig" />}
+        contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}
+      >
+        <PageFrame
+          actions={(
+            <Button size="md" onClick={() => setStep("edit")} style={{ width: "100%" }}>
+              Done
+            </Button>
+          )}
+        >
+          <MultisigOwnersEditor
+            activeAccountName={activeAccountName}
+            identity={identity}
+            extraOwners={extraOwners}
+            ownerRowIds={ownerRowIds}
+            ownerErrors={ownerErrors}
+            ownerCount={ownerCount}
+            requiredApprovals={approvalsValue}
+            maxOwners={MSVAULT_MAX_OWNERS}
+            formError={formError && !formError.startsWith("Vault name") ? formError : ""}
+            preflightError={preflightError}
+            onOwnerChange={handleOwnerChange}
+            onAddOwner={addOwner}
+            onRemoveOwner={removeOwner}
+            onPickOwner={setOwnerPickerIndex}
+            onApprovalsChange={setRequiredApprovals}
+          />
+        </PageFrame>
+      </AppShell>
+    );
+  }
+
   return (
     <MultisigFlowShell footer={footer}>
       <div style={PAGE_STYLE}>
@@ -455,37 +502,36 @@ export default function MultisigCreateScreen() {
               />
             </section>
 
-            <section aria-label="Owners" style={SECTION_STYLE}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)" }}>
-                <p style={LABEL_STYLE}>Owners</p>
-                <span style={CAPTION_COPY}>{ownerCount} of {MSVAULT_MAX_OWNERS}</span>
-              </div>
-
-              <div style={OWNER_CARD_STYLE}>
-                <FramedAvatar seed={identity ?? activeAccountName} size={34} />
-                <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-                  <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontSize: "var(--text-body-compact)",
-                        fontWeight: 500,
-                        color: "var(--color-text-primary)",
-                        minWidth: 0,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
-                    </span>
-                    <Tag>{`${approvalsValue} of ${ownerCount} approvals`}</Tag>
-                  </span>
-                  <span style={CAPTION_COPY}>
-                    Owner 1 is {activeAccountName}. Use Manage owners to add signers and set how many approvals are required.
-                  </span>
+              <section aria-label="Owners" style={SECTION_STYLE}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)" }}>
+                  <p style={LABEL_STYLE}>Owners</p>
+                  <span style={CAPTION_COPY}>{ownerCount} of {MSVAULT_MAX_OWNERS}</span>
                 </div>
-              </div>
-            </section>
-
+  
+                <div style={OWNER_CARD_STYLE}>
+                  <FramedAvatar seed={identity ?? activeAccountName} size={34} />
+                  <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
+                    <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "var(--text-body-compact)",
+                          fontWeight: 500,
+                          color: "var(--color-text-primary)",
+                          minWidth: 0,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
+                      </span>
+                      <Tag>{`${approvalsValue} of ${ownerCount} approvals`}</Tag>
+                    </span>
+                    <span style={CAPTION_COPY}>
+                      Owner 1 is {activeAccountName}. Use Manage owners to add signers and set how many approvals are required.
+                    </span>
+                  </div>
+                </div>
+              </section>
             <section aria-label="Fees" style={SECTION_STYLE}>
               {feesError ? (
                 <FeeRow
@@ -638,128 +684,7 @@ export default function MultisigCreateScreen() {
         )}
       </div>
 
-      <Sheet
-        open={ownersOpen}
-        onClose={() => setOwnersOpen(false)}
-        title="Manage owners"
-        footer={(
-          <Button size="md" onClick={() => setOwnersOpen(false)} style={{ width: "100%" }}>
-            Done
-          </Button>
-        )}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <p style={BODY_COPY}>
-            Owner 1 is {activeAccountName}. Add at least one more signer, then choose how many
-            approvals are required before the vault can release funds.
-          </p>
 
-          <div style={OWNER_CARD_STYLE}>
-            <FramedAvatar seed={identity ?? activeAccountName} size={34} />
-            <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-              <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
-                <span
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-body-compact)",
-                    fontWeight: 500,
-                    color: "var(--color-text-primary)",
-                    minWidth: 0,
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {activeAccountName}
-                </span>
-                <Tag>You</Tag>
-              </span>
-              <span style={CAPTION_COPY}>{identity ?? "No active account"}</span>
-            </div>
-          </div>
-
-          {extraOwners.map((owner, index) => {
-            const ownerNumber = index + 2;
-            return (
-              <div key={ownerRowIds[index]} style={{ display: "flex", alignItems: "flex-end", gap: "var(--space-2)", minWidth: 0 }}>
-                <Input
-                  containerStyle={{ flex: 1, minWidth: 0 }}
-                  label={`Owner ${ownerNumber}`}
-                  value={owner}
-                  onChange={(event) => handleOwnerChange(index, event.target.value)}
-                  placeholder="Identity address"
-                  error={ownerErrors[index] || undefined}
-                  autoComplete="off"
-                  rightElement={(
-                    <button
-                      type="button"
-                      onClick={() => setPickerIndex(index)}
-                      aria-label={`Choose owner ${ownerNumber}`}
-                      style={{
-                        border: 0,
-                        background: "transparent",
-                        padding: 0,
-                        display: "flex",
-                        color: "var(--color-text-tertiary)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <UserGroupIcon size={18} aria-hidden="true" />
-                    </button>
-                  )}
-                />
-                <IconButton
-                  label={`Remove owner ${ownerNumber}`}
-                  onClick={() => removeOwner(index)}
-                  style={{ marginBottom: 1, flexShrink: 0 }}
-                >
-                  <Delete02Icon size={18} aria-hidden="true" />
-                </IconButton>
-              </div>
-            );
-          })}
-
-          <div>
-            <TextButton
-              onClick={addOwner}
-              disabled={ownerCount >= MSVAULT_MAX_OWNERS}
-              aria-label="Add owner"
-            >
-              <AddCircleIcon size={14} strokeWidth={1.5} aria-hidden="true" />
-              Add owner
-            </TextButton>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <DropdownSelect
-              id="multisig-approvals"
-              label="Approvals required"
-              value={String(approvalsValue)}
-              options={Array.from(
-                { length: approvalsUpper - 1 },
-                (_, index) => index + 2,
-              ).map((count) => ({
-                value: String(count),
-                label: `${count} of ${Math.max(2, ownerCount)}`,
-              }))}
-              onChange={(value) => setRequiredApprovals(Number(value))}
-            />
-            <p style={CAPTION_COPY}>
-              Every owner must approve the same release before funds can move.
-            </p>
-          </div>
-
-          {formError && !formError.startsWith("Vault name") ? <ErrorBlock message={formError} /> : null}
-          {preflightError ? <ErrorBlock message={preflightError} /> : null}
-        </div>
-      </Sheet>
-
-      <ContactPicker
-        open={pickerIndex !== null}
-        onClose={() => setPickerIndex(null)}
-        onSelect={chooseOwner}
-        contacts={contacts}
-        accounts={pickerAccounts}
-        title="Choose owner"
-      />
     </MultisigFlowShell>
   );
 }

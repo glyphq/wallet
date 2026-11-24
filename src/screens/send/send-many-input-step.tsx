@@ -5,6 +5,7 @@ import {
 import { Button } from "@/components/button";
 import { DetailRow } from "@/components/detail-row";
 import { Sheet } from "@/components/sheet";
+import { IdentityPickerScreen } from "@/components/identity-picker";
 import { TextButton } from "@/components/text-button";
 import { Textarea } from "@/components/textarea";
 import type { PreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
@@ -15,7 +16,7 @@ import { parseRecipientImport, type ImportedRecipient } from "@/lib/recipient-im
 import { SendStepPanel } from "./send-step-panel";
 import { labelStyle } from "./send-ui";
 import {
-  MAX_RECIPIENTS, RecipientPickerSheet, RecipientRow, sumRecipientAmounts, type Recipient,
+  MAX_RECIPIENTS, RecipientRow, sumRecipientAmounts, type Recipient,
 } from "./send-many-recipients";
 
 export interface SendManyInputStepProps {
@@ -91,6 +92,21 @@ export function SendManyInputStep({
       applyImportedRecipients(parseRecipientImport(await file.text()));
     };
     input.click();
+  }
+
+  if (pickerIndex !== null) {
+    return (
+      <IdentityPickerScreen
+        title="Choose recipient"
+        contacts={contacts}
+        accounts={accounts}
+        onSelect={(identity) => {
+          onFieldChange(pickerIndex, { identity, identityError: "" });
+          setPickerIndex(null);
+        }}
+        onClose={() => setPickerIndex(null)}
+      />
+    );
   }
 
   return (
@@ -218,17 +234,6 @@ export function SendManyInputStep({
         </div>
       </Sheet>
 
-      {/* Contact picker sheet */}
-      <RecipientPickerSheet
-        open={pickerIndex !== null}
-        contacts={contacts}
-        accounts={accounts}
-        onClose={() => setPickerIndex(null)}
-        onSelect={(identity) => {
-          if (pickerIndex !== null) onFieldChange(pickerIndex, { identity, identityError: "" });
-          setPickerIndex(null);
-        }}
-      />
     </SendStepPanel>
   );
 }

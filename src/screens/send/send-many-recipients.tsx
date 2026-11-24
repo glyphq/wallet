@@ -1,9 +1,8 @@
 import { Delete02Icon, UserCircleIcon } from "@/lib/icons";
 import { EmbeddedInput } from "@/components/embedded-input";
-import { Sheet } from "@/components/sheet";
 import type { PreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { newId } from "@/lib/crypto";
-import { formatPreferredCurrencyFromQu, truncateId } from "@/lib/format";
+import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import type { AddressSuggestion } from "@/lib/address-intelligence";
 import type { Contact } from "@/store/persisted";
 import { normalizeIdentity, sumQuAmounts } from "./send-flow";
@@ -149,39 +148,5 @@ export function RecipientRow({
         />
       )}
     </div>
-  );
-}
-
-/** Sheet listing contacts and wallet accounts for a recipient slot. */
-export function RecipientPickerSheet({
-  open,
-  contacts,
-  accounts,
-  onClose,
-  onSelect,
-}: {
-  open: boolean;
-  contacts: Contact[];
-  accounts: { name: string; identity: string }[];
-  onClose: () => void;
-  onSelect: (identity: string) => void;
-}) {
-  return (
-    <Sheet open={open} onClose={onClose} title="Pick recipient">
-      {contacts.map((c) => (
-        <button key={c.id} onClick={() => onSelect(c.identity)}
-          style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "var(--space-3) 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>{c.name}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(c.identity)}</span>
-        </button>
-      ))}
-      {accounts.map((a) => (
-        <button key={a.identity} onClick={() => onSelect(a.identity)}
-          style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", padding: "var(--space-3) 0", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border-subtle)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)" }}>{a.name}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)" }}>{truncateId(a.identity)}</span>
-        </button>
-      ))}
-    </Sheet>
   );
 }
