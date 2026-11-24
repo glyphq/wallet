@@ -253,7 +253,7 @@ export default function RequestScreen() {
     ) : success.callbackStatus === "pending" ? (
       <StatusLine tone="muted">Sending callback...</StatusLine>
     ) : success.callbackStatus === "ok" ? (
-      <StatusLine tone="success">Callback delivered</StatusLine>
+      <StatusLine tone="muted">Callback delivered</StatusLine>
     ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <StatusLine tone="error">Callback failed</StatusLine>

@@ -45,7 +45,7 @@ export function RequestTechnicalDetails(props:
 ) {
   if (props.kind === "invalid") {
     return (
-      <ApprovalDisclosure label="Technical details" defaultOpen>
+      <ApprovalDisclosure label="Technical details">
         <Row label="Parse error" value={props.error ?? "Unknown request error"} />
         {props.raw ? (
           <ApprovalDisclosure label="Raw request">
@@ -58,7 +58,7 @@ export function RequestTechnicalDetails(props:
 
   if (props.kind === "expired") {
     return (
-      <ApprovalDisclosure label="Technical details" defaultOpen>
+      <ApprovalDisclosure label="Technical details">
         <Row label="Request type" value={REQUEST_TYPE_LABEL[props.item.type]} />
         <Row label="dApp" value={props.item.dappName} />
         <Row label="Origin" value={props.item.dappOrigin} />
@@ -72,7 +72,7 @@ export function RequestTechnicalDetails(props:
 
   const request = props.envelope?.request;
   return (
-    <ApprovalDisclosure label="Technical details" defaultOpen>
+    <ApprovalDisclosure label="Technical details">
       {request ? <Row label="Request type" value={REQUEST_TYPE_LABEL[request.type]} /> : null}
       {request ? <Row label="dApp" value={request.dapp.name || "Unknown dApp"} /> : null}
       {request ? <Row label="Origin" value={request.dapp.origin} /> : null}
