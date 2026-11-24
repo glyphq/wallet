@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { usePersistedStore } from "@/store/persisted";
 import { DappRow } from "./dapps/dapp-row";
 
@@ -24,14 +25,11 @@ export default function DappsScreen() {
         <SettingsPageHeader title="Approved dApps" />
 
         {sortedDapps.length === 0 ? (
-          <div style={{
-            padding: "var(--space-8) 0",
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-body)",
-            color: "var(--color-text-secondary)",
-          }}>
-            No approved dApps
-          </div>
+          <EmptyCollectionState
+            icon="apps"
+            title="No approved dApps"
+            description="Connections and permissions from dApps will appear here."
+          />
         ) : (
           <div className="dapps-list" aria-label="Approved dApps">
             {sortedDapps.map((dapp) => (

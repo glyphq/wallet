@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { Hub, Loupe, Plot } from "@lucasmarkes/hairline/react";
+import { Hub, Loupe, Plot, Relay } from "@lucasmarkes/hairline/react";
 
 const FIGURE_STYLE = {
   width: 180,
@@ -20,9 +20,9 @@ export function EmptyCollectionState({
 }: {
   title: string;
   description: string;
-  icon?: "activity" | "search" | "contacts";
+  icon?: "activity" | "search" | "contacts" | "apps";
 }) {
-  const Figure = icon === "search" ? Loupe : icon === "contacts" ? Hub : Plot;
+  const Figure = icon === "search" ? Loupe : icon === "contacts" ? Hub : icon === "apps" ? Relay : Plot;
 
   return (
     <div
