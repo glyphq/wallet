@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import type { UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
-import { LockKeyholeIcon, ViewIcon, ViewOffIcon } from "@/lib/icons";
+import { LockKeyholeIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 
@@ -7,41 +8,10 @@ export interface FormValues {
   password: string;
 }
 
-function PasswordVisibilityButton({
-  visible,
-  onToggle,
-}: {
-  visible: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={visible ? "Hide password" : "Show password"}
-      aria-pressed={visible}
-      style={{
-        border: "none",
-        background: "transparent",
-        padding: 0,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "var(--color-text-tertiary)",
-        cursor: "pointer",
-      }}
-    >
-      {visible ? <ViewOffIcon size={18} strokeWidth={1.5} /> : <ViewIcon size={18} strokeWidth={1.5} />}
-    </button>
-  );
-}
-
 export function LockForm({
   register,
   handleSubmit,
   onSubmit,
-  showPassword,
-  onToggleShowPassword,
   shakeKey,
   error,
   lockoutSecsLeft,
@@ -50,12 +20,11 @@ export function LockForm({
   bioFailures,
   onBiometric,
   isLinux,
+  secondaryAction,
 }: {
   register: UseFormRegister<FormValues>;
   handleSubmit: UseFormHandleSubmit<FormValues>;
   onSubmit: (values: FormValues) => void;
-  showPassword: boolean;
-  onToggleShowPassword: () => void;
   shakeKey: number;
   error: string;
   lockoutSecsLeft: number;
@@ -64,6 +33,7 @@ export function LockForm({
   bioFailures: number;
   onBiometric: () => void;
   isLinux: boolean;
+  secondaryAction?: ReactNode;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%" }}>
@@ -73,16 +43,17 @@ export function LockForm({
             {...register("password")}
             id="wallet-password"
             aria-label="Wallet password"
-            type={showPassword ? "text" : "password"}
-            style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) var(--space-4)" }}
+            type="password"
+            leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
+            style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) 48px" }}
             placeholder="Enter the wallet password"
             autoComplete="current-password"
             error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
             disabled={lockoutSecsLeft > 0}
             autoFocus
-            rightElement={<PasswordVisibilityButton visible={showPassword} onToggle={onToggleShowPassword} />}
           />
         </div>
+        {secondaryAction}
         <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
           <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
           {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock wallet"}
