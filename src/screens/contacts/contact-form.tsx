@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/button";
-import { ArrowLeft01Icon } from "@/lib/icons";
 import { Input } from "@/components/input";
 import { Textarea } from "@/components/textarea";
 
@@ -32,16 +31,12 @@ export function ContactForm({ formId, name, onName, identity, onIdentity, note, 
   );
 }
 
-export function ContactFormActions({ formId, submitLabel, submitIcon, disabled, onCancel }: { formId: string; submitLabel: string; submitIcon?: ReactNode; disabled: boolean; onCancel: () => void }) {
+export function ContactFormActions({ formId, submitLabel, submitIcon, disabled }: { formId: string; submitLabel: string; submitIcon?: ReactNode; disabled: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       <Button type="submit" form={formId} size="md" style={{ width: "100%" }} disabled={disabled}>
         {submitIcon}
         {submitLabel}
-      </Button>
-      <Button type="button" variant="ghost" size="md" style={{ width: "100%" }} onClick={onCancel}>
-        <ArrowLeft01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
-        Cancel
       </Button>
     </div>
   );

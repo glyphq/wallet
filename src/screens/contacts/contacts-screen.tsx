@@ -83,7 +83,7 @@ export default function ContactsScreen() {
         {filtered.length === 0 ? (
           <EmptyState hasContacts={contacts.length > 0} onAdd={() => navigate(`/contacts/new${routeSuffix}`)} />
         ) : (
-          <div className="contacts-list corner-frame" aria-label="Saved contacts">
+          <div className="contacts-list" aria-label="Saved contacts">
             {filtered.map((contact) => (
               <ContactRow
                 key={contact.id}

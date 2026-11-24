@@ -1130,10 +1130,9 @@ a:hover {
 /* ── Contacts ──────────────────────────────────────────────────────────────── */
 
 .contacts-list {
-  overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sharp);
-  background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .contact-row {
@@ -1141,12 +1140,8 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.contact-row:last-child {
-  border-bottom: 0;
 }
 
 .contact-row-identity {

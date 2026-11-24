@@ -1,4 +1,4 @@
-import { ArrowUpRight01Icon, Edit02Icon } from "@/lib/icons";
+import { Edit02Icon, SentIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
 import { Identicon } from "@/components/identicon";
@@ -25,10 +25,9 @@ export function ContactRow({ contact, highlighted, onSend, onEdit }: { contact: 
         <IconButton label={`Edit ${contact.name}`} title="Edit contact" onClick={onEdit}>
           <Edit02Icon size={16} strokeWidth={1.5} aria-hidden="true" />
         </IconButton>
-        <Button variant="secondary" size="sm" onClick={onSend}>
-          Send
-          <ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" />
-        </Button>
+        <IconButton label={`Send to ${contact.name}`} title="Send" onClick={onSend} style={{ color: "var(--color-accent)" }}>
+          <SentIcon size={17} strokeWidth={1.5} aria-hidden="true" />
+        </IconButton>
       </div>
     </article>
   );

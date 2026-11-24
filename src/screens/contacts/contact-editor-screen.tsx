@@ -122,7 +122,6 @@ export default function ContactEditorScreen() {
                 ? <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
                 : <AddCircleIcon size={16} strokeWidth={1.5} aria-hidden="true" />}
               disabled={!name.trim() || !identity.trim()}
-              onCancel={() => navigate(backTo)}
             />
             {editing ? (
               <Button variant="danger" size="md" style={{ width: "100%" }} onClick={() => setConfirmDelete(true)}>
