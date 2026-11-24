@@ -4,12 +4,14 @@ import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
+import { PageFrame } from "@/components/page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
 import { Toggle } from "@/components/toggle";
 import { Button } from "@/components/button";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
+import { Notification01Icon } from "@/lib/icons";
 
 export default function NotificationsScreen() {
   const enabled = usePersistedStore((s) => s.settings.notificationsEnabled);
@@ -94,7 +96,15 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell fullBleed contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}>
+      <PageFrame
+        actions={(
+          <Button size="md" style={{ width: "100%" }} onClick={() => void sendNotificationTest()} disabled={!enabled || notificationTestPending} loading={notificationTestPending}>
+            <Notification01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+            Send test notification
+          </Button>
+        )}
+      >
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <SettingsPageHeader title="Notifications" />
 
@@ -103,14 +113,11 @@ export default function NotificationsScreen() {
           <Toggle label="Notifications" description="Show desktop notifications for wallet events" checked={enabled} onChange={(checked) => updateSettings({ notificationsEnabled: checked })} />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-sm)" }}>
-            {notificationTestStatus === "sent" ? "Notification sent" : notificationTestStatus === "failed" ? "Notification could not be sent" : "Check desktop delivery"}
+        {notificationTestStatus !== "idle" ? (
+          <span role={notificationTestStatus === "failed" ? "alert" : "status"} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: notificationTestStatus === "failed" ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
+            {notificationTestStatus === "sent" ? "Test notification sent." : "Test notification could not be sent."}
           </span>
-          <Button size="sm" variant="secondary" style={{ width: "auto" }} onClick={() => void sendNotificationTest()} disabled={!enabled || notificationTestPending} loading={notificationTestPending}>
-            Send test
-          </Button>
-        </div>
+        ) : null}
 
         <SettingsDivider fullBleed />
 
@@ -138,6 +145,7 @@ export default function NotificationsScreen() {
           <Toggle label="Notify when locked" description="Allow notifications while the wallet is locked" checked={notifyWhenLocked} onChange={(checked) => updateSettings({ notifyWhenLocked: checked })} disabled={!enabled} />
         </div>
       </motion.div>
+      </PageFrame>
     </AppShell>
   );
 }
