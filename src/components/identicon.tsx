@@ -19,8 +19,6 @@ interface IdenticonProps {
   walletIcon?: WalletIconId;
   walletColor?: WalletColor;
   square?: boolean;
-  /** Render generated avatars through the ASCII engine. */
-  ascii?: boolean;
 }
 
 function badgeLabel(seed: string, explicitLabel?: string): string {
@@ -82,7 +80,6 @@ export function Identicon({
   walletIcon: _walletIcon,
   walletColor: _walletColor,
   square = true,
-  ascii = true,
 }: IdenticonProps) {
   const text = kind === "account" ? accountCode(label, code) : badgeLabel(seed, label);
   const fontSize = Math.max(10, Math.floor((size - padding * 2) * 0.34));
@@ -103,7 +100,7 @@ export function Identicon({
           ...style,
         }}
       >
-        <MarbleAvatar seed={seed} size={size} square={square} ascii={ascii} />
+        <MarbleAvatar seed={seed} size={size} square={square} />
       </div>
     );
   }
