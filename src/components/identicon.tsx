@@ -5,6 +5,60 @@ import type { WalletColor, WalletIconId } from "@/store/persisted";
 import { CONTACT_ICON } from "@/lib/wallet-appearance";
 
 const MARBLE_COLORS = ["#ccfcfb", "#7dd3fc", "#6ee7b7", "#fbbf24", "#a78bfa", "#f87171"];
+const ASCII_TEXTURE_CHARS = "/\\|_-=+*#%@";
+
+function asciiTexture(seed: string, size: number): { text: string; fontSize: number; lineHeight: number } {
+  const columns = Math.max(5, Math.floor(size / 7));
+  const rows = Math.max(5, Math.floor(size / 7));
+  let state = 2166136261;
+  for (const character of seed) {
+    state ^= character.charCodeAt(0);
+    state = Math.imul(state, 16777619);
+  }
+  const next = () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return state >>> 0;
+  };
+  const lines: string[] = [];
+  for (let row = 0; row < rows; row++) {
+    let line = "";
+    for (let column = 0; column < columns; column++) {
+      const value = next();
+      line += value % 100 < 35 ? " " : ASCII_TEXTURE_CHARS[value % ASCII_TEXTURE_CHARS.length];
+    }
+    lines.push(line);
+  }
+  return { text: lines.join("\n"), fontSize: size / columns, lineHeight: size / rows };
+}
+
+function AsciiAvatarTexture({ seed, size }: { seed: string; size: number }) {
+  const { text, fontSize, lineHeight } = asciiTexture(seed, size);
+  return (
+    <pre
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        margin: 0,
+        padding: 0,
+        overflow: "hidden",
+        fontFamily: "var(--font-mono)",
+        fontSize,
+        lineHeight: `${lineHeight}px`,
+        letterSpacing: 0,
+        color: "#111",
+        opacity: 0.3,
+        mixBlendMode: "multiply",
+        pointerEvents: "none",
+        userSelect: "none",
+      }}
+    >
+      {text}
+    </pre>
+  );
+}
 
 type BadgeKind = "wallet" | "account" | "contract" | "contact" | "identity" | "position";
 
@@ -21,6 +75,8 @@ interface IdenticonProps {
   walletIcon?: WalletIconId;
   walletColor?: WalletColor;
   square?: boolean;
+  /** Overlay a deterministic ASCII dither texture on generated avatars. */
+  ascii?: boolean;
 }
 
 function badgeLabel(seed: string, explicitLabel?: string): string {
@@ -82,6 +138,7 @@ export function Identicon({
   walletIcon: _walletIcon,
   walletColor: _walletColor,
   square = false,
+  ascii = false,
 }: IdenticonProps) {
   const text = kind === "account" ? accountCode(label, code) : badgeLabel(seed, label);
   const fontSize = Math.max(10, Math.floor((size - padding * 2) * 0.34));
@@ -95,6 +152,7 @@ export function Identicon({
         style={{
           width: size,
           height: size,
+          position: "relative",
           borderRadius: radius,
           overflow: "hidden",
           flexShrink: 0,
@@ -108,6 +166,7 @@ export function Identicon({
           colors={MARBLE_COLORS}
           square={square}
         />
+        {ascii ? <AsciiAvatarTexture seed={seed} size={size} /> : null}
       </div>
     );
   }
@@ -119,6 +178,7 @@ export function Identicon({
         style={{
           width: size,
           height: size,
+          position: "relative",
           borderRadius: radius,
           overflow: "hidden",
           flexShrink: 0,
@@ -132,6 +192,7 @@ export function Identicon({
           colors={MARBLE_COLORS}
           square={square}
         />
+        {ascii ? <AsciiAvatarTexture seed={seed} size={size} /> : null}
       </div>
     );
   }

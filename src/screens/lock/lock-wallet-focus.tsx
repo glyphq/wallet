@@ -18,6 +18,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
         size={96}
         radius={4}
         square
+        ascii
         style={{ flexShrink: 0 }}
       />
       <span
