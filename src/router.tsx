@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
+const SplashScreen = lazy(() => import("@/screens/splash/splash-screen"));
 const LockScreen = lazy(() => import("@/screens/lock/lock-screen"));
 const WelcomeScreen = lazy(() => import("@/screens/setup/welcome-screen"));
 const CreateVaultScreen = lazy(() => import("@/screens/setup/create-vault-screen"));
