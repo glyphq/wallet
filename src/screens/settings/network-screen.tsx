@@ -136,7 +136,7 @@ export default function NetworkScreen() {
           )}
         </section>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         <section style={sectionStyle} aria-label="Transaction tick offset">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>

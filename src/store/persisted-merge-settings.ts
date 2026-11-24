@@ -36,7 +36,7 @@ export function mergeSettings(value: unknown, current: AppSettings): AppSettings
     approvedDapps,
     autoLockMinutes:
       typeof settingsBase.autoLockMinutes === "number" && Number.isInteger(settingsBase.autoLockMinutes)
-        ? Math.min(24 * 60, Math.max(1, settingsBase.autoLockMinutes))
+        ? Math.min(24 * 60, Math.max(0, settingsBase.autoLockMinutes))
         : current.autoLockMinutes,
     highValueSendThreshold:
       typeof settingsBase.highValueSendThreshold === "string"

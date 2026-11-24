@@ -5,7 +5,7 @@ import { SettingsDivider, SettingsSectionLabel } from "@/components/settings-sec
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { CurrencyPicker } from "./appearance/currency-picker";
-import { SettingsToggleRow } from "./appearance/settings-toggle-row";
+import { Toggle } from "@/components/toggle";
 import { ThemePicker } from "./appearance/theme-picker";
 
 export default function AppearanceScreen() {
@@ -24,18 +24,18 @@ export default function AppearanceScreen() {
           <CurrencyPicker value={currency} onChange={(id) => updateSettings({ currency: id })} />
         </div>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <SettingsSectionLabel>Theme</SettingsSectionLabel>
           <ThemePicker value={themeMode} onChange={(id) => updateSettings({ themeMode: id })} />
         </div>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <SettingsSectionLabel>Privacy</SettingsSectionLabel>
-          <SettingsToggleRow
+          <Toggle
             checked={hideBalances}
             label="Hide balances"
             description="Mask wallet amounts until you turn this off."

@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { motion } from "motion/react";
-import { gesture } from "@/lib/animations";
 import { ArrowDown01Icon, ArrowUp01Icon } from "@/lib/icons";
 import { formatDate } from "@/lib/format";
 import type { AppSettings } from "@/store/persisted";
@@ -14,8 +12,7 @@ export function TechnicalDetails({ updater, settings }: { updater: ReturnType<ty
 
   return (
     <section style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-5)", paddingBottom: "var(--space-6)" }}>
-      <motion.button
-        {...gesture.pressSubtle}
+      <button
         type="button"
         onClick={() => setShowTechnical((value) => !value)}
         aria-expanded={showTechnical}
@@ -23,7 +20,7 @@ export function TechnicalDetails({ updater, settings }: { updater: ReturnType<ty
       >
         Technical details
         {showTechnical ? <ArrowUp01Icon size={16} strokeWidth={1.5} aria-hidden="true" /> : <ArrowDown01Icon size={16} strokeWidth={1.5} aria-hidden="true" />}
-      </motion.button>
+      </button>
       <span style={{ display: "block", marginTop: 4, color: "var(--color-text-secondary)", fontSize: "var(--text-label)" }}>Security policy and update diagnostics for advanced troubleshooting.</span>
       {showTechnical && (
         <div style={{ marginTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>

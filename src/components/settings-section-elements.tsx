@@ -45,15 +45,23 @@ export function SettingsMenuRow({
 export function SettingsSectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span style={{
-      fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)",
-      fontWeight: 600, color: "var(--color-text-disabled)",
-      textTransform: "none", letterSpacing: "0.06em",
+      fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)",
+      fontWeight: 500, color: "var(--color-text-tertiary)",
+      textTransform: "uppercase", letterSpacing: "0.08em",
     }}>
       {children}
     </span>
   );
 }
 
-export function SettingsDivider() {
-  return <div style={{ height: 1, background: "var(--color-border-subtle)" }} />;
+export function SettingsDivider({ fullBleed = false }: { fullBleed?: boolean }) {
+  return (
+    <div
+      style={{
+        height: 1,
+        background: "var(--color-border-subtle)",
+        marginInline: fullBleed ? "calc(var(--space-4) * -1)" : undefined,
+      }}
+    />
+  );
 }

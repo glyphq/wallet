@@ -222,7 +222,7 @@ describe("persisted boundary helpers", () => {
       DEFAULT_SETTINGS.sponsorAttribution
     );
     expect(merged.settings.allowBlurLockBypass).toBe(true);
-    expect(merged.settings.autoLockMinutes).toBe(1);
+    expect(merged.settings.autoLockMinutes).toBe(0);
     expect(merged.settings.autostartEnabled).toBe(true);
     expect(merged.passwordAttempts).toBe(4);
     expect(merged.passwordLockoutUntil).toBe(99_000);

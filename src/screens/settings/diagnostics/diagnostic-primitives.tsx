@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import { motion } from "motion/react";
-import { gesture } from "@/lib/animations";
 
 export function DiagnosticSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
@@ -24,8 +22,7 @@ export function DiagnosticRow({ label, value, tone, technical = false }: { label
 
 export function ActionRow({ label, detail, onClick, primary = false }: { label: string; detail?: string; onClick: () => void; primary?: boolean }) {
   return (
-    <motion.button
-      {...gesture.pressSubtle}
+    <button
       type="button"
       onClick={onClick}
       style={{ display: "flex", width: "100%", justifyContent: "space-between", gap: "var(--space-4)", alignItems: "center", padding: "var(--space-3) 0", border: "none", borderBottom: "1px solid var(--color-border-subtle)", background: "transparent", cursor: "pointer", textAlign: "left" }}
@@ -35,6 +32,6 @@ export function ActionRow({ label, detail, onClick, primary = false }: { label: 
         {detail && <span style={{ display: "block", marginTop: 2, color: "var(--color-text-secondary)", fontSize: "var(--text-caption)", lineHeight: 1.4 }}>{detail}</span>}
       </span>
       <span aria-hidden="true" style={{ color: primary ? "var(--color-accent)" : "var(--color-text-secondary)", fontSize: "var(--text-body)" }}>›</span>
-    </motion.button>
+    </button>
   );
 }

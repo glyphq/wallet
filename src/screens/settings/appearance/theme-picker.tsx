@@ -15,28 +15,12 @@ export function ThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
           <div key={id}>
             <button
               type="button"
-              className="settings-pressable"
+              className="settings-choice"
+              data-selected={selected ? "true" : "false"}
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(id)}
-              style={{
-                width: "100%",
-                minHeight: 64,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "var(--space-3)",
-                padding: "var(--space-3)",
-                background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
-                border: "1px solid var(--color-border-subtle)",
-                borderRadius: "var(--radius-control)",
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                fontWeight: selected ? 600 : 400,
-                color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-                textAlign: "left",
-              }}
+              style={{ fontWeight: selected ? 600 : 400 }}
             >
               <span style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
                 <Icon size={18} strokeWidth={1.5} aria-hidden="true" style={{ marginTop: 1, flexShrink: 0 }} />

@@ -179,50 +179,6 @@ a:hover {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
 }
 
-.settings-pressable {
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 10%, transparent),
-    0 2px 0 var(--color-border-strong),
-    0 5px 10px rgba(0, 0, 0, 0.1);
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out),
-    opacity var(--duration-fast) var(--ease-out);
-}
-
-.settings-pressable:hover:not(:disabled) {
-  border-color: var(--color-border-strong) !important;
-  background: var(--color-bg-hover) !important;
-}
-
-.settings-pressable.settings-pressable-accent:hover:not(:disabled) {
-  border-color: var(--color-accent-hover) !important;
-  background: var(--color-accent-hover) !important;
-}
-
-.settings-pressable:active:not(:disabled) {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 5%, transparent);
-}
-
-.settings-pressable:disabled {
-  box-shadow: none;
-}
-
-.settings-pressable[data-selected="true"],
-.settings-pressable[aria-pressed="true"],
-.settings-pressable[aria-checked="true"] {
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-text-display) 14%, transparent),
-    0 2px 0 color-mix(in srgb, var(--color-text-display) 42%, var(--color-border-strong)),
-    0 6px 12px rgba(0, 0, 0, 0.12);
-}
-
-.settings-chip {
-  border-color: var(--color-border-default) !important;
-}
-
 .glyph-btn[data-variant="primary"]:active:not(:disabled) {
   background: var(--color-text-secondary);
 }
@@ -1069,4 +1025,104 @@ a:hover {
   font-size: var(--text-caption);
   line-height: 1.5;
   color: var(--color-text-secondary);
+}
+
+/* ── Toggle ────────────────────────────────────────────────────────────────── */
+
+.glyph-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.glyph-toggle-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.glyph-toggle-track {
+  width: 38px;
+  height: 20px;
+  padding: 2px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sharp);
+  background: transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-toggle-thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--color-text-tertiary);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-toggle-track[data-checked="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.glyph-toggle-track[data-checked="true"] .glyph-toggle-thumb {
+  transform: translateX(18px);
+  background: var(--color-accent-contrast);
+}
+
+.glyph-toggle-row:hover:not(:disabled) .glyph-toggle-track {
+  border-color: var(--color-text-tertiary);
+}
+
+.glyph-toggle-row:hover:not(:disabled) .glyph-toggle-track[data-checked="true"] {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.glyph-toggle-row:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.settings-choice {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.settings-choice:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-hover);
+}
+
+.settings-choice[data-selected="true"] {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
 }

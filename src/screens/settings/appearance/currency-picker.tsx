@@ -1,3 +1,4 @@
+import { Button } from "@/components/button";
 import type { AppSettings } from "@/store/persisted";
 
 const CURRENCIES: { id: AppSettings["currency"]; label: string }[] = [
@@ -18,27 +19,17 @@ export function CurrencyPicker({
       {CURRENCIES.map(({ id, label }) => {
         const selected = value === id;
         return (
-          <button
+          <Button
             key={id}
-            type="button"
-            className="settings-pressable"
             role="radio"
             aria-checked={selected}
+            variant={selected ? "primary" : "secondary"}
+            size="sm"
+            style={{ width: "100%" }}
             onClick={() => onChange(id)}
-            style={{
-              minHeight: 44,
-              border: "1px solid var(--color-border-subtle)",
-              borderRadius: "var(--radius-control)",
-              background: selected ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
-              color: selected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-label)",
-              fontWeight: selected ? 600 : 400,
-            }}
           >
             {label}
-          </button>
+          </Button>
         );
       })}
     </div>

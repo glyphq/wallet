@@ -5,7 +5,7 @@ import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
-import { SettingsSwitch } from "@/components/settings-switch";
+import { Toggle } from "@/components/toggle";
 import { Button } from "@/components/button";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
@@ -100,7 +100,7 @@ export default function NotificationsScreen() {
 
         {/* Master toggle */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <SettingsSwitch label="Notifications" description="Show desktop notifications for wallet events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
+          <Toggle label="Notifications" description="Show desktop notifications for wallet events" checked={enabled} onChange={(checked) => updateSettings({ notificationsEnabled: checked })} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
@@ -112,30 +112,30 @@ export default function NotificationsScreen() {
           </Button>
         </div>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         {/* Notify when */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSectionLabel>Notify when</SettingsSectionLabel>
-          <SettingsSwitch label="QU received" description="Balance increases on any account" checked={onReceived} onChange={() => updateSettings({ notifyOnReceived: !onReceived })} disabled={!enabled} />
-          <SettingsDivider />
-          <SettingsSwitch label="Transaction sent" description="Send, contract call, or burn is broadcast" checked={onSent} onChange={() => updateSettings({ notifyOnSent: !onSent })} disabled={!enabled} />
-          <SettingsDivider />
-          <SettingsSwitch label="Transaction confirmed" description="Pending transaction confirms on chain" checked={onConfirmed} onChange={() => updateSettings({ notifyOnConfirmed: !onConfirmed })} disabled={!enabled} />
-          <SettingsDivider />
-          <SettingsSwitch label="Missed confirmations" description="Pending transaction fails or expires" checked={onMissedConfirmations} onChange={() => updateSettings({ notifyOnMissedConfirmations: !onMissedConfirmations })} disabled={!enabled} />
+          <Toggle label="QU received" description="Balance increases on any account" checked={onReceived} onChange={(checked) => updateSettings({ notifyOnReceived: checked })} disabled={!enabled} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Transaction sent" description="Send, contract call, or burn is broadcast" checked={onSent} onChange={(checked) => updateSettings({ notifyOnSent: checked })} disabled={!enabled} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Transaction confirmed" description="Pending transaction confirms on chain" checked={onConfirmed} onChange={(checked) => updateSettings({ notifyOnConfirmed: checked })} disabled={!enabled} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Missed confirmations" description="Pending transaction fails or expires" checked={onMissedConfirmations} onChange={(checked) => updateSettings({ notifyOnMissedConfirmations: checked })} disabled={!enabled} />
         </div>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         {/* Behavior */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSectionLabel>Behavior</SettingsSectionLabel>
-          <SettingsSwitch label="Hide to tray on close" description="Keep Glyph running in the system tray" checked={hideToTray} onChange={() => updateSettings({ hideToTray: !hideToTray })} />
-          <SettingsDivider />
-          <SettingsSwitch label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
-          <SettingsDivider />
-          <SettingsSwitch label="Notify when locked" description="Allow notifications while the wallet is locked" checked={notifyWhenLocked} onChange={() => updateSettings({ notifyWhenLocked: !notifyWhenLocked })} disabled={!enabled} />
+          <Toggle label="Hide to tray on close" description="Keep Glyph running in the system tray" checked={hideToTray} onChange={(checked) => updateSettings({ hideToTray: checked })} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Notify when locked" description="Allow notifications while the wallet is locked" checked={notifyWhenLocked} onChange={(checked) => updateSettings({ notifyWhenLocked: checked })} disabled={!enabled} />
         </div>
       </motion.div>
     </AppShell>
