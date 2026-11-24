@@ -54,7 +54,6 @@ export function TitleBar() {
 
   // The splash owns the whole window while it checks updates and hydrates.
   if (routeHash === "" || routeHash === "#/" || routeHash === "#") return null;
-
   return (
     <div
       data-tauri-drag-region

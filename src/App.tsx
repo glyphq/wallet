@@ -13,7 +13,6 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { configureApiClient, getApiBaseUrl } from "@/lib/api/client";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
-import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const queryClient = new QueryClient({
@@ -143,7 +142,6 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AppHooks />
-        <TitleBar />
         <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <RouterProvider router={router} />
         </div>

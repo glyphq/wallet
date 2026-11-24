@@ -137,6 +137,8 @@ function LayoutShell() {
 
   return (
     <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
+      {cur !== "/" && <TitleBar />}
+
       {/* ── Static header ── */}
       {show && resolvedHeader && (
         <header
