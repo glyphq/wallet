@@ -32,6 +32,7 @@ fn main() {
         "reveal_wallet_seed",
         "store_session_seeds",
         "clear_session_seeds",
+        "get_session_accounts",
         "sign_transaction",
         "sign_local_transaction",
         "sign_message",

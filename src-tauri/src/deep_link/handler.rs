@@ -50,7 +50,10 @@ pub fn process_url(app: &AppHandle, raw: &str) -> bool {
             });
             let payload = envelope.to_string();
             if state.store(payload.clone()) {
-                app.emit("glyph:request", payload).ok();
+                if let Err(error) = crate::app::approval_window::show(app) {
+                    eprintln!("[glyph] could not open approval window: {error}");
+                }
+                app.emit_to("approval", "glyph:approval-request", payload).ok();
                 true
             } else {
                 false

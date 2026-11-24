@@ -41,6 +41,7 @@
     "allow-get-seconds-until-lock",
     "allow-force-lock",
     "allow-get-pending-request",
+    "allow-get-session-accounts",
     "allow-clear-pending-request",
     "allow-accept-pending-request",
     "allow-authorize-pending-request",

@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
 import { router } from "@/router";
-import { useDeepLink } from "@/hooks/use-deep-link";
 import { usePersistedStore } from "@/store/persisted";
+import { useSessionStore } from "@/store/session";
 import { THEME_VARS, getThemeVars } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
@@ -12,6 +12,7 @@ import { useLatestStats } from "@/hooks/use-latest-stats";
 import { configureApiClient, getApiBaseUrl } from "@/lib/api/client";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const queryClient = new QueryClient({
@@ -122,10 +123,30 @@ function usePriceSnapshotRecorder() {
   }, [addPriceSnapshot, price]);
 }
 
+function useApprovalUnlockSync() {
+  useEffect(() => {
+    const pending = listen<{ walletId?: string }>("glyph:session-unlocked", async (event) => {
+      const accounts = await invoke<{ identity: string; publicKey: number[] }[]>("get_session_accounts").catch(() => []);
+      if (accounts.length === 0) return;
+      const walletId = event.payload?.walletId ?? usePersistedStore.getState().settings.activeWalletId ?? "approval";
+      useSessionStore.getState().unlock(walletId, accounts.map((account) => ({
+        identity: account.identity,
+        publicKey: new Uint8Array(account.publicKey),
+      })));
+      if (window.location.hash === "" || window.location.hash.startsWith("#/lock")) {
+        window.location.hash = "#/dashboard";
+      }
+    });
+    return () => {
+      void pending.then((unlisten) => unlisten());
+    };
+  }, []);
+}
+
 function AppHooks() {
+  useApprovalUnlockSync();
   useAppearance();
   useNetworkSync();
-  useDeepLink();
   useNotificationTriggers();
   useNotificationReconcile();
   useHideToTray();

@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import ApprovalWindow from "./approval-window";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "@/styles/global.css";
 
 document.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -13,6 +15,10 @@ window.addEventListener("unhandledrejection", (event) => {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {new URLSearchParams(window.location.search).get("approval") === "1" || getCurrentWindow().label === "approval" ? (
+      <ApprovalWindow />
+    ) : (
+      <App />
+    )}
   </React.StrictMode>,
 );

@@ -1,0 +1,41 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "approval",
+  "description": "Least-privilege capability for the dedicated dApp approval window",
+  "windows": ["approval"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "opener:allow-open-url",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-load",
+    "store:allow-save",
+    "store:allow-delete",
+    "clipboard-manager:allow-write-text",
+    "dialog:allow-save",
+    "fs:allow-write-text-file",
+    "fs:allow-exists",
+    {
+      "identifier": "fs:scope",
+      "allow": ["$DOWNLOAD/**/*", "$DOCUMENT/**/*"]
+    },
+    "allow-get-seconds-until-lock",
+    "allow-get-pending-request",
+    "allow-clear-pending-request",
+    "allow-accept-pending-request",
+    "allow-authorize-pending-request",
+    "allow-authorize-callback-message",
+    "allow-post-callback",
+    "allow-copy-to-clipboard",
+    "allow-clear-clipboard",
+    "allow-get-session-accounts",
+    "allow-unlock-wallet-session",
+    "allow-sign-transaction",
+    "allow-sign-message",
+    "allow-sign-callback-message",
+    "allow-encrypt-store-value",
+    "allow-decrypt-store-value"
+  ]
+}

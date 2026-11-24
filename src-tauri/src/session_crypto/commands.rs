@@ -1,6 +1,6 @@
 //! Tauri commands that sign with the unlocked native session seeds.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{command, State};
 
@@ -13,6 +13,23 @@ use super::state::{validate_session_seeds, NativeSessionState};
 use crate::qubic_native;
 
 const MAX_SIGN_MESSAGE_BYTES: usize = 64 * 1024;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionAccountInfo {
+    identity: String,
+    public_key: Vec<u8>,
+}
+
+#[command]
+pub fn get_session_accounts(state: State<'_, NativeSessionState>) -> Result<Vec<SessionAccountInfo>, String> {
+    Ok(state
+        .public_accounts()?
+        .into_iter()
+        .map(|(identity, public_key)| SessionAccountInfo { identity, public_key: public_key.to_vec() })
+        .collect())
+}
+
 
 #[command]
 pub async fn store_session_seeds(
