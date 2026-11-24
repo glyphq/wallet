@@ -20,6 +20,7 @@ interface IdenticonProps {
   icon?: ReactNode;
   walletIcon?: WalletIconId;
   walletColor?: WalletColor;
+  square?: boolean;
 }
 
 function badgeLabel(seed: string, explicitLabel?: string): string {
@@ -80,6 +81,7 @@ export function Identicon({
   icon,
   walletIcon: _walletIcon,
   walletColor: _walletColor,
+  square = false,
 }: IdenticonProps) {
   const text = kind === "account" ? accountCode(label, code) : badgeLabel(seed, label);
   const fontSize = Math.max(10, Math.floor((size - padding * 2) * 0.34));
@@ -104,7 +106,7 @@ export function Identicon({
           name={seed}
           variant="marble"
           colors={MARBLE_COLORS}
-          square={false}
+          square={square}
         />
       </div>
     );
@@ -128,7 +130,7 @@ export function Identicon({
           name={seed}
           variant="marble"
           colors={MARBLE_COLORS}
-          square={false}
+          square={square}
         />
       </div>
     );
