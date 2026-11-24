@@ -115,7 +115,7 @@ export function TitleBar() {
               color: "var(--color-text-primary)",
             }}
           >
-            Wallet
+            Glyph Wallet
           </span>
         </div>
 
