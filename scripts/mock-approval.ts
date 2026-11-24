@@ -1,15 +1,12 @@
 import { REQUEST_PROTOCOL_V2, requestHashV2 } from "../src/lib/jcs";
 
-const identity = "JTPKXWYCBQKZKBXLYYXMSKPHJDGAPEOETXUNOVBVJFMUFWIDXEPZPEPFZONO";
 const now = Math.floor(Date.now() / 1000);
 const request = {
-  type: "transfer" as const,
+  type: "connect" as const,
   dapp: { name: "Glyph Demo", origin: "https://demo.glyph.xyz" },
   nonce: crypto.randomUUID().replaceAll("-", ""),
   exp: now + 300,
-  from: identity,
-  to: identity,
-  amount: "1",
+  permissions: ["transfer", "sign_message"] as const,
 };
 const network = { id: "qubic:mainnet" as const };
 const requestHash = await requestHashV2({

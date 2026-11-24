@@ -4,7 +4,6 @@ import { ScCallPreview } from "@/components/request/sc-call-preview";
 import { SignMessagePreview } from "@/components/request/sign-message-preview";
 import { ConnectPreview } from "@/components/request/connect-preview";
 import { VerifyMessagePreview } from "@/components/request/verify-message-preview";
-import { IconButton } from "@/components/icon-button";
 import { ScreenHeader } from "@/components/screen-header";
 import type {
   ApproveResult,
@@ -47,21 +46,7 @@ export function RequestApprovalView({
 }) {
   const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
   const { approvalWindow } = useReviewMode();
-  const statusBar = (
-    <ScreenHeader
-      title={typeLabel}
-      onBack={approvalWindow ? undefined : onDismiss}
-      backAriaLabel="Close without rejecting"
-      action={approvalWindow ? (
-        <IconButton label="Close review window" onClick={onDismiss}>
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-            <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        </IconButton>
-      ) : undefined}
-    />
-  );
+  const statusBar = approvalWindow ? null : <ScreenHeader title={typeLabel} onBack={onDismiss} backAriaLabel="Close without rejecting" />;
 
   return (
     <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>

@@ -131,9 +131,10 @@ function RequestActionBar({ children }: { children: ReactNode }) {
     <div
       style={{
         display: "flex",
-        gap: "var(--space-3)",
+        flexDirection: approvalWindow ? "column" : "row",
+        gap: "var(--space-2)",
         marginTop: "auto",
-        paddingTop: "var(--space-6)",
+        paddingTop: approvalWindow ? "var(--space-3)" : "var(--space-6)",
         ...(approvalWindow
           ? {
               position: "sticky",

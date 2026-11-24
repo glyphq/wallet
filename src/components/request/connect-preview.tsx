@@ -60,6 +60,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: approvalWindow ? "var(--space-3)" : "var(--space-6)", flex: 1, minHeight: approvalWindow ? 0 : "100%" }}>
+      <div style={{ display: "grid", gridTemplateColumns: approvalWindow ? "minmax(0, 1fr) minmax(0, 1fr)" : "minmax(0, 1fr)", gap: approvalWindow ? "var(--space-5)" : "var(--space-3)", alignContent: "start" }}>
       {/* Account picker */}
       <div>
         <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Account</RequestSectionTitle></div>
@@ -132,6 +133,8 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
           </div>
         </div>
       )}
+
+      </div>
 
       {!approvalWindow && (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>

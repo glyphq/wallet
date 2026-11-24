@@ -20,7 +20,7 @@ import { extractMessage } from "@/lib/format";
 import { LockKeyholeIcon, ViewIcon, ViewOffIcon } from "@/lib/icons";
 import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptance";
 import { drainPendingRequests } from "@/lib/pending-request-queue";
-import { parseGlyphEnvelope } from "@/lib/request-schema";
+import { parseGlyphEnvelope, REQUEST_TYPE_LABEL } from "@/lib/request-schema";
 import { unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -99,29 +99,17 @@ function PasswordVisibilityButton({ visible, onToggle }: { visible: boolean; onT
   );
 }
 
-function ApprovalShell({ children }: { children: React.ReactNode }) {
+function ApprovalAsciiHeader({ title }: { title: string }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "var(--color-bg-canvas)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <div className="approval-surface" style={{ flex: 1, minHeight: 0, position: "relative" }}>{children}</div>
-    </div>
-  );
-}
-
-function ApprovalAsciiHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return (
-    <div style={{ position: "relative", height: 92, flexShrink: 0, borderBottom: "1px solid var(--color-border-subtle)" }}>
+    <div style={{ position: "relative", height: 76, flexShrink: 0, borderBottom: "1px solid var(--color-border-subtle)" }}>
       <AsciiBackdrop
         style={{ position: "absolute", inset: 0 }}
-        contentStyle={{ height: "100%", flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)", padding: "0 22px" }}
+        contentStyle={{ height: "100%", flexDirection: "row", alignItems: "center", gap: "var(--space-4)", padding: "0 22px" }}
       >
-        <div className="asciify-clear">
-          <BrandLockup size={30} title="Glyph" subtitle="Review" compact />
-        </div>
-        <div className="asciify-clear" style={{ textAlign: "right" }}>
-          <span style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.13em", textTransform: "uppercase", color: "var(--color-text-tertiary)" }}>
-            {eyebrow}
-          </span>
-          <h1 style={{ margin: "4px 0 0", fontFamily: "var(--font-display)", fontSize: 22, lineHeight: 1.05, letterSpacing: "-0.025em", fontWeight: 600, color: "var(--color-text-primary)" }}>
+        <div className="asciify-clear" style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+          <BrandLockup size={30} title="Glyph" compact />
+          <span aria-hidden="true" style={{ width: 1, height: 20, background: "var(--color-border-strong)" }} />
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 20, lineHeight: 1.05, letterSpacing: "-0.02em", fontWeight: 600, color: "var(--color-text-primary)" }}>
             {title}
           </h1>
         </div>
@@ -130,10 +118,18 @@ function ApprovalAsciiHeader({ eyebrow, title }: { eyebrow: string; title: strin
   );
 }
 
+function ApprovalShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "var(--color-bg-canvas)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div className="approval-surface" style={{ flex: 1, minHeight: 0, position: "relative" }}>{children}</div>
+    </div>
+  );
+}
+
 function ApprovalFooter({ children }: { children: React.ReactNode }) {
   return (
     <div className="page-frame-actions">
-      <div className="page-frame-actions-inner" style={{ display: "flex", gap: "var(--space-3)" }}>
+      <div className="page-frame-actions-inner" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
         {children}
       </div>
     </div>
@@ -164,6 +160,12 @@ export default function ApprovalWindow() {
     wallets[0];
   const sessionWalletRef = useRef<string | null>(null);
   const autoSelectedRef = useRef(false);
+  const pendingRequest = useSessionStore((state) => state.pendingRequests[0] ?? null);
+  const reviewTitle = (() => {
+    if (!pendingRequest) return "Review";
+    const request = parseGlyphEnvelope(pendingRequest).envelope?.request;
+    return request ? REQUEST_TYPE_LABEL[request.type] : "Review";
+  })();
   const readyRef = useRef(false);
   const drainRef = useRef<Promise<void> | null>(null);
 
@@ -343,7 +345,7 @@ export default function ApprovalWindow() {
   if (phase === "loading") {
     return (
       <ApprovalShell>
-        <ApprovalAsciiHeader eyebrow="Secure review" title="Preparing" />
+        <ApprovalAsciiHeader title="Preparing" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-4)" }}>
           <AsciiSpinner size={64} />
           <span role="status" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-tertiary)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -357,7 +359,7 @@ export default function ApprovalWindow() {
   if (phase === "waiting") {
     return (
       <ApprovalShell>
-        <ApprovalAsciiHeader eyebrow="Review window" title="No request" />
+        <ApprovalAsciiHeader title="No request" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", padding: "var(--space-6)", textAlign: "center" }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-tertiary)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
             Waiting for request
@@ -378,7 +380,7 @@ export default function ApprovalWindow() {
   if (phase === "locked") {
     return (
       <ApprovalShell>
-        <ApprovalAsciiHeader eyebrow="DApp review" title={wallets.length > 0 ? "Unlock to review" : "No wallet"} />
+        <ApprovalAsciiHeader title={wallets.length > 0 ? "Unlock" : "No wallet"} />
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 24px", display: "flex", flexDirection: "column", justifyContent: "center", gap: "var(--space-3)", width: "100%", maxWidth: 500, margin: "0 auto" }}>
           {wallets.length > 0 ? (
             <>
@@ -467,18 +469,21 @@ export default function ApprovalWindow() {
 
   return (
     <ApprovalShell>
-      <QueryClientProvider client={queryClient}>
-        <ReviewModeProvider approvalWindow>
-          <div style={{ height: "100%" }}>
-            <MemoryRouter key={reviewKey} initialEntries={["/request"]}>
-              <Routes>
-                <Route path="/request" element={<RequestScreen />} />
-                <Route path="*" element={<CloseRoute />} />
-              </Routes>
-            </MemoryRouter>
-          </div>
-        </ReviewModeProvider>
-      </QueryClientProvider>
+      <ApprovalAsciiHeader title={reviewTitle} />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <QueryClientProvider client={queryClient}>
+          <ReviewModeProvider approvalWindow>
+            <div style={{ height: "100%" }}>
+              <MemoryRouter key={reviewKey} initialEntries={["/request"]}>
+                <Routes>
+                  <Route path="/request" element={<RequestScreen />} />
+                  <Route path="*" element={<CloseRoute />} />
+                </Routes>
+              </MemoryRouter>
+            </div>
+          </ReviewModeProvider>
+        </QueryClientProvider>
+      </div>
     </ApprovalShell>
   );
 }

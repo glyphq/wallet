@@ -8,7 +8,7 @@ import { ActionFooter, DetailBlock, SheetLayout, StatusLine } from "./sheet-layo
 export function RequestExpiredView({ dappName, onContinue }: { dappName: string; onContinue: () => void }) {
   const { approvalWindow } = useReviewMode();
   return (
-    <SheetLayout statusBar={<ScreenHeader title="Request expired" onBack={approvalWindow ? undefined : onContinue} backAriaLabel="Continue" />}>
+    <SheetLayout statusBar={approvalWindow ? null : <ScreenHeader title="Request expired" onBack={onContinue} backAriaLabel="Continue" />}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
         <Tag variant="warning">Expired</Tag>
         <StatusLine tone="warning">This request expired before you made a decision.</StatusLine>

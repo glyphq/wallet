@@ -19,7 +19,7 @@ export function RequestInvalidView({
 }) {
   const { approvalWindow } = useReviewMode();
   return (
-    <SheetLayout statusBar={<ScreenHeader title="Request" onBack={approvalWindow ? undefined : onBack} />}>
+    <SheetLayout statusBar={approvalWindow ? null : <ScreenHeader title="Request" onBack={onBack} />}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: "100%" }}>
         <Tag variant="error">Invalid request</Tag>
         <StatusLine tone="error">{error}</StatusLine>

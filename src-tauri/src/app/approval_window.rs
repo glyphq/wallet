@@ -6,8 +6,8 @@ use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 
 pub(crate) const LABEL: &str = "approval";
 
-const WINDOW_WIDTH: f64 = 640.0;
-const WINDOW_HEIGHT: f64 = 440.0;
+const WINDOW_WIDTH: f64 = 720.0;
+const WINDOW_HEIGHT: f64 = 420.0;
 const START_WIDTH: f64 = 120.0;
 const START_HEIGHT: f64 = 82.0;
 const EDGE_MARGIN: f64 = 16.0;

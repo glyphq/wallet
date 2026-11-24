@@ -2,23 +2,25 @@ import type { ReactNode } from "react";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { useReviewMode } from "./review-mode";
 
-export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
+export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar?: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
   const countdown = useLockCountdown();
   const { approvalWindow } = useReviewMode();
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--color-bg-base)" }}>
-      <header
-        style={{
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          minHeight: 48,
-          padding: "var(--space-3) var(--screen-padding)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-        }}
-      >
-        {statusBar}
-      </header>
+      {statusBar ? (
+        <header
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            minHeight: 48,
+            padding: "var(--space-3) var(--screen-padding)",
+            borderBottom: "1px solid var(--color-border-subtle)",
+          }}
+        >
+          {statusBar}
+        </header>
+      ) : null}
 
       {countdown !== null && (
         <div
