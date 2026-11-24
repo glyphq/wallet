@@ -34,7 +34,6 @@ export default function SettingsScreen() {
   const updaterSupported = context?.supportsAutoUpdate ?? true;
 
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
-  const networkName = usePersistedStore((s) => s.settings.network.name);
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
   const contacts = usePersistedStore((s) => s.contacts);
   const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps ?? []);
@@ -43,7 +42,7 @@ export default function SettingsScreen() {
   const rows: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: (typeof SECTIONS)[number] }> = [
     { label: "Security", description: `Auto-lock · ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheckIcon size={18} strokeWidth={1.5} />, section: "General" },
     { label: "Appearance", description: "Theme, currency, privacy", route: "/settings/appearance", icon: <PaintBoardIcon size={18} strokeWidth={1.5} />, section: "General" },
-    { label: "Network", description: `${networkName} · API and tick offset`, route: "/settings/network", icon: <Wifi01Icon size={18} strokeWidth={1.5} />, section: "General" },
+    { label: "Network", description: "Glyph API · tick offset", route: "/settings/network", icon: <Wifi01Icon size={18} strokeWidth={1.5} />, section: "General" },
     { label: "Contacts", description: contacts.length ? `${contacts.length} saved` : "No contacts yet", route: "/settings/contacts", icon: <UserGroupIcon size={18} strokeWidth={1.5} />, section: "Manage" },
     { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approvals", route: "/settings/dapps", icon: <EarthIcon size={18} strokeWidth={1.5} />, section: "Manage" },
     { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Notification01Icon size={18} strokeWidth={1.5} />, section: "Manage" },
