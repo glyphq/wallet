@@ -149,7 +149,7 @@ export default function MultisigApprovalsScreen() {
       title="Pending approvals"
       onBack={() => navigate(`/multisig/${rawId}`)}
       backAriaLabel="Back to vault"
-      action={<ShellAccountSwitcher />}
+      leading={<ShellAccountSwitcher />}
     />
   );
 

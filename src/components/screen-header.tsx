@@ -25,6 +25,11 @@ export function ScreenHeader({ title, leading, onBack, backAriaLabel, action }: 
           minHeight: 52,
         }}
       >
+        {onBack ? (
+          <IconButton label={backAriaLabel ?? "Go back"} onClick={onBack} style={{ flexShrink: 0 }}>
+            <ArrowLeft01Icon size={22} aria-hidden="true" />
+          </IconButton>
+        ) : null}
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>{leading}</div>
         <h1
           style={{

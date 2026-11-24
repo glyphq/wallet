@@ -20,6 +20,25 @@ import { ChromeVisibilityProvider, useChromeVisibility } from "./chrome-visibili
 
 const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
 
+/** Screens where the header account switcher belongs on the leading edge. */
+const ACCOUNT_SELECTOR_PREFIXES = [
+  "/dashboard",
+  "/send",
+  "/send-many",
+  "/burn",
+  "/receive",
+  "/history",
+  "/analytics",
+  "/stake",
+  "/multisig",
+];
+
+function showsAccountSelector(pathname: string): boolean {
+  return ACCOUNT_SELECTOR_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/dashboard", "home"],
   ["/send", "send"],
@@ -149,12 +168,13 @@ function LayoutShell() {
   const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
+  const accountSelector = showsAccountSelector(cur) ? <ShellAccountSwitcher /> : undefined;
   const resolvedHeader = header ?? (cur === "/settings"
-    ? <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} backAriaLabel="Back to dashboard" action={<ShellAccountSwitcher />} />
+    ? <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} backAriaLabel="Back to dashboard" />
     : routeTitle
       ? backTarget
-        ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} action={<ShellAccountSwitcher />} />
-        : <ScreenHeader leading={<ShellAccountSwitcher />} title={routeTitle} />
+        ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} leading={accountSelector} />
+        : <ScreenHeader leading={accountSelector} title={routeTitle} />
       : null);
 
   const prevRef = useRef(cur);

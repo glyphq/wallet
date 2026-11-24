@@ -461,7 +461,7 @@ export default function MultisigCreateScreen() {
     return (
       <AppShell
         fullBleed
-        statusBar={<ScreenHeader title="Add owner" onBack={() => setStep("owners")} backAriaLabel="Back to manage owners" action={<ShellAccountSwitcher />} />}
+        statusBar={<ScreenHeader title="Add owner" onBack={() => setStep("owners")} backAriaLabel="Back to manage owners" leading={<ShellAccountSwitcher />} />}
         contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}
       >
         <PageFrame
@@ -518,7 +518,7 @@ export default function MultisigCreateScreen() {
     return (
       <AppShell
         fullBleed
-        statusBar={<ScreenHeader title="Manage owners" onBack={() => setStep("edit")} backAriaLabel="Back to new multisig" action={<ShellAccountSwitcher />} />}
+        statusBar={<ScreenHeader title="Manage owners" onBack={() => setStep("edit")} backAriaLabel="Back to new multisig" leading={<ShellAccountSwitcher />} />}
         contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}
       >
         <PageFrame

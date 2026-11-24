@@ -121,7 +121,7 @@ export default function MultisigDetailScreen() {
       <ScreenHeader
         title={!vaultId ? "Vault not found" : detail?.name.trim() || "Multisig vault"}
         onBack={() => navigate("/multisig")}
-        action={<ShellAccountSwitcher />}
+        leading={<ShellAccountSwitcher />}
       />
     ),
     [detail, navigate, vaultId],

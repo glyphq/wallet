@@ -162,7 +162,7 @@ export default function MultisigApprovalScreen() {
       title="Approval request"
       onBack={() => navigate(`/multisig/${rawId}/approvals`)}
       backAriaLabel="Back to pending approvals"
-      action={<ShellAccountSwitcher />}
+      leading={<ShellAccountSwitcher />}
     />
   );
 
@@ -355,7 +355,7 @@ export default function MultisigApprovalScreen() {
     };
     return (
       <MultisigFlowShell
-        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} action={<ShellAccountSwitcher />} />}
+        statusBar={<ScreenHeader title="Withdraw approval" onBack={closeReset} leading={<ShellAccountSwitcher />} />}
         footer={(
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             <Button onClick={() => void withdraw()} loading={resetSending} disabled={!fees || resetSending || hasPending || !isOwner} style={{ width: "100%" }}>
