@@ -3,15 +3,12 @@ import { motion } from "motion/react";
 import { ArrowLeft01Icon, ArrowRight01Icon, ViewIcon, ViewOffIcon, LockKeyholeIcon, ShieldCheckIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { StepProgress } from "@/components/step-progress";
 import { PageBanner, PageFrame } from "@/components/page-header";
 import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
 import { stepMotion } from "@/lib/animations";
 import { MIN_PASSWORD_LENGTH, passwordStrength } from "@/lib/password-strength";
 
 interface SetupFlowProps {
-  current: number;
-  total: number;
   title: ReactNode;
   children: ReactNode;
   primaryLabel: string;
@@ -24,8 +21,6 @@ interface SetupFlowProps {
 }
 
 export function SetupFlow({
-  current,
-  total,
   title,
   children,
   primaryLabel,
@@ -66,9 +61,7 @@ export function SetupFlow({
             gap: "var(--space-5)",
           }}
         >
-          <StepProgress current={current} total={total} />
           <motion.div
-            key={current}
             {...stepMotion}
             style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
           >

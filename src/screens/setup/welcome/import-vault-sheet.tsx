@@ -3,7 +3,6 @@ import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
-import { StepProgress } from "@/components/step-progress";
 import { WalletAppearancePicker } from "@/components/wallet-appearance-picker";
 import { MAX_VAULT_ACCOUNTS } from "@/hooks/use-vault-balances";
 import { ImportAccountList } from "./import-account-list";
@@ -40,7 +39,6 @@ export function ImportVaultSheet({ flow }: { flow: VaultFileImport }) {
   return (
     <Sheet open={!!importData} onClose={() => setImportData(null)} title={`Import ${importData?.name ?? "Vault"}`}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-        <StepProgress current={2} total={2} />
         <FlowHeader
           title="Unlock Vault file"
           description={importData && importData.accounts.length > MAX_VAULT_ACCOUNTS

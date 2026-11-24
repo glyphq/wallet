@@ -20,8 +20,6 @@ export function ConfirmBackupStep({
 }) {
   return (
     <SetupFlow
-      current={3}
-      total={4}
       title="Confirm your backup"
       primaryLabel="Continue"
       primaryDisabled={!confirmation.trim()}

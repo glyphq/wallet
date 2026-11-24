@@ -11,12 +11,13 @@ export function FieldLabel({ htmlFor, children, style }: FieldLabelProps) {
     <label
       htmlFor={htmlFor}
       style={{
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-label)",
+        fontFamily: "var(--font-mono)",
+        fontSize: "var(--text-caption)",
         color: "var(--color-text-tertiary)",
         fontWeight: 500,
         lineHeight: "var(--leading-compact)",
-        letterSpacing: "0.015em",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
         ...style,
       }}
     >

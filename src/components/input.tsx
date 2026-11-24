@@ -38,7 +38,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       aria-errormessage={error && errorId ? errorId : undefined}
       data-has-leading={leftElement ? "true" : undefined}
       style={{
-        borderRadius: "var(--radius-control)",
+        borderRadius: 3,
         paddingTop: "var(--space-3)",
         paddingRight: rightElement ? 52 : "var(--space-4)",
         paddingBottom: "var(--space-3)",
@@ -63,36 +63,34 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {label}
         </FieldLabel>
       )}
-      {leftElement || rightElement ? (
-        <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
-          {leftElement ? (
-            <div
-              className="glyph-field-icon"
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                left: "var(--space-4)",
-                top: "50%",
-                transform: "translateY(-50%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-text-tertiary)",
-                pointerEvents: "none",
-                zIndex: 1,
-              }}
-            >
-              {leftElement}
-            </div>
-          ) : null}
-          {inputEl}
-          {rightElement ? (
-            <div style={{ position: "absolute", right: "var(--space-2)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
-              {rightElement}
-            </div>
-          ) : null}
-        </div>
-      ) : inputEl}
+      <div className="glyph-field corner-frame" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
+        {leftElement ? (
+          <div
+            className="glyph-field-icon"
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "var(--space-4)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--color-text-tertiary)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          >
+            {leftElement}
+          </div>
+        ) : null}
+        {inputEl}
+        {rightElement ? (
+          <div style={{ position: "absolute", right: "var(--space-2)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
+            {rightElement}
+          </div>
+        ) : null}
+      </div>
       {error && (
         <FieldError id={errorId}>{error}</FieldError>
       )}

@@ -28,8 +28,6 @@ export function BackupStep({
 }) {
   return (
     <SetupFlow
-      current={2}
-      total={4}
       title="Back up your seed"
       primaryLabel="Continue"
       primaryDisabled={!acknowledged || !backupHandled}

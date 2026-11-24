@@ -27,8 +27,6 @@ export function PasswordStep({
 }) {
   return (
     <SetupFlow
-      current={4}
-      total={4}
       title="Set a password"
       primaryLabel="Create Vault"
       primaryDisabled={!passwordValid}

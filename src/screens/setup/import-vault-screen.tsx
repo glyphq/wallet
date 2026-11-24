@@ -105,8 +105,6 @@ export default function ImportVaultScreen() {
     <>
       {step === 1 ? (
         <SetupFlow
-          current={1}
-          total={3}
           title="Enter your seed"
           primaryLabel="Continue"
           onPrimary={validateSeed}
@@ -132,7 +130,7 @@ export default function ImportVaultScreen() {
       ) : null}
 
       {step === 2 ? (
-        <SetupFlow current={2} total={3} title="Name your Vault" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
+        <SetupFlow title="Name your Vault" primaryLabel="Continue" onPrimary={continueFromName} onBack={back}>
           {identity ? (
             <div
               style={{
@@ -168,8 +166,6 @@ export default function ImportVaultScreen() {
 
       {step === 3 ? (
         <SetupFlow
-          current={3}
-          total={3}
           title="Set a password"
           primaryLabel="Restore Vault"
           primaryDisabled={!passwordValid}

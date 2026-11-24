@@ -34,7 +34,7 @@ export function Textarea({
       {label ? (
         <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
       ) : null}
-      <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
+      <div className="glyph-field corner-frame" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
         {leftElement ? (
           <div
             className="glyph-field-icon"
@@ -71,7 +71,7 @@ export function Textarea({
             paddingRight: "var(--space-4)",
             paddingBottom: "var(--space-3)",
             paddingLeft: leftElement ? 48 : "var(--space-4)",
-            borderRadius: "var(--radius-control)",
+            borderRadius: 3,
             color: "var(--color-text-primary)",
             fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
             fontSize: technical ? "0.875rem" : "0.9375rem",

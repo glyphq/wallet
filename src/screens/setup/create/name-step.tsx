@@ -16,7 +16,7 @@ export function NameStep({
   onBack: () => void;
 }) {
   return (
-    <SetupFlow current={1} total={4} title="Name your Vault" primaryLabel="Continue" onPrimary={onContinue} onBack={onBack}>
+    <SetupFlow title="Name your Vault" primaryLabel="Continue" onPrimary={onContinue} onBack={onBack}>
       <Input
         leftElement={<Wallet01Icon size={18} strokeWidth={1.5} />}
         value={name}
