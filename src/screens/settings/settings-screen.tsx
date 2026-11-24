@@ -15,7 +15,6 @@ import {
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { SettingsMenuGroup, SettingsMenuRow } from "@/components/settings-section-elements";
-import { ErrorProbe } from "@/components/error-probe";
 import { stepMotion } from "@/lib/animations";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
@@ -126,8 +125,6 @@ export default function SettingsScreen() {
               </span>
             ) : null}
           </div>
-
-          {import.meta.env.DEV ? <ErrorProbe /> : null}
 
           <Button
             variant="secondary"

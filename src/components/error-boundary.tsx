@@ -1,8 +1,9 @@
-import { Component, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
-import { useRouteError } from "react-router";
-import { Alert01Icon, Copy01Icon, RefreshIcon } from "@/lib/icons";
-import { AsciiBackdrop } from "@/components/ascii-backdrop";
+import { Component, useState, type ErrorInfo, type ReactNode } from "react";
+import { useNavigate, useRouteError } from "react-router";
+import { Copy01Icon, RefreshIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
+import { FullPage } from "@/layouts/full-page";
+import { PageBanner, PageFrame } from "@/components/page-header";
 import { copyToClipboard } from "@/lib/clipboard";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 
@@ -60,103 +61,14 @@ function ErrorFallback({
   }
 
   return (
-    <div
-      role="alert"
-      style={{
-        position: "relative",
-        height: "100%",
-        minHeight: 0,
-        overflowY: "auto",
-        background: "var(--color-bg-base)",
-      }}
-    >
-      <AsciiBackdrop style={{ position: "absolute", inset: 0 }} />
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          minHeight: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "var(--space-4)",
-          padding: "var(--space-6) var(--screen-padding)",
-        }}
-      >
-        <div
-          className="error-card corner-frame"
-          style={{
-            width: "100%",
-            maxWidth: 420,
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-4)",
-            padding: "var(--space-5)",
-            border: "1px solid var(--color-border-default)",
-            borderRadius: "var(--radius-sharp)",
-            background: "var(--color-bg-surface)",
-            "--corner-size": "12px",
-            "--corner-inset": "-4px",
-            "--corner-color": "var(--color-status-error)",
-          } as CSSProperties}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <span
-              aria-hidden="true"
-              style={{
-                width: 34,
-                height: 34,
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-                border: "1px solid var(--color-status-error)",
-                borderRadius: "var(--radius-sharp)",
-                background: "var(--color-status-error-soft)",
-                color: "var(--color-status-error)",
-              }}
-            >
-              <Alert01Icon size={18} strokeWidth={1.5} />
-            </span>
-            <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", fontWeight: 500, color: "var(--color-status-error)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                Unhandled error
-              </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Glyph / Recovery
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-display)",
-                fontSize: "var(--text-title)",
-                fontWeight: 400,
-                lineHeight: "var(--leading-title)",
-                letterSpacing: "0.04em",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              Something went wrong.
-            </h1>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body-compact)",
-                lineHeight: "var(--leading-body)",
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              Glyph stopped this view before it could continue. Your wallet, accounts, and keys were not changed.
-            </p>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+    <FullPage centered={false} style={{ padding: 0 }}>
+      <PageBanner
+        title="Something went wrong."
+        description="Glyph stopped this view before it could continue."
+      />
+      <PageFrame
+        actions={(
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             {onRetry ? (
               <Button size="md" style={{ width: "100%" }} onClick={onRetry}>
                 <RefreshIcon size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -172,35 +84,37 @@ function ErrorFallback({
               {copied ? "Report copied" : "Copy report"}
             </Button>
           </div>
-
+        )}
+      >
+        <div
+          role="alert"
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-4)",
+          }}
+        >
           <span aria-live="polite" className="sr-only">{copied ? "Error report copied to clipboard" : ""}</span>
 
           {SHOW_ERROR_DEBUG_DETAILS ? (
-            <details className="error-details">
-              <summary>Diagnostic details</summary>
+            <section className="error-details" aria-label="Diagnostic details">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Diagnostic details
+              </span>
               <pre>
                 {error.message || "Unknown render failure"}
                 {"\n\n"}
                 {componentStack.trim() ? `Component stack\n${componentStack.trim()}` : "Component stack unavailable"}
                 {error.stack ? `\n\nJS stack\n${error.stack}` : ""}
               </pre>
-            </details>
+            </section>
           ) : null}
         </div>
-
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-caption)",
-            color: "var(--color-text-tertiary)",
-            letterSpacing: "0.06em",
-            textAlign: "center",
-          }}
-        >
-          The failure was recorded in Diagnostics.
-        </span>
-      </div>
-    </div>
+      </PageFrame>
+    </FullPage>
   );
 }
 
@@ -239,5 +153,12 @@ export class ErrorBoundary extends Component<Props, State> {
 /** Router-level fallback for failures above the route element boundary. */
 export function RouteErrorBoundary() {
   const routeError = useRouteError();
-  return <ErrorFallback error={normalizeError(routeError)} componentStack="" />;
+  const navigate = useNavigate();
+  return (
+    <ErrorFallback
+      error={normalizeError(routeError)}
+      componentStack=""
+      onRetry={() => navigate("/dashboard", { replace: true })}
+    />
+  );
 }
