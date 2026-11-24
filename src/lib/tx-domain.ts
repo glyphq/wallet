@@ -55,7 +55,8 @@ interface ApiEventLike {
   log_id?: number | null;
   type_name?: string | null;
   timestamp?: string | null;
-  body?: Record<string, unknown> | null;
+  /** The service currently serializes decoded event bodies as JSON strings. */
+  body?: unknown;
 }
 
 export function parseTimestamp(value: string | number | null | undefined): number | null {
@@ -115,10 +116,26 @@ export function normalizeApiTransaction(tx: ApiTransactionLike): TxRecord | null
   };
 }
 
+function parseEventBody(body: unknown): Record<string, unknown> | null {
+  if (typeof body === "string") {
+    try {
+      const parsed: unknown = JSON.parse(body);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null;
+    } catch {
+      return null;
+    }
+  }
+  return body && typeof body === "object" && !Array.isArray(body)
+    ? (body as Record<string, unknown>)
+    : null;
+}
+
 /** Maps a decoded QU-transfer event into a history row for contract-originated payouts. */
 export function normalizeApiEvent(event: ApiEventLike): TxRecord | null {
-  if (event.type_name !== "qu_transfer" || !event.body) return null;
-  const body = event.body;
+  const body = parseEventBody(event.body);
+  if (event.type_name !== "qu_transfer" || !body) return null;
   const from = typeof body.from === "string" ? body.from : null;
   const to = typeof body.to === "string" ? body.to : null;
   if (!from && !to) return null;

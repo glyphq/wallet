@@ -4,6 +4,8 @@ import {
   dedupeTxRecords,
   getKnownContractLabel,
   isKnownContract,
+  normalizeApiEvent,
+  normalizeApiTransaction,
   normalizeArchiveTransaction,
   normalizeEventTransfer,
   parseTimestamp,
@@ -142,5 +144,52 @@ describe("known contract lookup", () => {
     expect(isKnownContract("NOT-A-CONTRACT")).toBe(false);
     expect(getKnownContractLabel("NOT-A-CONTRACT")).toBe("");
     expect(getKnownContractLabel(undefined)).toBe("");
+  });
+});
+
+describe("Glyph API transaction normalization", () => {
+  test("maps numeric amounts and status", () => {
+    const record = normalizeApiTransaction({
+      hash: "HASH",
+      source: "A",
+      destination: "B",
+      amount: 1_500_000,
+      tick: 42,
+      input_type: 0,
+      status: "success",
+      timestamp: "2026-11-22T13:23:34Z",
+    });
+    expect(record).toMatchObject({
+      hash: "HASH",
+      amount: "1500000",
+      tickNumber: 42,
+      inputType: 0,
+      moneyFlew: true,
+      timestamp: Date.parse("2026-11-22T13:23:34Z"),
+    });
+    expect(normalizeApiTransaction({ hash: "HASH", status: "failed" })?.moneyFlew).toBe(false);
+  });
+
+  test("parses event bodies serialized as JSON strings", () => {
+    const record = normalizeApiEvent({
+      type_name: "qu_transfer",
+      tx_hash: "TX",
+      tick: 7,
+      timestamp: "2026-11-22T02:44:55Z",
+      body: JSON.stringify({ from: "C", to: "D", amount: 3 }),
+    });
+    expect(record).toMatchObject({
+      hash: "TX",
+      source: "C",
+      destination: "D",
+      amount: "3",
+      tickNumber: 7,
+    });
+  });
+
+  test("ignores non-transfer events and malformed bodies", () => {
+    expect(normalizeApiEvent({ type_name: "custom_message", body: "{}" })).toBeNull();
+    expect(normalizeApiEvent({ type_name: "qu_transfer", body: "not json" })).toBeNull();
+    expect(normalizeApiEvent({ type_name: "qu_transfer", body: {} })).toBeNull();
   });
 });

@@ -45,7 +45,7 @@ Create Vaults, manage Qubic identities, send and receive QU, follow your activit
 
 A Vault can hold the Qubic identities you use every day. Switch Vaults and accounts from anywhere in the app, hide balances when you need privacy, and choose the display settings that fit your workspace.
 
-Your dashboard keeps balances, recent activity, owned assets, approximate fiat values, and QEarn information close at hand. Use a custom RPC endpoint when you need to work with a different Qubic service.
+Your dashboard keeps balances, recent activity, owned assets, approximate fiat values, and QEarn information close at hand. Use a custom Glyph API origin when you need to work with a different Glyph service.
 
 ### Send, receive, and stay informed
 

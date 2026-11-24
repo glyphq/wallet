@@ -38,25 +38,33 @@ export function useNotificationReconcile() {
         const results = await Promise.all(
           identities.map(async (identity) => {
             const cutoff = Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS);
-            const { data } = await listIdentityTransactions({
-              path: { identity },
-              query: { limit: PAGE_SIZE },
-              throwOnError: true,
-            });
+            let cursor: string | undefined;
+            for (let page = 0; page < 5; page++) {
+              const { data } = await listIdentityTransactions({
+                path: { identity },
+                query: { limit: PAGE_SIZE, cursor },
+                throwOnError: true,
+              });
 
-            for (const raw of data.data) {
-              const tx = normalizeApiTransaction(raw);
-              if (!tx?.hash || tx.destination !== identity || !tx.moneyFlew) continue;
-              if (tx.timestamp !== null && tx.timestamp < cutoff) continue;
-              await publishNotificationEvent(createNotificationEvent({
-                kind: "received",
-                title: "Funds received",
-                body: `${BigInt(tx.amount).toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
-                identity,
-                txHash: tx.hash,
-                dedupeKey: `received:${tx.hash}:${identity}`,
-                createdAt: tx.timestamp ?? startedAt,
-              }), { desktop: false });
+              for (const raw of data.data) {
+                const tx = normalizeApiTransaction(raw);
+                if (!tx?.hash || tx.destination !== identity || !tx.moneyFlew) continue;
+                if (tx.timestamp !== null && tx.timestamp < cutoff) continue;
+                await publishNotificationEvent(createNotificationEvent({
+                  kind: "received",
+                  title: "Funds received",
+                  body: `${BigInt(tx.amount).toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
+                  identity,
+                  txHash: tx.hash,
+                  dedupeKey: `received:${tx.hash}:${identity}`,
+                  createdAt: tx.timestamp ?? startedAt,
+                }), { desktop: false });
+              }
+
+              const oldest = data.data[data.data.length - 1]?.timestamp;
+              const oldestMs = oldest ? Date.parse(oldest) : null;
+              cursor = data.meta.next_cursor ?? undefined;
+              if (!cursor || (oldestMs !== null && Number.isFinite(oldestMs) && oldestMs < cutoff)) break;
             }
             return true;
           }),

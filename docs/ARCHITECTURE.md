@@ -30,7 +30,7 @@ The current design does not provide:
 - Silent dApp transaction approval based on a stored connection
 - Deterministic zeroization of seed strings while they transiently exist in JavaScript
 - Protection against malware with the same privileges as an unlocked desktop user
-- Trustless balances, price data, or history when the configured RPC endpoints are malicious
+- Trustless balances, price data, or history when the configured Glyph API is malicious
 - Automatic updates for Debian or RPM installations
 
 ## 3. Runtime topology
@@ -42,8 +42,8 @@ graph LR
     Broker --> Native[Tauri Rust process]
     Link --> Native
     UI <-->|Tauri IPC and events| Native
-    UI <-->|HTTPS queries| LiveRPC[Qubic live RPC]
-    UI <-->|HTTPS queries| ArchiveRPC[Qubic archive RPC]
+    UI <-->|HTTPS| API[Glyph API]
+    API <-->|Qubic peer protocol| Peers[Qubic peers]
     Native -->|HTTPS callback POST| DApp[dApp callback]
     Native -->|Open HTTPS redirect| Browser[System browser]
     Native --> OS[Credential store, clipboard, notifications, tray, filesystem]
@@ -51,7 +51,7 @@ graph LR
     Native --> Updater[Signed update endpoint]
 ```
 
-There is no Glyph application backend in the normal wallet data path. The renderer communicates with configured Qubic live and archive services. The native process communicates with operating-system facilities, the update service, and validated dApp callback destinations.
+The Glyph API is the only chain-data backend in the wallet path. It indexes Qubic data and exposes live peer passthrough; the renderer never calls Qubic RPC services directly. The native process communicates with operating-system facilities, the update service, and validated dApp callback destinations.
 
 ## 4. Repository structure
 
@@ -63,8 +63,8 @@ There is no Glyph application backend in the normal wallet data path. The render
 - `src/screens/`: feature screens for setup, vaults, sends, history, settings, requests, and support
 - `src/layouts/`: application shell and animated route layouts
 - `src/components/`: reusable UI and request-review components
-- `src/hooks/`: RPC queries, polling, auto-lock integration, deep links, notifications, and updater hooks
-- `src/lib/`: wallet domain logic, RPC clients, request validation, export format, session adapters, analytics, and formatting
+- `src/hooks/`: Glyph API queries, polling, auto-lock integration, deep links, notifications, and updater hooks
+- `src/lib/`: wallet domain logic, generated API client, request validation, export format, session adapters, analytics, and formatting
 - `src/store/`: persisted, session, updater, and UI state
 - `src/styles/`: global application styles
 
@@ -182,7 +182,7 @@ Lock clears this native state synchronously before a `glyph:lock` event tells th
 
 ### TanStack Query state
 
-Network-derived balances, tick data, owned assets, transaction history, and related RPC results live in the query cache. Query keys include the relevant RPC endpoint identity so changing endpoints does not reuse data from another configured service.
+Network-derived balances, tick data, owned assets, transaction history, and related API results live in the query cache. The generated client points at one configured Glyph API origin, and the query cache is cleared when that origin changes so data from another service is never reused.
 
 ## 7. Persistent storage architecture
 
@@ -270,7 +270,7 @@ sequenceDiagram
     participant Cmd as Native commands
     participant Vault as Vault crypto
     participant Session as Native session
-    participant RPC as Qubic RPC
+    participant API as Glyph API
 
     UI->>Cmd: unlock(encrypted vault, password)
     Cmd->>Vault: PBKDF2 and AES-GCM decrypt
@@ -283,7 +283,7 @@ sequenceDiagram
     Cmd->>Session: read selected seed
     Cmd->>Cmd: validate and sign in Rust
     Cmd-->>UI: signed transaction payload
-    UI->>RPC: broadcast signed transaction
+    UI->>API: broadcast signed transaction
 ```
 
 ### Security interpretation
@@ -359,13 +359,13 @@ Clipboard writes are performed through Tauri clipboard integration. Native sched
 
 Native keeps a SHA-256 digest of the value Glyph last copied. Scheduled clears, lock-time clears, and application-close clears blank the clipboard only while it still contains that value. If the clipboard cannot be read, the clear still runs so a copied seed does not remain. Content the user copies after Glyph is left intact.
 
-## 13. RPC and transaction architecture
+## 13. API and transaction architecture
 
 ### Network clients
 
-The frontend owns live and archive RPC clients. Custom endpoints must use HTTPS and can be tested in Network settings before being persisted.
+The frontend uses a generated Glyph API client for every chain read and broadcast. A custom API origin must use HTTPS and is tested in Network settings before being persisted.
 
-The live RPC supplies current network state and accepts signed transaction broadcasts. The archive RPC supplies paginated history and related indexed data.
+The Glyph API supplies current network state, paginated history, decoded events, typed contract queries, and signed-transaction broadcast. Contract reads are sent as hex input to `/v1/live/contracts/{index}/query`; the typed contract helpers only encode and decode payloads.
 
 ### Query and polling profiles
 
@@ -385,7 +385,7 @@ Persisted values are sanitized to a range of 2 through 60 seconds. Owned-asset q
 1. The renderer validates source, recipient, amount, balance, and pending-transaction guard.
 2. It fetches the current tick and adds the configured offset, default 10.
 3. Native Rust constructs and signs the transaction.
-4. The renderer broadcasts it to the live RPC.
+4. The renderer broadcasts it to the Glyph API.
 5. A local pending record is retained.
 6. Archive and event queries reconcile it to confirmed, failed, or expired.
 
@@ -395,8 +395,8 @@ Only one outgoing pending operation is allowed per source identity. This is an a
 
 History merges:
 
-- Paginated archive transactions, 50 per page
-- Recent event-log results for the initial time window
+- Cursor-paginated identity transactions, 50 per page
+- Recent decoded event results for the initial time window
 - Local pending records
 
 The frontend deduplicates merged results. Event supplementation mainly covers approximately two weeks of recent activity. Archive indexing delays can still produce temporary gaps.
@@ -578,7 +578,7 @@ The packaged CSP permits:
 - Images from `self`, `data:`, and `blob:`
 - Connections to `self`, Tauri IPC endpoints, and HTTPS
 
-Remote scripts are not permitted by the configured CSP. The HTTPS connection allowance is broad because users can configure RPC endpoints and dApp callbacks are native.
+Remote scripts are not permitted by the configured CSP. The HTTPS connection allowance covers the bundled Glyph API, wallet, relay, exchange-rate, and updater origins; dApp callbacks are native.
 
 ### Main-window capabilities
 
@@ -649,7 +649,7 @@ The design does not protect secrets or transaction intent from:
 - Screen capture, accessibility capture, or malicious input methods during seed reveal
 - Clipboard managers retaining copied values
 - A user approving a deceptive but structurally valid request
-- A malicious RPC lying about balances, prices, ticks, history, or broadcast success
+- A malicious or compromised Glyph API lying about balances, prices, ticks, history, or broadcast success
 - Loss of all seeds, exports, and passwords
 - Rollback or replacement of the entire local installation by an attacker with sufficient system privileges
 
@@ -678,7 +678,7 @@ Security and architecture reviews should explicitly account for these current be
 8. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
 9. **Audit history is mutable:** it is local, capped, and clearable.
 10. **Diagnostics contain metadata:** reports omit vault secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
-11. **Network-derived data is trusted for display:** signatures remain local, but malicious RPC data can influence user decisions.
+11. **Network-derived data is trusted for display:** signatures remain local, but malicious API data can influence user decisions.
 
 ## 22. Review checklist for sensitive changes
 

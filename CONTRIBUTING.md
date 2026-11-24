@@ -54,6 +54,9 @@ Commit both lockfiles when their dependency graphs change:
 ## Repository map
 
 - `src/`: React application, screens, state, request schemas, and shared UI
+- `src/lib/api/generated/`: Hey API output (types, fetch SDK, TanStack Query helpers); do not hand-edit
+- `openapi.json`: committed Glyph API contract snapshot used by the generator
+- `openapi-ts.config.ts`: generator input and plugin configuration
 - `src/styles/`: design tokens and global interaction styles
 - `src-tauri/src/`: Rust commands, vault and store cryptography, native signing, locking, clipboard handling, deep links, and callbacks
 - `src-tauri/capabilities/`: renderer capability allowlist
@@ -61,6 +64,20 @@ Commit both lockfiles when their dependency graphs change:
 - `scripts/`: versioning, audit, packaging, validation, and release helpers
 - `.github/workflows/`: CI, Changesets, prerelease artifact, and release automation
 - `.changeset/`: release-note inputs and Changesets configuration
+
+### Regenerating the API client
+
+`openapi.json` is refreshed from the running Glyph API at `/openapi.json`, then
+the client is regenerated:
+
+```sh
+curl -fsS https://api.glyphq.org/openapi.json -o openapi.json
+bun run api:generate
+```
+
+Commit the spec and generated output together. The app reads chain data through
+these generated SDK functions and the generated TanStack Query options; do not
+add direct `rpc.qubic.org` calls.
 
 ## How to make a change
 

@@ -106,7 +106,7 @@ The sidecar preparation script writes a target-suffixed binary under `src-tauri/
 
 The production Tauri window uses an explicit `connect-src` allowlist in
 `src-tauri/tauri.conf.json`. The entries are limited to the wallet payment-link
-origin (`wallet.glyphq.org`), Qubic RPC (`rpc.qubic.org`), Glyph Relay
+origin (`wallet.glyphq.org`), Glyph API (`api.glyphq.org`), Glyph Relay
 callbacks (`relay.glyphq.org`), Coinbase exchange rates (`api.coinbase.com`),
 and the configured GitHub updater endpoint (`github.com`), plus Tauri IPC.
 
@@ -324,7 +324,7 @@ For changes to packaging, deep-link registration, the tray, credential stores, t
 
 Bun discovers tests in the frontend and scripts. Current test areas include:
 
-- RPC cache isolation by endpoint identity
+- Glyph API cache identity and response normalization
 - Formatting and amount behavior
 - History analytics
 - Notification event behavior

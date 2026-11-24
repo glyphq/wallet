@@ -6,7 +6,7 @@ Glyph is a self-custody desktop wallet for the Qubic network. It runs as a Tauri
 
 ## 1. What Glyph stores and what it does not
 
-Glyph stores wallet vaults and application settings on the computer where it is installed. It connects directly to configured Qubic RPC services. Glyph does not upload your seed or password to a Glyph account or recovery service.
+Glyph stores wallet vaults and application settings on the computer where it is installed. It connects to a Glyph API service for chain data. Glyph does not upload your seed or password to a Glyph account or recovery service.
 
 A vault can contain up to 16 accounts. Each account is backed by a 55-character lowercase Qubic seed.
 
@@ -148,7 +148,7 @@ Deletion is irreversible without a seed backup or a usable encrypted export and 
 
 ## 5. Dashboard and balances
 
-The dashboard shows visible accounts, aggregate QU balance, recent activity, and assets returned by the configured RPC service.
+The dashboard shows visible accounts, aggregate QU balance, recent activity, and assets returned by the configured Glyph API service.
 
 Important distinctions:
 
@@ -171,7 +171,7 @@ Use the hide-balances setting when sharing a screen. On the receive screen, this
 
 The target tick is calculated from the current tick plus the configured offset. The default offset is 10, with common choices of 5, 10, 15, 20, 30, or 50.
 
-Glyph signs transactions in native Rust and submits them to the configured live RPC. It records a local pending transaction and reconciles it against archive and event data.
+Glyph signs transactions in native Rust and submits them to the configured Glyph API. It records a local pending transaction and reconciles it against archive and event data.
 
 Glyph prevents another outgoing transaction from the same identity while one is still pending. A pending record can later become confirmed, failed, or expired.
 
@@ -291,7 +291,7 @@ Analytics is informational only. It is not accounting, tax, or compliance softwa
 
 ### Search
 
-Global search covers accounts, contacts, known contracts, and a limited set of archive transactions per account. Search results depend on the configured RPC services and local metadata.
+Global search covers accounts, contacts, known contracts, and a limited set of archive transactions per account. Search results depend on the configured Glyph API service and local metadata.
 
 ## 12. Contacts and local records
 
@@ -445,9 +445,9 @@ An encrypted export without its password is not a recovery method.
 
 ## 16. Network settings
 
-Glyph uses separate live and archive RPC endpoints. The Network settings screen allows custom HTTPS endpoints to be tested before saving. It also controls the target-tick offset.
+Glyph uses a single Glyph API origin for chain data. The Network settings screen allows a custom HTTPS origin to be tested before saving. It also controls the target-tick offset.
 
-Use trusted endpoints. A malicious or unreliable RPC can provide false balances, incomplete history, stale ticks, or failed broadcasts. It cannot produce a valid signature without the seed, but it can mislead the information shown before signing.
+Use a trusted Glyph API. A malicious or unreliable service can provide false balances, incomplete history, stale ticks, or report a broadcast that never reached a peer. It cannot produce a valid signature without the seed, but it can mislead the information shown before signing.
 
 Default polling intervals vary by application state, with slower polling in the background, tray, and locked states. Asset refreshes are limited to no more than once every 30 seconds.
 
@@ -473,7 +473,7 @@ The diagnostics screen can export a JSON report containing information such as:
 - Most application settings
 - Device diagnostics such as battery state, display, available disk space, and connection type
 
-The report excludes vault encrypted data, seeds, passwords, device identifiers, serial numbers, IP addresses, and MAC addresses. It can still contain privacy-sensitive metadata such as RPC URLs, dApp origins, account-scope identities, recent security-event descriptions, and configuration choices. Inspect the file before sharing it.
+The report excludes vault encrypted data, seeds, passwords, device identifiers, serial numbers, IP addresses, and MAC addresses. It can still contain privacy-sensitive metadata such as API URLs, dApp origins, account-scope identities, recent security-event descriptions, and configuration choices. Inspect the file before sharing it.
 
 Support links open in the system browser. Treat unsolicited support messages, seed requests, and remote-access requests as scams.
 
