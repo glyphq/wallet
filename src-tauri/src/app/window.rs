@@ -8,6 +8,11 @@ use crate::clipboard::ClipboardState;
 use crate::commands::HideToTrayState;
 
 pub(crate) fn handle_event(window: &tauri::Window, event: &tauri::WindowEvent) {
+    #[cfg(target_os = "windows")]
+    if let Ok(hwnd) = window.hwnd() {
+        crate::app::setup::set_square_corners(hwnd.0 as isize);
+    }
+
     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         let hide = window
             .app_handle()

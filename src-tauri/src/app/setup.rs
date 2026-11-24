@@ -27,6 +27,13 @@ pub(crate) fn configure(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
 fn apply_square_window_corners(app: &tauri::App) {
     use tauri::Manager;
 
+    let Some(window) = app.get_webview_window("main") else { return };
+    let Ok(hwnd) = window.hwnd() else { return };
+    set_square_corners(hwnd.0 as isize);
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) fn set_square_corners(hwnd: isize) {
     const DWMWA_WINDOW_CORNER_PREFERENCE: u32 = 33;
     const DWMWCP_DONOTROUND: i32 = 1;
 
@@ -40,12 +47,10 @@ fn apply_square_window_corners(app: &tauri::App) {
         ) -> i32;
     }
 
-    let Some(window) = app.get_webview_window("main") else { return };
-    let Ok(hwnd) = window.hwnd() else { return };
     let preference = DWMWCP_DONOTROUND;
     unsafe {
         let _ = DwmSetWindowAttribute(
-            hwnd.0 as isize,
+            hwnd,
             DWMWA_WINDOW_CORNER_PREFERENCE,
             &preference as *const _ as *const core::ffi::c_void,
             std::mem::size_of::<i32>() as u32,

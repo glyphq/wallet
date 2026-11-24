@@ -21,6 +21,7 @@
         "maxWidth": 380,
         "maxHeight": 680,
         "resizable": false,
+        "minimizable": true,
         "maximizable": false,
         "fullscreen": false,
         "center": true,
