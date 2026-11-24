@@ -28,7 +28,7 @@ export function SettingsMenuRow({
 }) {
   return (
     <button type="button" className="settings-menu-row" onClick={onClick}>
-      <span aria-hidden="true" style={{ width: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-text-tertiary)" }}>{icon}</span>
+      <span className="settings-menu-icon" aria-hidden="true">{icon}</span>
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {label}

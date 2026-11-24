@@ -984,6 +984,18 @@ a:hover {
   background: var(--color-bg-hover);
 }
 
+.settings-menu-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-base);
+  color: var(--color-text-tertiary);
+}
+
 .settings-update {
   display: flex;
   flex-direction: column;
