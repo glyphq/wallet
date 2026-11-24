@@ -257,22 +257,25 @@ a:hover {
 .glyph-input {
   min-height: var(--height-input);
   background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 3px;
+  border: 0;
+  border-radius: 2px;
   appearance: none;
   caret-color: var(--color-text-primary);
   box-shadow: none;
   transition:
     color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out);
 }
 
 .glyph-field {
-  --corner-size: 7px;
-  --corner-inset: 2px;
+  --corner-size: 8px;
+  --corner-inset: -3px;
   --corner-color: var(--color-text-tertiary);
-  border-radius: 3px;
+  position: relative;
+  padding: 2px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  background: transparent;
 }
 
 .glyph-field:focus-within {
@@ -281,6 +284,7 @@ a:hover {
 
 .glyph-field[data-error="true"] {
   --corner-color: var(--color-status-error);
+  border-color: color-mix(in srgb, var(--color-status-error) 28%, var(--color-border-subtle));
 }
 
 .glyph-input::placeholder {
@@ -304,7 +308,11 @@ a:hover {
   cursor: not-allowed;
   color: var(--color-text-disabled);
   background: var(--color-bg-inset);
+}
+
+.glyph-field:has(.glyph-input:disabled) {
   border-color: var(--color-border-subtle);
+  opacity: 0.6;
 }
 
 .glyph-input:-webkit-autofill,
@@ -315,22 +323,16 @@ a:hover {
   transition: background-color 9999s ease-out;
 }
 
-.glyph-input:hover:not(:disabled) {
-  border-color: var(--color-border-strong);
-  background: var(--color-bg-surface);
-}
-
+.glyph-input:hover:not(:disabled),
 .glyph-input:focus:not(:focus-visible),
 .glyph-input:focus-visible {
   outline: none;
-  border-color: var(--color-text-primary);
   background: var(--color-bg-surface);
   box-shadow: none;
 }
 
 .glyph-input[data-error="true"],
 .glyph-input[data-error="true"]:focus {
-  border-color: var(--color-status-error);
   background: color-mix(in srgb, var(--color-status-error) 5%, var(--color-bg-surface));
   box-shadow: none;
 }

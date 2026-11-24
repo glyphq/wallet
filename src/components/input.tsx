@@ -12,7 +12,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, className, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, className, ...props },
   ref,
 ) {
   const generatedId = useId();
