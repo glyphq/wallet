@@ -634,20 +634,23 @@ a:hover {
 /* ── Landscape onboarding ─────────────────────────────────────────────────── */
 
 .onboarding-landscape {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
-  padding: clamp(20px, 3vw, 32px);
+  padding: 0;
   overflow: hidden;
   background: var(--color-bg-base);
 }
 
 .onboarding-inner {
+  z-index: 1;
   --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
   position: relative;
-  width: 80%;
-  height: 80%;
+  width: 85%;
+  height: 85%;
   min-height: 0;
   overflow: hidden;
   isolation: isolate;

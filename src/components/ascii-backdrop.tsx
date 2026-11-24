@@ -13,7 +13,7 @@ interface ClearRect {
  * out behind headline and paragraph line boxes; reduced-motion and WebGL2
  * failures leave the content untouched.
  */
-export function AsciiBackdrop({ children, style, contentStyle }: { children: ReactNode; style?: CSSProperties; contentStyle?: CSSProperties }) {
+export function AsciiBackdrop({ children, style, contentStyle }: { children?: ReactNode; style?: CSSProperties; contentStyle?: CSSProperties }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
 
@@ -82,23 +82,25 @@ export function AsciiBackdrop({ children, style, contentStyle }: { children: Rea
 
   return (
     <div ref={hostRef} style={{ position: "absolute", inset: 0, overflow: "hidden", ...style }}>
-      <div
-        ref={copyRef}
-        style={{
-          position: "relative",
-          zIndex: 1,
-          height: "100%",
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          gap: "var(--space-10)",
-          padding: "clamp(32px, 5vw, 72px)",
-          ...contentStyle,
-        }}
-      >
-        {children}
-      </div>
+      {children ? (
+        <div
+          ref={copyRef}
+          style={{
+            position: "relative",
+            zIndex: 1,
+            height: "100%",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            gap: "var(--space-10)",
+            padding: "clamp(32px, 5vw, 72px)",
+            ...contentStyle,
+          }}
+        >
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }

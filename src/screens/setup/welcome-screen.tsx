@@ -52,7 +52,6 @@ export default function WelcomeScreen() {
         <BrandLockup size={42} iconOnly />
 
         <FlowHeader
-          eyebrow="Get started"
           title="Set up your Vault"
           description="Create a new Vault, restore a seed, or import an existing Vault file."
         />
