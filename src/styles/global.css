@@ -1003,7 +1003,7 @@ a:hover {
 .recent-activity-panel {
   --corner-color: var(--color-text-tertiary);
   --corner-size: 8px;
-  --corner-inset: 3px;
+  --corner-inset: -4px;
   padding: var(--space-4);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sharp);
