@@ -8,14 +8,13 @@ const TX_TYPE_ICONS: Record<string, typeof ArrowUpRight01Icon> = {
   pending: Clock01Icon,
 };
 
-export function ActivityItem({ onClick, label, labelColor, address, time, amount, amountUsd, amountColor, className, txType }: {
+export function ActivityItem({ onClick, label, labelColor, address, time, amount, amountColor, className, txType }: {
   onClick: () => void;
   label: string;
   labelColor: string;
   address: string;
   time: string;
   amount: string;
-  amountUsd?: string;
   amountColor: string;
   className?: string;
   txType?: "sent" | "received" | "sc" | "failed" | "pending";
@@ -67,36 +66,19 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", minWidth: 0 }}>
-          <span
-            style={{
-              minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body-compact)",
-              fontWeight: 500,
-              color: labelColor,
-            }}
-          >
-            {label}
-          </span>
-          {time ? (
-            <span
-              style={{
-                flexShrink: 0,
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--text-caption)",
-                color: "var(--color-text-tertiary)",
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {time}
-            </span>
-          ) : null}
-        </div>
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            fontFamily: "var(--font-sans)",
+            fontSize: "var(--text-body-compact)",
+            fontWeight: 500,
+            color: labelColor,
+          }}
+        >
+          {label}
+        </span>
         <span
           style={{
             overflow: "hidden",
@@ -125,7 +107,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
         >
           {amount}
         </span>
-        {amountUsd ? (
+        {time ? (
           <span
             style={{
               fontFamily: "var(--font-mono)",
@@ -135,7 +117,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
               whiteSpace: "nowrap",
             }}
           >
-            {amountUsd}
+            {time}
           </span>
         ) : null}
       </div>

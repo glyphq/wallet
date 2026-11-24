@@ -18,7 +18,7 @@ export function IconButton({ label, children, badge = false, framed = false, sty
         position: "relative",
         width: 40,
         height: 40,
-        borderRadius: "var(--radius-sharp)",
+        borderRadius: framed ? 2 : "var(--radius-sharp)",
         border: "1px solid transparent",
         background: "transparent",
         display: "inline-flex",
