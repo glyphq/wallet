@@ -6,6 +6,7 @@ import { RequestApprovalActions } from "./request-primitives";
 import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
 import type { ConnectApproveResult } from "@/lib/request-approvals";
 import { Link01Icon } from "@/lib/icons";
+import { MarbleAvatar } from "@/components/marble-avatar";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FieldLabel } from "@/components/field-parts";
 import { Toggle } from "@/components/toggle";
@@ -29,7 +30,6 @@ interface ConnectPreviewProps {
 export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
   const accounts = useSessionStore((s) => s.accounts);
   const settings = usePersistedStore((s) => s.settings);
-  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
 
   const [selectedIndex, setSelectedIndex] = useState(settings.activeAccountIndex);
 
@@ -68,13 +68,11 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
 
   const grantsTransferLike = requestedPerms.some((p) => (p === "transfer" || p === "sc_call") && grantedPerms.has(p));
 
-  const accountOptions = accounts.map((sessionAccount, index) => {
-    const meta = wallet?.accounts.find((account) => account.identity === sessionAccount.identity) ?? wallet?.accounts[index];
-    return {
-      value: String(index),
-      label: `${meta?.name ?? `Account ${index + 1}`} · ${truncateId(sessionAccount.identity, 6, 6)}`,
-    };
-  });
+  const accountOptions = accounts.map((sessionAccount, index) => ({
+    value: String(index),
+    label: truncateId(sessionAccount.identity, 8, 8),
+    icon: <MarbleAvatar seed={sessionAccount.identity} size={22} />,
+  }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>

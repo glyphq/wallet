@@ -6,6 +6,7 @@ import { ArrowDown01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 export interface DropdownOption {
   value: string;
   label: string;
+  icon?: ReactNode;
 }
 
 interface MenuPosition {
@@ -120,7 +121,10 @@ export function DropdownSelect({
                   className="dropdown-option"
                   onClick={() => choose(option.value)}
                 >
-                  <span>{option.label}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+                    {option.icon ? <span style={{ display: "flex", flexShrink: 0 }}>{option.icon}</span> : null}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{option.label}</span>
+                  </span>
                   {active ? <CheckmarkCircle01Icon size={14} aria-hidden="true" /> : null}
                 </button>
               );
@@ -164,8 +168,11 @@ export function DropdownSelect({
             cursor: disabled ? "not-allowed" : "pointer",
           }}
         >
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {selected?.label ?? "No options"}
+          <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+            {selected?.icon ? <span style={{ display: "flex", flexShrink: 0 }}>{selected.icon}</span> : null}
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {selected?.label ?? "No options"}
+            </span>
           </span>
           <span aria-hidden="true" style={{ display: "flex", flexShrink: 0, color: "var(--color-text-tertiary)", transform: open ? "rotate(180deg)" : undefined, transition: "transform var(--duration-fast) var(--ease-out)" }}>
             <ArrowDown01Icon size={16} />

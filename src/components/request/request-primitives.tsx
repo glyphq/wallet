@@ -4,6 +4,8 @@ import type { AccountMeta } from "@/store/persisted-types";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { StickyFooter } from "@/components/sticky-footer";
 import { RequestExpiryNotch } from "@/screens/request/sheet-layout";
+import { MarbleAvatar } from "@/components/marble-avatar";
+import { truncateId } from "@/lib/format";
 import { useRequestStatus } from "@/screens/request/request-status-context";
 import { CheckmarkCircle01Icon, DisconnectIcon } from "@/lib/icons";
 
@@ -198,7 +200,8 @@ export function RequestSigningAccountPicker({
       value={String(selectedIndex)}
       options={visible.map((account) => ({
         value: String(account.index),
-        label: account.name || `Account ${account.index + 1}`,
+        label: account.identity ? truncateId(account.identity, 8, 8) : account.name,
+        icon: <MarbleAvatar seed={account.identity ?? String(account.index)} size={22} />,
       }))}
       onChange={(value) => onSelect(Number(value))}
     />
