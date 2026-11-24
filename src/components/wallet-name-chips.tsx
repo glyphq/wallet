@@ -10,7 +10,7 @@ export function WalletNameChips({ value, onSelect }: { value: string; onSelect: 
           <button
             key={name}
             type="button"
-            className="wallet-name-chip"
+            className="wallet-name-chip corner-frame"
             data-selected={selected ? "true" : "false"}
             aria-pressed={selected}
             onClick={() => onSelect(name)}

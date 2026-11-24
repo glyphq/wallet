@@ -957,7 +957,23 @@ a:hover {
   justify-content: center;
   justify-items: center;
   column-gap: var(--space-2);
-  row-gap: calc(var(--space-2) + 4px);
+  row-gap: var(--space-2);
+  margin-top: calc(var(--space-5) * -0.5);
+}
+
+.wallet-name-chip.corner-frame {
+  --corner-size: 6px;
+  --corner-inset: 2px;
+  --corner-color: var(--color-text-tertiary);
+}
+
+.wallet-name-chip.corner-frame::before {
+  opacity: 0.24;
+}
+
+.wallet-name-chip.corner-frame:hover::before,
+.wallet-name-chip.corner-frame[data-selected="true"]::before {
+  opacity: 0.5;
 }
 
 .wallet-name-chip {
@@ -975,14 +991,6 @@ a:hover {
     color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out);
-}
-
-.wallet-name-chip:nth-child(2n) {
-  transform: translateY(3px);
-}
-
-.wallet-name-chip:nth-child(3n) {
-  transform: translateY(-1px);
 }
 
 .wallet-name-chip:hover,
