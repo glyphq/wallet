@@ -1,9 +1,11 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import glyphOnLight from "@/assets/brand/glyph-on-light.png";
-import { Moon02Icon, Sun01Icon } from "@/lib/icons";
+import { LockKeyholeIcon, Moon02Icon, Sun01Icon } from "@/lib/icons";
 import { usePersistedStore } from "@/store/persisted";
+import { useSessionStore } from "@/store/session";
 
 function WinBtn({
   onClick,
@@ -30,6 +32,7 @@ function WinBtn({
 }
 
 export function TitleBar() {
+  const navigate = useNavigate();
   // Vite previews, component tests, and browser-based accessibility checks do
   // not have Tauri's window bridge. Keep the app shell usable in those
   // environments instead of throwing while the title bar mounts.
@@ -39,6 +42,8 @@ export function TitleBar() {
   );
   const themeMode = usePersistedStore((state) => state.settings.themeMode);
   const updateSettings = usePersistedStore((state) => state.updateSettings);
+  const isLocked = useSessionStore((state) => state.isLocked);
+  const lock = useSessionStore((state) => state.lock);
   const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
 
   return (
@@ -90,6 +95,25 @@ export function TitleBar() {
 
       {win ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {!isLocked ? (
+            <WinBtn
+              onClick={() => {
+                lock();
+                navigate("/lock", { replace: true });
+              }}
+              label="Lock wallet"
+            >
+              <LockKeyholeIcon size={14} />
+            </WinBtn>
+          ) : null}
+
+          <WinBtn
+            onClick={() => updateSettings({ themeMode: themeMode === "dark" ? "light" : "dark" })}
+            label={themeMode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          >
+            {themeMode === "dark" ? <Sun01Icon size={14} /> : <Moon02Icon size={14} />}
+          </WinBtn>
+
           <WinBtn
             onClick={() => void win.minimize()}
             label="Minimize"
@@ -97,13 +121,6 @@ export function TitleBar() {
             <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
               <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
             </svg>
-          </WinBtn>
-
-          <WinBtn
-            onClick={() => updateSettings({ themeMode: themeMode === "dark" ? "light" : "dark" })}
-            label={themeMode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-          >
-            {themeMode === "dark" ? <Sun01Icon size={14} /> : <Moon02Icon size={14} />}
           </WinBtn>
 
           <WinBtn onClick={() => void win.close()} label="Close" danger>
