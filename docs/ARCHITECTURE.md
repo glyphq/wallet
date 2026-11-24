@@ -2,14 +2,14 @@
 
 This document describes the current Glyph desktop-wallet implementation for engineers, maintainers, and security reviewers. It focuses on runtime boundaries, state ownership, cryptography, network flows, platform integration, and known limitations.
 
-Glyph is a Tauri 2 desktop application. The user interface is a React and TypeScript renderer. Privileged operations, vault cryptography, active-session seed retention, Qubic signing, deep-link validation, secure-store encryption, auto-lock enforcement, and platform integration are implemented in Rust.
+Glyph is a Tauri 2 desktop application. The user interface is a React and TypeScript renderer. Privileged operations, wallet cryptography, active-session seed retention, Qubic signing, deep-link validation, secure-store encryption, auto-lock enforcement, and platform integration are implemented in Rust.
 
 ## 1. Design goals
 
 The implementation is designed to:
 
 - Provide a self-custody Qubic wallet without a Glyph-hosted seed or password service.
-- Encrypt vault seeds with a user-supplied password.
+- Encrypt wallet seeds with a user-supplied password.
 - Encrypt persisted application metadata with an installation-specific key.
 - Keep the long-lived unlocked signing session in native memory.
 - Sign Qubic transactions and messages in native Rust.
@@ -60,7 +60,7 @@ The Glyph API is the only chain-data backend in the wallet path. It indexes Qubi
 - `src/main.tsx`: renderer entry point
 - `src/App.tsx`: application composition and startup behavior
 - `src/router.tsx`: hash-based route tree
-- `src/screens/`: feature screens for setup, vaults, sends, history, settings, requests, and support
+- `src/screens/`: feature screens for setup, wallets, sends, history, settings, requests, and support
 - `src/layouts/`: application shell and animated route layouts
 - `src/components/`: reusable UI and request-review components
 - `src/hooks/`: Glyph API queries, polling, auto-lock integration, deep links, notifications, and updater hooks
@@ -72,7 +72,7 @@ The Glyph API is the only chain-data backend in the wallet path. It indexes Qubi
 
 - `src-tauri/src/lib.rs`: Tauri builder, plugin setup, state registration, events, tray, single-instance behavior, and command registration
 - `src-tauri/src/commands.rs`: command-facing validation and orchestration
-- `src-tauri/src/vault_crypto.rs`: password-based vault encryption and decryption
+- `src-tauri/src/wallet_crypto.rs`: password-based wallet encryption and decryption
 - `src-tauri/src/store_crypto.rs`: installation-key management and persisted-value encryption
 - `src-tauri/src/session_crypto.rs`: native unlocked-session seed storage
 - `src-tauri/src/qubic_native.rs`: identity derivation, transaction construction, and native signing
@@ -108,7 +108,7 @@ The route tree separates:
 
 - Setup and import
 - Lock and unlock
-- Dashboard and vault management
+- Dashboard and wallet management
 - Standard send, Send Many, burn, staking, and scheduled templates
 - Receive and payment-link creation
 - History, transaction detail, analytics, and search
@@ -124,8 +124,8 @@ The splash flow waits for persisted Zustand hydration before choosing the initia
 
 The route decision is:
 
-1. No configured vault: setup.
-2. Vault configured but no active session: lock.
+1. No configured wallet: setup.
+2. Wallet configured but no active session: lock.
 3. Active unlocked session: dashboard.
 
 The updater check is triggered once during startup.
@@ -136,9 +136,9 @@ Glyph divides state according to lifetime and sensitivity.
 
 ### Persisted Zustand state
 
-Persisted state includes encrypted vault records and local metadata such as:
+Persisted state includes encrypted wallet records and local metadata such as:
 
-- Vault descriptors and account metadata
+- Wallet descriptors and account metadata
 - Contacts
 - Pending transaction summaries
 - Transaction memos
@@ -152,7 +152,7 @@ The persisted boundary sanitizes and caps collections before storage. Current im
 
 | Record | Maximum retained |
 | --- | ---: |
-| Accounts in one vault | 16 |
+| Accounts in one wallet | 16 |
 | Pending transactions | 50 |
 | Transaction memos | 500 |
 | Scheduled templates | 50 |
@@ -164,7 +164,7 @@ The persisted boundary sanitizes and caps collections before storage. Current im
 
 ### Session state
 
-Session state represents the currently selected vault and non-durable UI workflow state. It includes:
+Session state represents the currently selected wallet and non-durable UI workflow state. It includes:
 
 - Lock status
 - Derived public account identities and display state
@@ -225,27 +225,27 @@ This key protects local data at rest but is available to the running application
 
 ### Export integrity key
 
-Version 2 vault exports include HMAC-SHA256 over a canonical envelope. The HMAC key is installation-local and persisted through Glyph's protected storage path.
+Version 2 wallet exports include HMAC-SHA256 over a canonical envelope. The HMAC key is installation-local and persisted through Glyph's protected storage path.
 
 Consequences:
 
 - The originating installation can detect a modified export.
 - A different installation cannot verify that local HMAC and imports with an unverified-integrity warning.
-- The HMAC is not a portable digital signature, identity proof, or substitute for vault encryption.
+- The HMAC is not a portable digital signature, identity proof, or substitute for wallet encryption.
 - Legacy unsigned exports are intentionally accepted for compatibility.
 
-## 8. Vault cryptography
+## 8. Wallet cryptography
 
 ### Encryption format
 
-New vault encryption uses:
+New wallet encryption uses:
 
 - AES-256-GCM
 - PBKDF2-HMAC-SHA256
 - 600,000 iterations
 - Random 32-byte salt
 - Random 12-byte GCM nonce
-- Vault format version 1
+- Wallet format version 1
 
 The password-derived AES key exists in native code for the encryption or decryption operation and is then dropped. Sensitive Rust buffers use zeroizing containers where practical.
 
@@ -257,10 +257,10 @@ Decryption validates input sizes and resource bounds before deriving a key. It a
 
 Password strength rules are UI policy, not cryptographic-format constraints:
 
-- New-vault setup requires at least 10 characters and the screen's minimum strength level.
+- New-wallet setup requires at least 10 characters and the screen's minimum strength level.
 - Password rotation uses the same 10-character minimum.
 
-The native vault format can decrypt any valid password bytes, including legacy vaults whose password predates the current policy.
+The native wallet format can decrypt any valid password bytes, including legacy wallets whose password predates the current policy.
 
 ## 9. Unlock and signing data flow
 
@@ -268,13 +268,13 @@ The native vault format can decrypt any valid password bytes, including legacy v
 sequenceDiagram
     participant UI as React renderer
     participant Cmd as Native commands
-    participant Vault as Vault crypto
+    participant Wallet as Wallet crypto
     participant Session as Native session
     participant API as Glyph API
 
-    UI->>Cmd: unlock(encrypted vault, password)
-    Cmd->>Vault: PBKDF2 and AES-GCM decrypt
-    Vault-->>Cmd: seed array
+    UI->>Cmd: unlock(encrypted wallet, password)
+    Cmd->>Wallet: PBKDF2 and AES-GCM decrypt
+    Wallet-->>Cmd: seed array
     Cmd-->>UI: seed array over Tauri IPC
     UI->>UI: derive public identities
     UI->>Cmd: store_session_seeds(seed array)
@@ -293,11 +293,11 @@ The architecture reduces seed residence in the renderer after unlock, but it is 
 Seeds transiently enter renderer memory during:
 
 - New-account creation
-- Vault import and unlock
-- Account addition or removal workflows that re-encrypt the vault
+- Wallet import and unlock
+- Account addition or removal workflows that re-encrypt the wallet
 - Explicit seed reveal
 
-They cross Tauri IPC as serialized command values. JavaScript strings and objects cannot be reliably overwritten. The native session is the long-lived signing location, but the renderer remains inside the sensitive trust boundary whenever a vault is being manipulated or unlocked.
+They cross Tauri IPC as serialized command values. JavaScript strings and objects cannot be reliably overwritten. The native session is the long-lived signing location, but the renderer remains inside the sensitive trust boundary whenever a wallet is being manipulated or unlocked.
 
 A compromised renderer in an unlocked session can invoke allowed signing commands with attacker-selected transaction fields. Native validation prevents malformed structures and some abuse, but the review UI is the primary intent-confirmation control.
 
@@ -427,7 +427,7 @@ CSV and JSON import is parsed in the renderer. Invalid rows are filtered and no 
 
 ### Burn
 
-Burn invokes the QUtil `BurnQubic` contract. It is irreversible. An optional application setting can require vault-password revalidation before signing.
+Burn invokes the QUtil `BurnQubic` contract. It is irreversible. An optional application setting can require wallet-password revalidation before signing.
 
 ### QEarn
 
@@ -636,7 +636,7 @@ A renderer compromise can exercise these allowed APIs and registered native comm
 
 The implementation provides meaningful controls against:
 
-- Offline inspection of vault ciphertext without the password
+- Offline inspection of wallet ciphertext without the password
 - Offline inspection of normal application-store values without the installation key
 - Accidental or local modification of an export when verified on its originating installation
 - Replayed dApp links within the nonce retention window
@@ -683,12 +683,12 @@ Security and architecture reviews should explicitly account for these current be
 7. **Nonce consumption occurs before approval:** rejected requests cannot reuse the same nonce for one hour.
 8. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
 9. **Audit history is mutable:** it is local, capped, and clearable.
-10. **Diagnostics contain metadata:** reports omit vault secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
+10. **Diagnostics contain metadata:** reports omit wallet secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
 11. **Network-derived data is trusted for display:** signatures remain local, but malicious API data can influence user decisions.
 
 ## 22. Review checklist for sensitive changes
 
-Changes involving vaults, signing, deep links, persistence, or platform integration should verify:
+Changes involving wallets, signing, deep links, persistence, or platform integration should verify:
 
 1. What process and state layer owns each secret at every step.
 2. Whether a value crosses Tauri IPC or enters JavaScript.

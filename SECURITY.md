@@ -25,7 +25,7 @@ Include as much of the following as possible:
 - relevant logs with secrets and personal data removed
 - known mitigations or workarounds
 
-Never include a real seed, password, vault export, signing key, certificate, updater credential, or production account in a report.
+Never include a real seed, password, wallet export, signing key, certificate, updater credential, or production account in a report.
 
 We aim to acknowledge a report within 48 hours and provide an initial assessment or resolution plan within 7 days. Timing may vary with complexity, but maintainers will coordinate disclosure before publishing details that could put users at risk.
 
@@ -34,9 +34,9 @@ We aim to acknowledge a report within 48 hours and provide an initial assessment
 ### In scope
 
 - seed or private-key disclosure, persistence, or exfiltration
-- vault encryption, password, or protected-store bypass
+- wallet encryption, password, or protected-store bypass
 - signing without the required user authorization or with a different account or payload than reviewed
-- session material surviving lock, reset, or final-vault removal unexpectedly
+- session material surviving lock, reset, or final-wallet removal unexpectedly
 - dApp permission or account-scope escalation
 - `glyph://` argument injection, parsing, replay, spoofing, queue, callback, or redirect flaws
 - callback server-side request forgery or DNS-rebinding bypass
@@ -63,11 +63,11 @@ Glyph is a Tauri v2 desktop application. The React renderer runs in a platform w
 
 The webview is trusted application code, not a separate authorization principal. CSP, input validation, capability scoping, and native command checks reduce attack surface, but a renderer compromise must still be treated as security-sensitive.
 
-### Vault encryption and unlock
+### Wallet encryption and unlock
 
-Vault payloads are encrypted in Rust with AES-256-GCM. Password-derived keys use PBKDF2-HMAC-SHA-256. New vaults use 600,000 iterations, a random 32-byte salt, and a random 12-byte nonce. Decryption rejects unsupported versions, malformed fields, iteration counts below 100,000, and iteration counts above 2,000,000.
+Wallet payloads are encrypted in Rust with AES-256-GCM. Password-derived keys use PBKDF2-HMAC-SHA-256. New wallets use 600,000 iterations, a random 32-byte salt, and a random 12-byte nonce. Decryption rejects unsupported versions, malformed fields, iteration counts below 100,000, and iteration counts above 2,000,000.
 
-Encryption and decryption are native operations, but passwords and decrypted seed values cross the Tauri command boundary during vault creation, unlock, mutation, and explicit seed reveal. Those values therefore exist briefly in renderer and IPC-managed memory. JavaScript memory does not provide deterministic erasure guarantees.
+Encryption and decryption are native operations, but passwords and decrypted seed values cross the Tauri command boundary during wallet creation, unlock, mutation, and explicit seed reveal. Those values therefore exist briefly in renderer and IPC-managed memory. JavaScript memory does not provide deterministic erasure guarantees.
 
 ### Unlocked session and signing
 
@@ -130,7 +130,7 @@ Release scripts refuse to move existing tags or mutate published assets, but sou
 - Tauri initialization and registered commands: `src-tauri/src/lib.rs`
 - Capability allowlist: `src-tauri/capabilities/default.json`
 - CSP and updater configuration: `src-tauri/tauri.conf.json`
-- Vault cryptography: `src-tauri/src/vault_crypto.rs`
+- Wallet cryptography: `src-tauri/src/wallet_crypto.rs`
 - Protected-store cryptography: `src-tauri/src/store_crypto.rs`
 - Native session and signing commands: `src-tauri/src/session_crypto.rs`
 - Qubic signing implementation: `src-tauri/src/qubic_native.rs`

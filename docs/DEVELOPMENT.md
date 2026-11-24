@@ -130,7 +130,7 @@ allowlisted or served through an approved proxy rather than broadening
 bun run dev
 ```
 
-This starts only Vite. It is useful for isolated visual work, but Tauri commands and plugins are not available in a normal browser tab. Vault cryptography, native session signing, store encryption, deep links, updater behavior, notifications, tray behavior, and platform integration cannot be validated this way.
+This starts only Vite. It is useful for isolated visual work, but Tauri commands and plugins are not available in a normal browser tab. Wallet cryptography, native session signing, store encryption, deep links, updater behavior, notifications, tray behavior, and platform integration cannot be validated this way.
 
 ### Preview a frontend production build
 
@@ -358,7 +358,7 @@ Native tests cover important logic in:
 - Deep-link parsing and security validation
 - Application argument handling
 - Native signing and identity logic
-- Vault cryptography
+- Wallet cryptography
 
 Run a focused test through Cargo's filter:
 
@@ -455,7 +455,7 @@ Do not put active seeds into Zustand, browser storage, query cache, logs, diagno
 - Treat every renderer argument as untrusted.
 - Validate sizes and numeric ranges before allocation, password derivation, network access, or signing.
 - Return narrow serializable results.
-- Avoid returning seeds or private key material unless the feature explicitly requires reveal or vault re-encryption.
+- Avoid returning seeds or private key material unless the feature explicitly requires reveal or wallet re-encryption.
 
 ### Qubic transaction features
 
@@ -506,13 +506,13 @@ A capability addition is a security-boundary change and should receive explicit 
 - Prefer Rust for secret processing.
 - Use `zeroize` or zeroizing containers for mutable native secret buffers.
 - Remember that JavaScript strings cannot be deterministically erased.
-- Do not claim that seeds never enter the renderer. They currently cross IPC during unlock and selected vault-management flows.
+- Do not claim that seeds never enter the renderer. They currently cross IPC during unlock and selected wallet-management flows.
 - Clear the native session before emitting lock state to the renderer.
-- Never log passwords, seeds, decrypted vaults, signing inputs that contain secret payloads, or callback result secrets.
+- Never log passwords, seeds, decrypted wallets, signing inputs that contain secret payloads, or callback result secrets.
 
 ### Cryptography
 
-Do not change vault format constants casually. Current new-vault parameters are AES-256-GCM with PBKDF2-HMAC-SHA256 at 600,000 iterations, a 32-byte random salt, and a 12-byte random nonce.
+Do not change wallet format constants casually. Current new-wallet parameters are AES-256-GCM with PBKDF2-HMAC-SHA256 at 600,000 iterations, a 32-byte random salt, and a 12-byte random nonce.
 
 A cryptographic-format change requires:
 
@@ -561,13 +561,13 @@ For dependency changes:
 
 Automated tests should be supplemented with targeted manual checks.
 
-### Vault and session changes
+### Wallet and session changes
 
-- Create a vault and verify seed confirmation.
+- Create a wallet and verify seed confirmation.
 - Import a seed.
 - Unlock with correct and incorrect passwords.
 - Trigger the five-attempt temporary lockout.
-- Add, reveal, remove, export, import, and delete accounts or vaults.
+- Add, reveal, remove, export, import, and delete accounts or wallets.
 - Verify explicit lock clears signing ability.
 - Verify inactivity, sleep, and optional blur locking.
 - Restart and confirm only intended state persists.

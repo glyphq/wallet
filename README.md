@@ -8,7 +8,7 @@
 ### Your Qubic wallet for the desktop.
 
 **Glyph is an open-source, self-custodial desktop wallet for Qubic.**
-Create Vaults, manage Qubic identities, send and receive QU, follow your activity, and review requests from connected apps in one focused native application.
+Create wallets, manage Qubic addresses, send and receive QU, follow your activity, and review requests from connected apps in one focused native application.
 
 [![Latest release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
 [![Release downloads](https://img.shields.io/github/downloads/glyphq/wallet/latest/total?style=flat-square&label=downloads&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
@@ -25,17 +25,17 @@ Create Vaults, manage Qubic identities, send and receive QU, follow your activit
 ## Start here
 
 1. [Download the latest release](https://github.com/glyphq/wallet/releases/latest) for your desktop.
-2. Create a Vault, import a Qubic seed, or restore a Glyph Vault export.
+2. Create a wallet, import a Qubic seed, or restore a Glyph wallet backup.
 3. Back up every new seed offline before you add funds or continue.
 
-> **Your wallet, your recovery.** Glyph is self-custodial. It cannot recover a seed or reset a forgotten Vault password.
+> **Your wallet, your recovery.** Glyph is self-custodial. It cannot recover a seed or reset a forgotten wallet password.
 
 ## Why Glyph
 
 | | What it gives you |
 | --- | --- |
-| **Your Vaults, organized** | Create or import Vaults, keep Qubic accounts together, and make them easy to recognize with names, colors, icons, and notes. |
-| **QU without the guesswork** | Send to an identity, contact, or multiple recipients. Receive with a QR code or payment link. Review the amount and remaining balance before you sign. |
+| **Your wallets, organized** | Create or import wallets, keep Qubic accounts together, and make them easy to recognize with names, colors, icons, and notes. |
+| **QU without the guesswork** | Send to an address, contact, or multiple recipients. Receive with a QR code or payment link. Review the amount and remaining balance before you sign. |
 | **Activity with context** | Searchable history, local memos, tags, contacts, saved transfer templates, exports, and account-level activity make your wallet easier to understand over time. |
 | **Connected apps on your terms** | Open supported `glyph://` requests from Qubic apps and services, then review connection, transfer, contract-call, signing, and verification requests in Glyph. |
 
@@ -43,15 +43,15 @@ Create Vaults, manage Qubic identities, send and receive QU, follow your activit
 
 ### Keep your setup in one place
 
-A Vault can hold the Qubic identities you use every day. Switch Vaults and accounts from anywhere in the app, hide balances when you need privacy, and choose the display settings that fit your workspace.
+A wallet can hold the Qubic addresses you use every day. Switch wallets and accounts from anywhere in the app, hide balances when you need privacy, and choose the display settings that fit your workspace.
 
 Your dashboard keeps balances, recent activity, owned assets, approximate fiat values, and QEarn information close at hand. Use a custom Glyph API origin when you need to work with a different Glyph service.
 
 ### Send, receive, and stay informed
 
-- Send QU to an identity or a saved contact.
+- Send QU to an address or a saved contact.
 - Send to multiple recipients in one reviewed flow.
-- Share an identity, QR code, or payment link to receive QU.
+- Share an address, QR code, or payment link to receive QU.
 - Track transactions from broadcast through confirmation, expiry, or failure.
 - Keep local notes and reusable transfer templates for recurring payments.
 
@@ -84,10 +84,10 @@ Glyph is a native desktop application. It does not run in a browser, on mobile, 
 
 ## Self-custody, clearly
 
-- Your encrypted Vaults and local wallet data are stored on your computer.
-- Glyph does not upload your seed or Vault password to a Glyph account or recovery service.
+- Your encrypted Wallets and local wallet data are stored on your computer.
+- Glyph does not upload your seed or Wallet password to a Glyph account or recovery service.
 - Your seed is the recovery method. Store it offline, keep it private, and test backups before you need them.
-- Vault exports are sensitive encrypted files. Store them separately from their passwords.
+- Wallet backups are sensitive encrypted files. Store them separately from their passwords.
 
 For implementation details, platform behavior, and important limitations, read the [full user guide](./docs/USER_GUIDE.md).
 

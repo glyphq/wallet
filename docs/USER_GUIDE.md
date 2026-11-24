@@ -2,17 +2,17 @@
 
 Glyph is a self-custody desktop wallet for the Qubic network. It runs as a Tauri application on Windows, macOS, and Linux. This guide explains the behavior of the current implementation, including security boundaries and limitations that are easy to misunderstand.
 
-> **Self-custody warning:** Glyph cannot recover your seed or reset a forgotten vault password. Keep an offline backup of every seed. Test backups before relying on them.
+> **Self-custody warning:** Glyph cannot recover your seed or reset a forgotten wallet password. Keep an offline backup of every seed. Test backups before relying on them.
 
 ## 1. What Glyph stores and what it does not
 
-Glyph stores wallet vaults and application settings on the computer where it is installed. It connects to a Glyph API service for chain data. Glyph does not upload your seed or password to a Glyph account or recovery service.
+Glyph stores wallets and application settings on the computer where it is installed. It connects to a Glyph API service for chain data. Glyph does not upload your seed or password to a Glyph account or recovery service.
 
-A vault can contain up to 16 accounts. Each account is backed by a 55-character lowercase Qubic seed.
+A wallet can contain up to 16 accounts. Each account is backed by a 55-character lowercase Qubic seed.
 
 Glyph stores two broad kinds of information:
 
-- **Encrypted secrets:** account seeds inside password-encrypted vault data.
+- **Encrypted secrets:** account seeds inside password-encrypted wallet data.
 - **Local wallet metadata:** names, contacts, transaction memos, scheduled-transfer templates, notification history, audit events, approved dApps, and settings.
 
 Local metadata is encrypted at rest with an installation-specific key when it is written to Glyph's application store. Some records, such as transaction confirmations and balances, are derived again from network data. Other records, such as memos and contacts, exist only on this installation unless separately backed up.
@@ -50,32 +50,32 @@ The universal application supports Apple Silicon and Intel Macs. Protocol links 
 
 On first launch, choose one of these paths:
 
-1. Create a new vault and seed.
+1. Create a new wallet and seed.
 2. Import an existing 55-character Qubic seed.
-3. Import a Glyph vault export in JSON format.
+3. Import a Glyph wallet export in JSON format.
 
-### Create a new vault
+### Create a new wallet
 
-1. Enter a vault name.
+1. Enter a wallet name.
 2. Glyph generates a 55-character lowercase seed.
 3. Write the seed down offline in the exact order shown.
 4. Confirm the seed by entering it again.
 5. Acknowledge that Glyph cannot recover it.
-6. Choose and confirm a vault password.
+6. Choose and confirm a wallet password.
 
 The setup screen automatically hides the displayed seed after 30 seconds. If you copy it, Glyph schedules the clipboard to be cleared after 60 seconds.
 
-New-vault passwords must contain at least 10 characters and pass the screen's minimum strength check. A longer unique passphrase is strongly recommended.
+New-wallet passwords must contain at least 10 characters and pass the screen's minimum strength check. A longer unique passphrase is strongly recommended.
 
 ### Import a seed
 
-An imported Qubic seed must be exactly 55 lowercase letters. After validating the seed, choose the vault name and password.
+An imported Qubic seed must be exactly 55 lowercase letters. After validating the seed, choose the wallet name and password.
 
 Importing a seed does not discover or import local Glyph metadata from another installation. Contacts, memos, settings, and audit history are installation-local.
 
-### Import a Glyph vault export
+### Import a Glyph wallet export
 
-Select a `.json` export and enter the password that encrypted the exported vault. If the file contains more than 16 accounts, Glyph requires you to select no more than 16 before importing.
+Select a `.json` export and enter the password that encrypted the exported wallet. If the file contains more than 16 accounts, Glyph requires you to select no more than 16 before importing.
 
 Current exports use a versioned envelope with a local HMAC integrity value:
 
@@ -84,54 +84,54 @@ Current exports use a versioned envelope with a local HMAC integrity value:
 - The HMAC is not a public signature and does not prove who created the file.
 - Legacy unsigned export files remain importable.
 
-The original vault password is still required to decrypt and migrate the selected accounts.
+The original wallet password is still required to decrypt and migrate the selected accounts.
 
-## 4. Vaults and accounts
+## 4. Wallets and accounts
 
-### Unlock a vault
+### Unlock a wallet
 
-Enter the vault password on the lock screen. Glyph rate-limits repeated failures:
+Enter the wallet password on the lock screen. Glyph rate-limits repeated failures:
 
 - After five failed attempts, unlocking is blocked for 30 seconds.
 - The failed-attempt count and temporary lockout survive an application restart.
 - A successful unlock resets the counter.
 
-Glyph decrypts the vault through native Rust code. During unlock, the seeds briefly cross the Tauri IPC boundary so the renderer can derive account identities, after which the native process retains the active session seeds for signing. See [Security model](#15-security-model-and-important-boundaries) for the exact limitation.
+Glyph decrypts the wallet through native Rust code. During unlock, the seeds briefly cross the Tauri IPC boundary so the renderer can derive account addresses, after which the native process retains the active session seeds for signing. See [Security model](#15-security-model-and-important-boundaries) for the exact limitation.
 
-### Switch vaults
+### Switch wallets
 
-Open the vault list, select another vault, and enter that vault's password. Each vault has an independent password and account set.
+Open the wallet list, select another wallet, and enter that wallet's password. Each wallet has an independent password and account set.
 
 ### Add an account
 
-A vault can contain up to 16 accounts. You can:
+A wallet can contain up to 16 accounts. You can:
 
 - Generate another Qubic seed.
 - Import an existing 55-character lowercase seed.
 
-Adding an account requires the current vault password. Back up every newly generated seed immediately. A backup of the first account does not recover later accounts.
+Adding an account requires the current wallet password. Back up every newly generated seed immediately. A backup of the first account does not recover later accounts.
 
 ### Manage account metadata
 
 Glyph supports account names, notes, tags, visibility, and removal. Hiding an account removes it from normal visible-account lists but does not delete its encrypted seed.
 
-Removing an account requires the vault password. Confirm that its seed is backed up first.
+Removing an account requires the wallet password. Confirm that its seed is backed up first.
 
 ### Reveal a seed
 
-Seed reveal requires the vault password under the normal configuration. The reveal dialog closes automatically after 60 seconds, and a copied seed is scheduled for clipboard clearing after 60 seconds.
+Seed reveal requires the wallet password under the normal configuration. The reveal dialog closes automatically after 60 seconds, and a copied seed is scheduled for clipboard clearing after 60 seconds.
 
-Biometric commands are currently disabled on every platform, so the biometric seed-reveal requirement is hidden. When biometric enrollment is available again, the requirement applies only to a vault that has an enrolled credential; otherwise Glyph falls back to the password path instead of blocking reveal.
+Biometric commands are currently disabled on every platform, so the biometric seed-reveal requirement is hidden. When biometric enrollment is available again, the requirement applies only to a wallet that has an enrolled credential; otherwise Glyph falls back to the password path instead of blocking reveal.
 
-### Change the vault password
+### Change the wallet password
 
-Open the vault detail screen, supply the current password, and choose a new one. New passwords use the same 10-character minimum as onboarding. A longer unique passphrase is still preferable.
+Open the wallet detail screen, supply the current password, and choose a new one. New passwords use the same 10-character minimum as onboarding. A longer unique passphrase is still preferable.
 
-Changing a password re-encrypts the vault. It does not change account seeds or identities.
+Changing a password re-encrypts the wallet. It does not change account seeds or addresses.
 
-### Export a vault
+### Export a wallet
 
-Vault export requires the current vault password. Store the resulting JSON file as sensitive material because it contains the encrypted vault and account metadata.
+Wallet export requires the current wallet password. Store the resulting JSON file as sensitive material because it contains the encrypted wallet and account metadata.
 
 Recommended handling:
 
@@ -140,9 +140,9 @@ Recommended handling:
 3. Test import on a trusted installation.
 4. Do not treat the local integrity HMAC as proof of authorship.
 
-### Delete a vault
+### Delete a wallet
 
-Deleting a vault requires its password and removes the local encrypted vault record. If another vault exists, Glyph selects it and returns to a locked state. Deleting the last vault returns Glyph to setup.
+Deleting a wallet requires its password and removes the local encrypted wallet record. If another wallet exists, Glyph selects it and returns to a locked state. Deleting the last wallet returns Glyph to setup.
 
 Deletion is irreversible without a seed backup or a usable encrypted export and its password.
 
@@ -164,7 +164,7 @@ Use the hide-balances setting when sharing a screen. On the receive screen, this
 ### Standard transfer
 
 1. Select the source account.
-2. Enter or select a checksum-valid Qubic identity.
+2. Enter or select a checksum-valid Qubic address.
 3. Enter a positive whole-number QU amount.
 4. Review the estimated target tick.
 5. Sign and broadcast the transaction.
@@ -173,7 +173,7 @@ The target tick is calculated from the current tick plus the configured offset. 
 
 Glyph signs transactions in native Rust and submits them to the configured Glyph API. It records a local pending transaction and reconciles it against archive and event data.
 
-Glyph prevents another outgoing transaction from the same identity while one is still pending. A pending record can later become confirmed, failed, or expired.
+Glyph prevents another outgoing transaction from the same address while one is still pending. A pending record can later become confirmed, failed, or expired.
 
 ### Amount and fiat entry
 
@@ -230,7 +230,7 @@ Imports discard invalid rows and use no more than the first 25 valid recipients.
 
 The burn screen calls the QUtil `BurnQubic` smart contract. Burning is irreversible. Verify the amount, source account, target tick, and fee before approving.
 
-A security setting can require the vault password before a burn. This setting is off by default.
+A security setting can require the wallet password before a burn. This setting is off by default.
 
 ### QEarn staking
 
@@ -254,7 +254,7 @@ Treat the schedule as a reminder and template, not as a standing payment instruc
 
 ### Receive screen
 
-Select an account to display its identity and QR code. Confirm the displayed identity before sharing it.
+Select an account to display its address and QR code. Confirm the displayed address before sharing it.
 
 ### Create a payment link
 
@@ -295,7 +295,7 @@ Global search covers accounts, contacts, known contracts, and a limited set of a
 
 ## 12. Contacts and local records
 
-Contacts can contain a name, Qubic identity, note, and tags. They are stored locally. The current UI does not provide contact import or export.
+Contacts can contain a name, Qubic address, note, and tags. They are stored locally. The current UI does not provide contact import or export.
 
 Other local records include:
 
@@ -305,7 +305,7 @@ Other local records include:
 - Scheduled-transfer templates, limited to 50 entries
 - Runtime diagnostics, limited to 100 issues
 
-The audit log records selected wallet events such as unlock success or failure, seed reveal, vault export, and external request decisions. It is clearable local history, not an immutable security ledger.
+The audit log records selected wallet events such as unlock success or failure, seed reveal, wallet export, and external request decisions. It is clearable local history, not an immutable security ledger.
 
 ## 13. Notifications and tray behavior
 
@@ -360,7 +360,7 @@ Current validation includes:
 - Rejection of local, private, link-local, and other non-global callback destinations
 - Request expiry no more than one hour in the future
 - A persisted nonce replay window of one hour
-- Qubic identity, amount, contract, and payload validation
+- Qubic address, amount, contract, and payload validation
 - A maximum queue of 16 pending requests and 16 pending payment links
 
 The nonce is consumed when Glyph accepts a request for review. Closing or rejecting the request means the same nonce cannot be retried for one hour.
@@ -379,17 +379,17 @@ Callback POSTs have a 4 KiB response limit, a 10-second timeout, no redirects, D
 
 ## 15. Security model and important boundaries
 
-### Vault encryption
+### Wallet encryption
 
-Vault seeds are encrypted in native Rust using:
+Wallet seeds are encrypted in native Rust using:
 
 - AES-256-GCM authenticated encryption
 - PBKDF2-HMAC-SHA256 password derivation
-- 600,000 PBKDF2 iterations for newly encrypted vaults
+- 600,000 PBKDF2 iterations for newly encrypted wallets
 - A random 32-byte salt
 - A random 12-byte AES-GCM nonce
 
-Glyph accepts a bounded range of iteration counts and older salt sizes when decrypting compatible vaults.
+Glyph accepts a bounded range of iteration counts and older salt sizes when decrypting compatible wallets.
 
 ### Application-store encryption
 
@@ -407,11 +407,11 @@ This protects data at rest from casual file inspection. It does not protect an u
 
 Long-lived active seeds are retained in zeroizing native Rust memory and transaction or message signing is performed natively. Lock clears the native seed session before the renderer receives the lock event.
 
-However, the seed is not guaranteed to remain exclusively native for its entire lifecycle. During vault creation, unlock, account changes, and seed reveal, seed values briefly exist in the web renderer and cross Tauri IPC. JavaScript strings cannot be deterministically zeroized. Glyph's design reduces long-lived renderer exposure but does not eliminate transient renderer exposure.
+However, the seed is not guaranteed to remain exclusively native for its entire lifecycle. During wallet creation, unlock, account changes, and seed reveal, seed values briefly exist in the web renderer and cross Tauri IPC. JavaScript strings cannot be deterministically zeroized. Glyph's design reduces long-lived renderer exposure but does not eliminate transient renderer exposure.
 
 ### Signing controls
 
-Native signing validates identities, amounts, target ticks, and payload sizes. Signing operations share a process-level rate limit of one operation every 750 milliseconds.
+Native signing validates addresses, amounts, target ticks, and payload sizes. Signing operations share a process-level rate limit of one operation every 750 milliseconds.
 
 A valid password or unlocked session is not protection against a fully compromised local machine. Verify transaction details before approval and keep the operating system updated.
 
@@ -473,7 +473,7 @@ The diagnostics screen can export a JSON report containing information such as:
 - Most application settings
 - Device diagnostics such as battery state, display, available disk space, and connection type
 
-The report excludes vault encrypted data, seeds, passwords, device identifiers, serial numbers, IP addresses, and MAC addresses. It can still contain privacy-sensitive metadata such as API URLs, dApp origins, account-scope identities, recent security-event descriptions, and configuration choices. Inspect the file before sharing it.
+The report excludes wallet encrypted data, seeds, passwords, device identifiers, serial numbers, IP addresses, and MAC addresses. It can still contain privacy-sensitive metadata such as API URLs, dApp origins, account-scope addresses, recent security-event descriptions, and configuration choices. Inspect the file before sharing it.
 
 Support links open in the system browser. Treat unsolicited support messages, seed requests, and remote-access requests as scams.
 
@@ -483,14 +483,14 @@ Before receiving significant funds:
 
 1. Back up every 55-character seed offline.
 2. Re-enter or otherwise verify the backup.
-3. Use a unique, long vault password.
-4. Store an encrypted vault export separately from its password.
-5. Test the receive identity through a second trusted channel.
+3. Use a unique, long wallet password.
+4. Store an encrypted wallet export separately from its password.
+5. Test the receive address through a second trusted channel.
 
 Before signing:
 
 1. Verify the source account and available balance.
-2. Verify the complete recipient identity.
+2. Verify the complete recipient address.
 3. Confirm the QU amount, contract action, fee, and target tick.
 4. Treat payment links and dApp requests as untrusted input.
 5. Remember that local memos and labels are not on-chain instructions.
@@ -500,4 +500,4 @@ Before sharing diagnostics or exports:
 1. Confirm which file you selected.
 2. Inspect diagnostics for metadata you do not want to disclose.
 3. Never share a seed.
-4. Treat an encrypted vault export as sensitive even when you believe its password is strong.
+4. Treat an encrypted wallet export as sensitive even when you believe its password is strong.

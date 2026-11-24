@@ -7,7 +7,7 @@ Thank you for improving Glyph. This project is a self-custodial desktop wallet, 
 - Search existing issues and pull requests for related work.
 - Base your branch on the current target branch. Stable work targets `main`; work intended for the prerelease channel targets `prerelease`.
 - Report vulnerabilities privately as described in [SECURITY.md](./SECURITY.md).
-- Never put real seeds, passwords, vault exports, signing keys, certificates, release credentials, `.env` files, or personal wallet data in source, fixtures, logs, screenshots, issues, or pull requests.
+- Never put real seeds, passwords, wallet exports, signing keys, certificates, release credentials, `.env` files, or personal wallet data in source, fixtures, logs, screenshots, issues, or pull requests.
 
 ## Development prerequisites
 
@@ -58,7 +58,7 @@ Commit both lockfiles when their dependency graphs change:
 - `openapi.json`: committed Glyph API contract snapshot used by the generator
 - `openapi-ts.config.ts`: generator input and plugin configuration
 - `src/styles/`: design tokens and global interaction styles
-- `src-tauri/src/`: Rust commands, vault and store cryptography, native signing, locking, clipboard handling, deep links, and callbacks
+- `src-tauri/src/`: Rust commands, wallet and store cryptography, native signing, locking, clipboard handling, deep links, and callbacks
 - `src-tauri/capabilities/`: renderer capability allowlist
 - `src-tauri/tauri.conf.json`: window, CSP, bundle, protocol, and updater configuration
 - `scripts/`: versioning, audit, packaging, validation, and release helpers
@@ -135,7 +135,7 @@ If a check cannot run on your platform, say exactly which check was skipped and 
 
 Request explicit security review and targeted regression coverage for changes involving:
 
-- vault encryption, decryption, passwords, exports, or migrations
+- wallet encryption, decryption, passwords, exports, or migrations
 - seed creation, reveal, session retention, clearing, or native signing
 - auto-lock, sleep handling, clipboard clearing, or biometric behavior
 - Tauri commands, capabilities, CSP, filesystem, opener, notification, or updater access
@@ -180,7 +180,7 @@ A pull request should include:
 
 Use concise commit subjects that describe the outcome, for example:
 
-- `feat(vaults): add account notes`
+- `feat(wallets): add account notes`
 - `fix(requests): reject expired callbacks`
 - `docs: clarify stable release promotion`
 

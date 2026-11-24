@@ -13,7 +13,7 @@ This document defines the maintained design direction for Glyph. It is a contrib
 - `src/components/title-bar.tsx`
 - `src/components/screen-header.tsx`
 - `src/components/bottom-nav.tsx`
-- `src/components/shell-vault-switcher.tsx`
+- `src/components/shell-wallet-switcher.tsx`
 - `src/components/button.tsx`
 - `src/components/icon-button.tsx`
 - `src/components/input.tsx`
@@ -141,16 +141,16 @@ The frameless title bar is operating-system chrome. Keep it quiet, compact, and 
 Rules:
 
 - use `ScreenHeader` rather than creating a route-specific top bar
-- show the active vault switcher on top-level shell routes
+- show the active wallet switcher on top-level shell routes
 - use a back action for subordinate routes
 - keep global context in the header and task-specific actions in the content area
 - update the central route mapping when adding a new shell route
 
-### Vault switcher
+### Wallet switcher
 
-The shared switcher communicates active vault context. It uses the wallet's configured identity treatment, handles locked-vault authentication, and returns to the dashboard after switching so stale route context is not shown under a new wallet.
+The shared switcher communicates active wallet context. It uses the wallet's configured identity treatment, handles locked-wallet authentication, and returns to the dashboard after switching so stale route context is not shown under a new wallet.
 
-Do not duplicate wallet-switch controls inside individual screens unless the task is explicitly about managing vaults.
+Do not duplicate wallet-switch controls inside individual screens unless the task is explicitly about managing wallets.
 
 ### Bottom navigation
 
