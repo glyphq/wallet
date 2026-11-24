@@ -11,7 +11,7 @@ import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { estimateTargetTick } from "@/lib/api/network";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
-import { QEARN_ADDRESS, QEARN_LOCK_INPUT_TYPE, buildQearnUnlockInput } from "@/lib/contracts";
+import { QEARN, QEARN_ADDRESS, QEARN_LOCK_INPUT_TYPE, QEARN_UNLOCK_INPUT_TYPE } from "@/lib/contracts";
 import { extractMessage, formatQu } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { StakeTabBar, type StakeTab } from "./stake-ui";
@@ -112,7 +112,7 @@ export default function StakeScreen() {
         accountIndex: settings.activeAccountIndex,
         destination: QEARN_ADDRESS,
         inputType: QEARN_LOCK_INPUT_TYPE,
-        payload: new Uint8Array(0),
+        payload: QEARN.encodeProcedure("lock", {}),
         amount,
         targetTick,
         currentTick: tickInfo.tick,
@@ -142,7 +142,8 @@ export default function StakeScreen() {
     if (!account || !tickInfo || !unlockTarget) return;
     setStep("sending");
     try {
-      const { inputType, payload } = buildQearnUnlockInput({
+      const inputType = QEARN_UNLOCK_INPUT_TYPE;
+      const payload = QEARN.encodeProcedure("unlock", {
         amount: unlockTarget.lockedAmount,
         lockedEpoch: unlockTarget.epoch,
       });

@@ -1,15 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { qUtilGetBalances16 } from "@qubic.org/contracts";
-import { glyphContractCaller } from "@/lib/api/contracts";
-import { identityToPublicKey } from "@/lib/crypto";
+import { getQutilBalances16 } from "@/lib/api/contracts";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
 import { qk } from "@/lib/query-keys";
 
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
-import type { Identity } from "@qubic.org/types";
-
-const idToPk = (id: string) => identityToPublicKey(id as Identity);
 
 export const MAX_WALLET_ACCOUNTS = 16;
 
@@ -30,11 +25,7 @@ export function useWalletBalances() {
   return useQuery({
     queryKey: qk.walletBalances(apiIdentity, identities),
     queryFn: async () => {
-      const result = await qUtilGetBalances16(
-        glyphContractCaller,
-        { publicKeys: identities },
-        { identityToPublicKey: idToPk },
-      );
+      const result = await getQutilBalances16(identities);
       if (!result.ok) throw result.error;
       const balances = result.value.balances;
       if (balances.length < identities.length) {

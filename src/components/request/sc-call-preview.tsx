@@ -6,26 +6,25 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useBalance } from "@/hooks/use-balance";
 import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
-import { glyphContractCaller } from "@/lib/api/contracts";
+import { getQutilSendManyFee } from "@/lib/api/contracts";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession, transactionSigningIntent } from "@/lib/secure-session";
 import { contractIndexToIdentity } from "@qubic.org/crypto";
 import type { Identity } from "@qubic.org/types";
 import {
-  Q_UTIL_CONTRACT_INDEX,
-  Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
-  Q_UTIL_BURN_QUBIC_INPUT_TYPE,
-  qUtilGetSendToManyV1Fee,
+  QUTIL_CONTRACT_INDEX,
+  QUTIL_SEND_TO_MANY_V1_INPUT_TYPE,
+  QUTIL_BURN_QUBIC_INPUT_TYPE,
   QEARN_CONTRACT_INDEX,
   QEARN_LOCK_INPUT_TYPE,
-  MS_VAULT_CONTRACT_INDEX,
-  MS_VAULT_DEPOSIT_INPUT_TYPE,
-  MS_VAULT_RELEASE_TO_INPUT_TYPE,
-  MS_VAULT_RESET_RELEASE_INPUT_TYPE,
+  QEARN_UNLOCK_INPUT_TYPE,
+  MSVAULT_CONTRACT_INDEX,
+  MSVAULT_DEPOSIT_INPUT_TYPE,
+  MSVAULT_RELEASE_TO_INPUT_TYPE,
+  MSVAULT_RESET_RELEASE_INPUT_TYPE,
   CONTRACT_NAMES,
   CONTRACT_PROCEDURE_NAMES,
 } from "@/lib/contracts";
-import { QEARN_UNLOCK_INPUT_TYPE } from "@qubic.org/contracts";
 import { truncateId, formatQu } from "@/lib/format";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { base64ToBytes } from "@/lib/base64";
@@ -72,9 +71,9 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const { data: balanceData } = useBalance(account?.identity ?? null);
   const { data: sendToManyFeeData } = useQuery({
     queryKey: qk.qutilSendManyFee(apiIdentity),
-    queryFn: () => qUtilGetSendToManyV1Fee(glyphContractCaller),
+    queryFn: () => getQutilSendManyFee(),
     staleTime: 60_000,
-    enabled: request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
+    enabled: request.contract_index === QUTIL_CONTRACT_INDEX && request.input_type === QUTIL_SEND_TO_MANY_V1_INPUT_TYPE,
   });
 
   const identity = account?.identity ?? "";
@@ -96,19 +95,19 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const payloadHex = request.payload ? base64ToHex(request.payload) : null;
   const payloadByteCount = payloadBytes.length;
   const decodedMultiSigDeposit = useMemo(() => {
-    if (request.contract_index === MS_VAULT_CONTRACT_INDEX && request.input_type === MS_VAULT_DEPOSIT_INPUT_TYPE && payloadBytes.length > 0) {
+    if (request.contract_index === MSVAULT_CONTRACT_INDEX && request.input_type === MSVAULT_DEPOSIT_INPUT_TYPE && payloadBytes.length > 0) {
       return decodeMultiSignVaultDeposit(payloadBytes);
     }
     return null;
   }, [request.contract_index, request.input_type, payloadBytes]);
   const decodedMultiSigRelease = useMemo(() => {
-    if (request.contract_index === MS_VAULT_CONTRACT_INDEX && request.input_type === MS_VAULT_RELEASE_TO_INPUT_TYPE && payloadBytes.length > 0) {
+    if (request.contract_index === MSVAULT_CONTRACT_INDEX && request.input_type === MSVAULT_RELEASE_TO_INPUT_TYPE && payloadBytes.length > 0) {
       return decodeMultiSignVaultRelease(payloadBytes);
     }
     return null;
   }, [request.contract_index, request.input_type, payloadBytes]);
   const decodedMultiSigResetRelease = useMemo(() => {
-    if (request.contract_index === MS_VAULT_CONTRACT_INDEX && request.input_type === MS_VAULT_RESET_RELEASE_INPUT_TYPE && payloadBytes.length > 0) {
+    if (request.contract_index === MSVAULT_CONTRACT_INDEX && request.input_type === MSVAULT_RESET_RELEASE_INPUT_TYPE && payloadBytes.length > 0) {
       return decodeMultiSignVaultResetRelease(payloadBytes);
     }
     return null;
@@ -116,7 +115,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
 
   // Decoded views for known call types
   const decodedSendToMany = useMemo(() => {
-    if (request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE && payloadBytes.length > 0) {
+    if (request.contract_index === QUTIL_CONTRACT_INDEX && request.input_type === QUTIL_SEND_TO_MANY_V1_INPUT_TYPE && payloadBytes.length > 0) {
       return decodeQUtilSendToMany(payloadBytes);
     }
     return null;
@@ -130,7 +129,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   }, [request.contract_index, request.input_type, payloadBytes]);
 
   const isQearnLock = request.contract_index === QEARN_CONTRACT_INDEX && request.input_type === QEARN_LOCK_INPUT_TYPE;
-  const isQUtilBurn = request.contract_index === Q_UTIL_CONTRACT_INDEX && request.input_type === Q_UTIL_BURN_QUBIC_INPUT_TYPE;
+  const isQUtilBurn = request.contract_index === QUTIL_CONTRACT_INDEX && request.input_type === QUTIL_BURN_QUBIC_INPUT_TYPE;
   const recipientsTotal = decodedSendToMany?.reduce((sum, recipient) => sum + recipient.amount, 0n) ?? 0n;
   const contractFee = decodedSendToMany ? sendToManyFee : null;
   const projectedBalance = balance !== null ? balance - requestAmount : null;

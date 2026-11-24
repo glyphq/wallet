@@ -1,24 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { glyphContractCaller } from "@/lib/api/contracts";
+import { getQearnEndedStatus, getQearnLockInfoPerEpoch, getQearnUserLockedInfo, getQearnUserLockStatus } from "@/lib/api/contracts";
 import { qk } from "@/lib/query-keys";
-import {
-  qearnGetUserLockStatus,
-  qearnGetUserLockedInfo,
-  qearnGetLockInfoPerEpoch,
-  qearnGetEndedStatus,
-} from "@/lib/contracts";
-import { LOCK_PERIOD_EPOCHS, Q_EARN_POSITION_BATCH_SIZE, SC_OPTS, type Position } from "./stake-model";
+import { LOCK_PERIOD_EPOCHS, Q_EARN_POSITION_BATCH_SIZE, type Position } from "./stake-model";
 
 type OkValue<T> = T extends { ok: true; value: infer V } ? V : never;
 
-export type EpochLockInfo = OkValue<Awaited<ReturnType<typeof qearnGetLockInfoPerEpoch>>>;
-export type QearnEndedStatus = OkValue<Awaited<ReturnType<typeof qearnGetEndedStatus>>>;
+export type EpochLockInfo = OkValue<Awaited<ReturnType<typeof getQearnLockInfoPerEpoch>>>;
+export type QearnEndedStatus = OkValue<Awaited<ReturnType<typeof getQearnEndedStatus>>>;
 
 /** Current-epoch Qearn lock totals and reward pool. */
 export function useEpochLockInfo(apiIdentity: string, currentEpoch: number | null): EpochLockInfo | null {
   const { data } = useQuery({
     queryKey: qk.qearnEpochInfo(apiIdentity, currentEpoch),
-    queryFn: () => qearnGetLockInfoPerEpoch(glyphContractCaller, { Epoch: currentEpoch! }),
+    queryFn: () => getQearnLockInfoPerEpoch(currentEpoch!),
     enabled: !!currentEpoch,
     staleTime: 60_000,
   });
@@ -31,9 +25,7 @@ export function useStakePositions(apiIdentity: string, unlockIdentity: string | 
     queryKey: qk.qearnPositions(apiIdentity, unlockIdentity, currentEpoch),
     queryFn: async (): Promise<Position[]> => {
       if (!unlockIdentity || !currentEpoch) return [];
-      const live = glyphContractCaller;
-
-      const statusResult = await qearnGetUserLockStatus(live, { user: unlockIdentity }, SC_OPTS);
+      const statusResult = await getQearnUserLockStatus(unlockIdentity);
       if (!statusResult.ok || statusResult.value.status === 0n) return [];
 
       const epochRange = Array.from({ length: 52 }, (_, i) => currentEpoch - i).filter((e) => e > 0);
@@ -42,7 +34,7 @@ export function useStakePositions(apiIdentity: string, unlockIdentity: string | 
       for (let i = 0; i < epochRange.length; i += Q_EARN_POSITION_BATCH_SIZE) {
         const batch = epochRange.slice(i, i + Q_EARN_POSITION_BATCH_SIZE);
         const batchResults = await Promise.all(
-          batch.map((epoch) => qearnGetUserLockedInfo(live, { user: unlockIdentity, epoch }, SC_OPTS)),
+          batch.map((epoch) => getQearnUserLockedInfo(unlockIdentity, epoch)),
         );
 
         batch.forEach((epoch, batchIndex) => {
@@ -73,7 +65,7 @@ export function useStakePositions(apiIdentity: string, unlockIdentity: string | 
 export function useQearnEndedStatus(apiIdentity: string, unlockIdentity: string | null): QearnEndedStatus | null {
   const { data } = useQuery({
     queryKey: ["qearn", "ended-status", apiIdentity, unlockIdentity],
-    queryFn: () => qearnGetEndedStatus(glyphContractCaller, { user: unlockIdentity! }, SC_OPTS),
+    queryFn: () => getQearnEndedStatus(unlockIdentity!),
     enabled: !!unlockIdentity,
     staleTime: 60_000,
   });

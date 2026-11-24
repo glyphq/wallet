@@ -11,11 +11,11 @@ import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote"
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
-import { glyphContractCaller } from "@/lib/api/contracts";
+import { getQutilSendManyFee } from "@/lib/api/contracts";
 import { broadcastTx } from "@/lib/broadcast";
 import { subscribeTxResolution } from "@/lib/tx-resolution-events";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
-import { QUTIL_ADDRESS, Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE, qUtilGetSendToManyV1Fee } from "@/lib/contracts";
+import { QUTIL_ADDRESS, QUTIL_SEND_TO_MANY_V1_INPUT_TYPE } from "@/lib/contracts";
 import { extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
 import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
@@ -49,7 +49,7 @@ export default function SendManyScreen() {
   const apiIdentity = useApiCacheIdentity();
   const { data: feeData } = useQuery({
     queryKey: qk.qutilSendManyFee(apiIdentity),
-    queryFn: () => qUtilGetSendToManyV1Fee(glyphContractCaller),
+    queryFn: () => getQutilSendManyFee(),
     staleTime: 60_000,
   });
   const fee = feeData?.ok ? feeData.value.fee : null;
@@ -167,7 +167,7 @@ export default function SendManyScreen() {
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,
-        inputType: Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
+        inputType: QUTIL_SEND_TO_MANY_V1_INPUT_TYPE,
         payload, amount: total, targetTick, currentTick,
       });
       await broadcastTx(encoded);

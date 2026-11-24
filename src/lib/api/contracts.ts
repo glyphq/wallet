@@ -1,6 +1,18 @@
-import { ok, err, type SmartContractCaller } from "@qubic.org/contracts";
+import {
+  QEARN,
+  QUTIL,
+  type CallInput,
+  type CallName,
+  type CallOutput,
+  type ContractHandle,
+  type ContractShape,
+  type DecodeOptions,
+  type EncodeOptions,
+} from "@glyph-oss/contracts";
 import { bytesToHex, hexToBytes } from "@/lib/hex";
 import { queryContract } from "./generated";
+
+export type ContractResult<T> = { ok: true; value: T } | { ok: false; error: Error };
 
 class GlyphContractError extends Error {
   readonly code = "RPC_ERROR" as const;
@@ -9,54 +21,80 @@ class GlyphContractError extends Error {
 
   constructor(status: number, endpoint: string, message: string) {
     super(message);
-    this.name = "QubicRpcError";
+    this.name = "GlyphContractError";
     this.status = status;
     this.endpoint = endpoint;
   }
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
+export interface ContractQueryOptions {
+  encode?: EncodeOptions;
+  decode?: DecodeOptions;
 }
 
-function base64ToBytes(value: string): Uint8Array | null {
+/** Encodes a function call, queries the Glyph API, and decodes the response with the same ABI. */
+export async function queryContractFunction<
+  S extends ContractShape,
+  N extends CallName<S, "functions">,
+>(
+  contract: ContractHandle<S>,
+  name: N,
+  input: CallInput<S, "functions", N>,
+  options: ContractQueryOptions = {},
+): Promise<ContractResult<CallOutput<S, "functions", N>>> {
   try {
-    const binary = atob(value);
-    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-  } catch {
-    return null;
-  }
-}
+    const call = contract.functions[name];
+    if (!call || call.inputType == null) {
+      throw new Error(`${contract.name}.${name} is not a queryable function`);
+    }
 
-/**
- * Adapts the contract read helpers in `@qubic.org/contracts` to the Glyph API
- * contract-query route. The helpers still encode and decode payloads; only the
- * transport changes (base64 in the official RPC, hex in the Glyph API).
- */
-export const glyphContractCaller: SmartContractCaller = {
-  async querySmartContract(request) {
-    const contractIndex = request.contractIndex ?? 0;
-    const endpoint = `/v1/live/contracts/${contractIndex}/query`;
-    const input = base64ToBytes(request.requestData ?? "");
-    if (!input) return err(new GlyphContractError(400, endpoint, "Contract input is not valid base64"));
-
+    const payload = contract.encodeFunction(name, input, options.encode);
+    const endpoint = `/v1/live/contracts/${contract.contractIndex}/query`;
     const { data, error, response } = await queryContract({
-      path: { contract_index: contractIndex },
-      body: { input_type: request.inputType, input: bytesToHex(input) },
+      path: { contract_index: contract.contractIndex },
+      body: { input_type: call.inputType, input: bytesToHex(payload) },
     });
     const status = response?.status ?? 0;
+
     if (error || !data?.data) {
       const message =
         error && typeof error === "object" && "detail" in error && typeof error.detail === "string"
           ? error.detail
           : `Contract query failed (${status})`;
-      return err(new GlyphContractError(status, endpoint, message));
+      throw new GlyphContractError(status, endpoint, message);
     }
 
     const output = hexToBytes(data.data.output ?? "");
-    if (!output) return err(new GlyphContractError(502, endpoint, "Contract output is not valid hex"));
-    return ok({ responseData: bytesToBase64(output) });
-  },
-};
+    if (!output) throw new GlyphContractError(502, endpoint, "Contract output is not valid hex");
+    return { ok: true, value: contract.decodeFunctionOutput(name, output, options.decode) };
+  } catch (cause) {
+    return {
+      ok: false,
+      error: cause instanceof Error ? cause : new Error(String(cause)),
+    };
+  }
+}
+
+export function getQutilSendManyFee() {
+  return queryContractFunction(QUTIL, "GetSendToManyV1Fee", {});
+}
+
+export function getQutilBalances16(publicKeys: readonly string[]) {
+  return queryContractFunction(QUTIL, "GetBalances16", { publicKeys });
+}
+
+export function getQearnLockInfoPerEpoch(epoch: number) {
+  return queryContractFunction(QEARN, "getLockInfoPerEpoch", { Epoch: epoch });
+}
+
+export function getQearnUserLockStatus(user: string) {
+  return queryContractFunction(QEARN, "getUserLockStatus", { user });
+}
+
+export function getQearnUserLockedInfo(user: string, epoch: number) {
+  return queryContractFunction(QEARN, "getUserLockedInfo", { user, epoch });
+}
+
+export function getQearnEndedStatus(user: string) {
+  return queryContractFunction(QEARN, "getEndedStatus", { user });
+}

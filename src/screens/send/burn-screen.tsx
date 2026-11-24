@@ -5,7 +5,7 @@ import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
-import { buildQUtilBurnQubicInput, QUTIL_ADDRESS } from "@/lib/contracts";
+import { QUTIL, QUTIL_ADDRESS, QUTIL_BURN_QUBIC_INPUT_TYPE } from "@/lib/contracts";
 import { extractMessage } from "@/lib/format";
 import { verifyWalletPassword } from "@/lib/wallet";
 import { getWalletAccountIdentity } from "@/lib/accounts";
@@ -80,7 +80,8 @@ export default function BurnScreen() {
     try {
       const amount = BigInt(amountStr.trim());
       const { currentTick, targetTick } = await resolveTargetTick(settings.tickOffset);
-      const { inputType, payload } = buildQUtilBurnQubicInput({ amount });
+      const payload = QUTIL.encodeProcedure("BurnQubic", { amount });
+      const inputType = QUTIL_BURN_QUBIC_INPUT_TYPE;
       const { encoded, hash } = await buildScTransactionFromSession({
         accountIndex: settings.activeAccountIndex,
         destination: QUTIL_ADDRESS,

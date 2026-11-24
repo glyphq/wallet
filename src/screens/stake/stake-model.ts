@@ -1,6 +1,3 @@
-import type { Identity } from "@qubic.org/types";
-import { identityToPublicKey } from "@/lib/crypto";
-
 export type StakeStep = "main" | "confirm" | "sending" | "done" | "error";
 
 export const QEARN_MIN_LOCK = 10_000_000;
@@ -18,10 +15,6 @@ export interface TickProgressSource {
   initialTick?: number | null;
   duration?: number | null;
 }
-
-const idToPk = (id: string) => identityToPublicKey(id as Identity);
-
-export const SC_OPTS = { identityToPublicKey: idToPk };
 
 /** Fraction of the current epoch that has elapsed, clamped to 0..1. */
 export function epochProgressOf(tickInfo: TickProgressSource | null | undefined): number | null {

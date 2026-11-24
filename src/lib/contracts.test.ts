@@ -4,8 +4,8 @@ import {
   CONTRACT_PROCEDURE_NAMES,
   KNOWN_CONTRACT_ADDRESSES,
   QEARN_CONTRACT_INDEX,
-  Q_UTIL_CONTRACT_INDEX,
-  Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE,
+  QUTIL_CONTRACT_INDEX,
+  QUTIL_SEND_TO_MANY_V1_INPUT_TYPE,
   resolveProcedureName,
 } from "@/lib/contracts";
 
@@ -26,9 +26,9 @@ describe("resolveProcedureName", () => {
   });
 
   test("falls back to the sending contract", () => {
-    const expected = CONTRACT_PROCEDURE_NAMES[`${Q_UTIL_CONTRACT_INDEX}:${Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE}`];
+    const expected = CONTRACT_PROCEDURE_NAMES[`${QUTIL_CONTRACT_INDEX}:${QUTIL_SEND_TO_MANY_V1_INPUT_TYPE}`];
     expect(expected).toBeTruthy();
-    expect(resolveProcedureName(undefined, CONTRACT_NAMES[Q_UTIL_CONTRACT_INDEX], Q_UTIL_SEND_TO_MANY_V1_INPUT_TYPE)).toBe(expected);
+    expect(resolveProcedureName(undefined, CONTRACT_NAMES[QUTIL_CONTRACT_INDEX], QUTIL_SEND_TO_MANY_V1_INPUT_TYPE)).toBe(expected);
   });
 
   test("returns undefined for unknown contracts, procedures, or missing input type", () => {
