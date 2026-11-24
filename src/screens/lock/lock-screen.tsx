@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
+import { Exchange01Icon } from "@/lib/icons";
 import { PageBanner, PageFrame } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
@@ -224,6 +225,7 @@ export default function LockScreen() {
                 passwordEntered={passwordEntered}
                 secondaryAction={(
                   <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setView("switch")}>
+                    <Exchange01Icon size={18} aria-hidden="true" />
                     Switch wallet
                   </Button>
                 )}

@@ -1,4 +1,4 @@
-import { AddCircleIcon, CheckmarkCircle01Icon } from "@/lib/icons";
+import { AddCircleIcon } from "@/lib/icons";
 import { Identicon } from "@/components/identicon";
 import { timeAgo } from "@/lib/format";
 import type { usePersistedStore } from "@/store/persisted";
@@ -39,7 +39,8 @@ function WalletShelfRow({
         cursor: "pointer",
         textAlign: "left",
         fontFamily: "var(--font-sans)",
-        transition: "background var(--duration-fast) var(--ease-out)",
+        opacity: selected ? 1 : 0.58,
+        transition: "background var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out)",
       }}
     >
       <Identicon kind="wallet" seed={`${wallet.id}:${wallet.color}`} label={wallet.name} size={36} radius={4} padding={2} walletIcon={wallet.icon} walletColor={wallet.color} />
@@ -59,7 +60,6 @@ function WalletShelfRow({
           {lastOpened}
         </span>
       </span>
-      {selected ? <CheckmarkCircle01Icon size={18} aria-hidden="true" style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} /> : null}
     </button>
   );
 }

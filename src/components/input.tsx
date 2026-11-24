@@ -88,7 +88,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         ) : null}
         {inputEl}
         {rightElement ? (
-          <div style={{ position: "absolute", right: "var(--space-2)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
+          <div style={{ position: "absolute", right: "var(--space-4)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
             {rightElement}
           </div>
         ) : null}

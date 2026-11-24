@@ -1,11 +1,34 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
-import { LockKeyholeIcon } from "@/lib/icons";
+import { LockKeyholeIcon, ViewIcon, ViewOffIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 
 export interface FormValues {
   password: string;
+}
+
+function PasswordVisibilityButton({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={visible ? "Hide password" : "Show password"}
+      aria-pressed={visible}
+      style={{
+        border: "none",
+        background: "transparent",
+        padding: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--color-text-tertiary)",
+        cursor: "pointer",
+      }}
+    >
+      {visible ? <ViewOffIcon size={18} strokeWidth={1.5} /> : <ViewIcon size={18} strokeWidth={1.5} />}
+    </button>
+  );
 }
 
 export function LockForm({
@@ -37,6 +60,8 @@ export function LockForm({
   passwordEntered: boolean;
   secondaryAction?: ReactNode;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%" }}>
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -52,14 +77,20 @@ export function LockForm({
               {...register("password")}
               id="wallet-password"
               aria-label="Wallet password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               leftElement={<LockKeyholeIcon size={18} strokeWidth={1.5} />}
-              style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) 48px" }}
+              style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 48px" }}
               placeholder="Enter the wallet password"
               autoComplete="current-password"
               error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
               disabled={lockoutSecsLeft > 0}
               autoFocus
+              rightElement={(
+                <PasswordVisibilityButton
+                  visible={showPassword}
+                  onToggle={() => setShowPassword((visible) => !visible)}
+                />
+              )}
             />
           </div>
         </div>
