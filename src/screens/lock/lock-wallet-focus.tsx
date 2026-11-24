@@ -10,12 +10,12 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
   const accountCount = wallet.accounts.length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", textAlign: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", textAlign: "center" }}>
       <Identicon
         kind="wallet"
         seed={`${wallet.id}:${wallet.color}`}
         label={wallet.name}
-        size={64}
+        size={96}
         radius={4}
         square
         style={{ flexShrink: 0 }}
@@ -27,7 +27,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
           fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-section)",
+          fontSize: "var(--text-title)",
           fontWeight: 600,
           color: "var(--color-text-primary)",
         }}
@@ -37,7 +37,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
+          fontSize: "var(--text-body-compact)",
           color: "var(--color-text-tertiary)",
           letterSpacing: "0.02em",
         }}
@@ -49,7 +49,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
         className="lock-wallet-accounts corner-frame"
         style={{
           marginTop: "var(--space-2)",
-          padding: "6px 12px",
+          padding: "8px 14px",
           border: "1px solid var(--color-border-subtle)",
           borderRadius: "var(--radius-sharp)",
           background: "var(--color-bg-surface)",
@@ -58,7 +58,7 @@ export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
           gap: "var(--space-2)",
         }}
       >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body)", color: "var(--color-text-primary)" }}>
           {accountCount}
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
