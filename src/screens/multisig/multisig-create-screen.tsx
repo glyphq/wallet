@@ -32,7 +32,7 @@ import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { UserGroupIcon } from "@/lib/icons";
+import { AddCircleIcon, CheckmarkCircle01Icon, UserGroupIcon } from "@/lib/icons";
 import { IdentityPickerScreen } from "@/components/identity-picker";
 import {
   FeeRow,
@@ -448,9 +448,11 @@ export default function MultisigCreateScreen() {
                 disabled={ownerCount >= MSVAULT_MAX_OWNERS}
                 style={{ width: "100%" }}
               >
+                <AddCircleIcon size={18} strokeWidth={1.5} aria-hidden="true" />
                 Add owner
               </Button>
               <Button size="md" onClick={() => setStep("edit")} style={{ width: "100%" }}>
+                <CheckmarkCircle01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
                 Done
               </Button>
             </div>
@@ -609,7 +611,6 @@ export default function MultisigCreateScreen() {
                       </span>
                       <span style={CAPTION_COPY}>{truncateId(owner, 10, 10)}</span>
                     </span>
-                    {owner === activeUpper ? <Tag>You</Tag> : null}
                   </div>
                 ))}
               </div>

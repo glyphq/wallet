@@ -3,7 +3,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { Tag } from "@/components/tag";
-import { UserGroupIcon } from "@/lib/icons";
+import { Alert01Icon } from "@/lib/icons";
 import { useMsvaultAssetMeta } from "@/hooks/use-msvault";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
@@ -309,7 +309,7 @@ export function MultisigNotch({ children }: { children: string }) {
         color: "var(--color-status-warning)",
       }}
     >
-      <UserGroupIcon size={13} strokeWidth={1.5} aria-hidden="true" />
+      <Alert01Icon size={13} strokeWidth={1.5} aria-hidden="true" />
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
         {children}
       </span>

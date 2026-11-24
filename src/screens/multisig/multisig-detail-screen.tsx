@@ -627,7 +627,6 @@ export default function MultisigDetailScreen() {
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
                     <IdentityName identity={owner} contacts={contacts} wallet={wallet} sessionAccounts={sessionAccounts} />
                   </span>
-                  {ownerIndex([owner], identity) >= 0 ? <Tag variant="neutral">You</Tag> : null}
                 </span>
                 <span style={MONO_META} title={owner}>{truncateId(owner, 10, 10)}</span>
               </div>
