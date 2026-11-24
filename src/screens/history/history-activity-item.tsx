@@ -25,7 +25,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
     <button
       type="button"
       onClick={onClick}
-      className={className}
+      className={`history-row${className ? ` ${className}` : ""}`}
       style={{
         display: "flex", alignItems: "center", gap: "var(--space-3)",
         width: "100%", background: "none", border: "none", cursor: "pointer", padding: "var(--space-3) 0", textAlign: "left",
@@ -39,7 +39,8 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: "var(--radius-control)",
+          borderRadius: "var(--radius-sharp)",
+          border: "1px solid var(--color-border-subtle)",
           background: "var(--color-bg-surface)",
           color: txType === "failed" ? "var(--color-status-warning)" : txType === "pending" ? "var(--color-text-disabled)" : "var(--color-text-secondary)",
         }}>

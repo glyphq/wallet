@@ -15,7 +15,7 @@ import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 // ── Route helpers ────────────────────────────────────────────────────────────
 
 const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
-const ROUTE_OWNED_HEADERS = new Set(["/dashboard"]);
+const ROUTE_OWNED_HEADERS = new Set(["/dashboard", "/history"]);
 
 const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/dashboard", "home"],

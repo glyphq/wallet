@@ -39,11 +39,12 @@ export function HistoryTxList({
       {sections.map((section) => (
         <div key={section.label}>
           <div style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-mono-sm)",
             fontWeight: 500,
-            color: "var(--color-text-disabled)",
-            letterSpacing: "0.05em",
+            color: "var(--color-text-tertiary)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
             padding: "var(--space-3) 0 var(--space-2)",
           }}>
             {section.label}

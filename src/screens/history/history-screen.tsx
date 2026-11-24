@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
+import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTxHistory } from "@/hooks/use-tx-history";
@@ -189,16 +190,6 @@ export default function HistoryScreen() {
   return (
     <AppShell
       fullBleed
-      statusBar={
-        <HistoryToolbar
-          exportDisabled={!exportRows.length}
-          hasActiveFilters={hasActive}
-          onViewAnalytics={() => navigate("/analytics")}
-          onExport={() => setExportOpen(true)}
-          onFilter={() => setFilterOpen(true)}
-          onRefresh={() => void refetch()}
-        />
-      }
       contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1, padding: 0 }}
     >
       {/* ── Wide-screen sticky filter sidebar ── */}
@@ -216,8 +207,28 @@ export default function HistoryScreen() {
       )}
 
       {/* ── Main content column ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <section style={{ flexShrink: 0, borderBottom: "1px solid var(--color-border-subtle)", background: "var(--color-bg-base)" }}>
+          <AsciiBackdrop
+            style={{ minHeight: 96 }}
+            contentStyle={{
+              justifyContent: "center",
+              alignItems: "stretch",
+              padding: "var(--space-2) var(--screen-padding)",
+            }}
+          >
+            <HistoryToolbar
+              exportDisabled={!exportRows.length}
+              hasActiveFilters={hasActive}
+              onViewAnalytics={() => navigate("/analytics")}
+              onExport={() => setExportOpen(true)}
+              onFilter={() => setFilterOpen(true)}
+              onRefresh={() => void refetch()}
+            />
+          </AsciiBackdrop>
+        </section>
 
+        <div style={{ flex: 1, padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
       <motion.div
         {...presets.fadeIn}
         style={{ display: "flex", flexDirection: "column", flex: 1 }}
@@ -269,6 +280,7 @@ export default function HistoryScreen() {
       {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
 
       </motion.div>
+        </div>
       </div>{/* end main content column */}
 
       <HistoryFilterSheet

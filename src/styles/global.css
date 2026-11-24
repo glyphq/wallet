@@ -1016,3 +1016,13 @@ a:hover {
   border-radius: calc(var(--radius-sharp) + 2px);
   opacity: 0.28;
 }
+
+/* ── History rows ───────────────────────────────────────────────────────────── */
+
+.history-row {
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.history-row:hover {
+  background: var(--color-bg-surface);
+}
