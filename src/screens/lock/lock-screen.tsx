@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
-import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon, Notification01Icon } from "@/lib/icons";
+import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon } from "@/lib/icons";
 import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
@@ -41,7 +41,6 @@ function PendingRequestNotch({ count }: { count: number }) {
         color: "var(--color-accent)",
       }}
     >
-      <Notification01Icon size={13} aria-hidden="true" />
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-accent)", fontWeight: 600 }}>
         {count}
       </span>
