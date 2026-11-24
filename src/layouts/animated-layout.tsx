@@ -159,23 +159,22 @@ function LayoutShell() {
               role="status"
               aria-live="polite"
               aria-label={`Locking in ${countdown} seconds`}
-              initial={{ opacity: 0, y: -6 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
-              style={{ position: "absolute", top: "var(--space-3)", right: "var(--space-3)", zIndex: 30, pointerEvents: "none" }}
+              style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 30, pointerEvents: "none", display: "flex", justifyContent: "center" }}
             >
               <div
-                className="lock-countdown corner-frame"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "var(--space-2)",
-                  padding: "6px 10px",
+                  padding: "4px 10px",
                   background: "var(--color-bg-elevated)",
                   border: "1px solid var(--color-border-strong)",
-                  borderRadius: "var(--radius-sharp)",
-                  boxShadow: "var(--shadow-floating)",
+                  borderBottom: 0,
+                  borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
                   color: "var(--color-status-warning)",
                 }}
               >

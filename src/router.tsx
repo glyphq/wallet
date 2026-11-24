@@ -65,8 +65,6 @@ const loadNetworkScreen = () => import("@/screens/settings/network-screen");
 const NetworkScreen = lazy(loadNetworkScreen);
 const loadNotificationsScreen = () => import("@/screens/settings/notifications-screen");
 const NotificationsScreen = lazy(loadNotificationsScreen);
-const loadSupportScreen = () => import("@/screens/settings/support-screen");
-const SupportScreen = lazy(loadSupportScreen);
 const loadDiagnosticsScreen = () => import("@/screens/settings/diagnostics-screen");
 const DiagnosticsScreen = lazy(loadDiagnosticsScreen);
 const loadAppearanceScreen = () => import("@/screens/settings/appearance-screen");
@@ -141,7 +139,6 @@ const SCREEN_LOADERS = [
   loadAuditLogScreen,
   loadNetworkScreen,
   loadNotificationsScreen,
-  loadSupportScreen,
   loadDiagnosticsScreen,
   loadAppearanceScreen,
 ];
@@ -200,7 +197,6 @@ export const router = createHashRouter([
           { path: "/settings/network", element: <Screen component={NetworkScreen} /> },
           { path: "/settings/contacts", element: <Screen component={ContactsScreen} /> },
           { path: "/settings/notifications", element: <Screen component={NotificationsScreen} /> },
-          { path: "/settings/support", element: <Screen component={SupportScreen} /> },
           { path: "/settings/diagnostics", element: <Screen component={DiagnosticsScreen} /> },
           { path: "/settings/appearance", element: <Screen component={AppearanceScreen} /> },
         ],

@@ -4,7 +4,6 @@ import {
   Bug01Icon,
   Clock01Icon,
   EarthIcon,
-  FavouriteIcon,
   InformationCircleIcon,
   LockKeyholeIcon,
   Notification01Icon,
@@ -49,7 +48,6 @@ export default function SettingsScreen() {
     { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approvals", route: "/settings/dapps", icon: <EarthIcon size={18} strokeWidth={1.5} />, section: "Manage" },
     { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Notification01Icon size={18} strokeWidth={1.5} />, section: "Manage" },
     { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <Clock01Icon size={18} strokeWidth={1.5} />, section: "Info" },
-    { label: "Support", description: "Sponsors, donate QU, GitHub", route: "/settings/support", icon: <FavouriteIcon size={18} strokeWidth={1.5} />, section: "Info" },
     { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug01Icon size={18} strokeWidth={1.5} />, section: "Info" },
   ];
 

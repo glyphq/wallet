@@ -34,7 +34,6 @@ import {
   Funnel,
   Gear,
   Globe,
-  Heart,
   House,
   Key,
   Link,
@@ -111,7 +110,6 @@ export const FilterIcon = createIcon(Funnel);
 export const FireIcon = createIcon(Flame);
 export const FolderOpenIcon = createIcon(FolderOpen);
 export const Image01Icon = createIcon(Picture);
-export const FavouriteIcon = createIcon(Heart);
 export const Home01Icon = createIcon(House);
 export const InformationCircleIcon = createIcon(CircleInfo);
 export const Key01Icon = createIcon(Key);
