@@ -7,6 +7,12 @@ const MAX_EXPIRY_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export const DAPP_PERMISSION_LABELS: Record<string, string> = {
+  transfer: "Transfer QU",
+  sc_call: "Contract calls",
+  sign_message: "Sign messages",
+};
+
 export const DAPP_EXPIRY_OPTIONS: { label: string; value: number | undefined }[] = [
   { label: "Never", value: undefined },
   { label: "1 day", value: DAY_MS },
@@ -97,9 +103,8 @@ export function sanitizeApprovedDapp(value: unknown): ApprovedDapp | null {
     origin: dapp.origin,
     name: dapp.name,
     approvedAt: dapp.approvedAt,
-    lastUsedAt: sanitizeDappExpiresAt(dapp.lastUsedAt),
     permissions,
-    allowedIdentities: allowedIdentities && allowedIdentities.length > 0 ? allowedIdentities : undefined,
+    allowedIdentities,
     transferLimitQu,
     expiryDurationMs,
     expiresAt: persistedExpiresAt ?? derivedExpiresAt,

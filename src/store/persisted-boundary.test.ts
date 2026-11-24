@@ -166,7 +166,6 @@ describe("persisted boundary helpers", () => {
               origin: "https://app",
               name: "App",
               approvedAt: 1,
-              lastUsedAt: 2,
               permissions: ["transfer", "invalid", "transfer"],
               allowedIdentities: ["IDENTITY_A", "IDENTITY_A", 4],
               transferLimitQu: "2,500 qu",

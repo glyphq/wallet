@@ -37,6 +37,7 @@ import {
   House,
   Key,
   Link,
+  LinkSlash,
   Lock,
   LockOpen,
   Magnifier,
@@ -115,6 +116,7 @@ export const InformationCircleIcon = createIcon(CircleInfo);
 export const Key01Icon = createIcon(Key);
 export const KeyRoundIcon = createIcon(Key);
 export const Link01Icon = createIcon(Link);
+export const DisconnectIcon = createIcon(LinkSlash);
 export const SquareLock01Icon = createIcon(Lock);
 export const LockKeyholeIcon = createIcon(Lock);
 export const SquareUnlock01Icon = createIcon(LockOpen);

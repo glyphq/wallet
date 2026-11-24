@@ -49,6 +49,18 @@ describe("dApp permission policy", () => {
     expect(evaluateDappPermission({ approvedDapps: [baseDapp], origin: baseDapp.origin, permission: "sign_message", identity: "IDENTITY_A", now }).allowed).toBe(true);
   });
 
+  test("preserves empty account scope and drops limits without transfer-like permissions", () => {
+    const sanitized = sanitizeApprovedDapp({
+      ...baseDapp,
+      permissions: ["sign_message"],
+      allowedIdentities: [],
+      transferLimitQu: "1000",
+    });
+
+    expect(sanitized?.allowedIdentities).toEqual([]);
+    expect(sanitized?.transferLimitQu).toBeUndefined();
+  });
+
   test("sanitizes limits and creates expiry timestamps", () => {
     expect(sanitizeTransferLimitQu("0")).toBeUndefined();
     expect(sanitizeTransferLimitQu("18_446_744_073_709_551_615")).toBe("18446744073709551615");

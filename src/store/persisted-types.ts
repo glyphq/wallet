@@ -80,7 +80,7 @@ export interface PersistedState {
   removeContact: (id: string) => void;
   addPendingTx: (tx: PendingTx) => void;
   removePendingTx: (hash: string) => void;
-  /** Upserts a dApp approval — merges permissions and allowed identities into an existing entry rather than replacing it. */
+  /** Upserts a dApp approval using the scope granted in that connection request. */
   approveDapp: (dapp: ApprovedDapp) => void;
   revokeDapp: (origin: string) => void;
   /** Removes a single permission while leaving the persisted dApp connection entry intact. */

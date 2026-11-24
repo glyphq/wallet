@@ -1,34 +1,18 @@
 import type { PersistedStoreSet } from "./persisted-store-set";
 import type { ApprovedDapp } from "./persisted-types";
-import { sanitizeDappExpiresAt, sanitizeDappExpiryDurationMs, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
+import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
 
 /** dApp approval and policy actions for the persisted store. */
 export function createDappActions(set: PersistedStoreSet) {
   return {
     approveDapp: (dapp: ApprovedDapp) =>
       set((s) => {
-        const now = Date.now();
-        const existing = s.settings.approvedDapps.find(
-          (d) => d.origin === dapp.origin
-        );
-        const transferLimitQu = sanitizeTransferLimitQu(dapp.transferLimitQu);
-        const expiryDurationMs = sanitizeDappExpiryDurationMs(dapp.expiryDurationMs);
-        const expiresAt = sanitizeDappExpiresAt(dapp.expiresAt);
+        const normalized = sanitizeApprovedDapp(dapp);
+        if (!normalized) return s;
+        const existing = s.settings.approvedDapps.some((candidate) => candidate.origin === normalized.origin);
         const approvedDapps = existing
-          ? s.settings.approvedDapps.map((d) =>
-              d.origin === dapp.origin
-                ? {
-                    ...dapp,
-                    permissions: [...new Set(dapp.permissions)],
-                    allowedIdentities: dapp.allowedIdentities && [...new Set(dapp.allowedIdentities)],
-                    transferLimitQu,
-                    expiryDurationMs,
-                    expiresAt,
-                    lastUsedAt: now,
-                  }
-                : d
-            )
-          : [...s.settings.approvedDapps, { ...dapp, transferLimitQu, expiryDurationMs, expiresAt, lastUsedAt: now }];
+          ? s.settings.approvedDapps.map((candidate) => candidate.origin === normalized.origin ? normalized : candidate)
+          : [...s.settings.approvedDapps, normalized];
         return { settings: { ...s.settings, approvedDapps } };
       }),
 
@@ -46,26 +30,29 @@ export function createDappActions(set: PersistedStoreSet) {
       origin: string,
       permission: ApprovedDapp["permissions"][number]
     ) =>
-      set((s) => {
-        const approvedDapps = s.settings.approvedDapps
-          .map((d) =>
-            d.origin === origin
-              ? {
-                  ...d,
-                  permissions: d.permissions.filter((p) => p !== permission),
-                }
-              : d
-          );
-        return { settings: { ...s.settings, approvedDapps } };
-      }),
+      set((s) => ({
+        settings: {
+          ...s.settings,
+          approvedDapps: s.settings.approvedDapps
+            .map((d) => d.origin === origin
+              ? sanitizeApprovedDapp({ ...d, permissions: d.permissions.filter((p) => p !== permission) })
+              : d)
+            .filter((d): d is ApprovedDapp => d !== null),
+        },
+      })),
 
     setDappAllowedIdentities: (origin: string, identities: string[] | undefined) =>
       set((s) => ({
         settings: {
           ...s.settings,
-          approvedDapps: s.settings.approvedDapps.map((d) =>
-            d.origin === origin ? { ...d, allowedIdentities: identities } : d
-          ),
+          approvedDapps: s.settings.approvedDapps
+            .map((d) => d.origin === origin
+              ? sanitizeApprovedDapp({
+                  ...d,
+                  allowedIdentities: identities ? [...new Set(identities)] : undefined,
+                })
+              : d)
+            .filter((d): d is ApprovedDapp => d !== null),
         },
       })),
 
@@ -76,16 +63,16 @@ export function createDappActions(set: PersistedStoreSet) {
       set((s) => ({
         settings: {
           ...s.settings,
-          approvedDapps: s.settings.approvedDapps.map((d) =>
-            d.origin === origin
-              ? {
+          approvedDapps: s.settings.approvedDapps
+            .map((d) => d.origin === origin
+              ? sanitizeApprovedDapp({
                   ...d,
-                  transferLimitQu: sanitizeTransferLimitQu(policy.transferLimitQu),
-                  expiryDurationMs: sanitizeDappExpiryDurationMs(policy.expiryDurationMs),
-                  expiresAt: sanitizeDappExpiresAt(policy.expiresAt),
-                }
-              : d
-          ),
+                  transferLimitQu: policy.transferLimitQu,
+                  expiryDurationMs: policy.expiryDurationMs,
+                  expiresAt: policy.expiresAt,
+                })
+              : d)
+            .filter((d): d is ApprovedDapp => d !== null),
         },
       })),
   };

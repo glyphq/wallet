@@ -7,7 +7,6 @@ import {
   sanitizeTransferLimitQu,
   type DappPermissionDecision,
 } from "@/lib/dapp-permissions";
-import type { ApprovedDapp } from "@/store/persisted-types";
 
 function OutlineIcon({ children }: { children: ReactNode }) {
   return (
@@ -147,9 +146,9 @@ export function DappPolicyControls({
   );
 }
 
-export function DappPolicyStatus({ decision }: { decision: DappPermissionDecision }) {
+export function DappPolicyStatus({ decision, showLimit = true }: { decision: DappPermissionDecision; showLimit?: boolean }) {
   const tone = decision.allowed ? "var(--color-text-secondary)" : "var(--color-status-error)";
-  const text = decision.reason ?? (decision.dapp ? `${getDappLimitLabel(decision.dapp)} · ${getDappExpiryLabel(decision.dapp)}` : "Policy ready");
+  const text = decision.reason ?? (decision.dapp ? `${showLimit ? `${getDappLimitLabel(decision.dapp)} · ` : ""}${getDappExpiryLabel(decision.dapp)}` : "Policy ready");
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)", color: tone }}>
@@ -161,6 +160,3 @@ export function DappPolicyStatus({ decision }: { decision: DappPermissionDecisio
   );
 }
 
-export function dappPolicySummary(dapp: ApprovedDapp, now = Date.now()): string {
-  return `${getDappLimitLabel(dapp)} · ${getDappExpiryLabel(dapp, now)}`;
-}

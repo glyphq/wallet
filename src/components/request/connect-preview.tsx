@@ -7,7 +7,7 @@ import type { ConnectRequest, GlyphPermission } from "@/lib/request-schema";
 import type { ConnectApproveResult } from "@/lib/request-approvals";
 import { CheckmarkCircle01Icon } from "@/lib/icons";
 import { DappPolicyControls } from "@/components/dapp-policy-controls";
-import { DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
+import { DAPP_PERMISSION_LABELS, DEFAULT_DAPP_EXPIRY_DURATION_MS, makeDappExpiresAt, sanitizeTransferLimitQu } from "@/lib/dapp-permissions";
 
 export type { ConnectRequest } from "@/lib/request-schema";
 
@@ -16,12 +16,6 @@ interface ConnectPreviewProps {
   onApprove: (result: ConnectApproveResult) => void;
   onReject: () => void;
 }
-
-const PERMISSION_LABELS: Record<string, string> = {
-  transfer: "Transfer QU",
-  sc_call: "Contract calls",
-  sign_message: "Sign messages",
-};
 
 export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewProps) {
   const accounts = useSessionStore((s) => s.accounts);
@@ -126,7 +120,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
                       {granted ? "On" : "Off"}
                     </span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: granted ? "var(--color-text-primary)" : "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                      {PERMISSION_LABELS[p] ?? p}
+                      {DAPP_PERMISSION_LABELS[p] ?? p}
                     </span>
                   </button>
                 );

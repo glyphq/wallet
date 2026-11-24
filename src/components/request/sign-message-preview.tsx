@@ -107,7 +107,7 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
 
       {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}
 
-      <DappPolicyStatus decision={policyDecision} />
+      <DappPolicyStatus decision={policyDecision} showLimit={false} />
 
       <RequestApprovalActions
         onReject={onReject}

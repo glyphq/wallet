@@ -74,8 +74,6 @@ export interface ApprovedDapp {
   origin: string;
   name: string;
   approvedAt: number;
-  /** Stamped each time a permission is exercised — used to sort/prune stale dApp entries. */
-  lastUsedAt?: number;
   permissions: ("transfer" | "sc_call" | "sign_message")[];
   /** When set, restricts this dApp's permissions to these specific account identities only. */
   allowedIdentities?: string[];
