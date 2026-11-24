@@ -55,10 +55,6 @@ export default function WalletsScreen() {
     setActionWallet(wallet);
   }
 
-  function openSwitch(wallet: WalletMeta) {
-    navigate(`/wallets/switch?wallet=${encodeURIComponent(wallet.id)}`);
-  }
-
   function openRename(wallet: WalletMeta) {
     setActionWallet(null);
     setRenamingWallet(wallet);
@@ -180,7 +176,7 @@ export default function WalletsScreen() {
         <WalletList
           wallets={wallets}
           activeWalletId={settings.activeWalletId}
-          onSelect={(wallet) => (wallet.id === settings.activeWalletId ? navigate(`/wallets/${wallet.id}`) : openSwitch(wallet))}
+          onSelect={(wallet) => navigate(`/wallets/${wallet.id}`)}
           onOpenActions={openActions}
         />
       </section>
@@ -190,7 +186,6 @@ export default function WalletsScreen() {
         activeWalletId={settings.activeWalletId}
         onClose={() => setActionWallet(null)}
         onManageAccounts={(wallet) => { setActionWallet(null); navigate(`/wallets/${wallet.id}`); }}
-        onSwitch={openSwitch}
         onRename={openRename}
         onDelete={openDelete}
       />

@@ -1,7 +1,7 @@
 import { FireIcon, UserGroupIcon } from "@/lib/icons";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
-import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 
 /** Send screen header with the cross-flow actions. */
 export function SendHeader({
@@ -13,7 +13,7 @@ export function SendHeader({
 }) {
   return (
     <ScreenHeader
-      leading={<ShellWalletSwitcher />}
+      leading={<ShellAccountSwitcher />}
       title="Send"
       action={
         <>

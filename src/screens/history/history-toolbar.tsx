@@ -1,7 +1,7 @@
 import { Download01Icon, FilterIcon, RefreshIcon, ChartLineData01Icon } from "@/lib/icons";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
-import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 
 export function HistoryToolbar({
   exportDisabled, hasActiveFilters, onViewAnalytics, onExport, onFilter, onRefresh,
@@ -15,7 +15,7 @@ export function HistoryToolbar({
 }) {
   return (
     <ScreenHeader
-      leading={<ShellWalletSwitcher />}
+      leading={<ShellAccountSwitcher />}
       title="History"
       action={
         <>

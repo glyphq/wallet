@@ -29,7 +29,6 @@ interface WalletActionSheetProps {
   activeWalletId: string | null;
   onClose: () => void;
   onManageAccounts: (wallet: WalletMeta) => void;
-  onSwitch: (wallet: WalletMeta) => void;
   onRename: (wallet: WalletMeta) => void;
   onDelete: (wallet: WalletMeta) => void;
 }
@@ -39,7 +38,6 @@ export function WalletActionSheet({
   activeWalletId,
   onClose,
   onManageAccounts,
-  onSwitch,
   onRename,
   onDelete,
 }: WalletActionSheetProps) {
@@ -49,11 +47,6 @@ export function WalletActionSheet({
         {wallet && wallet.id === activeWalletId && (
           <SheetAction onClick={() => onManageAccounts(wallet)}>
             Manage accounts
-          </SheetAction>
-        )}
-        {wallet && wallet.id !== activeWalletId && (
-          <SheetAction onClick={() => onSwitch(wallet)}>
-            Switch to wallet
           </SheetAction>
         )}
         <SheetAction onClick={() => wallet && onRename(wallet)}>

@@ -11,7 +11,7 @@ import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
 import { TitleBar } from "@/components/title-bar";
 import { AsciiPageHeader } from "@/components/ascii-page-header";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
 import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 import { ChromeVisibilityProvider, useChromeVisibility } from "./chrome-visibility";
@@ -38,7 +38,6 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
 
 const HEADER_TITLES: [string, string][] = [
   ["/dashboard", "Dashboard"],
-  ["/wallets/switch", "Switch wallet"],
   ["/wallets/:id/portfolio", "Portfolio"],
   ["/wallets", "Wallets"],
   ["/wallets/", "Wallet details"],
@@ -63,7 +62,6 @@ function showHeader(pathname: string): boolean {
 
 function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
-  if (pathname === "/wallets/switch") return false;
   if (pathname.startsWith("/multisig/")) return false;
   if (pathname.startsWith("/contacts/")) return false;
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return false;
@@ -146,12 +144,10 @@ function LayoutShell() {
   const backTarget = backTargetFromPath(cur);
   const resolvedHeader = header ?? (cur === "/settings"
     ? <ScreenHeader title="Settings" onBack={() => navigate("/dashboard")} backAriaLabel="Back to dashboard" />
-    : cur === "/wallets/switch"
-    ? <ScreenHeader title="Switch wallet" onBack={() => navigate(-1)} />
     : routeTitle
       ? backTarget
         ? <ScreenHeader title={routeTitle} onBack={() => navigate(backTarget)} />
-        : <ScreenHeader leading={<ShellWalletSwitcher />} title={routeTitle} />
+        : <ScreenHeader leading={<ShellAccountSwitcher />} title={routeTitle} />
       : null);
 
   const prevRef = useRef(cur);

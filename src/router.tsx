@@ -23,8 +23,6 @@ const loadWalletsScreen = () => import("@/screens/wallets/wallets-screen");
 const WalletsScreen = lazy(loadWalletsScreen);
 const loadWalletDetailScreen = () => import("@/screens/wallets/wallet-detail-screen");
 const WalletDetailScreen = lazy(loadWalletDetailScreen);
-const loadSwitchWalletScreen = () => import("@/screens/wallets/switch-wallet-screen");
-const SwitchWalletScreen = lazy(loadSwitchWalletScreen);
 const loadPortfolioScreen = () => import("@/screens/wallets/portfolio-screen");
 const PortfolioScreen = lazy(loadPortfolioScreen);
 const loadSendScreen = () => import("@/screens/send/send-screen");
@@ -136,7 +134,6 @@ const SCREEN_LOADERS = [
   loadDashboardScreen,
   loadWalletsScreen,
   loadWalletDetailScreen,
-  loadSwitchWalletScreen,
   loadPortfolioScreen,
   loadSendScreen,
   loadScheduledTransfersScreen,
@@ -202,7 +199,6 @@ export const router = createHashRouter([
         children: [
           { path: "/dashboard", element: <Screen component={DashboardScreen} /> },
           { path: "/wallets", element: <Screen component={WalletsScreen} /> },
-          { path: "/wallets/switch", element: <Screen component={SwitchWalletScreen} /> },
           { path: "/wallets/:id", element: <Screen component={WalletDetailScreen} /> },
           { path: "/wallets/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
           { path: "/send", element: <Screen component={SendScreen} /> },

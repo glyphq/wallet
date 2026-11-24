@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { ScreenHeader } from "@/components/screen-header";
-import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
+import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -67,7 +67,7 @@ export default function DashboardScreen() {
   }, [isLocked, navigate]);
 
   const dashboardHeader = useMemo(() => (
-    <ScreenHeader leading={<ShellWalletSwitcher />} title="Dashboard" />
+    <ScreenHeader leading={<ShellAccountSwitcher />} title="Dashboard" />
   ), []);
 
   return (
