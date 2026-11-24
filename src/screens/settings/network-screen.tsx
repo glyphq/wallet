@@ -16,6 +16,7 @@ import { apiErrorMessage } from "@/lib/api/problems";
 import { identifyNetworkPreset, NETWORK_PRESETS } from "@/lib/network-presets";
 
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
+const MAX_TICK_OFFSET = 60;
 type TestStatus = "idle" | "testing" | "ok" | "error";
 
 const sectionStyle = {
@@ -39,6 +40,9 @@ export default function NetworkScreen() {
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testTick, setTestTick] = useState<number | null>(null);
   const [testError, setTestError] = useState("");
+  const [customOffsetOpen, setCustomOffsetOpen] = useState(false);
+  const [customOffset, setCustomOffset] = useState("");
+  const [customOffsetError, setCustomOffsetError] = useState("");
 
   async function testAndSave() {
     const normalized = normalizeApiUrl(apiUrl);
@@ -90,6 +94,28 @@ export default function NetworkScreen() {
   }
 
   const activeNetwork = identifyNetworkPreset(apiUrl);
+  const customTickOffset = !TICK_PRESETS.some((value) => value === settings.tickOffset);
+
+  function chooseTickOffset(offset: number) {
+    updateSettings({ tickOffset: offset });
+    setCustomOffsetOpen(false);
+    setCustomOffsetError("");
+  }
+
+  function openCustomTickOffset() {
+    setCustomOffsetOpen(true);
+    setCustomOffsetError("");
+    setCustomOffset(String(settings.tickOffset));
+  }
+
+  function applyCustomTickOffset() {
+    const offset = Number.parseInt(customOffset, 10);
+    if (!Number.isFinite(offset) || offset < 1 || offset > MAX_TICK_OFFSET) {
+      setCustomOffsetError(`Enter 1–${MAX_TICK_OFFSET} ticks.`);
+      return;
+    }
+    chooseTickOffset(offset);
+  }
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -147,11 +173,40 @@ export default function NetworkScreen() {
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
             {TICK_PRESETS.map((v) => (
-              <Button key={v} size="sm" variant={v === settings.tickOffset ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => updateSettings({ tickOffset: v })} aria-pressed={v === settings.tickOffset}>
+              <Button key={v} size="sm" variant={v === settings.tickOffset ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => chooseTickOffset(v)} aria-pressed={v === settings.tickOffset}>
                 +{v}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant={customTickOffset || customOffsetOpen ? "primary" : "secondary"}
+              style={{ width: "auto" }}
+              aria-pressed={customTickOffset}
+              aria-expanded={customOffsetOpen}
+              onClick={openCustomTickOffset}
+            >
+              {customTickOffset ? `Custom · +${settings.tickOffset}` : "Custom"}
+            </Button>
           </div>
+          {customOffsetOpen ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxWidth: 260 }}>
+              <Input
+                label="Custom offset (ticks)"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={2}
+                value={customOffset}
+                onChange={(event) => { setCustomOffset(event.target.value.replace(/\D/g, "")); setCustomOffsetError(""); }}
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); applyCustomTickOffset(); } }}
+                error={customOffsetError || undefined}
+              />
+              <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                <Button size="sm" onClick={applyCustomTickOffset}>Apply</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setCustomOffsetOpen(false); setCustomOffsetError(""); }}>Cancel</Button>
+              </div>
+            </div>
+          ) : null}
         </section>
       </motion.div>
     </AppShell>
