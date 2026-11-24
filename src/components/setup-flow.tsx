@@ -109,7 +109,7 @@ function SetupError({ children }: { children: ReactNode }) {
 
 const MASK_CHARS = "/\\|-_=+<>*#%&@$";
 
-function asciiSeedMask(seed: string): string {
+export function asciiSeedMask(seed: string): string {
   const length = seed.length || 55;
   return Array.from({ length }, (_, index) => MASK_CHARS[index % MASK_CHARS.length]).join("");
 }

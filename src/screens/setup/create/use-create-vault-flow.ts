@@ -85,6 +85,7 @@ export function useCreateVaultFlow() {
 
   function continueFromBackup() {
     setBackupSeedRevealed(false);
+    setConfirmationRevealed(false);
     setStep(3);
   }
 
@@ -137,6 +138,8 @@ export function useCreateVaultFlow() {
     setConfirmation,
     confirmationError,
     setConfirmationError,
+    confirmationRevealed,
+    toggleConfirmationRevealed: () => setConfirmationRevealed((value) => !value),
     password,
     setPassword,
     confirmPassword,

@@ -8,6 +8,8 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   containerStyle?: CSSProperties;
   leftElement?: ReactNode;
   technical?: boolean;
+  /** Absolutely positioned content drawn over the field, such as a mask. */
+  overlay?: ReactNode;
 }
 
 export function Textarea({
@@ -19,6 +21,7 @@ export function Textarea({
   containerStyle,
   leftElement,
   technical = false,
+  overlay,
   className,
   ...props
 }: TextareaProps) {
@@ -82,6 +85,7 @@ export function Textarea({
             ...style,
           }}
         />
+        {overlay ? <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{overlay}</div> : null}
       </div>
       {hint ? (
         <span

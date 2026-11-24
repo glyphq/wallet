@@ -39,11 +39,13 @@ export default function CreateVaultScreen() {
         <ConfirmBackupStep
           confirmation={flow.confirmation}
           confirmationError={flow.confirmationError}
+          revealed={flow.confirmationRevealed}
           onConfirmationChange={(value) => {
             flow.setConfirmation(value);
             flow.setConfirmationError("");
           }}
           onConfirm={flow.confirmBackup}
+          onToggleReveal={flow.toggleConfirmationRevealed}
           onBack={flow.back}
         />
       ) : null}
