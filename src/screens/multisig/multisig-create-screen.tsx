@@ -7,6 +7,7 @@ import { DropdownSelect } from "@/components/dropdown-select";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
+import { Sheet } from "@/components/sheet";
 import { Tag } from "@/components/tag";
 import { TextButton } from "@/components/text-button";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
@@ -170,6 +171,7 @@ export default function MultisigCreateScreen() {
   const [formError, setFormError] = useState("");
   const [preflightError, setPreflightError] = useState("");
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const [ownersOpen, setOwnersOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -220,7 +222,10 @@ export default function MultisigCreateScreen() {
       return duplicate ? "Owner already added." : "";
     });
     setOwnerErrors(nextOwnerErrors);
-    if (nextOwnerErrors.some(Boolean)) valid = false;
+    if (nextOwnerErrors.some(Boolean)) {
+      setOwnersOpen(true);
+      valid = false;
+    }
 
     if (valid) {
       const configError = validateMultisigConfig({
@@ -383,6 +388,16 @@ export default function MultisigCreateScreen() {
 
   const footer = step === "edit" ? (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 0 }}>
+      <Button
+        variant="secondary"
+        size="md"
+        onClick={() => setOwnersOpen(true)}
+        disabled={checking || sending}
+        style={{ width: "100%" }}
+      >
+        <UserGroupIcon size={18} strokeWidth={1.5} aria-hidden="true" />
+        Manage owners
+      </Button>
       <Button onClick={() => void goReview()} loading={checking} disabled={!canContinue} style={{ width: "100%" }}>
         Continue
       </Button>
@@ -460,81 +475,15 @@ export default function MultisigCreateScreen() {
                         overflowWrap: "anywhere",
                       }}
                     >
-                      {activeAccountName}
+                      {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
                     </span>
-                    <Tag>You</Tag>
+                    <Tag>{`${approvalsValue} of ${ownerCount} approvals`}</Tag>
                   </span>
-                  <span style={CAPTION_COPY}>{identity ?? "No active account"}</span>
+                  <span style={CAPTION_COPY}>
+                    Owner 1 is {activeAccountName}. Use Manage owners to add signers and set how many approvals are required.
+                  </span>
                 </div>
               </div>
-
-              {extraOwners.map((owner, index) => {
-                const ownerNumber = index + 2;
-                return (
-                  <div key={ownerRowIds[index]} style={{ display: "flex", alignItems: "flex-end", gap: "var(--space-2)", minWidth: 0 }}>
-                    <Input
-                      containerStyle={{ flex: 1, minWidth: 0 }}
-                      label={`Owner ${ownerNumber}`}
-                      value={owner}
-                      onChange={(event) => handleOwnerChange(index, event.target.value)}
-                      placeholder="Identity address"
-                      error={ownerErrors[index] || undefined}
-                      autoComplete="off"
-                      rightElement={(
-                        <button
-                          type="button"
-                          onClick={() => setPickerIndex(index)}
-                          aria-label={`Choose owner ${ownerNumber}`}
-                          style={{
-                            border: 0,
-                            background: "transparent",
-                            padding: 0,
-                            display: "flex",
-                            color: "var(--color-text-tertiary)",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <UserGroupIcon size={18} aria-hidden="true" />
-                        </button>
-                      )}
-                    />
-                    <IconButton
-                      label={`Remove owner ${ownerNumber}`}
-                      onClick={() => removeOwner(index)}
-                      style={{ marginBottom: 1, flexShrink: 0 }}
-                    >
-                      <Delete02Icon size={18} aria-hidden="true" />
-                    </IconButton>
-                  </div>
-                );
-              })}
-
-              <div>
-                <TextButton
-                  onClick={addOwner}
-                  disabled={ownerCount >= MSVAULT_MAX_OWNERS}
-                  aria-label="Add owner"
-                >
-                  <AddCircleIcon size={14} strokeWidth={1.5} aria-hidden="true" />
-                  Add owner
-                </TextButton>
-              </div>
-            </section>
-
-            <section aria-label="Approvals" style={SECTION_STYLE}>
-              <DropdownSelect
-                id="multisig-approvals"
-                label="Approvals required"
-                value={String(approvalsValue)}
-                options={Array.from(
-                  { length: approvalsUpper - 1 },
-                  (_, index) => index + 2,
-                ).map((count) => ({
-                  value: String(count),
-                  label: `${count} of ${Math.max(2, ownerCount)}`,
-                }))}
-                onChange={(value) => setRequiredApprovals(Number(value))}
-              />
             </section>
 
             <section aria-label="Fees" style={SECTION_STYLE}>
@@ -688,6 +637,120 @@ export default function MultisigCreateScreen() {
           </>
         )}
       </div>
+
+      <Sheet
+        open={ownersOpen}
+        onClose={() => setOwnersOpen(false)}
+        title="Manage owners"
+        footer={(
+          <Button size="md" onClick={() => setOwnersOpen(false)} style={{ width: "100%" }}>
+            Done
+          </Button>
+        )}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <p style={BODY_COPY}>
+            Owner 1 is {activeAccountName}. Add at least one more signer, then choose how many
+            approvals are required before the vault can release funds.
+          </p>
+
+          <div style={OWNER_CARD_STYLE}>
+            <FramedAvatar seed={identity ?? activeAccountName} size={34} />
+            <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
+              <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-body-compact)",
+                    fontWeight: 500,
+                    color: "var(--color-text-primary)",
+                    minWidth: 0,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {activeAccountName}
+                </span>
+                <Tag>You</Tag>
+              </span>
+              <span style={CAPTION_COPY}>{identity ?? "No active account"}</span>
+            </div>
+          </div>
+
+          {extraOwners.map((owner, index) => {
+            const ownerNumber = index + 2;
+            return (
+              <div key={ownerRowIds[index]} style={{ display: "flex", alignItems: "flex-end", gap: "var(--space-2)", minWidth: 0 }}>
+                <Input
+                  containerStyle={{ flex: 1, minWidth: 0 }}
+                  label={`Owner ${ownerNumber}`}
+                  value={owner}
+                  onChange={(event) => handleOwnerChange(index, event.target.value)}
+                  placeholder="Identity address"
+                  error={ownerErrors[index] || undefined}
+                  autoComplete="off"
+                  rightElement={(
+                    <button
+                      type="button"
+                      onClick={() => setPickerIndex(index)}
+                      aria-label={`Choose owner ${ownerNumber}`}
+                      style={{
+                        border: 0,
+                        background: "transparent",
+                        padding: 0,
+                        display: "flex",
+                        color: "var(--color-text-tertiary)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <UserGroupIcon size={18} aria-hidden="true" />
+                    </button>
+                  )}
+                />
+                <IconButton
+                  label={`Remove owner ${ownerNumber}`}
+                  onClick={() => removeOwner(index)}
+                  style={{ marginBottom: 1, flexShrink: 0 }}
+                >
+                  <Delete02Icon size={18} aria-hidden="true" />
+                </IconButton>
+              </div>
+            );
+          })}
+
+          <div>
+            <TextButton
+              onClick={addOwner}
+              disabled={ownerCount >= MSVAULT_MAX_OWNERS}
+              aria-label="Add owner"
+            >
+              <AddCircleIcon size={14} strokeWidth={1.5} aria-hidden="true" />
+              Add owner
+            </TextButton>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <DropdownSelect
+              id="multisig-approvals"
+              label="Approvals required"
+              value={String(approvalsValue)}
+              options={Array.from(
+                { length: approvalsUpper - 1 },
+                (_, index) => index + 2,
+              ).map((count) => ({
+                value: String(count),
+                label: `${count} of ${Math.max(2, ownerCount)}`,
+              }))}
+              onChange={(value) => setRequiredApprovals(Number(value))}
+            />
+            <p style={CAPTION_COPY}>
+              Every owner must approve the same release before funds can move.
+            </p>
+          </div>
+
+          {formError && !formError.startsWith("Vault name") ? <ErrorBlock message={formError} /> : null}
+          {preflightError ? <ErrorBlock message={preflightError} /> : null}
+        </div>
+      </Sheet>
 
       <ContactPicker
         open={pickerIndex !== null}

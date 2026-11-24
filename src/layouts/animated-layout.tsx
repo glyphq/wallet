@@ -64,6 +64,7 @@ function showHeader(pathname: string): boolean {
 function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname === "/wallets/switch") return false;
+  if (pathname === "/multisig/new") return false;
   if (pathname.startsWith("/contacts/")) return false;
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return false;
   return true;
