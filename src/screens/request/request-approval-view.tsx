@@ -20,7 +20,6 @@ const ACTION_PHRASE: Record<GlyphRequest["type"], string> = {
   connect: "connect",
 };
 import type { SigningAuthorizationContext } from "@/lib/secure-session";
-import { RequestQueueNotice } from "./request-queue-notice";
 import { SheetLayout, StatusLine } from "./sheet-layout";
 
 /** Active request review: dApp header, queue/error notices, and the type-specific preview. */
@@ -48,9 +47,8 @@ export function RequestApprovalView({
   onApproveConnect: (result: ConnectApproveResult) => void | Promise<void>;
 }) {
   return (
-    <SheetLayout expirySecsLeft={expirySecsLeft}>
+    <SheetLayout expirySecsLeft={expirySecsLeft} pendingRequestCount={pendingRequestCount}>
       <RequestHeader dapp={request.dapp} action={ACTION_PHRASE[request.type]} />
-      <RequestQueueNotice pendingRequestCount={pendingRequestCount} />
       {actionError && <StatusLine tone="error">{actionError}</StatusLine>}
 
       {request.type === "transfer" ? (

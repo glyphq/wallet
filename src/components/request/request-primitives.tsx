@@ -3,7 +3,7 @@ import { Button } from "@/components/button";
 import type { AccountMeta } from "@/store/persisted-types";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { StickyFooter } from "@/components/sticky-footer";
-import { RequestExpiryNotch } from "@/screens/request/sheet-layout";
+import { RequestExpiryNotch, RequestQueueNotch } from "@/screens/request/sheet-layout";
 import { MarbleAvatar } from "@/components/marble-avatar";
 import { truncateId } from "@/lib/format";
 import { useRequestStatus } from "@/screens/request/request-status-context";
@@ -132,9 +132,13 @@ export function RequestDisclosure({ label, children }: { label: ReactNode; child
 }
 
 function RequestActionBar({ children }: { children: ReactNode }) {
-  const { expirySecsLeft } = useRequestStatus();
+  const { expirySecsLeft, pendingRequestCount } = useRequestStatus();
+  const queued = pendingRequestCount > 1 ? pendingRequestCount - 1 : 0;
   return (
-    <StickyFooter notch={expirySecsLeft !== null ? <RequestExpiryNotch seconds={expirySecsLeft} /> : undefined}>
+    <StickyFooter
+      queueNotch={queued > 0 ? <RequestQueueNotch count={queued} /> : undefined}
+      notch={expirySecsLeft !== null ? <RequestExpiryNotch seconds={expirySecsLeft} /> : undefined}
+    >
       {children}
     </StickyFooter>
   );

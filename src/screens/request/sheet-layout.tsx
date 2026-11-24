@@ -5,11 +5,11 @@ import { Clock01Icon } from "@/lib/icons";
 import { RequestFooterProvider } from "./request-footer-context";
 import { RequestStatusProvider, useRequestStatus } from "./request-status-context";
 
-export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar?: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
+export function SheetLayout({ statusBar, children, expirySecsLeft, pendingRequestCount = 0 }: { statusBar?: ReactNode; children: ReactNode; expirySecsLeft?: number | null; pendingRequestCount?: number }) {
   const countdown = useLockCountdown();
   const [footerTarget, setFooterTarget] = useState<HTMLElement | null>(null);
   return (
-    <RequestStatusProvider expirySecsLeft={expirySecsLeft ?? null}>
+    <RequestStatusProvider expirySecsLeft={expirySecsLeft ?? null} pendingRequestCount={pendingRequestCount}>
     <RequestFooterProvider value={footerTarget}>
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--color-bg-base)" }}>
       {statusBar ? (
@@ -118,10 +118,39 @@ export function RequestExpiryNotch({ seconds }: { seconds: number }) {
   );
 }
 
-export function ActionFooter({ children }: { children: ReactNode }) {
-  const { expirySecsLeft } = useRequestStatus();
+export function RequestQueueNotch({ count }: { count: number }) {
   return (
-    <StickyFooter notch={expirySecsLeft !== null ? <RequestExpiryNotch seconds={expirySecsLeft} /> : undefined}>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "3px 10px",
+        background: "var(--color-bg-nav)",
+        borderLeft: "1px solid var(--color-border-subtle)",
+        borderTop: "1px solid var(--color-border-subtle)",
+        borderRight: "1px solid var(--color-border-subtle)",
+        borderBottom: "none",
+        borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+        fontFamily: "var(--font-mono)",
+        fontSize: "var(--text-caption)",
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        color: "var(--color-text-tertiary)",
+      }}
+    >
+      +{count} {count === 1 ? "request" : "requests"} pending
+    </div>
+  );
+}
+
+export function ActionFooter({ children }: { children: ReactNode }) {
+  const { expirySecsLeft, pendingRequestCount } = useRequestStatus();
+  const queued = pendingRequestCount > 1 ? pendingRequestCount - 1 : 0;
+  return (
+    <StickyFooter
+      queueNotch={queued > 0 ? <RequestQueueNotch count={queued} /> : undefined}
+      notch={expirySecsLeft !== null ? <RequestExpiryNotch seconds={expirySecsLeft} /> : undefined}
+    >
       {children}
     </StickyFooter>
   );

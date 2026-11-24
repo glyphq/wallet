@@ -3,10 +3,15 @@ import type { ReactNode } from "react";
 import { useRequestFooter } from "@/screens/request/request-footer-context";
 
 /** Pinned action area for request flows; rendered outside the scrolling content. */
-export function StickyFooter({ children, notch }: { children: ReactNode; notch?: ReactNode }) {
+export function StickyFooter({ children, notch, queueNotch }: { children: ReactNode; notch?: ReactNode; queueNotch?: ReactNode }) {
   const target = useRequestFooter();
   const surface = (
     <div style={{ flexShrink: 0, background: "var(--color-bg-base)" }}>
+      {queueNotch ? (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: -1 }}>
+          {queueNotch}
+        </div>
+      ) : null}
       {notch ? (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: -1 }}>
           {notch}
