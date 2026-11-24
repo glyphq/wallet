@@ -5,6 +5,7 @@ import { AppShell } from "@/layouts/app-shell";
 import { IconButton } from "@/components/icon-button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Input } from "@/components/input";
+import { SettingsDivider, SettingsSectionLabel } from "@/components/settings-section-elements";
 import { usePersistedStore } from "@/store/persisted";
 import { ContactRow, EmptyState } from "./contact-row";
 
@@ -32,10 +33,6 @@ export default function ContactsScreen() {
       if (right.lastUsedAt) return 1;
       return left.name.localeCompare(right.name);
     }), [contacts, search]);
-
-  const searchDescription = search.trim()
-    ? `${filtered.length} matching contact${filtered.length === 1 ? "" : "s"}`
-    : `${contacts.length} contact${contacts.length === 1 ? "" : "s"}`;
 
   return (
     <AppShell
@@ -71,30 +68,26 @@ export default function ContactsScreen() {
           reserveErrorSpace={false}
         />
 
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Contacts
-          </span>
-          <span aria-live="polite" style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-            {searchDescription}
-          </span>
-        </div>
+        <SettingsDivider fullBleed />
 
-        {filtered.length === 0 ? (
-          <EmptyState hasContacts={contacts.length > 0} onAdd={() => navigate(`/contacts/new${routeSuffix}`)} />
-        ) : (
-          <div className="contacts-list" aria-label="Saved contacts">
-            {filtered.map((contact) => (
-              <ContactRow
-                key={contact.id}
-                contact={contact}
-                highlighted={savedContactId === contact.id}
-                onSend={() => navigate(`/send?to=${contact.identity}`)}
-                onEdit={() => navigate(`/contacts/${contact.id}/edit${routeSuffix}`)}
-              />
-            ))}
-          </div>
-        )}
+        <section aria-label="Contacts" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <SettingsSectionLabel>Contacts</SettingsSectionLabel>
+          {filtered.length === 0 ? (
+            <EmptyState hasContacts={contacts.length > 0} onAdd={() => navigate(`/contacts/new${routeSuffix}`)} />
+          ) : (
+            <div className="contacts-list" aria-label="Saved contacts">
+              {filtered.map((contact) => (
+                <ContactRow
+                  key={contact.id}
+                  contact={contact}
+                  highlighted={savedContactId === contact.id}
+                  onSend={() => navigate(`/send?to=${contact.identity}`)}
+                  onEdit={() => navigate(`/contacts/${contact.id}/edit${routeSuffix}`)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </AppShell>
   );

@@ -132,7 +132,7 @@ export default function ContactEditorScreen() {
           </div>
         )}
       >
-        <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+        <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <ContactForm
             formId="contact-editor-form"
             name={name}
