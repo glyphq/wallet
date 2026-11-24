@@ -15,6 +15,7 @@ import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 // ── Route helpers ────────────────────────────────────────────────────────────
 
 const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "/setup/import", "/request"]);
+const ROUTE_OWNED_HEADERS = new Set(["/dashboard"]);
 
 const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/dashboard", "home"],
@@ -61,7 +62,7 @@ const instantTransition = {
 } as const;
 
 function showHeader(pathname: string): boolean {
-  if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
+  if (HIDDEN_CHROME_ROUTES.has(pathname) || ROUTE_OWNED_HEADERS.has(pathname)) return false;
   return true;
 }
 

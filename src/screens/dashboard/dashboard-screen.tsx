@@ -93,17 +93,19 @@ export default function DashboardScreen() {
   ), [lock, navigate]);
 
   return (
-    <AppShell statusBar={dashboardHeader} fullBleed>
+    <AppShell fullBleed>
       <section style={{ borderBottom: "1px solid var(--color-border-subtle)", background: "var(--color-bg-base)" }}>
         <AsciiBackdrop
           style={{ minHeight: 300 }}
           contentStyle={{
-            justifyContent: "center",
+            justifyContent: "flex-start",
             alignItems: "center",
             gap: "var(--space-3)",
-            padding: "var(--space-6) var(--space-4) var(--space-5)",
+            padding: "var(--space-2) var(--screen-padding) var(--space-5)",
           }}
         >
+          {dashboardHeader}
+
           <div className="asciify-clear" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
             <AccountSelector
               wallet={wallet}
