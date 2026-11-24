@@ -10,6 +10,7 @@ import type { SignMessageRequest } from "@/lib/request-schema";
 import type { SignMessageApproveResult } from "@/lib/request-approvals";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
+import { useReviewMode } from "@/screens/request/review-mode";
 
 export type { SignMessageRequest } from "@/lib/request-schema";
 
@@ -27,6 +28,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 export function SignMessagePreview({ request, onApprove, onReject, authorize }: SignMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const { approvalWindow } = useReviewMode();
 
   const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
@@ -82,12 +84,13 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: approvalWindow ? "var(--space-3)" : "var(--space-6)", flex: 1, minHeight: approvalWindow ? 0 : "100%" }}>
       <RequestMessageContent
         title={request.data ? "Data to sign" : "Message"}
         data={request.data}
         message={request.message}
         dataByteCount={dataByteCount}
+        plainTextMaxHeight={approvalWindow ? 110 : undefined}
       />
 
       {/* Account picker (shown when dApp didn't specify `from`) */}
@@ -107,7 +110,7 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
 
       {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}
 
-      <DappPolicyStatus decision={policyDecision} showLimit={false} />
+      {(!approvalWindow || !policyDecision.allowed) && <DappPolicyStatus decision={policyDecision} showLimit={false} />}
 
       <RequestApprovalActions
         onReject={onReject}

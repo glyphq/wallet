@@ -1,8 +1,6 @@
-import { deriveIdentityFromSeed } from "../src/lib/crypto";
 import { REQUEST_PROTOCOL_V2, requestHashV2 } from "../src/lib/jcs";
 
-const seed = "a".repeat(55);
-const identity = deriveIdentityFromSeed(seed as never);
+const identity = "JTPKXWYCBQKZKBXLYYXMSKPHJDGAPEOETXUNOVBVJFMUFWIDXEPZPEPFZONO";
 const now = Math.floor(Date.now() / 1000);
 const request = {
   type: "transfer" as const,

@@ -4,6 +4,7 @@ import { ScCallPreview } from "@/components/request/sc-call-preview";
 import { SignMessagePreview } from "@/components/request/sign-message-preview";
 import { ConnectPreview } from "@/components/request/connect-preview";
 import { VerifyMessagePreview } from "@/components/request/verify-message-preview";
+import { IconButton } from "@/components/icon-button";
 import { ScreenHeader } from "@/components/screen-header";
 import type {
   ApproveResult,
@@ -16,6 +17,7 @@ import { REQUEST_TYPE_LABEL } from "@/lib/request-schema";
 import type { SigningAuthorizationContext } from "@/lib/secure-session";
 import { RequestQueueNotice } from "./request-queue-notice";
 import { SheetLayout, StatusLine } from "./sheet-layout";
+import { useReviewMode } from "./review-mode";
 
 /** Active request review: dApp header, queue/error notices, and the type-specific preview. */
 export function RequestApprovalView({
@@ -44,7 +46,22 @@ export function RequestApprovalView({
   onApproveConnect: (result: ConnectApproveResult) => void | Promise<void>;
 }) {
   const typeLabel = REQUEST_TYPE_LABEL[request.type] ?? request.type;
-  const statusBar = <ScreenHeader title={typeLabel} onBack={onDismiss} backAriaLabel="Close without rejecting" />;
+  const { approvalWindow } = useReviewMode();
+  const statusBar = (
+    <ScreenHeader
+      title={typeLabel}
+      onBack={approvalWindow ? undefined : onDismiss}
+      backAriaLabel="Close without rejecting"
+      action={approvalWindow ? (
+        <IconButton label="Close review window" onClick={onDismiss}>
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+            <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
+            <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </IconButton>
+      ) : undefined}
+    />
+  );
 
   return (
     <SheetLayout statusBar={statusBar} expirySecsLeft={expirySecsLeft}>

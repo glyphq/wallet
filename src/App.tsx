@@ -133,6 +133,7 @@ function useApprovalUnlockSync() {
         identity: account.identity,
         publicKey: new Uint8Array(account.publicKey),
       })));
+      usePersistedStore.getState().setActiveWallet(walletId);
       if (window.location.hash === "" || window.location.hash.startsWith("#/lock")) {
         window.location.hash = "#/dashboard";
       }

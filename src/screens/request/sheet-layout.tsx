@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
+import { useReviewMode } from "./review-mode";
 
 export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar: ReactNode; children: ReactNode; expirySecsLeft?: number | null }) {
   const countdown = useLockCountdown();
+  const { approvalWindow } = useReviewMode();
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--color-bg-base)" }}>
       <header
@@ -59,7 +61,7 @@ export function SheetLayout({ statusBar, children, expirySecsLeft }: { statusBar
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          padding: "var(--space-5) var(--screen-padding) var(--space-6)",
+          padding: approvalWindow ? "var(--space-5) var(--screen-padding) 0" : "var(--space-5) var(--screen-padding) var(--space-6)",
           display: "flex",
           flexDirection: "column",
           gap: "var(--space-6)",
@@ -94,8 +96,27 @@ export function StatusLine({ tone, children }: { tone: "muted" | "success" | "wa
 }
 
 export function ActionFooter({ children }: { children: ReactNode }) {
+  const { approvalWindow } = useReviewMode();
   return (
-    <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-5)", borderTop: "1px solid var(--color-border-subtle)" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "var(--space-3)",
+        marginTop: "auto",
+        paddingTop: "var(--space-5)",
+        borderTop: "1px solid var(--color-border-subtle)",
+        ...(approvalWindow
+          ? {
+              position: "sticky",
+              bottom: 0,
+              zIndex: 5,
+              marginInline: "calc(var(--screen-padding) * -1)",
+              padding: "var(--space-3) var(--screen-padding)",
+              background: "var(--color-bg-base)",
+            }
+          : {}),
+      }}
+    >
       {children}
     </div>
   );

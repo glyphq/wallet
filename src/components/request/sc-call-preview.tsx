@@ -52,6 +52,7 @@ import type { TransactionPreviewProps } from "./request-preview-props";
 import type { ScCallRequest } from "@/lib/request-schema";
 import { DappPolicyStatus } from "@/components/dapp-policy-controls";
 import { evaluateDappPermission } from "@/lib/dapp-permissions";
+import { useReviewMode } from "@/screens/request/review-mode";
 
 export type { ScCallRequest } from "@/lib/request-schema";
 
@@ -59,6 +60,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
   const [highValueConfirmed, setHighValueConfirmed] = useState(false);
+  const { approvalWindow } = useReviewMode();
 
   const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
@@ -207,7 +209,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: approvalWindow ? "var(--space-3)" : "var(--space-6)", flex: 1, minHeight: approvalWindow ? 0 : "100%" }}>
       {/* Contract — primary element */}
       <ScCallContractSummary
         contractName={contractName}
@@ -215,7 +217,11 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         amountQu={hasAmount ? formatQu(requestAmount) : null}
       />
 
-      {decodedSendToMany && <ScCallRecipients recipients={decodedSendToMany} />}
+      {decodedSendToMany && (approvalWindow ? (
+        <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)" }}>
+          {decodedSendToMany.length} recipients · {formatQu(recipientsTotal)} QU
+        </div>
+      ) : <ScCallRecipients recipients={decodedSendToMany} />)}
 
       <ScCallDecodedHeadline
         requestAmount={requestAmount}
@@ -247,7 +253,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         {hasAmount && <RequestDetailRow label="Balance after" value={balanceAfterDisplay} />}
       </div>
 
-      {decodedSendToMany && (
+      {!approvalWindow && decodedSendToMany && (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <RequestSectionTitle>Totals</RequestSectionTitle>
           <RequestDetailRow label="Recipients" value={`${formatQu(recipientsTotal)} QU`} />
@@ -255,7 +261,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         </div>
       )}
 
-      {(payloadHex !== null || targetTick !== null) && (
+      {!approvalWindow && (payloadHex !== null || targetTick !== null) && (
         <ScCallAdvancedDetails
           payloadHex={payloadHex}
           payloadByteCount={payloadByteCount}
@@ -274,7 +280,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       {qUtilAmountWarning && <RequestInlineNotice tone="warning">{qUtilAmountWarning}</RequestInlineNotice>}
       {txError && <RequestInlineNotice tone="error">{txError}</RequestInlineNotice>}
 
-      <DappPolicyStatus decision={policyDecision} />
+      {(!approvalWindow || !policyDecision.allowed) && <DappPolicyStatus decision={policyDecision} />}
 
       {needsHighValueConfirmation && (
         <div

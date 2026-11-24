@@ -1,12 +1,14 @@
 import { Button } from "@/components/button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Tag } from "@/components/tag";
+import { useReviewMode } from "./review-mode";
 import { ActionFooter, DetailBlock, SheetLayout, StatusLine } from "./sheet-layout";
 
 /** Terminal view shown once the request's exp timestamp passes without a decision. */
 export function RequestExpiredView({ dappName, onContinue }: { dappName: string; onContinue: () => void }) {
+  const { approvalWindow } = useReviewMode();
   return (
-    <SheetLayout statusBar={<ScreenHeader title="Request expired" onBack={onContinue} backAriaLabel="Continue" />}>
+    <SheetLayout statusBar={<ScreenHeader title="Request expired" onBack={approvalWindow ? undefined : onContinue} backAriaLabel="Continue" />}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
         <Tag variant="warning">Expired</Tag>
         <StatusLine tone="warning">This request expired before you made a decision.</StatusLine>

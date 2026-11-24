@@ -33,12 +33,12 @@
         "label": "approval",
         "title": "Glyph Approval",
         "url": "index.html",
-        "width": 420,
-        "height": 720,
-        "minWidth": 420,
-        "minHeight": 720,
-        "maxWidth": 420,
-        "maxHeight": 720,
+        "width": 640,
+        "height": 440,
+        "minWidth": 120,
+        "minHeight": 82,
+        "maxWidth": 640,
+        "maxHeight": 440,
         "resizable": false,
         "minimizable": false,
         "maximizable": false,
@@ -49,7 +49,8 @@
         "focus": false,
         "skipTaskbar": true,
         "dragDropEnabled": false,
-        "devtools": false
+        "devtools": false,
+        "alwaysOnTop": true
       }
     ],
     "security": {

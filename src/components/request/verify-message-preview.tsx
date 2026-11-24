@@ -8,6 +8,7 @@ import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice } from ".
 import { RequestMessageContent } from "./request-message-content";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
 import type { VerifyMessageResult } from "@/lib/request-approvals";
+import { useReviewMode } from "@/screens/request/review-mode";
 
 export type { VerifyMessageRequest } from "@/lib/request-schema";
 
@@ -20,6 +21,7 @@ interface VerifyMessagePreviewProps {
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const { approvalWindow } = useReviewMode();
   const accounts = useSessionStore((s) => s.accounts);
   const activeAccountIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
 
@@ -64,13 +66,13 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const invalidKey = claimedIdentity === null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: approvalWindow ? "var(--space-3)" : "var(--space-6)", flex: 1, minHeight: approvalWindow ? 0 : "100%" }}>
       <RequestMessageContent
         title={request.data ? "Data to verify" : "Message"}
         data={request.data}
         message={request.message}
         dataByteCount={dataByteCount}
-        plainTextMaxHeight={160}
+        plainTextMaxHeight={approvalWindow ? 110 : 160}
       />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
