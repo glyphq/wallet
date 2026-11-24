@@ -28,6 +28,7 @@ export function NameStep({
           aria-label="Wallet name"
           autoFocus
           error={error}
+          reserveErrorSpace={false}
         />
         <WalletNameChips value={name} onSelect={onNameChange} />
       </div>

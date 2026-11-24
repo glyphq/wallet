@@ -9,10 +9,12 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leftElement?: ReactNode;
   rightElement?: ReactNode;
   technical?: boolean;
+  /** Reserve the error line even when no error is shown. */
+  reserveErrorSpace?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, className, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, className, reserveErrorSpace = true, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -91,9 +93,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           </div>
         ) : null}
       </div>
-      <div className="field-error-slot">
-        {error ? <FieldError id={errorId}>{error}</FieldError> : null}
-      </div>
+      {reserveErrorSpace || error ? (
+        <div className="field-error-slot">
+          {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+        </div>
+      ) : null}
     </div>
   );
 });
