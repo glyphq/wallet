@@ -19,7 +19,6 @@ interface ContactFormProps {
 export function ContactForm({ formId, name, onName, identity, onIdentity, note, onNote, tags, onTags, identityError, onSubmit }: ContactFormProps) {
   return (
     <form id={formId} onSubmit={(event) => { event.preventDefault(); onSubmit(); }} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-      <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "var(--text-label)", lineHeight: 1.5 }}>Use a clear name and verify the address before saving. You can add private notes and tags to help organize recipients.</p>
       <Input label="Name" value={name} onChange={(event) => onName(event.target.value)} placeholder="e.g. Alice" autoFocus autoComplete="name" maxLength={80} />
       <Input label="Qubic address" value={identity} onChange={(event) => onIdentity(event.target.value)} error={identityError} placeholder="60 uppercase letters" technical autoCapitalize="characters" autoCorrect="off" maxLength={60} />
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
@@ -33,9 +32,9 @@ export function ContactForm({ formId, name, onName, identity, onIdentity, note, 
 
 export function ContactFormActions({ formId, submitLabel, disabled, onCancel }: { formId: string; submitLabel: string; disabled: boolean; onCancel: () => void }) {
   return (
-    <div style={{ display: "flex", gap: "var(--space-3)" }}>
-      <Button type="button" variant="ghost" size="md" style={{ flex: 1 }} onClick={onCancel}>Cancel</Button>
-      <Button type="submit" form={formId} size="md" style={{ flex: 1 }} disabled={disabled}>{submitLabel}</Button>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <Button type="submit" form={formId} size="md" style={{ width: "100%" }} disabled={disabled}>{submitLabel}</Button>
+      <Button type="button" variant="ghost" size="md" style={{ width: "100%" }} onClick={onCancel}>Cancel</Button>
     </div>
   );
 }

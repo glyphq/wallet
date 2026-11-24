@@ -47,6 +47,10 @@ const loadAnalyticsScreen = () => import("@/screens/history/analytics-screen");
 const AnalyticsScreen = lazy(loadAnalyticsScreen);
 const loadContactsScreen = () => import("@/screens/contacts/contacts-screen");
 const ContactsScreen = lazy(loadContactsScreen);
+const loadContactEditorScreen = () => import("@/screens/contacts/contact-editor-screen");
+const ContactEditorScreen = lazy(loadContactEditorScreen);
+const loadContactsTransferScreen = () => import("@/screens/contacts/contacts-transfer-screen");
+const ContactsTransferScreen = lazy(loadContactsTransferScreen);
 const loadSearchScreen = () => import("@/screens/search/search-screen");
 const SearchScreen = lazy(loadSearchScreen);
 const loadRequestScreen = () => import("@/screens/request/request-screen");
@@ -130,6 +134,8 @@ const SCREEN_LOADERS = [
   loadTxDetailScreen,
   loadAnalyticsScreen,
   loadContactsScreen,
+  loadContactEditorScreen,
+  loadContactsTransferScreen,
   loadSearchScreen,
   loadRequestScreen,
   loadSettingsScreen,
@@ -188,6 +194,9 @@ export const router = createHashRouter([
           { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },
           { path: "/analytics", element: <Screen component={AnalyticsScreen} /> },
           { path: "/contacts", element: <Screen component={ContactsScreen} /> },
+          { path: "/contacts/new", element: <Screen component={ContactEditorScreen} /> },
+          { path: "/contacts/transfer", element: <Screen component={ContactsTransferScreen} /> },
+          { path: "/contacts/:id/edit", element: <Screen component={ContactEditorScreen} /> },
           { path: "/search", element: <Screen component={SearchScreen} /> },
           { path: "/request", element: <Screen component={RequestScreen} /> },
           { path: "/settings", element: <Screen component={SettingsScreen} /> },
