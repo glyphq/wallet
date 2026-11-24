@@ -950,14 +950,14 @@ a:hover {
 .wallet-name-chips {
   width: 100%;
   max-width: 260px;
-  margin-inline: auto;
+  margin-inline: 0;
   padding-bottom: 4px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--space-2);
-  margin-top: calc(var(--space-5) * -0.5);
+  margin-top: calc(var(--space-4) - var(--space-5));
 }
 
 .wallet-name-chip.corner-frame {
