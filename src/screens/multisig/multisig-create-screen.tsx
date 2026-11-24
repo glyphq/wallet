@@ -514,9 +514,6 @@ export default function MultisigCreateScreen() {
                       {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
                     </span>
                   </span>
-                  <span style={CAPTION_COPY}>
-                    Includes {activeAccountName}. Manage owners to add or remove signers.
-                  </span>
                 </div>
               </div>
             </section>
