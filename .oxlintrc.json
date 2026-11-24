@@ -30,6 +30,7 @@
   "ignorePatterns": [
     "dist/**",
     "node_modules/**",
+    "src/lib/api/generated/**",
     "src-tauri/target/**",
     "src-tauri/vendor/**",
     "src-tauri/gen/**"
