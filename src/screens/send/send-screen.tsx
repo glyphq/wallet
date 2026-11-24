@@ -71,8 +71,6 @@ export default function SendScreen() {
   const [highValueVerifying, setHighValueVerifying] = useState(false);
   const [memo, setMemo] = useState("");
   const [showPicker, setShowPicker] = useState(false);
-  const [showQrIntake, setShowQrIntake] = useState(false);
-  const [qrIntakeError, setQrIntakeError] = useState("");
   const [usdMode, setUsdMode] = useState(false);
   const [usdStr, setUsdStr] = useState("");
   const [sending, setSending] = useState(false);
@@ -92,7 +90,6 @@ export default function SendScreen() {
   const sendHeader = useMemo(() => (
     <SendHeader
       onSendMany={() => navigate("/send-many")}
-      onScanQr={() => { setQrIntakeError(""); setShowQrIntake(true); }}
       onBurn={() => navigate("/burn")}
     />
   ), [navigate]);
@@ -150,19 +147,6 @@ export default function SendScreen() {
   }
 
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
-
-  function applyScannedPayload(raw: string) {
-    const identity = raw.trim().toUpperCase();
-    if (!isValidIdentity(identity)) {
-      setQrIntakeError("Unsupported QR. Use a Qubic address.");
-      return;
-    }
-    setDestination(identity);
-    setDestError("");
-    setAmountError("");
-    setQrIntakeError("");
-    setShowQrIntake(false);
-  }
 
   function toggleCurrency() {
     if (!usdMode && price && amountStr) {
@@ -239,10 +223,6 @@ export default function SendScreen() {
         showPicker={showPicker}
         onOpenPicker={() => setShowPicker(true)}
         onClosePicker={() => setShowPicker(false)}
-        showQrIntake={showQrIntake}
-        qrIntakeError={qrIntakeError}
-        onCloseQr={() => { setShowQrIntake(false); setQrIntakeError(""); }}
-        onQrScan={applyScannedPayload}
       />
     );
   }

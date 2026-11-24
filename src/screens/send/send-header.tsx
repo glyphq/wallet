@@ -1,4 +1,4 @@
-import { FireIcon, QrCodeIcon, UserGroupIcon } from "@/lib/icons";
+import { FireIcon, UserGroupIcon } from "@/lib/icons";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
 import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
@@ -6,11 +6,9 @@ import { ShellWalletSwitcher } from "@/components/shell-wallet-switcher";
 /** Send screen header with the cross-flow actions. */
 export function SendHeader({
   onSendMany,
-  onScanQr,
   onBurn,
 }: {
   onSendMany: () => void;
-  onScanQr: () => void;
   onBurn: () => void;
 }) {
   return (
@@ -21,9 +19,6 @@ export function SendHeader({
         <>
           <IconButton label="Send to many" onClick={onSendMany}>
             <UserGroupIcon size={20} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Scan QR" onClick={onScanQr}>
-            <QrCodeIcon size={20} aria-hidden="true" />
           </IconButton>
           <IconButton label="Burn QU" onClick={onBurn}>
             <FireIcon size={20} aria-hidden="true" />

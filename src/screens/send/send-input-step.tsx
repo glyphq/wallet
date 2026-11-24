@@ -1,9 +1,8 @@
 import type { ReactNode, RefObject } from "react";
-import { ArrowUpRight01Icon, QrCodeIcon, UserCircleIcon } from "@/lib/icons";
+import { ArrowUpRight01Icon, UserCircleIcon, UserGroupIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
 import { ContactPicker } from "@/components/contact-picker";
 import { EmbeddedInput } from "@/components/embedded-input";
-import { QrIntakeSheet } from "@/components/qr-intake-sheet";
 import { TextButton } from "@/components/text-button";
 import { formatQu, type DisplayCurrency } from "@/lib/format";
 import type { AddressSuggestion } from "@/lib/address-intelligence";
@@ -43,10 +42,6 @@ export interface SendInputStepProps {
   showPicker: boolean;
   onOpenPicker: () => void;
   onClosePicker: () => void;
-  showQrIntake: boolean;
-  qrIntakeError: string;
-  onCloseQr: () => void;
-  onQrScan: (raw: string) => void;
 }
 
 /** Send entry step: numpad amount, recipient field, suggestions, pickers. */
@@ -82,10 +77,6 @@ export function SendInputStep({
   showPicker,
   onOpenPicker,
   onClosePicker,
-  showQrIntake,
-  qrIntakeError,
-  onCloseQr,
-  onQrScan,
 }: SendInputStepProps) {
   return (
     <SendStepPanel minHeight="min-content" scroll="y" statusBar={statusBar}>
@@ -161,7 +152,7 @@ export function SendInputStep({
             {canOpenPicker && (
               <button onClick={onOpenPicker}
                 style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
-                <QrCodeIcon size={16} />
+                <UserGroupIcon size={16} />
               </button>
             )}
           </div>
@@ -214,12 +205,6 @@ export function SendInputStep({
         onSelect={onPickerSelect}
         contacts={contacts}
         accounts={accounts}
-      />
-      <QrIntakeSheet
-        open={showQrIntake}
-        onClose={onCloseQr}
-        onScan={onQrScan}
-        errorMessage={qrIntakeError}
       />
     </SendStepPanel>
   );

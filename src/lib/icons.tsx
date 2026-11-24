@@ -15,7 +15,6 @@ import {
   Bell,
   Bookmark,
   Bug,
-  Camera,
   ChartLine,
   CircleCheck,
   CircleDollar,
@@ -48,7 +47,6 @@ import {
   Pencil,
   Person,
   Persons,
-  Picture,
   QrCode,
   Rocket,
   ShieldCheck,
@@ -91,7 +89,6 @@ export const FlashIcon = createIcon(TriangleThunderbolt);
 export const Bookmark01Icon = createIcon(Bookmark);
 export const Bug01Icon = createIcon(Bug);
 export const Building01Icon = createIcon(OfficeBadge);
-export const Camera01Icon = createIcon(Camera);
 export const MoneyReceive01Icon = createIcon(ArrowDownToLine);
 export const MoneySend01Icon = createIcon(ArrowUpFromLine);
 export const ChartLineData01Icon = createIcon(ChartLine);
@@ -110,7 +107,6 @@ export const ViewOffIcon = createIcon(EyeSlash);
 export const FilterIcon = createIcon(Funnel);
 export const FireIcon = createIcon(Flame);
 export const FolderOpenIcon = createIcon(FolderOpen);
-export const Image01Icon = createIcon(Picture);
 export const Home01Icon = createIcon(House);
 export const InformationCircleIcon = createIcon(CircleInfo);
 export const Key01Icon = createIcon(Key);
