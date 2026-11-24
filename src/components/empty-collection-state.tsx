@@ -3,6 +3,7 @@ import { Loupe, Plot } from "@lucasmarkes/hairline/react";
 
 const FIGURE_STYLE = {
   width: 180,
+  pointerEvents: "none",
   "--hairline-plate": "transparent",
   "--hairline-hi": "var(--color-text-primary)",
   "--hairline-edge": "var(--color-text-tertiary)",

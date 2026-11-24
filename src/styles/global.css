@@ -1002,7 +1002,7 @@ a:hover {
 
 .recent-activity-panel {
   --corner-color: var(--color-text-tertiary);
-  --corner-size: 8px;
+  --corner-size: 12px;
   --corner-inset: -4px;
   padding: var(--space-4);
   border: 1px solid var(--color-border-subtle);
@@ -1010,7 +1010,9 @@ a:hover {
   background: var(--color-bg-surface);
 }
 
-.recent-activity-panel::before {
-  border-radius: calc(var(--radius-sharp) + 4px);
+.recent-activity-panel::before,
+.recent-activity-panel:hover::before,
+.recent-activity-panel:focus-visible::before {
+  border-radius: calc(var(--radius-sharp) + 2px);
   opacity: 0.28;
 }
