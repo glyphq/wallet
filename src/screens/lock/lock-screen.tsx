@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence, motion } from "motion/react";
-import { presets } from "@/lib/animations";
+import { AnimatePresence } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
-import { BrandLockup } from "@/components/brand-lockup";
+import { Button } from "@/components/button";
 import { FlowHeader } from "@/components/flow-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
@@ -14,6 +13,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionAccount } from "@/lib/session-account";
 import { LockForm, type FormValues } from "./lock-form";
+import { LockWalletFocus } from "./lock-wallet-focus";
 import { LockWalletShelf } from "./lock-wallet-shelf";
 import { UnlockingPanel } from "./lock-unlocking-panel";
 
@@ -46,6 +46,7 @@ export default function LockScreen() {
   }, [wallets.length, lockedWallets.length, navigate]);
 
   const [selectedId, setSelectedId] = useState<string>(() => lockedWallets[0]?.id ?? "");
+  const [view, setView] = useState<"unlock" | "switch">("unlock");
   const selected = lockedWallets.find((wallet) => wallet.id === selectedId) ?? lockedWallets[0];
   const biometricEnabled = selected ? (settings.biometricWalletIds ?? []).includes(selected.id) : false;
 
@@ -199,9 +200,8 @@ export default function LockScreen() {
         {unlocking ? (
           <UnlockingPanel key="unlocking" />
         ) : (
-          <motion.div
+          <div
             key="form"
-            {...presets.fadeIn}
             style={{
               width: "100%",
               maxWidth: 340,
@@ -210,44 +210,59 @@ export default function LockScreen() {
               minHeight: 0,
               display: "flex",
               flexDirection: "column",
-              gap: "var(--space-6)",
+              gap: "var(--space-5)",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0, minHeight: 0 }}>
-              <BrandLockup align="center" compact iconOnly />
-              <FlowHeader
-                align="center"
-                title="Unlock wallet"
-                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a wallet, then enter its password."}
-              />
+            {view === "unlock" ? (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0, minHeight: 0 }}>
+                  <FlowHeader
+                    align="center"
+                    title="Unlock wallet"
+                    description={hasPendingRequest ? "Unlock to review a pending request." : "Enter the password for this wallet."}
+                  />
+                  <LockWalletFocus wallet={selected} onSwitch={() => setView("switch")} />
+                </div>
 
-              <LockWalletShelf
-                wallets={lockedWallets}
-                selectedId={selected.id}
-                onSelect={(id) => {
-                  setSelectedId(id);
-                  window.requestAnimationFrame(() => setFocus("password"));
-                }}
-                onAdd={() => navigate("/setup")}
-              />
-            </div>
-
-            <LockForm
-              register={register}
-              handleSubmit={handleSubmit}
-              onSubmit={onSubmit}
-              showPassword={showPassword}
-              onToggleShowPassword={() => setShowPassword((visible) => !visible)}
-              shakeKey={shakeKey}
-              error={error}
-              lockoutSecsLeft={lockoutSecsLeft}
-              loading={loading}
-              biometricEnabled={biometricEnabled}
-              bioFailures={bioFailures}
-              onBiometric={onBiometric}
-              isLinux={isLinux}
-            />
-          </motion.div>
+                <LockForm
+                  register={register}
+                  handleSubmit={handleSubmit}
+                  onSubmit={onSubmit}
+                  showPassword={showPassword}
+                  onToggleShowPassword={() => setShowPassword((visible) => !visible)}
+                  shakeKey={shakeKey}
+                  error={error}
+                  lockoutSecsLeft={lockoutSecsLeft}
+                  loading={loading}
+                  biometricEnabled={biometricEnabled}
+                  bioFailures={bioFailures}
+                  onBiometric={onBiometric}
+                  isLinux={isLinux}
+                />
+              </>
+            ) : (
+              <>
+                <FlowHeader
+                  align="center"
+                  title="Switch wallet"
+                  description="Choose a wallet to unlock."
+                />
+                <LockWalletShelf
+                  wallets={lockedWallets}
+                  selectedId={selected.id}
+                  onSelect={(id) => {
+                    setSelectedId(id);
+                    setView("unlock");
+                    window.requestAnimationFrame(() => setFocus("password"));
+                  }}
+                  onAdd={() => navigate("/setup")}
+                />
+                <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
+                  Back to unlock
+                </Button>
+              </>
+            )}
+          </div>
         )}
       </AnimatePresence>
     </FullPage>
