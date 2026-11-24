@@ -13,7 +13,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   activeWalletId: null,
   activeAccountIndex: 0,
   hideBalances: false,
-  approvedDapps: [],
   currency: "USD",
   tickOffset: 10,
   themeMode: "dark",

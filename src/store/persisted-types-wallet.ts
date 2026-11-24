@@ -70,21 +70,6 @@ export interface NetworkConfig {
 }
 
 /** A dApp origin that the user has explicitly approved, along with its granted permission set. */
-export interface ApprovedDapp {
-  origin: string;
-  name: string;
-  approvedAt: number;
-  permissions: ("transfer" | "sc_call" | "sign_message")[];
-  /** When set, restricts this dApp's permissions to these specific account identities only. */
-  allowedIdentities?: string[];
-  /** Optional per-request QU ceiling for transfer-like requests from this dApp. */
-  transferLimitQu?: string;
-  /** User-selected approval lifetime, persisted so Settings can refresh the expiry with the same duration. */
-  expiryDurationMs?: number;
-  /** Unix ms timestamp after which this approval cannot be exercised. Undefined means no expiry. */
-  expiresAt?: number;
-}
-
 export interface AppSettings {
   autoLockMinutes: number;
   lockOnSleep: boolean;
@@ -94,7 +79,6 @@ export interface AppSettings {
   activeWalletId: string | null;
   activeAccountIndex: number;
   hideBalances: boolean;
-  approvedDapps: ApprovedDapp[];
   currency: "USD" | "EUR" | "BTC";
   /** Ticks added to the current tick when estimating targetTick for new transactions. Default 10. */
   tickOffset: number;

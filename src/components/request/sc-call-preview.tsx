@@ -50,8 +50,6 @@ import {
 } from "./sc-call-decoders";
 import type { TransactionPreviewProps } from "./request-preview-props";
 import type { ScCallRequest } from "@/lib/request-schema";
-import { DappPolicyStatus } from "@/components/dapp-policy-controls";
-import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { ScCallRequest } from "@/lib/request-schema";
 
@@ -65,7 +63,6 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   const settings = usePersistedStore((s) => s.settings);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const { data: tickInfo } = useTickInfo();
   const apiIdentity = useApiCacheIdentity();
   const { data: balanceData } = useBalance(account?.identity ?? null);
@@ -140,28 +137,9 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       : null;
   const insufficientBalance = balance !== null && requestAmount > balance;
   const balanceAfterDisplay = projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—";
-  const policyDecision = evaluateDappPermission({
-    approvedDapps,
-    origin: request.dapp.origin,
-    permission: "sc_call",
-    identity,
-    amountQu: requestAmount,
-  });
 
   async function approve() {
     if (!account) return;
-    const freshPolicyDecision = evaluateDappPermission({
-      approvedDapps,
-      origin: request.dapp.origin,
-      permission: "sc_call",
-      identity,
-      amountQu: requestAmount,
-      now: Date.now(),
-    });
-    if (!freshPolicyDecision.allowed) {
-      setTxError(freshPolicyDecision.reason ?? "dApp policy blocked this contract call.");
-      return;
-    }
     setProcessing(true);
     setTxError("");
     try {
@@ -274,8 +252,6 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       {qUtilAmountWarning && <RequestInlineNotice tone="warning">{qUtilAmountWarning}</RequestInlineNotice>}
       {txError && <RequestInlineNotice tone="error">{txError}</RequestInlineNotice>}
 
-      <DappPolicyStatus decision={policyDecision} />
-
       {needsHighValueConfirmation && (
         <div
           role="checkbox"
@@ -297,7 +273,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         onApprove={approve}
         approveLabel="Sign and send"
         approveLoading={processing}
-        approveDisabled={!account || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)}
+        approveDisabled={!account || !tickInfo || !!fromError || insufficientBalance || hasPendingTx || (needsHighValueConfirmation && !highValueConfirmed)}
       />
     </div>
   );

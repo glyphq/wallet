@@ -46,11 +46,6 @@ function currentState(): PersistedState {
     removeContact: () => undefined,
     addPendingTx: () => undefined,
     removePendingTx: () => undefined,
-    approveDapp: () => undefined,
-    revokeDapp: () => undefined,
-    revokeDappPermission: () => undefined,
-    setDappAllowedIdentities: () => undefined,
-    setDappPolicy: () => undefined,
     setTxMemo: () => undefined,
     deleteTxMemo: () => undefined,
     addScheduledTransfer: () => undefined,
@@ -161,18 +156,6 @@ describe("persisted boundary helpers", () => {
         passwordLockoutUntil: 99_000,
         exportSigningKey: { kty: "oct", k: "test-key" },
         settings: {
-          approvedDapps: [
-            {
-              origin: "https://app",
-              name: "App",
-              approvedAt: 1,
-              permissions: ["transfer", "invalid", "transfer"],
-              allowedIdentities: ["IDENTITY_A", "IDENTITY_A", 4],
-              transferLimitQu: "2,500 qu",
-              expiryDurationMs: 60_000,
-              expiresAt: "bad",
-            },
-          ],
           highValueSendThreshold: "1,234 qu",
           priceAlertAbove: "$12.34",
           customPriceFeedUrl: "https://legacy-price.example/latest-stats",
@@ -226,12 +209,6 @@ describe("persisted boundary helpers", () => {
     expect(merged.passwordAttempts).toBe(4);
     expect(merged.passwordLockoutUntil).toBe(99_000);
     expect(merged.exportSigningKey).toEqual({ kty: "oct", k: "test-key" });
-    expect(merged.settings.approvedDapps[0]).toMatchObject({
-      permissions: ["transfer"],
-      allowedIdentities: ["IDENTITY_A"],
-      transferLimitQu: "2500",
-      expiresAt: 60_001,
-    });
     expect(merged.wallets[0]?.encryptedData).toEqual({ should: "be removed" });
     expect(merged.wallets[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);

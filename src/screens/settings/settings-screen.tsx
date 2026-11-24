@@ -4,7 +4,6 @@ import {
   Bug01Icon,
   Clock01Icon,
   Download01Icon,
-  EarthIcon,
   LockKeyholeIcon,
   Notification01Icon,
   PaintBoardIcon,
@@ -48,7 +47,6 @@ export default function SettingsScreen() {
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
   const contacts = usePersistedStore((s) => s.contacts);
-  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps ?? []);
   const lock = useSessionStore((s) => s.lock);
 
   const rows: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: (typeof SECTIONS)[number] }> = [
@@ -56,7 +54,6 @@ export default function SettingsScreen() {
     { label: "Appearance", description: "Theme, currency, privacy", route: "/settings/appearance", icon: <PaintBoardIcon size={18} strokeWidth={1.5} />, section: "General" },
     { label: "Network", description: "Glyph API · tick offset", route: "/settings/network", icon: <Wifi01Icon size={18} strokeWidth={1.5} />, section: "General" },
     { label: "Contacts", description: contacts.length ? `${contacts.length} saved` : "No contacts yet", route: "/settings/contacts", icon: <UserGroupIcon size={18} strokeWidth={1.5} />, section: "Manage" },
-    { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approvals", route: "/settings/dapps", icon: <EarthIcon size={18} strokeWidth={1.5} />, section: "Manage" },
     { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Notification01Icon size={18} strokeWidth={1.5} />, section: "Manage" },
     { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <Clock01Icon size={18} strokeWidth={1.5} />, section: "Info" },
     { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug01Icon size={18} strokeWidth={1.5} />, section: "Info" },

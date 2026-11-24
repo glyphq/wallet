@@ -727,7 +727,7 @@ Documentation changes must distinguish:
 - Broadcast from confirmation
 - Read-only assets from transferable asset support
 - Scheduled templates from automatic payments
-- Stored dApp permissions from silent authorization
+- Address sharing from request authorization
 - Long-lived native seed storage from transient renderer exposure
 - Installation-local export HMAC verification from portable signature verification
 - AppImage updater behavior from Debian and RPM package management

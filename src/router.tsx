@@ -57,12 +57,6 @@ const loadRequestScreen = () => import("@/screens/request/request-screen");
 const RequestScreen = lazy(loadRequestScreen);
 const loadSettingsScreen = () => import("@/screens/settings/settings-screen");
 const SettingsScreen = lazy(loadSettingsScreen);
-const loadDappsScreen = () => import("@/screens/settings/dapps-screen");
-const DappsScreen = lazy(loadDappsScreen);
-const loadDappDetailScreen = () => import("@/screens/settings/dapps/dapp-detail-screen");
-const DappDetailScreen = lazy(loadDappDetailScreen);
-const loadDappManageScreen = () => import("@/screens/settings/dapps/dapp-manage-screen");
-const DappManageScreen = lazy(loadDappManageScreen);
 const loadRequestHistoryScreen = () => import("@/screens/settings/request-history-screen");
 const RequestHistoryScreen = lazy(loadRequestHistoryScreen);
 const loadRequestHistoryDetailScreen = () => import("@/screens/settings/request-history-detail-screen");
@@ -145,9 +139,6 @@ const SCREEN_LOADERS = [
   loadSearchScreen,
   loadRequestScreen,
   loadSettingsScreen,
-  loadDappsScreen,
-  loadDappDetailScreen,
-  loadDappManageScreen,
   loadRequestHistoryScreen,
   loadRequestHistoryDetailScreen,
   loadSecurityScreen,
@@ -209,9 +200,6 @@ export const router = createHashRouter([
           { path: "/search", element: <Screen component={SearchScreen} /> },
           { path: "/request", element: <Screen component={RequestScreen} /> },
           { path: "/settings", element: <Screen component={SettingsScreen} /> },
-          { path: "/settings/dapps", element: <Screen component={DappsScreen} /> },
-          { path: "/settings/dapps/detail", element: <Screen component={DappDetailScreen} /> },
-          { path: "/settings/dapps/manage", element: <Screen component={DappManageScreen} /> },
           { path: "/settings/request-history", element: <Screen component={RequestHistoryScreen} /> },
           { path: "/settings/request-history/detail", element: <Screen component={RequestHistoryDetailScreen} /> },
           { path: "/settings/security", element: <Screen component={SecurityScreen} /> },

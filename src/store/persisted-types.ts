@@ -9,7 +9,6 @@ import type {
 } from "./persisted-types-activity";
 import type {
   AppSettings,
-  ApprovedDapp,
   Contact,
   WalletMeta,
 } from "./persisted-types-wallet";
@@ -18,7 +17,6 @@ export type {
   AccountMeta,
   AccentColorId,
   AppSettings,
-  ApprovedDapp,
   Contact,
   FontPairId,
   NetworkConfig,
@@ -81,21 +79,6 @@ export interface PersistedState {
   addPendingTx: (tx: PendingTx) => void;
   removePendingTx: (hash: string) => void;
   /** Upserts a dApp approval using the scope granted in that connection request. */
-  approveDapp: (dapp: ApprovedDapp) => void;
-  revokeDapp: (origin: string) => void;
-  /** Removes a single permission while leaving the persisted dApp connection entry intact. */
-  revokeDappPermission: (
-    origin: string,
-    permission: ApprovedDapp["permissions"][number]
-  ) => void;
-  setDappAllowedIdentities: (
-    origin: string,
-    identities: string[] | undefined
-  ) => void;
-  setDappPolicy: (
-    origin: string,
-    policy: Pick<ApprovedDapp, "transferLimitQu" | "expiryDurationMs" | "expiresAt">
-  ) => void;
   setTxMemo: (hash: string, memo: string) => void;
   deleteTxMemo: (hash: string) => void;
   addScheduledTransfer: (transfer: ScheduledTransfer) => void;

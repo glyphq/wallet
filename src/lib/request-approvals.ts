@@ -1,5 +1,3 @@
-import type { GlyphPermission } from "@/lib/request-schema";
-
 /** Result of approving a reviewed transfer request. */
 export interface ApproveResult {
   txHash: string;
@@ -20,10 +18,6 @@ export interface SignMessageApproveResult {
 export interface ConnectApproveResult {
   identity: string;
   accountIndex: number;
-  permissions: GlyphPermission[];
-  transferLimitQu?: string;
-  expiryDurationMs?: number;
-  expiresAt?: number;
 }
 
 /** Result of verifying a message signature in the review UI. */

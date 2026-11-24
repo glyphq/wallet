@@ -10,7 +10,6 @@ const relayEnvelope: GlyphEnvelope = {
     dapp: { name: "Demo", origin: "https://demo.app" },
     nonce: "request-nonce",
     exp: 1_900_000_000,
-    permissions: ["transfer", "sign_message"],
   },
   callback: "https://relay.glyphq.org/v2/callback/session_1234567890abcdef/callbackCapabilitySecret_1234567890abcdef",
   redirect_uri: null,
@@ -23,7 +22,6 @@ const result: GlyphCallbackResponse = {
   type: "connect",
   nonce: "request-nonce",
   identity: "IDENTITY",
-  permissions: ["transfer"],
 };
 
 describe("callback envelope", () => {

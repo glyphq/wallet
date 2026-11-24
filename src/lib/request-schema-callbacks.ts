@@ -1,4 +1,4 @@
-import type { GlyphPermission, GlyphRequest } from "./request-schema-requests";
+import type { GlyphRequest } from "./request-schema-requests";
 
 export interface GlyphSignedTransferCallback {
   status: "signed";
@@ -23,7 +23,6 @@ export interface GlyphConnectedCallback {
   type: "connect";
   nonce: string;
   identity: string;
-  permissions: GlyphPermission[];
 }
 
 export interface GlyphVerifiedCallback {

@@ -8,7 +8,6 @@ export { scCallRequestSchema } from "./request-schema-requests";
 export type {
   ConnectRequest,
   DappMeta,
-  GlyphPermission,
   GlyphRequest,
   ScCallRequest,
   SignMessageRequest,

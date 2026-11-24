@@ -1,6 +1,5 @@
 import type { AppSettings, NetworkConfig } from "./persisted-types";
 import { DEFAULT_API_URL, normalizeApiUrl } from "@/lib/api-url";
-import { sanitizeApprovedDapp } from "@/lib/dapp-permissions";
 import {
   sanitizeCustomPriceFeedUrl,
   sanitizePollingInterval,
@@ -25,15 +24,9 @@ export function mergeSettings(value: unknown, current: AppSettings): AppSettings
     value && typeof value === "object" && !Array.isArray(value)
       ? { ...current, ...(value as Partial<AppSettings>) }
       : current;
-  const approvedDapps = Array.isArray(settingsBase.approvedDapps)
-    ? settingsBase.approvedDapps
-        .map(sanitizeApprovedDapp)
-        .filter((dapp): dapp is NonNullable<typeof dapp> => dapp !== null)
-    : current.approvedDapps;
   return {
     ...settingsBase,
     network: sanitizeNetworkConfig(settingsBase.network, current.network),
-    approvedDapps,
     autoLockMinutes:
       typeof settingsBase.autoLockMinutes === "number" && Number.isInteger(settingsBase.autoLockMinutes)
         ? Math.min(24 * 60, Math.max(0, settingsBase.autoLockMinutes))

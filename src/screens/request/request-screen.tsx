@@ -38,7 +38,6 @@ export default function RequestScreen() {
   const shiftPendingRequest = useSessionStore((s) => s.shiftPendingRequest);
   const wallets = usePersistedStore((s) => s.wallets);
   const networkName = usePersistedStore((s) => s.settings.network.name);
-  const approveDapp = usePersistedStore((s) => s.approveDapp);
   const addRequestHistoryItem = usePersistedStore((s) => s.addRequestHistoryItem);
   const updateRequestHistoryItem = usePersistedStore((s) => s.updateRequestHistoryItem);
 
@@ -201,16 +200,6 @@ export default function RequestScreen() {
         () => approveRequest(orchestrationDeps, { envelope, approval: { kind: "connect", approve: result }, wallets }),
         shiftPendingRequest,
       );
-      approveDapp({
-        origin: envelope.request.dapp.origin,
-        name: envelope.request.dapp.name || "Unknown dApp",
-        approvedAt: Date.now(),
-        permissions: result.permissions,
-        allowedIdentities: [result.identity],
-        transferLimitQu: result.transferLimitQu,
-        expiryDurationMs: result.expiryDurationMs,
-        expiresAt: result.expiresAt,
-      });
       showSuccessIfQueueIsEmpty(state);
     } catch {
       setActionError("Could not prepare the secure response. This request is still open. Try again.");

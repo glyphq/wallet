@@ -5,14 +5,12 @@ import { mergePersistedState } from "./persisted-boundary";
 import type { PersistedState } from "./persisted-types";
 import { tauriStorage } from "./persisted-storage";
 import { createActivityActions } from "./persisted-actions-activity";
-import { createDappActions } from "./persisted-actions-dapps";
 import { createWalletActions } from "./persisted-actions-wallets";
 
 export type {
   AccountMeta,
   AccentColorId,
   AppSettings,
-  ApprovedDapp,
   AuditEvent,
   AuditEventKind,
   Contact,
@@ -55,7 +53,6 @@ export const usePersistedStore = create<PersistedState>()(
       exportSigningKey: null,
 
       ...createWalletActions(set),
-      ...createDappActions(set),
       ...createActivityActions(set),
     }),
     {

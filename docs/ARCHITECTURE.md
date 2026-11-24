@@ -144,7 +144,7 @@ Persisted state includes encrypted wallet records and local metadata such as:
 - Transaction memos
 - Scheduled-transfer templates
 - Notification and audit history
-- Request history and approved dApps
+- Request history
 - Price samples and runtime issues
 - Application, network, security, and appearance settings
 
@@ -511,7 +511,7 @@ Requests received while locked remain queued and are presented after unlock.
 
 ### Approval semantics
 
-Every transfer, contract call, and message-sign request requires explicit review. A `connect` approval stores an origin, selected account scopes, and selected permissions. Those records support connection management and display. They do not create a transport session or authorize future silent operations.
+Every transfer, contract call, message-sign, verify, and connect request requires explicit review. A connection shares only the selected account identity and does not create a transport session or authorize any later action.
 
 ### Result delivery
 
@@ -679,7 +679,7 @@ Security and architecture reviews should explicitly account for these current be
 3. **Linux store key has a durable file copy:** Secret Service success does not eliminate the local key file.
 4. **Windows fallback ACL is implicit:** the fallback key file does not receive an explicitly configured Glyph ACL.
 5. **Scheduled transfers are not executed:** they are reminders and prefill templates.
-6. **Stored dApp permissions are not silent authorization:** every action still requires review.
+6. **Connections do not pre-authorize requests:** every action still requires explicit review.
 7. **Nonce consumption occurs before approval:** rejected requests cannot reuse the same nonce for one hour.
 8. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
 9. **Audit history is mutable:** it is local, capped, and clearable.

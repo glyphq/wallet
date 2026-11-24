@@ -13,7 +13,7 @@ A wallet can contain up to 16 accounts. Each account is backed by a 55-character
 Glyph stores two broad kinds of information:
 
 - **Encrypted secrets:** account seeds inside password-encrypted wallet data.
-- **Local wallet metadata:** names, contacts, transaction memos, scheduled-transfer templates, notification history, audit events, approved dApps, and settings.
+- **Local wallet metadata:** names, contacts, transaction memos, scheduled-transfer templates, notification history, audit events, and settings.
 
 Local metadata is encrypted at rest with an installation-specific key when it is written to Glyph's application store. Some records, such as transaction confirmations and balances, are derived again from network data. Other records, such as memos and contacts, exist only on this installation unless separately backed up.
 
@@ -333,9 +333,9 @@ Structured requests can ask Glyph to:
 - Call a smart contract
 - Sign a message
 - Verify a message
-- Connect a dApp and record selected permissions
+- Connect a dApp after choosing the address to share
 
-Every actionable request requires manual review. A stored dApp approval does not grant silent transaction or signing access. It records the chosen origin, account scope, and permissions for management and display.
+Every actionable request requires manual review. A connection shares only the selected address; it never grants silent transaction or signing access, and every later request is reviewed again.
 
 ### Request safety rules
 

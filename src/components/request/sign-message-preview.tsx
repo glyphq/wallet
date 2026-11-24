@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { usePersistedStore } from "@/store/persisted";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { messageSigningIntent, signMessageFromSession, type SigningAuthorizationContext } from "@/lib/secure-session";
 import { truncateId } from "@/lib/format";
@@ -8,8 +7,6 @@ import { RequestApprovalActions, RequestDetailRow, RequestInlineNotice, RequestS
 import { RequestMessageContent } from "./request-message-content";
 import type { SignMessageRequest } from "@/lib/request-schema";
 import type { SignMessageApproveResult } from "@/lib/request-approvals";
-import { DappPolicyStatus } from "@/components/dapp-policy-controls";
-import { evaluateDappPermission } from "@/lib/dapp-permissions";
 
 export type { SignMessageRequest } from "@/lib/request-schema";
 
@@ -30,7 +27,6 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
 
   const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
     useSigningAccount(request.from);
-  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
   const identity = account?.identity ?? "";
   const dataByteCount = useMemo(() => {
     if (!request.data) return null;
@@ -40,26 +36,9 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
       return null;
     }
   }, [request.data]);
-  const policyDecision = evaluateDappPermission({
-    approvedDapps,
-    origin: request.dapp.origin,
-    permission: "sign_message",
-    identity,
-  });
 
   async function approve() {
     if (!account) return;
-    const freshPolicyDecision = evaluateDappPermission({
-      approvedDapps,
-      origin: request.dapp.origin,
-      permission: "sign_message",
-      identity,
-      now: Date.now(),
-    });
-    if (!freshPolicyDecision.allowed) {
-      setError(freshPolicyDecision.reason ?? "dApp policy blocked this signature.");
-      return;
-    }
     setProcessing(true);
     setError("");
     try {
@@ -107,14 +86,12 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
 
       {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}
 
-      <DappPolicyStatus decision={policyDecision} showLimit={false} />
-
       <RequestApprovalActions
         onReject={onReject}
         onApprove={approve}
         approveLabel="Sign message"
         approveLoading={processing}
-        approveDisabled={!account || !!fromError || !policyDecision.allowed}
+        approveDisabled={!account || !!fromError}
       />
     </div>
   );

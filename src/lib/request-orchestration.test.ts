@@ -157,8 +157,8 @@ describe("request orchestration", () => {
   test("Connect and Verify each single-sign their approved callback", async () => {
     const cases = [
       {
-        approval: { kind: "connect" as const, approve: { identity: "ID1", accountIndex: 1, permissions: ["sign_message" as const] } },
-        request: { type: "connect" as const, dapp: { name: "Demo", origin: "https://demo.app" }, nonce: "nonce-connect", permissions: ["sign_message" as const] },
+        approval: { kind: "connect" as const, approve: { identity: "ID1", accountIndex: 1 } },
+        request: { type: "connect" as const, dapp: { name: "Demo", origin: "https://demo.app" }, nonce: "nonce-connect" },
       },
       {
         approval: { kind: "verify" as const, approve: { valid: true, identity: "EXTERNAL", accountIndex: 1 } },
