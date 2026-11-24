@@ -2,14 +2,14 @@ import type { ReactNode } from "react";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
 
 /** Persistent shell header band with a drifting ASCII field behind its content. */
-export function AsciiPageHeader({ children }: { children: ReactNode }) {
+export function AsciiPageHeader({ children, borderBottom = true }: { children: ReactNode; borderBottom?: boolean }) {
   return (
     <div
       style={{
         position: "relative",
         flexShrink: 0,
         height: "var(--height-header)",
-        borderBottom: "1px solid var(--color-border-subtle)",
+        borderBottom: borderBottom ? "1px solid var(--color-border-subtle)" : undefined,
       }}
     >
       <AsciiBackdrop

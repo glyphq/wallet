@@ -135,7 +135,7 @@ function LayoutShell() {
 
       {/* ── Static header ── */}
       {show && resolvedHeader && (
-        <AsciiPageHeader>{resolvedHeader}</AsciiPageHeader>
+        <AsciiPageHeader borderBottom={cur !== "/dashboard"}>{resolvedHeader}</AsciiPageHeader>
       )}
 
       {/* ── Lock countdown banner ── */}
