@@ -54,9 +54,9 @@ export function TitleBar() {
         background: "var(--color-bg-header)",
         borderBottom: "1px solid var(--color-border-subtle)",
         display: "flex",
-        alignItems: "center",
+        alignItems: "stretch",
         justifyContent: "space-between",
-        padding: "0 var(--space-3)",
+        padding: "0 0 0 var(--space-3)",
         userSelect: "none",
       }}
     >
@@ -65,6 +65,7 @@ export function TitleBar() {
         style={{
           display: "flex",
           alignItems: "center",
+          height: "100%",
           gap: "var(--space-3)",
           pointerEvents: "none",
         }}
@@ -82,7 +83,7 @@ export function TitleBar() {
           data-tauri-drag-region
           style={{
             fontFamily: "'Geist Mono', monospace",
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: "-0.01em",
             color: "var(--color-text-primary)",
@@ -93,7 +94,7 @@ export function TitleBar() {
       </div>
 
       {win ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "stretch", gap: 0, height: "100%" }}>
           {!isLocked ? (
             <WinBtn
               onClick={() => {
