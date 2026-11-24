@@ -836,6 +836,18 @@ a:hover {
   cursor: not-allowed;
 }
 
+.choice-chip-static,
+.choice-chip-static:hover {
+  cursor: default;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-subtle);
+  background: transparent;
+}
+
+.choice-chip-static.corner-frame:hover::before {
+  opacity: 0.24;
+}
+
 .choice-chip:hover:not(:disabled),
 .choice-chip[data-selected="true"] {
   color: var(--color-text-primary);

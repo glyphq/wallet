@@ -183,6 +183,16 @@ export default function MultisigCreateScreen() {
   }
 
   const normalizedOwners = [activeUpper, ...extraOwners.map((owner) => owner.trim().toUpperCase())];
+  const ownerChips = [
+    { key: activeUpper || "active-owner", label: activeAccountName },
+    ...extraOwners.map((owner, index) => {
+      const value = owner.trim().toUpperCase();
+      return {
+        key: value || `owner-${ownerRowIds[index]}`,
+        label: value ? identityDisplayName(value, contacts, wallet, accounts) : "Unnamed owner",
+      };
+    }),
+  ];
 
   function validateForm(): boolean {
     setFormError("");
@@ -587,14 +597,18 @@ export default function MultisigCreateScreen() {
             </section>
 
             <section aria-label="Owners" style={SECTION_STYLE}>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", minWidth: 0 }}>
                 <FramedAvatar seed={identity ?? activeAccountName} size={34} />
-                <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-                  <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0 }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                      {ownerCount === 1 ? "1 owner" : `${ownerCount} owners`}
+                <div className="choice-chips" role="list" aria-label="Owners" style={{ flex: 1, width: "auto", maxWidth: "none", paddingBottom: 0 }}>
+                  {ownerChips.map((owner) => (
+                    <span
+                      key={owner.key}
+                      role="listitem"
+                      className="choice-chip choice-chip-static corner-frame"
+                    >
+                      {owner.label}
                     </span>
-                  </span>
+                  ))}
                 </div>
               </div>
             </section>
