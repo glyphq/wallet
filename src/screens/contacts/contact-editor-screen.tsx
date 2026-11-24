@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { ScreenHeader } from "@/components/screen-header";
+import { AddCircleIcon, CheckmarkCircle01Icon, Delete02Icon } from "@/lib/icons";
 import { PageFrame } from "@/components/page-header";
 import { usePersistedStore } from "@/store/persisted";
 import { isValidIdentity, newId } from "@/lib/crypto";
@@ -99,13 +100,37 @@ export default function ContactEditorScreen() {
   return (
     <AppShell fullBleed statusBar={statusBar} contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}>
       <PageFrame
-        actions={(
-          <ContactFormActions
-            formId="contact-editor-form"
-            submitLabel={editing ? "Save changes" : "Add contact"}
-            disabled={!name.trim() || !identity.trim()}
-            onCancel={() => navigate(backTo)}
-          />
+        actions={confirmDelete ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)" }}>
+              Remove <strong style={{ color: "var(--color-text-primary)" }}>{contact?.name}</strong> from saved recipients? Activity already recorded in Glyph is unaffected.
+            </p>
+            <Button variant="danger" size="md" style={{ width: "100%" }} onClick={remove}>
+              <Delete02Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+              Remove contact
+            </Button>
+            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setConfirmDelete(false)}>
+              Keep contact
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <ContactFormActions
+              formId="contact-editor-form"
+              submitLabel={editing ? "Save changes" : "Add contact"}
+              submitIcon={editing
+                ? <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+                : <AddCircleIcon size={16} strokeWidth={1.5} aria-hidden="true" />}
+              disabled={!name.trim() || !identity.trim()}
+              onCancel={() => navigate(backTo)}
+            />
+            {editing ? (
+              <Button variant="danger" size="md" style={{ width: "100%" }} onClick={() => setConfirmDelete(true)}>
+                <Delete02Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+                Remove contact
+              </Button>
+            ) : null}
+          </div>
         )}
       >
         <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -125,30 +150,6 @@ export default function ContactEditorScreen() {
             identityError={identityError}
             onSubmit={save}
           />
-
-          {editing ? (
-            <section aria-label="Remove contact" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)" }}>
-              {confirmDelete ? (
-                <>
-                  <p style={{ margin: 0, color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)" }}>
-                    Remove <strong style={{ color: "var(--color-text-primary)" }}>{contact?.name}</strong> from saved recipients? Activity already recorded in Glyph is unaffected.
-                  </p>
-                  <div style={{ display: "flex", gap: "var(--space-3)" }}>
-                    <Button variant="ghost" size="md" style={{ flex: 1 }} onClick={() => setConfirmDelete(false)}>
-                      Keep contact
-                    </Button>
-                    <Button variant="danger" size="md" style={{ flex: 1 }} onClick={remove}>
-                      Remove
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <Button variant="danger" size="md" style={{ alignSelf: "flex-start" }} onClick={() => setConfirmDelete(true)}>
-                  Remove contact
-                </Button>
-              )}
-            </section>
-          ) : null}
         </div>
       </PageFrame>
     </AppShell>
