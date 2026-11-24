@@ -1238,8 +1238,8 @@ a:hover {
 }
 
 .dropdown-option[aria-selected="true"] {
-  background: var(--color-accent-muted);
-  color: var(--color-accent);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 
 .dropdown-trigger {
@@ -1265,3 +1265,13 @@ a:hover {
   opacity: 0.55;
 }
 
+
+.dropdown-trigger {
+  --corner-color: var(--color-text-tertiary);
+  --corner-size: 8px;
+  --corner-inset: 3px;
+}
+
+.dropdown-trigger:focus-within {
+  --corner-color: var(--color-accent);
+}

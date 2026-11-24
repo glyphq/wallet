@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FieldLabel } from "./field-parts";
-import { ArrowDown01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
+import { ArrowDown01Icon } from "@/lib/icons";
 
 export interface DropdownOption {
   value: string;
@@ -38,6 +38,7 @@ export function DropdownSelect({
   const selectId = id ?? `dropdown-${generatedId}`;
   const hintId = hint ? `${selectId}-hint` : undefined;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState<MenuPosition | null>(null);
   const selected = options.find((option) => option.value === value) ?? options[0];
@@ -66,6 +67,10 @@ export function DropdownSelect({
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
+    const onScroll = (event: Event) => {
+      if (event.target instanceof Node && menuRef.current?.contains(event.target)) return;
+      setOpen(false);
+    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
@@ -73,11 +78,11 @@ export function DropdownSelect({
       }
     };
     window.addEventListener("resize", close);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     document.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("resize", close);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -97,6 +102,7 @@ export function DropdownSelect({
             style={{ position: "fixed", inset: 0, zIndex: 1000 }}
           />
           <div
+            ref={menuRef}
             id={`${selectId}-menu`}
             role="listbox"
             aria-label={label}
@@ -125,7 +131,6 @@ export function DropdownSelect({
                     {option.icon ? <span style={{ display: "flex", flexShrink: 0 }}>{option.icon}</span> : null}
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{option.label}</span>
                   </span>
-                  {active ? <CheckmarkCircle01Icon size={14} aria-hidden="true" /> : null}
                 </button>
               );
             })}
@@ -138,7 +143,7 @@ export function DropdownSelect({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 0 }}>
       <FieldLabel htmlFor={selectId}>{label}</FieldLabel>
-      <div className="dropdown-trigger" data-disabled={disabled ? "true" : undefined}>
+      <div className="dropdown-trigger corner-frame" data-disabled={disabled ? "true" : undefined}>
         <button
           ref={buttonRef}
           id={selectId}
