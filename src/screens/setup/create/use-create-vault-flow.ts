@@ -31,6 +31,7 @@ export function useCreateVaultFlow() {
   const [copied, setCopied] = useState(false);
   const [nameError, setNameError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
+  const [confirmationRevealed, setConfirmationRevealed] = useState(false);
   const [setupError, setSetupError] = useState("");
   const [loading, setLoading] = useState(false);
 

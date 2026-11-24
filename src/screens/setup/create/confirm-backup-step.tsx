@@ -1,17 +1,21 @@
 import { SetupFlow } from "@/components/setup-flow";
-import { SeedTextarea } from "../seed-textarea";
+import { SeedRevealButton, SeedTextarea } from "../seed-textarea";
 
 export function ConfirmBackupStep({
   confirmation,
   confirmationError,
+  revealed,
   onConfirmationChange,
   onConfirm,
+  onToggleReveal,
   onBack,
 }: {
   confirmation: string;
   confirmationError: string;
+  revealed: boolean;
   onConfirmationChange: (value: string) => void;
   onConfirm: () => void;
+  onToggleReveal: () => void;
   onBack: () => void;
 }) {
   return (
@@ -22,6 +26,7 @@ export function ConfirmBackupStep({
       primaryDisabled={!confirmation.trim()}
       onPrimary={onConfirm}
       onBack={onBack}
+      secondaryActions={<SeedRevealButton revealed={revealed} onToggle={onToggleReveal} />}
     >
       <SeedTextarea
         value={confirmation}
@@ -29,8 +34,7 @@ export function ConfirmBackupStep({
         onSubmit={onConfirm}
         placeholder="Enter the complete seed"
         ariaLabel="Complete recovery seed"
-        revealed
-        obscure={false}
+        revealed={revealed}
         error={confirmationError}
       />
     </SetupFlow>
