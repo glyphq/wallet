@@ -24,11 +24,17 @@ import type {
   SignMessageApproveResult,
   VerifyMessageResult,
 } from "@/lib/request-approvals";
+import { Button } from "@/components/button";
+import { StatusLine } from "./sheet-layout";
 import { RequestApprovalView } from "./request-approval-view";
-import { RequestExpiredView } from "./request-expired-view";
-import { RequestInvalidView } from "./request-invalid-view";
-import { RequestResultView, type CopyStatus } from "./request-result-view";
+import { RequestTerminalView, type CopyStatus } from "./request-terminal-view";
 import { useRequestExpiry } from "./use-request-expiry";
+
+function successLabels(success: RequestSuccessState): { detailLabel: string; tagLabel: string; tone: "success" | "error" } {
+  const detailLabel = success.kind === "tx" ? "Transaction hash" : success.kind === "message" ? "Signature" : success.kind === "verify" ? "Result" : "Address";
+  const tagLabel = success.kind === "tx" ? "Sent" : success.kind === "message" ? "Signed" : success.kind === "verify" ? (success.detail === "VALID" ? "Valid" : "Invalid") : "Connected";
+  return { detailLabel, tagLabel, tone: success.kind === "verify" && success.detail !== "VALID" ? "error" : "success" };
+}
 
 export default function RequestScreen() {
   const navigate = useNavigate();
@@ -49,6 +55,7 @@ export default function RequestScreen() {
   const copyResetTimeoutRef = useRef<number | null>(null);
   const callbackPayloadRef = useRef<string | null>(null);
   const callbackAuthorizationRef = useRef<SigningAuthorizationContext | null>(null);
+  const successRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pendingRequest && !success) navigate("/dashboard", { replace: true });
@@ -58,7 +65,7 @@ export default function RequestScreen() {
   // queue head takes precedence so the wallet does not strand it behind a
   // stale success state.
   useEffect(() => {
-    if (success && pendingRequest) setSuccess(null);
+    if (success && pendingRequest && pendingRequest !== successRequestRef.current) setSuccess(null);
   }, [pendingRequest, success]);
 
   useEffect(() => {
@@ -108,6 +115,7 @@ export default function RequestScreen() {
     // When another request is already queued, render it immediately instead of
     // holding the screen on the previous request's completion view.
     if (useSessionStore.getState().pendingRequests.length === 0) {
+      successRequestRef.current = pendingRequest;
       setSuccess(state);
     }
   }
@@ -241,29 +249,77 @@ export default function RequestScreen() {
     if (!hasQueuedRequest) navigate("/dashboard", { replace: true });
   }
 
-  if (expiredRequest) {
-    return <RequestExpiredView dappName={expiredRequest.dappName} onContinue={continueAfterExpiry} />;
+  if (success) {
+    const labels = successLabels(success);
+    const callbackAccessory = !success.hasCallback ? (
+      <Button
+        variant="secondary"
+        shape="sharp"
+        size="sm"
+        style={{ width: "auto" }}
+        onClick={() => copyResult(success.callbackBody)}
+      >
+        {copyStatus === "success" ? "Copied result" : copyStatus === "error" ? "Copy failed" : "Copy result"}
+      </Button>
+    ) : success.callbackStatus === "pending" ? (
+      <StatusLine tone="muted">Sending callback...</StatusLine>
+    ) : success.callbackStatus === "ok" ? (
+      <StatusLine tone="success">Callback delivered</StatusLine>
+    ) : (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <StatusLine tone="error">Callback failed</StatusLine>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+          <Button variant="secondary" shape="sharp" size="sm" style={{ width: "auto" }} onClick={retryCallbackFromSuccess}>
+            Retry callback
+          </Button>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => saveResult(success)}>
+            Save JSON
+          </Button>
+          <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto" }} onClick={() => copyResult(success.callbackBody)}>
+            {copyStatus === "success" ? "Copied JSON" : copyStatus === "error" ? "Copy failed" : "Copy JSON"}
+          </Button>
+        </div>
+      </div>
+    );
+
+    return (
+      <RequestTerminalView
+        title="Request complete"
+        tag={labels.tagLabel}
+        tone={labels.tone}
+        detailLabel={labels.detailLabel}
+        detail={success.detail}
+        accessory={callbackAccessory}
+        primaryLabel="Return to app"
+        onPrimary={() => navigate("/dashboard")}
+      />
+    );
   }
 
-  if (success) {
+  if (expiredRequest) {
     return (
-      <RequestResultView
-        success={success}
-        copyStatus={copyStatus}
-        onCopy={copyResult}
-        onRetry={retryCallbackFromSuccess}
-        onSave={saveResult}
-        onReturn={() => navigate("/dashboard")}
+      <RequestTerminalView
+        title="Request expired"
+        tag="Expired"
+        tone="warning"
+        detailLabel="dApp"
+        detail={expiredRequest.dappName}
+        description="This request expired before you made a decision. Nothing was approved and no callback was sent. The outcome is saved in request history."
+        primaryLabel="Continue"
+        onPrimary={continueAfterExpiry}
       />
     );
   }
 
   if (!envelope) {
     return (
-      <RequestInvalidView
-        error={parseError}
-        onBack={() => navigate("/dashboard")}
-        onBackToApp={() => { shiftPendingRequest(); navigate("/dashboard"); }}
+      <RequestTerminalView
+        title="Request"
+        tag="Invalid request"
+        tone="error"
+        description={parseError ?? "The request could not be read."}
+        primaryLabel="Back to app"
+        onPrimary={() => { shiftPendingRequest(); navigate("/dashboard"); }}
       />
     );
   }
