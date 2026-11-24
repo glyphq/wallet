@@ -7,7 +7,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { isValidIdentity, newId } from "@/lib/crypto";
+import { isValidIdentity } from "@/lib/crypto";
 import { broadcastTx } from "@/lib/broadcast";
 import { subscribeTxResolution } from "@/lib/tx-resolution-events";
 import { buildTransferFromSession } from "@/lib/secure-session";
@@ -21,9 +21,7 @@ import {
   hasPendingFromAccount, normalizeIdentity, resolveTargetTick, validateQuAmount,
   type SendStep, type WatchResult,
 } from "./send-flow";
-import {
-  SendDoneStep, SendErrorStep, SendSendingStep,
-} from "./send-result-steps";
+import { SendErrorStep, SendSendingStep } from "./send-result-steps";
 import { SendHeader } from "./send-header";
 import { SendInputStep } from "./send-input-step";
 import { SendReviewStep } from "./send-review-step";
@@ -38,7 +36,6 @@ export default function SendScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const contacts = usePersistedStore((s) => s.contacts);
-  const addContact = usePersistedStore((s) => s.addContact);
   const updateContact = usePersistedStore((s) => s.updateContact);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
@@ -104,7 +101,6 @@ export default function SendScreen() {
 
   const destUpper = normalizeIdentity(destination);
   const matchedContact = contacts.find((c) => c.identity === destUpper);
-  const destIsKnownContact = !!matchedContact;
   const amountValue = (() => { try { return BigInt(amountStr.trim() || "0"); } catch { return 0n; } })();
   const needsHighValueConfirmation = exceedsHighValueThreshold(amountValue, settings.highValueSendThreshold);
   const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
@@ -191,7 +187,7 @@ export default function SendScreen() {
       await broadcastTx(encoded);
       addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
-      setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
+      setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending");
       if (memo.trim()) setTxMemo(hash, memo.trim());
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
@@ -200,10 +196,6 @@ export default function SendScreen() {
     } finally {
       setSending(false);
     }
-  }
-
-  function saveContact(name: string) {
-    addContact({ id: newId(), name, identity: destUpper, addedAt: Date.now(), lastUsedAt: Date.now() });
   }
 
   if (step === "input") {
@@ -276,13 +268,7 @@ export default function SendScreen() {
 
   if (step === "sending") {
     return (
-      <SendSendingStep amountStr={amountStr} matchedContactName={matchedContact?.name ?? null} destUpper={destUpper} />
-    );
-  }
-
-  if (step === "done") {
-    return (
-      <SendDoneStep
+      <SendSendingStep
         amountStr={amountStr}
         matchedContactName={matchedContact?.name ?? null}
         destUpper={destUpper}
@@ -292,8 +278,6 @@ export default function SendScreen() {
         savedTargetTick={savedTargetTick}
         currentTick={tickInfo?.tick ?? 0}
         watchResult={watchResult}
-        destIsKnownContact={destIsKnownContact}
-        onSaveContact={saveContact}
       />
     );
   }

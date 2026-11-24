@@ -1,50 +1,16 @@
-import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { TxMemoField } from "@/components/tx-memo-field";
 import { ApprovalAddress } from "@/components/request/approval-address";
 import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalDisclosure, ApprovalField } from "@/components/request/approval-field";
-import { CheckmarkCircle01Icon, RefreshIcon, ShieldAlertIcon } from "@/lib/icons";
+import { Clock01Icon, Home01Icon, RefreshIcon, ShieldAlertIcon } from "@/lib/icons";
 import { watchStatusColor, watchStatusLabel, type WatchResult } from "./send-flow";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { useHideAppChrome } from "@/layouts/chrome-visibility";
-import { SendDoneActions } from "./send-result";
 import { SendStepPanel } from "./send-step-panel";
-import { SendStepFooter, StatusSpinner } from "./send-ui";
+import { SendStepFooter } from "./send-ui";
 
 export interface SendSendingStepProps {
-  amountStr: string;
-  matchedContactName: string | null;
-  destUpper: string;
-}
-
-/** Send broadcast-in-flight step. */
-export function SendSendingStep({ amountStr, matchedContactName, destUpper }: SendSendingStepProps) {
-  useHideAppChrome();
-  return (
-    <SendStepPanel centered gap="var(--space-5)" ariaLive="polite" ariaBusy>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", width: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <StatusSpinner size={20} />
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>
-              Broadcasting transfer
-            </div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: 2 }}>
-              Waiting for the network to accept the transaction.
-            </div>
-          </div>
-        </div>
-        <ApprovalAmount amount={BigInt(amountStr)} />
-        <ApprovalAddress label="To" identity={destUpper} name={matchedContactName ?? undefined} compact="long" />
-      </div>
-    </SendStepPanel>
-  );
-}
-
-export interface SendDoneStepProps {
   amountStr: string;
   matchedContactName: string | null;
   destUpper: string;
@@ -54,12 +20,10 @@ export interface SendDoneStepProps {
   savedTargetTick: number;
   currentTick: number;
   watchResult: WatchResult;
-  destIsKnownContact: boolean;
-  onSaveContact: (name: string) => void;
 }
 
-/** Send receipt with confirmation status, optional contact save, and note. */
-export function SendDoneStep({
+/** Single broadcast/status screen that stays in place through confirmation. */
+export function SendSendingStep({
   amountStr,
   matchedContactName,
   destUpper,
@@ -69,39 +33,35 @@ export function SendDoneStep({
   savedTargetTick,
   currentTick,
   watchResult,
-  destIsKnownContact,
-  onSaveContact,
-}: SendDoneStepProps) {
+}: SendSendingStepProps) {
   useHideAppChrome();
-  const [saveName, setSaveName] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  const progressText = watchResult === "pending"
+  const navigate = useNavigate();
+  const broadcasting = !txHash;
+  const progressText = txHash && watchResult === "pending"
     ? pendingTxProgress(savedTargetTick, currentTick).timingText
     : null;
-  const statusText = progressText ?? watchStatusLabel(watchResult);
-
-  function submitContact() {
-    if (!saveName.trim()) return;
-    onSaveContact(saveName.trim());
-    setSaved(true);
-  }
+  const statusText = broadcasting ? "Broadcasting…" : (progressText ?? watchStatusLabel(watchResult));
 
   return (
-    <SendStepPanel scroll="y" gap="var(--space-5)">
+    <SendStepPanel scroll="y" gap="var(--space-5)" ariaLive="polite" ariaBusy={broadcasting}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent)" }}>
-          <CheckmarkCircle01Icon size={15} aria-hidden="true" />
-          Transaction sent
-        </span>
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>
+              {broadcasting ? "Broadcasting transfer" : "Transfer submitted"}
+            </div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: 2 }}>
+              {broadcasting ? "Waiting for the network to accept the transaction." : "Track the result below."}
+            </div>
+          </div>
+        </div>
 
         <ApprovalAmount amount={BigInt(amountStr)} />
-
         <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" />
         <ApprovalAddress label="To" identity={destUpper} name={matchedContactName ?? undefined} compact="long" />
 
         <ApprovalField label="Status">
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: watchStatusColor(watchResult, "var(--color-text-secondary)") }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: broadcasting ? "var(--color-text-tertiary)" : watchStatusColor(watchResult, "var(--color-text-secondary)") }}>
             {statusText}
           </span>
         </ApprovalField>
@@ -109,44 +69,29 @@ export function SendDoneStep({
         <ApprovalDisclosure label="Transaction details">
           <ApprovalField label="Hash">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", lineHeight: "var(--leading-body)", color: "var(--color-text-secondary)", overflowWrap: "anywhere" }}>
-              {txHash}
+              {txHash || "—"}
             </span>
           </ApprovalField>
           <ApprovalField label="Target tick">
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>{savedTargetTick}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+              {savedTargetTick || "—"}
+            </span>
           </ApprovalField>
         </ApprovalDisclosure>
-
-        {!destIsKnownContact && !saved ? (
-          <form onSubmit={(event) => { event.preventDefault(); submitContact(); }}>
-            <Input
-              label="Save as contact"
-              value={saveName}
-              onChange={(event) => setSaveName(event.target.value)}
-              placeholder="Contact name"
-              autoComplete="off"
-              rightElement={(
-                <button
-                  type="submit"
-                  disabled={!saveName.trim()}
-                  style={{ border: 0, background: "transparent", padding: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: saveName.trim() ? "var(--color-accent)" : "var(--color-text-disabled)", cursor: saveName.trim() ? "pointer" : "default" }}
-                >
-                  Save
-                </button>
-              )}
-            />
-          </form>
-        ) : null}
-        {saved ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--color-accent)" }}>
-            Contact saved
-          </span>
-        ) : null}
-
-        <TxMemoField hash={txHash} />
       </div>
 
-      <SendDoneActions />
+      <SendStepFooter>
+        <div style={{ display: "flex", gap: "var(--space-3)", width: "100%" }}>
+          <Button onClick={() => navigate("/dashboard")} disabled={broadcasting} style={{ flex: 1 }}>
+            <Home01Icon size={16} aria-hidden="true" />
+            Done
+          </Button>
+          <Button variant="secondary" onClick={() => navigate("/history")} disabled={broadcasting} style={{ flex: 1 }}>
+            <Clock01Icon size={16} aria-hidden="true" />
+            History
+          </Button>
+        </div>
+      </SendStepFooter>
     </SendStepPanel>
   );
 }
