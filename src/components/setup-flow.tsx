@@ -39,7 +39,7 @@ export function SetupFlow({
     <div
       style={{
         width: "100%",
-        maxWidth: 340,
+        maxWidth: 480,
         margin: "0 auto",
         height: "100%",
         minHeight: 0,

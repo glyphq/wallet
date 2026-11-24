@@ -58,6 +58,7 @@
     "@tauri-apps/plugin-store": "^2.4.4",
     "@tauri-apps/plugin-updater": "^2.10.1",
     "@zxing/browser": "^0.2.1",
+    "asciify-engine": "^4.33.0",
     "boring-avatars": "^2.0.4",
     "motion": "^12.42.2",
     "qrcode.react": "^4.2.0",

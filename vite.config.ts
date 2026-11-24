@@ -19,6 +19,7 @@ export default defineConfig(async () => ({
       output: {
         manualChunks(id) {
           const moduleId = id.replaceAll("\\", "/");
+          if (moduleId.includes("vite/preload-helper")) return "react-vendor";
           if (!moduleId.includes("/node_modules/")) return undefined;
 
           const inPackage = (pkg: string) =>
@@ -30,6 +31,7 @@ export default defineConfig(async () => ({
           if (moduleId.includes("/node_modules/@tauri-apps/")) return "tauri-vendor";
           if (moduleId.includes("/node_modules/@qubic.org/")) return "qubic-vendor";
           if (inPackage("motion") || inPackage("qrcode.react")) return "ui-vendor";
+          if (inPackage("asciify-engine") || inPackage("figlet") || inPackage("mediabunny") || inPackage("gifenc") || inPackage("gifuct-js")) return "ascii-vendor";
           return "vendor";
         },
       },

@@ -630,3 +630,126 @@ a:hover {
     animation: none !important;
   }
 }
+
+/* ── Landscape onboarding ─────────────────────────────────────────────────── */
+
+.onboarding-landscape {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 3vw, 32px);
+  overflow: hidden;
+  background: var(--color-bg-base);
+}
+
+.onboarding-inner {
+  --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
+  position: relative;
+  width: 80%;
+  height: 80%;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-base);
+}
+
+.onboarding-inner::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid currentColor;
+  opacity: 0.08;
+  -webkit-mask:
+    linear-gradient(#000 0 0) left top / 14px 14px no-repeat,
+    linear-gradient(#000 0 0) right top / 14px 14px no-repeat,
+    linear-gradient(#000 0 0) left bottom / 14px 14px no-repeat,
+    linear-gradient(#000 0 0) right bottom / 14px 14px no-repeat;
+  mask:
+    linear-gradient(#000 0 0) left top / 14px 14px no-repeat,
+    linear-gradient(#000 0 0) right top / 14px 14px no-repeat,
+    linear-gradient(#000 0 0) left bottom / 14px 14px no-repeat,
+    linear-gradient(#000 0 0) right bottom / 14px 14px no-repeat;
+}
+
+
+/* ── Landing button treatment ─────────────────────────────────────────────── */
+
+.corner-frame {
+  --corner-size: 10px;
+  --corner-inset: 3px;
+  --corner-color: currentColor;
+  position: relative;
+}
+
+.corner-frame::before {
+  content: "";
+  position: absolute;
+  inset: var(--corner-inset);
+  z-index: 2;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 1px solid var(--corner-color);
+  border-radius: inherit;
+  opacity: 0.45;
+  -webkit-mask:
+    linear-gradient(#000 0 0) left top / var(--corner-size) var(--corner-size) no-repeat,
+    linear-gradient(#000 0 0) right top / var(--corner-size) var(--corner-size) no-repeat,
+    linear-gradient(#000 0 0) left bottom / var(--corner-size) var(--corner-size) no-repeat,
+    linear-gradient(#000 0 0) right bottom / var(--corner-size) var(--corner-size) no-repeat;
+  mask:
+    linear-gradient(#000 0 0) left top / var(--corner-size) var(--corner-size) no-repeat,
+    linear-gradient(#000 0 0) right top / var(--corner-size) var(--corner-size) no-repeat,
+    linear-gradient(#000 0 0) left bottom / var(--corner-size) var(--corner-size) no-repeat,
+    linear-gradient(#000 0 0) right bottom / var(--corner-size) var(--corner-size) no-repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.corner-frame:hover::before,
+.corner-frame:focus-visible::before {
+  opacity: 1;
+}
+
+.glyph-btn {
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.glyph-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.glyph-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.glyph-btn[data-variant="secondary"]:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+}
+
+.glyph-btn[data-variant="ghost"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text-primary) 7%, transparent);
+}
+
+.glyph-btn[data-variant="danger"]:hover:not(:disabled) {
+  background: var(--color-status-error-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph-btn,
+  .corner-frame::before {
+    transition: none;
+  }
+
+  .glyph-btn:active:not(:disabled) {
+    transform: none;
+  }
+}

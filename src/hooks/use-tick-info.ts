@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getStatus, type GetStatusResponse } from "@/lib/api/generated";
 import { getStatusQueryKey } from "@/lib/api/generated/@tanstack/react-query.gen";
@@ -19,11 +19,11 @@ export interface TickInfo {
 export function useTickInfo() {
   const apiIdentity = useApiCacheIdentity();
   const queryClient = useQueryClient();
-  const queryKey = [...getStatusQueryKey(), apiIdentity];
+  const queryKey = useMemo(() => [...getStatusQueryKey(), apiIdentity], [apiIdentity]);
 
   useEffect(() => subscribeTickStream(apiIdentity, (tick) => {
     queryClient.setQueryData<GetStatusResponse>(queryKey, (previous) => applyTickToStatus(previous, tick));
-  }), [apiIdentity, queryClient, queryKey.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+  }), [apiIdentity, queryClient, queryKey]);
 
   return useQuery({
     queryKey,
@@ -41,6 +41,6 @@ export function useTickInfo() {
       };
     },
     staleTime: Infinity,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: "always",
   });
 }
