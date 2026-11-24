@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { truncateId } from "@/lib/format";
-import { Delete02Icon, UserGroupIcon } from "@/lib/icons";
-import { EmbeddedInput } from "@/components/embedded-input";
+import { Delete02Icon } from "@/lib/icons";
 import { FieldError, FieldLabel } from "@/components/field-parts";
 import { FramedAvatar } from "@/components/framed-avatar";
+import type { Contact, WalletMeta } from "@/store/persisted";
+import type { SessionAccount } from "@/lib/session-account";
+import { identityDisplayName } from "./multisig-ui";
 
 const ROW_STYLE = {
   display: "flex",
@@ -56,22 +58,24 @@ export function MultisigOwnersEditor({
   extraOwners,
   ownerRowIds,
   ownerErrors,
+  contacts,
+  wallet,
+  sessionAccounts,
   formError,
   preflightError,
-  onOwnerChange,
   onRemoveOwner,
-  onPickOwner,
 }: {
   activeAccountName: string;
   identity: string | null;
   extraOwners: string[];
   ownerRowIds: number[];
   ownerErrors: string[];
+  contacts: Contact[];
+  wallet: WalletMeta | null;
+  sessionAccounts: SessionAccount[];
   formError: string;
   preflightError: string;
-  onOwnerChange: (index: number, value: string) => void;
   onRemoveOwner: (index: number) => void;
-  onPickOwner: (index: number) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", width: "100%", maxWidth: 480, margin: "0 auto" }}>
@@ -92,22 +96,19 @@ export function MultisigOwnersEditor({
 
       {extraOwners.map((owner, index) => {
         const ownerNumber = index + 2;
-        const inputId = `owner-${ownerRowIds[index]}`;
         return (
           <div key={ownerRowIds[index]} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 0 }}>
-            <FieldLabel htmlFor={inputId}>Owner {ownerNumber}</FieldLabel>
+            <FieldLabel>Owner {ownerNumber}</FieldLabel>
             <div style={ROW_STYLE}>
-              <EmbeddedInput
-                id={inputId}
-                value={owner}
-                onChange={(event) => onOwnerChange(index, event.target.value)}
-                placeholder="Identity address"
-                autoComplete="off"
-                style={{ flex: 1, minWidth: 0 }}
-              />
-              <OwnerAction label={`Choose owner ${ownerNumber}`} onClick={() => onPickOwner(index)}>
-                <UserGroupIcon size={18} aria-hidden="true" />
-              </OwnerAction>
+              <FramedAvatar seed={owner} size={28} />
+              <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
+                  {identityDisplayName(owner, contacts, wallet, sessionAccounts)}
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)" }}>
+                  {truncateId(owner, 10, 10)}
+                </span>
+              </span>
               <OwnerAction label={`Remove owner ${ownerNumber}`} onClick={() => onRemoveOwner(index)}>
                 <Delete02Icon size={18} aria-hidden="true" />
               </OwnerAction>

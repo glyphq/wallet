@@ -162,7 +162,6 @@ export default function MultisigCreateScreen() {
   const [ownerErrors, setOwnerErrors] = useState<string[]>([""]);
   const [formError, setFormError] = useState("");
   const [preflightError, setPreflightError] = useState("");
-  const [ownerPickerIndex, setOwnerPickerIndex] = useState<number | null>(null);
   const [addOwnerDraft, setAddOwnerDraft] = useState("");
   const [addOwnerError, setAddOwnerError] = useState("");
   const [addOwnerPickerOpen, setAddOwnerPickerOpen] = useState(false);
@@ -242,19 +241,10 @@ export default function MultisigCreateScreen() {
     if (preflightError) setPreflightError("");
   }
 
-  function handleOwnerChange(index: number, value: string) {
-    if (checking || sending) return;
-    setExtraOwners((current) => current.map((owner, ownerIndex) => (ownerIndex === index ? value : owner)));
-    setOwnerErrors((current) => current.map((error, ownerIndex) => (ownerIndex === index ? "" : error)));
-    if (formError) setFormError("");
-    setPreflightError("");
-  }
-
   function openAddOwner() {
     if (checking || sending || ownerCount >= MSVAULT_MAX_OWNERS) return;
     setAddOwnerDraft("");
     setAddOwnerError("");
-    setOwnerPickerIndex(null);
     setStep("add-owner");
   }
 
@@ -290,7 +280,6 @@ export default function MultisigCreateScreen() {
 
   function removeOwner(index: number) {
     if (checking || sending) return;
-    setOwnerPickerIndex(null);
     setExtraOwners((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
     setOwnerRowIds((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
     setOwnerErrors((current) => current.filter((_, ownerIndex) => ownerIndex !== index));
@@ -523,21 +512,6 @@ export default function MultisigCreateScreen() {
     );
   }
 
-  if (step === "owners" && ownerPickerIndex !== null) {
-    return (
-      <IdentityPickerScreen
-        title="Choose owner"
-        contacts={contacts}
-        accounts={pickerAccounts}
-        onSelect={(ownerIdentity) => {
-          handleOwnerChange(ownerPickerIndex, ownerIdentity);
-          setOwnerPickerIndex(null);
-        }}
-        onClose={() => setOwnerPickerIndex(null)}
-      />
-    );
-  }
-
   if (step === "owners") {
     return (
       <AppShell
@@ -571,11 +545,12 @@ export default function MultisigCreateScreen() {
             extraOwners={extraOwners}
             ownerRowIds={ownerRowIds}
             ownerErrors={ownerErrors}
+            contacts={contacts}
+            wallet={wallet}
+            sessionAccounts={accounts}
             formError={formError && !formError.startsWith("Vault name") ? formError : ""}
             preflightError={preflightError}
-            onOwnerChange={handleOwnerChange}
             onRemoveOwner={removeOwner}
-            onPickOwner={setOwnerPickerIndex}
           />
         </PageFrame>
       </AppShell>
