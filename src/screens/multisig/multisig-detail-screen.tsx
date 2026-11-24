@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
+import { BalanceDisplay } from "@/components/balance-display";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
@@ -11,6 +12,8 @@ import { TextButton } from "@/components/text-button";
 import { useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { useTickInfo } from "@/hooks/use-tick-info";
+import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { usePersistedStore, type Contact, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionAccount } from "@/lib/session-account";
@@ -24,7 +27,7 @@ import {
   MSVAULT_RESET_ASSET_RELEASE_INPUT_TYPE,
   MSVAULT_RESET_RELEASE_INPUT_TYPE,
 } from "@/lib/contracts";
-import { extractMessage, formatQu, truncateId } from "@/lib/format";
+import { extractMessage, formatPreferredCurrencyFromQu, formatQu, truncateId } from "@/lib/format";
 import {
   MSVAULT_REVOKE_FEE,
   ownerIndex,
@@ -35,6 +38,7 @@ import {
 import { qk } from "@/lib/query-keys";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
+import { ArrowUpRight01Icon, Download01Icon } from "@/lib/icons";
 import {
   AssetMetaLabel,
   FeeRow,
@@ -78,14 +82,6 @@ const CARD: CSSProperties = {
   border: "1px solid var(--color-border-subtle)",
   borderRadius: "var(--radius-sharp)",
   background: "var(--color-bg-surface)",
-};
-
-const INLINE_ROW: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "var(--space-3)",
-  minWidth: 0,
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -268,6 +264,8 @@ export default function MultisigDetailScreen() {
   const identity = getWalletAccountIdentity(wallet, settings.activeAccountIndex, sessionAccounts) ?? "";
   const apiIdentity = useApiCacheIdentity();
   const { data: tickInfo } = useTickInfo();
+  const { data: stats } = useLatestStats();
+  const quote = usePreferredCurrencyQuote();
 
   const rawId = params.id ?? "";
   const vaultId = useMemo(() => {
@@ -478,6 +476,9 @@ export default function MultisigDetailScreen() {
   const qubicProposals = detail.proposals.filter((proposal) => proposal.kind === "qubic");
   const assetProposals = detail.proposals.filter((proposal) => proposal.kind === "asset");
   const actionsDisabled = hasPending;
+  const fiatValue = stats?.price
+    ? formatPreferredCurrencyFromQu(detail.balance, { usdPrice: stats.price, ...quote }).text
+    : undefined;
 
   return (
     <AppShell
@@ -503,82 +504,65 @@ export default function MultisigDetailScreen() {
         </InlineNotice>
       ) : null}
 
-      <section className="corner-frame" style={CARD} aria-label="Vault balance">
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <span style={SECTION_LABEL}>Vault balance</span>
-          <span style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)" }}>
-            <span
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 300,
-                fontSize: "var(--text-headline)",
-                lineHeight: 1,
-                color: "var(--color-text-display)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {formatQu(detail.balance)}
-            </span>
-            <span style={MONO_META}>QU</span>
-          </span>
-        </div>
-
-        <div style={INLINE_ROW}>
-          <span style={MONO_META}>
-            {detail.requiredApprovals} of {detail.owners.length} approvals
-          </span>
+      <section aria-label="Vault balance" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2) 0" }}>
+        <span style={SECTION_LABEL}>Vault balance</span>
+        <BalanceDisplay
+          balance={detail.balance}
+          loading={false}
+          hidden={settings.hideBalances}
+          fiatValue={fiatValue}
+          priceChange24h={null}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
+          <span style={MONO_META}>{detail.requiredApprovals} of {detail.owners.length} approvals</span>
           <VaultId id={detail.id} />
         </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          {feesQuery.isLoading ? (
-            <span style={MONO_META}>Loading fees…</span>
-          ) : feesQuery.isError || !fees ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-              <span role="alert" style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>Fees unavailable</span>
-              <TextButton onClick={() => void feesQuery.refetch()}>Retry</TextButton>
-            </div>
-          ) : (
-            <span style={MONO_META}>
-              {coverage !== null
-                ? coverage > 0n
-                  ? `Holding fee covered for ${coverage.toString()} epochs`
-                  : "Below holding fee"
-                : "No holding fee"}
-            </span>
-          )}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={SECTION_LABEL}>Assets</span>
-          {detail.assets.length === 0 ? (
-            <span style={BODY_COPY}>No assets</span>
-          ) : (
-            detail.assets.map((balance) => (
-              <div
-                key={`${balance.asset.issuer}:${balance.asset.assetName.toString()}`}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "30px minmax(0, 1fr)",
-                  alignItems: "center",
-                  columnGap: "var(--space-3)",
-                  minWidth: 0,
-                }}
-              >
-                <FramedAvatar seed={`asset:${balance.asset.issuer}:${balance.asset.name}`} size={30} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
-                    <AssetMetaLabel asset={balance.asset} amount={balance.amount} />
-                  </span>
-                  <span style={MONO_META} title={balance.asset.issuer}>
-                    {truncateId(balance.asset.issuer, 8, 8)}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        {feesQuery.isLoading ? (
+          <span style={MONO_META}>Loading fees…</span>
+        ) : feesQuery.isError || !fees ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            <span role="alert" style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>Fees unavailable</span>
+            <TextButton onClick={() => void feesQuery.refetch()}>Retry</TextButton>
+          </div>
+        ) : (
+          <span style={MONO_META}>
+            {coverage !== null
+              ? coverage > 0n
+                ? `Holding fee covered for ${coverage.toString()} epochs`
+                : "Below holding fee"
+              : "No holding fee"}
+          </span>
+        )}
       </section>
+
+      <Section title="Assets">
+        {detail.assets.length === 0 ? (
+          <span style={BODY_COPY}>No assets</span>
+        ) : (
+          detail.assets.map((balance) => (
+            <div
+              key={`${balance.asset.issuer}:${balance.asset.assetName.toString()}`}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "30px minmax(0, 1fr)",
+                alignItems: "center",
+                columnGap: "var(--space-3)",
+                minWidth: 0,
+              }}
+            >
+              <FramedAvatar seed={`asset:${balance.asset.issuer}:${balance.asset.name}`} size={30} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
+                  <AssetMetaLabel asset={balance.asset} amount={balance.amount} />
+                </span>
+                <span style={MONO_META} title={balance.asset.issuer}>
+                  {truncateId(balance.asset.issuer, 8, 8)}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </Section>
 
       {fees ? (
         <HoldingFeeWarning
@@ -599,6 +583,7 @@ export default function MultisigDetailScreen() {
           disabled={actionsDisabled}
           onClick={() => navigate(`/multisig/${rawId}/deposit`)}
         >
+          <Download01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
           Deposit
         </Button>
         <Button
@@ -609,6 +594,7 @@ export default function MultisigDetailScreen() {
           onClick={() => navigate(`/multisig/${rawId}/release`)}
           title={!isOwner ? "Only owners can request releases." : undefined}
         >
+          <ArrowUpRight01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
           Request release
         </Button>
       </div>

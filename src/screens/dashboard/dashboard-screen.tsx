@@ -13,7 +13,8 @@ import { useOwnedAssets } from "@/hooks/use-owned-assets";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { AccountSelector } from "@/components/account-selector";
-import { BalanceDisplay, OwnedAssetChips } from "./dashboard-balance";
+import { BalanceDisplay } from "@/components/balance-display";
+import { OwnedAssetChips } from "./dashboard-balance";
 import { MoreActions, PrimaryActions } from "./dashboard-actions";
 import { RecentTxs } from "./dashboard-activity";
 
