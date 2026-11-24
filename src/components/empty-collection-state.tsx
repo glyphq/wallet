@@ -1,4 +1,15 @@
-import { Exchange01Icon, Search01Icon } from "@/lib/icons";
+import type { CSSProperties } from "react";
+import { Loupe, Plot } from "@lucasmarkes/hairline/react";
+
+const FIGURE_STYLE = {
+  width: 180,
+  "--hairline-plate": "transparent",
+  "--hairline-hi": "var(--color-text-primary)",
+  "--hairline-edge": "var(--color-text-tertiary)",
+  "--hairline-mid": "var(--color-border-strong)",
+  "--hairline-lo": "var(--color-border-subtle)",
+  "--hairline-stroke": "0.8px",
+} as CSSProperties;
 
 /** Shared empty state for activity and search collections. */
 export function EmptyCollectionState({
@@ -10,7 +21,7 @@ export function EmptyCollectionState({
   description: string;
   icon?: "activity" | "search";
 }) {
-  const Icon = icon === "search" ? Search01Icon : Exchange01Icon;
+  const Figure = icon === "search" ? Loupe : Plot;
 
   return (
     <div
@@ -18,17 +29,12 @@ export function EmptyCollectionState({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "var(--space-3)",
-        padding: "var(--space-8) var(--space-4)",
+        gap: "var(--space-2)",
+        padding: "var(--space-6) var(--space-4)",
         textAlign: "center",
       }}
     >
-      <Icon
-        size={28}
-        strokeWidth={1.5}
-        aria-hidden="true"
-        style={{ color: "var(--color-text-tertiary)" }}
-      />
+      <Figure aria-hidden="true" intensity={0.35} style={FIGURE_STYLE} />
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
         <span
           style={{
