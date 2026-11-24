@@ -11,7 +11,6 @@ const ROW_STYLE = {
   gap: "var(--space-2)",
   minHeight: 44,
   minWidth: 0,
-  borderBottom: "1px solid var(--color-border-subtle)",
 } as const;
 
 function InlineError({ message, warning = false }: { message: string; warning?: boolean }) {
