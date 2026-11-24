@@ -640,8 +640,9 @@ a:hover {
 
 .page-banner {
   position: relative;
-  flex: 1 1 25dvh;
-  min-height: 25dvh;
+  flex: 0 0 var(--height-page-banner);
+  height: var(--height-page-banner);
+  min-height: 0;
   overflow: hidden;
   border-bottom: 1px solid var(--color-border-subtle);
 }
@@ -697,9 +698,8 @@ a:hover {
 }
 
 .page-frame {
-  flex: 0 1 auto;
+  flex: 1;
   min-height: 0;
-  max-height: 70dvh;
   width: 100%;
   max-width: none;
   margin: 0;

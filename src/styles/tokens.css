@@ -117,6 +117,7 @@
 
   /* Control heights */
   --height-titlebar: 46px;
+  --height-page-banner: 180px;
   --height-header: 60px;
   --height-button-lg: 48px;
   --height-button-md: 42px;
