@@ -1,12 +1,11 @@
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
-import { useShallow } from "zustand/react/shallow";
 import { router } from "@/router";
 import { useDeepLink } from "@/hooks/use-deep-link";
 import { usePayLink } from "@/hooks/use-pay-link";
 import { usePersistedStore } from "@/store/persisted";
-import { FONT_PAIRS, THEME_VARS, getThemeVars } from "@/lib/appearance";
+import { THEME_VARS, getThemeVars } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
@@ -27,20 +26,7 @@ const queryClient = new QueryClient({
 });
 
 function useAppearance() {
-  const { fontPair, themeMode } = usePersistedStore(
-    useShallow((s) => ({
-      fontPair: s.settings.fontPair,
-      themeMode: s.settings.themeMode,
-    }))
-  );
-
-  useEffect(() => {
-    const pair = FONT_PAIRS.find((p) => p.id === fontPair) ?? FONT_PAIRS[0];
-    const root = document.documentElement;
-    root.style.setProperty("--font-sans", pair.sans);
-    root.style.setProperty("--font-mono", pair.mono);
-    root.style.setProperty("--font-display", pair.sans);
-  }, [fontPair]);
+  const themeMode = usePersistedStore((s) => s.settings.themeMode);
 
   useEffect(() => {
     const root = document.documentElement;

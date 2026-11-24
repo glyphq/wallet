@@ -1,29 +1,6 @@
-/* Boldonse (display) */
-@import "@fontsource/boldonse/latin-400.css";
-/* Geist */
-@import "@fontsource/geist/latin-300.css";
-@import "@fontsource/geist/latin-400.css";
-@import "@fontsource/geist/latin-500.css";
+/* Geist Mono */
 @import "@fontsource/geist-mono/latin-400.css";
 @import "@fontsource/geist-mono/latin-700.css";
-/* Inter */
-@import "@fontsource/inter/latin-400.css";
-@import "@fontsource/inter/latin-500.css";
-@import "@fontsource/inter/latin-600.css";
-/* IBM Plex */
-@import "@fontsource/ibm-plex-sans/latin-400.css";
-@import "@fontsource/ibm-plex-sans/latin-500.css";
-@import "@fontsource/ibm-plex-mono/latin-400.css";
-/* Space Grotesk + Space Mono */
-@import "@fontsource/space-grotesk/latin-400.css";
-@import "@fontsource/space-grotesk/latin-500.css";
-@import "@fontsource/space-mono/latin-400.css";
-/* Fira */
-@import "@fontsource/fira-sans/latin-400.css";
-@import "@fontsource/fira-sans/latin-500.css";
-@import "@fontsource/fira-code/latin-400.css";
-/* JetBrains Mono */
-@import "@fontsource/jetbrains-mono/latin-400.css";
 @import "./tokens.css";
 
 *, *::before, *::after {
@@ -649,8 +626,8 @@ a:hover {
 /* ── Header-led onboarding pages ──────────────────────────────────────────── */
 
 .page-shell {
-  --font-display: "Space Grotesk", "Geist", system-ui, sans-serif;
-  --font-sans: "Geist", system-ui, sans-serif;
+  --font-display: "Geist Mono", "Courier New", monospace;
+  --font-sans: "Geist Mono", "Courier New", monospace;
   --font-mono: "Geist Mono", monospace;
   width: 100%;
   height: 100%;

@@ -108,7 +108,7 @@ export function TitleBar() {
           <span
             data-tauri-drag-region
             style={{
-              fontFamily: "'Geist', system-ui, sans-serif",
+              fontFamily: "'Geist Mono', monospace",
               fontSize: 16,
               fontWeight: 500,
               letterSpacing: "-0.01em",

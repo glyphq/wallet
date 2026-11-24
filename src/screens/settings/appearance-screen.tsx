@@ -5,13 +5,11 @@ import { SettingsDivider, SettingsSectionLabel } from "@/components/settings-sec
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
 import { CurrencyPicker } from "./appearance/currency-picker";
-import { FontPicker } from "./appearance/font-picker";
 import { SettingsToggleRow } from "./appearance/settings-toggle-row";
 import { ThemePicker } from "./appearance/theme-picker";
 
 export default function AppearanceScreen() {
   const themeMode = usePersistedStore((s) => s.settings.themeMode);
-  const fontPair = usePersistedStore((s) => s.settings.fontPair);
   const hideBalances = usePersistedStore((s) => s.settings.hideBalances);
   const currency = usePersistedStore((s) => s.settings.currency);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
@@ -20,15 +18,6 @@ export default function AppearanceScreen() {
     <AppShell fullBleed contentStyle={{ padding: "var(--space-5) var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", minHeight: 0 }}>
         <SettingsPageHeader title="Appearance" />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <SettingsSectionLabel>Font</SettingsSectionLabel>
-          <div style={{ display: "flex" }}>
-            <FontPicker value={fontPair} onChange={(font) => updateSettings({ fontPair: font })} />
-          </div>
-        </div>
-
-        <SettingsDivider />
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <SettingsSectionLabel>Currency</SettingsSectionLabel>
