@@ -6,7 +6,7 @@ import type { usePersistedStore } from "@/store/persisted";
 type Wallet = NonNullable<ReturnType<typeof usePersistedStore.getState>["wallets"][number]>;
 
 /** The most recently used wallet, shown as the primary unlock target. */
-export function LockWalletFocus({ wallet, onSwitch }: { wallet: Wallet; onSwitch: () => void }) {
+export function LockWalletFocus({ wallet }: { wallet: Wallet }) {
   const lastOpened = wallet.lastUnlockedAt ? `Last unlocked ${timeAgo(wallet.lastUnlockedAt)}` : "Not unlocked yet";
 
   return (
@@ -56,25 +56,6 @@ export function LockWalletFocus({ wallet, onSwitch }: { wallet: Wallet; onSwitch
           {lastOpened}
         </span>
       </div>
-      <button
-        type="button"
-        onClick={onSwitch}
-        style={{
-          flexShrink: 0,
-          padding: "6px 10px",
-          border: "1px solid var(--color-border-subtle)",
-          borderRadius: "var(--radius-sharp)",
-          background: "transparent",
-          color: "var(--color-text-secondary)",
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--text-mono-sm)",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-        }}
-      >
-        Switch
-      </button>
     </div>
   );
 }

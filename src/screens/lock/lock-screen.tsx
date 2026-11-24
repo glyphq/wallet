@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence } from "motion/react";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
-import { FlowHeader } from "@/components/flow-header";
+import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
 import { unlockBiometricSession, unlockWalletSession } from "@/lib/wallet";
@@ -194,77 +193,101 @@ export default function LockScreen() {
 
   if (!selected) return null;
 
+  const bannerTitle = view === "switch" ? "Switch wallet" : "Unlock wallet";
+  const bannerDescription = view === "switch"
+    ? "Choose a wallet to unlock."
+    : hasPendingRequest
+      ? "Unlock to review a pending request."
+      : "Enter the password for your last used wallet.";
+
   return (
-    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-6)", paddingBottom: "var(--space-6)" }}>
-      <AnimatePresence mode="wait">
-        {unlocking ? (
-          <UnlockingPanel key="unlocking" />
-        ) : (
+    <FullPage centered={false} style={{ padding: 0 }}>
+      {unlocking ? (
+        <UnlockingPanel />
+      ) : (
+        <>
+          <PageBanner title={bannerTitle} description={bannerDescription} />
           <div
-            key="form"
             style={{
-              width: "100%",
-              maxWidth: 340,
-              margin: "0 auto",
-              height: "100%",
+              flex: 1,
               minHeight: 0,
+              overflowY: "auto",
+              padding: "var(--space-4)",
               display: "flex",
               flexDirection: "column",
-              gap: "var(--space-5)",
             }}
           >
-            {view === "unlock" ? (
-              <>
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0, minHeight: 0 }}>
-                  <FlowHeader
-                    align="center"
-                    title="Unlock wallet"
-                    description={hasPendingRequest ? "Unlock to review a pending request." : "Enter the password for this wallet."}
-                  />
-                  <LockWalletFocus wallet={selected} onSwitch={() => setView("switch")} />
-                </div>
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 340,
+                margin: "0 auto",
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-3)",
+              }}
+            >
+              {view === "unlock" ? (
+                <>
+                  <LockWalletFocus wallet={selected} />
+                  <button
+                    type="button"
+                    onClick={() => setView("switch")}
+                    style={{
+                      alignSelf: "flex-end",
+                      padding: "var(--space-1) 0",
+                      border: 0,
+                      background: "transparent",
+                      color: "var(--color-text-secondary)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "var(--text-mono-sm)",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Switch wallet
+                  </button>
 
-                <LockForm
-                  register={register}
-                  handleSubmit={handleSubmit}
-                  onSubmit={onSubmit}
-                  showPassword={showPassword}
-                  onToggleShowPassword={() => setShowPassword((visible) => !visible)}
-                  shakeKey={shakeKey}
-                  error={error}
-                  lockoutSecsLeft={lockoutSecsLeft}
-                  loading={loading}
-                  biometricEnabled={biometricEnabled}
-                  bioFailures={bioFailures}
-                  onBiometric={onBiometric}
-                  isLinux={isLinux}
-                />
-              </>
-            ) : (
-              <>
-                <FlowHeader
-                  align="center"
-                  title="Switch wallet"
-                  description="Choose a wallet to unlock."
-                />
-                <LockWalletShelf
-                  wallets={lockedWallets}
-                  selectedId={selected.id}
-                  onSelect={(id) => {
-                    setSelectedId(id);
-                    setView("unlock");
-                    window.requestAnimationFrame(() => setFocus("password"));
-                  }}
-                  onAdd={() => navigate("/setup")}
-                />
-                <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
-                  Back to unlock
-                </Button>
-              </>
-            )}
+                  <LockForm
+                    register={register}
+                    handleSubmit={handleSubmit}
+                    onSubmit={onSubmit}
+                    showPassword={showPassword}
+                    onToggleShowPassword={() => setShowPassword((visible) => !visible)}
+                    shakeKey={shakeKey}
+                    error={error}
+                    lockoutSecsLeft={lockoutSecsLeft}
+                    loading={loading}
+                    biometricEnabled={biometricEnabled}
+                    bioFailures={bioFailures}
+                    onBiometric={onBiometric}
+                    isLinux={isLinux}
+                  />
+                </>
+              ) : (
+                <>
+                  <LockWalletShelf
+                    wallets={lockedWallets}
+                    selectedId={selected.id}
+                    onSelect={(id) => {
+                      setSelectedId(id);
+                      setView("unlock");
+                      window.requestAnimationFrame(() => setFocus("password"));
+                    }}
+                    onAdd={() => navigate("/setup")}
+                  />
+                  <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
+                    Back to unlock
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </>
+      )}
     </FullPage>
   );
 }

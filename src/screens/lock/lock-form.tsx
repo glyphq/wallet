@@ -66,7 +66,7 @@ export function LockForm({
   isLinux: boolean;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", marginTop: "auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%" }}>
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <div key={shakeKey} className={error ? "lock-shake" : undefined}>
           <Input
