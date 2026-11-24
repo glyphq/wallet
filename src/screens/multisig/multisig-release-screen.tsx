@@ -5,6 +5,7 @@ import { Button } from "@/components/button";
 import { ChoiceChips } from "@/components/choice-chips";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
+import { AmountInput } from "@/components/amount-input";
 import { Input } from "@/components/input";
 import { TextButton } from "@/components/text-button";
 import { ApprovalAddress } from "@/components/request/approval-address";
@@ -716,13 +717,12 @@ export default function MultisigReleaseScreen() {
 
             {kind === "qubic" ? (
               <Section title="Amount">
-                <Input
+                <AmountInput
                   label="Amount"
-                  inputMode="numeric"
                   autoComplete="off"
                   value={amountText}
-                  onChange={(event) => {
-                    setAmountText(event.target.value.replace(/[^\d]/g, ""));
+                  onValueChange={(value) => {
+                    setAmountText(value);
                     setError("");
                   }}
                   placeholder="0"
@@ -762,13 +762,13 @@ export default function MultisigReleaseScreen() {
                         Vault balance: {formatAssetAmount(selectedBalance.amount, assetDecimals)}
                       </p>
                     ) : null}
-                    <Input
+                    <AmountInput
                       label="Amount"
-                      inputMode="decimal"
                       autoComplete="off"
                       value={amountText}
-                      onChange={(event) => {
-                        setAmountText(event.target.value.replace(/[^0-9.]/g, ""));
+                      decimals={assetDecimals}
+                      onValueChange={(value) => {
+                        setAmountText(value);
                         setError("");
                       }}
                       placeholder="0"

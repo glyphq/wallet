@@ -5,7 +5,7 @@ import { Button } from "@/components/button";
 import { ChoiceChips } from "@/components/choice-chips";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
-import { Input } from "@/components/input";
+import { AmountInput } from "@/components/amount-input";
 import { TextButton } from "@/components/text-button";
 import { ApprovalDisclosure, ApprovalField } from "@/components/request/approval-field";
 import { useBalance } from "@/hooks/use-balance";
@@ -718,14 +718,13 @@ export default function MultisigDepositScreen() {
         {mode === "qubic" ? (
           <Section title="Amount">
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              <Input
+              <AmountInput
                 label="Amount"
-                inputMode="numeric"
                 autoComplete="off"
                 value={amountText}
                 disabled={sending}
-                onChange={(event) => {
-                  setAmountText(event.target.value.replace(/[^\d]/g, ""));
+                onValueChange={(value) => {
+                  setAmountText(value);
                   setError("");
                 }}
                 placeholder="0"
@@ -791,14 +790,14 @@ export default function MultisigDepositScreen() {
                 ) : null}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                  <Input
+                  <AmountInput
                     label="Amount"
-                    inputMode="decimal"
                     autoComplete="off"
                     value={assetAmount}
                     disabled={sending}
-                    onChange={(event) => {
-                      setAssetAmount(event.target.value.replace(/[^0-9.]/g, ""));
+                    decimals={assetDecimals}
+                    onValueChange={(value) => {
+                      setAssetAmount(value);
                       setError("");
                     }}
                     placeholder="0"
