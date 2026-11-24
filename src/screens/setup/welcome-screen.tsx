@@ -29,7 +29,6 @@ export default function WelcomeScreen() {
       />
 
       <PageFrame
-        centered
         actions={(
           <div style={actionsStyle}>
             <Button onClick={() => navigate("/setup/create")}>
@@ -43,7 +42,7 @@ export default function WelcomeScreen() {
           </div>
         )}
       >
-        <div style={{ width: "100%", maxWidth: 380, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "center" }}>
+        <div style={{ width: "100%", maxWidth: 380, margin: "0 auto", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "center" }}>
           {hasVaults ? (
             <button
               type="button"
