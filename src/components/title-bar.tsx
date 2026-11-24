@@ -57,6 +57,7 @@ export function TitleBar() {
     [],
   );
   const themeMode = usePersistedStore((state) => state.settings.themeMode);
+  const hideToTray = usePersistedStore((state) => state.settings.hideToTray);
   const logo = themeMode === "light" ? glyphOnLight : glyphOnDark;
 
   return (
@@ -120,6 +121,15 @@ export function TitleBar() {
 
         {win ? (
           <div style={{ display: "flex", height: "100%", marginRight: "calc(var(--screen-padding) * -1)" }}>
+            <WinBtn
+              onClick={() => { if (hideToTray) void win.hide(); else void win.minimize(); }}
+              label={hideToTray ? "Hide to tray" : "Minimize"}
+            >
+              <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
+                <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </WinBtn>
+
             <WinBtn onClick={() => void win.close()} label="Close" danger>
               <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
                 <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
