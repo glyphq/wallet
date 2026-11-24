@@ -171,9 +171,7 @@ function LayoutShell() {
                   alignItems: "center",
                   gap: "var(--space-2)",
                   padding: "4px 10px",
-                  background: "var(--color-bg-elevated)",
-                  border: "1px solid var(--color-border-strong)",
-                  borderBottom: 0,
+                  background: "var(--color-bg-nav)",
                   borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
                   color: "var(--color-status-warning)",
                 }}
