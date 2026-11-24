@@ -207,7 +207,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0 }}>
       {/* Contract — primary element */}
       <ScCallContractSummary
         contractName={contractName}

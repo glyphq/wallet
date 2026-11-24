@@ -64,7 +64,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const invalidKey = claimedIdentity === null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0 }}>
       <RequestMessageContent
         title={request.data ? "Data to verify" : "Message"}
         data={request.data}

@@ -32,7 +32,7 @@ export function RequestResultView({
 
   return (
     <SheetLayout statusBar={<ScreenHeader title="Request complete" onBack={onReturn} backAriaLabel="Return to app" />}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
         <div>
           <Tag variant={success.kind === "verify" && success.detail !== "VALID" ? "error" : "success"}>{tagLabel}</Tag>
         </div>

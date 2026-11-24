@@ -77,7 +77,7 @@ export function ConnectPreview({ request, onApprove, onReject }: ConnectPreviewP
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
       <DropdownSelect
         id="connect-account"
         label="Account"

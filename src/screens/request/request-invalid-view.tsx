@@ -18,7 +18,7 @@ export function RequestInvalidView({
 }) {
   return (
     <SheetLayout statusBar={<ScreenHeader title="Request" onBack={onBack} />}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1, minHeight: 0 }}>
         <Tag variant="error">Invalid request</Tag>
         <StatusLine tone="error">{error}</StatusLine>
         <ActionFooter>

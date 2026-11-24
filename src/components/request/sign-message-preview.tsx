@@ -82,7 +82,7 @@ export function SignMessagePreview({ request, onApprove, onReject, authorize }: 
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: 0 }}>
       <RequestMessageContent
         title={request.data ? "Data to sign" : "Message"}
         data={request.data}
