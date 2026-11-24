@@ -15,18 +15,28 @@ export function AppDeviceSection({
   storageUsed: number | null;
   storageQuota: number | null;
 }) {
+  const updateValue = updater.checking
+    ? "Checking"
+    : updater.installing
+      ? `Installing ${updater.progress}%`
+      : updater.update
+        ? `v${updater.update.version} available`
+        : updater.upToDate
+          ? "Up to date"
+          : updater.context?.supportsAutoUpdate
+            ? "Ready"
+            : "Not available";
+
   return (
-    <DiagnosticSection title="App and device" description="Version, update support, and available device information.">
+    <DiagnosticSection title="App">
       <DiagnosticRow label="Version" value={updater.appVersion || "Not available"} />
       <DiagnosticRow label="Platform" value={updater.context?.platform ?? "Not available"} />
       <DiagnosticRow label="Package" value={updater.context?.packageKind ?? "Not available"} />
-      <DiagnosticRow label="Updates" value={updater.checking ? "Checking for updates" : updater.installing ? `Installing ${updater.progress}%` : updater.update ? `Update available: v${updater.update.version}` : updater.upToDate ? "Up to date" : updater.context?.supportsAutoUpdate ? "Ready to check" : "Not available"} tone={updater.checkError ? "error" : updater.update ? "warning" : undefined} />
-      {storageUsed != null && storageQuota != null && <DiagnosticRow label="App storage" value={`${formatBytes(storageUsed)} of ${formatBytes(storageQuota)}`} />}
-      <DiagnosticRow label="System" value={deviceDiagnostics?.device ?? "Native device details unavailable"} />
-      {deviceDiagnostics?.battery && <DiagnosticRow label="Battery" value={deviceDiagnostics.battery} />}
-      {deviceDiagnostics?.network && <DiagnosticRow label="Device connection" value={deviceDiagnostics.network} />}
-      {deviceDiagnostics?.storage && <DiagnosticRow label="Disk" value={deviceDiagnostics.storage} />}
-      {deviceDiagnostics?.display && <DiagnosticRow label="Display" value={deviceDiagnostics.display} />}
+      <DiagnosticRow label="Updates" value={updateValue} tone={updater.checkError ? "error" : updater.update ? "warning" : undefined} />
+      {storageUsed != null && storageQuota != null ? (
+        <DiagnosticRow label="App storage" value={`${formatBytes(storageUsed)} of ${formatBytes(storageQuota)}`} />
+      ) : null}
+      {deviceDiagnostics?.device ? <DiagnosticRow label="Device" value={deviceDiagnostics.device} /> : null}
     </DiagnosticSection>
   );
 }
