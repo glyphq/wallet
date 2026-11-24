@@ -838,6 +838,11 @@ a:hover {
 
 .choice-chip-static,
 .choice-chip-static:hover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
   cursor: default;
   color: var(--color-text-secondary);
   border-color: var(--color-border-subtle);

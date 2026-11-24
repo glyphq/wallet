@@ -597,19 +597,17 @@ export default function MultisigCreateScreen() {
             </section>
 
             <section aria-label="Owners" style={SECTION_STYLE}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", minWidth: 0 }}>
-                <FramedAvatar seed={identity ?? activeAccountName} size={34} />
-                <div className="choice-chips" role="list" aria-label="Owners" style={{ flex: 1, width: "auto", maxWidth: "none", paddingBottom: 0 }}>
-                  {ownerChips.map((owner) => (
-                    <span
-                      key={owner.key}
-                      role="listitem"
-                      className="choice-chip choice-chip-static corner-frame"
-                    >
-                      {owner.label}
-                    </span>
-                  ))}
-                </div>
+              <p style={LABEL_STYLE}>Owners</p>
+              <div className="choice-chips" role="list" aria-label="Owners" style={{ width: "100%", maxWidth: "none", paddingBottom: 0 }}>
+                {ownerChips.map((owner) => (
+                  <span
+                    key={owner.key}
+                    role="listitem"
+                    className="choice-chip choice-chip-static corner-frame"
+                  >
+                    {owner.label}
+                  </span>
+                ))}
               </div>
             </section>
 
