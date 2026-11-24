@@ -4,6 +4,7 @@ import {
   MSVAULT,
   QEARN,
   QUTIL,
+  QX,
   decodeFields,
   getProcedure,
   type ContractCall,
@@ -107,13 +108,30 @@ export const QEARN_ADDRESS = QEARN.contractAddress;
 export const QEARN_LOCK_INPUT_TYPE = inputTypeOf(QEARN.procedures.lock!);
 export const QEARN_UNLOCK_INPUT_TYPE = inputTypeOf(QEARN.procedures.unlock!);
 
+// QX
+export const QX_CONTRACT_INDEX = QX.contractIndex;
+export const QX_ADDRESS = QX.contractAddress;
+export const QX_TRANSFER_SHARE_MANAGEMENT_RIGHTS_INPUT_TYPE = inputTypeOf(
+  QX.procedures.TransferShareManagementRights!,
+);
+
 // MSVAULT
 export const MSVAULT_CONTRACT_INDEX = MSVAULT.contractIndex;
+export const MSVAULT_ADDRESS = MSVAULT.contractAddress;
+export const MSVAULT_REGISTER_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.registerVault!);
 export const MSVAULT_DEPOSIT_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.deposit!);
 export const MSVAULT_RELEASE_TO_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.releaseTo!);
 export const MSVAULT_RESET_RELEASE_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.resetRelease!);
+export const MSVAULT_DEPOSIT_ASSET_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.depositAsset!);
+export const MSVAULT_RELEASE_ASSET_TO_INPUT_TYPE = inputTypeOf(MSVAULT.procedures.releaseAssetTo!);
+export const MSVAULT_RESET_ASSET_RELEASE_INPUT_TYPE = inputTypeOf(
+  MSVAULT.procedures.resetAssetRelease!,
+);
+export const MSVAULT_REVOKE_ASSET_MANAGEMENT_RIGHTS_INPUT_TYPE = inputTypeOf(
+  MSVAULT.procedures.revokeAssetManagementRights!,
+);
 
-export { MSVAULT, QEARN, QUTIL };
+export { MSVAULT, QEARN, QUTIL, QX };
 
 /** Decode a procedure payload into its declared input fields, when the ABI knows the call. */
 export function decodeProcedureInputValues(

@@ -16,7 +16,7 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionAccount } from "@/lib/session-account";
 import { LockForm, type FormValues } from "./lock-form";
-import { LockWalletFocus } from "./lock-wallet-focus";
+import { LockWalletTransition, type WalletChangeDirection } from "./lock-wallet-transition";
 import { LockWalletShelf } from "./lock-wallet-shelf";
 import { UnlockingPanel } from "./lock-unlocking-panel";
 
@@ -77,6 +77,8 @@ export default function LockScreen() {
   }, [wallets.length, lockedWallets.length, navigate]);
 
   const [selectedId, setSelectedId] = useState<string>(() => lockedWallets[0]?.id ?? "");
+  const [walletDirection, setWalletDirection] = useState<WalletChangeDirection>(1);
+  const [animateWalletOnMount, setAnimateWalletOnMount] = useState(false);
   const [view, setView] = useState<"unlock" | "switch">("unlock");
   const selected = lockedWallets.find((wallet) => wallet.id === selectedId) ?? lockedWallets[0];
   const biometricEnabled = selected ? (settings.biometricWalletIds ?? []).includes(selected.id) : false;
@@ -134,12 +136,21 @@ export default function LockScreen() {
     startCountdown(PASSWORD_LOCKOUT_SECS);
   }
 
-  function cycleWallet(direction: -1 | 1) {
+  function cycleWallet(direction: WalletChangeDirection) {
     if (lockedWallets.length < 2) return;
     const index = lockedWallets.findIndex((wallet) => wallet.id === selected.id);
     const next = lockedWallets[(index + direction + lockedWallets.length) % lockedWallets.length];
+    setWalletDirection(direction);
     setSelectedId(next.id);
     setView("unlock");
+  }
+
+  /** Shelf selection animates toward the new row's position relative to the old one. */
+  function selectWallet(id: string) {
+    const currentIndex = lockedWallets.findIndex((wallet) => wallet.id === selected.id);
+    const nextIndex = lockedWallets.findIndex((wallet) => wallet.id === id);
+    setWalletDirection(nextIndex >= 0 && currentIndex >= 0 && nextIndex < currentIndex ? -1 : 1);
+    setSelectedId(id);
   }
 
   async function finishUnlock(wallets: SessionAccount[]) {
@@ -267,7 +278,15 @@ export default function LockScreen() {
         <AddCircleIcon size={18} aria-hidden="true" />
         Add wallet
       </Button>
-      <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={() => setView("unlock")}>
+      <Button
+        variant="ghost"
+        size="md"
+        style={{ width: "100%" }}
+        onClick={() => {
+          setAnimateWalletOnMount(false);
+          setView("unlock");
+        }}
+      >
         Back to unlock
       </Button>
     </div>
@@ -302,17 +321,17 @@ export default function LockScreen() {
                   <IconButton
                     label="Previous wallet"
                     onClick={() => cycleWallet(-1)}
-                    style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36 }}
+                    style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, zIndex: 1, pointerEvents: "auto" }}
                   >
                     <ChevronLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
                   </IconButton>
                 ) : null}
-                <LockWalletFocus wallet={selected} />
+                <LockWalletTransition wallet={selected} direction={walletDirection} animateOnMount={animateWalletOnMount} />
                 {lockedWallets.length > 1 ? (
                   <IconButton
                     label="Next wallet"
                     onClick={() => cycleWallet(1)}
-                    style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36 }}
+                    style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, zIndex: 1, pointerEvents: "auto" }}
                   >
                     <ChevronRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
                   </IconButton>
@@ -328,7 +347,8 @@ export default function LockScreen() {
                   wallets={lockedWallets}
                   selectedId={selected.id}
                   onSelect={(id) => {
-                    setSelectedId(id);
+                    setAnimateWalletOnMount(true);
+                    selectWallet(id);
                     setView("unlock");
                     window.setTimeout(() => setFocus("password"), 240);
                   }}

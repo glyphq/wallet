@@ -122,7 +122,7 @@ export default function DashboardScreen() {
           <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} price={stats?.price} />
         </div>
 
-        <MoreActions onStake={() => navigate("/stake")} onSendMany={() => navigate("/send-many")} />
+        <MoreActions onStake={() => navigate("/stake")} onSendMany={() => navigate("/send-many")} onMultisig={() => navigate("/multisig")} />
 
       </div>
     </AppShell>

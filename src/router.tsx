@@ -37,6 +37,16 @@ const loadBurnScreen = () => import("@/screens/send/burn-screen");
 const BurnScreen = lazy(loadBurnScreen);
 const loadStakeScreen = () => import("@/screens/stake/stake-screen");
 const StakeScreen = lazy(loadStakeScreen);
+const loadMultisigScreen = () => import("@/screens/multisig/multisig-screen");
+const MultisigScreen = lazy(loadMultisigScreen);
+const loadMultisigCreateScreen = () => import("@/screens/multisig/multisig-create-screen");
+const MultisigCreateScreen = lazy(loadMultisigCreateScreen);
+const loadMultisigDetailScreen = () => import("@/screens/multisig/multisig-detail-screen");
+const MultisigDetailScreen = lazy(loadMultisigDetailScreen);
+const loadMultisigDepositScreen = () => import("@/screens/multisig/multisig-deposit-screen");
+const MultisigDepositScreen = lazy(loadMultisigDepositScreen);
+const loadMultisigReleaseScreen = () => import("@/screens/multisig/multisig-release-screen");
+const MultisigReleaseScreen = lazy(loadMultisigReleaseScreen);
 const loadReceiveScreen = () => import("@/screens/receive/receive-screen");
 const ReceiveScreen = lazy(loadReceiveScreen);
 const loadHistoryScreen = () => import("@/screens/history/history-screen");
@@ -129,6 +139,11 @@ const SCREEN_LOADERS = [
   loadSendManyScreen,
   loadBurnScreen,
   loadStakeScreen,
+  loadMultisigScreen,
+  loadMultisigCreateScreen,
+  loadMultisigDetailScreen,
+  loadMultisigDepositScreen,
+  loadMultisigReleaseScreen,
   loadReceiveScreen,
   loadHistoryScreen,
   loadTxDetailScreen,
@@ -189,6 +204,11 @@ export const router = createHashRouter([
           { path: "/send-many", element: <Screen component={SendManyScreen} /> },
           { path: "/burn", element: <Screen component={BurnScreen} /> },
           { path: "/stake", element: <Screen component={StakeScreen} /> },
+          { path: "/multisig", element: <Screen component={MultisigScreen} /> },
+          { path: "/multisig/new", element: <Screen component={MultisigCreateScreen} /> },
+          { path: "/multisig/:id", element: <Screen component={MultisigDetailScreen} /> },
+          { path: "/multisig/:id/deposit", element: <Screen component={MultisigDepositScreen} /> },
+          { path: "/multisig/:id/release", element: <Screen component={MultisigReleaseScreen} /> },
           { path: "/receive", element: <Screen component={ReceiveScreen} /> },
           { path: "/history", element: <Screen component={HistoryScreen} /> },
           { path: "/tx/:hash", element: <Screen component={TxDetailScreen} /> },

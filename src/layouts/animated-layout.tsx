@@ -26,6 +26,7 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/send-many", "send"],
   ["/burn", "send"],
   ["/stake", "send"],
+  ["/multisig", "home"],
   ["/receive", "receive"],
   ["/history", "history"],
   ["/analytics", "history"],
@@ -78,6 +79,12 @@ function activeTabFromPath(pathname: string): BottomNavTab {
 function headerTitleFromPath(pathname: string): string | null {
   if (pathname.endsWith("/portfolio")) return "Portfolio";
 
+  if (pathname === "/multisig") return "Multisig";
+  if (pathname === "/multisig/new") return "New multisig";
+  if (pathname.startsWith("/multisig/") && pathname.endsWith("/deposit")) return "Deposit";
+  if (pathname.startsWith("/multisig/") && pathname.endsWith("/release")) return "Release";
+  if (pathname.startsWith("/multisig/")) return "Multisig vault";
+
   for (const [prefix, title] of HEADER_TITLES) {
     if (prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix || pathname.startsWith(prefix + "/")) {
       return title;
@@ -87,6 +94,11 @@ function headerTitleFromPath(pathname: string): string | null {
 }
 
 function backTargetFromPath(pathname: string): string | null {
+  if (pathname === "/multisig/new") return "/multisig";
+  if (pathname.startsWith("/multisig/") && (pathname.endsWith("/deposit") || pathname.endsWith("/release"))) {
+    return pathname.slice(0, pathname.lastIndexOf("/"));
+  }
+  if (pathname.startsWith("/multisig/")) return "/multisig";
   if (pathname.endsWith("/portfolio") && pathname.startsWith("/wallets/")) {
     return pathname.slice(0, -"/portfolio".length);
   }
@@ -102,6 +114,7 @@ function isSameSection(a: string, b: string): boolean {
   if (a.startsWith("/settings") && b.startsWith("/settings")) return true;
   if (a.startsWith("/wallets") && b.startsWith("/wallets")) return true;
   if (a.startsWith("/setup") && b.startsWith("/setup")) return true;
+  if (a.startsWith("/multisig") && b.startsWith("/multisig")) return true;
   return false;
 }
 

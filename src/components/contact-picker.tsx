@@ -15,9 +15,10 @@ export interface ContactPickerProps {
   onSelect: (identity: string) => void;
   contacts: Contact[];
   accounts?: PickerAccount[];
+  title?: string;
 }
 
-export function ContactPicker({ open, onClose, onSelect, contacts, accounts = [] }: ContactPickerProps) {
+export function ContactPicker({ open, onClose, onSelect, contacts, accounts = [], title = "Choose recipient" }: ContactPickerProps) {
   const [search, setSearch] = useState("");
 
   function handleClose() {
@@ -52,7 +53,7 @@ export function ContactPicker({ open, onClose, onSelect, contacts, accounts = []
   const hasResults = filteredAccounts.length > 0 || filteredContacts.length > 0;
 
   return (
-    <Sheet open={open} onClose={handleClose} title="Choose recipient">
+    <Sheet open={open} onClose={handleClose} title={title}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         <input
           aria-label="Search contacts and accounts"
