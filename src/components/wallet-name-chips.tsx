@@ -3,7 +3,7 @@ const WALLET_NAME_SUGGESTIONS = ["Main", "Daily", "Savings", "Trading", "Treasur
 /** Quick wallet-name presets; selecting one replaces the current name. */
 export function WalletNameChips({ value, onSelect }: { value: string; onSelect: (name: string) => void }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+    <div className="wallet-name-chips">
       {WALLET_NAME_SUGGESTIONS.map((name) => {
         const selected = value === name;
         return (
