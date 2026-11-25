@@ -5,7 +5,7 @@
     "": {
       "name": "glyph",
       "dependencies": {
-        "@fontsource/geist-mono": "^5.3.0",
+        "@fontsource/space-grotesk": "^5.3.0",
         "@glyph-oss/contracts": "^0.1.0",
         "@gravity-ui/icons": "^2.23.1",
         "@lucasmarkes/hairline": "^0.5.1",
@@ -224,7 +224,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.1", "", { "os": "win32", "cpu": "x64" }, "sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A=="],
 
-    "@fontsource/geist-mono": ["@fontsource/geist-mono@5.3.0", "", {}, "sha512-UtJ1BBBCVpMYdIcW7nEB45UAoAw5M53ZXs2t0ciPW+IokuAAIc56M8+kW5tXbRJCTpDw4XTtU7proT6NdQAHTg=="],
+    "@fontsource/space-grotesk": ["@fontsource/space-grotesk@5.3.0", "", {}, "sha512-ksnGizDPXIDuvqcTYTSrmZ+evx9sDlS8rp7+42BQ7wU+spt3twEoXfbJz672C+5CLg6VeUQwRy5RXshWb67LcQ=="],
 
     "@glyph-oss/contracts": ["@glyph-oss/contracts@0.1.0", "", { "dependencies": { "@qubic.org/crypto": "^1.0.0" } }, "sha512-Af00Ihjp8jhqvX6G4f6xmLc/tTxe7dQyAnLzKd3Zk1+ZbQ+XZKkgA9BGNMK6UxZdkd4xjRvU+cMS08wehRCwMg=="],
 
