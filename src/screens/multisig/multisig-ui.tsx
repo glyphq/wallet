@@ -1,15 +1,12 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AppShell } from "@/layouts/app-shell";
-import { Tag } from "@/components/tag";
 import { Alert01Icon } from "@/lib/icons";
 import { useMsvaultAssetMeta } from "@/hooks/use-msvault";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { truncateId } from "@/lib/format";
 import {
-  MSVAULT_REVOKE_FEE,
   formatAssetAmount,
   type MsvaultAssetRef,
-  type MsvaultFees,
 } from "@/lib/msvault";
 import type { SessionAccount } from "@/lib/session-account";
 import type { Contact, WalletMeta } from "@/store/persisted";
@@ -179,63 +176,6 @@ export function FeeRow({ label, value, hint }: { label: string; value: ReactNode
           {hint}
         </span>
       ) : null}
-    </div>
-  );
-}
-
-/** Warns when the vault cannot cover holding or revoke fees. Renders nothing when safe. */
-export function HoldingFeeWarning({
-  fees,
-  balance,
-  hasAssets,
-  releaseAmount,
-}: {
-  fees: MsvaultFees;
-  balance: bigint;
-  hasAssets?: boolean;
-  releaseAmount?: bigint;
-}) {
-  const releaseShortfall =
-    releaseAmount !== undefined &&
-    balance - releaseAmount < fees.holdingFee + (hasAssets ? MSVAULT_REVOKE_FEE : 0n);
-
-  const message =
-    balance < fees.holdingFee
-      ? "Below the holding fee. This vault can close at the next epoch."
-      : releaseShortfall
-        ? "This release leaves too little QUBIC for holding and asset-transfer fees."
-        : null;
-
-  if (!message) return null;
-
-  return (
-    <div
-      role="status"
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        flexWrap: "wrap",
-        gap: "var(--space-2)",
-        padding: "var(--space-2) var(--space-3)",
-        border: "1px solid var(--color-status-warning)",
-        borderRadius: "var(--radius-sharp)",
-        background: "var(--color-status-warning-soft)",
-      }}
-    >
-      <Tag variant="warning">Holding fee</Tag>
-      <span
-        style={{
-          flex: "1 1 160px",
-          minWidth: 0,
-          fontFamily: "var(--font-sans)",
-          fontSize: "var(--text-caption)",
-          lineHeight: "var(--leading-body)",
-          color: "var(--color-status-warning)",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {message}
-      </span>
     </div>
   );
 }

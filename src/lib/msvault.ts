@@ -187,17 +187,17 @@ export function ownerIndex(owners: readonly string[], identity: string): number 
 /** Validates a create-vault configuration; returns an empty string when valid. */
 export function validateMultisigConfig(input: MsvaultConfigInput): string {
   const name = input.name.trim();
-  if (!name) return "Vault name is required.";
+  if (!name) return "Vault name required";
   if (encoder.encode(name).length > VAULT_NAME_MAX_BYTES) {
-    return `Vault name must be at most ${VAULT_NAME_MAX_BYTES} bytes.`;
+    return `Vault name must be at most ${VAULT_NAME_MAX_BYTES} bytes`;
   }
 
   const owners = input.owners.map((owner) => owner.trim().toUpperCase());
   if (owners.length < 2 || owners.length > MSVAULT_MAX_OWNERS) {
-    return `Add between 2 and ${MSVAULT_MAX_OWNERS} owners.`;
+    return `Add 2 to ${MSVAULT_MAX_OWNERS} owners`;
   }
-  if (owners.some((owner) => !isValidIdentity(owner))) return "Invalid address.";
-  if (new Set(owners).size !== owners.length) return "Owners must be unique.";
+  if (owners.some((owner) => !isValidIdentity(owner))) return "Invalid address";
+  if (new Set(owners).size !== owners.length) return "Owners must be unique";
 
   const { requiredApprovals } = input;
   if (
@@ -205,7 +205,7 @@ export function validateMultisigConfig(input: MsvaultConfigInput): string {
     requiredApprovals < 2 ||
     requiredApprovals > owners.length
   ) {
-    return `Approvals must be between 2 and ${owners.length}.`;
+    return `Approvals must be 2 to ${owners.length}`;
   }
   return "";
 }

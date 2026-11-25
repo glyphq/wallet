@@ -242,9 +242,9 @@ export default function MultisigDepositScreen() {
   const qubicTotal = qubicAmount !== null && depositFee !== null ? qubicAmount + depositFee : null;
   const qubicError =
     amountText.trim() && qubicAmount === null
-      ? "Enter a whole amount."
+      ? "Enter a whole amount"
       : qubicTotal !== null && walletBalance !== null && qubicTotal > walletBalance
-        ? "Insufficient balance after the deposit fee."
+        ? "Insufficient balance"
         : "";
 
   const rawAssetAmount =
@@ -259,11 +259,11 @@ export default function MultisigDepositScreen() {
     !!detail && detail.assets.length >= MSVAULT_MAX_ASSET_TYPES && !vaultAsset;
   const assetError =
     assetTypeLimitReached
-      ? `This vault already holds the maximum of ${MSVAULT_MAX_ASSET_TYPES} asset types.`
+      ? `Vault holds ${MSVAULT_MAX_ASSET_TYPES} asset types`
       : assetAmount.trim() && rawAssetAmount === null
-        ? `Enter a positive amount with at most ${assetDecimals} decimal places.`
+        ? "Invalid amount"
         : rawAssetAmount !== null && selectedOption && rawAssetAmount > selectedOption.shares
-          ? "Amount exceeds your wallet balance."
+          ? "Exceeds wallet balance"
           : "";
   const grantAmount =
     rawAssetAmount !== null && managedBalance !== null && managedBalance < rawAssetAmount
@@ -306,7 +306,7 @@ export default function MultisigDepositScreen() {
   async function submitQubicDeposit() {
     if (!detail || !fees || qubicAmount === null || qubicTotal === null || !tickInfo || !identity) return;
     if (walletBalance !== null && qubicTotal > walletBalance) {
-      setError("Insufficient balance after the deposit fee.");
+      setError("Insufficient balance");
       return;
     }
 
@@ -340,7 +340,7 @@ export default function MultisigDepositScreen() {
       await invalidateVault(detail.id);
       navigate(`/multisig/${rawId}`);
     } catch (submitError) {
-      setError(extractMessage(submitError, "Broadcast failed."));
+      setError(extractMessage(submitError, "Broadcast failed"));
     } finally {
       setSending(false);
     }
@@ -391,7 +391,7 @@ export default function MultisigDepositScreen() {
       ]);
       navigate(`/multisig/${rawId}`);
     } catch (submitError) {
-      setError(extractMessage(submitError, "Broadcast failed."));
+      setError(extractMessage(submitError, "Broadcast failed"));
     } finally {
       setSending(false);
     }
@@ -439,7 +439,7 @@ export default function MultisigDepositScreen() {
       setAccessMode(null);
       setNotice("Access grant submitted. Deposit unlocks after the network confirms it.");
     } catch (submitError) {
-      setAccessError(extractMessage(submitError, "Broadcast failed."));
+      setAccessError(extractMessage(submitError, "Broadcast failed"));
     } finally {
       setAccessSending(false);
     }
@@ -486,7 +486,7 @@ export default function MultisigDepositScreen() {
       setAccessMode(null);
       setNotice("Access withdrawal submitted.");
     } catch (submitError) {
-      setAccessError(extractMessage(submitError, "Broadcast failed."));
+      setAccessError(extractMessage(submitError, "Broadcast failed"));
     } finally {
       setAccessSending(false);
     }
@@ -577,7 +577,7 @@ export default function MultisigDepositScreen() {
       <MultisigFlowShell>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", alignItems: "flex-start" }}>
           <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
-            {extractMessage(detailQuery.error, "Could not load this vault.")}
+            {extractMessage(detailQuery.error, "Could not load vault")}
           </p>
           <Button size="sm" variant="secondary" onClick={() => void detailQuery.refetch()}>
             Retry

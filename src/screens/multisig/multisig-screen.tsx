@@ -168,7 +168,7 @@ export default function MultisigScreen() {
   const feesQuery = useMsvaultFees();
   const entries = listQuery.data ?? [];
   const holdingFee = feesQuery.data?.holdingFee ?? null;
-  const listError = listQuery.isError ? extractMessage(listQuery.error, "Could not load multisig vaults.") : "";
+  const listError = listQuery.isError ? extractMessage(listQuery.error, "Could not load vaults") : "";
 
   function createVault() {
     navigate("/multisig/new");

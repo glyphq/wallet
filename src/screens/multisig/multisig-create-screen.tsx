@@ -200,27 +200,27 @@ export default function MultisigCreateScreen() {
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setFormError("Vault name is required.");
+      setFormError("Vault name required");
       valid = false;
     } else if (encoder.encode(trimmedName).length > MAX_NAME_BYTES) {
-      setFormError(`Vault name must be at most ${MAX_NAME_BYTES} bytes.`);
+      setFormError(`Vault name must be at most ${MAX_NAME_BYTES} bytes`);
       valid = false;
     }
 
     if (!identity) {
-      setFormError("No active account is available.");
+      setFormError("No active account");
       return false;
     }
 
     const nextOwnerErrors = extraOwners.map((raw, index) => {
       const value = raw.trim().toUpperCase();
-      if (!value) return "Owner address is required.";
+      if (!value) return "Owner address required";
       if (!isValidIdentity(value)) return "Invalid address";
-      if (value === activeUpper) return "Owner already added.";
+      if (value === activeUpper) return "Owner already added";
       const duplicate = extraOwners.some(
         (other, otherIndex) => otherIndex !== index && other.trim().toUpperCase() === value,
       );
-      return duplicate ? "Owner already added." : "";
+      return duplicate ? "Owner already added" : "";
     });
     setOwnerErrors(nextOwnerErrors);
     if (nextOwnerErrors.some(Boolean)) {
@@ -260,19 +260,19 @@ export default function MultisigCreateScreen() {
     if (checking || sending) return;
     const value = addOwnerDraft.trim().toUpperCase();
     if (!value) {
-      setAddOwnerError("Owner address is required.");
+      setAddOwnerError("Owner address required");
       return;
     }
     if (!isValidIdentity(value)) {
-      setAddOwnerError("Invalid address.");
+      setAddOwnerError("Invalid address");
       return;
     }
     if (value === activeUpper || extraOwners.some((owner) => owner.trim().toUpperCase() === value)) {
-      setAddOwnerError("Owner already added.");
+      setAddOwnerError("Owner already added");
       return;
     }
     if (ownerCount >= MSVAULT_MAX_OWNERS) {
-      setAddOwnerError(`A vault can have at most ${MSVAULT_MAX_OWNERS} owners.`);
+      setAddOwnerError(`Vault holds ${MSVAULT_MAX_OWNERS} owners`);
       return;
     }
 
@@ -314,7 +314,7 @@ export default function MultisigCreateScreen() {
       }
       setStep("review");
     } catch (error) {
-      setPreflightError(extractMessage(error, "Could not check owner vault limits. Try again."));
+      setPreflightError(extractMessage(error, "Could not check owner vault limits"));
     } finally {
       setChecking(false);
     }
@@ -353,7 +353,7 @@ export default function MultisigCreateScreen() {
       void queryClient.invalidateQueries({ queryKey: qk.msvaultVaults(apiIdentity, identity) });
       navigate("/multisig");
     } catch (error) {
-      setSubmitError(extractMessage(error, "Could not create the multisig vault."));
+      setSubmitError(extractMessage(error, "Could not create vault"));
     } finally {
       setSending(false);
     }
@@ -382,14 +382,14 @@ export default function MultisigCreateScreen() {
     && !sending;
 
   let continueHint = "";
-  if (ownerCount < 2) continueHint = "Add at least one more owner.";
-  else if (pending) continueHint = "You have a pending transaction. Wait for it to confirm.";
+  if (ownerCount < 2) continueHint = "Add another owner";
+  else if (pending) continueHint = "Pending transaction";
   else if (feesQuery.isLoading) continueHint = "Loading fees…";
   else if (feesError) continueHint = "Fees unavailable";
   else if (balanceLoading) continueHint = "Loading balance…";
-  else if (balance === null) continueHint = "Balance unavailable.";
+  else if (balance === null) continueHint = "Balance unavailable";
   else if (insufficientBalance && fees) {
-    continueHint = `Insufficient balance. The registration fee is ${formatQu(fees.registeringFee)} QU.`;
+    continueHint = `Insufficient balance · fee ${formatQu(fees.registeringFee)} QU`;
   }
 
   const footer = step === "edit" ? (
@@ -574,7 +574,7 @@ export default function MultisigCreateScreen() {
                 onChange={(event) => handleNameChange(event.target.value)}
                 placeholder="Treasury"
                 maxLength={MAX_NAME_BYTES}
-                error={formError && (formError.startsWith("Vault name") || formError === "Vault name is required.") ? formError : undefined}
+                error={formError && formError.startsWith("Vault name") ? formError : undefined}
                 autoComplete="off"
               />
             </section>

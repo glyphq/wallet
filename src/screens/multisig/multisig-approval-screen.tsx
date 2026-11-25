@@ -35,7 +35,6 @@ import { ApprovalField } from "@/components/request/approval-field";
 import {
   AssetMetaLabel,
   FeeRow,
-  HoldingFeeWarning,
   MultisigFlowShell,
   identityDisplayName,
 } from "./multisig-ui";
@@ -205,7 +204,7 @@ export default function MultisigApprovalScreen() {
   async function approve() {
     if (!detail || !proposal || !fees || !tickInfo || !identity || !isOwner || supportedByMe || hasPending) return;
     if (accountBalance !== null && accountBalance < fees.releaseFee) {
-      setError(`Not enough QU for the ${formatQu(fees.releaseFee)} QU release fee.`);
+      setError("Not enough QU for release fee");
       return;
     }
     setSending(true);
@@ -249,7 +248,7 @@ export default function MultisigApprovalScreen() {
       await invalidate(detail.id);
       navigate(`/multisig/${rawId}/approvals`);
     } catch (cause) {
-      setError(extractMessage(cause, "Broadcast failed."));
+      setError(extractMessage(cause, "Broadcast failed"));
     } finally {
       setSending(false);
     }
@@ -290,7 +289,7 @@ export default function MultisigApprovalScreen() {
       setConfirmReset(false);
       navigate(`/multisig/${rawId}/approvals`);
     } catch (cause) {
-      setResetError(extractMessage(cause, "Broadcast failed."));
+      setResetError(extractMessage(cause, "Broadcast failed"));
     } finally {
       setResetSending(false);
     }
@@ -329,7 +328,7 @@ export default function MultisigApprovalScreen() {
       <MultisigFlowShell statusBar={header}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", alignItems: "flex-start" }}>
           <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
-            {extractMessage(detailQuery.error, "Could not load this vault.")}
+            {extractMessage(detailQuery.error, "Could not load vault")}
           </p>
           <Button size="sm" variant="secondary" onClick={() => void detailQuery.refetch()}>Retry</Button>
         </div>
@@ -500,7 +499,7 @@ export default function MultisigApprovalScreen() {
             </ApprovalField>
             {releaseFeeShort ? (
               <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", lineHeight: "var(--leading-body)", color: "var(--color-status-error)" }}>
-                Need {formatQu(releaseFeeShortfall)} more QU in this account for the release fee.
+                Need {formatQu(releaseFeeShortfall)} more QU for release fee
               </p>
             ) : null}
             <ApprovalField label="Vault QUBIC after release">
@@ -519,22 +518,14 @@ export default function MultisigApprovalScreen() {
           {replacesOther ? (
             <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
               {proposal.kind === "qubic"
-                ? "This replaces your current QUBIC approval."
-                : "This replaces your current asset approval."}
+                ? "Replaces current QUBIC approval"
+                : "Replaces current asset approval"}
             </p>
           ) : null}
           {assetReserveShort ? (
             <p role="alert" style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
-              The vault needs at least {formatQu(MSVAULT_REVOKE_FEE)} QU for asset transfer fees.
+              Vault needs {formatQu(MSVAULT_REVOKE_FEE)} QU for asset fees
             </p>
-          ) : null}
-          {fees ? (
-            <HoldingFeeWarning
-              fees={fees}
-              balance={detail.balance}
-              hasAssets={detail.assets.length > 0}
-              releaseAmount={proposal.kind === "qubic" ? proposal.amount : undefined}
-            />
           ) : null}
           {feesQuery.isError ? (
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>

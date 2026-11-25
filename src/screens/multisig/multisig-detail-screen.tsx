@@ -21,7 +21,6 @@ import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import { ArrowUpRight01Icon, Download01Icon } from "@/lib/icons";
 import {
   AssetMetaLabel,
-  HoldingFeeWarning,
   IdentityName,
   PendingApprovalsNotch,
   MultisigFlowShell,
@@ -177,7 +176,7 @@ export default function MultisigDetailScreen() {
       <AppShell statusBar={header}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", alignItems: "flex-start" }}>
           <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
-            {extractMessage(detailQuery.error, "Could not load this vault.")}
+            {extractMessage(detailQuery.error, "Could not load vault")}
           </p>
           <Button size="sm" variant="secondary" onClick={() => void detailQuery.refetch()}>
             Retry
@@ -317,14 +316,6 @@ export default function MultisigDetailScreen() {
           </div>
         </AsciiBackdrop>
       </section>
-
-      {fees ? (
-        <HoldingFeeWarning
-          fees={fees}
-          balance={detail.balance}
-          hasAssets={detail.assets.length > 0}
-        />
-      ) : null}
 
       {detail.assets.length > 0 && detail.balance < MSVAULT_REVOKE_FEE ? (
         <InlineNotice tone="warning">Asset releases need at least 100 QU in the vault.</InlineNotice>

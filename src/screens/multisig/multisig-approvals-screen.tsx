@@ -7,12 +7,10 @@ import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
 import { useMsvaultDetail } from "@/hooks/use-msvault";
-import { usePersistedStore } from "@/store/persisted";
-import { useSessionStore } from "@/store/session";
 import { MsvaultInactiveError } from "@/lib/api/msvault";
 import { extractMessage, formatQu, truncateId } from "@/lib/format";
 import type { MsvaultProposal } from "@/lib/msvault";
-import { AssetMetaLabel, VaultId, identityDisplayName } from "./multisig-ui";
+import { AssetMetaLabel, VaultId } from "./multisig-ui";
 
 const SECTION_LABEL: CSSProperties = {
   margin: 0,
@@ -41,21 +39,12 @@ const MONO_META: CSSProperties = {
 
 function ApprovalRow({
   proposal,
-  contacts,
-  wallet,
-  sessionAccounts,
   onOpen,
 }: {
   proposal: MsvaultProposal;
-  contacts: Parameters<typeof identityDisplayName>[1];
-  wallet: Parameters<typeof identityDisplayName>[2];
-  sessionAccounts: Parameters<typeof identityDisplayName>[3];
   onOpen: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const remaining = Math.max(0, proposal.requiredApprovals - proposal.approvals);
-  const ready = remaining === 0;
-  const destinationName = identityDisplayName(proposal.destination, contacts, wallet, sessionAccounts);
 
   return (
     <button
@@ -63,7 +52,7 @@ function ApprovalRow({
       onClick={onOpen}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      aria-label={`Review release to ${destinationName}`}
+      aria-label={`Review release to ${proposal.destination}`}
       style={{
         display: "flex",
         alignItems: "center",
@@ -89,16 +78,13 @@ function ApprovalRow({
             `${formatQu(proposal.amount)} QU`
           )}
         </span>
-        <span style={{ ...MONO_META, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          To {destinationName} · {truncateId(proposal.destination, 8, 8)}
+        <span title={proposal.destination} style={{ ...MONO_META, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {truncateId(proposal.destination, 8, 8)}
         </span>
       </span>
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, flexShrink: 0 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
           {proposal.approvals} of {proposal.requiredApprovals}
-        </span>
-        <span style={{ ...MONO_META, textAlign: "right", color: ready ? "var(--color-status-success)" : "var(--color-status-warning)" }}>
-          {ready ? "Ready" : `Needs ${remaining} more`}
         </span>
       </span>
     </button>
@@ -109,12 +95,6 @@ export default function MultisigApprovalsScreen() {
   const navigate = useNavigate();
   const params = useParams();
 
-  const settings = usePersistedStore((s) => s.settings);
-  const wallets = usePersistedStore((s) => s.wallets);
-  const contacts = usePersistedStore((s) => s.contacts);
-  const sessionAccounts = useSessionStore((s) => s.accounts);
-
-  const wallet = wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null;
   const rawId = params.id ?? "";
   const vaultId = useMemo(() => {
     if (!/^\d+$/.test(rawId)) return null;
@@ -184,7 +164,7 @@ export default function MultisigApprovalsScreen() {
     return (
       <AppShell statusBar={header}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", alignItems: "flex-start" }}>
-          <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>{extractMessage(detailQuery.error, "Could not load this vault.")}</p>
+          <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>{extractMessage(detailQuery.error, "Could not load vault")}</p>
           <Button size="sm" variant="secondary" onClick={() => void detailQuery.refetch()}>Retry</Button>
         </div>
       </AppShell>
@@ -208,9 +188,6 @@ export default function MultisigApprovalsScreen() {
             <ApprovalRow
               key={proposal.key}
               proposal={proposal}
-              contacts={contacts}
-              wallet={wallet}
-              sessionAccounts={sessionAccounts}
               onOpen={() => navigate(approvalHref(proposal))}
             />
           ))}

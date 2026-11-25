@@ -7,6 +7,7 @@ export interface DropdownOption {
   value: string;
   label: string;
   icon?: ReactNode;
+  trailing?: ReactNode;
 }
 
 interface MenuPosition {
@@ -133,6 +134,11 @@ export function DropdownSelect({
                     {option.icon ? <span style={{ display: "flex", flexShrink: 0 }}>{option.icon}</span> : null}
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{option.label}</span>
                   </span>
+                  {option.trailing ? (
+                    <span style={{ flexShrink: 0, color: "var(--color-text-tertiary)", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", whiteSpace: "nowrap" }}>
+                      {option.trailing}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
@@ -180,9 +186,9 @@ export function DropdownSelect({
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {selected?.label ?? "No options"}
             </span>
-            {trailing ? (
+            {trailing ?? selected?.trailing ? (
               <span style={{ marginLeft: "auto", flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", whiteSpace: "nowrap" }}>
-                {trailing}
+                {trailing ?? selected?.trailing}
               </span>
             ) : null}
           </span>

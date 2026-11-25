@@ -46,7 +46,6 @@ import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
 import {
   AssetMetaLabel,
   FeeRow,
-  HoldingFeeWarning,
   MultisigFlowShell,
   VaultId,
   identityDisplayName,
@@ -175,6 +174,11 @@ function readInitialParams(searchParams: URLSearchParams): InitialParams {
   };
 }
 
+function AssetOptionTrailing({ asset, amount }: { asset: MsvaultAssetRef; amount: bigint }) {
+  const { data } = useMsvaultAssetMeta(asset);
+  return <>{formatAssetAmount(amount, data?.decimals ?? 0)}</>;
+}
+
 export default function MultisigReleaseScreen() {
   const navigate = useNavigate();
   const params = useParams();
@@ -271,7 +275,6 @@ export default function MultisigReleaseScreen() {
   const hasPending = hasPendingFromAccount(pendingTxs, identity);
   const activeOwner = detail ? ownerIndex(detail.owners, identity) : -1;
   const isOwner = activeOwner >= 0;
-  const hasAssets = assetBalances.length > 0;
 
   function proposalMatches(proposalKind: MsvaultReleaseKind, asset: MsvaultAssetRef | null): boolean {
     if (proposalKind !== kind) return false;
@@ -310,21 +313,21 @@ export default function MultisigReleaseScreen() {
 
   const amountValidation = (() => {
     if (rawAmount === null) {
-      return kind === "qubic" ? "Enter a whole amount." : "Enter a positive amount.";
+      return kind === "qubic" ? "Enter a whole amount" : "Enter a positive amount";
     }
     if (kind === "qubic" && detail && rawAmount > detail.balance) {
-      return "Amount exceeds the vault balance.";
+      return "Exceeds vault balance";
     }
     if (kind === "asset") {
-      if (!selectedBalance) return "This asset is not held by the vault.";
-      if (rawAmount > selectedBalance.amount) return "Amount exceeds the vault asset balance.";
+      if (!selectedBalance) return "Asset not held by vault";
+      if (rawAmount > selectedBalance.amount) return "Exceeds asset balance";
     }
     return "";
   })();
   const destinationValidation = !destUpper
-    ? "Enter a destination."
+    ? "Enter a destination"
     : !isValidIdentity(destUpper)
-      ? "Invalid address."
+      ? "Invalid address"
       : "";
 
   const amountError = showErrors || amountText.trim() ? amountValidation : "";
@@ -335,13 +338,13 @@ export default function MultisigReleaseScreen() {
   const releaseFeeShort = !!fees && accountBalance !== null && accountBalance < fees.releaseFee;
   const releaseFeeShortfall = fees && accountBalance !== null ? fees.releaseFee - accountBalance : 0n;
   const totalDisabledReason = hasPending
-    ? "Wait for your pending transaction to confirm."
+    ? "Pending transaction"
     : feesQuery.isLoading
       ? "Loading fees…"
       : feesQuery.isError
-        ? "Fees unavailable."
+        ? "Fees unavailable"
         : releaseFeeShort
-          ? `Need ${formatQu(releaseFeeShortfall)} more QU for the release fee.`
+          ? `Need ${formatQu(releaseFeeShortfall)} more QU for release fee`
           : amountValidation || destinationValidation;
 
   const canReview = !amountValidation && !destinationValidation;
@@ -380,7 +383,7 @@ export default function MultisigReleaseScreen() {
     if (!detail || !fees || rawAmount === null || !tickInfo || !identity || !isOwner) return;
     if (kind === "asset" && (!selectedAsset || !selectedBalance)) return;
     if (accountBalance !== null && accountBalance < fees.releaseFee) {
-      setError(`Not enough QU for the ${formatQu(fees.releaseFee)} QU release fee.`);
+      setError("Not enough QU for release fee");
       return;
     }
 
@@ -436,7 +439,7 @@ export default function MultisigReleaseScreen() {
       ]);
       navigate(`/multisig/${rawId}`);
     } catch (submitError) {
-      setError(extractMessage(submitError, "Broadcast failed."));
+      setError(extractMessage(submitError, "Broadcast failed"));
     } finally {
       setSending(false);
     }
@@ -522,7 +525,7 @@ export default function MultisigReleaseScreen() {
       <MultisigFlowShell>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", alignItems: "flex-start" }}>
           <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
-            {extractMessage(detailQuery.error, "Could not load this vault.")}
+            {extractMessage(detailQuery.error, "Could not load vault")}
           </p>
           <Button size="sm" variant="secondary" onClick={() => void detailQuery.refetch()}>
             Retry
@@ -632,7 +635,7 @@ export default function MultisigReleaseScreen() {
             </ApprovalField>
             {releaseFeeShort ? (
               <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
-                Need {formatQu(releaseFeeShortfall)} more QU in this account for the release fee.
+                Need {formatQu(releaseFeeShortfall)} more QU for release fee
               </p>
             ) : null}
 
@@ -657,24 +660,15 @@ export default function MultisigReleaseScreen() {
             {replacesOther ? (
               <p style={{ ...BODY_COPY, color: "var(--color-status-warning)" }}>
                 {kind === "qubic"
-                  ? "This replaces your current QUBIC approval."
-                  : "This replaces your current asset approval."}
+                  ? "Replaces current QUBIC approval"
+                  : "Replaces current asset approval"}
               </p>
             ) : null}
 
             {assetReserveShort ? (
               <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
-                The vault needs at least {formatQu(MSVAULT_REVOKE_FEE)} QU for asset transfer fees.
+                Vault needs {formatQu(MSVAULT_REVOKE_FEE)} QU for asset fees
               </p>
-            ) : null}
-
-            {fees ? (
-              <HoldingFeeWarning
-                fees={fees}
-                balance={detail.balance}
-                hasAssets={hasAssets}
-                releaseAmount={kind === "qubic" ? (rawAmount ?? undefined) : undefined}
-              />
             ) : null}
 
             {feesQuery.isError ? (
@@ -748,8 +742,8 @@ export default function MultisigReleaseScreen() {
                       options={assetOptions.map((balance) => ({
                         value: assetKeyOf(balance.asset),
                         label: balance.asset.name,
+                        trailing: <AssetOptionTrailing asset={balance.asset} amount={balance.amount} />,
                       }))}
-                      trailing={selectedBalance ? formatAssetAmount(selectedBalance.amount, assetDecimals) : undefined}
                       onChange={(value) => {
                         setAssetKey(value);
                         setAmountText("");
@@ -829,27 +823,19 @@ export default function MultisigReleaseScreen() {
               {replacesOther ? (
                 <p style={{ ...BODY_COPY, color: "var(--color-status-warning)" }}>
                   {kind === "qubic"
-                    ? "This replaces your current QUBIC approval."
-                    : "This replaces your current asset approval."}
+                    ? "Replaces current QUBIC approval"
+                    : "Replaces current asset approval"}
                 </p>
               ) : null}
               {assetReserveShort ? (
                 <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
-                  The vault needs at least {formatQu(MSVAULT_REVOKE_FEE)} QU for asset transfer fees.
+                  Vault needs {formatQu(MSVAULT_REVOKE_FEE)} QU for asset fees
                 </p>
               ) : null}
               {kind === "asset" ? (
                 <p style={BODY_COPY}>
                   A successful asset release also deducts {formatQu(MSVAULT_REVOKE_FEE)} QU from the vault.
                 </p>
-              ) : null}
-              {fees ? (
-                <HoldingFeeWarning
-                  fees={fees}
-                  balance={detail.balance}
-                  hasAssets={hasAssets}
-                  releaseAmount={kind === "qubic" ? (rawAmount ?? undefined) : undefined}
-                />
               ) : null}
               {feesQuery.isError ? (
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
