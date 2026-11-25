@@ -59,7 +59,7 @@ export function IdentityValue({ identity }: { identity: string }) {
     <>
       <FramedAvatar seed={identity} size={PARTY_MARK_SIZE} />
       <span title={identity} style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {truncateId(identity, 8, 8)}
+        {truncateId(identity, 12, 12)}
       </span>
     </>
   );

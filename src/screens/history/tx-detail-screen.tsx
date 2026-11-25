@@ -3,6 +3,8 @@ import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
+import { ArrowUpRight01Icon } from "@/lib/icons";
+import { explorerTransactionUrl, openExplorer } from "@/lib/explorer";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { type TxHistoryItem } from "@/hooks/use-tx-history";
@@ -87,6 +89,15 @@ export default function TxDetailScreen() {
         />
       )}
       </div>
+
+      <footer style={{ flexShrink: 0, borderTop: "1px solid var(--color-border-subtle)", padding: "var(--space-3) var(--space-5) var(--space-4)" }}>
+        <div style={{ width: "100%", maxWidth: 600 }}>
+          <Button style={{ width: "100%" }} onClick={() => openExplorer(explorerTransactionUrl(hash))}>
+            Open in Explorer
+            <ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" />
+          </Button>
+        </div>
+      </footer>
     </AppShell>
   );
 }

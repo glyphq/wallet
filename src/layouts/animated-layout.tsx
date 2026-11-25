@@ -80,6 +80,7 @@ function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname === "/accounts" || pathname.startsWith("/accounts/")) return false;
   if (pathname === "/send-many") return false;
+  if (pathname.startsWith("/tx/")) return false;
   if (pathname.startsWith("/multisig/")) return false;
   if (pathname.startsWith("/contacts/")) return false;
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return false;

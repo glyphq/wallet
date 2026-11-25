@@ -37,26 +37,28 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
+const HISTORY_MARK_SIZE = 34;
+
 function RowLeading({ contractName, identity }: { contractName?: string | null; identity: string | null }) {
   if (contractName) {
     return (
       <span
         style={{
           flexShrink: 0,
-          width: 40,
-          height: 40,
+          width: HISTORY_MARK_SIZE,
+          height: HISTORY_MARK_SIZE,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: 12,
+          borderRadius: 10,
           background: "var(--color-bg-surface)",
         }}
       >
-        <ContractMark name={contractName} size={20} />
+        <ContractMark name={contractName} size={18} />
       </span>
     );
   }
-  return <FramedAvatar seed={identity ?? "unknown"} size={40} />;
+  return <FramedAvatar seed={identity ?? "unknown"} size={HISTORY_MARK_SIZE} />;
 }
 
 export function HistoryTxList({
