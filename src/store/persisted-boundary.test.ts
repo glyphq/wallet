@@ -225,7 +225,9 @@ describe("persisted boundary helpers", () => {
             createdAt: 1,
             lastUnlockedAt: 2,
             encryptedData: null,
-            accounts: [{ index: 0, name: "Main", addedAt: 1, hidden: false }],
+            accounts: [
+              { index: 0, name: "Main", addedAt: 1, hidden: false, note: "legacy note" },
+            ],
           },
         ],
         settings: { activeVaultId: "w1", biometricVaultIds: ["w1"] },
@@ -233,7 +235,9 @@ describe("persisted boundary helpers", () => {
       currentState()
     );
 
+    expect(merged.wallets).toHaveLength(1);
     expect(merged.wallets[0]?.id).toBe("w1");
+    expect(merged.wallets[0]?.accounts[0]?.note).toBe("legacy note");
     expect(merged.settings.activeWalletId).toBe("w1");
     expect(merged.settings.biometricWalletIds).toEqual(["w1"]);
   });
