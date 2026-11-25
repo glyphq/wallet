@@ -6,6 +6,7 @@ import { Download01Icon, LockKeyholeIcon } from "@/lib/icons";
 import { useUpdaterStore } from "@/store/updater";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
+import { useGlobalTickStream } from "@/hooks/use-global-tick-stream";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
 import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
 import { TitleBar } from "@/components/title-bar";
@@ -298,6 +299,7 @@ function LayoutShell() {
 export function AnimatedLayout() {
   useAutoLock();
   useDisableHistoryNavigation();
+  useGlobalTickStream();
 
   return (
     <HeaderSlotProvider>
