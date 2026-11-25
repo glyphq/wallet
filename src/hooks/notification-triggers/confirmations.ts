@@ -51,6 +51,12 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
     removePendingTx(pending.hash);
     emitTxResolution(resolution);
     queryClient.invalidateQueries({ queryKey: ["tx-history"] });
+    // The lifecycle tracker can confirm inclusion before the history index has
+    // the row; refresh again so the confirmed transaction replaces the pending
+    // row instead of briefly disappearing.
+    window.setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: ["tx-history"] });
+    }, 3_000);
 
     const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
     if (resolution.status === "confirmed") {

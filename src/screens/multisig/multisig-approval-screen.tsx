@@ -7,6 +7,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { TextButton } from "@/components/text-button";
 import { useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
+import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -137,6 +138,8 @@ export default function MultisigApprovalScreen() {
   const identity = getWalletAccountIdentity(wallet, settings.activeAccountIndex, sessionAccounts) ?? "";
   const apiIdentity = useApiCacheIdentity();
   const { data: tickInfo } = useTickInfo();
+  const { data: balanceData } = useBalance(identity || null);
+  const accountBalance = balanceData?.balance ?? null;
 
   const rawId = params.id ?? "";
   const vaultId = useMemo(() => {
@@ -201,6 +204,10 @@ export default function MultisigApprovalScreen() {
 
   async function approve() {
     if (!detail || !proposal || !fees || !tickInfo || !identity || !isOwner || supportedByMe || hasPending) return;
+    if (accountBalance !== null && accountBalance < fees.releaseFee) {
+      setError(`Not enough QU for the ${formatQu(fees.releaseFee)} QU release fee.`);
+      return;
+    }
     setSending(true);
     setError("");
     try {
@@ -389,7 +396,9 @@ export default function MultisigApprovalScreen() {
     ? detail.balance - proposal.amount
     : detail.balance - MSVAULT_REVOKE_FEE;
   const assetReserveShort = proposal.kind === "asset" && detail.balance < MSVAULT_REVOKE_FEE;
-  const approvalActionsDisabled = !isOwner || hasPending || !fees || assetReserveShort || sending;
+  const releaseFeeShort = !!fees && accountBalance !== null && accountBalance < fees.releaseFee;
+  const releaseFeeShortfall = fees && accountBalance !== null ? fees.releaseFee - accountBalance : 0n;
+  const approvalActionsDisabled = !isOwner || hasPending || !fees || assetReserveShort || releaseFeeShort || sending;
 
   const footer = (
     <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
@@ -489,6 +498,11 @@ export default function MultisigApprovalScreen() {
                 {feesQuery.isLoading ? "Loading fees…" : fees ? `${formatQu(fees.releaseFee)} QU` : "Fees unavailable"}
               </span>
             </ApprovalField>
+            {releaseFeeShort ? (
+              <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", lineHeight: "var(--leading-body)", color: "var(--color-status-error)" }}>
+                Need {formatQu(releaseFeeShortfall)} more QU in this account for the release fee.
+              </p>
+            ) : null}
             <ApprovalField label="Vault QUBIC after release">
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
                 {formatQu(vaultAfterRelease)} QU

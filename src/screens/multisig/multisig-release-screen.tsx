@@ -13,6 +13,7 @@ import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalField } from "@/components/request/approval-field";
 import { useMsvaultAssetMeta, useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
+import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -191,6 +192,8 @@ export default function MultisigReleaseScreen() {
   const identity = getWalletAccountIdentity(wallet, settings.activeAccountIndex, sessionAccounts) ?? "";
   const apiIdentity = useApiCacheIdentity();
   const { data: tickInfo } = useTickInfo();
+  const { data: balanceData } = useBalance(identity || null);
+  const accountBalance = balanceData?.balance ?? null;
 
   const rawId = params.id ?? "";
   const vaultId = useMemo(() => {
@@ -329,13 +332,17 @@ export default function MultisigReleaseScreen() {
     showErrors || destination.trim() ? destinationValidation : "";
 
   const feesReady = !!fees;
+  const releaseFeeShort = !!fees && accountBalance !== null && accountBalance < fees.releaseFee;
+  const releaseFeeShortfall = fees && accountBalance !== null ? fees.releaseFee - accountBalance : 0n;
   const totalDisabledReason = hasPending
     ? "Wait for your pending transaction to confirm."
     : feesQuery.isLoading
       ? "Loading fees…"
       : feesQuery.isError
         ? "Fees unavailable."
-        : amountValidation || destinationValidation;
+        : releaseFeeShort
+          ? `Need ${formatQu(releaseFeeShortfall)} more QU for the release fee.`
+          : amountValidation || destinationValidation;
 
   const canReview = !amountValidation && !destinationValidation;
   const canSubmit =
@@ -347,6 +354,7 @@ export default function MultisigReleaseScreen() {
     !sending &&
     !exactSupport &&
     !assetReserveShort &&
+    !releaseFeeShort &&
     canReview;
 
   const vaultAfterRelease =
@@ -371,6 +379,10 @@ export default function MultisigReleaseScreen() {
   async function submitRelease() {
     if (!detail || !fees || rawAmount === null || !tickInfo || !identity || !isOwner) return;
     if (kind === "asset" && (!selectedAsset || !selectedBalance)) return;
+    if (accountBalance !== null && accountBalance < fees.releaseFee) {
+      setError(`Not enough QU for the ${formatQu(fees.releaseFee)} QU release fee.`);
+      return;
+    }
 
     setSending(true);
     setError("");
@@ -618,6 +630,11 @@ export default function MultisigReleaseScreen() {
               </span>
               <span style={MONO_META}>Paid by this account</span>
             </ApprovalField>
+            {releaseFeeShort ? (
+              <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
+                Need {formatQu(releaseFeeShortfall)} more QU in this account for the release fee.
+              </p>
+            ) : null}
 
             <ApprovalField label="Vault QUBIC after release">
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", fontVariantNumeric: "tabular-nums" }}>

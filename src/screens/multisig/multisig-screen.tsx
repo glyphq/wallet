@@ -108,7 +108,6 @@ function VaultCard({
     );
   }
 
-  const assets = detail.assets;
   const hasPendingRelease = detail.proposals.length > 0;
   const belowHoldingFee = holdingFee !== null && detail.balance < holdingFee;
   const status = [
@@ -144,14 +143,10 @@ function VaultCard({
         <span style={{ ...NAME_STYLE, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
         <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", ...CAPTION_STYLE }}>
           <VaultId id={entry.id} />
-          {assets.length > 0 ? <span>· {assets.length} {assets.length === 1 ? "asset" : "assets"}</span> : null}
         </span>
       </span>
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, flexShrink: 0 }}>
         <span style={VALUE_STYLE}>{`${formatQu(detail.balance)} QU`}</span>
-        <span style={{ ...CAPTION_STYLE, textAlign: "right" }}>
-          {detail.requiredApprovals} of {detail.owners.length} approvals
-        </span>
         {status ? <span style={{ ...CAPTION_STYLE, textAlign: "right", color: "var(--color-status-warning)" }}>{status}</span> : null}
       </span>
     </button>
