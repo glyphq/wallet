@@ -121,7 +121,7 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
         label={label}
         labelColor={labelColor}
         address={address}
-        time={progress.timingText}
+        time=""
         amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(p.amount ?? "0")} QU`}
         amountColor={amountColor}
       />,

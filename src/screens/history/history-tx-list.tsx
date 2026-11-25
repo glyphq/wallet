@@ -141,7 +141,7 @@ function PendingTxRow({
       label={progress.label}
       labelColor={expired ? "var(--color-status-error)" : "var(--color-status-warning)"}
       address={address}
-      time={progress.timingText}
+      time=""
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
       amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
       txType={expired ? "failed" : "pending"}
