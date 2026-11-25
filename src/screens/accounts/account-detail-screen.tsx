@@ -47,6 +47,7 @@ export default function AccountDetailScreen() {
   const [password, setPassword] = useState("");
   const [removeError, setRemoveError] = useState("");
   const [removeLoading, setRemoveLoading] = useState(false);
+  const canCopySeed = isActiveWallet;
   const [copyError, setCopyError] = useState("");
   const [copyLoading, setCopyLoading] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
@@ -91,7 +92,7 @@ export default function AccountDetailScreen() {
   }
 
   function startHold() {
-    if (!account || copyLoading || copyDone) return;
+    if (!account || !canCopySeed || !identity || copyLoading || copyDone) return;
     clearInterval(holdTimerRef.current);
     holdStartedRef.current = Date.now();
     setCopyProgress(0.01);
@@ -107,13 +108,14 @@ export default function AccountDetailScreen() {
   }
 
   async function doCopySeed() {
-    if (!wallet || !account) return;
+    if (!wallet || !account || !identity || !canCopySeed) return;
     setCopyLoading(true);
     setCopyError("");
     setCopyProgress(0);
     try {
       await invoke("copy_session_seed", {
         accountIndex: account.index,
+        expectedIdentity: identity,
         clearAfterSecs: SEED_CLIPBOARD_CLEAR_SECS,
       });
       recordAuditEvent({
@@ -285,7 +287,7 @@ export default function AccountDetailScreen() {
                 <Button
                   variant="secondary"
                   size="md"
-                  disabled={copyLoading || copyDone}
+                  disabled={!canCopySeed || copyLoading || copyDone}
                   onPointerDown={startHold}
                   onPointerUp={stopHold}
                   onPointerCancel={stopHold}
@@ -337,7 +339,7 @@ export default function AccountDetailScreen() {
                 </span>
               ) : (
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
-                  Hold Copy seed for one second.
+                  {canCopySeed ? "Hold Copy seed for one second." : "Switch to this wallet to copy its seed."}
                 </span>
               )}
             </>

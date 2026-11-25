@@ -36,10 +36,14 @@ pub async fn copy_session_seed(
     app: AppHandle,
     clip_state: State<'_, ClipboardState>,
     account_index: usize,
+    expected_identity: String,
     clear_after_secs: u64,
 ) -> Result<(), String> {
     state
         .with_seed_at(account_index, |seed| {
+            if qubic_native::derive_identity_from_seed(seed)? != expected_identity {
+                return Err("session account does not match this account".to_string());
+            }
             app.clipboard()
                 .write_text(seed)
                 .map_err(|error| error.to_string())?;
