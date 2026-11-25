@@ -6,18 +6,15 @@ type StatTone = "value" | "primary" | "display" | "accent";
 const TONE: Record<StatTone, CSSProperties> = {
   value: valueStyle,
   primary: {
-    fontFamily: "var(--font-sans)",
-    fontSize: "var(--text-label)",
+    ...valueStyle,
     color: "var(--color-text-primary)",
   },
   display: {
-    fontFamily: "var(--font-sans)",
-    fontSize: "var(--text-label)",
+    ...valueStyle,
     color: "var(--color-text-display)",
   },
   accent: {
-    fontFamily: "var(--font-sans)",
-    fontSize: "var(--text-label)",
+    ...valueStyle,
     fontWeight: 500,
     color: "var(--color-accent)",
   },
@@ -33,7 +30,7 @@ interface StatRowProps {
 /** Label/value line used across the stake panels. */
 export function StatRow({ label, value, tone = "value", valueStyle: override }: StatRowProps) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) 0" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-2) 0" }}>
       <span style={labelStyle}>{label}</span>
       <span style={{ ...TONE[tone], ...override }}>{value}</span>
     </div>

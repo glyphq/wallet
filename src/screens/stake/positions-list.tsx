@@ -1,6 +1,5 @@
-import { MoneyBag01Icon } from "@/lib/icons";
-import { TextButton } from "@/components/text-button";
-import { RowDivider } from "./stake-ui";
+import { Button } from "@/components/button";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { PositionRow } from "./position-row";
 import type { Position } from "./stake-model";
 
@@ -24,32 +23,32 @@ export function PositionsList({
 }: PositionsListProps) {
   if (!currentEpoch || positionsLoading) {
     return (
-      <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-        Loading...
-      </div>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
+        Loading positions…
+      </span>
     );
   }
 
   if (!positions || positions.length === 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: "var(--space-3)" }}>
-        <span style={{ color: "var(--color-text-disabled)" }}><MoneyBag01Icon size={32} strokeWidth={1.5} /></span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
-          No active positions
-        </span>
-        <TextButton type="button" tone="accent" onClick={onSwitchToLock}>
-          SquareLock01Icon QU to start staking
-        </TextButton>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <EmptyCollectionState
+          title="No active positions"
+          description="Lock QU into Qearn to start earning epoch rewards."
+          icon="activity"
+        />
+        <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={onSwitchToLock}>
+          Lock QU
+        </Button>
       </div>
     );
   }
 
   return (
-    <div>
-      {positions.map((pos, i) => (
-        <div key={pos.epoch} className="stagger-item">
-          {i > 0 && <RowDivider />}
-          <PositionRow position={pos} currentEpoch={currentEpoch} disabled={disabled} onUnlock={onUnlock} />
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+      {positions.map((position) => (
+        <div key={position.epoch} className="stagger-item" style={{ padding: "var(--space-3) 0" }}>
+          <PositionRow position={position} currentEpoch={currentEpoch} disabled={disabled} onUnlock={onUnlock} />
         </div>
       ))}
     </div>

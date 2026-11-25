@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -13,8 +13,7 @@ import { broadcastTx } from "@/lib/broadcast";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QEARN, QEARN_ADDRESS, QEARN_LOCK_INPUT_TYPE, QEARN_UNLOCK_INPUT_TYPE } from "@/lib/contracts";
 import { extractMessage, formatQu } from "@/lib/format";
-import { getWalletAccountIdentity } from "@/lib/accounts";
-import { StakeTabBar, type StakeTab } from "./stake-ui";
+import { StakeActionChips, StakeFlowShell, type StakeTab } from "./stake-ui";
 import {
   QEARN_MIN_LOCK,
   epochProgressOf,
@@ -32,19 +31,20 @@ import { DoneStep } from "./done-step";
 import { ErrorStep } from "./error-step";
 
 export default function StakeScreen() {
+  const activeAccountIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
+  return <StakeSession key={activeAccountIndex} />;
+}
+
+function StakeSession() {
   const navigate = useNavigate();
 
   const settings = usePersistedStore((s) => s.settings);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const wallets = usePersistedStore((s) => s.wallets);
-  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const accounts = useSessionStore((s) => s.accounts);
   const account = accounts[settings.activeAccountIndex] ?? null;
   const identity = account?.identity ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === (identity ?? ""));
-
-  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0] ?? null;
 
   const { data: tickInfo } = useTickInfo();
   const apiIdentity = useApiCacheIdentity();
@@ -61,23 +61,18 @@ export default function StakeScreen() {
   const [unlockTarget, setUnlockTarget] = useState<Position | null>(null);
   const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
-  const [unlockAccountIdx, setUnlockAccountIdx] = useState(settings.activeAccountIndex);
 
   // Lock tab: current epoch info
   const epochInfo = useEpochLockInfo(apiIdentity, currentEpoch);
 
-  // Unlock tab: identity for the selected unlock account
-  const unlockIdentity = getWalletAccountIdentity(wallet, unlockAccountIdx, accounts);
-  const unlockIsActiveAccount = unlockAccountIdx === settings.activeAccountIndex;
-
   // Unlock tab: user's locked positions across the last lock period
   const { data: positions, refetch: refetchPositions, isLoading: positionsLoading } = useStakePositions(
     apiIdentity,
-    unlockIdentity,
+    identity,
     currentEpoch,
   );
 
-  const endedStatus = useQearnEndedStatus(apiIdentity, unlockIdentity);
+  const endedStatus = useQearnEndedStatus(apiIdentity, identity);
   const historicalRewards = endedStatus ? endedStatus.fullyRewardedAmount + endedStatus.earlyRewardedAmount : 0n;
   const historicalUnlocked = endedStatus ? endedStatus.fullyUnlockedAmount + endedStatus.earlyUnlockedAmount : 0n;
 
@@ -185,7 +180,6 @@ export default function StakeScreen() {
   }
 
   function reviewUnlock(position: Position) {
-    if (!unlockIsActiveAccount) setActiveAccountIndex(unlockAccountIdx);
     setUnlockTarget(position);
     setStep("confirm");
   }
@@ -193,11 +187,16 @@ export default function StakeScreen() {
   // ── Main step (Lock / Unlock) ──────────────────────────────────────────────
 
   if (step === "main") {
+    const canContinue = Boolean(amountStr.trim()) && !actionsDisabled;
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
+      <StakeFlowShell footer={tab === "lock" ? (
+        <Button onClick={goLockConfirm} disabled={!canContinue}>
+          Continue
+        </Button>
+      ) : undefined}>
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
 
-          <StakeTabBar tab={tab} onChange={setTab} />
+          <StakeActionChips tab={tab} onChange={setTab} />
 
           {tab === "lock" ? (
             <LockPanel
@@ -210,14 +209,9 @@ export default function StakeScreen() {
               balance={balance}
               disabled={actionsDisabled}
               onAmountChange={handleAmountChange}
-              onContinue={goLockConfirm}
             />
           ) : (
             <UnlockPanel
-              wallet={wallet}
-              sessionAccounts={accounts}
-              unlockAccountIdx={unlockAccountIdx}
-              onSelectAccount={setUnlockAccountIdx}
               currentEpoch={currentEpoch}
               positions={positions}
               positionsLoading={positionsLoading}
@@ -230,7 +224,7 @@ export default function StakeScreen() {
           )}
 
         </motion.div>
-      </AppShell>
+      </StakeFlowShell>
     );
   }
 

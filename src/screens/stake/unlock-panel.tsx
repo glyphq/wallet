@@ -1,15 +1,8 @@
-import type { WalletMeta } from "@/store/persisted";
-import type { SessionAccount } from "@/lib/session-account";
-import { AccountPicker } from "./account-picker";
 import { PositionsSummary } from "./positions-summary";
 import { PositionsList } from "./positions-list";
 import type { Position } from "./stake-model";
 
 interface UnlockPanelProps {
-  wallet: WalletMeta | null;
-  sessionAccounts: SessionAccount[];
-  unlockAccountIdx: number;
-  onSelectAccount: (index: number) => void;
   currentEpoch: number | null;
   positions: Position[] | undefined;
   positionsLoading: boolean;
@@ -20,12 +13,8 @@ interface UnlockPanelProps {
   onSwitchToLock: () => void;
 }
 
-/** Unlock tab: account selector, position summary, and position list. */
+/** Unlock tab: locked summary and position list for the active account. */
 export function UnlockPanel({
-  wallet,
-  sessionAccounts,
-  unlockAccountIdx,
-  onSelectAccount,
   currentEpoch,
   positions,
   positionsLoading,
@@ -35,25 +24,13 @@ export function UnlockPanel({
   onReviewUnlock,
   onSwitchToLock,
 }: UnlockPanelProps) {
-  const visibleAccounts = wallet?.accounts.filter((a) => !a.hidden).sort((a, b) => a.index - b.index) ?? [];
-
   return (
-    <>
-      <AccountPicker
-        wallet={wallet}
-        accounts={visibleAccounts}
-        selectedIndex={unlockAccountIdx}
-        sessionAccounts={sessionAccounts}
-        onSelect={onSelectAccount}
-      />
-
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <PositionsSummary
         positions={positions}
         currentEpoch={currentEpoch}
         historicalRewards={historicalRewards}
         historicalUnlocked={historicalUnlocked}
-        disabled={disabled}
-        onReviewUnlock={onReviewUnlock}
       />
 
       <PositionsList
@@ -64,6 +41,6 @@ export function UnlockPanel({
         onUnlock={onReviewUnlock}
         onSwitchToLock={onSwitchToLock}
       />
-    </>
+    </div>
   );
 }

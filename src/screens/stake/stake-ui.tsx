@@ -1,83 +1,52 @@
-import { motion } from "motion/react";
-import { Divider } from "@/components/divider";
-import { SquareLock01Icon, SquareUnlock01Icon } from "@/lib/icons";
+import type { CSSProperties, ReactNode } from "react";
+import { AppShell } from "@/layouts/app-shell";
+import { ChoiceChips } from "@/components/choice-chips";
 
 export type StakeTab = "lock" | "unlock";
 
-const rowDivider: React.CSSProperties = {
-  margin: "0 calc(var(--space-4) * -1)",
-};
-
-export const labelStyle: React.CSSProperties = {
+export const labelStyle: CSSProperties = {
   fontFamily: "var(--font-sans)",
   fontSize: "var(--text-label)",
   fontWeight: 500,
-  color: "var(--color-text-disabled)",
+  color: "var(--color-text-tertiary)",
 };
 
-export const valueStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-label)",
+export const valueStyle: CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: "var(--text-mono-sm)",
   color: "var(--color-text-primary)",
   textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
 };
 
-export const sectionStyle: React.CSSProperties = {
-  padding: "0 var(--space-4)",
-};
-
-export function RowDivider() {
-  return <Divider style={rowDivider} />;
+/** Sticky-footer shell shared by every stake step. */
+export function StakeFlowShell({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+  return (
+    <AppShell fullBleed contentStyle={{ overflow: "hidden", padding: 0 }}>
+      <div style={{ display: "flex", flex: 1, height: "100%", minHeight: 0, minWidth: 0, flexDirection: "column" }}>
+        <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflowY: "auto", padding: "var(--screen-padding)" }}>
+          {children}
+        </div>
+        {footer ? (
+          <div style={{ flexShrink: 0, borderTop: "1px solid var(--color-border-subtle)", padding: "var(--space-3) var(--screen-padding)" }}>
+            {footer}
+          </div>
+        ) : null}
+      </div>
+    </AppShell>
+  );
 }
 
-export function StakeTabBar({ tab, onChange }: { tab: StakeTab; onChange: (tab: StakeTab) => void }) {
-  const tabs: { key: StakeTab; label: string; icon: React.ReactNode }[] = [
-    { key: "lock", label: "Lock", icon: <SquareLock01Icon size={14} strokeWidth={1.5} /> },
-    { key: "unlock", label: "Unlock", icon: <SquareUnlock01Icon size={14} strokeWidth={1.5} /> },
-  ];
+export function StakeActionChips({ tab, onChange }: { tab: StakeTab; onChange: (tab: StakeTab) => void }) {
   return (
-    <div style={{ position: "relative", display: "flex", background: "var(--color-bg-surface)", borderRadius: "var(--radius-pill)", padding: "var(--space-1)", gap: 2 }}>
-      {tabs.map(({ key, label, icon }) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          style={{
-            flex: 1,
-            position: "relative",
-            zIndex: 1,
-            background: "transparent",
-            color: tab === key ? "var(--color-bg-base)" : "var(--color-text-disabled)",
-            border: "none",
-            borderRadius: "var(--radius-pill)",
-            padding: "var(--space-3) 0",
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
-            fontWeight: 500,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "var(--space-2)",
-            transition: "color 0.15s ease",
-          }}
-        >
-          {tab === key && (
-            <motion.span
-              layoutId="stake-tab-pill"
-              transition={{ type: "spring", stiffness: 500, damping: 35 }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                borderRadius: "var(--radius-pill)",
-                background: "var(--color-accent)",
-                zIndex: -1,
-              }}
-            />
-          )}
-          {icon}
-          {label}
-        </button>
-      ))}
-    </div>
+    <ChoiceChips<StakeTab>
+      label="Stake action"
+      options={[
+        { value: "lock", label: "Lock" },
+        { value: "unlock", label: "Unlock" },
+      ]}
+      selected={tab}
+      onSelect={onChange}
+    />
   );
 }

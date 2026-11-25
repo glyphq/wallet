@@ -6,8 +6,11 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { Button } from "@/components/button";
 import { AsciiPageHeader } from "@/components/ascii-page-header";
 import { Settings01Icon } from "@/lib/icons";
-import { truncateId } from "@/lib/format";
+import { formatPreferredCurrencyFromQu, formatQuCompact, truncateId } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
+import { useLatestStats } from "@/hooks/use-latest-stats";
+import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
+import { useWalletBalances } from "@/hooks/use-wallet-balances";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -29,6 +32,9 @@ export function ShellAccountSwitcher() {
   const settings = usePersistedStore((s) => s.settings);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
   const sessionAccounts = useSessionStore((s) => s.accounts);
+  const { data: balances } = useWalletBalances();
+  const { data: stats } = useLatestStats();
+  const quote = usePreferredCurrencyQuote();
 
   const wallet = useMemo(
     () => wallets.find((item) => item.id === settings.activeWalletId) ?? wallets[0] ?? null,
@@ -158,6 +164,7 @@ export function ShellAccountSwitcher() {
                     {visibleAccounts.map((account) => {
                       const accountIdentity = getWalletAccountIdentity(wallet, account.index, sessionAccounts);
                       const isActive = account.index === settings.activeAccountIndex;
+                      const accountBalance = accountIdentity ? balances?.[accountIdentity] ?? null : null;
                       return (
                         <button
                           key={account.index}
@@ -186,7 +193,7 @@ export function ShellAccountSwitcher() {
                         >
                           <FramedAvatar seed={accountIdentity ?? account.name} size={34} />
                           <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
+                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {account.name}
                             </span>
                             {accountIdentity ? (
@@ -194,6 +201,18 @@ export function ShellAccountSwitcher() {
                                 {truncateId(accountIdentity, 8, 8)}
                               </span>
                             ) : null}
+                          </span>
+                          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", fontWeight: 500, color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                              {settings.hideBalances ? "••••" : accountBalance !== null ? `${formatQuCompact(accountBalance)} QU` : "—"}
+                            </span>
+                            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+                              {settings.hideBalances
+                                ? "••••"
+                                : accountBalance !== null
+                                  ? formatPreferredCurrencyFromQu(accountBalance, { usdPrice: stats?.price ?? null, ...quote }).text
+                                  : "—"}
+                            </span>
                           </span>
                         </button>
                       );
