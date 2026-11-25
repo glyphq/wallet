@@ -1,9 +1,7 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
-import { CheckmarkCircle01Icon, Copy01Icon } from "@/lib/icons";
-import { IconButton } from "@/components/icon-button";
+import type { CSSProperties, ReactNode } from "react";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ContractMark } from "@/components/contract-mark";
-import { copyToClipboard } from "@/lib/clipboard";
+import { truncateId } from "@/lib/format";
 
 export function TxSection({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -16,63 +14,56 @@ export function TxSection({ label, children }: { label: string; children: ReactN
   );
 }
 
-export function TxBox({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-2)",
-        minHeight: 46,
-        padding: "var(--space-3) var(--space-4)",
-        background: "var(--color-bg-surface)",
-        borderRadius: 6,
-        minWidth: 0,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+export function TxBox({
+  children,
+  style,
+  onClick,
+  ariaLabel,
+}: {
+  children: ReactNode;
+  style?: CSSProperties;
+  onClick?: () => void;
+  ariaLabel?: string;
+}) {
+  const boxStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    width: "100%",
+    minHeight: 46,
+    padding: "var(--space-3) var(--space-4)",
+    background: "var(--color-bg-surface)",
+    border: 0,
+    borderRadius: 6,
+    minWidth: 0,
+    color: "inherit",
+    textAlign: "left",
+    ...(onClick ? { cursor: "pointer" } : null),
+    ...style,
+  };
 
-export function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    await copyToClipboard(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  if (onClick) {
+    return (
+      <button type="button" aria-label={ariaLabel} onClick={onClick} style={boxStyle}>
+        {children}
+      </button>
+    );
   }
-
-  return (
-    <IconButton
-      label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
-      onClick={() => void copy()}
-      style={{ width: 26, height: 26, flexShrink: 0 }}
-    >
-      {copied ? (
-        <CheckmarkCircle01Icon size={14} color="var(--color-status-success)" aria-hidden="true" />
-      ) : (
-        <Copy01Icon size={14} aria-hidden="true" />
-      )}
-    </IconButton>
-  );
+  return <div style={boxStyle}>{children}</div>;
 }
 
 export function IdentityValue({ identity }: { identity: string }) {
   return (
     <>
       <FramedAvatar seed={identity} size={22} />
-      <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
-        {identity}
+      <span title={identity} style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {truncateId(identity, 8, 8)}
       </span>
-      <CopyButton value={identity} label="identity" />
     </>
   );
 }
 
-export function ContractValue({ name, address }: { name: string; address: string }) {
+export function ContractValue({ name }: { name: string }) {
   return (
     <>
       <span style={{ display: "inline-flex", width: 22, height: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -81,12 +72,21 @@ export function ContractValue({ name, address }: { name: string; address: string
       <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
         {name}
       </span>
-      <CopyButton value={address} label="contract address" />
     </>
   );
 }
 
-export function StatChip({ children, tone }: { children: ReactNode; tone?: "success" | "warning" | "error" }) {
+export function StatChip({
+  children,
+  tone,
+  onClick,
+  ariaLabel,
+}: {
+  children: ReactNode;
+  tone?: "success" | "warning" | "error";
+  onClick?: () => void;
+  ariaLabel?: string;
+}) {
   const color = tone === "success"
     ? "var(--color-status-success)"
     : tone === "warning"
@@ -95,22 +95,23 @@ export function StatChip({ children, tone }: { children: ReactNode; tone?: "succ
         ? "var(--color-status-error)"
         : "var(--color-text-primary)";
 
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        background: tone ? `color-mix(in srgb, ${color} 12%, var(--color-bg-surface))` : "var(--color-bg-surface)",
-        color,
-        borderRadius: 6,
-        padding: "4px 10px",
-        fontFamily: "var(--font-mono)",
-        fontSize: "var(--text-mono-sm)",
-        lineHeight: 1.35,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </span>
-  );
+  const style: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    background: tone ? `color-mix(in srgb, ${color} 12%, var(--color-bg-surface))` : "var(--color-bg-surface)",
+    color,
+    border: 0,
+    borderRadius: 6,
+    padding: "4px 10px",
+    fontFamily: "var(--font-mono)",
+    fontSize: "var(--text-mono-sm)",
+    lineHeight: 1.35,
+    whiteSpace: "nowrap",
+    cursor: onClick ? "pointer" : "default",
+  };
+
+  if (onClick) {
+    return <button type="button" aria-label={ariaLabel} onClick={onClick} style={style}>{children}</button>;
+  }
+  return <span style={style}>{children}</span>;
 }

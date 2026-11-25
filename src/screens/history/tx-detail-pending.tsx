@@ -2,10 +2,10 @@ import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { formatQu } from "@/lib/format";
+import { explorerAccountUrl, explorerTickUrl, explorerTransactionUrl, openExplorer } from "@/lib/explorer";
 import type { PendingTx, PriceSnapshot } from "@/store/persisted";
 import {
   ContractValue,
-  CopyButton,
   IdentityValue,
   StatChip,
   TxBox,
@@ -34,18 +34,22 @@ export function PendingTxDetail({
         <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "var(--text-display)", fontWeight: 500, color: "var(--color-text-primary)", letterSpacing: "-0.03em", lineHeight: 1.05 }}>
           {kindLabel}
         </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
-          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
-            {tx.source ?? "—"}
-          </span>
-          {tx.source ? <CopyButton value={tx.source} label="identity" /> : null}
-        </div>
+        <button
+          type="button"
+          aria-label="Open transaction in Glyph Explorer"
+          onClick={() => openExplorer(explorerTransactionUrl(hash))}
+          style={{ alignSelf: "flex-start", maxWidth: "100%", background: "none", border: 0, padding: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", textAlign: "left", overflowWrap: "anywhere", cursor: "pointer" }}
+        >
+          {hash}
+        </button>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
           {formatTransactionTimestamp(tx.broadcastAt)}
         </span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", paddingTop: "var(--space-1)" }}>
           <StatChip tone={expired ? "error" : "warning"}>{progress.label}</StatChip>
-          <StatChip>{formatQu(tx.targetTick)}</StatChip>
+          <StatChip ariaLabel="Open target tick in Glyph Explorer" onClick={() => openExplorer(explorerTickUrl(tx.targetTick))}>
+            {formatQu(tx.targetTick)}
+          </StatChip>
         </div>
       </header>
 
@@ -65,27 +69,24 @@ export function PendingTxDetail({
       </TxSection>
 
       <TxSection label="From">
-        <TxBox>
+        <TxBox
+          ariaLabel="Open sender in Glyph Explorer"
+          onClick={tx.source ? () => openExplorer(explorerAccountUrl(tx.source!)) : undefined}
+        >
           <IdentityValue identity={tx.source ?? "—"} />
         </TxBox>
       </TxSection>
 
       <TxSection label="To">
-        <TxBox>
+        <TxBox
+          ariaLabel="Open recipient in Glyph Explorer"
+          onClick={tx.destination ? () => openExplorer(explorerAccountUrl(tx.destination!)) : undefined}
+        >
           {contractLabel && tx.destination ? (
-            <ContractValue name={contractLabel} address={tx.destination} />
+            <ContractValue name={contractLabel} />
           ) : (
             <IdentityValue identity={tx.destination ?? "—"} />
           )}
-        </TxBox>
-      </TxSection>
-
-      <TxSection label="Hash">
-        <TxBox>
-          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
-            {hash}
-          </span>
-          <CopyButton value={hash} label="transaction hash" />
         </TxBox>
       </TxSection>
     </motion.div>

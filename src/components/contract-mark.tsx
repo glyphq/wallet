@@ -3,7 +3,6 @@ import {
   ChartLineData01Icon,
   Compass01Icon,
   Exchange01Icon,
-  ViewIcon,
   File01Icon,
   File02Icon,
   FlashIcon,
@@ -17,42 +16,43 @@ import {
   SquareLock01Icon,
   StarIcon,
   UserCircleIcon,
+  ViewIcon,
   Wallet01Icon,
 } from "@/lib/icons";
 
 type ContractMarkIcon = typeof File01Icon;
 
-const CONTRACT_MARKS: Record<string, { color: string; Icon: ContractMarkIcon }> = {
-  CCF: { color: "#10b981", Icon: Wallet01Icon },
-  ESCROW: { color: "#14b8a6", Icon: Building01Icon },
-  GQMPROP: { color: "#6366f1", Icon: File02Icon },
-  MLM: { color: "#ec4899", Icon: Link01Icon },
-  MSVAULT: { color: "#64748b", Icon: Key01Icon },
-  NOST: { color: "#a855f7", Icon: File02Icon },
-  PULSE: { color: "#f43f5e", Icon: FlashIcon },
-  QBAY: { color: "#e11d48", Icon: StarIcon },
-  QBOND: { color: "#22c55e", Icon: File02Icon },
-  QDRAW: { color: "#f97316", Icon: MoneyBag01Icon },
-  QDUEL: { color: "#f43f5e", Icon: Compass01Icon },
-  QIP: { color: "#ef4444", Icon: Rocket01Icon },
-  QPAYHUB: { color: "#06b6d4", Icon: MoneySend01Icon },
-  QPUMP: { color: "#22c55e", Icon: Rocket01Icon },
-  QRAFFLE: { color: "#d946ef", Icon: StarIcon },
-  QRP: { color: "#14b8a6", Icon: Building01Icon },
-  QRWA: { color: "#0ea5e9", Icon: Home01Icon },
-  QSWAP: { color: "#06b6d4", Icon: Exchange01Icon },
-  QTF: { color: "#f59e0b", Icon: MoneyBag01Icon },
-  QTREAT: { color: "#d97706", Icon: StarIcon },
-  QUOTTERY: { color: "#f97316", Icon: MoneyBag01Icon },
-  QUSINO: { color: "#8b5cf6", Icon: Link01Icon },
-  QUTIL: { color: "#0ea5e9", Icon: SentIcon },
-  QVAULT: { color: "#3b82f6", Icon: SquareLock01Icon },
-  QX: { color: "#f59e0b", Icon: ChartLineData01Icon },
-  RANDOM: { color: "#8b5cf6", Icon: Compass01Icon },
-  RL: { color: "#ec4899", Icon: StarIcon },
-  SWATCH: { color: "#14b8a6", Icon: ViewIcon },
-  VOTTUNBRIDGE: { color: "#6366f1", Icon: Link01Icon },
-  WOLFPACK: { color: "#64748b", Icon: UserCircleIcon },
+const CONTRACT_MARKS: Record<string, ContractMarkIcon> = {
+  CCF: Wallet01Icon,
+  ESCROW: Building01Icon,
+  GQMPROP: File02Icon,
+  MLM: Link01Icon,
+  MSVAULT: Key01Icon,
+  NOST: File02Icon,
+  PULSE: FlashIcon,
+  QBAY: StarIcon,
+  QBOND: File02Icon,
+  QDRAW: MoneyBag01Icon,
+  QDUEL: Compass01Icon,
+  QIP: Rocket01Icon,
+  QPAYHUB: MoneySend01Icon,
+  QPUMP: Rocket01Icon,
+  QRAFFLE: StarIcon,
+  QRP: Building01Icon,
+  QRWA: Home01Icon,
+  QSWAP: Exchange01Icon,
+  QTF: MoneyBag01Icon,
+  QTREAT: StarIcon,
+  QUOTTERY: MoneyBag01Icon,
+  QUSINO: Link01Icon,
+  QUTIL: SentIcon,
+  QVAULT: SquareLock01Icon,
+  QX: ChartLineData01Icon,
+  RANDOM: Compass01Icon,
+  RL: StarIcon,
+  SWATCH: ViewIcon,
+  VOTTUNBRIDGE: Link01Icon,
+  WOLFPACK: UserCircleIcon,
 };
 
 const DISPLAY_NAME_ALIASES: Record<string, string> = {
@@ -62,11 +62,9 @@ const DISPLAY_NAME_ALIASES: Record<string, string> = {
   "Q-BOND": "QBOND",
   "Q RESERVE POOL": "QRP",
   "Q34": "QTF",
-  "QPAYHUB": "QPAYHUB",
-  "QUTIL": "QUTIL",
 };
 
-const FALLBACK_MARK = { color: "#64748b", Icon: File01Icon };
+const FALLBACK_MARK = File01Icon;
 
 function contractMarkKey(name: string): string {
   const upper = name.trim().toUpperCase();
@@ -75,6 +73,6 @@ function contractMarkKey(name: string): string {
 
 /** Semantic contract artwork matching the explorer contract marks. */
 export function ContractMark({ name, size = 18 }: { name: string; size?: number }) {
-  const mark = CONTRACT_MARKS[contractMarkKey(name)] ?? FALLBACK_MARK;
-  return <mark.Icon size={size} color={mark.color} aria-hidden="true" />;
+  const Icon = CONTRACT_MARKS[contractMarkKey(name)] ?? FALLBACK_MARK;
+  return <Icon size={size} color="var(--color-text-primary)" aria-hidden="true" />;
 }

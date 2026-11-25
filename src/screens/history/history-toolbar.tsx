@@ -1,12 +1,10 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { Compass01Icon } from "@/lib/icons";
+import { explorerAccountUrl, openExplorer } from "@/lib/explorer";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
 import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 
 export function HistoryToolbar({ identity }: { identity: string | null }) {
-  const explorerUrl = identity ? `https://explorer.glyphq.org/accounts/${identity}` : null;
-
   return (
     <ScreenHeader
       leading={<ShellAccountSwitcher />}
@@ -15,13 +13,9 @@ export function HistoryToolbar({ identity }: { identity: string | null }) {
         <IconButton
           framed
           label="Open account in Glyph Explorer"
-          disabled={!explorerUrl}
+          disabled={!identity}
           onClick={() => {
-            if (explorerUrl) {
-              void openUrl(explorerUrl).catch((error) => {
-                console.error("[glyph] could not open explorer:", error);
-              });
-            }
+            if (identity) openExplorer(explorerAccountUrl(identity));
           }}
         >
           <Compass01Icon size={20} aria-hidden="true" />
