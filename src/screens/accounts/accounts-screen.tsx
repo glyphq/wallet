@@ -10,8 +10,6 @@ import { formatQu, truncateId } from "@/lib/format";
 import { AddCircleIcon, ChevronRight01Icon, File02Icon } from "@/lib/icons";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { ExportWalletSheet } from "@/screens/wallets/wallet-admin-sheets";
-import { useWalletAdmin } from "@/screens/wallets/use-wallet-admin";
 
 function AccountRow({
   account,
@@ -107,7 +105,6 @@ export default function AccountsScreen() {
     ?? wallets[0]
     ?? null;
   const isActiveWallet = wallet?.id === settings.activeWalletId;
-  const admin = useWalletAdmin(wallet ?? undefined, isActiveWallet);
   const [showHidden, setShowHidden] = useState(false);
 
   if (!wallet) return null;
@@ -208,7 +205,7 @@ export default function AccountsScreen() {
             size="md"
             style={{ width: "100%" }}
             disabled={!wallet.encryptedData}
-            onClick={() => admin.setShowExport(true)}
+            onClick={() => navigate(`/accounts/export?wallet=${wallet.id}`)}
           >
             <File02Icon size={16} strokeWidth={1.5} aria-hidden="true" />
             Export vault
@@ -224,13 +221,6 @@ export default function AccountsScreen() {
           </Button>
         </div>
       </footer>
-
-      <ExportWalletSheet
-        open={admin.showExport}
-        onClose={() => admin.setShowExport(false)}
-        walletName={wallet.name}
-        onExport={admin.doExport}
-      />
     </AppShell>
   );
 }

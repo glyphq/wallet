@@ -2,26 +2,6 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Sheet } from "@/components/sheet";
 
-interface ExportWalletSheetProps {
-  open: boolean;
-  onClose: () => void;
-  walletName: string;
-  onExport: () => void;
-}
-
-export function ExportWalletSheet({ open, onClose, walletName, onExport }: ExportWalletSheetProps) {
-  return (
-    <Sheet open={open} onClose={onClose} title={`Export ${walletName}`}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
-          This file contains your encrypted seed. Keep it safe. Anyone with this file and your password can access your funds.
-        </span>
-        <Button onClick={onExport}>Download backup file</Button>
-      </div>
-    </Sheet>
-  );
-}
-
 interface RotatePasswordSheetProps {
   open: boolean;
   onClose: () => void;

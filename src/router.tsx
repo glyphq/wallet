@@ -31,6 +31,8 @@ const loadAccountAddScreen = () => import("@/screens/accounts/account-add-screen
 const AccountAddScreen = lazy(loadAccountAddScreen);
 const loadAccountDetailScreen = () => import("@/screens/accounts/account-detail-screen");
 const AccountDetailScreen = lazy(loadAccountDetailScreen);
+const loadAccountExportScreen = () => import("@/screens/accounts/account-export-screen");
+const AccountExportScreen = lazy(loadAccountExportScreen);
 const loadSendScreen = () => import("@/screens/send/send-screen");
 const SendScreen = lazy(loadSendScreen);
 const loadScheduledTransfersScreen = () => import("@/screens/send/scheduled-transfers-screen");
@@ -144,6 +146,7 @@ const SCREEN_LOADERS = [
   loadAccountsScreen,
   loadAccountAddScreen,
   loadAccountDetailScreen,
+  loadAccountExportScreen,
   loadSendScreen,
   loadScheduledTransfersScreen,
   loadSendManyScreen,
@@ -212,6 +215,7 @@ export const router = createHashRouter([
           { path: "/wallets/:id/portfolio", element: <Screen component={PortfolioScreen} /> },
           { path: "/accounts", element: <Screen component={AccountsScreen} /> },
           { path: "/accounts/add", element: <Screen component={AccountAddScreen} /> },
+          { path: "/accounts/export", element: <Screen component={AccountExportScreen} /> },
           { path: "/accounts/:index", element: <Screen component={AccountDetailScreen} /> },
           { path: "/send", element: <Screen component={SendScreen} /> },
           { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },

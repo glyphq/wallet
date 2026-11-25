@@ -61,6 +61,7 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
 const HEADER_TITLES: [string, string][] = [
   ["/dashboard", "Dashboard"],
   ["/accounts/add", "Add account"],
+  ["/accounts/export", "Export vault"],
   ["/accounts/", "Account"],
   ["/accounts", "Accounts"],
   ["/wallets/:id/portfolio", "Portfolio"],

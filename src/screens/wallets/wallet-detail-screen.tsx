@@ -13,7 +13,7 @@ import {
   RemoveAccountSheet,
   RenameAccountSheet,
 } from "./wallet-account-sheets";
-import { ExportWalletSheet, RotatePasswordSheet } from "./wallet-admin-sheets";
+import { RotatePasswordSheet } from "./wallet-admin-sheets";
 import { WalletAccountList } from "./wallet-account-list";
 import { ManageAccountSheet } from "./wallet-manage-sheet";
 import { SeedRevealSheet } from "./wallet-seed-sheet";
@@ -75,20 +75,13 @@ export default function WalletDetailScreen() {
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/wallets/${wallet.id}/portfolio`)}>
           <InformationCircleIcon size={14} strokeWidth={1.5} /> Portfolio
         </Button>
-        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => admin.setShowExport(true)}>
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/accounts/export?wallet=${wallet.id}`)}>
           <File02Icon size={14} strokeWidth={1.5} /> Export wallet
         </Button>
         <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={admin.openRotate}>
           <Key01Icon size={14} strokeWidth={1.5} /> Change password
         </Button>
       </div>
-
-      <ExportWalletSheet
-        open={admin.showExport}
-        onClose={() => admin.setShowExport(false)}
-        walletName={wallet.name}
-        onExport={admin.doExport}
-      />
 
       {/* Add account sheet */}
       <AddAccountSheet
