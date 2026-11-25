@@ -227,6 +227,7 @@ export default function SendScreen() {
         onRefreshBalance={() => void refetchBalance()}
         canSign={!!account && !!tickInfo}
         onSend={send}
+        onBack={() => setStep("input")}
       />
     );
   }

@@ -32,6 +32,7 @@ export interface SendReviewStepProps {
   onRefreshBalance: () => void;
   canSign: boolean;
   onSend: () => void;
+  onBack: () => void;
 }
 
 /** Transfer review built from the shared approval primitives. */
@@ -57,6 +58,7 @@ export function SendReviewStep({
   onRefreshBalance,
   canSign,
   onSend,
+  onBack,
 }: SendReviewStepProps) {
   useHideAppChrome();
 
@@ -146,10 +148,15 @@ export function SendReviewStep({
       </div>
 
       <SendStepFooter>
-        <Button onClick={onSend} loading={sending} disabled={sendDisabled} style={{ width: "100%" }}>
-          <MoneySend01Icon size={16} aria-hidden="true" />
-          Send QUBIC
-        </Button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <Button onClick={onSend} loading={sending} disabled={sendDisabled} style={{ width: "100%" }}>
+            <MoneySend01Icon size={16} aria-hidden="true" />
+            Send QUBIC
+          </Button>
+          <Button variant="secondary" onClick={onBack} disabled={sending} style={{ width: "100%" }}>
+            Back
+          </Button>
+        </div>
       </SendStepFooter>
     </SendStepPanel>
   );
