@@ -72,11 +72,13 @@ export function ManageAccountSheet({
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                 {account.name}
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                ACCOUNT {account.index + 1}
-                {account.hidden ? " · HIDDEN" : ""}
-                {isActive && activeAccountIndex === account.index ? " · ACTIVE" : ""}
-              </div>
+              {account.hidden || (isActive && activeAccountIndex === account.index) ? (
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
+                  {isActive && activeAccountIndex === account.index ? "ACTIVE" : ""}
+                  {isActive && activeAccountIndex === account.index && account.hidden ? " · " : ""}
+                  {account.hidden ? "HIDDEN" : ""}
+                </div>
+              ) : null}
             </div>
             {balances && (() => {
               const id = getAccountIdentity(account, sessionWallets[account.index] ?? null);

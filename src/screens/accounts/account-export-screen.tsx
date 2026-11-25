@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { Alert01Icon, Download01Icon } from "@/lib/icons";
+import { Download01Icon } from "@/lib/icons";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { getAccountIdentity } from "@/lib/accounts";
 import { extractMessage, truncateId } from "@/lib/format";
@@ -50,6 +50,8 @@ export default function AccountExportScreen() {
 
   const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
+  const contacts = usePersistedStore((s) => s.contacts);
+  const txMemos = usePersistedStore((s) => s.txMemos);
   const sessionAccounts = useSessionStore((s) => s.accounts);
 
   const walletId = searchParams.get("wallet");
@@ -72,6 +74,8 @@ export default function AccountExportScreen() {
         name: wallet.name,
         color: wallet.color,
         accounts: wallet.accounts,
+        contacts,
+        memos: txMemos,
         exported_at: Date.now(),
         wallet: JSON.parse(exportWallet(wallet.encryptedData)),
       });
@@ -82,7 +86,7 @@ export default function AccountExportScreen() {
         kind: "wallet_exported",
         status: "success",
         title: "Wallet exported",
-        detail: `${wallet.name} saved as signed export v2`,
+        detail: `${wallet.name} exported with ${contacts.length} contacts and ${Object.keys(txMemos).length} memos`,
         walletId: wallet.id,
       });
       navigate(`/accounts?wallet=${wallet.id}`, { replace: true });
@@ -112,24 +116,6 @@ export default function AccountExportScreen() {
           gap: "var(--space-4)",
         }}
       >
-        <div
-          role="status"
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: "var(--space-3)",
-            padding: "var(--space-3)",
-            border: "1px solid var(--color-status-warning)",
-            borderRadius: "var(--radius-sharp)",
-            background: "var(--color-status-warning-soft)",
-          }}
-        >
-          <Alert01Icon size={18} strokeWidth={1.5} aria-hidden="true" color="var(--color-status-warning)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", lineHeight: "var(--leading-body)", color: "var(--color-status-warning)" }}>
-            This file contains your encrypted seed. Anyone with this file and your wallet password can access your funds. Store it somewhere safe.
-          </span>
-        </div>
-
         <section style={SUMMARY_STYLE} aria-labelledby="export-summary-heading">
           <span id="export-summary-heading" style={CAPTION_STYLE}>Backup contents</span>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -140,6 +126,14 @@ export default function AccountExportScreen() {
             <div style={ROW_STYLE}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Accounts</span>
               <span style={VALUE_STYLE}>{wallet.accounts.length}</span>
+            </div>
+            <div style={ROW_STYLE}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Contacts</span>
+              <span style={VALUE_STYLE}>{contacts.length}</span>
+            </div>
+            <div style={ROW_STYLE}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Memos</span>
+              <span style={VALUE_STYLE}>{Object.keys(txMemos).length}</span>
             </div>
             <div style={ROW_STYLE}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Format</span>
@@ -173,9 +167,11 @@ export default function AccountExportScreen() {
                       </span>
                     ) : null}
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em", flexShrink: 0 }}>
-                    {account.hidden ? "HIDDEN" : `ACCOUNT ${account.index + 1}`}
-                  </span>
+                  {account.hidden ? (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em", flexShrink: 0 }}>
+                      HIDDEN
+                    </span>
+                  ) : null}
                 </div>
               );
             })}

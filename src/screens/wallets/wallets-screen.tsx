@@ -15,7 +15,7 @@ import {
   ImportWalletSheet,
   ImportWalletErrorSheet,
 } from "./wallet-list-sheets";
-import { parseWalletImportFile, type WalletImportData } from "./wallet-import";
+import { parseWalletImportFile, restoreImportedWalletExtras, type WalletImportData } from "./wallet-import";
 
 export default function WalletsScreen() {
   const navigate = useNavigate();
@@ -142,6 +142,7 @@ export default function WalletsScreen() {
         accounts: importData.accounts,
         encryptedData: importData.wallet,
       });
+      restoreImportedWalletExtras(importData);
       setImportData(null);
     } catch {
       setImportError("Wrong password");

@@ -152,11 +152,13 @@ export default function AccountDetailScreen() {
             <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-section)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {account.name}
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>
-              ACCOUNT {account.index + 1}
-              {isCurrent ? " · ACTIVE" : ""}
-              {account.hidden ? " · HIDDEN" : ""}
-            </span>
+            {isCurrent || account.hidden ? (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>
+                {isCurrent ? "ACTIVE" : ""}
+                {isCurrent && account.hidden ? " · " : ""}
+                {account.hidden ? "HIDDEN" : ""}
+              </span>
+            ) : null}
           </div>
           {balance !== null && balance !== undefined ? (
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-display)", flexShrink: 0 }}>

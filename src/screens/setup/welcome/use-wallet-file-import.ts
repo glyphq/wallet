@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { MAX_WALLET_ACCOUNTS } from "@/hooks/use-wallet-balances";
 import { newId } from "@/lib/crypto";
 import { selectWalletAccounts, type WalletData, unlockWalletSession } from "@/lib/wallet";
-import { parseWalletImportFile, type WalletImportData } from "@/screens/wallets/wallet-import";
+import { parseWalletImportFile, restoreImportedWalletExtras, type WalletImportData } from "@/screens/wallets/wallet-import";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -117,6 +117,7 @@ export function useWalletFileImport() {
         accounts: finalAccounts,
         encryptedData: finalEncryptedData,
       });
+      restoreImportedWalletExtras(importData);
       setActiveWallet(newWalletId);
       unlock(newWalletId, accounts);
       navigate("/dashboard", { replace: true });

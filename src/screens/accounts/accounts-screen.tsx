@@ -141,19 +141,9 @@ export default function AccountsScreen() {
           padding: "var(--space-4)",
         }}
       >
-        <header style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Wallet
-          </span>
-          <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-section)", color: "var(--color-text-primary)", letterSpacing: "0.02em", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {wallet.name}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em", flexShrink: 0 }}>
-              {wallet.accounts.length} {wallet.accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
-            </span>
-          </span>
-        </header>
+        <span style={{ alignSelf: "flex-start", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Accounts
+        </span>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           {visible.map((account) => {
