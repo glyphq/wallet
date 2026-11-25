@@ -20,7 +20,7 @@ const ACTION_PHRASE: Record<GlyphRequest["type"], string> = {
   connect: "connect",
 };
 import type { SigningAuthorizationContext } from "@/lib/secure-session";
-import { SheetLayout, StatusLine } from "./sheet-layout";
+import { RequestLayout, StatusLine } from "./request-layout";
 
 /** Active request review: dApp header, queue/error notices, and the type-specific preview. */
 export function RequestApprovalView({
@@ -47,7 +47,7 @@ export function RequestApprovalView({
   onApproveConnect: (result: ConnectApproveResult) => void | Promise<void>;
 }) {
   return (
-    <SheetLayout expirySecsLeft={expirySecsLeft} pendingRequestCount={pendingRequestCount}>
+    <RequestLayout expirySecsLeft={expirySecsLeft} pendingRequestCount={pendingRequestCount}>
       <RequestHeader dapp={request.dapp} action={ACTION_PHRASE[request.type]} />
       {actionError && <StatusLine tone="error">{actionError}</StatusLine>}
 
@@ -85,6 +85,6 @@ export function RequestApprovalView({
           onReject={onReject}
         />
       ) : null}
-    </SheetLayout>
+    </RequestLayout>
   );
 }

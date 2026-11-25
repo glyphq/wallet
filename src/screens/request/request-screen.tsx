@@ -26,7 +26,7 @@ import type {
 } from "@/lib/request-approvals";
 import { Button } from "@/components/button";
 import { ArrowRight01Icon, Home01Icon } from "@/lib/icons";
-import { StatusLine } from "./sheet-layout";
+import { StatusLine } from "./request-layout";
 import { RequestApprovalView } from "./request-approval-view";
 import { RequestTechnicalDetails } from "./request-technical-details";
 import { RequestTerminalView, type CopyStatus } from "./request-terminal-view";

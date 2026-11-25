@@ -4,7 +4,7 @@ import { addToWallet, unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore, type AccountMeta, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-/** Owns the add-account sheet state and the wallet mutation that appends a new account. */
+/** Owns the add-account screen state and the wallet mutation that appends a new account. */
 export function useWalletAddAccount(wallet: WalletMeta | undefined, isActive: boolean) {
   const updateWallet = usePersistedStore((s) => s.updateWallet);
   const sessionUnlock = useSessionStore((s) => s.unlock);
@@ -52,10 +52,8 @@ export function useWalletAddAccount(wallet: WalletMeta | undefined, isActive: bo
         index: newIndex,
         name: addName.trim(),
         addedAt: Date.now(),
-        hidden: false,
         identity: deriveIdentityFromSeed(newSeed),
         note: "",
-        tags: [],
       };
       updateWallet(wallet.id, {
         encryptedData: newEncrypted,

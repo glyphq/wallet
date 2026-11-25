@@ -68,14 +68,14 @@ export const presets = {
     exit: { opacity: 0, scale: 0.96 },
     transition: transition.enter,
   },
-  /** Slide up from bottom. For sheets, bottom panels. */
+  /** Slide up from bottom. For temporary panels. */
   slideUp: {
     initial: { y: 24, opacity: 0 },
     animate: { y: 0, opacity: 1 },
     exit: { y: 24, opacity: 0 },
     transition: transition.enter,
   },
-  /** Slide down from top. For top sheets, dropdowns. */
+  /** Slide down from top. For dropdowns. */
   slideDown: {
     initial: { y: -16, opacity: 0 },
     animate: { y: 0, opacity: 1 },

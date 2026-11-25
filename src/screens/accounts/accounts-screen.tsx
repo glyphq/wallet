@@ -3,11 +3,10 @@ import { useNavigate, useSearchParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { TextButton } from "@/components/text-button";
 import { MAX_WALLET_ACCOUNTS, useWalletBalances } from "@/hooks/use-wallet-balances";
 import { getAccountIdentity } from "@/lib/accounts";
 import { formatQu, truncateId } from "@/lib/format";
-import { AddCircleIcon, ChevronRight01Icon, File02Icon } from "@/lib/icons";
+import { AddCircleIcon, File02Icon } from "@/lib/icons";
 import { usePersistedStore, type AccountMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -17,7 +16,6 @@ function AccountRow({
   isCurrent,
   balance,
   hideBalances,
-  hidden,
   onOpen,
 }: {
   account: AccountMeta;
@@ -25,7 +23,6 @@ function AccountRow({
   isCurrent: boolean;
   balance: bigint | null;
   hideBalances: boolean;
-  hidden?: boolean;
   onOpen: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -55,7 +52,6 @@ function AccountRow({
         color: "inherit",
         textAlign: "left",
         cursor: "pointer",
-        opacity: hidden ? 0.6 : 1,
         transition: "background var(--duration-fast) var(--ease-out)",
         "--corner-color": "var(--color-accent)",
         "--corner-size": "10px",
@@ -74,16 +70,11 @@ function AccountRow({
         ) : null}
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexShrink: 0 }}>
-        {hidden ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            HIDDEN
-          </span>
-        ) : balance !== null ? (
+        {balance !== null ? (
           <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
             {hideBalances ? "••••••" : `${formatQu(balance)} QU`}
           </span>
         ) : null}
-        <ChevronRight01Icon size={16} strokeWidth={1.5} aria-hidden="true" color="var(--color-text-tertiary)" />
       </span>
     </button>
   );
@@ -105,12 +96,10 @@ export default function AccountsScreen() {
     ?? wallets[0]
     ?? null;
   const isActiveWallet = wallet?.id === settings.activeWalletId;
-  const [showHidden, setShowHidden] = useState(false);
 
   if (!wallet) return null;
 
-  const visible = wallet.accounts.filter((account) => !account.hidden).sort((a, b) => a.index - b.index);
-  const hidden = wallet.accounts.filter((account) => account.hidden).sort((a, b) => a.index - b.index);
+  const accounts = wallet.accounts.slice().sort((a, b) => a.index - b.index);
   const atLimit = wallet.accounts.length >= MAX_WALLET_ACCOUNTS;
 
   function openAccount(account: AccountMeta) {
@@ -146,7 +135,7 @@ export default function AccountsScreen() {
         </span>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          {visible.map((account) => {
+          {accounts.map((account) => {
             const identity = getAccountIdentity(account, isActiveWallet ? (sessionAccounts[account.index] ?? null) : null);
             return (
               <AccountRow
@@ -162,30 +151,6 @@ export default function AccountsScreen() {
           })}
         </div>
 
-        {hidden.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <TextButton tone="muted" onClick={() => setShowHidden((value) => !value)}>
-              {showHidden ? "Hide hidden accounts" : `Show ${hidden.length} hidden ${hidden.length === 1 ? "account" : "accounts"}`}
-            </TextButton>
-            {showHidden
-              ? hidden.map((account) => {
-                  const identity = getAccountIdentity(account, isActiveWallet ? (sessionAccounts[account.index] ?? null) : null);
-                  return (
-                    <AccountRow
-                      key={account.index}
-                      account={account}
-                      identity={identity}
-                      isCurrent={isActiveWallet && settings.activeAccountIndex === account.index}
-                      balance={null}
-                      hideBalances={settings.hideBalances}
-                      hidden
-                      onOpen={() => openAccount(account)}
-                    />
-                  );
-                })
-              : null}
-          </div>
-        ) : null}
       </div>
 
       <footer style={{ flexShrink: 0, borderTop: "1px solid var(--color-border-subtle)", padding: "var(--space-3) var(--space-4) var(--space-4)" }}>

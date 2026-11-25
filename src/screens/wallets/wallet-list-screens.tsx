@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 import type { WalletMeta } from "@/store/persisted";
 import type { WalletImportData } from "./wallet-import";
 
-function SheetAction({ children, onClick, danger }: { children: ReactNode; onClick: () => void; danger?: boolean }) {
+function ScreenAction({ children, onClick, danger }: { children: ReactNode; onClick: () => void; danger?: boolean }) {
   return (
     <button
       type="button"
@@ -24,7 +24,7 @@ function SheetAction({ children, onClick, danger }: { children: ReactNode; onCli
   );
 }
 
-interface WalletActionSheetProps {
+interface WalletActionScreenProps {
   wallet: WalletMeta | null;
   activeWalletId: string | null;
   onClose: () => void;
@@ -33,34 +33,34 @@ interface WalletActionSheetProps {
   onDelete: (wallet: WalletMeta) => void;
 }
 
-export function WalletActionSheet({
+export function WalletActionScreen({
   wallet,
   activeWalletId,
   onClose,
   onManageAccounts,
   onRename,
   onDelete,
-}: WalletActionSheetProps) {
+}: WalletActionScreenProps) {
   return (
-    <Sheet open={!!wallet} onClose={onClose} title={wallet?.name ?? ""}>
+    <FullScreen open={!!wallet} onClose={onClose} title={wallet?.name ?? ""}>
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         {wallet && wallet.id === activeWalletId && (
-          <SheetAction onClick={() => onManageAccounts(wallet)}>
+          <ScreenAction onClick={() => onManageAccounts(wallet)}>
             Manage accounts
-          </SheetAction>
+          </ScreenAction>
         )}
-        <SheetAction onClick={() => wallet && onRename(wallet)}>
+        <ScreenAction onClick={() => wallet && onRename(wallet)}>
           Rename
-        </SheetAction>
-        <SheetAction danger onClick={() => wallet && onDelete(wallet)}>
+        </ScreenAction>
+        <ScreenAction danger onClick={() => wallet && onDelete(wallet)}>
           Delete wallet
-        </SheetAction>
+        </ScreenAction>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
 
-interface RenameWalletSheetProps {
+interface RenameWalletScreenProps {
   wallet: WalletMeta | null;
   value: string;
   onChange: (value: string) => void;
@@ -68,9 +68,9 @@ interface RenameWalletSheetProps {
   onSave: () => void;
 }
 
-export function RenameWalletSheet({ wallet, value, onChange, onClose, onSave }: RenameWalletSheetProps) {
+export function RenameWalletScreen({ wallet, value, onChange, onClose, onSave }: RenameWalletScreenProps) {
   return (
-    <Sheet open={!!wallet} onClose={onClose} title="Rename wallet">
+    <FullScreen open={!!wallet} onClose={onClose} title="Rename wallet">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <Input
           label="Name"
@@ -82,11 +82,11 @@ export function RenameWalletSheet({ wallet, value, onChange, onClose, onSave }: 
         />
         <Button onClick={onSave} disabled={!value.trim()}>Save</Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
 
-interface DeleteWalletSheetProps {
+interface DeleteWalletScreenProps {
   wallet: WalletMeta | null;
   password: string;
   onPasswordChange: (value: string) => void;
@@ -96,9 +96,9 @@ interface DeleteWalletSheetProps {
   onDelete: () => void;
 }
 
-export function DeleteWalletSheet({ wallet, password, onPasswordChange, error, loading, onClose, onDelete }: DeleteWalletSheetProps) {
+export function DeleteWalletScreen({ wallet, password, onPasswordChange, error, loading, onClose, onDelete }: DeleteWalletScreenProps) {
   return (
-    <Sheet open={!!wallet} onClose={onClose} title={`Delete ${wallet?.name ?? ""}`}>
+    <FullScreen open={!!wallet} onClose={onClose} title={`Delete ${wallet?.name ?? ""}`}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {(wallet?.accounts.length ?? 0) > 1 && (
           <span style={{
@@ -130,11 +130,11 @@ export function DeleteWalletSheet({ wallet, password, onPasswordChange, error, l
           Delete wallet
         </Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
 
-interface ImportWalletSheetProps {
+interface ImportWalletScreenProps {
   data: WalletImportData | null;
   password: string;
   onPasswordChange: (value: string) => void;
@@ -144,9 +144,9 @@ interface ImportWalletSheetProps {
   onImport: () => void;
 }
 
-export function ImportWalletSheet({ data, password, onPasswordChange, error, loading, onClose, onImport }: ImportWalletSheetProps) {
+export function ImportWalletScreen({ data, password, onPasswordChange, error, loading, onClose, onImport }: ImportWalletScreenProps) {
   return (
-    <Sheet open={!!data} onClose={onClose} title={`Import ${data?.name ?? ""}`}>
+    <FullScreen open={!!data} onClose={onClose} title={`Import ${data?.name ?? ""}`}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
           <span style={{
@@ -175,13 +175,13 @@ export function ImportWalletSheet({ data, password, onPasswordChange, error, loa
         />
         <Button onClick={onImport} loading={loading} disabled={!password}>Import wallet</Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
 
-export function ImportWalletErrorSheet({ error, onClose }: { error: string; onClose: () => void }) {
+export function ImportWalletErrorScreen({ error, onClose }: { error: string; onClose: () => void }) {
   return (
-    <Sheet open={!!error} onClose={onClose} title="Import failed">
+    <FullScreen open={!!error} onClose={onClose} title="Import failed">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <span style={{
           fontFamily: "var(--font-sans)", fontSize: "var(--text-body)",
@@ -191,6 +191,6 @@ export function ImportWalletErrorSheet({ error, onClose }: { error: string; onCl
         </span>
         <Button onClick={onClose}>OK</Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }

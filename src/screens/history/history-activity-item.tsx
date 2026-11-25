@@ -38,8 +38,8 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
         border: "none",
         borderRadius: "var(--radius-sharp)",
         cursor: "pointer",
-        padding: "var(--space-3) var(--space-2)",
-        margin: "0 calc(var(--space-2) * -1)",
+        padding: "var(--space-3)",
+        margin: 0,
         textAlign: "left",
       }}
     >

@@ -111,7 +111,6 @@
   --radius-sharp: 4px;
   --radius-control: 12px;
   --radius-card: 12px;
-  --radius-sheet: 16px;
   --radius-window: 18px;
   --radius-pill: 9999px;
 
@@ -127,7 +126,6 @@
 
   /* Shell metrics */
   --screen-padding: 16px;
-  --sheet-padding: 24px;
   --safe-bottom-space: 16px;
 
   /* Motion */
@@ -138,7 +136,6 @@
 
   /* Layers */
   --z-nav: 100;
-  --z-sheet: 200;
   --z-modal: 240;
   --z-toast: 300;
 }

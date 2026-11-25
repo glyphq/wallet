@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { parseAccountTags } from "@/lib/accounts";
 import { removeFromWallet, unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore, type AccountMeta, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-/** Account rename, metadata, visibility, and removal state for one wallet. */
+/** Account rename, metadata, and removal state for one wallet. */
 export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive: boolean) {
   const updateWallet = usePersistedStore((s) => s.updateWallet);
   const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
@@ -13,13 +12,10 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
 
   const [renamingAccount, setRenamingAccount] = useState<AccountMeta | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [editingMeta, setEditingMeta] = useState<AccountMeta | null>(null);
-  const [metaTags, setMetaTags] = useState("");
   const [removingAccount, setRemovingAccount] = useState<AccountMeta | null>(null);
   const [removePassword, setRemovePassword] = useState("");
   const [removeError, setRemoveError] = useState("");
   const [removeLoading, setRemoveLoading] = useState(false);
-  const [hidingAccount, setHidingAccount] = useState<AccountMeta | null>(null);
 
   function openRename(account: AccountMeta) {
     setRenamingAccount(account);
@@ -34,46 +30,6 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
       ),
     });
     setRenamingAccount(null);
-  }
-
-  function openMeta(account: AccountMeta) {
-    setEditingMeta(account);
-    setMetaTags((account.tags ?? []).join(", "));
-  }
-
-  function saveAccountMeta() {
-    if (!wallet || !editingMeta) return;
-    updateWallet(wallet.id, {
-      accounts: wallet.accounts.map((account) =>
-        account.index === editingMeta.index
-          ? { ...account, tags: parseAccountTags(metaTags) }
-          : account,
-      ),
-    });
-    setEditingMeta(null);
-  }
-
-  function toggleHide(account: AccountMeta) {
-    if (!wallet) return;
-    if (!account.hidden) {
-      setHidingAccount(account);
-      return;
-    }
-    updateWallet(wallet.id, {
-      accounts: wallet.accounts.map((a) =>
-        a.index === account.index ? { ...a, hidden: false } : a,
-      ),
-    });
-  }
-
-  function confirmHide() {
-    if (!wallet || !hidingAccount) return;
-    updateWallet(wallet.id, {
-      accounts: wallet.accounts.map((a) =>
-        a.index === hidingAccount.index ? { ...a, hidden: true } : a,
-      ),
-    });
-    setHidingAccount(null);
   }
 
   function openRemove(account: AccountMeta) {
@@ -116,12 +72,6 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
     setRenameValue,
     openRename,
     doRename,
-    editingMeta,
-    setEditingMeta,
-    metaTags,
-    setMetaTags,
-    openMeta,
-    saveAccountMeta,
     removingAccount,
     setRemovingAccount,
     removePassword,
@@ -131,9 +81,5 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
     removeLoading,
     openRemove,
     doRemove,
-    hidingAccount,
-    setHidingAccount,
-    toggleHide,
-    confirmHide,
   };
 }

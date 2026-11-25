@@ -173,7 +173,7 @@ export default function MultisigCreateScreen() {
 
   const pickerAccounts: { name: string; identity: string }[] = [];
   if (wallet) {
-    for (const account of [...wallet.accounts].filter((item) => !item.hidden).sort((a, b) => a.index - b.index)) {
+    for (const account of [...wallet.accounts].sort((a, b) => a.index - b.index)) {
       if (account.index === activeIndex) continue;
       const accountIdentity = getWalletAccountIdentity(wallet, account.index, accounts);
       if (accountIdentity) pickerAccounts.push({ name: account.name, identity: accountIdentity });

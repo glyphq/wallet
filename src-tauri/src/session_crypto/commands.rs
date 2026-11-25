@@ -2,7 +2,10 @@
 
 use serde::Deserialize;
 use serde_json::Value;
-use tauri::{command, State};
+use tauri::{command, AppHandle, State};
+use tauri_plugin_clipboard_manager::ClipboardExt;
+
+use crate::clipboard::ClipboardState;
 
 use super::authorization::{
     ensure_message_matches_request, ensure_transaction_matches_request, LocalSignMessageRequest,
@@ -13,6 +16,7 @@ use super::state::{validate_session_seeds, NativeSessionState};
 use crate::qubic_native;
 
 const MAX_SIGN_MESSAGE_BYTES: usize = 64 * 1024;
+const MAX_CLIPBOARD_CLEAR_SECS: u64 = 300;
 
 #[command]
 pub async fn store_session_seeds(
@@ -24,6 +28,25 @@ pub async fn store_session_seeds(
     authorization_state.clear_signing_authorizations();
     state.replace_seeds(seeds);
     Ok(())
+}
+
+#[command]
+pub async fn copy_session_seed(
+    state: State<'_, NativeSessionState>,
+    app: AppHandle,
+    clip_state: State<'_, ClipboardState>,
+    account_index: usize,
+    clear_after_secs: u64,
+) -> Result<(), String> {
+    state
+        .with_seed_at(account_index, |seed| {
+            app.clipboard()
+                .write_text(seed)
+                .map_err(|error| error.to_string())?;
+            clip_state.schedule_clear(clear_after_secs.min(MAX_CLIPBOARD_CLEAR_SECS), seed);
+            Ok(())
+        })
+        .await
 }
 
 #[command]

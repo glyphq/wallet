@@ -7,16 +7,14 @@ import { useWalletBalances } from "@/hooks/use-wallet-balances";
 import { useSessionStore } from "@/store/session";
 import { File02Icon, InformationCircleIcon, Key01Icon } from "@/lib/icons";
 import {
-  AccountMetaSheet,
-  AddAccountSheet,
-  HideAccountSheet,
-  RemoveAccountSheet,
-  RenameAccountSheet,
-} from "./wallet-account-sheets";
-import { RotatePasswordSheet } from "./wallet-admin-sheets";
+  AddAccountScreen,
+  RemoveAccountScreen,
+  RenameAccountScreen,
+} from "./wallet-account-screens";
+import { RotatePasswordScreen } from "./wallet-admin-screens";
 import { WalletAccountList } from "./wallet-account-list";
-import { ManageAccountSheet } from "./wallet-manage-sheet";
-import { SeedRevealSheet } from "./wallet-seed-sheet";
+import { ManageAccountScreen } from "./wallet-manage-screen";
+import { SeedRevealScreen } from "./wallet-seed-screen";
 import { useSeedReveal } from "./use-seed-reveal";
 import { useWalletAccountActions } from "./use-wallet-account-actions";
 import { useWalletAddAccount } from "./use-wallet-add-account";
@@ -53,7 +51,7 @@ export default function WalletDetailScreen() {
   }
 
   function makeActive(account: AccountMeta) {
-    if (!isActive || account.hidden) return;
+    if (!isActive) return;
     setActiveAccountIndex(account.index);
     closeAccountMenu();
   }
@@ -83,8 +81,7 @@ export default function WalletDetailScreen() {
         </Button>
       </div>
 
-      {/* Add account sheet */}
-      <AddAccountSheet
+      <AddAccountScreen
         open={addAccount.addingAccount}
         onClose={() => addAccount.setAddingAccount(false)}
         accounts={wallet.accounts}
@@ -104,8 +101,7 @@ export default function WalletDetailScreen() {
         onAdd={addAccount.doAdd}
       />
 
-      {/* Rename sheet */}
-      <RenameAccountSheet
+      <RenameAccountScreen
         open={!!actions.renamingAccount}
         onClose={() => actions.setRenamingAccount(null)}
         value={actions.renameValue}
@@ -113,19 +109,7 @@ export default function WalletDetailScreen() {
         onSave={actions.doRename}
       />
 
-      <AccountMetaSheet
-        open={!!actions.editingMeta}
-        onClose={() => actions.setEditingMeta(null)}
-        tags={actions.metaTags}
-        setTags={actions.setMetaTags}
-        onSave={actions.saveAccountMeta}
-      />
-
-      {/* Hide confirmation sheet */}
-      <HideAccountSheet account={actions.hidingAccount} onClose={() => actions.setHidingAccount(null)} onConfirm={actions.confirmHide} />
-
-      {/* Remove sheet */}
-      <RemoveAccountSheet
+      <RemoveAccountScreen
         account={actions.removingAccount}
         onClose={() => actions.setRemovingAccount(null)}
         password={actions.removePassword}
@@ -136,8 +120,7 @@ export default function WalletDetailScreen() {
         onRemove={actions.doRemove}
       />
 
-      {/* Reveal seed sheet */}
-      <SeedRevealSheet
+      <SeedRevealScreen
         account={reveal.revealingAccount}
         onClose={() => reveal.setRevealingAccount(null)}
         verifyingBackup={reveal.verifyingBackup}
@@ -159,8 +142,7 @@ export default function WalletDetailScreen() {
         onVerify={reveal.verifyBackupSeed}
       />
 
-      {/* Password rotation sheet */}
-      <RotatePasswordSheet
+      <RotatePasswordScreen
         open={admin.showRotate}
         onClose={() => admin.setShowRotate(false)}
         done={admin.rotateDone}
@@ -176,7 +158,7 @@ export default function WalletDetailScreen() {
         onSubmit={admin.doRotatePassword}
       />
 
-      <ManageAccountSheet
+      <ManageAccountScreen
         account={selectedAccount}
         onClose={closeAccountMenu}
         isActive={isActive}
@@ -186,10 +168,8 @@ export default function WalletDetailScreen() {
         hideBalances={settings.hideBalances}
         onMakeActive={makeActive}
         onRename={(account) => { actions.openRename(account); closeAccountMenu(); }}
-        onEditMeta={(account) => { actions.openMeta(account); closeAccountMenu(); }}
         onVerifyBackup={() => { reveal.openBackupVerification(); closeAccountMenu(); }}
         onRevealSeed={(account) => { reveal.openReveal(account); closeAccountMenu(); }}
-        onToggleHide={(account) => { actions.toggleHide(account); closeAccountMenu(); }}
         onRemove={(account) => { actions.openRemove(account); closeAccountMenu(); }}
       />
     </AppShell>

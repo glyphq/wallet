@@ -4,7 +4,7 @@ import { AddCircleIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type ScheduledTransfer } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -98,8 +98,8 @@ export default function ScheduledTransfersScreen() {
         </div>
       ))}
 
-      {/* New transfer sheet */}
-      <Sheet open={adding} onClose={() => setAdding(false)} title="New scheduled transfer">
+      {/* New transfer screen */}
+      <FullScreen open={adding} onClose={() => setAdding(false)} title="New scheduled transfer">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <Input label="Label" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="e.g. Weekly allowance" autoFocus />
 
@@ -133,7 +133,7 @@ export default function ScheduledTransfersScreen() {
             Schedule
           </Button>
         </div>
-      </Sheet>
+      </FullScreen>
     </AppShell>
   );
 }

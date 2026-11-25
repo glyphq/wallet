@@ -3,7 +3,7 @@ import { Button } from "@/components/button";
 import type { AccountMeta } from "@/store/persisted-types";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { StickyFooter } from "@/components/sticky-footer";
-import { RequestExpiryNotch, RequestQueueNotch } from "@/screens/request/sheet-layout";
+import { RequestExpiryNotch, RequestQueueNotch } from "@/screens/request/request-layout";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { truncateId } from "@/lib/format";
 import { useRequestStatus } from "@/screens/request/request-status-context";
@@ -197,12 +197,11 @@ export function RequestSigningAccountPicker({
   selectedIndex: number;
   onSelect: (index: number) => void;
 }) {
-  const visible = accounts.filter((account) => !account.hidden);
   return (
     <DropdownSelect
       label="Sign as"
       value={String(selectedIndex)}
-      options={visible.map((account) => ({
+      options={accounts.map((account) => ({
         value: String(account.index),
         label: account.identity ? truncateId(account.identity, 8, 8) : account.name,
         icon: <FramedAvatar seed={account.identity ?? String(account.index)} size={28} />,

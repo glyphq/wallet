@@ -4,7 +4,7 @@ import { StickyFooter } from "@/components/sticky-footer";
 import { RequestFooterProvider } from "./request-footer-context";
 import { RequestStatusProvider, useRequestStatus } from "./request-status-context";
 
-export function SheetLayout({ statusBar, children, expirySecsLeft, pendingRequestCount = 0 }: { statusBar?: ReactNode; children: ReactNode; expirySecsLeft?: number | null; pendingRequestCount?: number }) {
+export function RequestLayout({ statusBar, children, expirySecsLeft, pendingRequestCount = 0 }: { statusBar?: ReactNode; children: ReactNode; expirySecsLeft?: number | null; pendingRequestCount?: number }) {
   const countdown = useLockCountdown();
   const [footerTarget, setFooterTarget] = useState<HTMLElement | null>(null);
   return (

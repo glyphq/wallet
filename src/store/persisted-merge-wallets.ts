@@ -21,11 +21,6 @@ export function mergeWallets(value: unknown, current: WalletMeta[]): WalletMeta[
               .map((account) => ({
                 ...account,
                 note: typeof account.note === "string" ? account.note : "",
-                tags: Array.isArray(account.tags)
-                  ? account.tags.filter(
-                      (tag): tag is string => typeof tag === "string"
-                    )
-                  : [],
                 identity:
                   typeof account.identity === "string"
                     ? account.identity

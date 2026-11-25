@@ -23,7 +23,7 @@ export function WalletList({
     <>
       {sorted.map((wallet) => {
         const isActive = wallet.id === activeWalletId;
-        const visibleCount = wallet.accounts.filter((a) => !a.hidden).length;
+        const visibleCount = wallet.accounts.length;
 
         return (
           <div

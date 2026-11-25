@@ -153,7 +153,6 @@ export default function AccountExportScreen() {
                     gap: "var(--space-3)",
                     minHeight: 52,
                     padding: "var(--space-2) 0",
-                    opacity: account.hidden ? 0.6 : 1,
                   }}
                 >
                   <FramedAvatar seed={identity ?? account.name} size={30} />
@@ -167,11 +166,6 @@ export default function AccountExportScreen() {
                       </span>
                     ) : null}
                   </span>
-                  {account.hidden ? (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em", flexShrink: 0 }}>
-                      HIDDEN
-                    </span>
-                  ) : null}
                 </div>
               );
             })}

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/button";
 import { ApprovalField } from "@/components/request/approval-field";
-import { ActionFooter, SheetLayout } from "./sheet-layout";
+import { ActionFooter, RequestLayout } from "./request-layout";
 
 export type CopyStatus = "idle" | "success" | "error";
 
@@ -28,7 +28,7 @@ export function RequestTerminalView({
   onPrimary: () => void;
 }) {
   return (
-    <SheetLayout>
+    <RequestLayout>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
         <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, lineHeight: "var(--leading-tight)", letterSpacing: "-0.025em", fontWeight: 600, color: "var(--color-text-primary)" }}>
           {title}
@@ -58,6 +58,6 @@ export function RequestTerminalView({
           </Button>
         </ActionFooter>
       </div>
-    </SheetLayout>
+    </RequestLayout>
   );
 }

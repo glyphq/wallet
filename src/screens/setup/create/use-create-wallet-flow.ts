@@ -112,7 +112,6 @@ export function useCreateWalletFlow() {
           hidden: false,
           identity: deriveIdentityFromSeed(seed),
           note: "",
-          tags: [],
         }],
         encryptedData,
       };

@@ -41,7 +41,7 @@ export function ShellAccountSwitcher() {
     [settings.activeWalletId, wallets],
   );
   const visibleAccounts = useMemo(
-    () => wallet?.accounts.filter((account) => !account.hidden).sort((a, b) => a.index - b.index) ?? [],
+    () => wallet?.accounts.slice().sort((a, b) => a.index - b.index) ?? [],
     [wallet],
   );
   const identity = getWalletAccountIdentity(wallet, settings.activeAccountIndex, sessionAccounts);

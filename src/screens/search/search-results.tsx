@@ -40,7 +40,6 @@ export interface SearchAccountEntry {
   accountName: string;
   identity: string;
   note: string;
-  tags: string[];
 }
 
 export interface SearchTxItem {
@@ -89,7 +88,6 @@ export function buildSearchResults({
         account.walletName,
         account.identity,
         account.note,
-        ...account.tags,
       ].some((part) => part.toLowerCase().includes(query)),
     )
     .map((account) => ({

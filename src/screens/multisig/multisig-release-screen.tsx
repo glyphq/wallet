@@ -363,7 +363,6 @@ export default function MultisigReleaseScreen() {
       : null;
 
   const pickerAccounts = (wallet?.accounts ?? [])
-    .filter((account) => !account.hidden)
     .map((account) => ({
       name: account.name,
       identity: getWalletAccountIdentity(wallet, account.index, sessionAccounts) ?? "",

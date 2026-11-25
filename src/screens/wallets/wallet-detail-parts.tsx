@@ -9,14 +9,12 @@ export interface AccountRowProps {
   account: AccountMeta;
   identity: string | null;
   isCurrent: boolean;
-  dimmed?: boolean;
   balance?: bigint | null;
   hideBalances: boolean;
   onManage: () => void;
 }
 
-export function AccountRow({ account, identity, isCurrent, dimmed, balance, hideBalances, onManage }: AccountRowProps) {
-  const tags = account.tags ?? [];
+export function AccountRow({ account, identity, isCurrent, balance, hideBalances, onManage }: AccountRowProps) {
   const note = account.note?.trim() ?? "";
   const [hovered, setHovered] = useState(false);
 
@@ -28,7 +26,6 @@ export function AccountRow({ account, identity, isCurrent, dimmed, balance, hide
       onMouseLeave={() => setHovered(false)}
       onClick={onManage}
       style={{
-        opacity: dimmed ? 0.55 : 1,
         background: hovered ? "var(--color-bg-elevated)" : "var(--color-bg-surface)",
         border: "1px solid var(--color-border-strong)",
         borderRadius: "var(--radius-sharp)",
@@ -75,16 +72,6 @@ export function AccountRow({ account, identity, isCurrent, dimmed, balance, hide
               <CheckmarkCircle01Icon size={14} strokeWidth={1.5} aria-hidden="true" /> Active
             </span>
           )}
-          {account.hidden && (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-              Hidden
-            </span>
-          )}
-          {tags.map((tag) => (
-            <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.05em" }}>
-              #{tag}
-            </span>
-          ))}
         </div>
         {note && (
           <div style={{ marginTop: "var(--space-2)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>

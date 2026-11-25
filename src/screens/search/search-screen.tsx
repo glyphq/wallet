@@ -39,7 +39,6 @@ export default function SearchScreen() {
           wallet.id === settings.activeWalletId ? (accounts[account.index] ?? null) : null,
         ) ?? account.identity ?? "",
       note: account.note ?? "",
-      tags: account.tags ?? [],
     })),
   ).filter((account) => account.identity);
 

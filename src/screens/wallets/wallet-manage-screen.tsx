@@ -1,17 +1,17 @@
 import { Button } from "@/components/button";
 import { Identicon } from "@/components/identicon";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 import { getAccountIdentity } from "@/lib/accounts";
 import { formatQu } from "@/lib/format";
 import {
-  PencilEdit01Icon, File02Icon, Key01Icon, ViewOffIcon, ViewIcon, Delete02Icon,
+  PencilEdit01Icon, Key01Icon, Delete02Icon,
   CheckmarkCircle01Icon,
 } from "@/lib/icons";
 import type { SessionAccount } from "@/lib/session-account";
 import type { AccountMeta } from "@/store/persisted";
 import { ActionRow, ActionSection } from "./wallet-detail-parts";
 
-interface ManageAccountSheetProps {
+interface ManageAccountScreenProps {
   account: AccountMeta | null;
   onClose: () => void;
   isActive: boolean;
@@ -21,15 +21,13 @@ interface ManageAccountSheetProps {
   hideBalances: boolean;
   onMakeActive: (account: AccountMeta) => void;
   onRename: (account: AccountMeta) => void;
-  onEditMeta: (account: AccountMeta) => void;
   onVerifyBackup: () => void;
   onRevealSeed: (account: AccountMeta) => void;
-  onToggleHide: (account: AccountMeta) => void;
   onRemove: (account: AccountMeta) => void;
 }
 
-/** Bottom sheet with every action available for a single wallet account. */
-export function ManageAccountSheet({
+/** Full screen with every action available for a single wallet account. */
+export function ManageAccountScreen({
   account,
   onClose,
   isActive,
@@ -39,14 +37,12 @@ export function ManageAccountSheet({
   hideBalances,
   onMakeActive,
   onRename,
-  onEditMeta,
   onVerifyBackup,
   onRevealSeed,
-  onToggleHide,
   onRemove,
-}: ManageAccountSheetProps) {
+}: ManageAccountScreenProps) {
   return (
-    <Sheet
+    <FullScreen
       open={!!account}
       onClose={onClose}
       title={account ? `Manage ${account.name}` : "Manage account"}
@@ -72,11 +68,9 @@ export function ManageAccountSheet({
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
                 {account.name}
               </div>
-              {account.hidden || (isActive && activeAccountIndex === account.index) ? (
+              {isActive && activeAccountIndex === account.index ? (
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-                  {isActive && activeAccountIndex === account.index ? "ACTIVE" : ""}
-                  {isActive && activeAccountIndex === account.index && account.hidden ? " · " : ""}
-                  {account.hidden ? "HIDDEN" : ""}
+                  ACTIVE
                 </div>
               ) : null}
             </div>
@@ -94,10 +88,10 @@ export function ManageAccountSheet({
           <ActionSection title="Selection">
             <ActionRow
               title={isActive && activeAccountIndex === account.index ? "Active account" : "Use this account"}
-              description={account.hidden ? "Hidden accounts cannot be made active." : "Use for sending, receiving, and signing."}
+              description="Use for sending, receiving, and signing."
               icon={CheckmarkCircle01Icon}
               selected={isActive && activeAccountIndex === account.index}
-              disabled={!isActive || account.hidden || activeAccountIndex === account.index}
+              disabled={!isActive || activeAccountIndex === account.index}
               onClick={() => onMakeActive(account)}
             />
           </ActionSection>
@@ -108,12 +102,6 @@ export function ManageAccountSheet({
               description="Change the label shown in the wallet and switcher."
               icon={PencilEdit01Icon}
               onClick={() => onRename(account)}
-            />
-            <ActionRow
-              title="Tags"
-              description="Label this account for searching and organization."
-              icon={File02Icon}
-              onClick={() => onEditMeta(account)}
             />
           </ActionSection>
 
@@ -132,15 +120,6 @@ export function ManageAccountSheet({
             />
           </ActionSection>
 
-          <ActionSection title="Visibility">
-            <ActionRow
-              title={account.hidden ? "Unhide account" : "Hide account"}
-              description={account.hidden ? "Show this account in the switcher again." : "Remove from the switcher without deleting it."}
-              icon={account.hidden ? ViewIcon : ViewOffIcon}
-              onClick={() => onToggleHide(account)}
-            />
-          </ActionSection>
-
           <ActionSection title="Danger zone" danger>
             <ActionRow
               title="Remove account"
@@ -152,6 +131,6 @@ export function ManageAccountSheet({
           </ActionSection>
         </div>
       )}
-    </Sheet>
+    </FullScreen>
   );
 }

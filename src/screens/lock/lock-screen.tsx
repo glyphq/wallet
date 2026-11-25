@@ -5,7 +5,9 @@ import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
 import { FullPage } from "@/layouts/full-page";
 import { Button } from "@/components/button";
+import { FullScreen } from "@/components/full-screen";
 import { IconButton } from "@/components/icon-button";
+import { Input } from "@/components/input";
 import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon } from "@/lib/icons";
 import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -15,7 +17,6 @@ import { unlockBiometricSession, unlockWalletSession, verifyWalletPassword } fro
 import { usePersistedStore, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionAccount } from "@/lib/session-account";
-import { DeleteWalletSheet } from "@/screens/wallets/wallet-list-sheets";
 import { LockForm, type FormValues } from "./lock-form";
 import { LockWalletTransition, type WalletChangeDirection } from "./lock-wallet-transition";
 import { LockWalletShelf } from "./lock-wallet-shelf";
@@ -411,18 +412,39 @@ export default function LockScreen() {
           </motion.div>
         </AnimatePresence>
       )}
-      <DeleteWalletSheet
-        wallet={deletingWallet}
-        password={deletePassword}
-        onPasswordChange={(value) => {
-          setDeletePassword(value);
-          setDeleteError("");
-        }}
-        error={deleteError}
-        loading={deleteLoading}
+      <FullScreen
+        open={!!deletingWallet}
         onClose={() => setDeletingWallet(null)}
-        onDelete={doDelete}
-      />
+        title={`Delete ${deletingWallet?.name ?? "wallet"}`}
+        footer={(
+          <Button variant="danger" shape="sharp" onClick={doDelete} loading={deleteLoading} disabled={!deletePassword}>
+            Delete wallet
+          </Button>
+        )}
+      >
+        {deletingWallet && deletingWallet.accounts.length > 1 ? (
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
+            This wallet contains {deletingWallet.accounts.length} accounts. All seeds will be permanently lost.
+          </span>
+        ) : null}
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
+          This action cannot be undone.
+        </span>
+        <Input
+          type="password"
+          label="Password to confirm"
+          value={deletePassword}
+          onChange={(event) => {
+            setDeletePassword(event.target.value);
+            setDeleteError("");
+          }}
+          onKeyDown={(event) => event.key === "Enter" && !deleteLoading && doDelete()}
+          error={deleteError}
+          placeholder="••••••••••"
+          autoComplete="current-password"
+          autoFocus
+        />
+      </FullScreen>
     </FullPage>
   );
 }

@@ -1,12 +1,12 @@
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { SeedSurface } from "@/components/setup-flow";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 import { Textarea } from "@/components/textarea";
 import { ViewIcon, ViewOffIcon } from "@/lib/icons";
 import type { AccountMeta } from "@/store/persisted";
 
-interface SeedRevealSheetProps {
+interface SeedRevealScreenProps {
   account: AccountMeta | null;
   onClose: () => void;
   verifyingBackup: boolean;
@@ -28,7 +28,7 @@ interface SeedRevealSheetProps {
   onVerify: () => void;
 }
 
-export function SeedRevealSheet({
+export function SeedRevealScreen({
   account,
   onClose,
   verifyingBackup,
@@ -48,9 +48,9 @@ export function SeedRevealSheet({
   onBackupCheckChange,
   backupCheckStatus,
   onVerify,
-}: SeedRevealSheetProps) {
+}: SeedRevealScreenProps) {
   return (
-    <Sheet open={!!account} onClose={onClose} title={verifyingBackup ? "Verify seed backup" : account ? `Reveal seed for ${account.name}` : "Reveal seed"}>
+    <FullScreen open={!!account} onClose={onClose} title={verifyingBackup ? "Verify seed backup" : account ? `Reveal seed for ${account.name}` : "Reveal seed"}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {!revealedSeed ? (
           <>
@@ -122,6 +122,6 @@ export function SeedRevealSheet({
           </>
         )}
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }

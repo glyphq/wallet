@@ -42,12 +42,9 @@ export interface AccountMeta {
   index: number;
   name: string;
   addedAt: number;
-  /** When true the account is hidden from the account switcher but remains in the seed array. */
-  hidden: boolean;
   /** Persisted identity used to hydrate seeded-account metadata while locked. */
   identity?: string;
   note?: string;
-  tags?: string[];
 }
 
 /** Persisted metadata for a wallet — does not contain seeds; those live in `encryptedData`. */

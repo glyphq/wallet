@@ -67,10 +67,8 @@ export async function parseWalletImportFile(text: string): Promise<WalletImportD
         index: typeof a.index === "number" && Number.isInteger(a.index) && a.index >= 0 ? a.index : i,
         name: typeof a.name === "string" && a.name.trim() ? a.name.trim().slice(0, 64) : `Account ${i + 1}`,
         addedAt: typeof a.addedAt === "number" && a.addedAt > 0 ? a.addedAt : Date.now(),
-        hidden: a.hidden === true,
         identity: isValidIdentity(identity) ? identity : undefined,
         note: typeof a.note === "string" ? a.note.slice(0, 2000) : undefined,
-        tags: sanitizeTags(a.tags),
       };
     });
 

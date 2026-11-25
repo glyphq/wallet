@@ -33,9 +33,7 @@ export default function PortfolioScreen() {
     );
   }
 
-  const visibleAccounts = wallet.accounts.filter((a) => !a.hidden);
-
-  const accountsWithBalance = visibleAccounts.map((account) => {
+  const accountsWithBalance = wallet.accounts.map((account) => {
     const identity = getWalletAccountIdentity(wallet, account.index, accounts);
     const balance = identity ? (balances?.[identity] ?? null) : null;
     return { account, identity, balance };
@@ -113,7 +111,7 @@ export default function PortfolioScreen() {
       {/* ── Account list ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-          Accounts ({visibleAccounts.length})
+          Accounts ({accountsWithBalance.length})
         </span>
 
         {accountsWithBalance.map((entry, i) => (

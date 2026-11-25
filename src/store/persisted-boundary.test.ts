@@ -179,8 +179,6 @@ describe("persisted boundary helpers", () => {
                 index: 0,
                 name: "A",
                 addedAt: 1,
-                hidden: false,
-                tags: ["ok", 1],
               },
             ],
           },
@@ -210,7 +208,6 @@ describe("persisted boundary helpers", () => {
     expect(merged.passwordLockoutUntil).toBe(99_000);
     expect(merged.exportSigningKey).toEqual({ kty: "oct", k: "test-key" });
     expect(merged.wallets[0]?.encryptedData).toEqual({ should: "be removed" });
-    expect(merged.wallets[0]?.accounts[0]?.tags).toEqual(["ok"]);
     expect(Object.keys(merged.txMemos)).toHaveLength(MAX_TX_MEMOS);
   });
 
@@ -226,7 +223,7 @@ describe("persisted boundary helpers", () => {
             lastUnlockedAt: 2,
             encryptedData: null,
             accounts: [
-              { index: 0, name: "Main", addedAt: 1, hidden: false, note: "legacy note" },
+              { index: 0, name: "Main", addedAt: 1, note: "legacy note" },
             ],
           },
         ],
@@ -264,7 +261,7 @@ describe("persisted boundary helpers", () => {
   });
 
   test("caps persisted account, pending, and scheduled collections", () => {
-    const account = { index: 0, name: "Account", addedAt: 1, hidden: false };
+    const account = { index: 0, name: "Account", addedAt: 1 };
     const pending = { hash: "h", source: "s", destination: "d", amount: "1", targetTick: 1, broadcastAt: 1 };
     const scheduled = { id: "s", label: "Scheduled", sourceIdentity: "SOURCE", destination: "DESTINATION", amount: "1", intervalDays: 1, nextRunAt: 1, createdAt: 1, enabled: true };
     const merged = mergePersistedState({

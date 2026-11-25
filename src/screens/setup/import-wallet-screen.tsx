@@ -85,7 +85,6 @@ export default function ImportWalletScreen() {
           hidden: false,
           identity: identity ?? undefined,
           note: "",
-          tags: [],
         }],
         encryptedData,
       };

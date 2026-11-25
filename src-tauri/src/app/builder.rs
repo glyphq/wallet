@@ -44,6 +44,7 @@ pub(crate) fn run() {
             wallet_crypto::rotate_wallet_password,
             wallet_crypto::reveal_wallet_seed,
             session_crypto::store_session_seeds,
+            session_crypto::copy_session_seed,
             session_crypto::clear_session_seeds,
             session_crypto::sign_transaction,
             session_crypto::sign_local_transaction,

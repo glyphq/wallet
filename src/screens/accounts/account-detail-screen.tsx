@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
+import { invoke } from "@tauri-apps/api/core";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { IdentityDisplay } from "@/components/identity-display";
 import { Input } from "@/components/input";
 import { useWalletBalances } from "@/hooks/use-wallet-balances";
-import { getAccountIdentity, parseAccountTags } from "@/lib/accounts";
+import { getAccountIdentity } from "@/lib/accounts";
+import { recordAuditEvent } from "@/lib/audit-log";
+import { SEED_CLIPBOARD_CLEAR_SECS } from "@/lib/constants";
 import { formatQu } from "@/lib/format";
-import { CheckmarkCircle01Icon, Delete02Icon, ViewIcon, ViewOffIcon } from "@/lib/icons";
+import { CheckmarkCircle01Icon, Copy01Icon, Delete02Icon } from "@/lib/icons";
 import { removeFromWallet, unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -39,16 +42,20 @@ export default function AccountDetailScreen() {
   const balance = isActiveWallet && identity ? balances?.[identity] : null;
 
   const [name, setName] = useState(account?.name ?? "");
-  const [tags, setTags] = useState((account?.tags ?? []).join(", "));
   const [saved, setSaved] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [password, setPassword] = useState("");
   const [removeError, setRemoveError] = useState("");
   const [removeLoading, setRemoveLoading] = useState(false);
+  const [copyError, setCopyError] = useState("");
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyDone, setCopyDone] = useState(false);
+  const [copyProgress, setCopyProgress] = useState(0);
+  const holdTimerRef = useRef<number | undefined>(undefined);
+  const holdStartedRef = useRef(0);
 
   useEffect(() => {
     setName(account?.name ?? "");
-    setTags((account?.tags ?? []).join(", "));
     setSaved(false);
     setConfirmRemove(false);
     setPassword("");
@@ -66,21 +73,64 @@ export default function AccountDetailScreen() {
     updateWallet(wallet.id, {
       accounts: wallet.accounts.map((item) =>
         item.index === account.index
-          ? { ...item, name: name.trim(), tags: parseAccountTags(tags) }
+          ? { ...item, name: name.trim() }
           : item,
       ),
     });
     setSaved(true);
   }
 
-  function toggleVisibility() {
+  useEffect(() => () => {
+    clearInterval(holdTimerRef.current);
+  }, []);
+
+  function stopHold() {
+    clearInterval(holdTimerRef.current);
+    holdTimerRef.current = undefined;
+    setCopyProgress(0);
+  }
+
+  function startHold() {
+    if (!account || copyLoading || copyDone) return;
+    clearInterval(holdTimerRef.current);
+    holdStartedRef.current = Date.now();
+    setCopyProgress(0.01);
+    holdTimerRef.current = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - holdStartedRef.current) / 1000);
+      setCopyProgress(progress);
+      if (progress >= 1) {
+        clearInterval(holdTimerRef.current);
+        holdTimerRef.current = undefined;
+        void doCopySeed();
+      }
+    }, 30);
+  }
+
+  async function doCopySeed() {
     if (!wallet || !account) return;
-    if (!account.hidden && isCurrent) return;
-    updateWallet(wallet.id, {
-      accounts: wallet.accounts.map((item) =>
-        item.index === account.index ? { ...item, hidden: !item.hidden } : item,
-      ),
-    });
+    setCopyLoading(true);
+    setCopyError("");
+    setCopyProgress(0);
+    try {
+      await invoke("copy_session_seed", {
+        accountIndex: account.index,
+        clearAfterSecs: SEED_CLIPBOARD_CLEAR_SECS,
+      });
+      recordAuditEvent({
+        kind: "seed_revealed",
+        status: "success",
+        title: "Seed copied",
+        detail: `${account.name} in ${wallet.name}`,
+        walletId: wallet.id,
+        accountIndex: account.index,
+      });
+      setCopyDone(true);
+    } catch {
+      setCopyError("Could not copy seed");
+    } finally {
+      setCopyLoading(false);
+      setCopyProgress(0);
+    }
   }
 
   async function removeAccount() {
@@ -151,11 +201,9 @@ export default function AccountDetailScreen() {
             <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-section)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {account.name}
             </span>
-            {isCurrent || account.hidden ? (
+            {isCurrent ? (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", letterSpacing: "0.05em" }}>
-                {isCurrent ? "ACTIVE" : ""}
-                {isCurrent && account.hidden ? " · " : ""}
-                {account.hidden ? "HIDDEN" : ""}
+                ACTIVE
               </span>
             ) : null}
           </div>
@@ -178,16 +226,6 @@ export default function AccountDetailScreen() {
             }}
             maxLength={80}
             style={{ fontFamily: "var(--font-sans)" }}
-          />
-          <Input
-            label="Tags"
-            value={tags}
-            onChange={(event) => {
-              setTags(event.target.value);
-              markDirty();
-            }}
-            placeholder="staking, cold, treasury"
-            maxLength={160}
           />
         </div>
       </div>
@@ -247,13 +285,36 @@ export default function AccountDetailScreen() {
                 <Button
                   variant="secondary"
                   size="md"
-                  style={{ flex: "1 1 140px" }}
-                  disabled={!account.hidden && isCurrent}
-                  title={!account.hidden && isCurrent ? "Switch accounts before hiding this one" : undefined}
-                  onClick={toggleVisibility}
+                  disabled={copyLoading || copyDone}
+                  onPointerDown={startHold}
+                  onPointerUp={stopHold}
+                  onPointerCancel={stopHold}
+                  onPointerLeave={stopHold}
+                  onKeyDown={(event) => {
+                    if (event.key === " " || event.key === "Enter") {
+                      event.preventDefault();
+                      startHold();
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key === " " || event.key === "Enter") stopHold();
+                  }}
+                  style={{ flex: "1 1 140px", position: "relative", overflow: "hidden" }}
                 >
-                  {account.hidden ? <ViewIcon size={16} strokeWidth={1.5} aria-hidden="true" /> : <ViewOffIcon size={16} strokeWidth={1.5} aria-hidden="true" />}
-                  {account.hidden ? "Unhide account" : "Hide account"}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: `${copyProgress * 100}%`,
+                      background: "var(--color-accent-soft)",
+                      transition: "width 30ms linear",
+                    }}
+                  />
+                  <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: "var(--space-2)" }}>
+                    <Copy01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+                    {copyLoading ? "Copying…" : copyProgress > 0 ? "Keep holding…" : copyDone ? "Copied" : "Hold to copy"}
+                  </span>
                 </Button>
                 <Button
                   variant="danger"
@@ -266,6 +327,19 @@ export default function AccountDetailScreen() {
                   Remove account
                 </Button>
               </div>
+              {copyError ? (
+                <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>
+                  {copyError}
+                </span>
+              ) : copyDone ? (
+                <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
+                  Seed copied. Clipboard clears in {SEED_CLIPBOARD_CLEAR_SECS} seconds.
+                </span>
+              ) : (
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
+                  Hold Copy seed for one second.
+                </span>
+              )}
             </>
           )}
         </div>

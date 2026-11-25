@@ -84,10 +84,8 @@ export default function AccountAddScreen() {
         index: newIndex,
         name: name.trim(),
         addedAt: Date.now(),
-        hidden: false,
         identity: deriveIdentityFromSeed(newSeed),
         note: "",
-        tags: [],
       };
       updateWallet(wallet.id, {
         encryptedData: newEncrypted,

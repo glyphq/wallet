@@ -13,7 +13,6 @@ import { AsciiPageHeader } from "@/components/ascii-page-header";
 import { ScreenHeader } from "@/components/screen-header";
 import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 import { HeaderSlotProvider, useHeaderSlot } from "./header-slot";
-import { SheetStateProvider, useSheetsOpen } from "./sheet-state";
 import { ChromeVisibilityProvider, useChromeVisibility } from "./chrome-visibility";
 
 // ── Route helpers ────────────────────────────────────────────────────────────
@@ -158,7 +157,6 @@ function LayoutShell() {
   const cur = location.pathname;
   const show = !chromeHidden && showHeader(cur);
   const showNav = !chromeHidden && showBottomNav(cur);
-  const sheetsOpen = useSheetsOpen();
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
   const accountSelector = showsAccountSelector(cur) ? <ShellAccountSwitcher /> : undefined;
@@ -200,7 +198,7 @@ function LayoutShell() {
 
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
           <AnimatePresence>
-            {update && updaterContext?.supportsAutoUpdate && showNav && !sheetsOpen ? (
+            {update && updaterContext?.supportsAutoUpdate && showNav ? (
               <motion.div
                 key="app-update"
                 initial={{ opacity: 0, y: 6 }}
@@ -277,7 +275,7 @@ function LayoutShell() {
       </div>
 
       {/* ── Anchored bottom nav ── */}
-      {showNav && !sheetsOpen && (
+      {showNav && (
         <footer
           style={{
             flexShrink: 0,
@@ -302,12 +300,10 @@ export function AnimatedLayout() {
   useDisableHistoryNavigation();
 
   return (
-    <SheetStateProvider>
-      <HeaderSlotProvider>
-        <ChromeVisibilityProvider>
-          <LayoutShell />
-        </ChromeVisibilityProvider>
-      </HeaderSlotProvider>
-    </SheetStateProvider>
+    <HeaderSlotProvider>
+      <ChromeVisibilityProvider>
+        <LayoutShell />
+      </ChromeVisibilityProvider>
+    </HeaderSlotProvider>
   );
 }

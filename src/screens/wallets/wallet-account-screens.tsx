@@ -1,6 +1,6 @@
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 import type { AccountMeta } from "@/store/persisted";
 
 const ACCOUNT_NAME_SUGGESTIONS = [
@@ -8,7 +8,7 @@ const ACCOUNT_NAME_SUGGESTIONS = [
   "Hot Wallet", "Treasury", "Operations", "Rewards",
 ];
 
-interface AddAccountSheetProps {
+interface AddAccountScreenProps {
   open: boolean;
   onClose: () => void;
   accounts: AccountMeta[];
@@ -28,7 +28,7 @@ interface AddAccountSheetProps {
   onAdd: () => void;
 }
 
-export function AddAccountSheet({
+export function AddAccountScreen({
   open,
   onClose,
   accounts,
@@ -46,9 +46,9 @@ export function AddAccountSheet({
   setError,
   loading,
   onAdd,
-}: AddAccountSheetProps) {
+}: AddAccountScreenProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Add account">
+    <FullScreen open={open} onClose={onClose} title="Add account">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             {(["new", "import"] as const).map((nextMode, i) => (
@@ -104,11 +104,11 @@ export function AddAccountSheet({
         <Button onClick={onAdd} loading={loading} disabled={!name.trim() || !password || (mode === "import" && !seed.trim())}>Add account</Button>
         <Button variant="ghost" shape="sharp" size="md" style={{ width: "auto", margin: "0 auto" }} onClick={onClose}>Cancel</Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
 
-interface RenameAccountSheetProps {
+interface RenameAccountScreenProps {
   open: boolean;
   onClose: () => void;
   value: string;
@@ -116,61 +116,18 @@ interface RenameAccountSheetProps {
   onSave: () => void;
 }
 
-export function RenameAccountSheet({ open, onClose, value, onChange, onSave }: RenameAccountSheetProps) {
+export function RenameAccountScreen({ open, onClose, value, onChange, onSave }: RenameAccountScreenProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Rename account">
+    <FullScreen open={open} onClose={onClose} title="Rename account">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <Input label="Name" value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSave()} autoFocus style={{ fontFamily: "var(--font-sans)" }} />
         <Button onClick={onSave} disabled={!value.trim()}>Save</Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
 
-interface AccountMetaSheetProps {
-  open: boolean;
-  onClose: () => void;
-  tags: string;
-  setTags: (value: string) => void;
-  onSave: () => void;
-}
-
-export function AccountMetaSheet({ open, onClose, tags, setTags, onSave }: AccountMetaSheetProps) {
-  return (
-    <Sheet open={open} onClose={onClose} title="Tags">
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <Input
-          label="Tags"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          placeholder="staking, cold, treasury"
-        />
-        <Button onClick={onSave}>Save</Button>
-      </div>
-    </Sheet>
-  );
-}
-
-interface HideAccountSheetProps {
-  account: AccountMeta | null;
-  onClose: () => void;
-  onConfirm: () => void;
-}
-
-export function HideAccountSheet({ account, onClose, onConfirm }: HideAccountSheetProps) {
-  return (
-    <Sheet open={!!account} onClose={onClose} title={account ? `Hide ${account.name}?` : "Hide account"}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-          The account will be removed from the switcher. It can be restored from this screen.
-        </div>
-        <Button onClick={onConfirm}>Hide account</Button>
-      </div>
-    </Sheet>
-  );
-}
-
-interface RemoveAccountSheetProps {
+interface RemoveAccountScreenProps {
   account: AccountMeta | null;
   onClose: () => void;
   password: string;
@@ -181,14 +138,14 @@ interface RemoveAccountSheetProps {
   onRemove: () => void;
 }
 
-export function RemoveAccountSheet({ account, onClose, password, setPassword, error, setError, loading, onRemove }: RemoveAccountSheetProps) {
+export function RemoveAccountScreen({ account, onClose, password, setPassword, error, setError, loading, onRemove }: RemoveAccountScreenProps) {
   return (
-    <Sheet open={!!account} onClose={onClose} title={account ? `Remove ${account.name}?` : "Remove account"}>
+    <FullScreen open={!!account} onClose={onClose} title={account ? `Remove ${account.name}?` : "Remove account"}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-status-error)" }}>This cannot be undone.</div>
         <Input type="password" label="Wallet password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} onKeyDown={(e) => e.key === "Enter" && onRemove()} error={error} placeholder="••••••••••" autoComplete="current-password" autoFocus />
         <Button variant="danger" shape="sharp" onClick={onRemove} loading={loading} disabled={!password}>Remove account</Button>
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }

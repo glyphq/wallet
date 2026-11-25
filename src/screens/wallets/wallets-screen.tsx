@@ -9,12 +9,12 @@ import { verifyWalletPassword } from "@/lib/wallet";
 import { newId } from "@/lib/crypto";
 import { WalletList } from "./wallet-list";
 import {
-  WalletActionSheet,
-  RenameWalletSheet,
-  DeleteWalletSheet,
-  ImportWalletSheet,
-  ImportWalletErrorSheet,
-} from "./wallet-list-sheets";
+  WalletActionScreen,
+  RenameWalletScreen,
+  DeleteWalletScreen,
+  ImportWalletScreen,
+  ImportWalletErrorScreen,
+} from "./wallet-list-screens";
 import { parseWalletImportFile, restoreImportedWalletExtras, type WalletImportData } from "./wallet-import";
 
 export default function WalletsScreen() {
@@ -29,7 +29,7 @@ export default function WalletsScreen() {
   const sessionLock = useSessionStore((s) => s.lock);
   const resetSessionForSetup = useSessionStore((s) => s.resetForSetup);
 
-  // Action sheet
+  // Action screen
   const [actionWallet, setActionWallet] = useState<WalletMeta | null>(null);
 
   // Rename
@@ -182,7 +182,7 @@ export default function WalletsScreen() {
         />
       </section>
 
-      <WalletActionSheet
+      <WalletActionScreen
         wallet={actionWallet}
         activeWalletId={settings.activeWalletId}
         onClose={() => setActionWallet(null)}
@@ -191,7 +191,7 @@ export default function WalletsScreen() {
         onDelete={openDelete}
       />
 
-      <RenameWalletSheet
+      <RenameWalletScreen
         wallet={renamingWallet}
         value={renameValue}
         onChange={setRenameValue}
@@ -199,7 +199,7 @@ export default function WalletsScreen() {
         onSave={doRename}
       />
 
-      <DeleteWalletSheet
+      <DeleteWalletScreen
         wallet={deletingWallet}
         password={deletePassword}
         onPasswordChange={(value) => { setDeletePassword(value); setDeleteError(""); }}
@@ -209,7 +209,7 @@ export default function WalletsScreen() {
         onDelete={doDelete}
       />
 
-      <ImportWalletSheet
+      <ImportWalletScreen
         data={importData}
         password={importPassword}
         onPasswordChange={(value) => { setImportPassword(value); setImportError(""); }}
@@ -219,7 +219,7 @@ export default function WalletsScreen() {
         onImport={doImport}
       />
 
-      <ImportWalletErrorSheet error={importFileError} onClose={() => setImportFileError("")} />
+      <ImportWalletErrorScreen error={importFileError} onClose={() => setImportFileError("")} />
     </AppShell>
   );
 }

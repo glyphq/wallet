@@ -74,8 +74,7 @@ export default function SendScreen() {
   const accountName = wallet?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
   const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
   const walletAccountTargets = (wallet?.accounts ?? [])
-    .filter((a) => !a.hidden)
-    .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
+    .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note }))
     .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
   const sendHeader = <SendHeader />;

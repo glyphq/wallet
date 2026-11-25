@@ -1,8 +1,8 @@
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 
-interface RotatePasswordSheetProps {
+interface RotatePasswordScreenProps {
   open: boolean;
   onClose: () => void;
   done: boolean;
@@ -18,7 +18,7 @@ interface RotatePasswordSheetProps {
   onSubmit: () => void;
 }
 
-export function RotatePasswordSheet({
+export function RotatePasswordScreen({
   open,
   onClose,
   done,
@@ -32,9 +32,9 @@ export function RotatePasswordSheet({
   setError,
   loading,
   onSubmit,
-}: RotatePasswordSheetProps) {
+}: RotatePasswordScreenProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Change wallet password">
+    <FullScreen open={open} onClose={onClose} title="Change wallet password">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {done ? (
           <>
@@ -54,6 +54,6 @@ export function RotatePasswordSheet({
           </>
         )}
       </div>
-    </Sheet>
+    </FullScreen>
   );
 }
