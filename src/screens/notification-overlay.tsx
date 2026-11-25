@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -208,11 +209,18 @@ export function NotificationOverlay() {
     void invoke("dismiss_notification", { id });
   }, []);
 
+  const previousCount = useRef(0);
   useEffect(() => {
-    void invoke("layout_notification_overlay", { count: notifications.length });
+    const shrinking = notifications.length < previousCount.current;
+    previousCount.current = notifications.length;
+    const timer = window.setTimeout(() => {
+      void invoke("layout_notification_overlay", { count: notifications.length });
+    }, shrinking ? 180 : 0);
+    return () => window.clearTimeout(timer);
   }, [notifications.length]);
 
   const ordered = position.startsWith("top") ? [...notifications].reverse() : notifications;
+  const fromBottom = position.startsWith("bottom");
 
   return (
     <div
@@ -228,9 +236,21 @@ export function NotificationOverlay() {
         overflow: "hidden",
       }}
     >
-      {ordered.map((notification) => (
-        <NotificationCard key={notification.id} notification={notification} onDismiss={dismiss} />
-      ))}
+      <AnimatePresence initial={false}>
+        {ordered.map((notification) => (
+          <motion.div
+            key={notification.id}
+            layout
+            initial={{ opacity: 0, y: fromBottom ? 14 : -14, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: fromBottom ? 8 : -8, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            style={{ flexShrink: 0 }}
+          >
+            <NotificationCard notification={notification} onDismiss={dismiss} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
