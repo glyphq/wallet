@@ -16,11 +16,14 @@ export function PendingTxDetail({
   snapshot: PriceSnapshot | null;
   fiatValue: string;
 }) {
-  const { statusLabel, statusVariant, amountColor, displayTo, progress } = describePendingTx(tx, currentTick);
+  const { kindLabel, statusLabel, statusVariant, amountColor, displayTo, progress } = describePendingTx(tx, currentTick);
 
   return (
     <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <header style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          {kindLabel}
+        </span>
         <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
           {hideBalances ? "••••••" : `${formatQu(tx.amount ?? "0")} QU`}
         </span>

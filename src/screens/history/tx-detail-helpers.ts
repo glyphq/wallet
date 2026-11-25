@@ -15,6 +15,7 @@ export function describePendingTx(tx: PendingTx, currentTick: number) {
   return {
     progress,
     expired,
+    kindLabel: tx.contractName?.trim() || "Transfer",
     statusLabel: progress.label,
     statusVariant: (expired ? "error" : "warning") as TagVariant,
     amountColor: expired ? "var(--color-text-disabled)" : "var(--color-accent)",
@@ -59,5 +60,7 @@ export function describeConfirmedTx(
     ? (contractName ?? fromContract ?? truncateId(tx.destination ?? "—"))
     : truncateId(tx.destination ?? "—");
 
-  return { isIn, flew, isSc, statusLabel, statusVariant, amountColor, displayTo };
+  const kindLabel = isSc ? (procedureName ?? contractName ?? "Contract call") : "Transfer";
+
+  return { isIn, flew, isSc, kindLabel, statusLabel, statusVariant, amountColor, displayTo };
 }
