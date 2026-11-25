@@ -809,7 +809,6 @@ a:hover {
   justify-content: center;
   padding: 0;
   border: 0;
-  border-left: 1px solid var(--color-border-subtle);
   border-radius: 0;
   background: transparent;
   color: var(--color-text-tertiary);
@@ -817,10 +816,6 @@ a:hover {
   transition:
     color var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
-}
-
-.primary-nav-action:first-child {
-  border-left: 0;
 }
 
 .primary-nav-action:hover {

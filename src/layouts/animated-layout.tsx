@@ -281,7 +281,7 @@ function LayoutShell() {
             flexShrink: 0,
             borderTop: "1px solid var(--color-border-subtle)",
             background: "var(--color-bg-base)",
-            padding: "var(--space-3) var(--screen-padding) var(--space-4)",
+            padding: "var(--space-2) 0 var(--space-3)",
           }}
         >
           <PrimaryNav active={activeTabFromPath(cur)} />
