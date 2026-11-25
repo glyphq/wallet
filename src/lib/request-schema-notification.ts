@@ -14,10 +14,7 @@ function parseQuAmount(value: unknown): bigint | null {
 }
 
 function requester(input: GlyphRequest): string {
-  const name = input.dapp.name?.trim();
-  return name
-    ? `${name} at ${input.dapp.origin}`
-    : `An application at ${input.dapp.origin}`;
+  return input.dapp.name?.trim() || "A decentralized application";
 }
 
 export function buildRequestNotification(input: GlyphRequest): { title: string; body: string } | null {
@@ -31,8 +28,8 @@ export function buildRequestNotification(input: GlyphRequest): { title: string; 
       return {
         title,
         body: amount !== null
-          ? `${requester(input)} is requesting a transfer of ${notificationAmount(amount)} to ${notificationAddress(input.to)}. The request is waiting for your review.`
-          : `${requester(input)} is requesting a transfer to ${notificationAddress(input.to)}. The request is waiting for your review.`,
+          ? `${requester(input)} is requesting a transfer of ${notificationAmount(amount)} to ${notificationAddress(input.to)}.`
+          : `${requester(input)} is requesting a transfer to ${notificationAddress(input.to)}.`,
       };
     }
     case "sc_call": {
@@ -43,16 +40,16 @@ export function buildRequestNotification(input: GlyphRequest): { title: string; 
       return {
         title,
         body: amount !== null && amount > 0n
-          ? `${requester(input)} is requesting a ${contractPhrase(label)} call with ${notificationAmount(amount)} attached. The request is waiting for your review.`
-          : `${requester(input)} is requesting a ${contractPhrase(label)} call. The request is waiting for your review.`,
+          ? `${requester(input)} is requesting a ${contractPhrase(label)} call with ${notificationAmount(amount)} attached.`
+          : `${requester(input)} is requesting a ${contractPhrase(label)} call.`,
       };
     }
     case "sign_message":
-      return { title, body: `${requester(input)} is asking you to sign a message. The request is waiting for your review.` };
+      return { title, body: `${requester(input)} is asking you to sign a message.` };
     case "verify_message":
-      return { title, body: `${requester(input)} is asking you to verify a signature. The request is waiting for your review.` };
+      return { title, body: `${requester(input)} is asking you to verify a signature.` };
     case "connect":
-      return { title, body: `${requester(input)} wants to connect to your wallet. The request is waiting for your review.` };
+      return { title, body: `${requester(input)} wants to connect to your wallet.` };
     default:
       return null;
   }
