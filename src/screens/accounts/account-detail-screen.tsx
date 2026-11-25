@@ -61,6 +61,11 @@ export default function AccountDetailScreen() {
     setConfirmRemove(false);
     setPassword("");
     setRemoveError("");
+    clearInterval(holdTimerRef.current);
+    holdTimerRef.current = undefined;
+    setCopyError("");
+    setCopyDone(false);
+    setCopyProgress(0);
     // Reset the form when navigating between account indices.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account?.index]);
