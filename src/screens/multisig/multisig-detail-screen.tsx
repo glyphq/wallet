@@ -16,6 +16,7 @@ import { useSessionStore } from "@/store/session";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { MsvaultInactiveError } from "@/lib/api/msvault";
 import { extractMessage, formatPreferredCurrencyFromQu, truncateId } from "@/lib/format";
+import { explorerAccountUrl, openExplorer } from "@/lib/explorer";
 import { MSVAULT_REVOKE_FEE, ownerIndex, vaultHoldingCoverage } from "@/lib/msvault";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import { ArrowUpRight01Icon, Download01Icon } from "@/lib/icons";
@@ -324,9 +325,12 @@ export default function MultisigDetailScreen() {
       <Section title="Owners">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minWidth: 0 }}>
           {detail.owners.map((owner) => (
-            <div
+            <button
               key={owner}
-              style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}
+              type="button"
+              onClick={() => openExplorer(explorerAccountUrl(owner))}
+              aria-label={`Open ${owner} in Glyph Explorer`}
+              style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0, padding: "var(--space-2)", border: 0, borderRadius: "var(--radius-sharp)", background: "transparent", color: "inherit", textAlign: "left", cursor: "pointer" }}
             >
               <FramedAvatar seed={owner} size={30} />
               <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
@@ -335,7 +339,7 @@ export default function MultisigDetailScreen() {
                 </span>
                 <span style={MONO_META} title={owner}>{truncateId(owner, 10, 10)}</span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </Section>

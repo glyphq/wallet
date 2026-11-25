@@ -23,20 +23,20 @@ import {
   MSVAULT_RESET_ASSET_RELEASE_INPUT_TYPE,
   MSVAULT_RESET_RELEASE_INPUT_TYPE,
 } from "@/lib/contracts";
-import { extractMessage, formatQu } from "@/lib/format";
+import { extractMessage, formatQu, truncateId } from "@/lib/format";
 import { MSVAULT_REVOKE_FEE, ownerIndex, type MsvaultReleaseKind } from "@/lib/msvault";
 import { qk } from "@/lib/query-keys";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
 import { ArrowLeft01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { ApprovalAddress } from "@/components/request/approval-address";
+import { explorerAccountUrl, openExplorer } from "@/lib/explorer";
 import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalField } from "@/components/request/approval-field";
 import {
   AssetMetaLabel,
   FeeRow,
   MultisigFlowShell,
-  identityDisplayName,
 } from "./multisig-ui";
 
 function ApprovalRecordedNotch() {
@@ -128,7 +128,6 @@ export default function MultisigApprovalScreen() {
 
   const settings = usePersistedStore((s) => s.settings);
   const wallets = usePersistedStore((s) => s.wallets);
-  const contacts = usePersistedStore((s) => s.contacts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const sessionAccounts = useSessionStore((s) => s.accounts);
@@ -190,9 +189,7 @@ export default function MultisigApprovalScreen() {
     : null;
   const replacesOther = !supportedByMe && !!otherSupport && otherSupport.key !== proposal?.key;
 
-  const destinationName = proposal
-    ? identityDisplayName(proposal.destination, contacts, wallet, sessionAccounts)
-    : "";
+  const destinationLabel = proposal ? truncateId(proposal.destination, 10, 10) : "";
 
   async function invalidate(vault: bigint) {
     await Promise.all([
@@ -382,7 +379,7 @@ export default function MultisigApprovalScreen() {
                 ? <AssetMetaLabel asset={proposal.asset} amount={proposal.amount} />
                 : `${formatQu(proposal.amount)} QU`}
             />
-            <FeeRow label="Destination" value={destinationName} />
+            <FeeRow label="Destination" value={destinationLabel} />
             <FeeRow label="Reset fee" value={fees ? `${formatQu(fees.releaseResetFee)} QU` : "Fees unavailable"} />
           </div>
           {resetError ? <p role="alert" style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>{resetError}</p> : null}
@@ -458,7 +455,7 @@ export default function MultisigApprovalScreen() {
                 : `${formatQu(proposal.amount)} QU`}
             </span>{" "}
             to{" "}
-            <span style={{ fontWeight: 500, color: "var(--color-text-primary)" }}>{destinationName}</span>.
+            <span style={{ fontWeight: 500, color: "var(--color-text-primary)" }}>{destinationLabel}</span>
           </div>
         </div>
 
@@ -479,7 +476,14 @@ export default function MultisigApprovalScreen() {
             </ApprovalField>
           )}
 
-          <ApprovalAddress label="Destination" identity={proposal.destination} name={destinationName} compact="long" />
+          <button
+            type="button"
+            onClick={() => openExplorer(explorerAccountUrl(proposal.destination))}
+            aria-label="Open destination in Glyph Explorer"
+            style={{ display: "block", width: "100%", padding: 0, border: 0, background: "none", textAlign: "left", cursor: "pointer" }}
+          >
+            <ApprovalAddress label="Destination" identity={proposal.destination} compact="long" />
+          </button>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             <ApprovalField label="Current approvals">

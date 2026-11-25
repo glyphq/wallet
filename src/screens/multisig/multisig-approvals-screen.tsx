@@ -8,6 +8,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
 import { useMsvaultDetail } from "@/hooks/use-msvault";
 import { MsvaultInactiveError } from "@/lib/api/msvault";
+import { explorerAccountUrl, openExplorer } from "@/lib/explorer";
 import { extractMessage, formatQu, truncateId } from "@/lib/format";
 import type { MsvaultProposal } from "@/lib/msvault";
 import { AssetMetaLabel, VaultId } from "./multisig-ui";
@@ -30,13 +31,6 @@ const BODY_COPY: CSSProperties = {
   overflowWrap: "anywhere",
 };
 
-const MONO_META: CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: "var(--text-mono-sm)",
-  color: "var(--color-text-tertiary)",
-  overflowWrap: "anywhere",
-};
-
 function ApprovalRow({
   proposal,
   onOpen,
@@ -47,9 +41,16 @@ function ApprovalRow({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={`Review release to ${proposal.destination}`}
@@ -60,7 +61,6 @@ function ApprovalRow({
         width: "100%",
         minHeight: 64,
         padding: "var(--space-3)",
-        border: 0,
         borderRadius: "var(--radius-sharp)",
         background: hovered ? "var(--color-bg-elevated)" : "transparent",
         color: "inherit",
@@ -78,16 +78,25 @@ function ApprovalRow({
             `${formatQu(proposal.amount)} QU`
           )}
         </span>
-        <span title={proposal.destination} style={{ ...MONO_META, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <button
+          type="button"
+          title={proposal.destination}
+          aria-label="Open destination in Glyph Explorer"
+          onClick={(event) => {
+            event.stopPropagation();
+            openExplorer(explorerAccountUrl(proposal.destination));
+          }}
+          style={{ alignSelf: "flex-start", maxWidth: "100%", padding: 0, border: 0, background: "none", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-tertiary)", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+        >
           {truncateId(proposal.destination, 8, 8)}
-        </span>
+        </button>
       </span>
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, flexShrink: 0 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
           {proposal.approvals} of {proposal.requiredApprovals}
         </span>
       </span>
-    </button>
+    </div>
   );
 }
 

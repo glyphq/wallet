@@ -9,6 +9,7 @@ import { AmountInput } from "@/components/amount-input";
 import { Input } from "@/components/input";
 import { TextButton } from "@/components/text-button";
 import { ApprovalAddress } from "@/components/request/approval-address";
+import { explorerAccountUrl, openExplorer } from "@/lib/explorer";
 import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalField } from "@/components/request/approval-field";
 import { useMsvaultAssetMeta, useMsvaultDetail, useMsvaultFees } from "@/hooks/use-msvault";
@@ -29,7 +30,7 @@ import {
 } from "@/lib/contracts";
 import { IdentityPickerScreen } from "@/components/identity-picker";
 import { isValidIdentity } from "@/lib/crypto";
-import { extractMessage, formatQu, truncateId } from "@/lib/format";
+import { extractMessage, formatQu } from "@/lib/format";
 import {
   MSVAULT_REVOKE_FEE,
   decodeAssetName,
@@ -48,7 +49,6 @@ import {
   FeeRow,
   MultisigFlowShell,
   VaultId,
-  identityDisplayName,
 } from "./multisig-ui";
 
 const SECTION_LABEL: CSSProperties = {
@@ -267,11 +267,6 @@ export default function MultisigReleaseScreen() {
         : null;
 
   const destUpper = destination.trim().toUpperCase();
-  const destinationDisplayName = identityDisplayName(destUpper, contacts, wallet, sessionAccounts);
-  const destinationName =
-    destUpper && destinationDisplayName !== truncateId(destUpper)
-      ? destinationDisplayName
-      : undefined;
   const hasPending = hasPendingFromAccount(pendingTxs, identity);
   const activeOwner = detail ? ownerIndex(detail.owners, identity) : -1;
   const isOwner = activeOwner >= 0;
@@ -609,11 +604,14 @@ export default function MultisigReleaseScreen() {
               </ApprovalField>
             ) : null}
 
-            <ApprovalAddress
-              label="Destination"
-              identity={destUpper}
-              name={destinationName}
-            />
+            <button
+              type="button"
+              onClick={() => openExplorer(explorerAccountUrl(destUpper))}
+              aria-label="Open destination in Glyph Explorer"
+              style={{ display: "block", width: "100%", padding: 0, border: 0, background: "none", textAlign: "left", cursor: "pointer" }}
+            >
+              <ApprovalAddress label="Destination" identity={destUpper} />
+            </button>
 
             <ApprovalField label="Approvals">
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)" }}>
