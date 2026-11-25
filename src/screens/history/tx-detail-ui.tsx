@@ -32,35 +32,37 @@ export function DetailRow({
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0, padding: "var(--space-2) 0" }}>
-      <span style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, padding: "var(--space-2) 0" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
         {label}
       </span>
-      <span
-        style={{
-          minWidth: 0,
-          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
-          fontSize: mono ? "var(--text-mono-sm)" : "var(--text-label)",
-          color: "var(--color-text-primary)",
-          overflowWrap: "anywhere",
-          fontVariantNumeric: mono ? "tabular-nums" : undefined,
-        }}
-      >
-        {value}
-      </span>
-      {copyValue ? (
-        <IconButton
-          label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
-          onClick={() => void copy()}
-          style={{ width: 24, height: 24, flexShrink: 0, alignSelf: "center" }}
+      <span style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", minWidth: 0 }}>
+        <span
+          style={{
+            minWidth: 0,
+            fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
+            fontSize: mono ? "var(--text-mono-sm)" : "var(--text-label)",
+            color: "var(--color-text-primary)",
+            overflowWrap: "anywhere",
+            fontVariantNumeric: mono ? "tabular-nums" : undefined,
+          }}
         >
-          {copied ? (
-            <CheckmarkCircle01Icon size={13} color="var(--color-status-success)" aria-hidden="true" />
-          ) : (
-            <Copy01Icon size={13} aria-hidden="true" />
-          )}
-        </IconButton>
-      ) : null}
+          {value}
+        </span>
+        {copyValue ? (
+          <IconButton
+            label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+            onClick={() => void copy()}
+            style={{ width: 24, height: 24, flexShrink: 0 }}
+          >
+            {copied ? (
+              <CheckmarkCircle01Icon size={13} color="var(--color-status-success)" aria-hidden="true" />
+            ) : (
+              <Copy01Icon size={13} aria-hidden="true" />
+            )}
+          </IconButton>
+        ) : null}
+      </span>
     </div>
   );
 }

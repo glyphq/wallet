@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { Tag } from "@/components/tag";
 import { KNOWN_CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { formatDate, formatQu, truncateId } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
@@ -23,7 +22,7 @@ export function ConfirmedTxDetail({
 }) {
   const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
   const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
-  const { isIn, isSc, kindLabel, statusLabel, statusVariant, amountColor, displayTo } = describeConfirmedTx(tx, identity, contractName, fromContract);
+  const { isIn, isSc, kindLabel, amountColor, displayTo } = describeConfirmedTx(tx, identity, contractName, fromContract);
 
   return (
     <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -39,7 +38,6 @@ export function ConfirmedTxDetail({
             {fiatValue}
           </span>
         ) : null}
-        <Tag variant={statusVariant}>{statusLabel}</Tag>
       </header>
 
       <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>

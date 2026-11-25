@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { Tag } from "@/components/tag";
 import { formatDate, formatQu, truncateId } from "@/lib/format";
 import type { PendingTx, PriceSnapshot } from "@/store/persisted";
 import { DetailRow, SectionLabel } from "./tx-detail-ui";
@@ -16,7 +15,7 @@ export function PendingTxDetail({
   snapshot: PriceSnapshot | null;
   fiatValue: string;
 }) {
-  const { kindLabel, statusLabel, statusVariant, amountColor, displayTo, progress } = describePendingTx(tx, currentTick);
+  const { kindLabel, amountColor, displayTo, progress } = describePendingTx(tx, currentTick);
 
   return (
     <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -32,7 +31,6 @@ export function PendingTxDetail({
             {fiatValue}
           </span>
         ) : null}
-        <Tag variant={statusVariant}>{statusLabel}</Tag>
       </header>
 
       <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
