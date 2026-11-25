@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { AsciiSkeleton } from "ascii-reveal";
 import { useNavigate } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { Tag } from "@/components/tag";
 import { TextButton } from "@/components/text-button";
 import { useMsvaultFees, useMsvaultList } from "@/hooks/use-msvault";
 import { getWalletAccountIdentity } from "@/lib/accounts";
@@ -29,32 +29,6 @@ const INTRO_COPY = {
   fontSize: "var(--text-body-compact)",
   lineHeight: "var(--leading-body)",
   color: "var(--color-text-secondary)",
-} as const;
-
-const CARD_STYLE = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "var(--space-3)",
-  width: "100%",
-  minWidth: 0,
-  padding: "var(--space-3) var(--space-4)",
-  background: "var(--color-bg-surface)",
-  border: "1px solid var(--color-border-subtle)",
-  borderRadius: "var(--radius-sharp)",
-} as const;
-
-const CARD_BUTTON_STYLE = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "var(--space-3)",
-  width: "100%",
-  minWidth: 0,
-  padding: 0,
-  border: 0,
-  background: "transparent",
-  color: "inherit",
-  textAlign: "left",
-  cursor: "pointer",
 } as const;
 
 const NAME_STYLE = {
@@ -89,16 +63,14 @@ function VaultListSkeleton() {
   return (
     <div aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
       {[0, 1, 2].map((index) => (
-        <div key={index} style={CARD_STYLE}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <AsciiSkeleton as="div" variant="scan" rows={2} width={34} height={34} animate={false} seed={index + 1} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[110]} animate={false} seed={index + 11} />
-              <div style={{ height: 6 }} />
-              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[150]} animate={false} seed={index + 21} />
-            </div>
-            <AsciiSkeleton as="div" variant="scan" lines={1} widths={[72]} animate={false} seed={index + 31} />
+        <div key={index} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 64, padding: "var(--space-3)" }}>
+          <AsciiSkeleton as="div" variant="scan" rows={2} width={34} height={34} animate={false} seed={index + 1} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <AsciiSkeleton as="div" variant="scan" lines={1} widths={[110]} animate={false} seed={index + 11} />
+            <div style={{ height: 6 }} />
+            <AsciiSkeleton as="div" variant="scan" lines={1} widths={[150]} animate={false} seed={index + 21} />
           </div>
+          <AsciiSkeleton as="div" variant="scan" lines={1} widths={[72]} animate={false} seed={index + 31} />
         </div>
       ))}
     </div>
@@ -116,73 +88,73 @@ function VaultCard({
   onOpen: () => void;
   onRetry: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
   const detail = entry.detail;
   const name = entry.name.trim() || "Unnamed vault";
-  const assets = detail?.assets ?? [];
-  const hasPendingRelease = (detail?.proposals.length ?? 0) > 0;
-  const belowHoldingFee = detail && holdingFee !== null && detail.balance < holdingFee;
+
+  if (!detail) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 64, padding: "var(--space-3)", minWidth: 0 }}>
+        <FramedAvatar seed={`msvault:${entry.id}`} size={34} />
+        <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
+          <span style={NAME_STYLE}>{name}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", ...CAPTION_STYLE }}>
+            <VaultId id={entry.id} />
+            <span style={{ color: "var(--color-status-warning)" }}>Could not load</span>
+          </span>
+        </span>
+        <TextButton onClick={onRetry} tone="muted">Retry</TextButton>
+      </div>
+    );
+  }
+
+  const assets = detail.assets;
+  const hasPendingRelease = detail.proposals.length > 0;
+  const belowHoldingFee = holdingFee !== null && detail.balance < holdingFee;
+  const status = [
+    hasPendingRelease ? "Pending release" : null,
+    belowHoldingFee ? "Below holding fee" : null,
+  ].filter(Boolean).join(" · ");
 
   return (
-    <article style={CARD_STYLE} className="corner-frame">
-      {detail ? (
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-label={`Open ${name}`}
-          style={{ ...CARD_BUTTON_STYLE, flexDirection: "column", alignItems: "stretch" }}
-        >
-          <span style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", width: "100%", minWidth: 0 }}>
-            <FramedAvatar seed={`msvault:${entry.id}`} size={34} />
-            <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-              <span style={NAME_STYLE}>{name}</span>
-              <VaultId id={entry.id} />
-            </span>
-            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--space-1)", flexShrink: 0 }}>
-              <span style={VALUE_STYLE}>{`${formatQu(detail.balance)} QU`}</span>
-              <span style={{ ...CAPTION_STYLE, textAlign: "right" }}>
-                {detail.requiredApprovals} of {detail.owners.length} approvals
-              </span>
-            </span>
-          </span>
-
-          {assets.length > 0 ? (
-            <span style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", minWidth: 0 }}>
-              {assets.slice(0, 3).map((balance) => (
-                <Tag key={`${balance.asset.issuer}:${balance.asset.assetName.toString()}`}>
-                  {balance.asset.name || "Asset"}
-                </Tag>
-              ))}
-              {assets.length > 3 ? <Tag>{`+${assets.length - 3}`}</Tag> : null}
-            </span>
-          ) : null}
-          {hasPendingRelease || belowHoldingFee ? (
-            <span style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", minWidth: 0 }}>
-              {hasPendingRelease ? <Tag variant="warning">Pending release</Tag> : null}
-              {belowHoldingFee ? <Tag variant="warning">Below holding fee</Tag> : null}
-            </span>
-          ) : null}
-        </button>
-      ) : (
-        <>
-          <button type="button" onClick={onOpen} aria-label={`Open ${name}`} style={CARD_BUTTON_STYLE}>
-            <FramedAvatar seed={`msvault:${entry.id}`} size={34} />
-            <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-              <span style={NAME_STYLE}>{name}</span>
-              <VaultId id={entry.id} />
-            </span>
-            <span style={VALUE_STYLE}>—</span>
-          </button>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            <span role="status" style={{ ...CAPTION_STYLE, color: "var(--color-status-warning)" }}>
-              Could not load this vault
-            </span>
-            <TextButton onClick={onRetry} tone="muted">
-              Retry
-            </TextButton>
-          </div>
-        </>
-      )}
-    </article>
+    <button
+      type="button"
+      onClick={onOpen}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label={`Open ${name}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-3)",
+        width: "100%",
+        minHeight: 64,
+        padding: "var(--space-3)",
+        border: 0,
+        borderRadius: "var(--radius-sharp)",
+        background: hovered ? "var(--color-bg-elevated)" : "transparent",
+        color: "inherit",
+        textAlign: "left",
+        cursor: "pointer",
+        minWidth: 0,
+      }}
+    >
+      <FramedAvatar seed={`msvault:${entry.id}`} size={34} />
+      <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
+        <span style={{ ...NAME_STYLE, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", ...CAPTION_STYLE }}>
+          <VaultId id={entry.id} />
+          {assets.length > 0 ? <span>· {assets.length} {assets.length === 1 ? "asset" : "assets"}</span> : null}
+        </span>
+      </span>
+      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, flexShrink: 0 }}>
+        <span style={VALUE_STYLE}>{`${formatQu(detail.balance)} QU`}</span>
+        <span style={{ ...CAPTION_STYLE, textAlign: "right" }}>
+          {detail.requiredApprovals} of {detail.owners.length} approvals
+        </span>
+        {status ? <span style={{ ...CAPTION_STYLE, textAlign: "right", color: "var(--color-status-warning)" }}>{status}</span> : null}
+      </span>
+    </button>
   );
 }
 
