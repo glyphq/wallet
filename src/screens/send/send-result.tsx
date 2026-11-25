@@ -6,7 +6,7 @@ import { watchStatusColor, watchStatusLabel, type WatchResult } from "./send-flo
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { SendStepFooter, StatusSpinner } from "./send-ui";
 
-/** Status row shared by send and send-many receipts. */
+/** Status row for send receipts. */
 export function TxStatusDetailRow(
   { status, idleColor, targetTick, currentTick }: {
     status: WatchResult;

@@ -41,7 +41,6 @@ function showsAccountSelector(pathname: string): boolean {
 const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/dashboard", "home"],
   ["/send", "send"],
-  ["/send-many", "send"],
   ["/multisig", "home"],
   ["/receive", "receive"],
   ["/history", "history"],
@@ -61,7 +60,6 @@ const HEADER_TITLES: [string, string][] = [
   ["/wallets", "Wallets"],
   ["/wallets/", "Wallet details"],
   ["/send/scheduled", "Scheduled transfers"],
-  ["/send-many", "Send many"],
   ["/send", "Send"],
   ["/receive", "Receive"],
   ["/tx/", "Transaction"],
@@ -79,7 +77,6 @@ function showHeader(pathname: string): boolean {
 function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname === "/accounts" || pathname.startsWith("/accounts/")) return false;
-  if (pathname === "/send-many") return false;
   if (pathname.startsWith("/tx/")) return false;
   if (pathname.startsWith("/multisig/")) return false;
   if (pathname.startsWith("/contacts/")) return false;
@@ -128,7 +125,7 @@ function backTargetFromPath(pathname: string): string | null {
     return pathname.slice(0, -"/portfolio".length);
   }
   if (pathname.startsWith("/wallets/")) return "/wallets";
-  if (pathname === "/send/scheduled" || pathname === "/send-many") return "/send";
+  if (pathname === "/send/scheduled") return "/send";
   if (pathname.startsWith("/tx/")) return "/history";
   if (pathname === "/search") return "/dashboard";
   return null;

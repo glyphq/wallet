@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -78,9 +78,7 @@ export default function SendScreen() {
     .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
     .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
-  const sendHeader = useMemo(() => (
-    <SendHeader onSendMany={() => navigate("/send-many")} />
-  ), [navigate]);
+  const sendHeader = <SendHeader />;
 
   const destUpper = normalizeIdentity(destination);
   const matchedContact = contacts.find((c) => c.identity === destUpper);

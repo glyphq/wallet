@@ -189,42 +189,7 @@ If a send fails, the current draft can remain in volatile session state. Do not 
 
 A broadcast response is not the same as final confirmation. Keep Glyph open or reopen it later so history can reconcile the transaction. For important transfers, verify the transaction independently using a trusted explorer or archive source.
 
-## 7. Send Many
-
-Send Many creates one QUtil `SendToMany` smart-contract transaction for up to 25 recipients.
-
-Glyph fetches the current contract fee, then checks that:
-
-`recipient total + contract fee <= source balance`
-
-You can paste rows or import CSV or JSON.
-
-### CSV format
-
-Use these columns:
-
-```text
-identity,amount,label
-```
-
-The first two columns are required. A header row is optional.
-
-### JSON format
-
-Provide an array of objects. Recipient aliases include `identity`, `address`, `recipient`, or `to`. Amount aliases include `amount`, `qu`, or `value`. `label` or `name` is optional.
-
-Example:
-
-```json
-[
-  { "identity": "<QUBIC_IDENTITY>", "amount": 1000, "label": "Supplier A" },
-  { "to": "<QUBIC_IDENTITY>", "qu": 2500, "name": "Supplier B" }
-]
-```
-
-Imports discard invalid rows and use no more than the first 25 valid recipients. Review every row and the fee before signing. The resulting operation is a smart-contract call, not 25 independently signed standard transfers.
-
-## 8. Burn and staking
+## 7. Burn and staking
 
 ### Burn QU
 
@@ -242,7 +207,7 @@ Glyph supports QEarn lock and unlock operations.
 
 Positions and rewards are loaded from network data. A submitted lock or unlock remains subject to Qubic confirmation and contract behavior. Glyph prevents a conflicting outgoing transaction from the same identity while an operation is pending.
 
-## 9. Scheduled transfers
+## 8. Scheduled transfers
 
 The Scheduled screen stores local transfer templates with a source, destination, amount, interval, and enabled state.
 
@@ -250,13 +215,13 @@ The Scheduled screen stores local transfer templates with a source, destination,
 
 Treat the schedule as a reminder and template, not as a standing payment instruction.
 
-## 10. Receiving
+## 9. Receiving
 
 ### Receive screen
 
 Select an account to display its address and QR code. Confirm the displayed address before sharing it.
 
-## 11. Transaction history, analytics, and search
+## 10. Transaction history, analytics, and search
 
 ### History
 
@@ -282,7 +247,7 @@ Analytics is informational only. It is not accounting, tax, or compliance softwa
 
 Global search covers accounts, contacts, known contracts, and a limited set of archive transactions per account. Search results depend on the configured Glyph API service and local metadata.
 
-## 12. Contacts and local records
+## 11. Contacts and local records
 
 Contacts can contain a name, Qubic address, note, and tags. They are stored locally. The current UI does not provide contact import or export.
 
@@ -296,7 +261,7 @@ Other local records include:
 
 The audit log records selected wallet events such as unlock success or failure, seed reveal, wallet export, and external request decisions. It is clearable local history, not an immutable security ledger.
 
-## 13. Notifications and tray behavior
+## 12. Notifications and tray behavior
 
 Desktop notifications are disabled by default. When enabled, Glyph requests operating-system permission on the first delivery attempt.
 
@@ -319,7 +284,7 @@ At startup, Glyph can reconcile received transactions over a lookback of up to 2
 
 Exiting drops the process-held session data. Lock explicitly clears the native signing session before notifying the renderer.
 
-## 14. External requests and `glyph://` links
+## 13. External requests and `glyph://` links
 
 Glyph recognizes `glyph://v1/request?...` for structured dApp requests.
 
@@ -363,7 +328,7 @@ After approval, Glyph can:
 
 Callback POSTs have a 4 KiB response limit, a 10-second timeout, no redirects, DNS address validation, and connection pinning to a validated address. Review the displayed dApp origin and action even when these controls pass.
 
-## 15. Security model and important boundaries
+## 14. Security model and important boundaries
 
 ### Wallet encryption
 
@@ -429,7 +394,7 @@ Glyph has no password reset, seed escrow, or remote recovery. Recovery requires 
 
 An encrypted export without its password is not a recovery method.
 
-## 16. Network settings
+## 15. Network settings
 
 Glyph uses a single Glyph API origin for chain data. The Network settings screen allows a custom HTTPS origin to be tested before saving. It also controls the target-tick offset.
 
@@ -437,7 +402,7 @@ Use a trusted Glyph API. A malicious or unreliable service can provide false bal
 
 Default polling intervals vary by application state, with slower polling in the background, tray, and locked states. Asset refreshes are limited to no more than once every 30 seconds.
 
-## 17. Updates
+## 16. Updates
 
 Glyph checks for an update once at startup. Update metadata and packages are verified using Tauri's signed-update mechanism and the public key embedded in the application.
 
@@ -446,7 +411,7 @@ Glyph checks for an update once at startup. Update metadata and packages are ver
 
 Only install Glyph from a source you trust. Verify published release information before replacing a wallet installation.
 
-## 18. Diagnostics and support
+## 17. Diagnostics and support
 
 The diagnostics screen can export a JSON report containing information such as:
 
@@ -463,7 +428,7 @@ The report excludes wallet encrypted data, seeds, passwords, device identifiers,
 
 Support links open in the system browser. Treat unsolicited support messages, seed requests, and remote-access requests as scams.
 
-## 19. Practical safety checklist
+## 18. Practical safety checklist
 
 Before receiving significant funds:
 

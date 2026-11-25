@@ -109,7 +109,7 @@ The route tree separates:
 - Setup and import
 - Lock and unlock
 - Dashboard and wallet management
-- Standard send, Send Many, burn, staking, and scheduled templates
+- Standard send, burn, staking, and scheduled templates
 - Receive and payment-link creation
 - History, transaction detail, analytics, and search
 - Contacts
@@ -413,17 +413,6 @@ The tick feed advances the cached head used by expiry. A pending transaction exp
 Memos are local records keyed to transactions and are not included in a standard on-chain transfer. Historical fiat values use the nearest retained local price sample. Neither should be treated as authoritative network data.
 
 ## 14. Smart-contract feature boundaries
-
-### Send Many
-
-Send Many uses the QUtil `SendToMany` V1 contract:
-
-- Up to 25 validated recipients
-- One smart-contract transaction
-- Contract fee fetched before review
-- Balance check includes recipient total and fee
-
-CSV and JSON import is parsed in the renderer. Invalid rows are filtered and no more than 25 valid entries are retained, so review must not assume an import error is always fatal.
 
 ### Burn
 

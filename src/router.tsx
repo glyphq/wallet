@@ -37,8 +37,6 @@ const loadSendScreen = () => import("@/screens/send/send-screen");
 const SendScreen = lazy(loadSendScreen);
 const loadScheduledTransfersScreen = () => import("@/screens/send/scheduled-transfers-screen");
 const ScheduledTransfersScreen = lazy(loadScheduledTransfersScreen);
-const loadSendManyScreen = () => import("@/screens/send/send-many-screen");
-const SendManyScreen = lazy(loadSendManyScreen);
 const loadMultisigScreen = () => import("@/screens/multisig/multisig-screen");
 const MultisigScreen = lazy(loadMultisigScreen);
 const loadMultisigCreateScreen = () => import("@/screens/multisig/multisig-create-screen");
@@ -143,7 +141,6 @@ const SCREEN_LOADERS = [
   loadAccountExportScreen,
   loadSendScreen,
   loadScheduledTransfersScreen,
-  loadSendManyScreen,
   loadMultisigScreen,
   loadMultisigCreateScreen,
   loadMultisigDetailScreen,
@@ -210,7 +207,6 @@ export const router = createHashRouter([
           { path: "/accounts/:index", element: <Screen component={AccountDetailScreen} /> },
           { path: "/send", element: <Screen component={SendScreen} /> },
           { path: "/send/scheduled", element: <Screen component={ScheduledTransfersScreen} /> },
-          { path: "/send-many", element: <Screen component={SendManyScreen} /> },
           { path: "/multisig", element: <Screen component={MultisigScreen} /> },
           { path: "/multisig/new", element: <Screen component={MultisigCreateScreen} /> },
           { path: "/multisig/:id", element: <Screen component={MultisigDetailScreen} /> },

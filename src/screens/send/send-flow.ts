@@ -1,6 +1,6 @@
 import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
 
-/** Step machine shared by the send and send-many flows. */
+/** Step machine for the send flow. */
 export type SendStep = "input" | "review" | "sending" | "done" | "error";
 
 /** Confirmation watch state used by the result panes. */
@@ -48,25 +48,6 @@ export function validateQuAmount(
   } catch {
     return { amount: null, error: invalidMessage };
   }
-}
-
-/** Parses a whole-QU amount, returning null instead of throwing. */
-function parseQuAmount(text: string): bigint | null {
-  try {
-    const trimmed = text.trim();
-    if (!/^\d+$/.test(trimmed)) return null;
-    return BigInt(trimmed);
-  } catch {
-    return null;
-  }
-}
-
-/** Sums positive whole-QU amount strings, ignoring unparsable entries. */
-export function sumQuAmounts(amounts: readonly string[]): bigint {
-  return amounts.reduce((sum, text) => {
-    const amount = parseQuAmount(text);
-    return amount !== null && amount > 0n ? sum + amount : sum;
-  }, 0n);
 }
 
 /** Resolves the current and target tick for a broadcast. */
