@@ -40,7 +40,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autostartEnabled: false,
   sponsorAttribution: "anonymous",
   allowBlurLockBypass: false,
-  requirePasswordForBurn: false,
   requireBiometricForSeedReveal: false,
   highValueSendThreshold: "",
   exportSigningPrivateJwk: null,

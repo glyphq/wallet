@@ -13,10 +13,6 @@ import type { Identity } from "@qubic.org/types";
 import {
   QUTIL_CONTRACT_INDEX,
   QUTIL_SEND_TO_MANY_V1_INPUT_TYPE,
-  QUTIL_BURN_QUBIC_INPUT_TYPE,
-  QEARN_CONTRACT_INDEX,
-  QEARN_LOCK_INPUT_TYPE,
-  QEARN_UNLOCK_INPUT_TYPE,
   MSVAULT_CONTRACT_INDEX,
   MSVAULT_DEPOSIT_INPUT_TYPE,
   MSVAULT_RELEASE_TO_INPUT_TYPE,
@@ -39,7 +35,6 @@ import {
   decodeMultiSignVaultDeposit,
   decodeMultiSignVaultRelease,
   decodeMultiSignVaultResetRelease,
-  decodeQearnUnlock,
   decodeQUtilSendToMany,
 } from "./sc-call-decoders";
 import type { TransactionPreviewProps } from "./request-preview-props";
@@ -117,15 +112,6 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
     return null;
   }, [request.contract_index, request.input_type, payloadBytes]);
 
-  const decodedQearnUnlock = useMemo(() => {
-    if (request.contract_index === QEARN_CONTRACT_INDEX && request.input_type === QEARN_UNLOCK_INPUT_TYPE && payloadBytes.length > 0) {
-      return decodeQearnUnlock(payloadBytes);
-    }
-    return null;
-  }, [request.contract_index, request.input_type, payloadBytes]);
-
-  const isQearnLock = request.contract_index === QEARN_CONTRACT_INDEX && request.input_type === QEARN_LOCK_INPUT_TYPE;
-  const isQUtilBurn = request.contract_index === QUTIL_CONTRACT_INDEX && request.input_type === QUTIL_BURN_QUBIC_INPUT_TYPE;
   const recipientsTotal = decodedSendToMany?.reduce((sum, recipient) => sum + recipient.amount, 0n) ?? 0n;
   const contractFee = decodedSendToMany ? sendToManyFee : null;
   const projectedBalance = balance !== null ? balance - requestAmount : null;
@@ -220,11 +206,6 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
       ) : null}
 
       <ScCallDecodedHeadline
-        requestAmount={requestAmount}
-        hasAmount={hasAmount}
-        isQearnLock={isQearnLock}
-        isQUtilBurn={isQUtilBurn}
-        decodedQearnUnlock={decodedQearnUnlock}
         decodedMultiSigDeposit={decodedMultiSigDeposit}
         decodedMultiSigRelease={decodedMultiSigRelease}
         decodedMultiSigResetRelease={decodedMultiSigResetRelease}

@@ -112,7 +112,6 @@ export interface AppSettings {
   autostartEnabled: boolean;
   sponsorAttribution: "anonymous" | "identity" | "custom";
   allowBlurLockBypass: boolean;
-  requirePasswordForBurn: boolean;
   requireBiometricForSeedReveal: boolean;
   highValueSendThreshold: string;
   /** @deprecated Kept for migration compat — signing key now in top-level exportSigningKey. */

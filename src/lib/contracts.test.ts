@@ -3,7 +3,6 @@ import {
   CONTRACT_NAMES,
   CONTRACT_PROCEDURE_NAMES,
   KNOWN_CONTRACT_ADDRESSES,
-  QEARN_CONTRACT_INDEX,
   QUTIL_CONTRACT_INDEX,
   QUTIL_SEND_TO_MANY_V1_INPUT_TYPE,
   resolveProcedureName,
@@ -22,7 +21,7 @@ describe("contract registry", () => {
 
 describe("resolveProcedureName", () => {
   test("resolves the procedure from the receiving contract", () => {
-    expect(resolveProcedureName(CONTRACT_NAMES[QEARN_CONTRACT_INDEX], undefined, 1)).toBe("Lock");
+    expect(resolveProcedureName(CONTRACT_NAMES[QUTIL_CONTRACT_INDEX], undefined, QUTIL_SEND_TO_MANY_V1_INPUT_TYPE)).toBe("Send To Many V1");
   });
 
   test("falls back to the sending contract", () => {
@@ -34,7 +33,7 @@ describe("resolveProcedureName", () => {
   test("returns undefined for unknown contracts, procedures, or missing input type", () => {
     expect(resolveProcedureName("Not A Contract", undefined, 1)).toBeUndefined();
     expect(resolveProcedureName(undefined, undefined, 1)).toBeUndefined();
-    expect(resolveProcedureName("Qearn", undefined, null)).toBeUndefined();
-    expect(resolveProcedureName("Qearn", undefined, 65_535)).toBeUndefined();
+    expect(resolveProcedureName("Unknown contract", undefined, null)).toBeUndefined();
+    expect(resolveProcedureName("Unknown contract", undefined, 65_535)).toBeUndefined();
   });
 });

@@ -1,16 +1,10 @@
-import { FireIcon, UserGroupIcon } from "@/lib/icons";
+import { UserGroupIcon } from "@/lib/icons";
 import { ScreenHeader } from "@/components/screen-header";
 import { IconButton } from "@/components/icon-button";
 import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
 
 /** Send screen header with the cross-flow actions. */
-export function SendHeader({
-  onSendMany,
-  onBurn,
-}: {
-  onSendMany: () => void;
-  onBurn: () => void;
-}) {
+export function SendHeader({ onSendMany }: { onSendMany: () => void }) {
   return (
     <ScreenHeader
       leading={<ShellAccountSwitcher />}
@@ -19,9 +13,6 @@ export function SendHeader({
         <>
           <IconButton label="Send to many" onClick={onSendMany}>
             <UserGroupIcon size={20} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Burn QU" onClick={onBurn}>
-            <FireIcon size={20} aria-hidden="true" />
           </IconButton>
         </>
       }

@@ -24,12 +24,8 @@ const HIDDEN_CHROME_ROUTES = new Set(["/", "/lock", "/setup", "/setup/create", "
 const ACCOUNT_SELECTOR_PREFIXES = [
   "/dashboard",
   "/send",
-  "/send-many",
-  "/burn",
   "/receive",
   "/history",
-  "/analytics",
-  "/stake",
 ];
 
 function showsAccountSelector(pathname: string): boolean {
@@ -46,12 +42,9 @@ const NAV_PREFIXES: [string, BottomNavTab][] = [
   ["/dashboard", "home"],
   ["/send", "send"],
   ["/send-many", "send"],
-  ["/burn", "send"],
-  ["/stake", "send"],
   ["/multisig", "home"],
   ["/receive", "receive"],
   ["/history", "history"],
-  ["/analytics", "history"],
   ["/contacts", "history"],
   ["/search", "history"],
   ["/wallets", "home"],
@@ -70,11 +63,8 @@ const HEADER_TITLES: [string, string][] = [
   ["/send/scheduled", "Scheduled transfers"],
   ["/send-many", "Send many"],
   ["/send", "Send"],
-  ["/burn", "Burn"],
-  ["/stake", "Stake"],
   ["/receive", "Receive"],
   ["/tx/", "Transaction"],
-  ["/analytics", "Analytics"],
   ["/history", "History"],
   ["/contacts", "Contacts"],
   ["/search", "Search"],
@@ -89,6 +79,7 @@ function showHeader(pathname: string): boolean {
 function showBottomNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname === "/accounts" || pathname.startsWith("/accounts/")) return false;
+  if (pathname === "/send-many") return false;
   if (pathname.startsWith("/multisig/")) return false;
   if (pathname.startsWith("/contacts/")) return false;
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return false;
@@ -136,8 +127,8 @@ function backTargetFromPath(pathname: string): string | null {
     return pathname.slice(0, -"/portfolio".length);
   }
   if (pathname.startsWith("/wallets/")) return "/wallets";
-  if (pathname === "/send/scheduled" || pathname === "/send-many" || pathname === "/burn") return "/send";
-  if (pathname.startsWith("/tx/") || pathname === "/analytics") return "/history";
+  if (pathname === "/send/scheduled" || pathname === "/send-many") return "/send";
+  if (pathname.startsWith("/tx/")) return "/history";
   if (pathname === "/search") return "/dashboard";
   return null;
 }

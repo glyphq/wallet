@@ -12,7 +12,6 @@ const REFRESH_THROTTLE_MS = 1_500;
 
 function invalidateIdentityData(queryClient: QueryClient, apiIdentity: string, identities: Set<string>) {
   void queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
-  void queryClient.invalidateQueries({ queryKey: ["wallet-analytics"] });
   for (const identity of identities) {
     void queryClient.invalidateQueries({ queryKey: ["owned-assets", apiIdentity, identity] });
     void queryClient.invalidateQueries({ queryKey: ["tx-history", apiIdentity, identity] });

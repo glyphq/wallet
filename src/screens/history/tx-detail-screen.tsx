@@ -9,7 +9,7 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { type TxHistoryItem } from "@/hooks/use-tx-history";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
-import { findClosestPriceSnapshot } from "@/lib/history-analytics";
+import { findClosestPriceSnapshot } from "@/lib/price-snapshots";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { isPendingTx } from "./tx-detail-helpers";
 import { PendingTxDetail } from "./tx-detail-pending";

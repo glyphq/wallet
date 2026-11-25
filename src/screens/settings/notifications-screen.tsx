@@ -126,7 +126,7 @@ export default function NotificationsScreen() {
           <SettingsSectionLabel>Notify when</SettingsSectionLabel>
           <Toggle label="QU received" description="Balance increases on any account" checked={onReceived} onChange={(checked) => updateSettings({ notifyOnReceived: checked })} disabled={!enabled} />
           <SettingsDivider fullBleed />
-          <Toggle label="Transaction sent" description="Send, contract call, or burn is broadcast" checked={onSent} onChange={(checked) => updateSettings({ notifyOnSent: checked })} disabled={!enabled} />
+          <Toggle label="Transaction sent" description="Send or contract call is broadcast" checked={onSent} onChange={(checked) => updateSettings({ notifyOnSent: checked })} disabled={!enabled} />
           <SettingsDivider fullBleed />
           <Toggle label="Transaction confirmed" description="Pending transaction confirms on chain" checked={onConfirmed} onChange={(checked) => updateSettings({ notifyOnConfirmed: checked })} disabled={!enabled} />
           <SettingsDivider fullBleed />

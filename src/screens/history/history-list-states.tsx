@@ -2,25 +2,15 @@ import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { HistorySkeletonRows } from "./history-skeleton";
 
-
 export function HistoryLoadingMoreRows() {
   return <HistorySkeletonRows />;
 }
 
-export function HistoryEmptyState({ hasAnyActivity }: { hasAnyActivity: boolean }) {
-  if (hasAnyActivity) {
-    return (
-      <EmptyCollectionState
-        title="No activity yet"
-        description="Incoming and outgoing transactions will appear here."
-      />
-    );
-  }
+export function HistoryEmptyState() {
   return (
     <EmptyCollectionState
-      icon="search"
-      title="No matching activity"
-      description="Try a different address, hash, or filter."
+      title="No activity yet"
+      description="Incoming and outgoing transactions will appear here."
     />
   );
 }

@@ -2,7 +2,6 @@ import {
   CONTRACT_HANDLES,
   CONTRACTS_BY_INDEX,
   MSVAULT,
-  QEARN,
   QUTIL,
   QX,
   decodeFields,
@@ -24,7 +23,6 @@ const CONTRACT_DISPLAY_NAMES: Record<string, string> = {
   QBOND: "Q-Bond",
   QDRAW: "Qdraw",
   QDUEL: "Q-Duel",
-  QEARN: "Qearn",
   QIP: "QIP",
   QPAYHUB: "QPayHub",
   QPUMP: "QPump",
@@ -69,6 +67,7 @@ export const CONTRACT_PROCEDURE_NAMES: Record<string, string> = {};
 export const KNOWN_CONTRACT_ADDRESSES: Record<string, string> = {};
 
 for (const handle of CONTRACT_HANDLES) {
+  if (handle.name === "QEARN") continue;
   const name = displayName(handle.name);
   CONTRACT_NAMES[handle.contractIndex] = name;
   KNOWN_CONTRACT_ADDRESSES[handle.contractAddress] = name;
@@ -100,13 +99,6 @@ export function resolveProcedureName(
 export const QUTIL_CONTRACT_INDEX = QUTIL.contractIndex;
 export const QUTIL_ADDRESS = QUTIL.contractAddress;
 export const QUTIL_SEND_TO_MANY_V1_INPUT_TYPE = inputTypeOf(QUTIL.procedures.SendToManyV1!);
-export const QUTIL_BURN_QUBIC_INPUT_TYPE = inputTypeOf(QUTIL.procedures.BurnQubic!);
-
-// QEARN
-export const QEARN_CONTRACT_INDEX = QEARN.contractIndex;
-export const QEARN_ADDRESS = QEARN.contractAddress;
-export const QEARN_LOCK_INPUT_TYPE = inputTypeOf(QEARN.procedures.lock!);
-export const QEARN_UNLOCK_INPUT_TYPE = inputTypeOf(QEARN.procedures.unlock!);
 
 // QX
 export const QX_CONTRACT_INDEX = QX.contractIndex;
@@ -131,7 +123,7 @@ export const MSVAULT_REVOKE_ASSET_MANAGEMENT_RIGHTS_INPUT_TYPE = inputTypeOf(
   MSVAULT.procedures.revokeAssetManagementRights!,
 );
 
-export { MSVAULT, QEARN, QUTIL, QX };
+export { MSVAULT, QUTIL, QX };
 
 /** Decode a procedure payload into its declared input fields, when the ABI knows the call. */
 export function decodeProcedureInputValues(

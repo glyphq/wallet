@@ -1,23 +1,17 @@
 import { useState } from "react";
-import {
-  AddCircleIcon, ArrowUpRight01Icon, ClipboardIcon, File01Icon, FlashIcon, Wallet01Icon,
-} from "@/lib/icons";
+import { AddCircleIcon, ArrowUpRight01Icon, ClipboardIcon, File01Icon } from "@/lib/icons";
 import { Button } from "@/components/button";
-import { DetailRow } from "@/components/detail-row";
 import { Sheet } from "@/components/sheet";
-import { IdentityPickerScreen } from "@/components/identity-picker";
 import { TextButton } from "@/components/text-button";
 import { Textarea } from "@/components/textarea";
+import { IdentityPickerScreen } from "@/components/identity-picker";
 import type { PreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { formatPreferredCurrencyFromQu, formatQu } from "@/lib/format";
-import type { AddressSuggestion } from "@/lib/address-intelligence";
 import type { Contact } from "@/store/persisted";
 import { parseRecipientImport, type ImportedRecipient } from "@/lib/recipient-import";
-import { SendStepPanel } from "./send-step-panel";
-import { labelStyle } from "./send-ui";
 import {
-  MAX_RECIPIENTS, RecipientRow, sumRecipientAmounts, type Recipient,
+  MAX_RECIPIENTS, sumRecipientAmounts, type Recipient,
 } from "./send-many-recipients";
+import { RecipientEditor, SectionLabel, SendManyShell, SendManySummary } from "./send-many-ui";
 
 export interface SendManyInputStepProps {
   recipients: Recipient[];
@@ -29,7 +23,6 @@ export interface SendManyInputStepProps {
   fee: bigint | null;
   totalAmount: bigint;
   formError: string;
-  suggestionsByIndex: AddressSuggestion[][];
   canOpenPicker: boolean;
   onFieldChange: (index: number, field: Partial<Recipient>) => void;
   onEnter: () => void;
@@ -41,7 +34,7 @@ export interface SendManyInputStepProps {
   canReview: boolean;
 }
 
-/** Send-many entry step: recipient list, totals, import and picker sheets. */
+/** Send-many entry step: recipient list, totals, and import actions. */
 export function SendManyInputStep({
   recipients,
   contacts,
@@ -52,7 +45,6 @@ export function SendManyInputStep({
   fee,
   totalAmount,
   formError,
-  suggestionsByIndex,
   canOpenPicker,
   onFieldChange,
   onEnter,
@@ -63,7 +55,6 @@ export function SendManyInputStep({
   onReview,
   canReview,
 }: SendManyInputStepProps) {
-  const [focusIndex, setFocusIndex] = useState<number | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
@@ -72,15 +63,17 @@ export function SendManyInputStep({
   const remaining = balance !== null && fee !== null
     ? balance - sumRecipientAmounts(recipients) - fee
     : null;
-  const overBalance = remaining !== null && remaining < 0n;
 
   function applyImportedRecipients(next: ImportedRecipient[]) {
-    if (next.length === 0) { setImportError("No valid recipients found"); return; }
+    if (next.length === 0) {
+      setImportError("No valid recipients found");
+      return;
+    }
     onApplyImported(next.slice(0, MAX_RECIPIENTS));
-    setImportOpen(false); setImportText(""); setImportError("");
+    setImportOpen(false);
+    setImportText("");
+    setImportError("");
   }
-
-  function importFromText() { applyImportedRecipients(parseRecipientImport(importText)); }
 
   function openImportFile() {
     const input = document.createElement("input");
@@ -110,130 +103,100 @@ export function SendManyInputStep({
   }
 
   return (
-    <SendStepPanel scroll="auto" gap="var(--space-3)">
-      {/* Import links */}
-      <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)" }}>
-        <TextButton onClick={() => setImportOpen(true)} tone="muted">
-          <ClipboardIcon size={12} /> Paste list
-        </TextButton>
-        <TextButton onClick={openImportFile} tone="muted">
-          <File01Icon size={12} /> Import CSV
-        </TextButton>
-      </div>
-
-      {/* Recipient rows */}
-      {recipients.map((r, i) => {
-        const idUpper = r.identity.trim().toUpperCase();
-        const matchedContact = contacts.find((c) => c.identity === idUpper);
-        return (
-          <RecipientRow
-            key={r.id}
-            recipient={r}
-            index={i}
-            totalCount={recipients.length}
-            matchedContact={matchedContact}
-            suggestions={suggestionsByIndex[i]}
-            canOpenPicker={canOpenPicker}
-            price={price}
-            quote={quote}
-            focused={focusIndex === i}
-            onFieldChange={(field) => onFieldChange(i, field)}
-            onFocus={() => setFocusIndex(i)}
-            onBlur={() => setTimeout(() => setFocusIndex(null), 150)}
-            onEnter={onEnter}
-            onPickContact={() => setPickerIndex(i)}
-            onRemove={() => onRemoveRecipient(i)}
-            onSelectSuggestion={(identity) => {
-              onFieldChange(i, { identity, identityError: "" });
-              setFocusIndex(null);
-            }}
-            registerIdentityRef={(el) => registerIdentityRef(i, el)}
-          />
-        );
-      })}
-
-      {/* Add recipient */}
-      {recipients.length < MAX_RECIPIENTS && (
-        <Button variant="secondary" size="md" onClick={onAddRecipient}>
-          <AddCircleIcon size={14} /> Add recipient ({recipients.length}/{MAX_RECIPIENTS})
+    <SendManyShell footer={(
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        {formError ? <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>{formError}</span> : null}
+        <Button onClick={onReview} disabled={!canReview}>
+          Review transfer
+          <ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" />
         </Button>
-      )}
-
-      {/* Summary card */}
-      <div style={{
-        background: "var(--color-bg-surface)",
-        borderRadius: "var(--radius-card)",
-        padding: "var(--space-1) var(--space-4)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
-          <ArrowUpRight01Icon size={16} style={{ color: "var(--color-text-disabled)" }} />
-          <span style={{ ...labelStyle, flex: 1 }}>Total</span>
-          <div style={{ textAlign: "right" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: "var(--color-text-display)" }}>
-              {formatQu(totalAmount)} QU
-            </span>
-            {price && totalAmount > 0n && (
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-                {price ? formatPreferredCurrencyFromQu(totalAmount, { usdPrice: price, ...quote }).text : null}
-              </div>
-            )}
+      </div>
+    )}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", flexWrap: "wrap" }}>
+          <SectionLabel>{recipients.length} / {MAX_RECIPIENTS} recipients</SectionLabel>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <TextButton onClick={() => setImportOpen(true)} tone="muted">
+              <ClipboardIcon size={12} /> Paste list
+            </TextButton>
+            <TextButton onClick={openImportFile} tone="muted">
+              <File01Icon size={12} /> Import CSV
+            </TextButton>
           </div>
         </div>
-        {fee !== null && (
-          <>
-            <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
-            <DetailRow icon={<FlashIcon size={16} />} label="QUtil fee" value={`${formatQu(fee)} QU`} mono={false} />
-          </>
-        )}
-        {remaining !== null && (
-          <>
-            <div style={{ height: 1, background: "var(--color-border-subtle)", margin: "0 calc(-1 * var(--space-4))" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "11px 0" }}>
-              <Wallet01Icon size={16} style={{ color: "var(--color-text-disabled)" }} />
-              <span style={{ ...labelStyle, flex: 1 }}>Remaining</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-label)", color: overBalance ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
-                {formatQu(remaining < 0n ? 0n : remaining)} QU
-              </span>
-            </div>
-          </>
-        )}
+
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {recipients.map((recipient, index) => {
+            const identity = recipient.identity.trim().toUpperCase();
+            return (
+              <RecipientEditor
+                key={recipient.id}
+                recipient={recipient}
+                index={index}
+                totalCount={recipients.length}
+                matchedContact={contacts.find((contact) => contact.identity === identity)}
+                canOpenPicker={canOpenPicker}
+                price={price}
+                quote={quote}
+                onFieldChange={(field) => onFieldChange(index, field)}
+                onEnter={onEnter}
+                onPickContact={() => setPickerIndex(index)}
+                onRemove={() => onRemoveRecipient(index)}
+                registerIdentityRef={(el) => registerIdentityRef(index, el)}
+              />
+            );
+          })}
+        </div>
+
+        {recipients.length < MAX_RECIPIENTS ? (
+          <Button variant="secondary" size="md" onClick={onAddRecipient}>
+            <AddCircleIcon size={14} aria-hidden="true" />
+            Add recipient
+          </Button>
+        ) : null}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", paddingTop: "var(--space-3)" }}>
+          <SendManySummary
+            totalAmount={totalAmount}
+            fee={fee}
+            remaining={remaining}
+            price={price}
+            quote={quote}
+          />
+        </div>
       </div>
 
-      {formError && (
-        <span style={{ ...labelStyle, color: "var(--color-status-error)", textAlign: "center" }}>{formError}</span>
-      )}
-
-      <div style={{ flex: 1 }} />
-
-      {/* Actions */}
-      <div style={{ paddingBottom: "var(--space-6)" }}>
-        <Button onClick={onReview} disabled={!canReview}>
-          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-            Review <ArrowUpRight01Icon size={16} strokeWidth={2} />
-          </span>
-        </Button>
-      </div>
-
-      {/* Import sheet */}
-      <Sheet open={importOpen} onClose={() => { setImportOpen(false); setImportError(""); setImportText(""); }} title="Paste recipients">
+      <Sheet
+        open={importOpen}
+        onClose={() => {
+          setImportOpen(false);
+          setImportError("");
+          setImportText("");
+        }}
+        title="Paste recipients"
+      >
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)" }}>
+          <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)", color: "var(--color-text-tertiary)" }}>
             CSV: address, amount, label. JSON arrays with address and amount.
-          </div>
+          </p>
           <Textarea
             value={importText}
-            onChange={(e) => { setImportText(e.target.value); setImportError(""); }}
+            onChange={(event) => {
+              setImportText(event.target.value);
+              setImportError("");
+            }}
             rows={6}
             placeholder={"address,amount,label\nABC...,1000,Treasury"}
             style={{ minHeight: 144 }}
           />
-          {importError && (
+          {importError ? (
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-status-error)" }}>{importError}</span>
-          )}
-          <Button onClick={importFromText}>Import</Button>
+          ) : null}
+          <Button onClick={() => applyImportedRecipients(parseRecipientImport(importText))}>
+            Import
+          </Button>
         </div>
       </Sheet>
-
-    </SendStepPanel>
+    </SendManyShell>
   );
 }

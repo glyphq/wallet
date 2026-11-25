@@ -1,5 +1,4 @@
 import {
-  QEARN,
   QUTIL,
   type CallInput,
   type CallName,
@@ -81,20 +80,4 @@ export function getQutilSendManyFee() {
 
 export function getQutilBalances16(publicKeys: readonly string[]) {
   return queryContractFunction(QUTIL, "GetBalances16", { publicKeys });
-}
-
-export function getQearnLockInfoPerEpoch(epoch: number) {
-  return queryContractFunction(QEARN, "getLockInfoPerEpoch", { Epoch: epoch });
-}
-
-export function getQearnUserLockStatus(user: string) {
-  return queryContractFunction(QEARN, "getUserLockStatus", { user });
-}
-
-export function getQearnUserLockedInfo(user: string, epoch: number) {
-  return queryContractFunction(QEARN, "getUserLockedInfo", { user, epoch });
-}
-
-export function getQearnEndedStatus(user: string) {
-  return queryContractFunction(QEARN, "getEndedStatus", { user });
 }

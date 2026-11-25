@@ -4,7 +4,6 @@ import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { isValidIdentity } from "@/lib/crypto";
@@ -12,7 +11,6 @@ import { broadcastTx } from "@/lib/broadcast";
 import { buildTransferFromSession } from "@/lib/secure-session";
 import { verifyWalletPassword } from "@/lib/wallet";
 import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
-import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import { fiatInputToQubic, fiatPerQubic, qubicToFiatInput } from "@/lib/amount-currency";
@@ -81,24 +79,13 @@ export default function SendScreen() {
     .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
   const sendHeader = useMemo(() => (
-    <SendHeader
-      onSendMany={() => navigate("/send-many")}
-      onBurn={() => navigate("/burn")}
-    />
+    <SendHeader onSendMany={() => navigate("/send-many")} />
   ), [navigate]);
-
-  const { data: recentTxsData } = useTxHistory(identity || null);
-  const recentTxs = recentTxsData?.pages[0]?.items;
 
   const destUpper = normalizeIdentity(destination);
   const matchedContact = contacts.find((c) => c.identity === destUpper);
   const amountValue = (() => { try { return BigInt(amountStr.trim() || "0"); } catch { return 0n; } })();
   const needsHighValueConfirmation = exceedsHighValueThreshold(amountValue, settings.highValueSendThreshold);
-  const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
-  const suggestions = useMemo(
-    () => buildAddressSuggestions({ query: destination, contacts, accounts: walletAccountTargets, currentIdentity: identity, recentIdentities: recentRecipientIdentities }),
-    [contacts, destination, identity, recentRecipientIdentities, walletAccountTargets],
-  );
 
   const price = stats?.price;
   const fiatEquiv = price && amountStr ? formatPreferredCurrencyFromQu(amountStr, { usdPrice: price, ...quote }).text : null;
@@ -199,14 +186,11 @@ export default function SendScreen() {
         onPercent={handlePercent}
         balance={balance}
         destination={destination}
-        destUpper={destUpper}
         destError={destError}
         destRef={destRef}
         matchedContactName={matchedContact?.name ?? null}
         canOpenPicker={canOpenPicker}
-        suggestions={suggestions}
         onChangeDestination={(value) => { setDestination(value); setDestError(""); }}
-        onSelectDestination={(value) => { setDestination(value); setDestError(""); }}
         onPickerSelect={(value) => { setDestination(value); setDestError(""); setShowPicker(false); }}
         onReview={goReview}
         canReview={!!account}

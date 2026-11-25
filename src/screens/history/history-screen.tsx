@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { AsciiReveal } from "ascii-reveal";
@@ -7,27 +7,8 @@ import { useSessionStore } from "@/store/session";
 import { useTxHistory } from "@/hooks/use-tx-history";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { getWalletAccountIdentity } from "@/lib/accounts";
-import {
-  DEFAULT_FILTERS,
-  HISTORY_RENDER_PAGE,
-  INITIAL_VISIBLE_HISTORY_ROWS,
-  downloadText,
-  exportRecordFromPending,
-  exportRecordFromTx,
-  isDefault,
-  isPendingTxExpired,
-  matchesPendingFilters,
-  sanitize,
-  toCsv,
-  toDraft,
-  type DraftInputs,
-  type TxFilters,
-} from "./history-utils";
-import { ActiveChip, StatusText } from "./history-ui";
-import { buildActiveFilterChips } from "./history-active-filters";
-import { HistoryFilterSidebar } from "./history-filter-sidebar";
+import { StatusText } from "./history-ui";
 import { HistoryToolbar } from "./history-toolbar";
-import { GroupedTxs } from "./history-grouped";
 import { HistoryTxList } from "./history-tx-list";
 import {
   HistoryEmptyState,
@@ -35,11 +16,9 @@ import {
   HistoryLoadingMoreRows,
 } from "./history-list-states";
 import { HistorySkeletonRows } from "./history-skeleton";
-import { HistoryFilterSheet } from "./history-filter-sheet";
-import { HistoryExportSheet } from "./history-export-sheet";
-import { HistoryMemoExportSheet } from "./history-memo-export-sheet";
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+const INITIAL_VISIBLE_HISTORY_ROWS = 150;
+const HISTORY_RENDER_PAGE = 100;
 
 export default function HistoryScreen() {
   const navigate = useNavigate();
@@ -49,106 +28,36 @@ export default function HistoryScreen() {
   const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts);
 
-  const txMemos = usePersistedStore((s) => s.txMemos);
-  const txTags = usePersistedStore((s) => s.txTags);
-
-
-  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
-  useEffect(() => {
-    const handler = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-  const wideLayout = windowWidth >= 720;
-
-  const [filters, setFilters] = useState<TxFilters>(DEFAULT_FILTERS);
-  const [groupByCounterparty, setGroupByCounterparty] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [draft, setDraft] = useState<DraftInputs>(toDraft(DEFAULT_FILTERS));
-  const [exportOpen, setExportOpen] = useState(false);
-  const [memoExportOpen, setMemoExportOpen] = useState(false);
   const [visibleConfirmedCount, setVisibleConfirmedCount] = useState(INITIAL_VISIBLE_HISTORY_ROWS);
-
-  const hasMemos = Object.values(txMemos).some((v) => v.trim());
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useTxHistory(identity, filters);
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useTxHistory(identity);
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
 
-  // Keep filters when the identity changes so the user retains their current context.
-
-  // Sync draft when sheet opens so edits start from current values
-  useEffect(() => { if (filterOpen) setDraft(toDraft(filters)); }, [filterOpen]); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     setVisibleConfirmedCount(INITIAL_VISIBLE_HISTORY_ROWS);
-  }, [identity, filters.direction, filters.type, filters.minAmount, filters.maxAmount, filters.dateFrom, filters.dateTo, filters.tickFrom, filters.tickTo, groupByCounterparty]);
-
-  function applyAndClose() {
-    setFilters((f) => ({
-      ...f,
-      minAmount: sanitize(draft.minAmount),
-      maxAmount: sanitize(draft.maxAmount),
-      dateFrom: draft.dateFrom,
-      dateTo: draft.dateTo,
-      tickFrom: sanitize(draft.tickFrom),
-      tickTo: sanitize(draft.tickTo),
-    }));
-    setFilterOpen(false);
-  }
-
-  function resetAndClose() {
-    setFilters(DEFAULT_FILTERS);
-    setDraft(toDraft(DEFAULT_FILTERS));
-    setFilterOpen(false);
-  }
+  }, [identity]);
 
   const allTxs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
   const initialLoading = isLoading && allTxs.length === 0;
-  const fetchedHashes = useMemo(() => new Set(allTxs.map((t) => t.hash)), [allTxs]);
+  const fetchedHashes = useMemo(() => new Set(allTxs.map((tx) => tx.hash)), [allTxs]);
   const myPending = useMemo(
-    () => pendingTxs.filter((p) => p.source === identity || p.destination === identity),
+    () => pendingTxs.filter((tx) => tx.source === identity || tx.destination === identity),
     [identity, pendingTxs],
   );
   const visiblePending = useMemo(
-    () => myPending.filter((p) => !fetchedHashes.has(p.hash)),
+    () => myPending.filter((tx) => !fetchedHashes.has(tx.hash)),
     [fetchedHashes, myPending],
   );
 
-  const filteredPending = useMemo(
-    () => visiblePending.filter((p) => matchesPendingFilters(p, filters, identity)),
-    [filters, identity, visiblePending],
-  );
-
-  const filteredTxs = allTxs;
   const visibleConfirmedTxs = useMemo(
-    () => filteredTxs.slice(0, visibleConfirmedCount),
-    [filteredTxs, visibleConfirmedCount],
+    () => allTxs.slice(0, visibleConfirmedCount),
+    [allTxs, visibleConfirmedCount],
   );
-  const hasHiddenLoadedTxs = filteredTxs.length > visibleConfirmedCount;
-  const hasActive = !isDefault(filters);
-  const exportRows = useMemo(
-    () => [
-      ...filteredPending.map((p) => exportRecordFromPending(p, identity, txMemos, txTags, isPendingTxExpired(p, currentTick))),
-      ...filteredTxs.map((tx) => exportRecordFromTx(tx, identity, txMemos, txTags)),
-    ],
-    [filteredPending, filteredTxs, identity, txMemos, txTags, currentTick], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const hasHiddenLoadedTxs = allTxs.length > visibleConfirmedCount;
 
-  function exportHistory(format: "csv" | "json") {
-    if (!exportRows.length) return;
-    const date = new Date().toISOString().slice(0, 10);
-    if (format === "csv") {
-      downloadText(`glyph-history-${date}.csv`, toCsv(exportRows), "text/csv;charset=utf-8");
-    } else {
-      downloadText(`glyph-history-${date}.json`, JSON.stringify({ filters, transactions: exportRows }, null, 2), "application/json");
-    }
-    setExportOpen(false);
-  }
-
-  // Infinite scroll sentinel
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -164,140 +73,60 @@ export default function HistoryScreen() {
   }, [hasHiddenLoadedTxs, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   function showOlderLoadedTxs() {
-    setVisibleConfirmedCount((count) => Math.min(filteredTxs.length, count + HISTORY_RENDER_PAGE));
+    setVisibleConfirmedCount((count) => Math.min(allTxs.length, count + HISTORY_RENDER_PAGE));
   }
-
-  // ── Active filter chips ───────────────────────────────────────────────────
-  const chips = buildActiveFilterChips(filters, groupByCounterparty).map((chip) => ({
-    label: chip.label,
-    clear: () => {
-      if (chip.filters) setFilters((f) => ({ ...f, ...chip.filters }));
-      if (chip.draft) setDraft((d) => ({ ...d, ...chip.draft }));
-      if (chip.clearGrouping) setGroupByCounterparty(false);
-    },
-  }));
 
   return (
     <AppShell
       fullBleed
-      statusBar={
-        <HistoryToolbar
-          exportDisabled={!exportRows.length}
-          hasActiveFilters={hasActive}
-          onViewAnalytics={() => navigate("/analytics")}
-          onExport={() => setExportOpen(true)}
-          onFilter={() => setFilterOpen(true)}
-          onRefresh={() => void refetch()}
-        />
-      }
-      contentStyle={{ display: "flex", flexDirection: "row", overflow: "hidden", flex: 1, padding: 0 }}
+      statusBar={<HistoryToolbar identity={identity} />}
+      contentStyle={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1, padding: 0 }}
     >
-      {/* ── Wide-screen sticky filter sidebar ── */}
-      {wideLayout && (
-        <HistoryFilterSidebar
-          active={hasActive}
-          filters={filters}
-          draft={draft}
-          groupByCounterparty={groupByCounterparty}
-          setFilters={setFilters}
-          setDraft={setDraft}
-          setGroupByCounterparty={setGroupByCounterparty}
-          onReset={() => { setFilters(DEFAULT_FILTERS); setDraft(toDraft(DEFAULT_FILTERS)); }}
-        />
-      )}
-
-      {/* ── Main content column ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
+        <div style={{ width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", flex: 1 }}>
+          <AsciiReveal
+            loading={initialLoading}
+            revealOnMount={false}
+            shimmer={false}
+            duration="fast"
+            style={{ display: "flex", flexDirection: "column", flex: 1 }}
+          >
+            {initialLoading ? (
+              <HistorySkeletonRows />
+            ) : (
+              <>
+                {isError ? <StatusText color="var(--color-status-error)">Network error</StatusText> : null}
+                {!isError && visiblePending.length === 0 && allTxs.length === 0 ? <HistoryEmptyState /> : null}
 
-      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                {!isError ? (
+                  <HistoryTxList
+                    pending={visiblePending}
+                    txs={visibleConfirmedTxs}
+                    identity={identity}
+                    currentTick={currentTick}
+                    hideBalances={settings.hideBalances}
+                    onSelect={(hash) => navigate(`/tx/${hash}`)}
+                  />
+                ) : null}
 
-      {/* Active filter chips */}
-      {chips.length > 0 && (
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-3)" }}>
-          {chips.map((c) => <ActiveChip key={c.label} label={c.label} onRemove={c.clear} />)}
+                {!isError && hasHiddenLoadedTxs ? (
+                  <HistoryLoadMore
+                    visibleCount={visibleConfirmedTxs.length}
+                    totalCount={allTxs.length}
+                    onShowOlder={showOlderLoadedTxs}
+                  />
+                ) : null}
+              </>
+            )}
+
+            <div ref={sentinelRef} style={{ height: 1 }} />
+            {isFetchingNextPage ? <HistoryLoadingMoreRows /> : null}
+            {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 ? (
+              <StatusText color="var(--color-text-disabled)">End</StatusText>
+            ) : null}
+          </AsciiReveal>
         </div>
-      )}
-
-      <AsciiReveal
-        loading={initialLoading}
-        revealOnMount={false}
-        shimmer={false}
-        duration="fast"
-        style={{ display: "flex", flexDirection: "column", flex: 1 }}
-      >
-      {initialLoading ? (
-        <HistorySkeletonRows />
-      ) : (
-        <>
-      {/* States */}
-      {isError && <StatusText color="var(--color-status-error)">Network error</StatusText>}
-      {!isError && filteredPending.length === 0 && filteredTxs.length === 0 && (
-        <HistoryEmptyState hasAnyActivity={allTxs.length === 0 && visiblePending.length === 0} />
-      )}
-
-      {/* Transaction rows */}
-      {!isError && groupByCounterparty && filteredTxs.length > 0 && (
-        <GroupedTxs txs={visibleConfirmedTxs} identity={identity} settings={settings} onSelect={(tx) => navigate(`/tx/${tx.hash}`)} />
-      )}
-      {!isError && !groupByCounterparty && (
-        <HistoryTxList
-          pending={filteredPending}
-          txs={visibleConfirmedTxs}
-          identity={identity}
-          currentTick={currentTick}
-          hideBalances={settings.hideBalances}
-          onSelect={(hash) => navigate(`/tx/${hash}`)}
-        />
-      )}
-
-      {!isError && hasHiddenLoadedTxs && (
-        <HistoryLoadMore
-          visibleCount={visibleConfirmedTxs.length}
-          totalCount={filteredTxs.length}
-          onShowOlder={showOlderLoadedTxs}
-        />
-      )}
-        </>
-      )}
-
-      {/* Infinite scroll */}
-      <div ref={sentinelRef} style={{ height: 1 }} />
-      {isFetchingNextPage && <HistoryLoadingMoreRows />}
-      {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 && <StatusText color="var(--color-text-disabled)">End</StatusText>}
-      </AsciiReveal>
-
       </div>
-      </div>{/* end main content column */}
-
-      <HistoryFilterSheet
-        open={filterOpen}
-        active={hasActive}
-        filters={filters}
-        draft={draft}
-        groupByCounterparty={groupByCounterparty}
-        setFilters={setFilters}
-        setDraft={setDraft}
-        setGroupByCounterparty={setGroupByCounterparty}
-        onApply={applyAndClose}
-        onReset={resetAndClose}
-        onClose={applyAndClose}
-      />
-
-      <HistoryExportSheet
-        open={exportOpen}
-        recordCount={exportRows.length}
-        hasMemos={hasMemos}
-        onExport={exportHistory}
-        onExportMemos={() => { setExportOpen(false); setMemoExportOpen(true); }}
-        onClose={() => setExportOpen(false)}
-      />
-
-      <HistoryMemoExportSheet
-        open={memoExportOpen}
-        txs={allTxs}
-        memos={txMemos}
-        onClose={() => setMemoExportOpen(false)}
-      />
     </AppShell>
   );
 }

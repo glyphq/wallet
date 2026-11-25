@@ -1,9 +1,39 @@
 import { KNOWN_CONTRACT_ADDRESSES, resolveProcedureName } from "@/lib/contracts";
-import { truncateId, formatQuCompact, formatDate } from "@/lib/format";
+import { truncateId, formatQuCompact } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
 import type { PendingTx } from "@/store/persisted";
-import { ActivityItem } from "./history-activity-item";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
+import { ActivityItem } from "./history-activity-item";
+
+function dayKey(timestamp: number | null): string {
+  if (!timestamp) return "unknown";
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function dayLabel(timestamp: number | null): string {
+  if (!timestamp) return "Unknown date";
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+function formatClock(timestamp: number | null): string {
+  if (!timestamp) return "";
+  return new Date(timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "var(--space-4) 0 var(--space-1)" }}>
+      {children}
+    </div>
+  );
+}
 
 export function HistoryTxList({
   pending, txs, identity, currentTick, hideBalances, onSelect,
@@ -15,27 +45,48 @@ export function HistoryTxList({
   hideBalances: boolean;
   onSelect: (hash: string) => void;
 }) {
+  const groups: { key: string; label: string; txs: TxHistoryItem[] }[] = [];
+  for (const tx of txs) {
+    const key = dayKey(tx.timestamp);
+    let group = groups.find((item) => item.key === key);
+    if (!group) {
+      group = { key, label: dayLabel(tx.timestamp), txs: [] };
+      groups.push(group);
+    }
+    group.txs.push(tx);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {pending.map((tx) => (
-        <PendingTxRow
-          key={`p-${tx.hash}`}
-          tx={tx}
-          identity={identity}
-          currentTick={currentTick}
-          hideBalances={hideBalances}
-          onSelect={onSelect}
-        />
-      ))}
+      {pending.length > 0 ? (
+        <div>
+          <SectionLabel>Pending</SectionLabel>
+          {pending.map((tx) => (
+            <PendingTxRow
+              key={`p-${tx.hash}`}
+              tx={tx}
+              identity={identity}
+              currentTick={currentTick}
+              hideBalances={hideBalances}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      ) : null}
 
-      {txs.map((tx) => (
-        <ConfirmedTxRow
-          key={tx.hash}
-          tx={tx}
-          identity={identity}
-          hideBalances={hideBalances}
-          onSelect={onSelect}
-        />
+      {groups.map((group) => (
+        <div key={group.key}>
+          <SectionLabel>{group.label}</SectionLabel>
+          {group.txs.map((tx) => (
+            <ConfirmedTxRow
+              key={tx.hash}
+              tx={tx}
+              identity={identity}
+              hideBalances={hideBalances}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
       ))}
     </div>
   );
@@ -53,19 +104,16 @@ function PendingTxRow({
   const isIn = tx.destination === identity;
   const progress = pendingTxProgress(tx.targetTick, currentTick);
   const expired = progress.phase === "expired";
-  const label = progress.label;
-  const labelColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
   const address = tx.contractName ?? (isIn ? truncateId(tx.source) : truncateId(tx.destination));
-  const time = progress.timingText;
 
   return (
     <ActivityItem
       className="stagger-item"
       onClick={() => onSelect(tx.hash)}
-      label={label}
-      labelColor={labelColor}
+      label={progress.label}
+      labelColor={expired ? "var(--color-status-error)" : "var(--color-status-warning)"}
       address={address}
-      time={time}
+      time={progress.timingText}
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
       amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
       txType={expired ? "failed" : "pending"}
@@ -84,11 +132,9 @@ function ConfirmedTxRow({
   const isIn = tx.destination === identity;
   const contractName = tx.destination ? KNOWN_CONTRACT_ADDRESSES[tx.destination] : undefined;
   const fromContract = tx.source ? KNOWN_CONTRACT_ADDRESSES[tx.source] : undefined;
-  const isSc = !!(contractName || fromContract);
+  const isSc = Boolean(contractName || fromContract);
   const flew = tx.moneyFlew;
-
   const procedureName = resolveProcedureName(contractName, fromContract, tx.inputType);
-
   const label = !flew ? "Failed" : isSc ? (procedureName ?? contractName ?? "Contract call") : isIn ? "Received" : "Sent";
   const labelColor = !flew ? "var(--color-status-error)" : isIn ? "var(--color-accent)" : "var(--color-text-secondary)";
   const address = isSc
@@ -103,7 +149,7 @@ function ConfirmedTxRow({
       label={label}
       labelColor={labelColor}
       address={address}
-      time={formatDate(tx.timestamp) || `Tick ${tx.tickNumber}`}
+      time={formatClock(tx.timestamp) || `Tick ${tx.tickNumber}`}
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
       amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
       txType={txType}

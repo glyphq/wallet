@@ -44,7 +44,7 @@ export default function SecurityScreen() {
   const wallets = usePersistedStore((s) => s.wallets);
 
   const { autoLockMinutes, lockOnWindowBlur, lockOnSleep, clipboardClearSeconds,
-    requirePasswordForBurn, requireBiometricForSeedReveal } = settings;
+    requireBiometricForSeedReveal } = settings;
   const biometricWalletIds = settings.biometricWalletIds ?? [];
   const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0];
   const bioEnabled = wallet ? biometricWalletIds.includes(wallet.id) : false;
@@ -210,20 +210,18 @@ export default function SecurityScreen() {
           </div>
         </section>
 
-        <SettingsDivider fullBleed />
+        {bioAvailable ? (
+          <>
+            <SettingsDivider fullBleed />
 
-        <section style={sectionStyle} aria-label="Approval requirements">
-          <SettingsSectionLabel>Approval requirements</SettingsSectionLabel>
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <Toggle label="Password for burn" description="Require password before burning QU" checked={requirePasswordForBurn} onChange={(checked) => updateSettings({ requirePasswordForBurn: checked })} />
-            {bioAvailable && (
-              <>
-                <SettingsDivider fullBleed />
+            <section style={sectionStyle} aria-label="Approval requirements">
+              <SettingsSectionLabel>Approval requirements</SettingsSectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 <Toggle label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={(checked) => updateSettings({ requireBiometricForSeedReveal: checked })} />
-              </>
-            )}
-          </div>
-        </section>
+              </div>
+            </section>
+          </>
+        ) : null}
 
         {bioAvailable && wallet && (
           <>

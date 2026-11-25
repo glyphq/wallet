@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildRequestNotification, MAX_REQUEST_CHARS, MAX_REQUEST_CONTRACT_INDEX, parseGlyphEnvelope, parseGlyphEnvelopeAsync, scCallRequestSchema } from "@/lib/request-schema";
+import { CONTRACT_NAMES, QUTIL_CONTRACT_INDEX } from "@/lib/contracts";
 import { REQUEST_PROTOCOL_V2, requestHashV2 } from "@/lib/jcs";
 
 async function envelope(request: Record<string, unknown>, callback: string | null = null, redirect_uri: string | null = null, network = { id: "qubic:mainnet" as const }) {
@@ -104,7 +105,7 @@ describe("parseGlyphEnvelope", () => {
 
 describe("buildRequestNotification", () => {
   test("uses shared labels for contract calls", () => {
-    const notification = buildRequestNotification({ type: "sc_call", dapp: { name: "Demo", origin: "https://demo.app" }, nonce: "n1", contract_index: 9, input_type: 1, amount: "2500" });
-    expect(notification?.body).toContain("Qearn");
+    const notification = buildRequestNotification({ type: "sc_call", dapp: { name: "Demo", origin: "https://demo.app" }, nonce: "n1", contract_index: QUTIL_CONTRACT_INDEX, input_type: 1, amount: "2500" });
+    expect(notification?.body).toContain(CONTRACT_NAMES[QUTIL_CONTRACT_INDEX]);
   });
 });

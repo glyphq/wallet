@@ -1,13 +1,8 @@
-import { decodeFields, MSVAULT, QEARN, QUTIL, type ContractCall, type ContractDefinition } from "@glyph-oss/contracts";
+import { decodeFields, MSVAULT, QUTIL, type ContractCall, type ContractDefinition } from "@glyph-oss/contracts";
 
 export interface ScCallRecipient {
   identity: string;
   amount: bigint;
-}
-
-export interface QearnUnlockPayload {
-  amount: bigint;
-  epoch: number;
 }
 
 export interface MultiSignVaultDepositPayload {
@@ -60,14 +55,6 @@ export function decodeQUtilSendToMany(bytes: Uint8Array): ScCallRecipient[] | nu
   }
   return results;
 }
-
-/** Decode a QEARN unlock payload from its maintained ABI. */
-export function decodeQearnUnlock(bytes: Uint8Array): QearnUnlockPayload | null {
-  const decoded = decodeInput(QEARN.definition, QEARN.procedures.unlock, bytes);
-  if (!decoded) return null;
-  return { amount: decoded.amount as bigint, epoch: decoded.lockedEpoch as number };
-}
-
 
 /** Decode an MSVAULT deposit payload from its maintained ABI. */
 export function decodeMultiSignVaultDeposit(bytes: Uint8Array): MultiSignVaultDepositPayload | null {

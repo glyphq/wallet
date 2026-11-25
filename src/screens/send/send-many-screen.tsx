@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { buildPayload, type PayloadField } from "@qubic.org/tx";
 import type { Identity } from "@qubic.org/types";
@@ -9,7 +9,6 @@ import { useTickInfo } from "@/hooks/use-tick-info";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
-import { useTxHistory } from "@/hooks/use-tx-history";
 import { isValidIdentity, newId } from "@/lib/crypto";
 import { getQutilSendManyFee } from "@/lib/api/contracts";
 import { broadcastTx } from "@/lib/broadcast";
@@ -18,7 +17,6 @@ import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { QUTIL_ADDRESS, QUTIL_SEND_TO_MANY_V1_INPUT_TYPE } from "@/lib/contracts";
 import { extractMessage } from "@/lib/format";
 import { qk } from "@/lib/query-keys";
-import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
 import {
@@ -60,8 +58,6 @@ export default function SendManyScreen() {
   const { data: stats } = useLatestStats();
   const quote = usePreferredCurrencyQuote();
   const price = stats?.price;
-  const { data: recentTxsData } = useTxHistory(identity || null);
-  const recentTxs = recentTxsData?.pages[0]?.items;
 
   const [step, setStep] = useState<SendStep>("input");
   const [recipients, setRecipients] = useState<Recipient[]>([emptyRecipient()]);
@@ -86,19 +82,10 @@ export default function SendManyScreen() {
     .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
     .filter((a) => a.identity && a.identity !== identity);
   const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
-  const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
 
   function setField(index: number, field: Partial<Recipient>) {
     setRecipients((prev) => prev.map((r, i) => (i === index ? { ...r, ...field } : r)));
   }
-
-  const suggestionsByIndex = useMemo(
-    () => recipients.map((r) => buildAddressSuggestions({
-      query: r.identity, contacts, accounts: walletAccountTargets,
-      currentIdentity: identity, recentIdentities: recentRecipientIdentities,
-    })),
-    [contacts, identity, recentRecipientIdentities, recipients, walletAccountTargets],
-  );
 
   function addRecipient() {
     if (recipients.length < MAX_RECIPIENTS) setRecipients((prev) => [...prev, emptyRecipient()]);
@@ -198,7 +185,6 @@ export default function SendManyScreen() {
         fee={fee}
         totalAmount={totalAmount}
         formError={formError}
-        suggestionsByIndex={suggestionsByIndex}
         canOpenPicker={canOpenPicker}
         onFieldChange={setField}
         onEnter={goReview}

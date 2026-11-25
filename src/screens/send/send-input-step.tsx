@@ -6,10 +6,9 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { ChoiceChips } from "@/components/choice-chips";
 import { TextButton } from "@/components/text-button";
-import type { AddressSuggestion } from "@/lib/address-intelligence";
 import type { Contact } from "@/store/persisted";
 import { SendStepPanel } from "./send-step-panel";
-import { AddressSuggestionsOverlay, labelStyle, SendStepFooter } from "./send-ui";
+import { labelStyle, SendStepFooter } from "./send-ui";
 
 export interface SendInputStepProps {
   statusBar: ReactNode;
@@ -28,14 +27,11 @@ export interface SendInputStepProps {
   onPercent: (percent: 25 | 50 | 75 | 100) => void;
   balance: bigint | null;
   destination: string;
-  destUpper: string;
   destError: string;
   destRef: RefObject<HTMLInputElement | null>;
   matchedContactName: string | null;
   canOpenPicker: boolean;
-  suggestions: AddressSuggestion[];
   onChangeDestination: (value: string) => void;
-  onSelectDestination: (identity: string) => void;
   onPickerSelect: (identity: string) => void;
   onReview: () => void;
   canReview: boolean;
@@ -64,14 +60,11 @@ export function SendInputStep({
   onPercent,
   balance,
   destination,
-  destUpper,
   destError,
   destRef,
   matchedContactName,
   canOpenPicker,
-  suggestions,
   onChangeDestination,
-  onSelectDestination,
   onPickerSelect,
   onReview,
   canReview,
@@ -123,15 +116,6 @@ export function SendInputStep({
               </button>
             ) : undefined}
           />
-          {destination.trim() ? (
-            <AddressSuggestionsOverlay
-              suggestions={suggestions}
-              currentIdentity={destUpper}
-              onSelect={onSelectDestination}
-              maxHeight={240}
-              animated
-            />
-          ) : null}
           {!destError && matchedContactName ? (
             <span style={{ display: "block", marginTop: "var(--space-1)", paddingLeft: "var(--space-1)", fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-accent)" }}>
               {matchedContactName}
