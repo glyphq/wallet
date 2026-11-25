@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { CheckmarkCircle01Icon, Copy01Icon } from "@/lib/icons";
 import { IconButton } from "@/components/icon-button";
-import { Identicon } from "@/components/identicon";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { ContractMark } from "@/components/contract-mark";
 import { copyToClipboard } from "@/lib/clipboard";
 
@@ -63,7 +63,7 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
 export function IdentityValue({ identity }: { identity: string }) {
   return (
     <>
-      <Identicon kind="identity" seed={identity} size={22} radius={999} style={{ flexShrink: 0 }} />
+      <FramedAvatar seed={identity} size={22} />
       <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
         {identity}
       </span>

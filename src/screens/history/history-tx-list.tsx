@@ -4,7 +4,7 @@ import type { TxHistoryItem } from "@/hooks/use-tx-history";
 import type { PendingTx } from "@/store/persisted";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { ContractMark } from "@/components/contract-mark";
-import { Identicon } from "@/components/identicon";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { ActivityItem } from "./history-activity-item";
 
 function dayKey(timestamp: number | null): string {
@@ -41,7 +41,6 @@ function RowLeading({ contractName, identity }: { contractName?: string | null; 
   if (contractName) {
     return (
       <span
-        className="history-tx-icon corner-frame"
         style={{
           flexShrink: 0,
           width: 40,
@@ -49,8 +48,7 @@ function RowLeading({ contractName, identity }: { contractName?: string | null; 
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: 2,
-          border: "1px solid var(--color-border-subtle)",
+          borderRadius: 12,
           background: "var(--color-bg-surface)",
         }}
       >
@@ -58,7 +56,7 @@ function RowLeading({ contractName, identity }: { contractName?: string | null; 
       </span>
     );
   }
-  return <Identicon kind="identity" seed={identity ?? "unknown"} size={40} radius={20} style={{ flexShrink: 0 }} />;
+  return <FramedAvatar seed={identity ?? "unknown"} size={40} />;
 }
 
 export function HistoryTxList({
