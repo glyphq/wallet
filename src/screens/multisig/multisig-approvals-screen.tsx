@@ -1,11 +1,11 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { AsciiSkeleton } from "ascii-reveal";
 import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ScreenHeader } from "@/components/screen-header";
-import { Tag } from "@/components/tag";
 import { useMsvaultDetail } from "@/hooks/use-msvault";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -39,86 +39,67 @@ const MONO_META: CSSProperties = {
   overflowWrap: "anywhere",
 };
 
-const CARD: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "var(--space-3)",
-  width: "100%",
-  padding: "var(--space-4)",
-  border: "1px solid var(--color-border-subtle)",
-  borderRadius: "var(--radius-sharp)",
-  background: "var(--color-bg-surface)",
-  color: "inherit",
-  textAlign: "left",
-  cursor: "pointer",
-};
-
-function ApprovalCard({
+function ApprovalRow({
   proposal,
-  owners,
   contacts,
   wallet,
   sessionAccounts,
   onOpen,
 }: {
   proposal: MsvaultProposal;
-  owners: string[];
   contacts: Parameters<typeof identityDisplayName>[1];
   wallet: Parameters<typeof identityDisplayName>[2];
   sessionAccounts: Parameters<typeof identityDisplayName>[3];
   onOpen: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
   const remaining = Math.max(0, proposal.requiredApprovals - proposal.approvals);
   const ready = remaining === 0;
   const destinationName = identityDisplayName(proposal.destination, contacts, wallet, sessionAccounts);
 
   return (
-    <button type="button" className="corner-frame" onClick={onOpen} style={CARD}>
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-        <span style={MONO_META}>{proposal.kind === "qubic" ? "QUBIC release" : "Asset release"}</span>
-        <Tag variant={ready ? "success" : "warning"}>{ready ? "Ready" : `Needs ${remaining} more`}</Tag>
-      </span>
-
-      <span style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", flexWrap: "wrap", minWidth: 0 }}>
-        {proposal.kind === "asset" && proposal.asset ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-section)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
+    <button
+      type="button"
+      onClick={onOpen}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label={`Review release to ${destinationName}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-3)",
+        width: "100%",
+        minHeight: 64,
+        padding: "var(--space-3)",
+        border: 0,
+        borderRadius: "var(--radius-sharp)",
+        background: hovered ? "var(--color-bg-elevated)" : "transparent",
+        color: "inherit",
+        textAlign: "left",
+        cursor: "pointer",
+        minWidth: 0,
+      }}
+    >
+      <FramedAvatar seed={proposal.destination} size={34} />
+      <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-body-compact)", fontWeight: 500, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {proposal.kind === "asset" && proposal.asset ? (
             <AssetMetaLabel asset={proposal.asset} amount={proposal.amount} />
-          </span>
-        ) : (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-section)", color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
-            {formatQu(proposal.amount)} QU
-          </span>
-        )}
-      </span>
-
-      <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", minWidth: 0 }}>
-        <span style={SECTION_LABEL}>To</span>
-        <span style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", flexWrap: "wrap", minWidth: 0 }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-compact)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
-            {destinationName}
-          </span>
-          <span style={{ ...MONO_META, color: "var(--color-text-disabled)" }}>{truncateId(proposal.destination, 8, 8)}</span>
+          ) : (
+            `${formatQu(proposal.amount)} QU`
+          )}
+        </span>
+        <span style={{ ...MONO_META, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          To {destinationName} · {truncateId(proposal.destination, 8, 8)}
         </span>
       </span>
-
-      <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-        <span style={MONO_META}>{proposal.approvals} of {proposal.requiredApprovals} approvals</span>
-        <span aria-hidden="true" style={{ ...MONO_META, color: "var(--color-text-disabled)" }}>·</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)" }}>
-          {proposal.supporters.map((ownerIdx) => {
-            const supporter = owners[ownerIdx];
-            if (!supporter) return null;
-            return (
-              <span key={`${proposal.key}:${ownerIdx}`} title={identityDisplayName(supporter, contacts, wallet, sessionAccounts)}>
-                <FramedAvatar seed={supporter} size={22} />
-              </span>
-            );
-          })}
+      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, flexShrink: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>
+          {proposal.approvals} of {proposal.requiredApprovals}
         </span>
-      </span>
-
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-accent)", letterSpacing: "0.04em" }}>
-        Review request →
+        <span style={{ ...MONO_META, textAlign: "right", color: ready ? "var(--color-status-success)" : "var(--color-status-warning)" }}>
+          {ready ? "Ready" : `Needs ${remaining} more`}
+        </span>
       </span>
     </button>
   );
@@ -174,9 +155,17 @@ export default function MultisigApprovalsScreen() {
   if (detailQuery.isLoading) {
     return (
       <AppShell statusBar={header}>
-        <div aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <div aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           {[0, 1, 2].map((row) => (
-            <div key={row} style={{ height: 72, borderRadius: "var(--radius-sharp)", background: "var(--color-skeleton)" }} />
+            <div key={row} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 64, padding: "var(--space-3)" }}>
+              <AsciiSkeleton as="div" variant="scan" rows={2} width={34} height={34} animate={false} seed={row + 1} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <AsciiSkeleton as="div" variant="scan" lines={1} widths={[130]} animate={false} seed={row + 11} />
+                <div style={{ height: 6 }} />
+                <AsciiSkeleton as="div" variant="scan" lines={1} widths={[180]} animate={false} seed={row + 21} />
+              </div>
+              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[60]} animate={false} seed={row + 31} />
+            </div>
           ))}
         </div>
       </AppShell>
@@ -216,10 +205,9 @@ export default function MultisigApprovalsScreen() {
             <VaultId id={detail.id} />
           </div>
           {detail.proposals.map((proposal) => (
-            <ApprovalCard
+            <ApprovalRow
               key={proposal.key}
               proposal={proposal}
-              owners={detail.owners}
               contacts={contacts}
               wallet={wallet}
               sessionAccounts={sessionAccounts}
