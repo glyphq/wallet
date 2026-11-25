@@ -1,8 +1,8 @@
 import { useNavigate, useParams } from "react-router";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { ShieldAlertIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTickInfo } from "@/hooks/use-tick-info";
@@ -49,13 +49,16 @@ export default function TxDetailScreen() {
 
   if (!detail || !hash) {
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-12) 0", gap: "var(--space-3)" }}>
-          <ShieldAlertIcon size={32} style={{ color: "var(--color-text-disabled)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
-            Transaction not found
-          </span>
-          <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/history")}>Back to history</Button>
+      <AppShell fullBleed contentStyle={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", padding: "var(--space-4)" }}>
+          <EmptyCollectionState
+            icon="search"
+            title="Transaction not found"
+            description="This transaction is not in the loaded history for the active account."
+          />
+          <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={() => navigate("/history")}>
+            Back to history
+          </Button>
         </div>
       </AppShell>
     );
@@ -65,7 +68,8 @@ export default function TxDetailScreen() {
   const fiatValue = snapshot ? formatPreferredCurrencyFromQu(detail.amount ?? "0", { usdPrice: snapshot.priceUsd, ...quote }).text : "—";
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
+    <AppShell fullBleed contentStyle={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", width: "100%", maxWidth: 720, margin: "0 auto", padding: "var(--space-4)" }}>
       {isPendingTx(detail) ? (
         <PendingTxDetail
           tx={detail}
@@ -90,6 +94,7 @@ export default function TxDetailScreen() {
           }}
         />
       )}
+      </div>
     </AppShell>
   );
 }

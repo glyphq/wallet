@@ -1,62 +1,66 @@
-import { useState, useCallback } from "react";
-import { Copy01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
+import { useState, type ReactNode } from "react";
+import { CheckmarkCircle01Icon, Copy01Icon } from "@/lib/icons";
+import { IconButton } from "@/components/icon-button";
 import { copyToClipboard } from "@/lib/clipboard";
 
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
-  color: "var(--color-text-secondary)",
-};
+export function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+      {children}
+    </span>
+  );
+}
 
-export const CARD_STYLE: React.CSSProperties = {
-  background: "var(--color-bg-surface)",
-  borderRadius: "var(--radius-card)",
-  padding: "var(--space-1) var(--space-4)",
-};
-
-export const DIVIDER: React.CSSProperties = {
-  height: 1, background: "var(--color-border-subtle)", margin: "0 calc(var(--space-4) * -1)",
-};
-
-export function DetailRow({ icon, label, value, valueColor, mono: useMono = true, copyValue }: {
-  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean; copyValue?: string;
+export function DetailRow({
+  label,
+  value,
+  copyValue,
+  mono = true,
+}: {
+  label: string;
+  value: string;
+  copyValue?: string;
+  mono?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const [hovered, setHovered] = useState(false);
 
-  const handleCopy = useCallback(async () => {
+  async function copy() {
     if (!copyValue) return;
     await copyToClipboard(copyValue);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  }, [copyValue]);
-
-  const valueElement = (
-    <span
-      style={{
-        fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "var(--text-body)", fontWeight: useMono ? 400 : 500,
-        color: valueColor ?? "var(--color-text-display)",
-        textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
-        textDecoration: copyValue && hovered ? "underline" : "none",
-        textUnderlineOffset: 3,
-        cursor: copyValue ? "pointer" : "default",
-        display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={copyValue ? handleCopy : undefined}
-    >
-      {value}
-      {copyValue && !copied && <Copy01Icon size={12} style={{ flexShrink: 0, opacity: 0.4 }} />}
-      {copyValue && copied && <CheckmarkCircle01Icon size={12} style={{ flexShrink: 0, color: "var(--color-status-success)" }} />}
-    </span>
-  );
+  }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
-      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
-      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
-      {valueElement}
+    <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "var(--space-2)", minWidth: 0, padding: "var(--space-2) 0" }}>
+      <span style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
+        {label}
+      </span>
+      <span
+        style={{
+          minWidth: 0,
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
+          fontSize: mono ? "var(--text-mono-sm)" : "var(--text-label)",
+          color: "var(--color-text-primary)",
+          overflowWrap: "anywhere",
+          fontVariantNumeric: mono ? "tabular-nums" : undefined,
+        }}
+      >
+        {value}
+      </span>
+      {copyValue ? (
+        <IconButton
+          label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+          onClick={() => void copy()}
+          style={{ width: 24, height: 24, flexShrink: 0, alignSelf: "center" }}
+        >
+          {copied ? (
+            <CheckmarkCircle01Icon size={13} color="var(--color-status-success)" aria-hidden="true" />
+          ) : (
+            <Copy01Icon size={13} aria-hidden="true" />
+          )}
+        </IconButton>
+      ) : null}
     </div>
   );
 }

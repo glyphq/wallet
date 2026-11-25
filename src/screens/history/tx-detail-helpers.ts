@@ -2,6 +2,7 @@ import { resolveProcedureName } from "@/lib/contracts";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
 import { truncateId } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
+import type { TagVariant } from "@/components/tag";
 import type { PendingTx } from "@/store/persisted";
 
 export function isPendingTx(detail: TxHistoryItem | PendingTx): detail is PendingTx {
@@ -15,7 +16,7 @@ export function describePendingTx(tx: PendingTx, currentTick: number) {
     progress,
     expired,
     statusLabel: progress.label,
-    statusColor: expired ? "var(--color-status-error)" : "var(--color-status-warning)",
+    statusVariant: (expired ? "error" : "warning") as TagVariant,
     amountColor: expired ? "var(--color-text-disabled)" : "var(--color-accent)",
     displayTo: tx.contractName ? tx.contractName : truncateId(tx.destination ?? "—"),
   };
@@ -33,24 +34,24 @@ export function describeConfirmedTx(
   const procedureName = resolveProcedureName(contractName, fromContract, tx.inputType);
 
   let statusLabel: string;
-  let statusColor: string;
+  let statusVariant: TagVariant;
   let amountColor: string;
 
   if (!flew) {
     statusLabel = "Failed";
-    statusColor = "var(--color-status-error)";
+    statusVariant = "error";
     amountColor = "var(--color-text-disabled)";
   } else if (isSc) {
     statusLabel = procedureName ?? "SC call";
-    statusColor = "var(--color-text-secondary)";
+    statusVariant = "neutral";
     amountColor = "var(--color-text-display)";
   } else if (isIn) {
     statusLabel = "Received";
-    statusColor = "var(--color-accent)";
+    statusVariant = "success";
     amountColor = "var(--color-accent)";
   } else {
     statusLabel = "Sent";
-    statusColor = "var(--color-text-secondary)";
+    statusVariant = "neutral";
     amountColor = "var(--color-text-display)";
   }
 
@@ -58,5 +59,5 @@ export function describeConfirmedTx(
     ? (contractName ?? fromContract ?? truncateId(tx.destination ?? "—"))
     : truncateId(tx.destination ?? "—");
 
-  return { isIn, flew, isSc, statusLabel, statusColor, amountColor, displayTo };
+  return { isIn, flew, isSc, statusLabel, statusVariant, amountColor, displayTo };
 }
