@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ArrowDownLeft01Icon, ArrowUpRight01Icon, Clock01Icon, FlashIcon, ShieldAlertIcon } from "@/lib/icons";
 
 const TX_TYPE_ICONS: Record<string, typeof ArrowUpRight01Icon> = {
@@ -8,7 +9,7 @@ const TX_TYPE_ICONS: Record<string, typeof ArrowUpRight01Icon> = {
   pending: Clock01Icon,
 };
 
-export function ActivityItem({ onClick, label, labelColor, address, time, amount, amountColor, className, txType }: {
+export function ActivityItem({ onClick, label, labelColor, address, time, amount, amountColor, className, txType, leading }: {
   onClick: () => void;
   label: string;
   labelColor: string;
@@ -18,6 +19,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
   amountColor: string;
   className?: string;
   txType?: "sent" | "received" | "sc" | "failed" | "pending";
+  leading?: ReactNode;
 }) {
   const TypeIcon = txType ? TX_TYPE_ICONS[txType] : null;
 
@@ -41,7 +43,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
         textAlign: "left",
       }}
     >
-      {TypeIcon && (
+      {leading ?? (TypeIcon ? (
         <div
           className="history-tx-icon corner-frame"
           style={{
@@ -63,7 +65,7 @@ export function ActivityItem({ onClick, label, labelColor, address, time, amount
         >
           <TypeIcon size={18} aria-hidden="true" />
         </div>
-      )}
+      ) : null)}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
         <span

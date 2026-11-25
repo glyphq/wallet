@@ -3,6 +3,8 @@ import { truncateId, formatQuCompact } from "@/lib/format";
 import type { TxHistoryItem } from "@/hooks/use-tx-history";
 import type { PendingTx } from "@/store/persisted";
 import { pendingTxProgress } from "@/lib/pending-tx-progress";
+import { ContractMark } from "@/components/contract-mark";
+import { Identicon } from "@/components/identicon";
 import { ActivityItem } from "./history-activity-item";
 
 function dayKey(timestamp: number | null): string {
@@ -33,6 +35,30 @@ function SectionLabel({ children }: { children: string }) {
       {children}
     </div>
   );
+}
+
+function RowLeading({ contractName, identity }: { contractName?: string | null; identity: string | null }) {
+  if (contractName) {
+    return (
+      <span
+        className="history-tx-icon corner-frame"
+        style={{
+          flexShrink: 0,
+          width: 40,
+          height: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 2,
+          border: "1px solid var(--color-border-subtle)",
+          background: "var(--color-bg-surface)",
+        }}
+      >
+        <ContractMark name={contractName} size={20} />
+      </span>
+    );
+  }
+  return <Identicon kind="identity" seed={identity ?? "unknown"} size={40} radius={20} style={{ flexShrink: 0 }} />;
 }
 
 export function HistoryTxList({
@@ -105,6 +131,8 @@ function PendingTxRow({
   const progress = pendingTxProgress(tx.targetTick, currentTick);
   const expired = progress.phase === "expired";
   const address = tx.contractName ?? (isIn ? truncateId(tx.source) : truncateId(tx.destination));
+  const contractLabel = tx.contractName?.split("·")[0]?.trim() || null;
+  const counterparty = isIn ? tx.source : tx.destination;
 
   return (
     <ActivityItem
@@ -117,6 +145,7 @@ function PendingTxRow({
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
       amountColor={expired ? "var(--color-text-disabled)" : "var(--color-status-warning)"}
       txType={expired ? "failed" : "pending"}
+      leading={<RowLeading contractName={contractLabel} identity={counterparty} />}
     />
   );
 }
@@ -141,6 +170,7 @@ function ConfirmedTxRow({
     ? (contractName ?? fromContract ?? truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown")))
     : truncateId(isIn ? (tx.source ?? "Unknown") : (tx.destination ?? "Unknown"));
   const txType = !flew ? "failed" as const : isSc ? "sc" as const : isIn ? "received" as const : "sent" as const;
+  const counterparty = isIn ? tx.source : tx.destination;
 
   return (
     <ActivityItem
@@ -153,6 +183,7 @@ function ConfirmedTxRow({
       amount={hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQuCompact(tx.amount)}`}
       amountColor={flew ? (isIn ? "var(--color-accent)" : "var(--color-text-primary)") : "var(--color-text-disabled)"}
       txType={txType}
+      leading={<RowLeading contractName={contractName ?? fromContract} identity={counterparty} />}
     />
   );
 }

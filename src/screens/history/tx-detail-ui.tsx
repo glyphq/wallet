@@ -1,68 +1,116 @@
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { CheckmarkCircle01Icon, Copy01Icon } from "@/lib/icons";
 import { IconButton } from "@/components/icon-button";
+import { Identicon } from "@/components/identicon";
+import { ContractMark } from "@/components/contract-mark";
 import { copyToClipboard } from "@/lib/clipboard";
 
-export function SectionLabel({ children }: { children: ReactNode }) {
+export function TxSection({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+    <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", paddingLeft: 2 }}>
+        {label}
+      </span>
       {children}
-    </span>
+    </section>
   );
 }
 
-export function DetailRow({
-  label,
-  value,
-  copyValue,
-  mono = true,
-}: {
-  label: string;
-  value: string;
-  copyValue?: string;
-  mono?: boolean;
-}) {
+export function TxBox({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-2)",
+        minHeight: 46,
+        padding: "var(--space-3) var(--space-4)",
+        background: "var(--color-bg-surface)",
+        borderRadius: 6,
+        minWidth: 0,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
-    if (!copyValue) return;
-    await copyToClipboard(copyValue);
+    await copyToClipboard(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, padding: "var(--space-2) 0" }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
-        {label}
+    <IconButton
+      label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+      onClick={() => void copy()}
+      style={{ width: 26, height: 26, flexShrink: 0 }}
+    >
+      {copied ? (
+        <CheckmarkCircle01Icon size={14} color="var(--color-status-success)" aria-hidden="true" />
+      ) : (
+        <Copy01Icon size={14} aria-hidden="true" />
+      )}
+    </IconButton>
+  );
+}
+
+export function IdentityValue({ identity }: { identity: string }) {
+  return (
+    <>
+      <Identicon kind="identity" seed={identity} size={22} radius={999} style={{ flexShrink: 0 }} />
+      <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
+        {identity}
       </span>
-      <span style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", minWidth: 0 }}>
-        <span
-          style={{
-            minWidth: 0,
-            fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
-            fontSize: mono ? "var(--text-mono-sm)" : "var(--text-label)",
-            color: "var(--color-text-primary)",
-            overflowWrap: "anywhere",
-            fontVariantNumeric: mono ? "tabular-nums" : undefined,
-          }}
-        >
-          {value}
-        </span>
-        {copyValue ? (
-          <IconButton
-            label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
-            onClick={() => void copy()}
-            style={{ width: 24, height: 24, flexShrink: 0 }}
-          >
-            {copied ? (
-              <CheckmarkCircle01Icon size={13} color="var(--color-status-success)" aria-hidden="true" />
-            ) : (
-              <Copy01Icon size={13} aria-hidden="true" />
-            )}
-          </IconButton>
-        ) : null}
+      <CopyButton value={identity} label="identity" />
+    </>
+  );
+}
+
+export function ContractValue({ name, address }: { name: string; address: string }) {
+  return (
+    <>
+      <span style={{ display: "inline-flex", width: 22, height: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <ContractMark name={name} size={20} />
       </span>
-    </div>
+      <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
+        {name}
+      </span>
+      <CopyButton value={address} label="contract address" />
+    </>
+  );
+}
+
+export function StatChip({ children, tone }: { children: ReactNode; tone?: "success" | "warning" | "error" }) {
+  const color = tone === "success"
+    ? "var(--color-status-success)"
+    : tone === "warning"
+      ? "var(--color-status-warning)"
+      : tone === "error"
+        ? "var(--color-status-error)"
+        : "var(--color-text-primary)";
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        background: tone ? `color-mix(in srgb, ${color} 12%, var(--color-bg-surface))` : "var(--color-bg-surface)",
+        color,
+        borderRadius: 6,
+        padding: "4px 10px",
+        fontFamily: "var(--font-mono)",
+        fontSize: "var(--text-mono-sm)",
+        lineHeight: 1.35,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
   );
 }

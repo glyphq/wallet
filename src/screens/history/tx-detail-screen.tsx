@@ -4,13 +4,11 @@ import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
-import { useSessionStore } from "@/store/session";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { type TxHistoryItem } from "@/hooks/use-tx-history";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import { findClosestPriceSnapshot } from "@/lib/price-snapshots";
-import { getWalletAccountIdentity } from "@/lib/accounts";
 import { isPendingTx } from "./tx-detail-helpers";
 import { PendingTxDetail } from "./tx-detail-pending";
 import { ConfirmedTxDetail } from "./tx-detail-confirmed";
@@ -21,8 +19,6 @@ export default function TxDetailScreen() {
   const queryClient = useQueryClient();
 
   const settings = usePersistedStore((s) => s.settings);
-  const wallets = usePersistedStore((s) => s.wallets);
-  const accounts = useSessionStore((s) => s.accounts);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const txMemos = usePersistedStore((s) => s.txMemos);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
@@ -30,9 +26,6 @@ export default function TxDetailScreen() {
   const priceSnapshots = usePersistedStore((s) => s.priceSnapshots);
   const hideBalances = settings.hideBalances;
   const quote = usePreferredCurrencyQuote();
-
-  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0] ?? null;
-  const identity = getWalletAccountIdentity(wallet, settings.activeAccountIndex, accounts);
 
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
@@ -69,7 +62,7 @@ export default function TxDetailScreen() {
 
   return (
     <AppShell fullBleed contentStyle={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", width: "100%", maxWidth: 720, margin: "0 auto", padding: "var(--space-4)" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", width: "100%", maxWidth: 600, padding: "var(--space-5)" }}>
       {isPendingTx(detail) ? (
         <PendingTxDetail
           tx={detail}
@@ -83,7 +76,6 @@ export default function TxDetailScreen() {
         <ConfirmedTxDetail
           tx={detail}
           hash={hash}
-          identity={identity}
           hideBalances={hideBalances}
           snapshot={snapshot}
           fiatValue={fiatValue}

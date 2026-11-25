@@ -1,9 +1,17 @@
 import { motion } from "motion/react";
 import { presets } from "@/lib/animations";
-import { formatDate, formatQu, truncateId } from "@/lib/format";
+import { pendingTxProgress } from "@/lib/pending-tx-progress";
+import { formatQu } from "@/lib/format";
 import type { PendingTx, PriceSnapshot } from "@/store/persisted";
-import { DetailRow, SectionLabel } from "./tx-detail-ui";
-import { describePendingTx } from "./tx-detail-helpers";
+import {
+  ContractValue,
+  CopyButton,
+  IdentityValue,
+  StatChip,
+  TxBox,
+  TxSection,
+} from "./tx-detail-ui";
+import { describePendingTx, formatTransactionTimestamp } from "./tx-detail-helpers";
 
 export function PendingTxDetail({
   tx, hash, currentTick, hideBalances, snapshot, fiatValue,
@@ -15,33 +23,71 @@ export function PendingTxDetail({
   snapshot: PriceSnapshot | null;
   fiatValue: string;
 }) {
-  const { kindLabel, amountColor, displayTo, progress } = describePendingTx(tx, currentTick);
+  const { kindLabel, amountColor } = describePendingTx(tx);
+  const progress = pendingTxProgress(tx.targetTick, currentTick);
+  const expired = progress.phase === "expired";
+  const contractLabel = tx.contractName?.split("·")[0]?.trim() || null;
 
   return (
-    <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-      <header style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-4) 0" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+    <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+        <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "var(--text-display)", fontWeight: 500, color: "var(--color-text-primary)", letterSpacing: "-0.03em", lineHeight: 1.05 }}>
           {kindLabel}
-        </span>
-        <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-          {hideBalances ? "••••••" : `${formatQu(tx.amount ?? "0")} QU`}
-        </span>
-        {snapshot && !hideBalances ? (
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
-            {fiatValue}
+        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
+            {tx.source ?? "—"}
           </span>
-        ) : null}
+          {tx.source ? <CopyButton value={tx.source} label="identity" /> : null}
+        </div>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
+          {formatTransactionTimestamp(tx.broadcastAt)}
+        </span>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", paddingTop: "var(--space-1)" }}>
+          <StatChip tone={expired ? "error" : "warning"}>{progress.label}</StatChip>
+          <StatChip>{formatQu(tx.targetTick)}</StatChip>
+        </div>
       </header>
 
-      <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-        <SectionLabel>Details</SectionLabel>
-        <DetailRow label="From" value={tx.source ? truncateId(tx.source) : "—"} copyValue={tx.source ?? undefined} />
-        <DetailRow label="To" value={displayTo} copyValue={tx.destination ?? undefined} />
-        <DetailRow label="Broadcast" value={formatDate(tx.broadcastAt) || "—"} mono={false} />
-        <DetailRow label="Target tick" value={String(tx.targetTick)} />
-        <DetailRow label="Progress" value={progress.timingText} mono={false} />
-        <DetailRow label="Hash" value={truncateId(hash)} copyValue={hash} />
-      </section>
+      <TxSection label="Amount">
+        <TxBox style={{ minHeight: 56 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+              {hideBalances ? "••••••" : `${formatQu(tx.amount ?? "0")} QUBIC`}
+            </span>
+            {snapshot && !hideBalances ? (
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+                {fiatValue}
+              </span>
+            ) : null}
+          </div>
+        </TxBox>
+      </TxSection>
+
+      <TxSection label="From">
+        <TxBox>
+          <IdentityValue identity={tx.source ?? "—"} />
+        </TxBox>
+      </TxSection>
+
+      <TxSection label="To">
+        <TxBox>
+          {contractLabel && tx.destination ? (
+            <ContractValue name={contractLabel} address={tx.destination} />
+          ) : (
+            <IdentityValue identity={tx.destination ?? "—"} />
+          )}
+        </TxBox>
+      </TxSection>
+
+      <TxSection label="Hash">
+        <TxBox>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", overflowWrap: "anywhere" }}>
+            {hash}
+          </span>
+          <CopyButton value={hash} label="transaction hash" />
+        </TxBox>
+      </TxSection>
     </motion.div>
   );
 }

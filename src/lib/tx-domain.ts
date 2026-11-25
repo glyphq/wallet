@@ -7,6 +7,7 @@ export interface TxRecord {
   destination: string | null;
   amount: string;
   tickNumber: number;
+  epoch?: number | null;
   moneyFlew: boolean;
   timestamp: number | null;
   inputType: number | null;
@@ -43,6 +44,7 @@ interface ApiTransactionLike {
   destination?: string | null;
   amount?: number | string | null;
   tick?: number | null;
+  epoch?: number | null;
   status?: string | null;
   timestamp?: string | null;
   input_type?: number | null;
@@ -109,6 +111,7 @@ export function normalizeApiTransaction(tx: ApiTransactionLike): TxRecord | null
     destination: tx.destination ?? null,
     amount: tx.amount == null ? "0" : String(tx.amount),
     tickNumber: tx.tick ?? 0,
+    epoch: tx.epoch ?? null,
     moneyFlew: tx.status !== "failed",
     timestamp: parseTimestamp(tx.timestamp),
     inputType: tx.input_type ?? null,
