@@ -31,7 +31,7 @@ function formatClock(timestamp: number | null): string {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "var(--space-4) 0 var(--space-1)" }}>
+    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "var(--space-4) var(--space-3) var(--space-1)" }}>
       {children}
     </div>
   );
