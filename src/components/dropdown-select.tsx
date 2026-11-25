@@ -23,6 +23,7 @@ export function DropdownSelect({
   options,
   onChange,
   hint,
+  trailing,
   disabled = false,
   id,
 }: {
@@ -31,6 +32,7 @@ export function DropdownSelect({
   options: readonly DropdownOption[];
   onChange: (value: string) => void;
   hint?: ReactNode;
+  trailing?: ReactNode;
   disabled?: boolean;
   id?: string;
 }) {
@@ -173,11 +175,16 @@ export function DropdownSelect({
             cursor: disabled ? "not-allowed" : "pointer",
           }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+          <span style={{ display: "flex", flex: 1, alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
             {selected?.icon ? <span style={{ display: "flex", flexShrink: 0 }}>{selected.icon}</span> : null}
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {selected?.label ?? "No options"}
             </span>
+            {trailing ? (
+              <span style={{ marginLeft: "auto", flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", whiteSpace: "nowrap" }}>
+                {trailing}
+              </span>
+            ) : null}
           </span>
           <span aria-hidden="true" style={{ display: "flex", flexShrink: 0, color: "var(--color-text-tertiary)", transform: open ? "rotate(180deg)" : undefined, transition: "transform var(--duration-fast) var(--ease-out)" }}>
             <ArrowDown01Icon size={16} />

@@ -749,6 +749,7 @@ export default function MultisigReleaseScreen() {
                         value: assetKeyOf(balance.asset),
                         label: balance.asset.name,
                       }))}
+                      trailing={selectedBalance ? formatAssetAmount(selectedBalance.amount, assetDecimals) : undefined}
                       onChange={(value) => {
                         setAssetKey(value);
                         setAmountText("");
@@ -756,11 +757,6 @@ export default function MultisigReleaseScreen() {
                         setError("");
                       }}
                     />
-                    {selectedBalance ? (
-                      <p style={BODY_COPY}>
-                        Vault balance: {formatAssetAmount(selectedBalance.amount, assetDecimals)}
-                      </p>
-                    ) : null}
                     <AmountInput
                       label="Amount"
                       autoComplete="off"
