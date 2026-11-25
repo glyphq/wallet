@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { usePendingTransactionStream } from "@/hooks/use-pending-transaction-stream";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
-import { addressEnding, contractPhrase, notificationAmount } from "@/lib/notification-copy";
+import { notificationAddress, contractPhrase, notificationAmount } from "@/lib/notification-copy";
 import { formatQu } from "@/lib/format";
 import { emitTxResolution } from "@/lib/tx-resolution-events";
 import type { TxResolution } from "@/lib/tx-resolution";
@@ -65,7 +65,7 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
     const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
     const transactionDescription = pending.contractName
       ? `Your ${contractPhrase(pending.contractName)} call`
-      : `Your transfer of ${notificationAmount(pending.amount)} to ${addressEnding(pending.destination)}`;
+      : `Your transfer of ${notificationAmount(pending.amount)} to ${notificationAddress(pending.destination)}`;
     if (resolution.status === "confirmed") {
       if (enabled && onConfirmed) {
         publishNotificationEvent(createNotificationEvent({

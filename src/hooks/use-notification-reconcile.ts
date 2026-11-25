@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { listIdentityTransactions } from "@/lib/api/generated";
 import { normalizeApiTransaction } from "@/lib/tx-domain";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
-import { addressEnding, notificationAmount } from "@/lib/notification-copy";
+import { notificationAddress, notificationAmount } from "@/lib/notification-copy";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
@@ -54,7 +54,7 @@ export function useNotificationReconcile() {
                   kind: "received",
                   title: "Transfer received",
                   body: tx.source
-                    ? `A transfer of ${notificationAmount(tx.amount)} arrived from ${addressEnding(tx.source)}.`
+                    ? `A transfer of ${notificationAmount(tx.amount)} arrived from ${notificationAddress(tx.source)}.`
                     : `A transfer of ${notificationAmount(tx.amount)} arrived in your account.`,
                   identity,
                   txHash: tx.hash,

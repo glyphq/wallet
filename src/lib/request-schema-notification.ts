@@ -1,5 +1,5 @@
 import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
-import { addressEnding, contractPhrase, notificationAmount } from "@/lib/notification-copy";
+import { notificationAddress, contractPhrase, notificationAmount } from "@/lib/notification-copy";
 import type { GlyphRequest } from "./request-schema-requests";
 
 function parseQuAmount(value: unknown): bigint | null {
@@ -20,8 +20,8 @@ export function buildRequestNotification(input: GlyphRequest): { title: string; 
       return {
         title: "Request waiting for review",
         body: amount !== null
-          ? `A transfer request for ${notificationAmount(amount)} to ${addressEnding(input.to)} is waiting for your review.`
-          : `A transfer request to ${addressEnding(input.to)} is waiting for your review.`,
+          ? `A transfer request for ${notificationAmount(amount)} to ${notificationAddress(input.to)} is waiting for your review.`
+          : `A transfer request to ${notificationAddress(input.to)} is waiting for your review.`,
       };
     }
     case "sc_call": {

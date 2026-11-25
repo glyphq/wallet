@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
-import { addressEnding, contractPhrase, notificationAmount } from "@/lib/notification-copy";
+import { notificationAddress, contractPhrase, notificationAmount } from "@/lib/notification-copy";
 import type { PendingTx } from "@/store/persisted";
 
 export interface SentNotificationTriggerInput {
@@ -34,7 +34,7 @@ export function useSentNotificationTriggers(input: SentNotificationTriggerInput)
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
               title: "Transfer sent",
-              body: `A transfer of ${notificationAmount(tx.amount)} was sent to ${addressEnding(tx.destination)}.`,
+              body: `A transfer of ${notificationAmount(tx.amount)} was sent to ${notificationAddress(tx.destination)}.`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
