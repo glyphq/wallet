@@ -387,6 +387,7 @@ export default function MultisigDepositScreen() {
         queryClient.invalidateQueries({
           queryKey: qk.msvaultManagedAsset(apiIdentity, identity, selectedOption.key),
         }),
+        queryClient.invalidateQueries({ queryKey: ["owned-assets", apiIdentity, identity] }),
       ]);
       navigate(`/multisig/${rawId}`);
     } catch (submitError) {

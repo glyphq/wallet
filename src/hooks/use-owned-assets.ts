@@ -23,14 +23,18 @@ export function useOwnedAssets(identity: string | null | undefined) {
       throwOnError: true,
     })).data,
     select: (response): OwnedAssetItem[] =>
-      (response.data?.owned ?? []).map((asset) => ({
-        name: asset.name,
-        numberOfUnits: String(asset.shares),
-        issuanceIndex: asset.universe_index ?? 0,
-        managingContractIndex: asset.managing_contract_index ?? 0,
-        issuerIdentity: asset.issuer,
-        numberOfDecimalPlaces: asset.decimals ?? 0,
-      })),
+      (response.data?.owned ?? [])
+        // A fully transferred ownership record can remain in peer state with
+        // zero shares; it is not a wallet asset anymore.
+        .filter((asset) => asset.shares > 0)
+        .map((asset) => ({
+          name: asset.name,
+          numberOfUnits: String(asset.shares),
+          issuanceIndex: asset.universe_index ?? 0,
+          managingContractIndex: asset.managing_contract_index ?? 0,
+          issuerIdentity: asset.issuer,
+          numberOfDecimalPlaces: asset.decimals ?? 0,
+        })),
     enabled: !!identity,
     staleTime: 30_000,
   });
