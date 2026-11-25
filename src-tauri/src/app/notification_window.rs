@@ -11,7 +11,7 @@ use tauri::{
 const WINDOW_LABEL: &str = "notification-overlay";
 const WINDOW_WIDTH: f64 = 360.0;
 const WINDOW_PADDING: f64 = 10.0;
-const CARD_HEIGHT: f64 = 88.0;
+const CARD_HEIGHT: f64 = 100.0;
 const CARD_GAP: f64 = 8.0;
 const SCREEN_MARGIN: f64 = 12.0;
 const MAX_PENDING: usize = 20;

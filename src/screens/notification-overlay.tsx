@@ -69,7 +69,7 @@ function NotificationCard({
       className="notification-card corner-frame"
       data-clickable={url ? "true" : "false"}
       style={{
-        height: 88,
+        height: 100,
         boxSizing: "border-box",
         display: "flex",
         alignItems: "flex-start",
@@ -111,7 +111,7 @@ function NotificationCard({
           style={{
             marginTop: 3,
             display: "-webkit-box",
-            WebkitLineClamp: 2,
+            WebkitLineClamp: 3,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
             fontFamily: "var(--font-sans)",
