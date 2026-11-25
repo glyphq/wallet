@@ -13,7 +13,7 @@ import { useStreamingTick } from "@/hooks/use-streaming-tick";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
-import { formatPreferredCurrencyFromQu } from "@/lib/format";
+import { formatPreferredCurrencyFromQu, formatQu } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { BalanceDisplay } from "@/components/balance-display";
 import { OwnedAssetChips } from "./dashboard-balance";
@@ -93,7 +93,7 @@ export default function DashboardScreen() {
           }}
         >
           <div className="asciify-clear" style={{ minHeight: 18, fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", fontVariantNumeric: "tabular-nums" }}>
-            {streamingTick ?? "—"}
+            {streamingTick === null ? "—" : formatQu(streamingTick)}
           </div>
 
           <div className="asciify-clear" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
