@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from "react";
-import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
+import { ArrowUpRight01Icon, Exchange01Icon, MoneyBag01Icon, User02Icon, UserGroupIcon } from "@/lib/icons";
 import { IdentityPickerScreen } from "@/components/identity-picker";
 import { fiatInputDecimals } from "@/lib/amount-currency";
 import { formatQu, type DisplayCurrency } from "@/lib/format";
@@ -110,6 +110,7 @@ export function SendInputStep({
             placeholder="Address or contact"
             autoComplete="off"
             error={destError || undefined}
+            leftElement={<User02Icon size={18} aria-hidden="true" />}
             rightElement={canOpenPicker ? (
               <button
                 type="button"
@@ -141,14 +142,17 @@ export function SendInputStep({
             autoComplete="off"
             maxLength={amountUnit === "qubic" ? 20 : 24}
             error={amountError || undefined}
+            leftElement={<MoneyBag01Icon size={18} aria-hidden="true" />}
+            style={{ paddingRight: 82 }}
             rightElement={(
               <button
                 type="button"
                 onClick={onToggleAmountUnit}
                 disabled={amountUnit === "qubic" && !canToggleAmountUnit}
                 aria-label="Switch amount currency"
-                style={{ border: 0, background: "transparent", padding: 0, display: "flex", alignItems: "center", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: canToggleAmountUnit ? "var(--color-accent)" : "var(--color-text-tertiary)", cursor: canToggleAmountUnit ? "pointer" : "not-allowed" }}
+                style={{ border: 0, background: "transparent", padding: 0, display: "flex", alignItems: "center", gap: "var(--space-1)", fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.1em", color: canToggleAmountUnit ? "var(--color-accent)" : "var(--color-text-tertiary)", cursor: canToggleAmountUnit ? "pointer" : "not-allowed" }}
               >
+                {canToggleAmountUnit ? <Exchange01Icon size={13} aria-hidden="true" /> : null}
                 {amountUnit === "qubic" ? "QUBIC" : currencyLabel}
               </button>
             )}
