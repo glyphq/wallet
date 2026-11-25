@@ -28,6 +28,7 @@ export type FontPairId =
   | "fira"
   | "jetbrains";
 export type ThemeMode = "dark" | "light";
+export type NotificationPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export type AccentColorId =
   | "green"
@@ -97,6 +98,9 @@ export interface AppSettings {
   notifyOnLargeIncoming: boolean;
   notifyOnPriceAlerts: boolean;
   notifyWhenLocked: boolean;
+  notificationPosition: NotificationPosition;
+  notificationDurationSecs: number;
+  notificationMaxVisible: number;
   largeIncomingThreshold: string;
   priceAlertAbove: string;
   priceAlertBelow: string;

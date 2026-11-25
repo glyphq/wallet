@@ -20,6 +20,9 @@ export default function NotificationsScreen() {
   const onConfirmed = usePersistedStore((s) => s.settings.notifyOnConfirmed);
   const onMissedConfirmations = usePersistedStore((s) => s.settings.notifyOnMissedConfirmations);
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
+  const notificationPosition = usePersistedStore((s) => s.settings.notificationPosition);
+  const notificationDurationSecs = usePersistedStore((s) => s.settings.notificationDurationSecs);
+  const notificationMaxVisible = usePersistedStore((s) => s.settings.notificationMaxVisible);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const autostartEnabled = usePersistedStore((s) => s.settings.autostartEnabled);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
@@ -110,12 +113,12 @@ export default function NotificationsScreen() {
 
         {/* Master toggle */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <Toggle label="Notifications" description="Show desktop notifications for wallet events" checked={enabled} onChange={(checked) => updateSettings({ notificationsEnabled: checked })} />
+          <Toggle label="Notifications" description="Show Glyph notification windows for wallet events" checked={enabled} onChange={(checked) => updateSettings({ notificationsEnabled: checked })} />
         </div>
 
         {notificationTestStatus !== "idle" ? (
           <span role={notificationTestStatus === "failed" ? "alert" : "status"} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: notificationTestStatus === "failed" ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
-            {notificationTestStatus === "sent" ? "Test notification sent." : "Test notification could not be sent."}
+            {notificationTestStatus === "sent" ? "Test notification shown." : "Test notification could not be shown."}
           </span>
         ) : null}
 
@@ -135,6 +138,80 @@ export default function NotificationsScreen() {
 
         <SettingsDivider fullBleed />
 
+        {/* Notification window */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <SettingsSectionLabel>Notification window</SettingsSectionLabel>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+              A separate always-on-top window; independent of the main wallet.
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Position</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {([
+                ["top-left", "Top left"],
+                ["top-right", "Top right"],
+                ["bottom-left", "Bottom left"],
+                ["bottom-right", "Bottom right"],
+              ] as const).map(([value, label]) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={notificationPosition === value ? "primary" : "secondary"}
+                  style={{ width: "auto" }}
+                  aria-pressed={notificationPosition === value}
+                  disabled={!enabled}
+                  onClick={() => updateSettings({ notificationPosition: value })}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Visible for</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {[4, 6, 8, 10, 15].map((seconds) => (
+                <Button
+                  key={seconds}
+                  size="sm"
+                  variant={notificationDurationSecs === seconds ? "primary" : "secondary"}
+                  style={{ width: "auto" }}
+                  aria-pressed={notificationDurationSecs === seconds}
+                  disabled={!enabled}
+                  onClick={() => updateSettings({ notificationDurationSecs: seconds })}
+                >
+                  {seconds}s
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Maximum visible</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {[2, 3, 4, 5].map((count) => (
+                <Button
+                  key={count}
+                  size="sm"
+                  variant={notificationMaxVisible === count ? "primary" : "secondary"}
+                  style={{ width: "auto" }}
+                  aria-pressed={notificationMaxVisible === count}
+                  disabled={!enabled}
+                  onClick={() => updateSettings({ notificationMaxVisible: count })}
+                >
+                  {count}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <SettingsDivider fullBleed />
+
         {/* Behavior */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSectionLabel>Behavior</SettingsSectionLabel>
@@ -142,7 +219,7 @@ export default function NotificationsScreen() {
           <SettingsDivider fullBleed />
           <Toggle label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
           <SettingsDivider fullBleed />
-          <Toggle label="Notify when locked" description="Allow notifications while the wallet is locked" checked={notifyWhenLocked} onChange={(checked) => updateSettings({ notifyWhenLocked: checked })} disabled={!enabled} />
+          <Toggle label="Show when locked" description="Allow notification windows while the wallet is locked" checked={notifyWhenLocked} onChange={(checked) => updateSettings({ notifyWhenLocked: checked })} disabled={!enabled} />
         </div>
       </motion.div>
       </PageFrame>

@@ -9,6 +9,7 @@ use crate::deep_link::{self, DeepLinkState};
 use crate::session_crypto::NativeSessionState;
 
 use super::launch::single_instance_url;
+use super::notification_window::NotificationOverlayState;
 
 pub(crate) fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder
@@ -31,7 +32,6 @@ pub(crate) fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             }
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::default().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
@@ -45,4 +45,5 @@ pub(crate) fn manage_state(builder: tauri::Builder<tauri::Wry>) -> tauri::Builde
         .manage(ClipboardState::default())
         .manage(HideToTrayState::default())
         .manage(NativeSessionState::default())
+        .manage(NotificationOverlayState::default())
 }

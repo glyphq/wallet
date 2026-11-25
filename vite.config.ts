@@ -16,6 +16,10 @@ export default defineConfig(async () => ({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        notification: resolve(__dirname, "notification.html"),
+      },
       output: {
         manualChunks(id) {
           const moduleId = id.replaceAll("\\", "/");

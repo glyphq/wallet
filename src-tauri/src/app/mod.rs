@@ -7,6 +7,7 @@
 
 pub(crate) mod builder;
 pub(crate) mod launch;
+pub(crate) mod notification_window;
 pub(crate) mod plugins;
 pub(crate) mod setup;
 pub(crate) mod tray;

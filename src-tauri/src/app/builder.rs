@@ -3,7 +3,7 @@
 
 use crate::{biometric, commands, session_crypto, store_crypto, wallet_crypto};
 
-use super::{launch, plugins, setup, window};
+use super::{launch, notification_window, plugins, setup, window};
 
 pub(crate) fn run() {
     launch::configure_runtime();
@@ -56,6 +56,10 @@ pub(crate) fn run() {
             biometric::biometric_unlock,
             biometric::reveal_seed_with_biometric,
             biometric::disable_biometric,
+            notification_window::show_notification_window,
+            notification_window::get_pending_notifications,
+            notification_window::dismiss_notification,
+            notification_window::layout_notification_overlay,
         ])
         .run(tauri::generate_context!())
         .expect("error while running glyph");

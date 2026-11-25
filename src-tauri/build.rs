@@ -31,6 +31,7 @@ fn main() {
         "rotate_wallet_password",
         "reveal_wallet_seed",
         "store_session_seeds",
+        "copy_session_seed",
         "clear_session_seeds",
         "sign_transaction",
         "sign_local_transaction",
@@ -42,6 +43,10 @@ fn main() {
         "biometric_unlock",
         "reveal_seed_with_biometric",
         "disable_biometric",
+        "show_notification_window",
+        "get_pending_notifications",
+        "dismiss_notification",
+        "layout_notification_overlay",
     ]);
 
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest))

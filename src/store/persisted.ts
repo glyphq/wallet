@@ -18,6 +18,7 @@ export type {
   NetworkConfig,
   NotificationEvent,
   NotificationEventKind,
+  NotificationPosition,
   PendingTx,
   PriceSnapshot,
   RequestHistoryAction,

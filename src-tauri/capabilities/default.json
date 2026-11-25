@@ -20,7 +20,6 @@
     "store:allow-save",
     "store:allow-delete",
     "clipboard-manager:allow-write-text",
-    "notification:default",
     "autostart:default",
     "device-info:default",
     "updater:allow-check",
@@ -74,6 +73,8 @@
     "allow-enable-biometric",
     "allow-biometric-unlock",
     "allow-reveal-seed-with-biometric",
-    "allow-disable-biometric"
+    "allow-disable-biometric",
+    "allow-copy-session-seed",
+    "allow-show-notification-window"
   ]
 }

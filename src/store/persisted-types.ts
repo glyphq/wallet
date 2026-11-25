@@ -20,6 +20,7 @@ export type {
   Contact,
   FontPairId,
   NetworkConfig,
+  NotificationPosition,
   ThemeMode,
   WalletColor,
   WalletMeta,

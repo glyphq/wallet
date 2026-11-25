@@ -26,7 +26,6 @@ tauri-plugin-store = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-clipboard-manager = "2"
-tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
@@ -61,8 +60,6 @@ ksni = { version = "0.3.6", features = ["blocking"] }
 tauri = { version = "2", features = ["tray-icon"] }
 
 [patch.crates-io]
-# Temporary security backports until crates.io releases include quick-xml >= 0.41.
-tauri-winrt-notification = { path = "vendor/tauri-winrt-notification" }
 # battery 0.7.8 is the latest published release; patch its target-only nix constraint to the fixed release.
 battery = { path = "vendor/battery" }
 wayland-scanner = { git = "https://github.com/Smithay/wayland-rs", rev = "05196740da57e41b60a9e9f8e35079e9bd29b89a" }

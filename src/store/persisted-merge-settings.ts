@@ -2,6 +2,9 @@ import type { AppSettings, NetworkConfig } from "./persisted-types";
 import { DEFAULT_API_URL, normalizeApiUrl } from "@/lib/api-url";
 import {
   sanitizeCustomPriceFeedUrl,
+  sanitizeNotificationDurationSecs,
+  sanitizeNotificationMaxVisible,
+  sanitizeNotificationPosition,
   sanitizePollingInterval,
 } from "./persisted-sanitizers";
 
@@ -71,6 +74,18 @@ export function mergeSettings(value: unknown, current: AppSettings): AppSettings
     pollingIntervalLockedMs: sanitizePollingInterval(
       settingsBase.pollingIntervalLockedMs,
       current.pollingIntervalLockedMs
+    ),
+    notificationPosition: sanitizeNotificationPosition(
+      settingsBase.notificationPosition,
+      current.notificationPosition
+    ),
+    notificationDurationSecs: sanitizeNotificationDurationSecs(
+      settingsBase.notificationDurationSecs,
+      current.notificationDurationSecs
+    ),
+    notificationMaxVisible: sanitizeNotificationMaxVisible(
+      settingsBase.notificationMaxVisible,
+      current.notificationMaxVisible
     ),
     sponsorAttribution:
       settingsBase.sponsorAttribution === "identity" ||
