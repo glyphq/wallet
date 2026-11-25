@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
+import { AsciiSkeleton } from "ascii-reveal";
 import { AppShell } from "@/layouts/app-shell";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
 import { IconButton } from "@/components/icon-button";
@@ -93,7 +94,9 @@ export default function DashboardScreen() {
           }}
         >
           <div className="asciify-clear" style={{ minHeight: 18, fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", fontVariantNumeric: "tabular-nums" }}>
-            {streamingTick === null ? "—" : formatQu(streamingTick)}
+            {streamingTick === null
+              ? <AsciiSkeleton as="span" variant="scan" lines={1} widths={[84]} animate={false} />
+              : formatQu(streamingTick)}
           </div>
 
           <div className="asciify-clear" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
