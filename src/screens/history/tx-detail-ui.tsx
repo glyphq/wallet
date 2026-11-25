@@ -3,6 +3,8 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { ContractMark } from "@/components/contract-mark";
 import { truncateId } from "@/lib/format";
 
+const PARTY_MARK_SIZE = 20;
+
 export function TxSection({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
@@ -55,7 +57,7 @@ export function TxBox({
 export function IdentityValue({ identity }: { identity: string }) {
   return (
     <>
-      <FramedAvatar seed={identity} size={22} />
+      <FramedAvatar seed={identity} size={PARTY_MARK_SIZE} />
       <span title={identity} style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {truncateId(identity, 8, 8)}
       </span>
@@ -66,8 +68,8 @@ export function IdentityValue({ identity }: { identity: string }) {
 export function ContractValue({ name }: { name: string }) {
   return (
     <>
-      <span style={{ display: "inline-flex", width: 22, height: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <ContractMark name={name} size={20} />
+      <span style={{ display: "inline-flex", width: PARTY_MARK_SIZE, height: PARTY_MARK_SIZE, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <ContractMark name={name} size={PARTY_MARK_SIZE} />
       </span>
       <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.02em", overflowWrap: "anywhere" }}>
         {name}
