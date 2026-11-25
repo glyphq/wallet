@@ -9,6 +9,7 @@ import { SafeIcon } from "@/lib/icons";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
+import { useStreamingTick } from "@/hooks/use-streaming-tick";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
 import { useOwnedAssets } from "@/hooks/use-owned-assets";
@@ -35,6 +36,7 @@ export default function DashboardScreen() {
   const identity = getWalletAccountIdentity(wallet, activeIndex, accounts);
 
   const { data: balance, isLoading: balanceLoading } = useBalance(identity);
+  const streamingTick = useStreamingTick();
   const { data: stats } = useLatestStats();
   const { data: ownedAssets } = useOwnedAssets(identity);
   const quote = usePreferredCurrencyQuote();
@@ -90,6 +92,10 @@ export default function DashboardScreen() {
             padding: "var(--space-4) var(--screen-padding) var(--space-5)",
           }}
         >
+          <div className="asciify-clear" style={{ minHeight: 18, fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.08em", fontVariantNumeric: "tabular-nums" }}>
+            {streamingTick ?? "—"}
+          </div>
+
           <div className="asciify-clear" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
             <BalanceDisplay
               balance={balance?.balance}
