@@ -17,7 +17,11 @@ export function HistoryToolbar({ identity }: { identity: string | null }) {
           label="Open account in Glyph Explorer"
           disabled={!explorerUrl}
           onClick={() => {
-            if (explorerUrl) void openUrl(explorerUrl);
+            if (explorerUrl) {
+              void openUrl(explorerUrl).catch((error) => {
+                console.error("[glyph] could not open explorer:", error);
+              });
+            }
           }}
         >
           <Compass01Icon size={20} aria-hidden="true" />
