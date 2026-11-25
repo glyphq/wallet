@@ -3,7 +3,7 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { subscribeIdentityStreams, type IdentityStreamListener } from "@/lib/api/stream-broker";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { parseEventBody } from "@/lib/tx-domain";
-import { truncateId } from "@/lib/format";
+import { addressEnding, notificationAmount } from "@/lib/notification-copy";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -103,8 +103,10 @@ export function useIdentityLiveUpdates() {
           const parsedTimestamp = event.timestamp ? Date.parse(event.timestamp) : Number.NaN;
           publishNotificationEvent(createNotificationEvent({
             kind: "received",
-            title: large ? "Large transfer received" : "Funds received",
-            body: `${transfer.amount.toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
+            title: large ? "Large transfer received" : "Transfer received",
+            body: transfer.from
+              ? `A transfer of ${notificationAmount(transfer.amount)} arrived from ${addressEnding(transfer.from)}.`
+              : `A transfer of ${notificationAmount(transfer.amount)} arrived in your account.`,
             identity,
             txHash: event.tx_hash || undefined,
             dedupeKey: `received:${hash}:${identity}`,

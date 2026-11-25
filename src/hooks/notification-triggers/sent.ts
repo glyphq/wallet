@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
-import { truncateId } from "@/lib/format";
+import { addressEnding, contractPhrase, notificationAmount } from "@/lib/notification-copy";
 import type { PendingTx } from "@/store/persisted";
 
 export interface SentNotificationTriggerInput {
@@ -24,8 +24,8 @@ export function useSentNotificationTriggers(input: SentNotificationTriggerInput)
           if (tx.contractName) {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
-              title: "Contract submitted",
-              body: `${tx.contractName} broadcast to the network`,
+              title: "Contract call submitted",
+              body: `Your ${contractPhrase(tx.contractName)} call was submitted to the Qubic network.`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,
@@ -33,8 +33,8 @@ export function useSentNotificationTriggers(input: SentNotificationTriggerInput)
           } else {
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
-              title: "Funds sent",
-              body: `${BigInt(tx.amount).toLocaleString()} QU → ${truncateId(tx.destination, 8, 4)}`,
+              title: "Transfer sent",
+              body: `A transfer of ${notificationAmount(tx.amount)} was sent to ${addressEnding(tx.destination)}.`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,

@@ -32,8 +32,8 @@ export function usePriceAlertTriggers(input: PriceAlertTriggerInput) {
         aboveTriggeredRef.current = true;
         publishNotificationEvent(createNotificationEvent({
           kind: "price_alert",
-          title: "QU Price Alert",
-          body: `QU moved above $${priceAlertAboveValue.toFixed(4)} and is now trading near $${price.toFixed(4)}.`,
+          title: "QU price alert",
+          body: `The price of QU rose above your alert at $${priceAlertAboveValue.toFixed(4)} and is now around $${price.toFixed(4)}.`,
           dedupeKey: `price:above:${priceAlertAboveValue}:${Math.floor(Date.now() / 60_000)}`,
         })).catch(() => {});
       }
@@ -45,8 +45,8 @@ export function usePriceAlertTriggers(input: PriceAlertTriggerInput) {
         belowTriggeredRef.current = true;
         publishNotificationEvent(createNotificationEvent({
           kind: "price_alert",
-          title: "QU Price Alert",
-          body: `QU moved below $${priceAlertBelowValue.toFixed(4)} and is now trading near $${price.toFixed(4)}.`,
+          title: "QU price alert",
+          body: `The price of QU fell below your alert at $${priceAlertBelowValue.toFixed(4)} and is now around $${price.toFixed(4)}.`,
           dedupeKey: `price:below:${priceAlertBelowValue}:${Math.floor(Date.now() / 60_000)}`,
         })).catch(() => {});
       }

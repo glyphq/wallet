@@ -1,6 +1,5 @@
 import { CONTRACT_NAMES, CONTRACT_PROCEDURE_NAMES } from "@/lib/contracts";
-import { truncateIdentity } from "@/lib/crypto";
-import { formatQu } from "@/lib/format";
+import { addressEnding, contractPhrase, notificationAmount } from "@/lib/notification-copy";
 import type { GlyphRequest } from "./request-schema-requests";
 
 function parseQuAmount(value: unknown): bigint | null {
@@ -18,10 +17,11 @@ export function buildRequestNotification(input: GlyphRequest): { title: string; 
   switch (input.type) {
     case "transfer": {
       const amount = parseQuAmount(input.amount);
-      const to = truncateIdentity(input.to);
       return {
-        title: "Request Waiting For Review",
-        body: amount !== null ? `Transfer ${formatQu(amount)} QU to ${to}.` : `Transfer QU to ${to}.`,
+        title: "Request waiting for review",
+        body: amount !== null
+          ? `A transfer request for ${notificationAmount(amount)} to ${addressEnding(input.to)} is waiting for your review.`
+          : `A transfer request to ${addressEnding(input.to)} is waiting for your review.`,
       };
     }
     case "sc_call": {
@@ -30,16 +30,18 @@ export function buildRequestNotification(input: GlyphRequest): { title: string; 
       const procedureName = CONTRACT_PROCEDURE_NAMES[`${input.contract_index}:${input.input_type}`] ?? null;
       const label = procedureName ? `${contractName} · ${procedureName}` : contractName;
       return {
-        title: "Request Waiting For Review",
-        body: amount !== null && amount > 0n ? `Contract call: ${label} for ${formatQu(amount)} QU.` : `Contract call: ${label}.`,
+        title: "Request waiting for review",
+        body: amount !== null && amount > 0n
+          ? `A request to call ${contractPhrase(label)} for ${notificationAmount(amount)} is waiting for your review.`
+          : `A request to call ${contractPhrase(label)} is waiting for your review.`,
       };
     }
     case "sign_message":
-      return { title: "Request Waiting For Review", body: "Message signing request received." };
+      return { title: "Request waiting for review", body: "A request to sign a message is waiting for your review." };
     case "verify_message":
-      return { title: "Request Waiting For Review", body: "Signature verification request received." };
+      return { title: "Request waiting for review", body: "A request to verify a signature is waiting for your review." };
     case "connect":
-      return { title: "Request Waiting For Review", body: "Connection request received." };
+      return { title: "Request waiting for review", body: "A request to connect to a decentralized application is waiting for your review." };
     default:
       return null;
   }

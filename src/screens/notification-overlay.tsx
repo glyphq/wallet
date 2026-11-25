@@ -133,8 +133,8 @@ function NotificationCard({
           onDismiss(notification.id);
         }}
         style={{
-          width: 24,
-          height: 24,
+          width: 30,
+          height: 30,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
@@ -145,7 +145,7 @@ function NotificationCard({
           cursor: "pointer",
           padding: 0,
           lineHeight: 1,
-          fontSize: 15,
+          fontSize: 18,
           flexShrink: 0,
         }}
       >

@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef } from "react";
 import { listIdentityTransactions } from "@/lib/api/generated";
 import { normalizeApiTransaction } from "@/lib/tx-domain";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { addressEnding, notificationAmount } from "@/lib/notification-copy";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { truncateId } from "@/lib/format";
 
 const STARTUP_RECEIVED_LOOKBACK_MS = 24 * 60 * 60 * 1000; // 24 h
 const PAGE_SIZE = 50;
@@ -52,8 +52,10 @@ export function useNotificationReconcile() {
                 if (tx.timestamp !== null && tx.timestamp < cutoff) continue;
                 await publishNotificationEvent(createNotificationEvent({
                   kind: "received",
-                  title: "Funds received",
-                  body: `${BigInt(tx.amount).toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
+                  title: "Transfer received",
+                  body: tx.source
+                    ? `A transfer of ${notificationAmount(tx.amount)} arrived from ${addressEnding(tx.source)}.`
+                    : `A transfer of ${notificationAmount(tx.amount)} arrived in your account.`,
                   identity,
                   txHash: tx.hash,
                   dedupeKey: `received:${tx.hash}:${identity}`,

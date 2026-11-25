@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { usePendingTransactionStream } from "@/hooks/use-pending-transaction-stream";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { addressEnding, contractPhrase, notificationAmount } from "@/lib/notification-copy";
 import { formatQu } from "@/lib/format";
 import { emitTxResolution } from "@/lib/tx-resolution-events";
 import type { TxResolution } from "@/lib/tx-resolution";
@@ -62,12 +63,15 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
     }, 3_000);
 
     const label = pending.contractName ?? `${formatQu(pending.amount)} QU`;
+    const transactionDescription = pending.contractName
+      ? `Your ${contractPhrase(pending.contractName)} call`
+      : `Your transfer of ${notificationAmount(pending.amount)} to ${addressEnding(pending.destination)}`;
     if (resolution.status === "confirmed") {
       if (enabled && onConfirmed) {
         publishNotificationEvent(createNotificationEvent({
           kind: "confirmed",
           title: "Transaction confirmed",
-          body: `${label} confirmed on chain`,
+          body: `${transactionDescription} was confirmed on the Qubic network.`,
           identity: pending.source,
           txHash: pending.hash,
           dedupeKey: `resolved:${pending.hash}:confirmed`,
@@ -82,7 +86,7 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
         publishNotificationEvent(createNotificationEvent({
           kind: "failed",
           title: "Transaction failed",
-          body: `${label} could not be completed`,
+          body: `${transactionDescription} could not be confirmed on the Qubic network.`,
           identity: pending.source,
           txHash: pending.hash,
           dedupeKey: `resolved:${pending.hash}:failed`,
@@ -96,7 +100,7 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
       publishNotificationEvent(createNotificationEvent({
         kind: "expired",
         title: "Transaction expired",
-        body: `${label} timed out and was dropped`,
+        body: `${transactionDescription} expired before it could be confirmed.`,
         identity: pending.source,
         txHash: pending.hash,
         dedupeKey: `resolved:${pending.hash}:expired`,
