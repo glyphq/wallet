@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import { Button } from "@/components/button";
-import { RefreshIcon, ShieldAlertIcon } from "@/lib/icons";
+import { RefreshIcon } from "@/lib/icons";
 import { useHideAppChrome } from "@/layouts/chrome-visibility";
 import { SendStepPanel } from "./send-step-panel";
 import { SendStepFooter } from "./send-ui";
@@ -18,7 +18,6 @@ export function SendErrorStep({ txError, onRetry }: SendErrorStepProps) {
     <SendStepPanel scroll="y" gap="var(--space-5)" role="alert">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-          <ShieldAlertIcon size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
           <div>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>
               Broadcast failed

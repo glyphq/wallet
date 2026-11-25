@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -28,6 +29,7 @@ import { useSendPrefill } from "./use-send-prefill";
 
 export default function SendScreen() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
 
   const settings = usePersistedStore((s) => s.settings);
@@ -45,7 +47,7 @@ export default function SendScreen() {
   const account = accounts[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
   const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts) ?? "";
-  const { data: balanceData } = useBalance(identity || null);
+  const { data: balanceData, isFetching: balanceFetching, refetch: refetchBalance } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
   const quote = usePreferredCurrencyQuote();
@@ -152,6 +154,7 @@ export default function SendScreen() {
       const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
       await broadcastTx(encoded);
       addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
+      void queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
       if (memo.trim()) setTxMemo(hash, memo.trim());
       navigate("/dashboard");
@@ -220,6 +223,8 @@ export default function SendScreen() {
         memo={memo}
         onMemoChange={setMemo}
         sending={sending}
+        refreshingBalance={balanceFetching}
+        onRefreshBalance={() => void refetchBalance()}
         canSign={!!account && !!tickInfo}
         onSend={send}
       />

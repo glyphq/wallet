@@ -50,6 +50,9 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
 
     removePendingTx(pending.hash);
     emitTxResolution(resolution);
+    void queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
+    void queryClient.invalidateQueries({ queryKey: ["owned-assets"] });
+    void queryClient.invalidateQueries({ queryKey: ["msvault"] });
     queryClient.invalidateQueries({ queryKey: ["tx-history"] });
     // The lifecycle tracker can confirm inclusion before the history index has
     // the row; refresh again so the confirmed transaction replaces the pending

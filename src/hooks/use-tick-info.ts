@@ -31,10 +31,10 @@ export function useTickInfo() {
     select: (response): TickInfo => {
       const status = response?.data;
       const network = status?.network;
-      const tick = network?.head ?? status?.head?.tick ?? 0;
+      const tick = Math.max(network?.head ?? 0, status?.head?.tick ?? 0);
       return {
         tick,
-        epoch: network?.epoch ?? status?.head?.epoch ?? null,
+        epoch: status?.head?.epoch ?? network?.epoch ?? null,
         initialTick: network?.initial_tick ?? null,
         duration: network?.tick_duration ?? null,
         reachable: network?.reachable ?? true,

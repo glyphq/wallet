@@ -39,5 +39,7 @@ export function useWalletBalances() {
     },
     enabled: identities.length > 0,
     staleTime: 5_000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   });
 }

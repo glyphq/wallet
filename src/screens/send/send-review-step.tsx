@@ -1,9 +1,10 @@
 import { Button } from "@/components/button";
+import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
 import { ApprovalAddress } from "@/components/request/approval-address";
 import { ApprovalAmount } from "@/components/request/approval-amount";
 import { ApprovalField } from "@/components/request/approval-field";
-import { MoneySend01Icon } from "@/lib/icons";
+import { MoneySend01Icon, RefreshIcon } from "@/lib/icons";
 import { formatQu } from "@/lib/format";
 import { useHideAppChrome } from "@/layouts/chrome-visibility";
 import { SendStepPanel } from "./send-step-panel";
@@ -27,6 +28,8 @@ export interface SendReviewStepProps {
   memo: string;
   onMemoChange: (value: string) => void;
   sending: boolean;
+  refreshingBalance: boolean;
+  onRefreshBalance: () => void;
   canSign: boolean;
   onSend: () => void;
 }
@@ -50,6 +53,8 @@ export function SendReviewStep({
   memo,
   onMemoChange,
   sending,
+  refreshingBalance,
+  onRefreshBalance,
   canSign,
   onSend,
 }: SendReviewStepProps) {
@@ -79,8 +84,18 @@ export function SendReviewStep({
 
         {balanceAfter !== null ? (
           <ApprovalField label="Remaining balance">
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)", letterSpacing: "0.03em" }}>
-              {formatQu(balanceAfter)} QUBIC
+            <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)", letterSpacing: "0.03em" }}>
+                {formatQu(balanceAfter)} QUBIC
+              </span>
+              <IconButton
+                label="Refresh balance"
+                onClick={onRefreshBalance}
+                disabled={refreshingBalance}
+                style={{ width: 30, height: 30, flexShrink: 0, color: "var(--color-text-tertiary)" }}
+              >
+                <RefreshIcon size={15} aria-hidden="true" />
+              </IconButton>
             </span>
           </ApprovalField>
         ) : null}
