@@ -59,7 +59,7 @@ Report upstream-only Tauri vulnerabilities to [Tauri Security](https://tauri.app
 
 ## Current security architecture
 
-Glyph is a Tauri v2 desktop application. The React renderer runs in a platform webview without Node.js APIs. Native access is limited to configured Tauri plugins, the capability allowlist in `src-tauri/capabilities/default.json`, and Rust commands registered in `src-tauri/src/lib.rs`.
+Glyph is a Tauri v2 desktop application. The React renderer runs in a platform webview without Node.js APIs. Native access is limited to configured Tauri plugins, the capability allowlists under `src-tauri/capabilities/`, and Rust commands registered in `src-tauri/src/lib.rs`.
 
 The webview is trusted application code, not a separate authorization principal. CSP, input validation, capability scoping, and native command checks reduce attack surface, but a renderer compromise must still be treated as security-sensitive.
 
@@ -67,7 +67,7 @@ The webview is trusted application code, not a separate authorization principal.
 
 Wallet payloads are encrypted in Rust with AES-256-GCM. Password-derived keys use PBKDF2-HMAC-SHA-256. New wallets use 600,000 iterations, a random 32-byte salt, and a random 12-byte nonce. Decryption rejects unsupported versions, malformed fields, iteration counts below 100,000, and iteration counts above 2,000,000.
 
-Encryption and decryption are native operations, but passwords and decrypted seed values cross the Tauri command boundary during wallet creation, unlock, mutation, and explicit seed reveal. Those values therefore exist briefly in renderer and IPC-managed memory. JavaScript memory does not provide deterministic erasure guarantees.
+Encryption and decryption are native operations, but passwords and decrypted seed values cross the Tauri command boundary during wallet creation, unlock, mutation, and explicit seed reveal. Those values therefore exist briefly in renderer and IPC-managed memory. JavaScript memory does not provide deterministic erasure guarantees. The account **Copy seed** path is native and verifies the session identity before writing to the clipboard; it does not return the seed to the renderer.
 
 ### Unlocked session and signing
 

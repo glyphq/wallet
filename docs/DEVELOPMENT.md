@@ -326,8 +326,7 @@ Bun discovers tests in the frontend and scripts. Current test areas include:
 
 - Glyph API cache identity and response normalization
 - Formatting and amount behavior
-- History analytics
-- Notification event behavior
+- Notification persistence and retention limits
 - External-request orchestration
 - External-request schema validation
 - Secure-session adapters

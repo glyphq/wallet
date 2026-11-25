@@ -71,7 +71,7 @@ New-wallet passwords must contain at least 10 characters and pass the screen's m
 
 An imported Qubic seed must be exactly 55 lowercase letters. After validating the seed, choose the wallet name and password.
 
-Importing a seed does not discover or import local Glyph metadata from another installation. Contacts, memos, settings, and audit history are installation-local.
+Importing a seed does not import local metadata from another installation. A Glyph wallet export can include contacts and transaction memos; settings and audit history remain installation-local.
 
 ### Import a Glyph wallet export
 
@@ -111,15 +111,17 @@ A wallet can contain up to 16 accounts. You can:
 
 Adding an account requires the current wallet password. Back up every newly generated seed immediately. A backup of the first account does not recover later accounts.
 
-### Manage account metadata
+### Manage accounts
 
-Glyph supports account names, notes, tags, visibility, and removal. Hiding an account removes it from normal visible-account lists but does not delete its encrypted seed.
+Glyph supports account names and removal. Removing an account requires the wallet password. Confirm that its seed is backed up first.
 
-Removing an account requires the wallet password. Confirm that its seed is backed up first.
+### Copy a seed
+
+Open the account edit screen and hold **Copy seed** for one second. Glyph reads the seed from the unlocked native session without displaying it, verifies that it belongs to the selected account, writes it to the clipboard, and schedules clipboard clearing after 60 seconds. Copying is available only for the active wallet.
 
 ### Reveal a seed
 
-Seed reveal requires the wallet password under the normal configuration. The reveal dialog closes automatically after 60 seconds, and a copied seed is scheduled for clipboard clearing after 60 seconds.
+Revealing an account seed from the wallet detail screen requires the wallet password under the normal configuration. The reveal view closes automatically after 60 seconds, and a copied seed is scheduled for clipboard clearing after 60 seconds.
 
 Biometric commands are currently disabled on every platform, so the biometric seed-reveal requirement is hidden. When biometric enrollment is available again, the requirement applies only to a wallet that has an enrolled credential; otherwise Glyph falls back to the password path instead of blocking reveal.
 
@@ -131,7 +133,7 @@ Changing a password re-encrypts the wallet. It does not change account seeds or 
 
 ### Export a wallet
 
-Wallet export requires the current wallet password. Store the resulting JSON file as sensitive material because it contains the encrypted wallet and account metadata.
+Wallet export requires the current wallet password. Store the resulting JSON file as sensitive material because it contains the encrypted wallet, account metadata, and any contacts and transaction memos included in the backup.
 
 Recommended handling:
 
@@ -148,12 +150,13 @@ Deletion is irreversible without a seed backup or a usable encrypted export and 
 
 ## 5. Dashboard and balances
 
-The dashboard shows visible accounts, aggregate QU balance, recent activity, and assets returned by the configured Glyph API service.
+The dashboard shows aggregate QU balance, the latest streamed network tick, recent activity, and assets returned by the configured Glyph API service. The header vault action opens multisig.
 
 Important distinctions:
 
 - Qubic balances and transaction status come from the network.
-- Asset entries are currently read-only.
+- The tick above the balance is the newest value delivered by the live tick stream.
+- Asset entries are read-only.
 - The portfolio view aggregates account QU balances. It is not a full token accounting or cost-basis system.
 - Fiat values use current or locally sampled price data and are estimates.
 
@@ -164,20 +167,22 @@ Use the hide-balances setting when sharing a screen. On the receive screen, this
 ### Standard transfer
 
 1. Select the source account.
-2. Enter or select a checksum-valid Qubic address.
+2. Enter or select a checksum-valid Qubic address or contact.
 3. Enter a positive whole-number QU amount.
-4. Review the estimated target tick.
+4. Review the recipient, amount, remaining balance, and estimated target tick.
 5. Sign and broadcast the transaction.
 
-The target tick is calculated from the current tick plus the configured offset. The default offset is 10, with common choices of 5, 10, 15, 20, 30, or 50.
+The target tick uses the newest indexed or peer head reported by the Glyph API plus the configured offset. The default offset is 10, with common choices of 5, 10, 15, 20, 30, or 50.
 
-Glyph signs transactions in native Rust and submits them to the configured Glyph API. It records a local pending transaction and reconciles it against archive and event data.
+Glyph signs transactions in native Rust and submits them to the configured Glyph API. It records a local pending transaction and reconciles it against archive, lifecycle, and live event data. Balances refresh after broadcast and confirmation, and continue to poll periodically as a fallback.
 
 Glyph prevents another outgoing transaction from the same address while one is still pending. A pending record can later become confirmed, failed, or expired.
 
 ### Amount and fiat entry
 
-The amount must be a positive integer in QU. The send screen can display or accept a USD estimate when price data is available. That conversion is only an estimate. The signed transaction contains QU, not fiat currency.
+The amount must be a positive integer in QU. The send screen can display or accept an estimate in the configured display currency when price data is available. That conversion is only an estimate. The signed transaction contains QU, not fiat currency.
+
+Amounts show grouped digits while typing. The review screen shows the resulting balance and offers a refresh action; **Back** returns to the input with the draft intact.
 
 ### Memos
 
@@ -189,23 +194,19 @@ If a send fails, the current draft can remain in volatile session state. Do not 
 
 A broadcast response is not the same as final confirmation. Keep Glyph open or reopen it later so history can reconcile the transaction. For important transfers, verify the transaction independently using a trusted explorer or archive source.
 
-## 7. Burn and staking
+## 7. Multisig vaults
 
-### Burn QU
+Open multisig from the vault action in the dashboard header. Glyph supports shared MSVault vaults with up to 16 owners.
 
-The burn screen calls the QUtil `BurnQubic` smart contract. Burning is irreversible. Verify the amount, source account, target tick, and fee before approving.
+- Create a vault by choosing its owners, required approvals, name, and icon.
+- Deposit QU or supported assets into the vault.
+- Owners can request releases of QU or vault assets.
+- Pending releases appear as approvals on the vault screen and in the shared pending-approval list.
+- Each approval is reviewed on its own screen before signing.
+- Vault, owner, and asset rows link to Glyph Explorer where an explorer URL is available.
+- Holding fees and release fees are shown before signing.
 
-A security setting can require the wallet password before a burn. This setting is off by default.
-
-### QEarn staking
-
-Glyph supports QEarn lock and unlock operations.
-
-- Minimum lock amount: 10,000,000 QU
-- Lock period: 52 epochs
-- Early unlock is available, but can reduce rewards
-
-Positions and rewards are loaded from network data. A submitted lock or unlock remains subject to Qubic confirmation and contract behavior. Glyph prevents a conflicting outgoing transaction from the same identity while an operation is pending.
+Multisig operations are smart-contract calls and remain subject to Qubic confirmation and contract behavior. A submitted operation is tracked like any other pending transaction.
 
 ## 8. Scheduled transfers
 
@@ -221,13 +222,15 @@ Treat the schedule as a reminder and template, not as a standing payment instruc
 
 Select an account to display its address and QR code. Confirm the displayed address before sharing it.
 
-## 10. Transaction history, analytics, and search
+## 10. Transaction history and search
 
 ### History
 
-History combines archive transactions, recent event data, and local pending records. It supports filtering by direction, transaction type, amount, date, and tick.
+History combines archive transactions, recent event data, and local pending records. It groups rows by day, shows pending transfers first, and loads older activity as you scroll.
 
 The first archive page can be supplemented with recent event logs to reduce indexing gaps. Results are deduplicated locally. Network or archive delays can still cause temporary omissions or status differences.
+
+Select a row to open transaction detail. The detail screen shows the transaction type, parties, amount, status, tick, fees, explorer links, and a copy action for the transaction ID. Local memos can be added there.
 
 Local retention limits include:
 
@@ -237,19 +240,13 @@ Local retention limits include:
 
 Historical fiat values use the nearest locally stored price sample. They are estimates, not exchange receipts or tax records.
 
-### Analytics
-
-Analytics examines visible accounts and can load up to 2,000 transactions per identity. It summarizes net flow, sent and received totals, average values, monthly activity, counterparties, contracts, and recent weekly activity.
-
-Analytics is informational only. It is not accounting, tax, or compliance software.
-
 ### Search
 
 Global search covers accounts, contacts, known contracts, and a limited set of archive transactions per account. Search results depend on the configured Glyph API service and local metadata.
 
 ## 11. Contacts and local records
 
-Contacts can contain a name, Qubic address, note, and tags. They are stored locally. The current UI does not provide contact import or export.
+Contacts can contain a name, Qubic address, and tags. They are stored locally and can be imported or exported as CSV or JSON.
 
 Other local records include:
 
@@ -263,11 +260,17 @@ The audit log records selected wallet events such as unlock success or failure, 
 
 ## 12. Notifications and tray behavior
 
-Desktop notifications are disabled by default. When enabled, Glyph requests operating-system permission on the first delivery attempt.
+Notifications use a separate always-on-top Glyph window rather than operating-system notification toasts. The window is independent of the main wallet and shows the Glyph icon, title, and description.
 
-Settings include notifications for received, sent, confirmed, missed, and locked events. Notification records can still be stored in the application even when a desktop popup is suppressed. By default, desktop notifications are suppressed while the wallet is locked unless the locked-notification option allows them.
+Notifications are disabled by default. In Settings, you can choose:
 
-At startup, Glyph can reconcile received transactions over a lookback of up to 24 hours. Reconciled events are normally stored without replaying old desktop popups.
+- Position: top-left, top-right, bottom-left, or bottom-right. The default is bottom-right.
+- Visible duration: 4, 6, 8, 10, or 15 seconds. The default is 6 seconds.
+- Maximum visible notifications: 2, 3, 4, or 5. The default is 3.
+
+Clicking a notification opens its transaction or account in Glyph Explorer when an explorer target is available. Notification records are stored in the application even when the window is disabled or suppressed. By default, notification windows are suppressed while the wallet is locked unless the locked-notification option allows them.
+
+At startup, Glyph can reconcile received transactions over a lookback of up to 24 hours. Reconciled events are normally stored without replaying old notification windows.
 
 ### Close and tray
 
@@ -358,7 +361,7 @@ This protects data at rest from casual file inspection. It does not protect an u
 
 Long-lived active seeds are retained in zeroizing native Rust memory and transaction or message signing is performed natively. Lock clears the native seed session before the renderer receives the lock event.
 
-However, the seed is not guaranteed to remain exclusively native for its entire lifecycle. During wallet creation, unlock, account changes, and seed reveal, seed values briefly exist in the web renderer and cross Tauri IPC. JavaScript strings cannot be deterministically zeroized. Glyph's design reduces long-lived renderer exposure but does not eliminate transient renderer exposure.
+However, the seed is not guaranteed to remain exclusively native for its entire lifecycle. During wallet creation, unlock, account changes, and seed reveal, seed values briefly exist in the web renderer and cross Tauri IPC. JavaScript strings cannot be deterministically zeroized. Glyph's design reduces long-lived renderer exposure but does not eliminate transient renderer exposure. The account **Copy seed** action is handled natively and does not return the seed to the renderer.
 
 ### Signing controls
 
@@ -379,7 +382,7 @@ Additional controls:
 
 Identity copies use the configured clipboard timeout, which defaults to 30 seconds and can be set to 15, 30, 60, or never. Seed copies use a fixed 60-second timeout.
 
-Glyph's scheduled clear overwrites the whole clipboard when the timer fires. It does not verify that the clipboard still contains the value Glyph originally copied. If you copy something else before the timer expires, that newer content can also be cleared.
+Glyph stores a digest of the value it copied. Scheduled, lock-time, and application-close clears blank the clipboard only while it still contains that value, so content copied afterwards is preserved. If Glyph cannot read the clipboard, it clears anyway so a copied seed does not remain.
 
 ### Biometrics
 
@@ -400,7 +403,7 @@ Glyph uses a single Glyph API origin for chain data. The Network settings screen
 
 Use a trusted Glyph API. A malicious or unreliable service can provide false balances, incomplete history, stale ticks, or report a broadcast that never reached a peer. It cannot produce a valid signature without the seed, but it can mislead the information shown before signing.
 
-Default polling intervals vary by application state, with slower polling in the background, tray, and locked states. Asset refreshes are limited to no more than once every 30 seconds.
+Glyph uses live streams for ticks, prices, market data, identity transactions, and confirmation resolution. Wallet balances also poll every 15 seconds as a fallback and refresh after broadcast and transaction resolution. Polling intervals vary by application state, with slower polling in the background, tray, and locked states. Asset refreshes are limited to no more than once every 30 seconds.
 
 ## 16. Updates
 

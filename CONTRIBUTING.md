@@ -89,7 +89,7 @@ add direct `rpc.qubic.org` calls.
 6. Update documentation when behavior, security boundaries, setup, or operations change.
 7. Add a Changeset when the change belongs in release notes.
 
-See [DESIGN.md](./DESIGN.md) for interface rules and [.changeset/README.md](./.changeset/README.md) for Changeset policy.
+Follow the existing shared components, tokens, and screen patterns. See [.changeset/README.md](./.changeset/README.md) for Changeset policy.
 
 ## Validation
 
@@ -138,7 +138,7 @@ Request explicit security review and targeted regression coverage for changes in
 - wallet encryption, decryption, passwords, exports, or migrations
 - seed creation, reveal, session retention, clearing, or native signing
 - auto-lock, sleep handling, clipboard clearing, or biometric behavior
-- Tauri commands, capabilities, CSP, filesystem, opener, notification, or updater access
+- Tauri commands, capabilities, CSP, filesystem, opener, notification window, or updater access
 - `glyph://` registration, link-broker behavior, parsing, nonce handling, request review, callbacks, or redirects
 - encrypted persisted metadata or key storage
 - dependencies, CI permissions, versioning, tags, release assets, native signing, notarization, updater signatures, or publication
@@ -180,7 +180,7 @@ A pull request should include:
 
 Use concise commit subjects that describe the outcome, for example:
 
-- `feat(wallets): add account notes`
+- `feat(accounts): add account labels`
 - `fix(requests): reject expired callbacks`
 - `docs: clarify stable release promotion`
 

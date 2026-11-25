@@ -34,9 +34,10 @@ Create wallets, manage Qubic addresses, send and receive QU, follow your activit
 
 | | What it gives you |
 | --- | --- |
-| **Your wallets, organized** | Create or import wallets, keep Qubic accounts together, and make them easy to recognize with names, colors, icons, and notes. |
-| **QU without the guesswork** | Send to an address, contact, or multiple recipients. Receive with a QR code or copyable address. Review the amount and remaining balance before you sign. |
-| **Activity with context** | Searchable history, local memos, tags, contacts, saved transfer templates, exports, and account-level activity make your wallet easier to understand over time. |
+| **Your wallets, organized** | Create or import wallets, keep Qubic accounts together, and make them easy to recognize with names, colors, and icons. |
+| **QU without the guesswork** | Send to an address or contact. Receive with a QR code or copyable address. Review the amount and remaining balance before you sign. |
+| **Activity with context** | Searchable history, local memos, contacts, saved transfer templates, backup exports, and account-level activity make your wallet easier to understand over time. |
+| **Multisig when you need it** | Create shared vaults, manage owners, deposit funds and assets, request releases, and review pending approvals from the dashboard header. |
 | **Connected apps on your terms** | Open supported `glyph://` requests from Qubic apps and services, then review connection, transfer, contract-call, signing, and verification requests in Glyph. |
 
 ## Built for everyday Qubic
@@ -45,15 +46,14 @@ Create wallets, manage Qubic addresses, send and receive QU, follow your activit
 
 A wallet can hold the Qubic addresses you use every day. Switch wallets and accounts from anywhere in the app, hide balances when you need privacy, and choose the display settings that fit your workspace.
 
-Your dashboard keeps balances, recent activity, owned assets, approximate fiat values, and QEarn information close at hand. Use a custom Glyph API origin when you need to work with a different Glyph service.
+Your dashboard keeps balances, the live network tick, recent activity, owned assets, and approximate fiat values close at hand. Use a custom Glyph API origin when you need to work with a different Glyph service.
 
 ### Send, receive, and stay informed
 
 - Send QU to an address or a saved contact.
-- Send to multiple recipients in one reviewed flow.
 - Share an address or QR code to receive QU.
 - Track transactions from broadcast through confirmation, expiry, or failure.
-- Keep local notes and reusable transfer templates for recurring payments.
+- Keep local transaction memos and reusable transfer templates for recurring payments.
 
 ### Review requests before they happen
 

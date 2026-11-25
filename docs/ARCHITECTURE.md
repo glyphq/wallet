@@ -14,7 +14,7 @@ The implementation is designed to:
 - Keep the long-lived unlocked signing session in native memory.
 - Sign Qubic transactions and messages in native Rust.
 - Require explicit UI review for transfers, smart-contract calls, and dApp requests.
-- Limit Tauri capabilities to the main window and required desktop functions.
+- Limit Tauri capabilities to the required window surfaces and desktop functions.
 - Validate untrusted protocol links before they become wallet actions.
 - Support signed application updates on supported package formats.
 
@@ -46,7 +46,8 @@ graph LR
     API <-->|Qubic peer protocol| Peers[Qubic peers]
     Native -->|HTTPS callback POST| DApp[dApp callback]
     Native -->|Open HTTPS redirect| Browser[System browser]
-    Native --> OS[Credential store, clipboard, notifications, tray, filesystem]
+    Native --> Notification[Always-on-top notification window]
+    Native --> OS[Credential store, clipboard, tray, filesystem]
     Native --> Store[Local Tauri stores]
     Native --> Updater[Signed update endpoint]
 ```
@@ -57,24 +58,25 @@ The Glyph API is the only chain-data backend in the wallet path. It indexes Qubi
 
 ### Frontend
 
-- `src/main.tsx`: renderer entry point
+- `src/main.tsx`: main-window renderer entry point
+- `src/notification-main.tsx`: separate notification-window entry point
 - `src/App.tsx`: application composition and startup behavior
 - `src/router.tsx`: hash-based route tree
-- `src/screens/`: feature screens for setup, wallets, sends, history, settings, requests, and support
+- `src/screens/`: feature screens for setup, wallets, sends, multisig, history, settings, requests, and support
 - `src/layouts/`: application shell and animated route layouts
-- `src/components/`: reusable UI and request-review components
+- `src/components/`: reusable UI, full-screen flows, and request-review components
 - `src/hooks/`: Glyph API queries, polling, auto-lock integration, deep links, notifications, and updater hooks
-- `src/lib/`: wallet domain logic, generated API client, request validation, export format, session adapters, analytics, and formatting
-- `src/store/`: persisted, session, updater, and UI state
+- `src/lib/`: wallet domain logic, generated API client, request validation, export format, session adapters, notification copy, and formatting
+- `src/store/`: persisted, session, streaming tick, updater, and UI state
 - `src/styles/`: global application styles
 
 ### Native application
 
-- `src-tauri/src/lib.rs`: Tauri builder, plugin setup, state registration, events, tray, single-instance behavior, and command registration
-- `src-tauri/src/commands.rs`: command-facing validation and orchestration
+- `src-tauri/src/app/`: builder, plugins, window lifecycle, tray, setup, and the notification window backend
+- `src-tauri/src/commands/`: command-facing validation and orchestration
 - `src-tauri/src/wallet_crypto.rs`: password-based wallet encryption and decryption
 - `src-tauri/src/store_crypto.rs`: installation-key management and persisted-value encryption
-- `src-tauri/src/session_crypto.rs`: native unlocked-session seed storage
+- `src-tauri/src/session_crypto.rs`: native unlocked-session seed storage and native seed copy
 - `src-tauri/src/qubic_native.rs`: identity derivation, transaction construction, and native signing
 - `src-tauri/src/auto_lock.rs`: native inactivity and sleep-lock state
 - `src-tauri/src/clipboard.rs`: scheduled clipboard clearing
@@ -109,9 +111,9 @@ The route tree separates:
 - Setup and import
 - Lock and unlock
 - Dashboard and wallet management
-- Standard send, burn, staking, and scheduled templates
+- Standard send, multisig vaults, and scheduled templates
 - Receive and payment-link creation
-- History, transaction detail, analytics, and search
+- History, transaction detail, and search
 - Contacts
 - External request review and request history
 - Settings, security, audit, network, notifications, diagnostics, appearance, and support
@@ -375,16 +377,16 @@ The renderer loads each resource once, then follows Glyph SSE feeds:
 | --- | --- |
 | `/v1/stream/ticks` | Cached head, epoch, last-processed tick, network health, expiry |
 | `/v1/stream?types=price,market` | Price and market-cap cards |
-| `/v1/stream?types=transaction,event&identity={id}` | History, balances, assets, analytics, received notifications, confirmations |
+| `/v1/stream?types=transaction,event&identity={id}` | History, balances, assets, received notifications, confirmations |
 
-One shared connection is kept per identity, regardless of how many hooks subscribe. EventSource reconnects automatically; `open`, `lag`, window focus, and network-online events trigger a reconciliation fetch, as does the initial mount. Query caches are updated or invalidated from the stream rather than on a fixed interval. Polling remains only for resources with no stream: the optional custom price feed and external Coinbase exchange rates. Persisted polling profiles apply to those fallbacks.
+One shared connection is kept per identity, regardless of how many hooks subscribe. EventSource reconnects automatically; `open`, `lag`, window focus, and network-online events trigger a reconciliation fetch, as does the initial mount. Query caches are updated or invalidated from the stream rather than on a fixed interval. Polling remains for resources with no stream, including the optional custom price feed, external Coinbase exchange rates, and a 15-second wallet-balance fallback. Persisted polling profiles apply to those fallbacks.
 
-Balances and owned assets do not have a dedicated snapshot stream. They load once and are invalidated by identity transaction/event frames, with a per-identity throttle so a busy account cannot cause unbounded contract queries.
+Balances and owned assets do not have a dedicated snapshot stream. They load once, poll periodically as a fallback, and are invalidated by identity transaction/event frames and by transaction resolution, with a per-identity throttle so a busy account cannot cause unbounded contract queries.
 
 ### Standard transfer flow
 
 1. The renderer validates source, recipient, amount, balance, and pending-transaction guard.
-2. It reads the current tick and adds the configured offset, default 10.
+2. It reads the newest indexed or peer head from the API and adds the configured offset, default 10.
 3. Native Rust constructs and signs the transaction.
 4. The renderer broadcasts it to the Glyph API.
 5. A local pending record is retained.
@@ -414,13 +416,9 @@ Memos are local records keyed to transactions and are not included in a standard
 
 ## 14. Smart-contract feature boundaries
 
-### Burn
+### Multisig vaults
 
-Burn invokes the QUtil `BurnQubic` contract. It is irreversible. An optional application setting can require wallet-password revalidation before signing.
-
-### QEarn
-
-QEarn lock and unlock use smart-contract transactions. The UI enforces a minimum lock amount of 10,000,000 QU and presents the 52-epoch lock period and early-unlock reward caveat. Position data is queried in bounded epoch batches.
+Multisig manages MSVault vaults. The wallet can create vaults, read owner and asset state, deposit QU or supported assets, request releases, and collect approvals before signing. Fee and holding-fee information is read from the contract and shown in review. Vault, owner, and asset views link to Glyph Explorer.
 
 ### Scheduled transfers
 
@@ -524,13 +522,13 @@ Delivery failure is recorded and the UI can retry, save, or copy the result.
 
 ## 16. Notifications and background behavior
 
-The native layer integrates operating-system notifications, tray behavior, and user-controlled startup registration. The frontend determines notification events from balances, history, and pending-state transitions.
+Notifications are rendered in a separate always-on-top Tauri window, independent of the main wallet. The native layer creates, positions, resizes, and hides that window; the main renderer sends notification events and the overlay renderer owns the visible card stack.
 
-- Desktop notifications are off by default.
-- The first delivery requests system permission.
+- Notification windows are off by default.
+- Position, visible duration, and maximum visible cards are configurable.
 - Notification records are capped at 200.
-- Locked-state desktop display follows the user's privacy setting, but events can still be persisted.
-- Startup reconciliation can examine up to 24 hours of received activity without replaying old desktop popups.
+- Locked-state display follows the user's privacy setting, but events can still be persisted.
+- Startup reconciliation can examine up to 24 hours of received activity without replaying old notification windows.
 
 If hide-to-tray is enabled, a close request hides the main window. Otherwise, it exits. Tray construction failure is nonfatal.
 
@@ -562,6 +560,15 @@ The main window is constrained to a desktop-wallet form factor:
 - Packaged developer tools disabled
 - Maximize and fullscreen not enabled
 
+A separate `notification-overlay` window is created on demand:
+
+- Always on top
+- Transparent and undecorated
+- Skipped in the taskbar
+- Not focusable
+- Dynamically sized to the visible notification stack
+- Anchored to a configurable screen corner
+
 ### Content Security Policy
 
 The packaged CSP permits:
@@ -584,7 +591,7 @@ The main window receives only the declared Tauri capabilities, including:
 - Store get, set, load, save, and delete
 - Deep-link handling
 - Clipboard write
-- Notifications
+- Notification-window display
 - User-controlled startup registration
 - Updater check and install
 - Save dialog
