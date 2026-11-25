@@ -2,8 +2,10 @@ import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { AsciiBackdrop } from "@/components/ascii-backdrop";
+import { IconButton } from "@/components/icon-button";
 import { ScreenHeader } from "@/components/screen-header";
 import { ShellAccountSwitcher } from "@/components/shell-account-switcher";
+import { SafeIcon } from "@/lib/icons";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
@@ -14,7 +16,7 @@ import { formatPreferredCurrencyFromQu } from "@/lib/format";
 import { getWalletAccountIdentity } from "@/lib/accounts";
 import { BalanceDisplay } from "@/components/balance-display";
 import { OwnedAssetChips } from "./dashboard-balance";
-import { MoreActions, PrimaryActions } from "./dashboard-actions";
+import { PrimaryActions } from "./dashboard-actions";
 import { RecentTxs } from "./dashboard-activity";
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
@@ -65,8 +67,16 @@ export default function DashboardScreen() {
   }, [isLocked, navigate]);
 
   const dashboardHeader = useMemo(() => (
-    <ScreenHeader leading={<ShellAccountSwitcher />} title="Dashboard" />
-  ), []);
+    <ScreenHeader
+      leading={<ShellAccountSwitcher />}
+      title="Dashboard"
+      action={(
+        <IconButton label="Multisig vaults" onClick={() => navigate("/multisig")}>
+          <SafeIcon size={20} aria-hidden="true" />
+        </IconButton>
+      )}
+    />
+  ), [navigate]);
 
   return (
     <AppShell statusBar={dashboardHeader} fullBleed>
@@ -110,8 +120,6 @@ export default function DashboardScreen() {
           </div>
           <RecentTxs identity={identity} activeIdentity={identity} hideBalances={settings.hideBalances} price={stats?.price} />
         </div>
-
-        <MoreActions onSendMany={() => navigate("/send-many")} onMultisig={() => navigate("/multisig")} />
 
       </div>
     </AppShell>
