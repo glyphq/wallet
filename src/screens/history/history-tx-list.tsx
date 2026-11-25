@@ -37,7 +37,7 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-const HISTORY_MARK_SIZE = 34;
+const HISTORY_MARK_SIZE = 40;
 
 function RowLeading({ contractName, identity }: { contractName?: string | null; identity: string | null }) {
   if (contractName) {
@@ -54,7 +54,7 @@ function RowLeading({ contractName, identity }: { contractName?: string | null; 
           background: "var(--color-bg-surface)",
         }}
       >
-        <ContractMark name={contractName} size={18} />
+        <ContractMark name={contractName} size={22} />
       </span>
     );
   }
