@@ -1,8 +1,10 @@
 import type { ReactNode, RefObject } from "react";
 import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
 import { IdentityPickerScreen } from "@/components/identity-picker";
-import { formatQu } from "@/lib/format";
+import { fiatInputDecimals } from "@/lib/amount-currency";
+import { formatQu, type DisplayCurrency } from "@/lib/format";
 import { Button } from "@/components/button";
+import { AmountInput } from "@/components/amount-input";
 import { Input } from "@/components/input";
 import { ChoiceChips } from "@/components/choice-chips";
 import { TextButton } from "@/components/text-button";
@@ -19,7 +21,7 @@ export interface SendInputStepProps {
   fiatEquiv: string | null;
   amountUnit: "qubic" | "fiat";
   fiatInput: string;
-  currencyLabel: string;
+  currencyLabel: DisplayCurrency;
   canToggleAmountUnit: boolean;
   onAmountChange: (value: string) => void;
   onFiatInputChange: (value: string) => void;
@@ -86,6 +88,9 @@ export function SendInputStep({
     );
   }
 
+  const enteredQubic = /^\d+$/.test(amountStr) ? BigInt(amountStr) : 0n;
+  const remainingBalance = balance === null ? null : (balance > enteredQubic ? balance - enteredQubic : 0n);
+
   return (
     <SendStepPanel minHeight="min-content" scroll="y" statusBar={statusBar}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1 }}>
@@ -124,16 +129,15 @@ export function SendInputStep({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <Input
+          <AmountInput
             label="Amount"
             value={amountUnit === "qubic" ? amountStr : fiatInput}
-            onChange={(event) => {
-              const value = event.target.value.replace(amountUnit === "qubic" ? /[^\d]/g : /[^\d.]/g, "");
+            decimals={amountUnit === "qubic" ? 0 : fiatInputDecimals(currencyLabel)}
+            onValueChange={(value) => {
               if (amountUnit === "qubic") onAmountChange(value);
               else onFiatInputChange(value);
             }}
             placeholder="0"
-            inputMode={amountUnit === "qubic" ? "numeric" : "decimal"}
             autoComplete="off"
             maxLength={amountUnit === "qubic" ? 20 : 24}
             error={amountError || undefined}
@@ -163,11 +167,10 @@ export function SendInputStep({
           </div>
         </div>
 
-        {balance !== null ? (
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Available balance</span>
+        {remainingBalance !== null ? (
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-secondary)", letterSpacing: "0.04em" }}>
-              {formatQu(balance)} QUBIC
+              {formatQu(remainingBalance)} QUBIC
             </span>
           </div>
         ) : null}
