@@ -40,18 +40,8 @@ export function PrimaryNav({ active }: { active: PrimaryNavTab }) {
             aria-current={isActive ? "page" : undefined}
             title={label}
           >
-            <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-            <span
-              aria-hidden="true"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                lineHeight: 1,
-                letterSpacing: "0.04em",
-              }}
-            >
-              {label}
-            </span>
+            <Icon size={20} strokeWidth={1.5} aria-hidden="true" />
+            <span className="sr-only">{label}</span>
           </button>
         );
       })}
