@@ -14,7 +14,6 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
   const [renamingAccount, setRenamingAccount] = useState<AccountMeta | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [editingMeta, setEditingMeta] = useState<AccountMeta | null>(null);
-  const [metaNote, setMetaNote] = useState("");
   const [metaTags, setMetaTags] = useState("");
   const [removingAccount, setRemovingAccount] = useState<AccountMeta | null>(null);
   const [removePassword, setRemovePassword] = useState("");
@@ -39,7 +38,6 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
 
   function openMeta(account: AccountMeta) {
     setEditingMeta(account);
-    setMetaNote(account.note ?? "");
     setMetaTags((account.tags ?? []).join(", "));
   }
 
@@ -48,7 +46,7 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
     updateWallet(wallet.id, {
       accounts: wallet.accounts.map((account) =>
         account.index === editingMeta.index
-          ? { ...account, note: metaNote.trim(), tags: parseAccountTags(metaTags) }
+          ? { ...account, tags: parseAccountTags(metaTags) }
           : account,
       ),
     });
@@ -120,8 +118,6 @@ export function useWalletAccountActions(wallet: WalletMeta | undefined, isActive
     doRename,
     editingMeta,
     setEditingMeta,
-    metaNote,
-    setMetaNote,
     metaTags,
     setMetaTags,
     openMeta,

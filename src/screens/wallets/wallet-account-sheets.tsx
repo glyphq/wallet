@@ -132,14 +132,12 @@ interface AccountMetaSheetProps {
   onClose: () => void;
   tags: string;
   setTags: (value: string) => void;
-  note: string;
-  setNote: (value: string) => void;
   onSave: () => void;
 }
 
-export function AccountMetaSheet({ open, onClose, tags, setTags, note, setNote, onSave }: AccountMetaSheetProps) {
+export function AccountMetaSheet({ open, onClose, tags, setTags, onSave }: AccountMetaSheetProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Notes and tags">
+    <Sheet open={open} onClose={onClose} title="Tags">
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         <Input
           label="Tags"
@@ -147,28 +145,6 @@ export function AccountMetaSheet({ open, onClose, tags, setTags, note, setNote, 
           onChange={(e) => setTags(e.target.value)}
           placeholder="staking, cold, treasury"
         />
-        <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
-            Note
-          </span>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={4}
-            placeholder="Optional note for this account"
-            style={{
-              width: "100%",
-              resize: "vertical",
-              background: "var(--color-bg-surface)",
-              color: "var(--color-text-primary)",
-              border: "1px solid var(--color-border-strong)",
-              borderRadius: "var(--radius-sharp)",
-              padding: "var(--space-3)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body)",
-            }}
-          />
-        </label>
         <Button onClick={onSave}>Save</Button>
       </div>
     </Sheet>

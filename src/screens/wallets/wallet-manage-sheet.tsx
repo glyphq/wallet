@@ -110,8 +110,8 @@ export function ManageAccountSheet({
               onClick={() => onRename(account)}
             />
             <ActionRow
-              title="Notes and tags"
-              description="Keep metadata such as staking, cold, or treasury."
+              title="Tags"
+              description="Label this account for searching and organization."
               icon={File02Icon}
               onClick={() => onEditMeta(account)}
             />

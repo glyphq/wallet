@@ -40,7 +40,6 @@ export default function AccountDetailScreen() {
 
   const [name, setName] = useState(account?.name ?? "");
   const [tags, setTags] = useState((account?.tags ?? []).join(", "));
-  const [note, setNote] = useState(account?.note ?? "");
   const [saved, setSaved] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [password, setPassword] = useState("");
@@ -50,7 +49,6 @@ export default function AccountDetailScreen() {
   useEffect(() => {
     setName(account?.name ?? "");
     setTags((account?.tags ?? []).join(", "));
-    setNote(account?.note ?? "");
     setSaved(false);
     setConfirmRemove(false);
     setPassword("");
@@ -68,7 +66,7 @@ export default function AccountDetailScreen() {
     updateWallet(wallet.id, {
       accounts: wallet.accounts.map((item) =>
         item.index === account.index
-          ? { ...item, name: name.trim(), note: note.trim(), tags: parseAccountTags(tags) }
+          ? { ...item, name: name.trim(), tags: parseAccountTags(tags) }
           : item,
       ),
     });
@@ -191,32 +189,6 @@ export default function AccountDetailScreen() {
             placeholder="staking, cold, treasury"
             maxLength={160}
           />
-          <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
-              Note
-            </span>
-            <textarea
-              value={note}
-              onChange={(event) => {
-                setNote(event.target.value);
-                markDirty();
-              }}
-              rows={4}
-              maxLength={2000}
-              placeholder="Optional note for this account"
-              style={{
-                width: "100%",
-                resize: "vertical",
-                background: "var(--color-bg-surface)",
-                color: "var(--color-text-primary)",
-                border: "1px solid var(--color-border-strong)",
-                borderRadius: "var(--radius-sharp)",
-                padding: "var(--space-3)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-              }}
-            />
-          </label>
         </div>
       </div>
 

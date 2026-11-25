@@ -118,8 +118,6 @@ export default function WalletDetailScreen() {
         onClose={() => actions.setEditingMeta(null)}
         tags={actions.metaTags}
         setTags={actions.setMetaTags}
-        note={actions.metaNote}
-        setNote={actions.setMetaNote}
         onSave={actions.saveAccountMeta}
       />
 
