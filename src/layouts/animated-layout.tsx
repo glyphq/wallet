@@ -8,7 +8,7 @@ import { useAutoLock } from "@/hooks/use-auto-lock";
 import { useDisableHistoryNavigation } from "@/hooks/use-disable-history-navigation";
 import { useGlobalTickStream } from "@/hooks/use-global-tick-stream";
 import { useLockCountdown } from "@/hooks/use-lock-countdown";
-import { BottomNav, type BottomNavTab } from "@/components/bottom-nav";
+import { PrimaryNav, type PrimaryNavTab } from "@/components/primary-nav";
 import { TitleBar } from "@/components/title-bar";
 import { AsciiPageHeader } from "@/components/ascii-page-header";
 import { ScreenHeader } from "@/components/screen-header";
@@ -38,7 +38,7 @@ function showsAccountSelector(pathname: string): boolean {
   );
 }
 
-const NAV_PREFIXES: [string, BottomNavTab][] = [
+const NAV_PREFIXES: [string, PrimaryNavTab][] = [
   ["/dashboard", "home"],
   ["/send", "send"],
   ["/multisig", "home"],
@@ -74,7 +74,7 @@ function showHeader(pathname: string): boolean {
   return true;
 }
 
-function showBottomNav(pathname: string): boolean {
+function showPrimaryNav(pathname: string): boolean {
   if (HIDDEN_CHROME_ROUTES.has(pathname)) return false;
   if (pathname === "/accounts" || pathname.startsWith("/accounts/")) return false;
   if (pathname.startsWith("/tx/")) return false;
@@ -84,7 +84,7 @@ function showBottomNav(pathname: string): boolean {
   return true;
 }
 
-function activeTabFromPath(pathname: string): BottomNavTab {
+function activeTabFromPath(pathname: string): PrimaryNavTab {
   for (const [prefix, tab] of NAV_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(prefix + "/")) return tab;
   }
@@ -157,7 +157,7 @@ function LayoutShell() {
   const installUpdate = useUpdaterStore((s) => s.install);
   const cur = location.pathname;
   const show = !chromeHidden && showHeader(cur);
-  const showNav = !chromeHidden && showBottomNav(cur);
+  const showNav = !chromeHidden && showPrimaryNav(cur);
   const routeTitle = headerTitleFromPath(cur);
   const backTarget = backTargetFromPath(cur);
   const accountSelector = showsAccountSelector(cur) ? <ShellAccountSwitcher /> : undefined;
@@ -275,19 +275,16 @@ function LayoutShell() {
         </div>
       </div>
 
-      {/* ── Anchored bottom nav ── */}
       {showNav && (
         <footer
           style={{
             flexShrink: 0,
-            display: "flex",
-            justifyContent: "center",
-            padding: `var(--space-2) var(--screen-padding) var(--safe-bottom-space)`,
+            borderTop: "1px solid var(--color-border-subtle)",
             background: "var(--color-bg-base)",
-            zIndex: "var(--z-nav)",
+            padding: "var(--space-3) var(--screen-padding) var(--space-4)",
           }}
         >
-          <BottomNav active={activeTabFromPath(cur)} />
+          <PrimaryNav active={activeTabFromPath(cur)} />
         </footer>
       )}
     </div>

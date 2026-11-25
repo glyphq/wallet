@@ -193,6 +193,7 @@ export default function MultisigDetailScreen() {
   const fiatValue = stats?.price
     ? formatPreferredCurrencyFromQu(detail.balance, { usdPrice: stats.price, ...quote }).text
     : undefined;
+  const positiveAssets = detail.assets.filter((asset) => asset.amount > 0n);
 
   const vaultFooter = (
     <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
@@ -266,9 +267,9 @@ export default function MultisigDetailScreen() {
               priceChange24h={null}
             />
           </div>
-          {detail.assets.length > 0 ? (
+          {positiveAssets.length > 0 ? (
             <div className="asciify-clear" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-2)", marginTop: "var(--space-1)", maxWidth: "100%" }}>
-              {detail.assets.map((balance) => (
+              {positiveAssets.map((balance) => (
                 <span
                   key={`${balance.asset.issuer}:${balance.asset.assetName.toString()}`}
                   style={{
@@ -318,7 +319,7 @@ export default function MultisigDetailScreen() {
         </AsciiBackdrop>
       </section>
 
-      {detail.assets.length > 0 && detail.balance < MSVAULT_REVOKE_FEE ? (
+      {positiveAssets.length > 0 && detail.balance < MSVAULT_REVOKE_FEE ? (
         <InlineNotice tone="warning">Asset releases need at least 100 QU in the vault.</InlineNotice>
       ) : null}
 

@@ -122,11 +122,10 @@
   --height-button-md: 42px;
   --height-button-sm: 36px;
   --height-input: 44px;
-  --height-nav: 60px;
+  --height-nav: 48px;
 
   /* Shell metrics */
   --screen-padding: 16px;
-  --safe-bottom-space: 16px;
 
   /* Motion */
   --duration-fast: 110ms;
@@ -135,9 +134,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Layers */
-  --z-nav: 100;
   --z-modal: 240;
-  --z-toast: 300;
 }
 
 @media (min-width: 380px) {
