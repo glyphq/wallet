@@ -83,7 +83,7 @@ export function IdentityPickerScreen({
             {filteredAccounts.length > 0 ? (
               <IdentityPickerSection
                 title="This wallet"
-                entries={filteredAccounts.map((account) => ({ ...account, badge: "Account" }))}
+                entries={filteredAccounts}
                 onSelect={choose}
               />
             ) : null}
@@ -110,7 +110,7 @@ function IdentityPickerSection({
   onSelect,
 }: {
   title: string;
-  entries: { name: string; identity: string; badge?: string }[];
+  entries: { name: string; identity: string }[];
   onSelect: (identity: string) => void;
 }) {
   return (
@@ -121,7 +121,7 @@ function IdentityPickerSection({
       <div className="corner-frame" style={{ display: "flex", flexDirection: "column", border: "1px solid var(--color-border-subtle)", borderRadius: "var(--radius-sharp)", overflow: "hidden" }}>
         {entries.map((entry, index) => (
           <button
-            key={`${entry.badge ?? "contact"}:${entry.identity}`}
+            key={entry.identity}
             type="button"
             onClick={() => onSelect(entry.identity)}
             style={{
@@ -147,11 +147,6 @@ function IdentityPickerSection({
                 {truncateId(entry.identity, 8, 8)}
               </span>
             </span>
-            {entry.badge ? (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", flexShrink: 0 }}>
-                {entry.badge}
-              </span>
-            ) : null}
           </button>
         ))}
       </div>
