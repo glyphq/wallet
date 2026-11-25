@@ -38,7 +38,7 @@ mod cred_store {
 
     fn target(wallet_id: &str) -> Vec<u16> {
         // Keep the historical target prefix so existing biometric enrollments still resolve.
-        to_wide(&format!("glyph-vault/{}", wallet_id))
+        to_wide(&format!("glyph-vault/{wallet_id}"))
     }
 
     pub fn store(wallet_id: &str, password: &str) -> Result<(), String> {

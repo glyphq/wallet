@@ -27,7 +27,9 @@ pub(crate) fn configure(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
 fn apply_square_window_corners(app: &tauri::App) {
     use tauri::Manager;
 
-    let Some(window) = app.get_webview_window("main") else { return };
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
     let Ok(hwnd) = window.hwnd() else { return };
     set_square_corners(hwnd.0 as isize);
 }

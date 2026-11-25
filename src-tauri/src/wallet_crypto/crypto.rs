@@ -58,7 +58,10 @@ pub fn encrypt_wallet_data(password: &str, seeds: &[String]) -> Result<WalletDat
     })
 }
 
-pub fn decrypt_wallet_data(wallet_data: &WalletData, password: &str) -> Result<Vec<String>, String> {
+pub fn decrypt_wallet_data(
+    wallet_data: &WalletData,
+    password: &str,
+) -> Result<Vec<String>, String> {
     if wallet_data.version != WALLET_VERSION {
         return Err(format!("unsupported version {}", wallet_data.version));
     }

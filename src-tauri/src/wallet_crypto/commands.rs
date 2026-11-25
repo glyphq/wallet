@@ -55,7 +55,10 @@ pub async fn unlock_wallet_session(
 }
 
 #[command]
-pub async fn verify_wallet_password(wallet_data: WalletData, password: String) -> Result<(), String> {
+pub async fn verify_wallet_password(
+    wallet_data: WalletData,
+    password: String,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let seeds = decrypt_wallet_data(&wallet_data, &password)?;
         session_crypto::validate_session_seeds(&seeds)

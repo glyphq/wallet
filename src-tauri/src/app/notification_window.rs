@@ -123,10 +123,7 @@ pub fn get_pending_notifications(
 }
 
 #[tauri::command]
-pub fn dismiss_notification(
-    state: State<'_, NotificationOverlayState>,
-    id: String,
-) {
+pub fn dismiss_notification(state: State<'_, NotificationOverlayState>, id: String) {
     state.dismiss(&id);
 }
 
@@ -146,9 +143,7 @@ pub fn layout_notification_overlay(
 
     let position = state.position();
     let visible = count.min(5) as f64;
-    let height = WINDOW_PADDING * 2.0
-        + visible * CARD_HEIGHT
-        + (visible - 1.0).max(0.0) * CARD_GAP;
+    let height = WINDOW_PADDING * 2.0 + visible * CARD_HEIGHT + (visible - 1.0).max(0.0) * CARD_GAP;
     window
         .set_size(LogicalSize::new(WINDOW_WIDTH, height))
         .map_err(|error| error.to_string())?;

@@ -18,7 +18,7 @@ fn store_key_path() -> Result<PathBuf, String> {
         let base = std::env::var_os("APPDATA")
             .map(PathBuf::from)
             .ok_or_else(|| "APPDATA is not set".to_string())?;
-        return Ok(base.join("com.qubic.glyph").join(STORE_KEY_FILE));
+        Ok(base.join("com.qubic.glyph").join(STORE_KEY_FILE))
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -125,8 +125,7 @@ mod secret_store {
     use windows::core::{PCWSTR, PWSTR};
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::Security::Credentials::{
-        CredReadW, CredWriteW, CREDENTIALW, CRED_FLAGS, CRED_PERSIST_LOCAL_MACHINE,
-        CRED_TYPE_GENERIC,
+        CredWriteW, CREDENTIALW, CRED_FLAGS, CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC,
     };
 
     fn to_wide(s: &str) -> Vec<u16> {
