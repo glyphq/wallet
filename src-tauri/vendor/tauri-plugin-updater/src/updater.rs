@@ -494,13 +494,8 @@ impl Updater {
                 let _ = rustls::crypto::ring::default_provider().install_default();
             }
 
+            // Glyph always validates the update server certificate and hostname.
             let mut request = ClientBuilder::new().user_agent(UPDATER_USER_AGENT);
-            if self.context.config.dangerous_accept_invalid_certs {
-                request = request.danger_accept_invalid_certs(true);
-            }
-            if self.context.config.dangerous_accept_invalid_hostnames {
-                request = request.danger_accept_invalid_hostnames(true);
-            }
             if let Some(timeout) = self.timeout {
                 request = request.timeout(timeout);
             }
@@ -688,13 +683,8 @@ impl Update {
             headers.insert(ACCEPT, HeaderValue::from_static("application/octet-stream"));
         }
 
+        // Glyph always validates the update server certificate and hostname.
         let mut request = ClientBuilder::new().user_agent(UPDATER_USER_AGENT);
-        if self.context.config.dangerous_accept_invalid_certs {
-            request = request.danger_accept_invalid_certs(true);
-        }
-        if self.context.config.dangerous_accept_invalid_hostnames {
-            request = request.danger_accept_invalid_hostnames(true);
-        }
         if let Some(timeout) = self.timeout {
             request = request.timeout(timeout);
         }
