@@ -21,7 +21,7 @@ function WinBtn({
   return (
     <button
       type="button"
-      className="titlebar-action corner-frame"
+      className="titlebar-action"
       data-danger={danger ? "true" : undefined}
       onClick={onClick}
       aria-label={label}
@@ -103,7 +103,7 @@ export function TitleBar() {
               }}
               label="Lock wallet"
             >
-              <LockKeyholeIcon size={14} />
+              <LockKeyholeIcon size={18} />
             </WinBtn>
           ) : null}
 
@@ -111,15 +111,15 @@ export function TitleBar() {
             onClick={() => void win.minimize()}
             label="Minimize"
           >
-            <svg width="10" height="2" viewBox="0 0 10 2" aria-hidden="true">
-              <line x1="0" y1="1" x2="10" y2="1" stroke="currentColor" strokeWidth="1.5" />
+            <svg width="13" height="3" viewBox="0 0 13 3" aria-hidden="true">
+              <line x1="0" y1="1.5" x2="13" y2="1.5" stroke="currentColor" strokeWidth="1.5" />
             </svg>
           </WinBtn>
 
           <WinBtn onClick={() => void win.close()} label="Close" danger>
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" />
+            <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
+              <line x1="1.5" y1="1.5" x2="11.5" y2="11.5" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="11.5" y1="1.5" x2="1.5" y2="11.5" stroke="currentColor" strokeWidth="1.5" />
             </svg>
           </WinBtn>
         </div>

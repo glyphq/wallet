@@ -31,7 +31,7 @@ export function PrimaryNav({ active }: { active: PrimaryNavTab }) {
           <button
             key={id}
             type="button"
-            className="primary-nav-action corner-frame"
+            className="primary-nav-action"
             data-active={isActive ? "true" : "false"}
             onClick={() => {
               if (!isActive) navigate(path);
@@ -40,7 +40,7 @@ export function PrimaryNav({ active }: { active: PrimaryNavTab }) {
             aria-current={isActive ? "page" : undefined}
             title={label}
           >
-            <Icon size={20} strokeWidth={1.5} aria-hidden="true" />
+            <Icon size={25} strokeWidth={1.5} aria-hidden="true" />
             <span className="sr-only">{label}</span>
           </button>
         );

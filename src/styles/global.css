@@ -764,9 +764,6 @@ a:hover {
 
 /* Window controls in the custom title bar. */
 .titlebar-action {
-  --corner-size: 6px;
-  --corner-inset: 2px;
-  --corner-color: var(--color-text-tertiary);
   height: 100%;
   width: auto;
   aspect-ratio: 1 / 1;
@@ -784,22 +781,17 @@ a:hover {
 }
 
 .titlebar-action:hover {
-  --corner-color: var(--color-text-primary);
   background: transparent;
   color: var(--color-text-primary);
 }
 
 .titlebar-action[data-danger="true"]:hover {
-  --corner-color: var(--color-status-error);
   background: transparent;
   color: var(--color-status-error);
 }
 
 /* Primary navigation shares the title-bar action language. */
 .primary-nav-action {
-  --corner-size: 6px;
-  --corner-inset: 2px;
-  --corner-color: var(--color-border-subtle);
   position: relative;
   flex: 1 1 0;
   min-width: 0;
@@ -819,17 +811,11 @@ a:hover {
 }
 
 .primary-nav-action:hover {
-  --corner-color: var(--color-text-primary);
   color: var(--color-text-primary);
 }
 
 .primary-nav-action[data-active="true"] {
-  --corner-color: var(--color-accent);
   color: var(--color-accent);
-}
-
-.primary-nav-action[data-active="true"]::before {
-  opacity: 1;
 }
 
 .primary-nav-action:active {
