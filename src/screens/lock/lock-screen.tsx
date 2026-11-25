@@ -11,10 +11,11 @@ import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { extractMessage } from "@/lib/format";
 import { stepMotion } from "@/lib/animations";
-import { unlockBiometricSession, unlockWalletSession } from "@/lib/wallet";
-import { usePersistedStore } from "@/store/persisted";
+import { unlockBiometricSession, unlockWalletSession, verifyWalletPassword } from "@/lib/wallet";
+import { usePersistedStore, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import type { SessionAccount } from "@/lib/session-account";
+import { DeleteWalletSheet } from "@/screens/wallets/wallet-list-sheets";
 import { LockForm, type FormValues } from "./lock-form";
 import { LockWalletTransition, type WalletChangeDirection } from "./lock-wallet-transition";
 import { LockWalletShelf } from "./lock-wallet-shelf";
@@ -58,12 +59,14 @@ export default function LockScreen() {
   const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
   const setActiveWallet = usePersistedStore((s) => s.setActiveWallet);
+  const removeWallet = usePersistedStore((s) => s.removeWallet);
   const touchWalletUnlocked = usePersistedStore((s) => s.touchWalletUnlocked);
   const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
   const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
   const passwordAttempts = usePersistedStore((s) => s.passwordAttempts);
   const setPasswordAttempts = usePersistedStore((s) => s.setPasswordAttempts);
   const unlock = useSessionStore((s) => s.unlock);
+  const resetSessionForSetup = useSessionStore((s) => s.resetForSetup);
   const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
   const hasPendingRequest = pendingRequestCount > 0;
 
@@ -90,6 +93,10 @@ export default function LockScreen() {
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [unlocking, setUnlocking] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
+  const [deletingWallet, setDeletingWallet] = useState<WalletMeta | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const { register, handleSubmit, setValue, setFocus, watch } = useForm<FormValues>();
   const passwordEntered = !!watch("password")?.trim();
@@ -151,6 +158,44 @@ export default function LockScreen() {
     const nextIndex = lockedWallets.findIndex((wallet) => wallet.id === id);
     setWalletDirection(nextIndex >= 0 && currentIndex >= 0 && nextIndex < currentIndex ? -1 : 1);
     setSelectedId(id);
+  }
+
+  function openDelete(wallet: WalletMeta) {
+    setDeletingWallet(wallet);
+    setDeletePassword("");
+    setDeleteError("");
+  }
+
+  async function doDelete() {
+    if (!deletingWallet?.encryptedData) return;
+    const removedId = deletingWallet.id;
+    setDeleteLoading(true);
+    setDeleteError("");
+    try {
+      await verifyWalletPassword(deletingWallet.encryptedData, deletePassword);
+      removeWallet(removedId);
+      const remaining = usePersistedStore.getState().wallets;
+      setDeletingWallet(null);
+      setDeletePassword("");
+      if (remaining.length === 0) {
+        resetSessionForSetup();
+        navigate("/setup", { replace: true });
+        return;
+      }
+      const next = remaining
+        .slice()
+        .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0))[0];
+      if (removedId === settings.activeWalletId) setActiveWallet(next.id);
+      if (removedId === selected?.id) {
+        setAnimateWalletOnMount(false);
+        setSelectedId(next.id);
+        setView("switch");
+      }
+    } catch {
+      setDeleteError("Wrong password");
+    } finally {
+      setDeleteLoading(false);
+    }
   }
 
   async function finishUnlock(wallets: SessionAccount[]) {
@@ -354,6 +399,7 @@ export default function LockScreen() {
                     setView("unlock");
                     window.setTimeout(() => setFocus("password"), 240);
                   }}
+                  onDelete={openDelete}
                 />
               </div>
             </div>
@@ -365,6 +411,18 @@ export default function LockScreen() {
           </motion.div>
         </AnimatePresence>
       )}
+      <DeleteWalletSheet
+        wallet={deletingWallet}
+        password={deletePassword}
+        onPasswordChange={(value) => {
+          setDeletePassword(value);
+          setDeleteError("");
+        }}
+        error={deleteError}
+        loading={deleteLoading}
+        onClose={() => setDeletingWallet(null)}
+        onDelete={doDelete}
+      />
     </FullPage>
   );
 }
