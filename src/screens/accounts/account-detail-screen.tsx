@@ -8,6 +8,7 @@ import { Input } from "@/components/input";
 import { useWalletBalances } from "@/hooks/use-wallet-balances";
 import { getAccountIdentity, parseAccountTags } from "@/lib/accounts";
 import { formatQu } from "@/lib/format";
+import { CheckmarkCircle01Icon, Delete02Icon, ViewIcon, ViewOffIcon } from "@/lib/icons";
 import { removeFromWallet, unlockWalletSession } from "@/lib/wallet";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -246,6 +247,7 @@ export default function AccountDetailScreen() {
                   disabled={!password}
                   onClick={() => void removeAccount()}
                 >
+                  <Delete02Icon size={16} strokeWidth={1.5} aria-hidden="true" />
                   Remove account
                 </Button>
                 <Button
@@ -266,6 +268,7 @@ export default function AccountDetailScreen() {
           ) : (
             <>
               <Button size="md" style={{ width: "100%" }} disabled={!name.trim()} onClick={saveDetails}>
+                <CheckmarkCircle01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
                 {saved ? "Saved" : "Save changes"}
               </Button>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
@@ -277,6 +280,7 @@ export default function AccountDetailScreen() {
                   title={!account.hidden && isCurrent ? "Switch accounts before hiding this one" : undefined}
                   onClick={toggleVisibility}
                 >
+                  {account.hidden ? <ViewIcon size={16} strokeWidth={1.5} aria-hidden="true" /> : <ViewOffIcon size={16} strokeWidth={1.5} aria-hidden="true" />}
                   {account.hidden ? "Unhide account" : "Hide account"}
                 </Button>
                 <Button
@@ -286,6 +290,7 @@ export default function AccountDetailScreen() {
                   disabled={lastAccount}
                   onClick={() => setConfirmRemove(true)}
                 >
+                  <Delete02Icon size={16} strokeWidth={1.5} aria-hidden="true" />
                   Remove account
                 </Button>
               </div>
