@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckmarkCircle01Icon } from "@/lib/icons";
+import { CheckIcon } from "@/lib/icons";
 import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
 
@@ -25,10 +25,10 @@ export function TxDetailMemo({ memo, onSave }: { memo: string; onSave: (next: st
           onClick={() => onSave(value.trim())}
           style={{ width: 32, height: 32 }}
         >
-          <CheckmarkCircle01Icon
+          <CheckIcon
             size={18}
             aria-hidden="true"
-            color={dirty ? "var(--color-accent)" : "var(--color-text-tertiary)"}
+            color={dirty ? "var(--color-text-primary)" : "var(--color-text-tertiary)"}
           />
         </IconButton>
       )}

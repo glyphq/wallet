@@ -4,7 +4,7 @@ import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
-import { ArrowUpRight01Icon, CheckmarkCircle01Icon, Copy01Icon } from "@/lib/icons";
+import { ArrowUpRight01Icon, CheckIcon, Copy01Icon } from "@/lib/icons";
 import { explorerTransactionUrl, openExplorer } from "@/lib/explorer";
 import { copyToClipboard } from "@/lib/clipboard";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
@@ -112,7 +112,7 @@ export default function TxDetailScreen() {
             }}
           >
             {copied ? (
-              <CheckmarkCircle01Icon size={18} color="var(--color-status-success)" aria-hidden="true" />
+              <CheckIcon size={18} color="var(--color-text-primary)" aria-hidden="true" />
             ) : (
               <Copy01Icon size={18} aria-hidden="true" />
             )}

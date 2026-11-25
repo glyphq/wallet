@@ -16,6 +16,7 @@ import {
   Bookmark,
   Bug,
   ChartLine,
+  Check,
   CircleCheck,
   CircleDollar,
   CircleInfo,
@@ -93,6 +94,7 @@ export const MoneyReceive01Icon = createIcon(ArrowDownToLine);
 export const MoneySend01Icon = createIcon(ArrowUpFromLine);
 export const ChartLineData01Icon = createIcon(ChartLine);
 export const CheckmarkCircle01Icon = createIcon(CircleCheck);
+export const CheckIcon = createIcon(Check);
 export const ClipboardIcon = createIcon(Copy);
 export const Clock01Icon = createIcon(Clock);
 export const Compass01Icon = createIcon(Compass);
