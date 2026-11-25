@@ -42,7 +42,7 @@ import {
 import { qk } from "@/lib/query-keys";
 import { buildScTransactionFromSession } from "@/lib/secure-session";
 import { hasPendingFromAccount } from "@/screens/send/send-flow";
-import { UserGroupIcon } from "@/lib/icons";
+import { ArrowUpRight01Icon, UserGroupIcon } from "@/lib/icons";
 import {
   AssetMetaLabel,
   FeeRow,
@@ -477,6 +477,7 @@ export default function MultisigReleaseScreen() {
       disabled={!canReview || !isOwner}
     >
       Review release
+      <ArrowUpRight01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
     </Button>
   );
 
@@ -628,7 +629,6 @@ export default function MultisigReleaseScreen() {
                     ? `${formatQu(fees.releaseFee)} QU`
                     : "Fees unavailable"}
               </span>
-              <span style={MONO_META}>Paid by this account</span>
             </ApprovalField>
             {releaseFeeShort ? (
               <p style={{ ...BODY_COPY, color: "var(--color-status-error)" }}>
@@ -809,11 +809,6 @@ export default function MultisigReleaseScreen() {
                   ) : undefined
                 }
               />
-              {destUpper ? (
-                <p style={MONO_META} title={destUpper}>
-                  {truncateId(destUpper, 10, 10)}
-                </p>
-              ) : null}
             </div>
 
             <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -822,7 +817,6 @@ export default function MultisigReleaseScreen() {
               <FeeRow label="After approval" value={`${currentApprovals + 1} of ${requiredApprovals}`} />
               <FeeRow
                 label="Release fee"
-                hint="Paid by this account"
                 value={
                   feesQuery.isLoading
                     ? "Loading fees…"
