@@ -49,6 +49,7 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     expect(helper).toContain("eca98d94d8e0ba2b1b6109610caa578a8d7fe2b010c102af85560dc29a0e492f");
     expect(helper).toContain("sha256sum");
     expect(helper).toContain('|| die "checksum mismatch for downloaded tool: $url"');
+    expect(helper).toContain("--check-tools");
   });
 
   test("production workflow delegates downloads to verified helpers", async () => {
@@ -61,6 +62,7 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     expect(workflow).toContain(
       "install -m 0755 .release-automation/scripts/patch-appimage.sh scripts/patch-appimage.sh",
     );
+    expect(workflow).toContain("scripts/patch-appimage.sh --check-tools");
     expect(workflow).toContain('scripts/patch-appimage.sh "$appimage"');
   });
 

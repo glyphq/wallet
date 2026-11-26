@@ -179,6 +179,12 @@ jobs:
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
 
+      - name: Install reviewed AppImage helper
+        run: install -m 0755 .release-automation/scripts/patch-appimage.sh scripts/patch-appimage.sh
+
+      - name: Validate AppImage packaging tools
+        run: scripts/patch-appimage.sh --check-tools
+
       - name: Install minimal Linux build dependencies
         run: |
           sudo apt-get update
@@ -270,7 +276,6 @@ jobs:
           # Build source from the immutable tag, but run the reviewed packaging
           # helper from the workflow ref. This keeps release tooling fixes usable
           # without moving a published tag.
-          install -m 0755 .release-automation/scripts/patch-appimage.sh scripts/patch-appimage.sh
           scripts/patch-appimage.sh "$appimage"
           rm -f "${appimage}.sig"
           bun tauri signer sign \
