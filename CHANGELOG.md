@@ -1,5 +1,11 @@
 # glyph
 
+## 1.0.1
+
+### Patch Changes
+
+- 839755a: Load every wallet screen eagerly at startup and replace the remaining ASCII loading skeletons with neutral placeholders.
+
 ## 1.0.0
 
 ### Major Changes
