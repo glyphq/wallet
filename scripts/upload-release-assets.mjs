@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
+import { normalizeAssetName } from "./release-asset-name.mjs";
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], ...options });
@@ -36,16 +37,18 @@ if (!release.isDraft) {
   throw new Error(`release ${tag} is already published; refusing to mutate its assets`);
 }
 const names = release.assets.map((asset) => asset.name);
-if (new Set(names).size !== names.length) {
+const normalizedNames = names.map(normalizeAssetName);
+if (new Set(normalizedNames).size !== normalizedNames.length) {
   throw new Error(`release ${tag} contains duplicate asset names`);
 }
-const existingNames = new Set(names);
+const existingNames = new Map(names.map((name) => [normalizeAssetName(name), name]));
 const tempRoot = await mkdtemp(join(tmpdir(), "glyph-release-assets-"));
 
 try {
   for (const path of paths) {
-    const name = basename(path);
-    if (!existingNames.has(name)) {
+    const name = normalizeAssetName(basename(path));
+    const remoteName = existingNames.get(name);
+    if (!remoteName) {
       run("gh", ["release", "upload", tag, path, "--repo", repository], { stdio: "inherit" });
       console.log(`[release] uploaded ${name}`);
       continue;
@@ -53,8 +56,8 @@ try {
 
     const downloadDir = join(tempRoot, createHash("sha256").update(name).digest("hex"));
     await mkdir(downloadDir, { recursive: true });
-    run("gh", ["release", "download", tag, "--repo", repository, "--pattern", name, "--dir", downloadDir]);
-    const remotePath = join(downloadDir, name);
+    run("gh", ["release", "download", tag, "--repo", repository, "--pattern", remoteName, "--dir", downloadDir]);
+    const remotePath = join(downloadDir, remoteName);
     const [localHash, remoteHash] = await Promise.all([sha256(path), sha256(remotePath)]);
     if (localHash !== remoteHash) {
       throw new Error(`refusing to replace existing draft asset ${name}: local and remote SHA-256 differ`);

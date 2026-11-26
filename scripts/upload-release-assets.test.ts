@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { tmpdir } from "node:os";
 
 const roots: string[] = [];
@@ -32,8 +32,9 @@ if (args[0] === "release" && args[1] === "view") {
   fs.copyFileSync(path.join(remote, name), path.join(dir, name));
 } else if (args[0] === "release" && args[1] === "upload") {
   const source = args[3];
-  fs.copyFileSync(source, path.join(remote, path.basename(source)));
-  fs.appendFileSync(process.env.FAKE_UPLOAD_LOG, path.basename(source) + "\\n");
+  const name = path.basename(source).replaceAll(" ", ".");
+  fs.copyFileSync(source, path.join(remote, name));
+  fs.appendFileSync(process.env.FAKE_UPLOAD_LOG, name + "\\n");
 } else {
   process.exit(9);
 }
@@ -47,7 +48,7 @@ async function runUploader(bin: string, remote: string, uploadLog: string, asset
     cwd: process.cwd(),
     env: {
       ...process.env,
-      PATH: `${bin}:${process.env.PATH ?? ""}`,
+      PATH: [bin, process.env.PATH ?? ""].join(delimiter),
       FAKE_REMOTE_DIR: remote,
       FAKE_UPLOAD_LOG: uploadLog,
       GITHUB_REPOSITORY: "glyphq/wallet",
@@ -57,12 +58,25 @@ async function runUploader(bin: string, remote: string, uploadLog: string, asset
   });
 }
 
-describe("immutable release asset uploads", () => {
+describe.skipIf(process.platform === "win32")("immutable release asset uploads", () => {
   test("skips a byte-identical existing asset", async () => {
     const { root, bin, remote, uploadLog } = await fixture();
     const asset = join(root, "artifact.bin");
     await writeFile(asset, "same bytes");
     await writeFile(join(remote, "artifact.bin"), "same bytes");
+
+    const process = await runUploader(bin, remote, uploadLog, asset);
+    expect(await process.exited).toBe(0);
+    expect(await new Response(process.stdout).text()).toContain("byte-identical");
+    expect(await readFile(uploadLog, "utf8").catch(() => "")).toBe("");
+  });
+
+  test("matches an existing asset after GitHub normalizes spaces to dots", async () => {
+    const { root, bin, remote, uploadLog } = await fixture();
+    const asset = join(root, "Glyph Wallet_1.0.0_x64-setup.exe");
+    const remoteAsset = join(remote, "Glyph.Wallet_1.0.0_x64-setup.exe");
+    await writeFile(asset, "same bytes");
+    await writeFile(remoteAsset, "same bytes");
 
     const process = await runUploader(bin, remote, uploadLog, asset);
     expect(await process.exited).toBe(0);
@@ -102,7 +116,7 @@ describe("immutable release asset uploads", () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        PATH: `${bin}:${process.env.PATH ?? ""}`,
+        PATH: [bin, process.env.PATH ?? ""].join(delimiter),
         FAKE_REMOTE_DIR: remote,
         FAKE_UPLOAD_LOG: uploadLog,
         FAKE_IS_DRAFT: "false",
