@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { AsciiSkeleton } from "ascii-reveal";
+import { Skeleton } from "@/components/skeleton";
 import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
@@ -147,13 +147,13 @@ export default function MultisigApprovalsScreen() {
         <div aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           {[0, 1, 2].map((row) => (
             <div key={row} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minHeight: 64, padding: "var(--space-3)" }}>
-              <AsciiSkeleton as="div" variant="scan" rows={2} width={34} height={34} animate={false} seed={row + 1} />
+              <Skeleton width={34} height={34} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <AsciiSkeleton as="div" variant="scan" lines={1} widths={[130]} animate={false} seed={row + 11} />
+                <Skeleton width={130} height={8} />
                 <div style={{ height: 6 }} />
-                <AsciiSkeleton as="div" variant="scan" lines={1} widths={[180]} animate={false} seed={row + 21} />
+                <Skeleton width={180} height={6} />
               </div>
-              <AsciiSkeleton as="div" variant="scan" lines={1} widths={[60]} animate={false} seed={row + 31} />
+              <Skeleton width={60} height={8} />
             </div>
           ))}
         </div>

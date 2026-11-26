@@ -1,4 +1,4 @@
-import { AsciiReveal, AsciiSkeleton } from "ascii-reveal";
+import { Skeleton } from "@/components/skeleton";
 import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
 import { formatQu, truncateId } from "@/lib/format";
@@ -74,19 +74,13 @@ export function PortfolioAccountRow({ entry, position, total, allLoaded, hideBal
             <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-display)" }}>
               {account.name}
             </span>
-            <AsciiReveal
-              loading={!allLoaded}
-              revealOnMount={false}
-              shimmer={false}
-              duration="fast"
-              style={{ flexShrink: 0 }}
-            >
+            <div style={{ flexShrink: 0 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-primary)", letterSpacing: "0.04em" }}>
                 {!allLoaded ? (
-                  <AsciiSkeleton as="span" variant="scan" lines={1} widths={[80]} animate={false} />
+                  <Skeleton width={80} height={8} />
                 ) : hideBalances ? "••••••" : balance !== null ? `${formatQu(balance)} QU` : "—"}
               </span>
-            </AsciiReveal>
+            </div>
           </div>
           {identity && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>

@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
-import { AsciiReveal, AsciiSkeleton } from "ascii-reveal";
+import { Skeleton } from "@/components/skeleton";
 import { Divider } from "@/components/divider";
 import { Identicon } from "@/components/identicon";
 import { usePersistedStore } from "@/store/persisted";
@@ -78,22 +78,16 @@ export default function PortfolioScreen() {
         <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-text-disabled)", letterSpacing: "0.05em" }}>
           Total balance
         </span>
-        <AsciiReveal
-          loading={!allLoaded}
-          revealOnMount={false}
-          shimmer={false}
-          duration="fast"
-          style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}
-        >
+        <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
           <span style={{ fontFamily: "var(--font-mono)", fontWeight: 400, fontSize: "var(--text-display)", letterSpacing: "-0.02em", color: "var(--color-text-display)" }}>
             {!allLoaded ? (
-              <AsciiSkeleton as="span" variant="scan" rows={4} width={200} height={48} animate={false} />
+              <Skeleton width={200} height={48} />
             ) : hideBalances ? "••••••" : formatQu(totalBalance)}
           </span>
           {allLoaded && !hideBalances && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-disabled)" }}>QU</span>
           )}
-        </AsciiReveal>
+        </div>
         {allLoaded && !hideBalances && stats?.price && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-text-disabled)", letterSpacing: "0.04em" }}>
             {formatPreferredCurrencyFromQu(totalBalance, { usdPrice: stats.price, ...quote }).text}
