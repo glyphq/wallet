@@ -43,9 +43,10 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     );
     expect(helper).toContain("b90f4a8b18967545fda78a445b27680a1642f1ef9488ced28b65398f2be7add2");
     expect(helper).toContain(
-      "https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-951-x86_64.AppImage",
+      "https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-${RUNTIME_TOOL_VERSION}-x86_64.AppImage",
     );
-    expect(helper).toContain("7c974f525d5bcde2712dd080e0b079a6c3802113a337f0ab142522dcefbf452d");
+    expect(helper).toContain('RUNTIME_TOOL_VERSION="954"');
+    expect(helper).toContain("eca98d94d8e0ba2b1b6109610caa578a8d7fe2b010c102af85560dc29a0e492f");
     expect(helper).toContain("sha256sum");
     expect(helper).toContain('|| die "checksum mismatch for downloaded tool: $url"');
   });
