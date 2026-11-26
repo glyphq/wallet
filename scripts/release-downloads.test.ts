@@ -58,6 +58,9 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     expect(workflow).not.toContain("releases/assets/");
     expect(workflow).not.toContain("Preload authenticated pinned AppImage tools");
     expect(workflow).toContain("scripts/prepare-tauri-linux-tools.sh");
+    expect(workflow).toContain(
+      "install -m 0755 .release-automation/scripts/patch-appimage.sh scripts/patch-appimage.sh",
+    );
     expect(workflow).toContain('scripts/patch-appimage.sh "$appimage"');
   });
 

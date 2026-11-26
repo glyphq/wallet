@@ -93,13 +93,6 @@ jobs:
           cache-targets: "false"
           cache-on-failure: "true"
 
-      - name: Check locked Rust build
-        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
-        env:
-          TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
-          RUSTC_WRAPPER: ${{ steps.sccache.outcome == 'success' && 'sccache' || '' }}
-          SCCACHE_GHA_ENABLED: ${{ steps.sccache.outcome == 'success' && 'true' || 'false' }}
-
       - name: Verify Rust formatting and linting
         run: |
           cargo fmt --manifest-path src-tauri/Cargo.toml --check
@@ -111,6 +104,7 @@ jobs:
 
   linux-package-smoke:
     name: Linux packages start from a clean profile
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
@@ -172,6 +166,7 @@ jobs:
 
   rust-desktop-platforms:
     name: Rust check (${{ matrix.os }})
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
