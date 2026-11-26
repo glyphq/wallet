@@ -223,6 +223,19 @@ validate_appdir() {
 main() {
   local input appimagetool runtime_tool runtime workdir appdir output
 
+  if [[ "${1:-}" == "--check-tools" ]]; then
+    require_command curl
+    require_command sha256sum
+    download_verified \
+      "$APPIMAGETOOL_URL" "$APPIMAGETOOL_SHA256" \
+      "$TOOL_CACHE_DIR/appimagetool-b90f4a8b.AppImage"
+    download_verified \
+      "$RUNTIME_TOOL_URL" "$RUNTIME_TOOL_SHA256" \
+      "$TOOL_CACHE_DIR/appimagetool-${RUNTIME_TOOL_VERSION}-x86_64.AppImage"
+    log "AppImage packaging tools are available and verified"
+    exit 0
+  fi
+
   require_command cmp
   require_command curl
   require_command find
