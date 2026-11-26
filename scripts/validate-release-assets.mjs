@@ -2,6 +2,7 @@ import { execFileSync } from "child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { normalizeAssetName } from "./release-asset-name.mjs";
 
 const [tag, repository, manifestName = "latest.json"] = process.argv.slice(2);
 if (!tag || !repository) {
@@ -103,8 +104,8 @@ try {
     if (!entry?.signature || !entry?.url) {
       throw new Error(`updater manifest entry is incomplete: ${platform}`);
     }
-    const filename = decodeURIComponent(new URL(entry.url).pathname.split("/").at(-1));
-    if (!assets.some((asset) => asset.name === filename)) {
+    const filename = normalizeAssetName(decodeURIComponent(new URL(entry.url).pathname.split("/").at(-1)));
+    if (!assets.some((asset) => normalizeAssetName(asset.name) === filename)) {
       throw new Error(`updater manifest references a missing asset: ${filename}`);
     }
   }
@@ -159,13 +160,18 @@ try {
     if (lines.length !== expectedEntries) {
       throw new Error(`${checksumName} has ${lines.length} entries, expected ${expectedEntries}`);
     }
-    for (const line of lines) {
-      const filename = line.replace(/^[0-9a-fA-F]{64}\s+\*?/, "");
-      if (!assets.some((asset) => asset.name === filename)) {
-        throw new Error(`${checksumName} references a missing asset: ${filename}`);
+    const entries = lines.map((line) => {
+      const match = line.match(/^([0-9a-fA-F]{64})\s+\*?(.+)$/);
+      if (!match) throw new Error(`${checksumName} has an invalid checksum line`);
+      return { hash: match[1], name: normalizeAssetName(match[2].trim()) };
+    });
+    for (const { name } of entries) {
+      if (!assets.some((asset) => normalizeAssetName(asset.name) === name)) {
+        throw new Error(`${checksumName} references a missing asset: ${name}`);
       }
-      download(filename);
+      download(name);
     }
+    writeFileSync(checksumPath, `${entries.map(({ hash, name }) => `${hash}  ${name}`).join("\n")}\n`);
     execFileSync("sha256sum", ["-c", checksumName], { cwd: workdir, stdio: "pipe" });
   }
 } finally {
