@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AppShell } from "@/layouts/app-shell";
-import { AsciiReveal } from "ascii-reveal";
+
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useTxHistory } from "@/hooks/use-tx-history";
@@ -84,13 +84,7 @@ export default function HistoryScreen() {
     >
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>
         <div style={{ width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", flex: 1 }}>
-          <AsciiReveal
-            loading={initialLoading}
-            revealOnMount={false}
-            shimmer={false}
-            duration="fast"
-            style={{ display: "flex", flexDirection: "column", flex: 1 }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
             {initialLoading ? (
               <HistorySkeletonRows />
             ) : (
@@ -124,7 +118,7 @@ export default function HistoryScreen() {
             {!hasHiddenLoadedTxs && !hasNextPage && allTxs.length > 0 ? (
               <StatusText color="var(--color-text-disabled)">End</StatusText>
             ) : null}
-          </AsciiReveal>
+          </div>
         </div>
       </div>
     </AppShell>

@@ -1,109 +1,55 @@
-import { lazy, Suspense, type ComponentType } from "react";
+import type { ComponentType } from "react";
 import { createHashRouter, Navigate, Outlet } from "react-router";
 import { AnimatedLayout } from "@/layouts/animated-layout";
 import { ErrorBoundary, RouteErrorBoundary } from "@/components/error-boundary";
-import { AsciiSpinner } from "@/components/ascii-spinner";
 
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 
-const loadSplashScreen = () => import("@/screens/splash/splash-screen");
-const SplashScreen = lazy(loadSplashScreen);
-const loadLockScreen = () => import("@/screens/lock/lock-screen");
-const LockScreen = lazy(loadLockScreen);
-const loadWelcomeScreen = () => import("@/screens/setup/welcome-screen");
-const WelcomeScreen = lazy(loadWelcomeScreen);
-const loadCreateWalletScreen = () => import("@/screens/setup/create-wallet-screen");
-const CreateWalletScreen = lazy(loadCreateWalletScreen);
-const loadImportWalletScreen = () => import("@/screens/setup/import-wallet-screen");
-const ImportWalletScreen = lazy(loadImportWalletScreen);
-const loadDashboardScreen = () => import("@/screens/dashboard/dashboard-screen");
-const DashboardScreen = lazy(loadDashboardScreen);
-const loadWalletsScreen = () => import("@/screens/wallets/wallets-screen");
-const WalletsScreen = lazy(loadWalletsScreen);
-const loadWalletDetailScreen = () => import("@/screens/wallets/wallet-detail-screen");
-const WalletDetailScreen = lazy(loadWalletDetailScreen);
-const loadPortfolioScreen = () => import("@/screens/wallets/portfolio-screen");
-const PortfolioScreen = lazy(loadPortfolioScreen);
-const loadAccountsScreen = () => import("@/screens/accounts/accounts-screen");
-const AccountsScreen = lazy(loadAccountsScreen);
-const loadAccountAddScreen = () => import("@/screens/accounts/account-add-screen");
-const AccountAddScreen = lazy(loadAccountAddScreen);
-const loadAccountDetailScreen = () => import("@/screens/accounts/account-detail-screen");
-const AccountDetailScreen = lazy(loadAccountDetailScreen);
-const loadAccountExportScreen = () => import("@/screens/accounts/account-export-screen");
-const AccountExportScreen = lazy(loadAccountExportScreen);
-const loadSendScreen = () => import("@/screens/send/send-screen");
-const SendScreen = lazy(loadSendScreen);
-const loadScheduledTransfersScreen = () => import("@/screens/send/scheduled-transfers-screen");
-const ScheduledTransfersScreen = lazy(loadScheduledTransfersScreen);
-const loadMultisigScreen = () => import("@/screens/multisig/multisig-screen");
-const MultisigScreen = lazy(loadMultisigScreen);
-const loadMultisigCreateScreen = () => import("@/screens/multisig/multisig-create-screen");
-const MultisigCreateScreen = lazy(loadMultisigCreateScreen);
-const loadMultisigDetailScreen = () => import("@/screens/multisig/multisig-detail-screen");
-const MultisigDetailScreen = lazy(loadMultisigDetailScreen);
-const loadMultisigDepositScreen = () => import("@/screens/multisig/multisig-deposit-screen");
-const MultisigDepositScreen = lazy(loadMultisigDepositScreen);
-const loadMultisigReleaseScreen = () => import("@/screens/multisig/multisig-release-screen");
-const MultisigReleaseScreen = lazy(loadMultisigReleaseScreen);
-const loadMultisigApprovalsScreen = () => import("@/screens/multisig/multisig-approvals-screen");
-const MultisigApprovalsScreen = lazy(loadMultisigApprovalsScreen);
-const loadMultisigApprovalScreen = () => import("@/screens/multisig/multisig-approval-screen");
-const MultisigApprovalScreen = lazy(loadMultisigApprovalScreen);
-const loadReceiveScreen = () => import("@/screens/receive/receive-screen");
-const ReceiveScreen = lazy(loadReceiveScreen);
-const loadHistoryScreen = () => import("@/screens/history/history-screen");
-const HistoryScreen = lazy(loadHistoryScreen);
-const loadTxDetailScreen = () => import("@/screens/history/tx-detail-screen");
-const TxDetailScreen = lazy(loadTxDetailScreen);
-const loadContactsScreen = () => import("@/screens/contacts/contacts-screen");
-const ContactsScreen = lazy(loadContactsScreen);
-const loadContactEditorScreen = () => import("@/screens/contacts/contact-editor-screen");
-const ContactEditorScreen = lazy(loadContactEditorScreen);
-const loadContactsTransferScreen = () => import("@/screens/contacts/contacts-transfer-screen");
-const ContactsTransferScreen = lazy(loadContactsTransferScreen);
-const loadSearchScreen = () => import("@/screens/search/search-screen");
-const SearchScreen = lazy(loadSearchScreen);
-const loadRequestScreen = () => import("@/screens/request/request-screen");
-const RequestScreen = lazy(loadRequestScreen);
-const loadSettingsScreen = () => import("@/screens/settings/settings-screen");
-const SettingsScreen = lazy(loadSettingsScreen);
-const loadRequestHistoryScreen = () => import("@/screens/settings/request-history-screen");
-const RequestHistoryScreen = lazy(loadRequestHistoryScreen);
-const loadRequestHistoryDetailScreen = () => import("@/screens/settings/request-history-detail-screen");
-const RequestHistoryDetailScreen = lazy(loadRequestHistoryDetailScreen);
-const loadSecurityScreen = () => import("@/screens/settings/security-screen");
-const SecurityScreen = lazy(loadSecurityScreen);
-const loadAuditLogScreen = () => import("@/screens/settings/audit-log-screen");
-const AuditLogScreen = lazy(loadAuditLogScreen);
-const loadNetworkScreen = () => import("@/screens/settings/network-screen");
-const NetworkScreen = lazy(loadNetworkScreen);
-const loadNotificationsScreen = () => import("@/screens/settings/notifications-screen");
-const NotificationsScreen = lazy(loadNotificationsScreen);
-const loadDiagnosticsScreen = () => import("@/screens/settings/diagnostics-screen");
-const DiagnosticsScreen = lazy(loadDiagnosticsScreen);
-const loadAppearanceScreen = () => import("@/screens/settings/appearance-screen");
-const AppearanceScreen = lazy(loadAppearanceScreen);
-
-function RouteFallback() {
-  return (
-    <div
-      role="status"
-      aria-label="Loading screen"
-      style={{ height: "100%", display: "grid", placeItems: "center", background: "var(--color-bg-base)" }}
-    >
-      <AsciiSpinner size={104} />
-    </div>
-  );
-}
+import SplashScreen from "@/screens/splash/splash-screen";
+import LockScreen from "@/screens/lock/lock-screen";
+import WelcomeScreen from "@/screens/setup/welcome-screen";
+import CreateWalletScreen from "@/screens/setup/create-wallet-screen";
+import ImportWalletScreen from "@/screens/setup/import-wallet-screen";
+import DashboardScreen from "@/screens/dashboard/dashboard-screen";
+import WalletsScreen from "@/screens/wallets/wallets-screen";
+import WalletDetailScreen from "@/screens/wallets/wallet-detail-screen";
+import PortfolioScreen from "@/screens/wallets/portfolio-screen";
+import AccountsScreen from "@/screens/accounts/accounts-screen";
+import AccountAddScreen from "@/screens/accounts/account-add-screen";
+import AccountDetailScreen from "@/screens/accounts/account-detail-screen";
+import AccountExportScreen from "@/screens/accounts/account-export-screen";
+import SendScreen from "@/screens/send/send-screen";
+import ScheduledTransfersScreen from "@/screens/send/scheduled-transfers-screen";
+import MultisigScreen from "@/screens/multisig/multisig-screen";
+import MultisigCreateScreen from "@/screens/multisig/multisig-create-screen";
+import MultisigDetailScreen from "@/screens/multisig/multisig-detail-screen";
+import MultisigDepositScreen from "@/screens/multisig/multisig-deposit-screen";
+import MultisigReleaseScreen from "@/screens/multisig/multisig-release-screen";
+import MultisigApprovalsScreen from "@/screens/multisig/multisig-approvals-screen";
+import MultisigApprovalScreen from "@/screens/multisig/multisig-approval-screen";
+import ReceiveScreen from "@/screens/receive/receive-screen";
+import HistoryScreen from "@/screens/history/history-screen";
+import TxDetailScreen from "@/screens/history/tx-detail-screen";
+import ContactsScreen from "@/screens/contacts/contacts-screen";
+import ContactEditorScreen from "@/screens/contacts/contact-editor-screen";
+import ContactsTransferScreen from "@/screens/contacts/contacts-transfer-screen";
+import SearchScreen from "@/screens/search/search-screen";
+import RequestScreen from "@/screens/request/request-screen";
+import SettingsScreen from "@/screens/settings/settings-screen";
+import RequestHistoryScreen from "@/screens/settings/request-history-screen";
+import RequestHistoryDetailScreen from "@/screens/settings/request-history-detail-screen";
+import SecurityScreen from "@/screens/settings/security-screen";
+import AuditLogScreen from "@/screens/settings/audit-log-screen";
+import NetworkScreen from "@/screens/settings/network-screen";
+import NotificationsScreen from "@/screens/settings/notifications-screen";
+import DiagnosticsScreen from "@/screens/settings/diagnostics-screen";
+import AppearanceScreen from "@/screens/settings/appearance-screen";
 
 function Screen({ component: C }: { component: ComponentType }) {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<RouteFallback />}>
-        <C />
-      </Suspense>
+      <C />
     </ErrorBoundary>
   );
 }
@@ -123,65 +69,6 @@ function UnlockedRoute() {
   if (!hasWallets) return <Navigate to="/setup" replace />;
   if (isLocked) return <Navigate to="/lock" replace />;
   return <Outlet />;
-}
-
-const SCREEN_LOADERS = [
-  loadSplashScreen,
-  loadLockScreen,
-  loadWelcomeScreen,
-  loadCreateWalletScreen,
-  loadImportWalletScreen,
-  loadDashboardScreen,
-  loadWalletsScreen,
-  loadWalletDetailScreen,
-  loadPortfolioScreen,
-  loadAccountsScreen,
-  loadAccountAddScreen,
-  loadAccountDetailScreen,
-  loadAccountExportScreen,
-  loadSendScreen,
-  loadScheduledTransfersScreen,
-  loadMultisigScreen,
-  loadMultisigCreateScreen,
-  loadMultisigDetailScreen,
-  loadMultisigDepositScreen,
-  loadMultisigReleaseScreen,
-  loadMultisigApprovalsScreen,
-  loadMultisigApprovalScreen,
-  loadReceiveScreen,
-  loadHistoryScreen,
-  loadTxDetailScreen,
-  loadContactsScreen,
-  loadContactEditorScreen,
-  loadContactsTransferScreen,
-  loadSearchScreen,
-  loadRequestScreen,
-  loadSettingsScreen,
-  loadRequestHistoryScreen,
-  loadRequestHistoryDetailScreen,
-  loadSecurityScreen,
-  loadAuditLogScreen,
-  loadNetworkScreen,
-  loadNotificationsScreen,
-  loadDiagnosticsScreen,
-  loadAppearanceScreen,
-];
-
-let screensPrefetched = false;
-
-/** Warm route chunks during idle so first navigation does not flash a fallback. */
-function prefetchScreens() {
-  if (screensPrefetched) return;
-  screensPrefetched = true;
-  for (const load of SCREEN_LOADERS) void load().catch(() => undefined);
-}
-
-if (typeof window !== "undefined") {
-  if (typeof window.requestIdleCallback === "function") {
-    window.requestIdleCallback(() => prefetchScreens(), { timeout: 2_500 });
-  } else {
-    window.setTimeout(prefetchScreens, 1_500);
-  }
 }
 
 export const router = createHashRouter([

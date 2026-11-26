@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Divider } from "@/components/divider";
 import { EmptyCollectionState } from "@/components/empty-collection-state";
-import { AsciiReveal, AsciiSkeleton } from "ascii-reveal";
+import { Skeleton } from "@/components/skeleton";
 import { usePersistedStore } from "@/store/persisted";
 import { useLastProcessedTick } from "@/hooks/use-last-processed-tick";
 import { useTxHistory } from "@/hooks/use-tx-history";
@@ -62,11 +62,11 @@ function RecentSkeleton() {
       {[0, 1, 2].map((index) => (
         <div key={index} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
           <div style={{ flex: 1 }}>
-            <AsciiSkeleton as="div" variant="scan" lines={1} widths={["48%"]} animate={false} seed={index + 1} />
+            <Skeleton width="48%" height={8} />
             <div style={{ height: 5 }} />
-            <AsciiSkeleton as="div" variant="scan" lines={1} widths={["76%"]} animate={false} seed={index + 11} />
+            <Skeleton width="76%" height={6} />
           </div>
-          <AsciiSkeleton as="div" variant="scan" lines={1} widths={[64]} animate={false} seed={index + 21} />
+          <Skeleton width={64} height={8} />
         </div>
       ))}
     </div>
@@ -164,13 +164,7 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
 
 
   return (
-    <AsciiReveal
-      loading={initialLoading}
-      revealOnMount={false}
-      shimmer={false}
-      duration="fast"
-      style={{ display: "flex", flexDirection: "column", flex: 1 }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       {initialLoading ? (
         <RecentSkeleton />
       ) : !hasAny ? (
@@ -195,6 +189,6 @@ export function RecentTxs({ identity, activeIdentity, hideBalances, price }: {
           ))}
         </div>
       )}
-    </AsciiReveal>
+    </div>
   );
 }

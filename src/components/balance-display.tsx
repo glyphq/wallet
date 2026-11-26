@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { animate } from "motion/react";
-import { AsciiReveal, AsciiSkeleton } from "ascii-reveal";
+import { Skeleton } from "@/components/skeleton";
 import { formatQu } from "@/lib/format";
 
 function AnimatedBalance({ value }: { value: bigint }) {
@@ -50,13 +50,7 @@ export function BalanceDisplay({ balance, loading, hidden, fiatValue, priceChang
   priceChange24h: number | null;
 }) {
   return (
-    <AsciiReveal
-      loading={loading}
-      revealOnMount={false}
-      shimmer={false}
-      duration="fast"
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>
       {hidden ? (
         <span style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-disabled)", letterSpacing: "-0.02em" }}>
           ••••••
@@ -64,7 +58,7 @@ export function BalanceDisplay({ balance, loading, hidden, fiatValue, priceChang
       ) : (
         <span style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
           {loading ? (
-            <AsciiSkeleton as="div" variant="scan" rows={4} width={200} height={48} animate={false} />
+            <Skeleton width={200} height={48} />
           ) : balance !== undefined ? (
             <AnimatedBalance value={balance} />
           ) : (
@@ -90,6 +84,6 @@ export function BalanceDisplay({ balance, loading, hidden, fiatValue, priceChang
           )}
         </div>
       )}
-    </AsciiReveal>
+    </div>
   );
 }

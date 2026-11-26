@@ -1,6 +1,6 @@
-import { AsciiSkeleton } from "ascii-reveal";
+import { Skeleton } from "@/components/skeleton";
 
-/** Row-shaped ASCII placeholders that match the two-line transaction layout. */
+/** Neutral row placeholders that match the two-line transaction layout. */
 export function HistorySkeletonRows() {
   return (
     <div aria-hidden="true" style={{ display: "flex", flexDirection: "column" }}>
@@ -16,51 +16,15 @@ export function HistorySkeletonRows() {
             margin: "0 calc(var(--space-2) * -1)",
           }}
         >
-          <AsciiSkeleton
-            as="div"
-            variant="scan"
-            rows={3}
-            width={40}
-            height={40}
-            animate={false}
-            seed={index + 1}
-          />
+          <Skeleton width={40} height={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <AsciiSkeleton
-              as="div"
-              variant="scan"
-              lines={1}
-              widths={[90]}
-              animate={false}
-              seed={index + 11}
-            />
+            <Skeleton width={90} height={8} />
             <div style={{ height: 6 }} />
-            <AsciiSkeleton
-              as="div"
-              variant="scan"
-              lines={1}
-              widths={[150]}
-              animate={false}
-              seed={index + 21}
-            />
+            <Skeleton width={150} height={6} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <AsciiSkeleton
-              as="div"
-              variant="scan"
-              lines={1}
-              widths={[64]}
-              animate={false}
-              seed={index + 31}
-            />
-            <AsciiSkeleton
-              as="div"
-              variant="scan"
-              lines={1}
-              widths={[80]}
-              animate={false}
-              seed={index + 41}
-            />
+            <Skeleton width={64} height={8} />
+            <Skeleton width={80} height={6} />
           </div>
         </div>
       ))}
