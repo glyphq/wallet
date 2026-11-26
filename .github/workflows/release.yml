@@ -174,6 +174,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .github/actions/setup-bun
+            scripts/patch-appimage.sh
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -266,6 +267,10 @@ jobs:
           mapfile -t appimages < <(find src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' | sort)
           [[ ${#appimages[@]} -eq 1 ]]
           appimage="${appimages[0]}"
+          # Build source from the immutable tag, but run the reviewed packaging
+          # helper from the workflow ref. This keeps release tooling fixes usable
+          # without moving a published tag.
+          install -m 0755 .release-automation/scripts/patch-appimage.sh scripts/patch-appimage.sh
           scripts/patch-appimage.sh "$appimage"
           rm -f "${appimage}.sig"
           bun tauri signer sign \

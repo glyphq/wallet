@@ -19,8 +19,9 @@ readonly TOOL_CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/glyph/appimage-tools"
 # provide the independent integrity gate for each downloaded tool.
 readonly APPIMAGETOOL_URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
 readonly APPIMAGETOOL_SHA256="b90f4a8b18967545fda78a445b27680a1642f1ef9488ced28b65398f2be7add2"
-readonly RUNTIME_TOOL_URL="https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-951-x86_64.AppImage"
-readonly RUNTIME_TOOL_SHA256="7c974f525d5bcde2712dd080e0b079a6c3802113a337f0ab142522dcefbf452d"
+readonly RUNTIME_TOOL_VERSION="954"
+readonly RUNTIME_TOOL_URL="https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-${RUNTIME_TOOL_VERSION}-x86_64.AppImage"
+readonly RUNTIME_TOOL_SHA256="eca98d94d8e0ba2b1b6109610caa578a8d7fe2b010c102af85560dc29a0e492f"
 PATCH_WORKDIR=""
 PATCH_OUTPUT=""
 
@@ -97,7 +98,7 @@ find_single_appimage() {
 
 prepare_runtime() {
   local go_tool="$1"
-  local runtime_dir="$TOOL_CACHE_DIR/go-appimage-951"
+  local runtime_dir="$TOOL_CACHE_DIR/go-appimage-${RUNTIME_TOOL_VERSION}"
   local runtime="$runtime_dir/usr/bin/runtime-x86_64"
   local extract_dir
 
@@ -235,7 +236,7 @@ main() {
   input="$(realpath "$input")"
 
   appimagetool="$TOOL_CACHE_DIR/appimagetool-b90f4a8b.AppImage"
-  runtime_tool="$TOOL_CACHE_DIR/appimagetool-951-x86_64.AppImage"
+  runtime_tool="$TOOL_CACHE_DIR/appimagetool-${RUNTIME_TOOL_VERSION}-x86_64.AppImage"
   download_verified "$APPIMAGETOOL_URL" "$APPIMAGETOOL_SHA256" "$appimagetool"
   download_verified "$RUNTIME_TOOL_URL" "$RUNTIME_TOOL_SHA256" "$runtime_tool"
   runtime="$(prepare_runtime "$runtime_tool")"
