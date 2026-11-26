@@ -187,7 +187,7 @@ gh workflow run release.yml --ref "$RELEASE_REF" --field "tag=${RELEASE_TAG}"
 
 `.github/workflows/release.yml` accepts one required input, an existing tag. Its concurrency group is per tag and in-progress runs are not cancelled.
 
-The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the immutable tag for application builds. Release-only automation that may need to repair an older tagged release, such as the immutable draft-asset uploader, is checked out separately from the exact reviewed workflow commit (`github.sha`) into `.release-automation`; it does not change the tagged application source being built.
+The workflow can start only when dispatched with the workflow ref set to `main` or `prerelease`. It checks out the immutable tag for application builds. Release-only automation that may need to repair an older tagged release, such as the immutable draft-asset uploader and AppImage patch helper, is checked out separately from the exact reviewed workflow commit (`github.sha`) into `.release-automation`; it does not change the tagged application source being built.
 
 ### Prepare the draft
 
@@ -214,6 +214,8 @@ The three platform jobs run after draft preparation.
 
 Prerelease release builds switch the bundled updater endpoint to `latest-prerelease.json` before building.
 
+The Linux job installs the reviewed AppImage patch helper and runs its `--check-tools` preflight before compiling. The preflight downloads both pinned packaging tools and verifies their checksums, so a removed upstream asset fails in seconds instead of after a full build.
+
 ### Unsigned native artifacts
 
 The Release workflow may publish unsigned macOS and Windows bundles while platform credentials are unavailable. It retains mandatory Tauri updater signing and explicitly warns users about operating-system trust prompts. The separate `.github/workflows/prerelease-artifacts.yml` workflow also produces short-lived development artifacts on the `prerelease` branch. Those artifacts expire after 14 days and never create or edit a GitHub Release.
@@ -232,7 +234,7 @@ The Linux job:
 
 ### Fresh Linux package smoke test
 
-The regular CI workflow also builds unsigned AppImage and Debian packages on a clean Ubuntu 22.04 runner. It extracts both payloads, starts each under Xvfb with an empty HOME and XDG profile, and fails if either process exits before the smoke interval. This verifies the packaged launch path without persisting a Wallet or touching a developer's local profile.
+After a merge to `main` or `prerelease`, CI builds unsigned AppImage and Debian packages on a clean Ubuntu 22.04 runner. It extracts both payloads, starts each under Xvfb with an empty HOME and XDG profile, and fails if either process exits before the smoke interval. This verifies the packaged launch path without persisting a Wallet or touching a developer's local profile.
 
 #### macOS
 
@@ -341,7 +343,7 @@ Run the Changesets workflow again on the relevant branch, or manually dispatch `
 
 ### Draft release exists
 
-Rerun `release.yml` with the same tag. Existing asset names are downloaded and compared by SHA-256:
+Rerun `release.yml` with the same tag. Existing asset names are normalized the way GitHub does for release uploads (spaces become dots), downloaded, and compared by SHA-256:
 
 - a byte-identical asset is reused
 - a missing asset is uploaded

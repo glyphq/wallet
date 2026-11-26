@@ -391,22 +391,33 @@ scripts/lint-workflows.sh
 
 CI installs ShellCheck before the workflow lint step.
 
-### Rust platform checks
+### Pull request gate
 
-Cargo check runs on:
+Every pull request runs the fast gate:
 
-- Ubuntu 22.04
-- Current macOS runner
-- Current Windows runner
+- frontend lint, typecheck, tests, and production build
+- commit-message validation
+- release-version synchronization and workflow linting
+- Rust formatting and Clippy on Ubuntu 22.04
+- JavaScript and Rust dependency audits
+- CodeQL for Actions and JavaScript/TypeScript
 
-The checks use:
+Clippy includes the native build check, so the pull request gate does not run a separate `cargo check` pass:
 
 ```sh
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
 TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
-  cargo check --manifest-path src-tauri/Cargo.toml --locked
+  cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
 ```
 
-This verifies native compilation without requiring the generated sidecar in the CI checkout.
+### Post-merge platform checks
+
+After a merge to `main` or `prerelease`, CI also runs:
+
+- native compilation on macOS and Windows
+- the unsigned Linux AppImage and Debian package smoke test
+
+Those slower platform checks do not block pull requests. Release jobs still build and validate the signed platform artifacts.
 
 ### Security audit
 
@@ -419,7 +430,7 @@ cargo audit
 
 It installs and caches `cargo-audit` 0.22.2.
 
-CI Rust compilation is a platform matrix, but it is not a full GUI, installer, code-signing, notarization, or protocol-registration test. Those behaviors are validated by release jobs and targeted manual testing.
+CI Rust compilation is not a full GUI, installer, code-signing, notarization, or protocol-registration test. Those behaviors are validated by release jobs and targeted manual testing.
 
 ## 10. Source organization and change placement
 
