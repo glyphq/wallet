@@ -655,7 +655,9 @@ jobs:
           ref: ${{ github.sha }}
           path: .release-automation
           persist-credentials: false
-          sparse-checkout: scripts/validate-release-assets.mjs
+          sparse-checkout: |
+            scripts/release-asset-name.mjs
+            scripts/validate-release-assets.mjs
           sparse-checkout-cone-mode: false
 
       - name: Install updater signature verifier
