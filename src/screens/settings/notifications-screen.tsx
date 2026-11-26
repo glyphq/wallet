@@ -4,12 +4,14 @@ import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { SettingsPageHeader } from "@/components/settings-page-header";
+import { PageFrame } from "@/components/page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
-import { SettingsSwitch } from "@/components/settings-switch";
+import { Toggle } from "@/components/toggle";
 import { Button } from "@/components/button";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
 import { usePersistedStore } from "@/store/persisted";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
+import { Notification01Icon } from "@/lib/icons";
 
 export default function NotificationsScreen() {
   const enabled = usePersistedStore((s) => s.settings.notificationsEnabled);
@@ -18,6 +20,9 @@ export default function NotificationsScreen() {
   const onConfirmed = usePersistedStore((s) => s.settings.notifyOnConfirmed);
   const onMissedConfirmations = usePersistedStore((s) => s.settings.notifyOnMissedConfirmations);
   const notifyWhenLocked = usePersistedStore((s) => s.settings.notifyWhenLocked);
+  const notificationPosition = usePersistedStore((s) => s.settings.notificationPosition);
+  const notificationDurationSecs = usePersistedStore((s) => s.settings.notificationDurationSecs);
+  const notificationMaxVisible = usePersistedStore((s) => s.settings.notificationMaxVisible);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const autostartEnabled = usePersistedStore((s) => s.settings.autostartEnabled);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
@@ -30,9 +35,9 @@ export default function NotificationsScreen() {
     let cancelled = false;
 
     void isEnabled()
-      .then((enabled) => {
+      .then((registered) => {
         if (cancelled) return;
-        if (enabled !== autostartEnabled) updateSettings({ autostartEnabled: enabled });
+        if (registered !== autostartEnabled) updateSettings({ autostartEnabled: registered });
         setAutostartReady(true);
       })
       .catch((error) => {
@@ -94,50 +99,130 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <AppShell fullBleed contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}>
+      <PageFrame
+        actions={(
+          <Button size="md" style={{ width: "100%" }} onClick={() => void sendNotificationTest()} disabled={!enabled || notificationTestPending} loading={notificationTestPending}>
+            <Notification01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+            Send test notification
+          </Button>
+        )}
+      >
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <SettingsPageHeader title="Notifications" />
 
         {/* Master toggle */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <SettingsSwitch label="Notifications" description="Show desktop notifications for Vault events" checked={enabled} onChange={() => updateSettings({ notificationsEnabled: !enabled })} />
+          <Toggle label="Notifications" description="Show Glyph notification windows for wallet events" checked={enabled} onChange={(checked) => updateSettings({ notificationsEnabled: checked })} />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-sm)" }}>
-            {notificationTestStatus === "sent" ? "Notification sent" : notificationTestStatus === "failed" ? "Notification could not be sent" : "Check desktop delivery"}
+        {notificationTestStatus !== "idle" ? (
+          <span role={notificationTestStatus === "failed" ? "alert" : "status"} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: notificationTestStatus === "failed" ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
+            {notificationTestStatus === "sent" ? "Test notification shown." : "Test notification could not be shown."}
           </span>
-          <Button size="sm" variant="secondary" style={{ width: "auto" }} onClick={() => void sendNotificationTest()} disabled={!enabled || notificationTestPending} loading={notificationTestPending}>
-            Send test
-          </Button>
-        </div>
+        ) : null}
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         {/* Notify when */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSectionLabel>Notify when</SettingsSectionLabel>
-          <SettingsSwitch label="QU received" description="Balance increases on any account" checked={onReceived} onChange={() => updateSettings({ notifyOnReceived: !onReceived })} disabled={!enabled} />
-          <SettingsDivider />
-          <SettingsSwitch label="Transaction sent" description="Send, contract call, or burn is broadcast" checked={onSent} onChange={() => updateSettings({ notifyOnSent: !onSent })} disabled={!enabled} />
-          <SettingsDivider />
-          <SettingsSwitch label="Transaction confirmed" description="Pending transaction confirms on chain" checked={onConfirmed} onChange={() => updateSettings({ notifyOnConfirmed: !onConfirmed })} disabled={!enabled} />
-          <SettingsDivider />
-          <SettingsSwitch label="Missed confirmations" description="Pending transaction fails or expires" checked={onMissedConfirmations} onChange={() => updateSettings({ notifyOnMissedConfirmations: !onMissedConfirmations })} disabled={!enabled} />
+          <Toggle label="QU received" description="Balance increases on any account" checked={onReceived} onChange={(checked) => updateSettings({ notifyOnReceived: checked })} disabled={!enabled} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Transaction sent" description="Send or contract call is broadcast" checked={onSent} onChange={(checked) => updateSettings({ notifyOnSent: checked })} disabled={!enabled} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Transaction confirmed" description="Pending transaction confirms on chain" checked={onConfirmed} onChange={(checked) => updateSettings({ notifyOnConfirmed: checked })} disabled={!enabled} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Missed confirmations" description="Pending transaction fails or expires" checked={onMissedConfirmations} onChange={(checked) => updateSettings({ notifyOnMissedConfirmations: checked })} disabled={!enabled} />
         </div>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
+
+        {/* Notification window */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <SettingsSectionLabel>Notification window</SettingsSectionLabel>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+              A separate always-on-top window; independent of the main wallet.
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Position</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {([
+                ["top-left", "Top left"],
+                ["top-right", "Top right"],
+                ["bottom-left", "Bottom left"],
+                ["bottom-right", "Bottom right"],
+              ] as const).map(([value, label]) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={notificationPosition === value ? "primary" : "secondary"}
+                  style={{ width: "auto" }}
+                  aria-pressed={notificationPosition === value}
+                  disabled={!enabled}
+                  onClick={() => updateSettings({ notificationPosition: value })}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Visible for</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {[4, 6, 8, 10, 15].map((seconds) => (
+                <Button
+                  key={seconds}
+                  size="sm"
+                  variant={notificationDurationSecs === seconds ? "primary" : "secondary"}
+                  style={{ width: "auto" }}
+                  aria-pressed={notificationDurationSecs === seconds}
+                  disabled={!enabled}
+                  onClick={() => updateSettings({ notificationDurationSecs: seconds })}
+                >
+                  {seconds}s
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Maximum visible</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {[2, 3, 4, 5].map((count) => (
+                <Button
+                  key={count}
+                  size="sm"
+                  variant={notificationMaxVisible === count ? "primary" : "secondary"}
+                  style={{ width: "auto" }}
+                  aria-pressed={notificationMaxVisible === count}
+                  disabled={!enabled}
+                  onClick={() => updateSettings({ notificationMaxVisible: count })}
+                >
+                  {count}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <SettingsDivider fullBleed />
 
         {/* Behavior */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SettingsSectionLabel>Behavior</SettingsSectionLabel>
-          <SettingsSwitch label="Hide to tray on close" description="Keep Glyph running in the system tray" checked={hideToTray} onChange={() => updateSettings({ hideToTray: !hideToTray })} />
-          <SettingsDivider />
-          <SettingsSwitch label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
-          <SettingsDivider />
-          <SettingsSwitch label="Notify when locked" description="Allow notifications while the vault is locked" checked={notifyWhenLocked} onChange={() => updateSettings({ notifyWhenLocked: !notifyWhenLocked })} disabled={!enabled} />
+          <Toggle label="Hide to tray on close" description="Keep Glyph running in the system tray" checked={hideToTray} onChange={(checked) => updateSettings({ hideToTray: checked })} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Launch at startup" description="Open Glyph automatically when you sign in" checked={autostartEnabled} onChange={() => void toggleAutostart()} disabled={!autostartReady || autostartPending} />
+          <SettingsDivider fullBleed />
+          <Toggle label="Show when locked" description="Allow notification windows while the wallet is locked" checked={notifyWhenLocked} onChange={(checked) => updateSettings({ notifyWhenLocked: checked })} disabled={!enabled} />
         </div>
       </motion.div>
+      </PageFrame>
     </AppShell>
   );
 }

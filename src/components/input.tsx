@@ -1,4 +1,5 @@
 import { forwardRef, useId, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
+import { FieldError, FieldLabel } from "./field-parts";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -11,7 +12,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, technical = false, className, ...props },
+  { label, error, style, id, containerStyle, labelStyle, leftElement, rightElement, className, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -37,18 +38,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       aria-errormessage={error && errorId ? errorId : undefined}
       data-has-leading={leftElement ? "true" : undefined}
       style={{
-        borderRadius: "var(--radius-control)",
+        borderRadius: 3,
         paddingTop: "var(--space-3)",
         paddingRight: rightElement ? 52 : "var(--space-4)",
         paddingBottom: "var(--space-3)",
         paddingLeft: leftElement ? 48 : "var(--space-4)",
-        fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: technical ? "0.875rem" : "0.9375rem",
+        fontFamily: "var(--font-mono)",
+        fontSize: "0.875rem",
         fontWeight: 400,
-        lineHeight: technical ? "var(--leading-compact)" : "var(--leading-body)",
+        lineHeight: "var(--leading-compact)",
         color: "var(--color-text-primary)",
         fontVariantNumeric: "tabular-nums",
-        letterSpacing: technical ? "0.015em" : "-0.005em",
+        letterSpacing: "0.015em",
         width: "100%",
         ...style,
       }}
@@ -57,66 +58,40 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
-      {label && (
-        <label
-          htmlFor={inputId}
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
-            color: "var(--color-text-tertiary)",
-            fontWeight: 500,
-            lineHeight: "var(--leading-compact)",
-            letterSpacing: "0.015em",
-            ...labelStyle,
-          }}
-        >
-          {label}
-        </label>
-      )}
-      {leftElement || rightElement ? (
-        <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
-          {leftElement ? (
-            <div
-              className="glyph-field-icon"
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                left: "var(--space-4)",
-                top: "50%",
-                transform: "translateY(-50%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-text-tertiary)",
-                pointerEvents: "none",
-                zIndex: 1,
-              }}
-            >
-              {leftElement}
-            </div>
-          ) : null}
-          {inputEl}
-          {rightElement ? (
-            <div style={{ position: "absolute", right: "var(--space-2)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
-              {rightElement}
-            </div>
-          ) : null}
+      {label || error ? (
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)", minWidth: 0 }}>
+          {label ? <FieldLabel htmlFor={inputId} style={labelStyle}>{label}</FieldLabel> : <span />}
+          {error ? <FieldError id={errorId} style={{ textAlign: "right" }}>{error}</FieldError> : null}
         </div>
-      ) : inputEl}
-      {error && (
-        <span
-          id={errorId}
-          role="alert"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-caption)",
-            color: "var(--color-status-error)",
-            lineHeight: "var(--leading-compact)",
-          }}
-        >
-          {error}
-        </span>
-      )}
+      ) : null}
+      <div className="glyph-field corner-frame" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
+        {leftElement ? (
+          <div
+            className="glyph-field-icon"
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "var(--space-4)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--color-text-tertiary)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          >
+            {leftElement}
+          </div>
+        ) : null}
+        {inputEl}
+        {rightElement ? (
+          <div style={{ position: "absolute", right: "var(--space-4)", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
+            {rightElement}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 });

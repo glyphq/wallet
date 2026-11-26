@@ -4,7 +4,7 @@ import { AddCircleIcon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { Sheet } from "@/components/sheet";
+import { FullScreen } from "@/components/full-screen";
 import { Divider } from "@/components/divider";
 import { usePersistedStore, type ScheduledTransfer } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
@@ -28,13 +28,13 @@ export default function ScheduledTransfersScreen() {
   const addScheduledTransfer = usePersistedStore((s) => s.addScheduledTransfer);
   const updateScheduledTransfer = usePersistedStore((s) => s.updateScheduledTransfer);
   const removeScheduledTransfer = usePersistedStore((s) => s.removeScheduledTransfer);
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
 
   const [adding, setAdding] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
   const [formLabel, setFormLabel] = useState("");
-  const [formSource, setFormSource] = useState(() => wallets[0]?.identity ?? "");
+  const [formSource, setFormSource] = useState(() => accounts[0]?.identity ?? "");
   const [formDest, setFormDest] = useState("");
   const [formAmount, setFormAmount] = useState("");
   const [formInterval, setFormInterval] = useState("7");
@@ -42,13 +42,13 @@ export default function ScheduledTransfersScreen() {
 
   function openAdd() {
     setFormLabel(""); setFormDest(""); setFormAmount(""); setFormInterval("7");
-    setFormSource(wallets[0]?.identity ?? ""); setFormError("");
+    setFormSource(accounts[0]?.identity ?? ""); setFormError("");
     setAdding(true);
   }
 
   function doAdd() {
     if (!formLabel.trim()) { setFormError("Label required"); return; }
-    if (!isValidIdentity(formDest.trim().toUpperCase())) { setFormError("Invalid destination identity"); return; }
+    if (!isValidIdentity(formDest.trim().toUpperCase())) { setFormError("Invalid destination address"); return; }
     const amount = formAmount.trim();
     if (!amount || !/^\d+$/.test(amount) || BigInt(amount) <= 0n) { setFormError("Invalid amount"); return; }
     const days = parseInt(formInterval, 10);
@@ -98,28 +98,28 @@ export default function ScheduledTransfersScreen() {
         </div>
       ))}
 
-      {/* New transfer sheet */}
-      <Sheet open={adding} onClose={() => setAdding(false)} title="New scheduled transfer">
+      {/* New transfer screen */}
+      <FullScreen open={adding} onClose={() => setAdding(false)} title="New scheduled transfer">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <Input label="Label" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="e.g. Weekly allowance" autoFocus />
 
-          {wallets.length > 1 && (
+          {accounts.length > 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>From</div>
-              {wallets.map((w) => (
+              {accounts.map((account) => (
                 <button
-                  key={w.identity}
+                  key={account.identity}
                   type="button"
-                  onClick={() => setFormSource(w.identity)}
-                  style={{ background: "none", border: `1px solid ${formSource === w.identity ? "var(--color-accent)" : "var(--color-border-strong)"}`, borderRadius: "var(--radius-sharp)", cursor: "pointer", padding: "var(--space-2) var(--space-3)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: formSource === w.identity ? "var(--color-accent)" : "var(--color-text-secondary)", letterSpacing: "0.05em", textAlign: "left" }}
+                  onClick={() => setFormSource(account.identity)}
+                  style={{ background: "none", border: `1px solid ${formSource === account.identity ? "var(--color-accent)" : "var(--color-border-strong)"}`, borderRadius: "var(--radius-sharp)", cursor: "pointer", padding: "var(--space-2) var(--space-3)", fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: formSource === account.identity ? "var(--color-accent)" : "var(--color-text-secondary)", letterSpacing: "0.05em", textAlign: "left" }}
                 >
-                  {truncateId(w.identity)}
+                  {truncateId(account.identity)}
                 </button>
               ))}
             </div>
           )}
 
-          <Input label="Destination" value={formDest} onChange={(e) => setFormDest(e.target.value)} placeholder="60-character identity" />
+          <Input label="Destination" value={formDest} onChange={(e) => setFormDest(e.target.value)} placeholder="60-character address" />
           <Input label="Amount (QU)" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} placeholder="e.g. 1000000" inputMode="numeric" />
           <Input label="Every N days" value={formInterval} onChange={(e) => setFormInterval(e.target.value)} placeholder="7" inputMode="numeric" />
 
@@ -133,7 +133,7 @@ export default function ScheduledTransfersScreen() {
             Schedule
           </Button>
         </div>
-      </Sheet>
+      </FullScreen>
     </AppShell>
   );
 }

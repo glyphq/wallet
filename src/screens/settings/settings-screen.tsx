@@ -1,32 +1,25 @@
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { stepMotion, gesture } from "@/lib/animations";
 import {
-  ArrowRight01Icon,
-  ShieldCheckIcon,
-  Wifi01Icon,
-  EarthIcon,
-  Clock01Icon,
-  UserGroupIcon,
-  Notification01Icon,
-  FavouriteIcon,
   Bug01Icon,
-  InformationCircleIcon,
+  Clock01Icon,
+  Download01Icon,
   LockKeyholeIcon,
+  Notification01Icon,
   PaintBoardIcon,
+  RefreshIcon,
+  ShieldCheckIcon,
+  UserGroupIcon,
+  Wifi01Icon,
 } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { PageFrame } from "@/components/page-header";
+import { SettingsDivider, SettingsMenuGroup, SettingsMenuRow, SettingsSectionLabel } from "@/components/settings-section-elements";
+import { stepMotion } from "@/lib/animations";
 import { useUpdater } from "@/hooks/use-updater";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-  fontSize: "var(--text-label)",
-  fontWeight: 500,
-  color: "var(--color-text-secondary)",
-};
 
 function autoLockLabel(minutes: number): string {
   if (minutes === 0) return "Never";
@@ -34,165 +27,119 @@ function autoLockLabel(minutes: number): string {
   return `${minutes / 60}h`;
 }
 
+function BuildRow({ label, value, tone }: { label: string; value: string; tone?: "success" | "warning" | "error" }) {
+  const color = tone === "success" ? "var(--color-status-success)" : tone === "warning" ? "var(--color-status-warning)" : tone === "error" ? "var(--color-status-error)" : "var(--color-text-secondary)";
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.5fr)", gap: "var(--space-4)", alignItems: "baseline", padding: "var(--space-2) 0" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color, textAlign: "right", overflowWrap: "anywhere" }}>{value}</span>
+    </div>
+  );
+}
+
+const SECTIONS = ["General", "Manage", "Info"] as const;
+
 export default function SettingsScreen() {
   const navigate = useNavigate();
-  const { appVersion, context, update, checking, upToDate, checkError, installError, installing, progress, lastError, install } = useUpdater();
+  const { appVersion, context, update, checking, upToDate, checkError, installError, installing, progress, lastError, install, checkForUpdates } = useUpdater();
   const updaterSupported = context?.supportsAutoUpdate ?? true;
 
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
   const notificationsEnabled = usePersistedStore((s) => s.settings.notificationsEnabled);
   const contacts = usePersistedStore((s) => s.contacts);
-  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps ?? []);
+  const lock = useSessionStore((s) => s.lock);
 
-  const ROWS: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: string }> = [
-    { label: "Security", description: `Auto-lock: ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheckIcon size={22} strokeWidth={1.5} />, section: "General" },
-    { label: "Appearance", description: "Dark or light theme", route: "/settings/appearance", icon: <PaintBoardIcon size={22} strokeWidth={1.5} />, section: "General" },
-    { label: "Network", description: "RPC endpoints and developer mode", route: "/settings/network", icon: <Wifi01Icon size={22} strokeWidth={1.5} />, section: "General" },
-    { label: "Contacts", description: contacts.length ? `${contacts.length} contact${contacts.length === 1 ? "" : "s"}` : "No contacts yet", route: "/settings/contacts", icon: <UserGroupIcon size={22} strokeWidth={1.5} />, section: "Manage" },
-    { label: "Approved dApps", description: approvedDapps.length ? `${approvedDapps.length} approved` : "No approved dApps", route: "/settings/dapps", icon: <EarthIcon size={22} strokeWidth={1.5} />, section: "Manage" },
-    { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Notification01Icon size={22} strokeWidth={1.5} />, section: "Manage" },
-    { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <Clock01Icon size={22} strokeWidth={1.5} />, section: "Info" },
-    { label: "Support", description: "Sponsors, donate QU, GitHub", route: "/settings/support", icon: <FavouriteIcon size={22} strokeWidth={1.5} />, section: "Info" },
-    { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug01Icon size={22} strokeWidth={1.5} />, section: "Info" },
+  const rows: Array<{ label: string; description: string; route: string; icon: React.ReactNode; section: (typeof SECTIONS)[number] }> = [
+    { label: "Security", description: `Auto-lock · ${autoLockLabel(autoLockMinutes)}`, route: "/settings/security", icon: <ShieldCheckIcon size={18} strokeWidth={1.5} />, section: "General" },
+    { label: "Appearance", description: "Theme, currency, privacy", route: "/settings/appearance", icon: <PaintBoardIcon size={18} strokeWidth={1.5} />, section: "General" },
+    { label: "Network", description: "Glyph API · tick offset", route: "/settings/network", icon: <Wifi01Icon size={18} strokeWidth={1.5} />, section: "General" },
+    { label: "Contacts", description: contacts.length ? `${contacts.length} saved` : "No contacts yet", route: "/settings/contacts", icon: <UserGroupIcon size={18} strokeWidth={1.5} />, section: "Manage" },
+    { label: "Notifications", description: notificationsEnabled ? "Enabled" : "Disabled", route: "/settings/notifications", icon: <Notification01Icon size={18} strokeWidth={1.5} />, section: "Manage" },
+    { label: "Request history", description: "Deep-link approvals and callbacks", route: "/settings/request-history", icon: <Clock01Icon size={18} strokeWidth={1.5} />, section: "Info" },
+    { label: "Diagnostics", description: "Runtime state and debug bundle", route: "/settings/diagnostics", icon: <Bug01Icon size={18} strokeWidth={1.5} />, section: "Info" },
   ];
 
-  return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-      <motion.div
-        {...stepMotion}
-        style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minHeight: 0 }}
-      >
-        {/* Settings01Icon rows with section headers */}
-        {(() => {
-          let lastSection = "";
-          return ROWS.map((row) => {
-            const showHeader = row.section !== lastSection;
-            lastSection = row.section;
-            return (
-              <div key={row.route}>
-                {showHeader && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", margin: lastSection === "General" ? 0 : "var(--space-3) 0 var(--space-2)", marginBottom: "var(--space-2)" }}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--color-text-disabled)", letterSpacing: "0.08em" }}>
-                      {row.section}
-                    </span>
-                    <div style={{ flex: 1, height: 1, background: "var(--color-border-subtle)" }} />
-                  </div>
-                )}
-                <motion.button
-                  {...gesture.pressSubtle}
-                  onClick={() => navigate(row.route)}
-                  className="stagger-item settings-pressable"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--space-3)",
-                    padding: "var(--space-4)",
-                    background: "var(--color-bg-surface)",
-                    borderRadius: "var(--radius-card)",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    width: "100%",
-                  }}
-                >
-                  <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{row.icon}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)" }}>
-                      {row.label}
-                    </div>
-                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: 2 }}>
-                      {row.description}
-                    </div>
-                  </div>
-                  <ArrowRight01Icon size={14} color="var(--color-text-disabled)" strokeWidth={1.5} style={{ flexShrink: 0 }} />
-                </motion.button>
-              </div>
-            );
-          });
-        })()}
+  const updateStatus = !updaterSupported
+    ? "Auto-update unavailable"
+    : checking
+      ? "Checking"
+      : checkError
+        ? "Check failed"
+        : upToDate
+          ? "Up to date"
+          : update
+            ? null
+            : "Not checked";
+  const updateTone: "success" | "warning" | "error" | undefined = checkError
+    ? "error"
+    : upToDate
+      ? "success"
+      : undefined;
 
-        {/* Version + update */}
-        <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          {update && updaterSupported && (
-            <button
-              className="settings-pressable"
-              onClick={install}
-              disabled={installing}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "stretch",
-                gap: "var(--space-2)",
-                padding: "var(--space-4) var(--space-4)",
-                background: "var(--color-bg-surface)",
-                border: "1px solid var(--color-status-success)",
-                borderRadius: "var(--radius-card)",
-                cursor: installing ? "default" : "pointer",
-                width: "100%",
-                opacity: installing ? 0.6 : 1,
+  return (
+    <AppShell fullBleed contentStyle={{ padding: 0, display: "flex", flexDirection: "column" }}>
+      <PageFrame
+        actions={(
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {update && updaterSupported ? (
+              <Button size="md" style={{ width: "100%" }} onClick={() => void install()} loading={installing}>
+                <Download01Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+                {installing ? progress > 0 ? `Installing · ${progress}%` : "Installing" : `Install v${update.version}`}
+              </Button>
+            ) : null}
+            <Button
+              variant={update && updaterSupported ? "secondary" : "primary"}
+              size="md"
+              onClick={() => {
+                lock();
+                navigate("/lock", { replace: true });
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                  <InformationCircleIcon size={18} strokeWidth={2} style={{ color: "var(--color-status-success)" }} />
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-status-success)" }}>
-                    {installing
-                      ? progress > 0 ? `Downloading update... ${progress}%` : "Downloading update..."
-                      : `Update available — v${update.version}`}
-                  </span>
-                </div>
-                {!installing && (
-                  <span style={{
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 600,
-                    color: "var(--color-bg-base)", background: "var(--color-status-success)",
-                    padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-pill)",
-                  }}>
-                    Install
-                  </span>
-                )}
-              </div>
-              {installing && progress > 0 && (
-                <div style={{ height: 3, borderRadius: 2, background: "var(--color-border-subtle)", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "100%", background: "var(--color-status-success)", borderRadius: 2, transform: `scaleX(${progress / 100})`, transformOrigin: "left", transition: "transform 0.3s ease" }} />
-                </div>
-              )}
-            </button>
-          )}
-
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-            <span style={{ ...labelStyle, color: checkError ? "var(--color-status-error)" : "var(--color-text-disabled)" }}>
-              {appVersion ? `v${appVersion}` : ""}
-              {checking ? " Checking..." : ""}
-              {upToDate ? " Up to date" : ""}
-              {!checking && !updaterSupported ? " Auto-update not available" : ""}
-              {checkError ? " Update check failed" : ""}
-            </span>
+              <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
+              Lock wallet
+            </Button>
           </div>
-          {lastError && (checkError || installError || !updaterSupported) && (
-            <span style={{ ...labelStyle, color: (checkError || installError) ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
-              {lastError}
-            </span>
-          )}
-        </div>
-        {/* SquareLock01Icon Vault */}
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => {
-            useSessionStore.getState().lock();
-            navigate("/lock", { replace: true });
-          }}
-          className="settings-pressable settings-pressable-accent"
-          style={{
-            marginTop: "var(--space-4)",
-            background: "var(--color-accent)",
-            border: "1px solid var(--color-accent)",
-          }}
-        >
-          <LockKeyholeIcon size={16} strokeWidth={1.5} style={{ color: "var(--color-accent-contrast)" }} />
-          SquareLock01Icon Vault
-        </Button>
-      </motion.div>
+        )}
+      >
+        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+          {SECTIONS.map((section) => (
+            <SettingsMenuGroup key={section} label={section}>
+              {rows.filter((row) => row.section === section).map((row) => (
+                <SettingsMenuRow
+                  key={row.route}
+                  label={row.label}
+                  description={row.description}
+                  icon={row.icon}
+                  onClick={() => navigate(row.route)}
+                />
+              ))}
+            </SettingsMenuGroup>
+          ))}
+
+          <SettingsDivider fullBleed />
+
+          <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }} aria-label="Build and updates">
+            <SettingsSectionLabel>Build</SettingsSectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              <BuildRow label="Version" value={appVersion ? `v${appVersion}` : "—"} />
+              {updateStatus ? <BuildRow label="Updates" value={updateStatus} tone={updateTone} /> : null}
+            </div>
+
+            {!update ? (
+              <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => void checkForUpdates()} loading={checking} disabled={!updaterSupported}>
+                <RefreshIcon size={16} strokeWidth={1.5} aria-hidden="true" />
+                {checking ? "Checking for updates" : "Check for updates"}
+              </Button>
+            ) : null}
+
+            {lastError && (checkError || installError || !updaterSupported) ? (
+              <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", lineHeight: "var(--leading-body)", color: checkError || installError ? "var(--color-status-error)" : "var(--color-text-secondary)" }}>
+                {lastError}
+              </span>
+            ) : null}
+          </section>
+        </motion.div>
+      </PageFrame>
     </AppShell>
   );
 }

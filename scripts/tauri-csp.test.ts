@@ -36,7 +36,7 @@ describe("Tauri CSP configuration", () => {
       "ipc:",
       "http://ipc.localhost",
       "https://wallet.glyphq.org",
-      "https://rpc.qubic.org",
+      "https://api.glyphq.org",
       "https://relay.glyphq.org",
       "https://api.coinbase.com",
       "https://github.com",

@@ -1,21 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { getRpcClient } from "@/lib/rpc";
-import { qk } from "@/lib/query-keys";
-import { usePollingIntervalMs } from "@/hooks/use-polling-profile";
-import { useRpcCacheIdentity } from "@/hooks/use-rpc-cache-identity";
+import { useMemo } from "react";
+import { useTickInfo } from "@/hooks/use-tick-info";
 
-/** Polls the archive for the last processed tick every 3 s. Used to detect when pending txs should be confirmed. */
+/** Index head derived from the tick stream; kept as a separate shape for existing callers. */
 export function useLastProcessedTick() {
-  const pollingIntervalMs = usePollingIntervalMs();
-  const rpcIdentity = useRpcCacheIdentity("archive");
-  return useQuery({
-    queryKey: qk.lastProcessedTick(rpcIdentity),
-    queryFn: async () => {
-      const result = await getRpcClient().archive.getLastProcessedTick();
-      if (!result.ok) throw result.error;
-      return result.value;
-    },
-    refetchInterval: Math.max(3_000, pollingIntervalMs),
-    refetchIntervalInBackground: true,
-  });
+  const query = useTickInfo();
+  const data = useMemo(
+    () => query.data && query.data.tick > 0
+      ? {
+          tickNumber: query.data.tick,
+          epoch: query.data.epoch,
+          intervalInitialTick: query.data.initialTick ?? 0,
+          logTickNumber: query.data.tick,
+        }
+      : undefined,
+    [query.data],
+  );
+  return { ...query, data };
 }

@@ -1,8 +1,8 @@
 import type { GlyphCallbackResponse, GlyphEnvelope, GlyphRequest } from "@/lib/request-schema";
 import { CALLBACK_ENVELOPE_VERSION_V2, bytesToBase64, jcsCanonicalize, sha256Base64Url } from "@/lib/jcs";
 
-export const CALLBACK_ENVELOPE_VERSION = CALLBACK_ENVELOPE_VERSION_V2;
-export const CALLBACK_SIGNATURE_ALGORITHM = "qubic-schnorrq-sha256";
+const CALLBACK_ENVELOPE_VERSION = CALLBACK_ENVELOPE_VERSION_V2;
+const CALLBACK_SIGNATURE_ALGORITHM = "qubic-schnorrq-sha256";
 
 export interface CallbackRelayBinding {
   callback_url: string | null;

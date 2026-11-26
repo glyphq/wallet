@@ -3,8 +3,8 @@ import { acceptDeepLinkPayloadAfterNetworkMatch } from "@/lib/deep-link-acceptan
 import { REQUEST_PROTOCOL_V2, requestHashV2, type GlyphNetworkBinding } from "@/lib/jcs";
 import type { NetworkConfig } from "@/store/persisted";
 
-const mainnet: NetworkConfig = { name: "mainnet", liveApiUrl: "", queryApiUrl: "" };
-const testnet: NetworkConfig = { name: "testnet", liveApiUrl: "", queryApiUrl: "" };
+const mainnet: NetworkConfig = { name: "mainnet", apiUrl: "" };
+const testnet: NetworkConfig = { name: "testnet", apiUrl: "" };
 
 async function makePayload(network: GlyphNetworkBinding): Promise<string> {
   const request = {

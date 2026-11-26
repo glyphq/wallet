@@ -1,20 +1,17 @@
 import { useState, useMemo } from "react";
-import { Button } from "@/components/button";
 import { k12, verify, publicKeyToIdentity } from "@qubic.org/crypto";
-import { truncateId } from "@/lib/format";
 import { base64ToBytes } from "@/lib/base64";
+import { ShieldCheckIcon } from "@/lib/icons";
 import { useSessionStore } from "@/store/session";
 import { usePersistedStore } from "@/store/persisted";
-import { RequestActionBar, RequestDetailRow, RequestDisclosure, RequestSectionTitle, RequestTechnicalBlock } from "./request-primitives";
+import { RequestApprovalActions, RequestInlineNotice } from "./request-primitives";
+import { ApprovalAddress } from "./approval-address";
+import { ApprovalField } from "./approval-field";
+import { ApprovalMessage } from "./approval-message";
 import type { VerifyMessageRequest } from "@/lib/request-schema";
+import type { VerifyMessageResult } from "@/lib/request-approvals";
 
 export type { VerifyMessageRequest } from "@/lib/request-schema";
-
-export interface VerifyMessageResult {
-  valid: boolean;
-  identity: string;
-  accountIndex: number;
-}
 
 interface VerifyMessagePreviewProps {
   request: VerifyMessageRequest;
@@ -22,16 +19,10 @@ interface VerifyMessagePreviewProps {
   onReject: () => void;
 }
 
-function previewText(value: string, maxChars = 2000): string {
-  return value.length > maxChars
-    ? `${value.slice(0, maxChars)}\n\n[… ${value.length.toLocaleString()} chars total]`
-    : value;
-}
-
 export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMessagePreviewProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const activeAccountIndex = usePersistedStore((s) => s.settings.activeAccountIndex);
 
   const publicKeyBytes = useMemo(() => base64ToBytes(request.public_key), [request.public_key]);
@@ -52,7 +43,7 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
     }
   }, [publicKeyBytes]);
 
-  const isOwnIdentity = claimedIdentity !== null && wallets.some((w) => w.identity === claimedIdentity);
+  const isOwnIdentity = claimedIdentity !== null && accounts.some((w) => w.identity === claimedIdentity);
 
   async function handleVerify() {
     setProcessing(true);
@@ -75,54 +66,41 @@ export function VerifyMessagePreview({ request, onApprove, onReject }: VerifyMes
   const invalidKey = claimedIdentity === null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      <div>
-        <div style={{ marginBottom: "var(--space-2)" }}>
-          <RequestSectionTitle>{request.data ? "Data to verify" : "Message"}</RequestSectionTitle>
-        </div>
-        {request.data ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <RequestDetailRow label="Payload" value={dataByteCount === null ? "Invalid base64" : `${dataByteCount.toLocaleString()} bytes`} valueColor={dataByteCount === null ? "var(--color-status-error)" : undefined} />
-            {request.message && <RequestDetailRow label="Label" value={previewText(request.message, 160)} />}
-            <RequestDisclosure label={`Show base64 data${dataByteCount === null ? "" : ` · ${dataByteCount.toLocaleString()}B`}`}>
-              <RequestTechnicalBlock maxHeight={160}>{request.data}</RequestTechnicalBlock>
-            </RequestDisclosure>
-          </div>
-        ) : (
-          <RequestTechnicalBlock maxHeight={160}>{previewText(request.message)}</RequestTechnicalBlock>
-        )}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
+      <ApprovalMessage
+        title={request.data ? "Data to verify" : "Message"}
+        data={request.data}
+        message={request.message}
+        dataByteCount={dataByteCount}
+      />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        <RequestDetailRow
-	          label="Signer"
-          value={invalidKey ? "Invalid public key" : truncateId(claimedIdentity!, 10, 10)}
-          valueColor={invalidKey ? "var(--color-status-error)" : undefined}
-	          badge={!invalidKey ? (isOwnIdentity ? "Your Vault" : "Other identity") : undefined}
+      {!invalidKey ? (
+        <ApprovalAddress
+          label="Signer"
+          identity={claimedIdentity!}
+          name={isOwnIdentity ? "Your address" : "Other address"}
+          compact="long"
         />
-        <RequestDetailRow label="Signature" value={truncateId(request.signature, 10, 10)} />
-      </div>
+      ) : null}
 
-      {invalidKey && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-	          Invalid public key
-        </div>
-      )}
+      <ApprovalField label="Signature">
+        <span title={request.signature} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", letterSpacing: "0.03em", color: "var(--color-text-secondary)", overflowWrap: "anywhere" }}>
+          {request.signature}
+        </span>
+      </ApprovalField>
 
-      {error && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {error}
-        </div>
-      )}
+      {invalidKey && <RequestInlineNotice tone="error">Invalid public key</RequestInlineNotice>}
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={handleVerify} loading={processing} disabled={invalidKey} style={{ flex: 1 }}>
-          Verify and respond
-        </Button>
-      </RequestActionBar>
+      {error && <RequestInlineNotice tone="error">{error}</RequestInlineNotice>}
+
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={handleVerify}
+        approveLabel="Verify and respond"
+        approveIcon={<ShieldCheckIcon size={16} aria-hidden="true" />}
+        approveLoading={processing}
+        approveDisabled={invalidKey}
+      />
     </div>
   );
 }

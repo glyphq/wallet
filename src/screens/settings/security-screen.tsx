@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion } from "motion/react";
-import { stepMotion, gesture } from "@/lib/animations";
+import { stepMotion } from "@/lib/animations";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
-import { SettingsSwitch } from "@/components/settings-switch";
+import { Toggle } from "@/components/toggle";
 import { usePersistedStore } from "@/store/persisted";
-import { verifyVaultPassword } from "@/lib/vault";
+import { verifyWalletPassword } from "@/lib/wallet";
 import { extractMessage } from "@/lib/format";
 
+const MAX_TIMEOUT_MINUTES = 24 * 60;
+
 const TIMEOUT_OPTIONS = [
+  { label: "Off", value: 0 },
   { label: "1m", value: 1 }, { label: "5m", value: 5 }, { label: "15m", value: 15 },
   { label: "30m", value: 30 }, { label: "1h", value: 60 },
 ];
@@ -34,55 +37,21 @@ const sectionStyle = {
   gap: "var(--space-3)",
 } as const;
 
-function ChoiceButton({
-  active,
-  children,
-  onClick,
-  ariaLabel,
-}: {
-  active: boolean;
-  children: string;
-  onClick: () => void;
-  ariaLabel: string;
-}) {
-  return (
-    <motion.button
-      {...gesture.pressSubtle}
-      type="button"
-      className="settings-pressable settings-chip"
-      aria-label={ariaLabel}
-      aria-pressed={active}
-      onClick={onClick}
-      style={{
-        minHeight: 36,
-        padding: "0 var(--space-3)",
-        borderRadius: "var(--radius-control)",
-        border: "1px solid var(--color-border-subtle)",
-        cursor: "pointer",
-        background: active ? "var(--color-bg-elevated)" : "transparent",
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-label)",
-        fontWeight: active ? 650 : 500,
-        color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-      }}
-    >
-      {children}
-    </motion.button>
-  );
-}
-
 export default function SecurityScreen() {
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
 
   const { autoLockMinutes, lockOnWindowBlur, lockOnSleep, clipboardClearSeconds,
-    requirePasswordForBurn, requireBiometricForSeedReveal } = settings;
-  const biometricVaultIds = settings.biometricVaultIds ?? [];
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0];
-  const bioEnabled = vault ? biometricVaultIds.includes(vault.id) : false;
+    requireBiometricForSeedReveal } = settings;
+  const biometricWalletIds = settings.biometricWalletIds ?? [];
+  const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0];
+  const bioEnabled = wallet ? biometricWalletIds.includes(wallet.id) : false;
 
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState("");
+  const [customError, setCustomError] = useState("");
   const [bioAvailable, setBioAvailable] = useState<boolean | null>(null);
   const [enabling, setEnabling] = useState(false);
   const [enablePw, setEnablePw] = useState("");
@@ -99,29 +68,60 @@ export default function SecurityScreen() {
   }, [enabling]);
 
   async function handleEnable() {
-    if (!vault) return;
+    if (!wallet) return;
     setEnableLoading(true); setEnableError("");
-    if (!vault.encryptedData) { setEnableError("Vault data missing"); setEnableLoading(false); return; }
-    try { await verifyVaultPassword(vault.encryptedData, enablePw); }
+    if (!wallet.encryptedData) { setEnableError("Wallet data missing"); setEnableLoading(false); return; }
+    try { await verifyWalletPassword(wallet.encryptedData, enablePw); }
     catch { setEnableError("Wrong password"); setEnableLoading(false); return; }
     const pw = enablePw; setEnablePw("");
     try {
-      await invoke("enable_biometric", { vaultId: vault.id, vaultData: vault.encryptedData, password: pw });
-      updateSettings({ biometricVaultIds: [...biometricVaultIds, vault.id] });
+      await invoke("enable_biometric", { walletId: wallet.id, walletData: wallet.encryptedData, password: pw });
+      updateSettings({ biometricWalletIds: [...biometricWalletIds, wallet.id] });
       setEnabling(false);
     } catch (e) { setEnableError(`Secure storage failed: ${extractMessage(e)}`); }
     finally { setEnableLoading(false); }
   }
 
   async function handleDisable() {
-    if (!vault) return;
-    try { await invoke("disable_biometric", { vaultId: vault.id }); } catch { /* ok */ }
-    updateSettings({ biometricVaultIds: biometricVaultIds.filter((id) => id !== vault.id) });
+    if (!wallet) return;
+    try { await invoke("disable_biometric", { walletId: wallet.id }); } catch { /* ok */ }
+    updateSettings({ biometricWalletIds: biometricWalletIds.filter((id) => id !== wallet.id) });
+  }
+
+  const customTimeout = autoLockMinutes > 0 && !TIMEOUT_OPTIONS.some((option) => option.value === autoLockMinutes);
+
+  function timeoutLabel(minutes: number): string {
+    if (minutes % 60 === 0) return `${minutes / 60}h`;
+    if (minutes > 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+    return `${minutes}m`;
   }
 
   function setLockTimeout(minutes: number) {
     updateSettings({ autoLockMinutes: minutes });
     invoke("set_lock_timeout", { minutes }).catch(() => {});
+  }
+
+  function chooseTimeout(minutes: number) {
+    setLockTimeout(minutes);
+    setCustomOpen(false);
+    setCustomError("");
+  }
+
+  function openCustomTimeout() {
+    setCustomOpen(true);
+    setCustomError("");
+    setCustomMinutes(String(customTimeout ? autoLockMinutes : 10));
+  }
+
+  function applyCustomTimeout() {
+    const minutes = Number.parseInt(customMinutes, 10);
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > MAX_TIMEOUT_MINUTES) {
+      setCustomError(`Enter 1–${MAX_TIMEOUT_MINUTES} minutes.`);
+      return;
+    }
+    setLockTimeout(minutes);
+    setCustomOpen(false);
+    setCustomError("");
   }
 
   return (
@@ -133,60 +133,104 @@ export default function SecurityScreen() {
           <SettingsSectionLabel>Auto-lock timeout</SettingsSectionLabel>
           <div style={optionGroupStyle}>
             {TIMEOUT_OPTIONS.map((opt) => (
-              <ChoiceButton
+              <Button
                 key={opt.value}
-                active={opt.value === autoLockMinutes}
-                onClick={() => setLockTimeout(opt.value)}
-                ariaLabel={`Set auto-lock timeout to ${opt.label}`}
+                size="sm"
+                variant={opt.value === autoLockMinutes ? "primary" : "secondary"}
+                style={{ width: "auto" }}
+                aria-pressed={opt.value === autoLockMinutes}
+                aria-label={`Set auto-lock timeout to ${opt.label}`}
+                onClick={() => chooseTimeout(opt.value)}
               >
                 {opt.label}
-              </ChoiceButton>
+              </Button>
             ))}
+            <Button
+              size="sm"
+              variant={customTimeout || customOpen ? "primary" : "secondary"}
+              style={{ width: "auto" }}
+              aria-pressed={customTimeout}
+              aria-expanded={customOpen}
+              aria-label="Set a custom auto-lock timeout"
+              onClick={openCustomTimeout}
+            >
+              {customTimeout ? `Custom · ${timeoutLabel(autoLockMinutes)}` : "Custom"}
+            </Button>
+          </div>
+          {customOpen ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxWidth: 280 }}>
+              <Input
+                label="Custom timeout (minutes)"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                value={customMinutes}
+                onChange={(event) => { setCustomMinutes(event.target.value.replace(/\D/g, "")); setCustomError(""); }}
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); applyCustomTimeout(); } }}
+                error={customError || undefined}
+              />
+              <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                <Button size="sm" onClick={applyCustomTimeout}>Apply</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setCustomOpen(false); setCustomError(""); }}>Cancel</Button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <SettingsDivider fullBleed />
+
+        <section style={sectionStyle} aria-label="Lock triggers">
+          <SettingsSectionLabel>Lock triggers</SettingsSectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <Toggle label="Lock on sleep" description="Lock when the screen locks or machine sleeps" checked={lockOnSleep} onChange={(checked) => updateSettings({ lockOnSleep: checked })} />
+            <SettingsDivider fullBleed />
+            <Toggle label="Lock on window blur" description="Lock when the app loses focus" checked={lockOnWindowBlur} onChange={(checked) => updateSettings({ lockOnWindowBlur: checked })} />
           </div>
         </section>
 
-        <SettingsDivider />
-
-        <section style={{ display: "flex", flexDirection: "column", gap: 0 }} aria-label="Lock triggers">
-          <SettingsSwitch label="Lock on sleep" description="Lock when the screen locks or machine sleeps" checked={lockOnSleep} onChange={() => updateSettings({ lockOnSleep: !lockOnSleep })} />
-          <SettingsDivider />
-          <SettingsSwitch label="Lock on window blur" description="Lock when the app loses focus" checked={lockOnWindowBlur} onChange={() => updateSettings({ lockOnWindowBlur: !lockOnWindowBlur })} />
-        </section>
-
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         <section style={sectionStyle} aria-label="Clear clipboard after">
           <SettingsSectionLabel>Clear clipboard after</SettingsSectionLabel>
           <div style={optionGroupStyle}>
             {CLIPBOARD_OPTIONS.map((opt) => (
-              <ChoiceButton
+              <Button
                 key={opt.value}
-                active={opt.value === clipboardClearSeconds}
+                size="sm"
+                variant={opt.value === clipboardClearSeconds ? "primary" : "secondary"}
+                style={{ width: "auto" }}
+                aria-pressed={opt.value === clipboardClearSeconds}
+                aria-label={`Clear clipboard after ${opt.label}`}
                 onClick={() => updateSettings({ clipboardClearSeconds: opt.value })}
-                ariaLabel={`Clear clipboard after ${opt.label}`}
               >
                 {opt.label}
-              </ChoiceButton>
+              </Button>
             ))}
           </div>
         </section>
 
-        <SettingsDivider />
-
-        <section style={{ display: "flex", flexDirection: "column", gap: 0 }} aria-label="Approval requirements">
-          <SettingsSwitch label="Password for burn" description="Require password before burning QU" checked={requirePasswordForBurn} onChange={() => updateSettings({ requirePasswordForBurn: !requirePasswordForBurn })} />
-          <SettingsDivider />
-          <SettingsSwitch label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={() => updateSettings({ requireBiometricForSeedReveal: !requireBiometricForSeedReveal })} />
-        </section>
-
-        {bioAvailable && vault && (
+        {bioAvailable ? (
           <>
-            <SettingsDivider />
+            <SettingsDivider fullBleed />
+
+            <section style={sectionStyle} aria-label="Approval requirements">
+              <SettingsSectionLabel>Approval requirements</SettingsSectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <Toggle label="Biometric for seed reveal" description={isLinux ? "Require quick unlock to view seed" : "Require biometric to view seed"} checked={requireBiometricForSeedReveal} onChange={(checked) => updateSettings({ requireBiometricForSeedReveal: checked })} />
+              </div>
+            </section>
+          </>
+        ) : null}
+
+        {bioAvailable && wallet && (
+          <>
+            <SettingsDivider fullBleed />
             <section style={sectionStyle} aria-label="Biometric unlock">
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <SettingsSectionLabel>{isLinux ? "Quick unlock" : "Biometric unlock"}</SettingsSectionLabel>
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
-                  {bioEnabled ? `Enabled for ${vault.name}` : `Enable faster unlock for ${vault.name}`}
+                  {bioEnabled ? `Enabled for ${wallet.name}` : `Enable faster unlock for ${wallet.name}`}
                 </span>
               </div>
               {bioEnabled ? (
@@ -214,7 +258,7 @@ export default function SecurityScreen() {
                 </div>
               ) : (
                 <Button variant="secondary" size="md" onClick={() => setEnabling(true)}>
-                  Enable for {vault.name}
+                  Enable for {wallet.name}
                 </Button>
               )}
             </section>

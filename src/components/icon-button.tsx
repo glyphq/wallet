@@ -4,20 +4,21 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   children: ReactNode;
   badge?: boolean;
+  framed?: boolean;
 }
 
-export function IconButton({ label, children, badge = false, style, ...props }: IconButtonProps) {
+export function IconButton({ label, children, badge = false, framed = false, style, ...props }: IconButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
-      className="glyph-icon-btn"
+      className={`glyph-icon-btn${framed ? " corner-frame" : ""}`}
       {...props}
       style={{
         position: "relative",
         width: 40,
         height: 40,
-        borderRadius: "var(--radius-pill)",
+        borderRadius: framed ? 2 : "var(--radius-sharp)",
         border: "1px solid transparent",
         background: "transparent",
         display: "inline-flex",

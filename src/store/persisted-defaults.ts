@@ -1,3 +1,4 @@
+import { DEFAULT_API_URL } from "@/lib/api-url";
 import type { AppSettings } from "./persisted-types";
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -6,20 +7,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lockOnWindowBlur: false,
   clipboardClearSeconds: 30,
   network: {
-    liveApiUrl: "https://rpc.qubic.org/live/v1",
-    queryApiUrl: "https://rpc.qubic.org/query/v1",
+    apiUrl: DEFAULT_API_URL,
     name: "mainnet",
   },
-  activeVaultId: null,
+  activeWalletId: null,
   activeAccountIndex: 0,
   hideBalances: false,
-  approvedDapps: [],
   currency: "USD",
   tickOffset: 10,
   themeMode: "dark",
   debugMode: false,
-  biometricVaultIds: [],
-  fontPair: "space-grotesk",
+  biometricWalletIds: [],
+  fontPair: "default",
   accentColor: "green",
   customScheme: null,
   notificationsEnabled: false,
@@ -30,6 +29,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifyOnLargeIncoming: false,
   notifyOnPriceAlerts: false,
   notifyWhenLocked: false,
+  notificationPosition: "bottom-right",
+  notificationDurationSecs: 6,
+  notificationMaxVisible: 3,
   largeIncomingThreshold: "",
   priceAlertAbove: "",
   priceAlertBelow: "",
@@ -41,7 +43,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autostartEnabled: false,
   sponsorAttribution: "anonymous",
   allowBlurLockBypass: false,
-  requirePasswordForBurn: false,
   requireBiometricForSeedReveal: false,
   highValueSendThreshold: "",
   exportSigningPrivateJwk: null,

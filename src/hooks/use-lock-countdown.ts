@@ -1,14 +1,16 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { usePersistedStore } from "@/store/persisted";
+import { useSessionStore } from "@/store/session";
 
 /** Returns seconds until auto-lock, or null when disabled. Only non-null when ≤ 60 s remain so callers can show a warning. */
 export function useLockCountdown(): number | null {
   const autoLockMinutes = usePersistedStore((s) => s.settings.autoLockMinutes);
+  const isLocked = useSessionStore((s) => s.isLocked);
   const [seconds, setSeconds] = useState<number | null>(null);
 
   useEffect(() => {
-    if (autoLockMinutes === 0) {
+    if (isLocked || autoLockMinutes === 0) {
       setSeconds(null);
       return;
     }
@@ -23,9 +25,9 @@ export function useLockCountdown(): number | null {
     }
 
     poll();
-    const id = setInterval(poll, 5_000);
+    const id = setInterval(poll, 1_000);
     return () => clearInterval(id);
-  }, [autoLockMinutes]);
+  }, [autoLockMinutes, isLocked]);
 
-  return seconds;
+  return isLocked ? null : seconds;
 }

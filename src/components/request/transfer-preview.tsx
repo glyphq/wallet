@@ -1,53 +1,34 @@
 import { useState } from "react";
-import { Button } from "@/components/button";
 import { usePersistedStore } from "@/store/persisted";
-import { useTickInfo } from "@/hooks/use-tick-info";
 import { useBalance } from "@/hooks/use-balance";
-import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
+import { estimateTargetTick, fetchLatestTick } from "@/lib/api/network";
 import { broadcastTx } from "@/lib/broadcast";
-import { buildTransferFromSession, transactionSigningIntent, type SigningAuthorizationContext } from "@/lib/secure-session";
+import { buildTransferFromSession, transactionSigningIntent } from "@/lib/secure-session";
 import { useSigningAccount } from "@/hooks/use-signing-account";
 import { isValidIdentity } from "@/lib/crypto";
-import { truncateId, formatQu } from "@/lib/format";
-import { exceedsHighValueThreshold } from "@/lib/session-policies";
-import { RequestActionBar, RequestDetailRow, RequestSectionTitle } from "./request-primitives";
+import { formatQu } from "@/lib/format";
+import { RequestApprovalActions, RequestInlineNotice, RequestSigningAccountPicker } from "./request-primitives";
+import { ApprovalAddress } from "./approval-address";
+import { ApprovalAmount } from "./approval-amount";
+import { MoneySend01Icon } from "@/lib/icons";
 import type { TransferRequest } from "@/lib/request-schema";
-import { DappPolicyStatus } from "@/components/dapp-policy-controls";
-import { evaluateDappPermission } from "@/lib/dapp-permissions";
+import type { TransactionPreviewProps } from "./request-preview-props";
 
 export type { TransferRequest } from "@/lib/request-schema";
 
-export interface ApproveResult {
-  txHash: string;
-  targetTick: number;
-  identity: string;
-  accountIndex: number;
-}
 
-interface TransferPreviewProps {
-  request: TransferRequest;
-  onApprove: (result: ApproveResult, authorization: SigningAuthorizationContext) => void | Promise<void>;
-  authorize: (accountIndex: number, intent: string) => Promise<SigningAuthorizationContext>;
-  onReject: () => void;
-}
 
-export function TransferPreview({ request, onApprove, onReject, authorize }: TransferPreviewProps) {
+export function TransferPreview({ request, onApprove, onReject, authorize }: TransactionPreviewProps<TransferRequest>) {
   const [processing, setProcessing] = useState(false);
   const [txError, setTxError] = useState("");
 
-  const { wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } =
-    useSigningAccount(request.from);
-  const vaults = usePersistedStore((s) => s.vaults);
-  const settings = usePersistedStore((s) => s.settings);
-  const vault = vaults.find((v) => v.id === settings.activeVaultId);
+  const { account, wallet, accountName, fromError, selectedIndex, setSelectedIndex, showPicker } = useSigningAccount(request.from);
   const contacts = usePersistedStore((s) => s.contacts);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const approvedDapps = usePersistedStore((s) => s.settings.approvedDapps);
-  const { data: tickInfo } = useTickInfo();
-  const { data: balanceData } = useBalance(wallet?.identity ?? null);
+  const { data: balanceData } = useBalance(account?.identity ?? null);
 
-  const identity = wallet?.identity ?? "";
+  const identity = account?.identity ?? "";
   const balance = balanceData?.balance ?? null;
   const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
   const requestAmount = (() => { try { return BigInt(request.amount); } catch { return null; } })();
@@ -55,44 +36,15 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
   const invalidDestination = !isValidIdentity(request.to);
   const toContact = contacts.find((c) => c.identity === request.to);
   const tickOffset = request.tick_offset ?? 10;
-  const targetTick = tickInfo ? estimateTargetTick(tickInfo.tick ?? 0, tickOffset) : null;
-  const [highValueConfirmed, setHighValueConfirmed] = useState(false);
-  const needsHighValueConfirmation = requestAmount !== null && exceedsHighValueThreshold(requestAmount, settings.highValueSendThreshold);
   const projectedBalance = balance !== null && requestAmount !== null ? balance - requestAmount : null;
-  const policyDecision = evaluateDappPermission({
-    approvedDapps,
-    origin: request.dapp.origin,
-    permission: "transfer",
-    identity,
-    amountQu: requestAmount,
-  });
-  const likelyFailures = [
-    requestAmount === null ? "Malformed amount in the request body." : null,
-    policyDecision.reason,
-    invalidDestination ? "Destination identity checksum is invalid." : null,
-    insufficientBalance ? "Current account balance does not cover the requested transfer." : null,
-    hasPendingTx ? "This account already has a pending transfer and cannot queue another one yet." : null,
-  ].filter((item): item is string => !!item);
 
   async function approve() {
-    if (!wallet || requestAmount === null) return;
-    const freshPolicyDecision = evaluateDappPermission({
-      approvedDapps,
-      origin: request.dapp.origin,
-      permission: "transfer",
-      identity,
-      amountQu: requestAmount,
-      now: Date.now(),
-    });
-    if (!freshPolicyDecision.allowed) {
-      setTxError(freshPolicyDecision.reason ?? "dApp policy blocked this transfer.");
-      return;
-    }
+    if (!account || requestAmount === null) return;
     setProcessing(true);
     setTxError("");
     try {
       const amount = requestAmount;
-      const currentTick = await getLatestTick();
+      const currentTick = await fetchLatestTick();
       const tick = estimateTargetTick(currentTick, tickOffset);
       const authorization = await authorize(selectedIndex, transactionSigningIntent({
         accountIndex: selectedIndex,
@@ -130,128 +82,51 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", flex: 1, minHeight: "100%" }}>
-      {/* Amount — primary element */}
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.02em" }}>
-          {formatQu(request.amount)}
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)" }}>QU</div>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", flex: 1, minHeight: 0 }}>
+      <ApprovalAmount amount={requestAmount} />
 
-      {/* Account picker (shown when dApp didn't specify `from`) */}
-      {showPicker && vault && (
-        <div>
-          <div style={{ marginBottom: "var(--space-2)" }}><RequestSectionTitle>Sign as</RequestSectionTitle></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {vault.accounts.filter((a) => !a.hidden).map((acc) => (
-              <button
-                key={acc.index}
-                onClick={() => setSelectedIndex(acc.index)}
-                style={{
-                  fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)",
-                  letterSpacing: "0.05em", padding: "var(--space-1) var(--space-3)",
-                  borderRadius: "var(--radius-pill)",
-                  border: `1px solid ${acc.index === selectedIndex ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-                  background: acc.index === selectedIndex ? "var(--color-text-display)" : "transparent",
-                  color: acc.index === selectedIndex ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                  cursor: "pointer",
-                }}
-              >
-                {acc.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* fromError: dApp specified an identity not in this vault */}
-      {fromError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {fromError}
-        </div>
-      )}
-
-      {/* Detail rows */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {!fromError && <RequestDetailRow label="From" value={`${accountName} · ${truncateId(identity, 10, 10)}`} />}
-        <RequestDetailRow
-          label="To"
-          value={toContact ? `${toContact.name} · ${truncateId(request.to, 10, 10)}` : truncateId(request.to, 10, 10)}
+      {showPicker && wallet ? (
+        <RequestSigningAccountPicker
+          accounts={wallet.accounts}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
         />
-        <RequestDetailRow label="Target tick" value={targetTick ? String(targetTick) : "—"} />
-        <RequestDetailRow label="Fee" value="None" />
-      </div>
+      ) : null}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        <RequestSectionTitle>Preflight</RequestSectionTitle>
-        <RequestDetailRow label="Balance before" value={balance !== null ? `${formatQu(balance)} QU` : "Loading…"} />
-        <RequestDetailRow label="Balance after" value={projectedBalance !== null ? `${formatQu(projectedBalance)} QU` : "—"} />
-        <RequestDetailRow label="Likely failures" value={likelyFailures.length > 0 ? likelyFailures.join(" ") : "No obvious client-side failure conditions detected."} />
-      </div>
+      {fromError ? <RequestInlineNotice tone="error">{fromError}</RequestInlineNotice> : null}
 
-      {requestAmount === null && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The request amount is invalid.
+      {!fromError ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <ApprovalAddress label="From" identity={identity} name={accountName} compact="short" />
+          <ApprovalAddress label="To" identity={request.to} name={toContact?.name} compact="long" />
         </div>
-      )}
-      {invalidDestination && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The destination identity is invalid.
-        </div>
-      )}
-      {insufficientBalance && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          The selected account does not have enough balance for this transfer.
-        </div>
-      )}
-      {hasPendingTx && !insufficientBalance && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-          This account already has a pending transfer. Wait for confirmation before sending another one.
-        </div>
-      )}
-      {txError && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-error)", letterSpacing: "0.05em" }}>
-          {txError}
-        </div>
-      )}
+      ) : null}
 
-      <DappPolicyStatus decision={policyDecision} />
-
-      {needsHighValueConfirmation && (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={highValueConfirmed}
-          onClick={() => setHighValueConfirmed((value) => !value)}
-          style={{
-            display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", userSelect: "none",
-            width: "100%", padding: 0, border: "none", background: "transparent", textAlign: "left",
-          }}
-        >
-          <div style={{
-            width: 14, height: 14, flexShrink: 0,
-            border: `1px solid ${highValueConfirmed ? "var(--color-text-display)" : "var(--color-border-strong)"}`,
-            borderRadius: 2,
-            background: highValueConfirmed ? "var(--color-text-display)" : "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {highValueConfirmed && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-bg-base)", lineHeight: 1 }}>✓</span>}
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-warning)", letterSpacing: "0.05em" }}>
-            I understand this is a high-value transfer.
+      {projectedBalance !== null ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-tertiary)" }}>Remaining balance</span>
+          <span title={`${formatQu(projectedBalance)} QUBIC`} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-secondary)", letterSpacing: "0.03em" }}>
+            {formatQu(projectedBalance)} QUBIC
           </span>
-        </button>
-      )}
+        </div>
+      ) : null}
 
-      <RequestActionBar>
-        <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
-          Reject
-        </Button>
-        <Button onClick={approve} loading={processing} disabled={!wallet || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx || !policyDecision.allowed || (needsHighValueConfirmation && !highValueConfirmed)} style={{ flex: 1 }}>
-          Sign and send
-        </Button>
-      </RequestActionBar>
+      {requestAmount === null ? <RequestInlineNotice tone="error">The request amount is invalid.</RequestInlineNotice> : null}
+      {invalidDestination ? <RequestInlineNotice tone="error">The destination address is invalid.</RequestInlineNotice> : null}
+      {insufficientBalance ? <RequestInlineNotice tone="error">The selected account does not have enough balance for this transfer.</RequestInlineNotice> : null}
+      {hasPendingTx && !insufficientBalance ? (
+        <RequestInlineNotice tone="warning">This account already has a pending transfer. Wait for confirmation before sending another one.</RequestInlineNotice>
+      ) : null}
+      {txError ? <RequestInlineNotice tone="error">{txError}</RequestInlineNotice> : null}
+
+      <RequestApprovalActions
+        onReject={onReject}
+        onApprove={approve}
+        approveLabel="Send"
+        approveIcon={<MoneySend01Icon size={16} aria-hidden="true" />}
+        approveLoading={processing}
+        approveDisabled={!account || requestAmount === null || !!fromError || invalidDestination || insufficientBalance || hasPendingTx}
+      />
     </div>
   );
 }

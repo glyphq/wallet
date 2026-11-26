@@ -1,354 +1,163 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { motion } from "motion/react";
-import { stepMotion, gesture } from "@/lib/animations";
-import { ArrowUpRight01Icon, QrCodeIcon, UserCircleIcon, Wallet01Icon, WalletAdd01Icon, Clock01Icon, FlashIcon, ShieldCheckIcon, ShieldAlertIcon, Bookmark01Icon, CheckmarkCircle01Icon, Note01Icon, UserGroupIcon, FireIcon } from "@/lib/icons";
-import { AppShell } from "@/layouts/app-shell";
-import { Button } from "@/components/button";
-import { ScreenHeader } from "@/components/screen-header";
-import { IconButton } from "@/components/icon-button";
-import { ShellVaultSwitcher } from "@/components/shell-vault-switcher";
-import { DetailRow } from "@/components/detail-row";
-import { EmbeddedInput } from "@/components/embedded-input";
-import { Input } from "@/components/input";
-import { TextButton } from "@/components/text-button";
-import { ContactPicker } from "@/components/contact-picker";
-import { AddressSuggestions } from "@/components/address-suggestions";
-import { QrIntakeSheet } from "@/components/qr-intake-sheet";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
 import { useBalance } from "@/hooks/use-balance";
 import { useTickInfo } from "@/hooks/use-tick-info";
-import { useTxHistory } from "@/hooks/use-tx-history";
 import { useLatestStats } from "@/hooks/use-latest-stats";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { isValidIdentity, newId } from "@/lib/crypto";
-import { estimateTargetTick, getLatestTick } from "@/lib/rpc";
+import { isValidIdentity } from "@/lib/crypto";
 import { broadcastTx } from "@/lib/broadcast";
 import { buildTransferFromSession } from "@/lib/secure-session";
-import { verifyVaultPassword } from "@/lib/vault";
-import { truncateId, formatQu, extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
-import { TxMemoField } from "@/components/tx-memo-field";
-import { buildAddressSuggestions, getRecentRecipientIdentities } from "@/lib/address-intelligence";
-import { getVaultAccountIdentity } from "@/lib/accounts";
+import { verifyWalletPassword } from "@/lib/wallet";
+import { extractMessage, formatPreferredCurrencyFromQu } from "@/lib/format";
+import { getWalletAccountIdentity } from "@/lib/accounts";
 import { exceedsHighValueThreshold } from "@/lib/session-policies";
-import { parseScannedSendPayload } from "@/lib/scan-payload";
-
-type Step = "input" | "review" | "sending" | "done" | "error";
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-  color: "var(--color-text-secondary)",
-};
-
-
-// ── Numpad ───────────────────────────────────────────────────────────────────
-
-const PAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
-
-function Numpad({ onPress, onMax }: { onPress: (key: string) => void; onMax?: () => void }) {
-  return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gap: "var(--space-1)",
-      maxWidth: 320,
-      width: "100%",
-      margin: "0 auto",
-    }}>
-      {PAD_KEYS.map((key, i) => {
-        const isMaxSlot = i === 9;
-        const label = isMaxSlot ? "MAX" : key;
-        const isActive = !!key || isMaxSlot;
-        return (
-          <button
-            key={i}
-            type="button"
-            disabled={!isActive}
-            onClick={() => {
-              if (isMaxSlot) onMax?.();
-              else if (key) onPress(key);
-            }}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              height: 58,
-              background: "transparent",
-              border: "none",
-              cursor: isActive ? "pointer" : "default",
-              fontFamily: "var(--font-sans)",
-              fontSize: isMaxSlot ? "var(--text-label)" : "1.375rem",
-              fontWeight: isMaxSlot ? 500 : 400,
-              color: isMaxSlot ? "var(--color-accent)" : key === "⌫" ? "var(--color-text-secondary)" : "var(--color-text-display)",
-              borderRadius: "var(--radius-card)",
-              transition: "transform 0.08s, background 0.08s",
-              userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
-            }}
-            onPointerDown={(e) => {
-              if (!isActive) return;
-              e.currentTarget.style.background = "var(--color-bg-hover)";
-              e.currentTarget.style.transform = "scale(0.95)";
-            }}
-            onPointerUp={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "scale(1)"; }}
-            onPointerLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+import { fiatInputToQubic, fiatPerQubic, qubicToFiatInput } from "@/lib/amount-currency";
+import {
+  hasPendingFromAccount, normalizeIdentity, resolveTargetTick, validateQuAmount,
+  type SendStep,
+} from "./send-flow";
+import { SendErrorStep } from "./send-result-steps";
+import { SendHeader } from "./send-header";
+import { SendInputStep } from "./send-input-step";
+import { SendReviewStep } from "./send-review-step";
+import { useSendPrefill } from "./use-send-prefill";
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SendScreen() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
 
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) => s.vaults.find((v) => v.id === s.settings.activeVaultId));
+  const wallet = usePersistedStore((s) => s.wallets.find((v) => v.id === s.settings.activeWalletId));
   const contacts = usePersistedStore((s) => s.contacts);
-  const addContact = usePersistedStore((s) => s.addContact);
   const updateContact = usePersistedStore((s) => s.updateContact);
   const addPendingTx = usePersistedStore((s) => s.addPendingTx);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const txDraft = useSessionStore((s) => s.txDraft);
   const saveTxDraft = useSessionStore((s) => s.saveTxDraft);
   const clearTxDraft = useSessionStore((s) => s.clearTxDraft);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
 
-  const wallet = wallets[settings.activeAccountIndex] ?? null;
+  const account = accounts[settings.activeAccountIndex] ?? null;
   const { data: tickInfo } = useTickInfo();
-  const identity = getVaultAccountIdentity(vault ?? null, settings.activeAccountIndex, wallets) ?? "";
-  const { data: balanceData } = useBalance(identity || null);
+  const identity = getWalletAccountIdentity(wallet ?? null, settings.activeAccountIndex, accounts) ?? "";
+  const { data: balanceData, isFetching: balanceFetching, refetch: refetchBalance } = useBalance(identity || null);
   const balance = balanceData?.balance ?? null;
   const { data: stats } = useLatestStats();
   const quote = usePreferredCurrencyQuote();
 
-  const [step, setStep] = useState<Step>("input");
-  const [draftRestored, setDraftRestored] = useState(false);
+  const [step, setStep] = useState<SendStep>("input");
   const [destination, setDestination] = useState(() => searchParams.get("to") ?? "");
   const [amountStr, setAmountStr] = useState(() => searchParams.get("amount") ?? "");
+  const [amountUnit, setAmountUnit] = useState<"qubic" | "fiat">("qubic");
+  const [fiatInput, setFiatInput] = useState("");
   const [destError, setDestError] = useState("");
   const [amountError, setAmountError] = useState("");
-  const [txHash, setTxHash] = useState("");
   const [txError, setTxError] = useState("");
-  const [savedTargetTick, setSavedTargetTick] = useState(0);
-  const [watchResult, setWatchResult] = useState<"pending" | "confirmed" | "failed">("pending");
   const [highValuePassword, setHighValuePassword] = useState("");
   const [highValuePasswordError, setHighValuePasswordError] = useState("");
   const [highValueVerified, setHighValueVerified] = useState(false);
   const [highValueVerifying, setHighValueVerifying] = useState(false);
   const [memo, setMemo] = useState("");
   const [showPicker, setShowPicker] = useState(false);
-  const [showQrIntake, setShowQrIntake] = useState(false);
-  const [qrIntakeError, setQrIntakeError] = useState("");
-  const [saveName, setSaveName] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [usdMode, setUsdMode] = useState(false);
-  const [usdStr, setUsdStr] = useState("");
   const [sending, setSending] = useState(false);
+  const destRef = useRef<HTMLInputElement>(null);
 
-  const accountName = vault?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
-  const hasPendingTx = pendingTxs.some((tx) => tx.source === identity);
-  const vaultAccountTargets = (vault?.accounts ?? [])
-    .filter((a) => !a.hidden)
-    .map((a) => ({ name: a.name, identity: a.identity ?? wallets[a.index]?.identity ?? "", note: a.note, tags: a.tags }))
+  const { draftRestored, dismissDraft } = useSendPrefill({
+    searchParams, step, draft: txDraft, clearDraft: clearTxDraft, setDestination, setAmountStr,
+  });
+
+  const accountName = wallet?.accounts[settings.activeAccountIndex]?.name ?? `Account ${settings.activeAccountIndex + 1}`;
+  const hasPendingTx = hasPendingFromAccount(pendingTxs, identity);
+  const walletAccountTargets = (wallet?.accounts ?? [])
+    .map((a) => ({ name: a.name, identity: a.identity ?? accounts[a.index]?.identity ?? "", note: a.note }))
     .filter((a) => a.identity && a.identity !== identity);
-  const canOpenPicker = contacts.length > 0 || vaultAccountTargets.length > 0;
-  const sendHeader = useMemo(() => (
-    <ScreenHeader
-      leading={<ShellVaultSwitcher />}
-      title="Send"
-      action={
-        <>
-          <IconButton label="Send to many" onClick={() => navigate("/send-many")}>
-            <UserGroupIcon size={20} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Scan QR" onClick={() => { setQrIntakeError(""); setShowQrIntake(true); }}>
-            <QrCodeIcon size={20} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Burn QU" onClick={() => navigate("/burn")}>
-            <FireIcon size={20} aria-hidden="true" />
-          </IconButton>
-        </>
-      }
-    />
-  ), [navigate]);
+  const canOpenPicker = contacts.length > 0 || walletAccountTargets.length > 0;
+  const sendHeader = <SendHeader />;
 
-  const { data: recentTxsData } = useTxHistory(identity || null);
-  const recentTxs = recentTxsData?.pages[0];
-
-  const destUpper = destination.trim().toUpperCase();
+  const destUpper = normalizeIdentity(destination);
   const matchedContact = contacts.find((c) => c.identity === destUpper);
-  const destIsKnownContact = !!matchedContact;
   const amountValue = (() => { try { return BigInt(amountStr.trim() || "0"); } catch { return 0n; } })();
   const needsHighValueConfirmation = exceedsHighValueThreshold(amountValue, settings.highValueSendThreshold);
-  const recentRecipientIdentities = useMemo(() => getRecentRecipientIdentities(identity || null, recentTxs), [identity, recentTxs]);
-  const suggestions = useMemo(
-    () => buildAddressSuggestions({ query: destination, contacts, accounts: vaultAccountTargets, currentIdentity: identity, recentIdentities: recentRecipientIdentities }),
-    [contacts, destination, identity, recentRecipientIdentities, vaultAccountTargets],
-  );
 
   const price = stats?.price;
   const fiatEquiv = price && amountStr ? formatPreferredCurrencyFromQu(amountStr, { usdPrice: price, ...quote }).text : null;
-
-  // Sync from URL
-  const prevSearchRef = useRef(searchParams.toString());
-  const destRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const current = searchParams.toString();
-    if (current === prevSearchRef.current) return;
-    prevSearchRef.current = current;
-    if (step !== "input") return;
-    const to = searchParams.get("to");
-    const amount = searchParams.get("amount");
-    if (to) setDestination(to.toUpperCase());
-    if (amount) setAmountStr(amount);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Restore draft
-  useEffect(() => {
-    if (draftRestored || !txDraft) return;
-    const age = Date.now() - txDraft.savedAt;
-    if (age < 30 * 60 * 1000) { setDestination(txDraft.destination); setAmountStr(txDraft.amountStr); }
-    setDraftRestored(true);
-    clearTxDraft();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Watch for confirmation (always active after send)
-  useEffect(() => {
-    if (!txHash || watchResult !== "pending") return;
-    const found = recentTxs?.find((t) => t.hash === txHash);
-    if (found) { setWatchResult(found.moneyFlew === false ? "failed" : "confirmed"); return; }
-    if (tickInfo?.tick && savedTargetTick && tickInfo.tick > savedTargetTick + 30) setWatchResult("failed");
-  }, [txHash, recentTxs, tickInfo, savedTargetTick, watchResult]);
-
-  // Numpad handler
-  const handleNumpad = useCallback((key: string) => {
-    setAmountError("");
-    if (usdMode) {
-      if (key === "⌫") {
-        setUsdStr((prev) => prev.slice(0, -1));
-        if (price) {
-          const newStr = usdStr.slice(0, -1);
-          const n = parseFloat(newStr);
-          setAmountStr(!isNaN(n) && n > 0 ? Math.round(n / price).toString() : "");
-        }
-      } else {
-        const next = usdStr + key;
-        if (price) {
-          const n = parseFloat(next);
-          const quAmount = !isNaN(n) && n > 0 ? Math.round(n / price) : 0;
-          setAmountStr(quAmount > 0 ? quAmount.toString() : "");
-        }
-        setUsdStr(next);
-      }
-    } else {
-      if (key === "⌫") {
-        setAmountStr((prev) => prev.slice(0, -1));
-      } else {
-        setAmountStr((prev) => {
-          if (prev === "0" && key !== "0") return key;
-          if (prev === "0" && key === "0") return prev;
-          return prev + key;
-        });
-      }
-    }
-  }, [usdMode, price, usdStr, balance]);
-
-  // Keyboard support
-  useEffect(() => {
-    if (step !== "input") return;
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target instanceof Element ? e.target : null;
-      const isEditingText = !!target?.closest('input, textarea, select, [contenteditable="true"]');
-      if (e.defaultPrevented || e.isComposing || e.metaKey || e.ctrlKey || e.altKey || isEditingText) return;
-
-      if (e.key >= "0" && e.key <= "9") {
-        e.preventDefault();
-        handleNumpad(e.key);
-      } else if (e.key === "Backspace") {
-        e.preventDefault();
-        handleNumpad("⌫");
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        goReview();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }); // eslint-disable-line react-hooks/exhaustive-deps
+  const canToggleAmountUnit = fiatPerQubic(price, quote) !== null;
 
   function validateInputs(): boolean {
     let ok = true;
-    if (!wallet) { setDestError("Account locked"); destRef.current?.focus(); return false; }
-    if (!isValidIdentity(destUpper)) { setDestError("Invalid identity"); destRef.current?.focus(); ok = false; } else setDestError("");
-    const amount = amountStr.trim();
-    try {
-      if (!/^\d+$/.test(amount) || BigInt(amount) <= 0n) {
-        setAmountError("Enter an amount");
-        ok = false;
-      } else if (balance !== null && BigInt(amount) > balance) {
-        setAmountError("Insufficient balance");
-        ok = false;
-      } else {
-        setAmountError("");
-      }
-    } catch {
-      setAmountError("Enter an amount");
-      ok = false;
-    }
+    if (!account) { setDestError("Account locked"); destRef.current?.focus(); return false; }
+    if (!isValidIdentity(destUpper)) { setDestError("Invalid address"); destRef.current?.focus(); ok = false; } else setDestError("");
+    const amountValidation = validateQuAmount(amountStr, {
+      balance,
+      invalidMessage: "Enter an amount",
+      insufficientMessage: "Insufficient balance",
+    });
+    if (amountValidation.error) ok = false;
+    setAmountError(amountValidation.error);
     return ok;
   }
 
   async function verifyHighValue() {
-    if (!vault?.encryptedData || !highValuePassword) return;
+    if (!wallet?.encryptedData || !highValuePassword) return;
     setHighValueVerifying(true); setHighValuePasswordError("");
-    try { await verifyVaultPassword(vault.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
+    try { await verifyWalletPassword(wallet.encryptedData, highValuePassword); setHighValueVerified(true); setHighValuePassword(""); }
     catch { setHighValuePasswordError("Wrong password"); }
     finally { setHighValueVerifying(false); }
   }
 
   function goReview() { if (validateInputs()) { setHighValueVerified(false); setHighValuePassword(""); setHighValuePasswordError(""); setStep("review"); } }
 
-  function applyScannedPayload(raw: string) {
-    const parsed = parseScannedSendPayload(raw);
-    if (!parsed) {
-      setQrIntakeError("Unsupported QR. Use a Glyph payment link or a Qubic identity.");
+  function handleAmountChange(value: string) {
+    setAmountStr(value);
+    setAmountError("");
+    if (amountUnit === "fiat") setFiatInput(qubicToFiatInput(value, price, quote));
+  }
+
+  function handleFiatInputChange(value: string) {
+    setFiatInput(value);
+    setAmountError("");
+    setAmountStr(fiatInputToQubic(value, price, quote));
+  }
+
+  function toggleAmountUnit() {
+    if (amountUnit === "fiat") {
+      setAmountUnit("qubic");
       return;
     }
+    if (!canToggleAmountUnit) return;
+    setFiatInput(qubicToFiatInput(amountStr, price, quote));
+    setAmountUnit("fiat");
+  }
 
-    if (parsed.kind === "identity") {
-      setDestination(parsed.identity);
-    } else {
-      setDestination(parsed.to);
-      setAmountStr(parsed.amount ?? "");
-      setUsdMode(false);
-      setUsdStr("");
-    }
-    setDestError("");
+  function handlePercent(percent: 25 | 50 | 75 | 100) {
+    if (balance === null) return;
+    const next = percent === 100 ? balance : (balance * BigInt(percent)) / 100n;
+    const value = next.toString();
+    setAmountStr(value);
     setAmountError("");
-    setQrIntakeError("");
-    setShowQrIntake(false);
+    setFiatInput(qubicToFiatInput(value, price, quote));
   }
 
   async function send() {
-    if (!wallet) return;
+    if (!account) return;
     setSending(true);
-    setStep("sending");
     try {
       const amount = BigInt(amountStr.trim());
-      const currentTick = await getLatestTick();
-      const targetTick = estimateTargetTick(currentTick, settings.tickOffset);
+      const { currentTick, targetTick } = await resolveTargetTick(settings.tickOffset);
       const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
       await broadcastTx(encoded);
       addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
+      void queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
-      setSavedTargetTick(targetTick); setTxHash(hash); setWatchResult("pending"); setStep("done");
       if (memo.trim()) setTxMemo(hash, memo.trim());
+      navigate("/dashboard");
     } catch (e) {
       setTxError(extractMessage(e, "Broadcast failed."));
       saveTxDraft({ destination: destUpper, amountStr, savedAt: Date.now() });
@@ -358,500 +167,72 @@ export default function SendScreen() {
     }
   }
 
-  function doSaveContact() {
-    if (!saveName.trim()) return;
-    addContact({ id: newId(), name: saveName.trim(), identity: destUpper, note: "", addedAt: Date.now(), lastUsedAt: Date.now() });
-    setSaved(true);
-  }
-
-  // ── Input step (numpad layout) ───────────────────────────────────────────
-
   if (step === "input") {
     return (
-      <AppShell fullBleed statusBar={sendHeader} contentStyle={{ padding: "var(--space-4)", height: "100%", overflowY: "auto" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: "min-content" }}>
-
-        <div style={{ display: "flex", justifyContent: "center", paddingTop: "var(--space-3)" }}>
-          <span style={{ ...labelStyle, color: "var(--color-text-tertiary)" }}>From {accountName}</span>
-        </div>
-
-        {/* Amount display */}
-        <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "var(--space-8)", paddingBottom: "var(--space-2)", gap: "var(--space-1)", position: "relative", overflow: "hidden", width: "100%" }}>
-
-          {/* Draft notice */}
-          {draftRestored && (
-            <div style={{ position: "absolute", top: "var(--space-3)", padding: "var(--space-1) var(--space-3)", background: "var(--color-status-warning-soft)", borderRadius: "var(--radius-pill)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-              <span style={{ ...labelStyle, color: "var(--color-status-warning)", fontSize: "var(--text-label)" }}>Draft restored</span>
-              <button type="button" onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-status-warning)", fontSize: "0.625rem", padding: 0 }}>✕</button>
-            </div>
-          )}
-
-          <span style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: (() => {
-              const raw = usdMode ? usdStr : amountStr;
-              if (!raw) return "var(--text-display)";
-              const len = raw.length + (usdMode ? 1 : 0); // +1 for $
-              if (len <= 6) return "3.5rem";
-              if (len <= 9) return "2.75rem";
-              if (len <= 12) return "2.125rem";
-              return "1.75rem";
-            })(),
-            fontWeight: 700,
-            color: amountError ? "var(--color-status-error)" : (usdMode ? usdStr : amountStr) ? "var(--color-text-display)" : "var(--color-text-disabled)",
-            letterSpacing: "-0.03em", lineHeight: 1.1, minHeight: "3.5rem",
-            transition: "color 0.15s, font-size 0.15s",
-          }}>
-            {usdMode
-              ? (usdStr ? `$${Number(usdStr).toLocaleString()}` : "$0")
-              : (amountStr ? Number(amountStr).toLocaleString() : "0")
-            }
-          </span>
-
-          <TextButton
-            onClick={() => {
-              if (!usdMode && price && amountStr) {
-                setUsdStr((Number(amountStr) * price).toFixed(2));
-              }
-              if (usdMode && price && usdStr) {
-                const n = parseFloat(usdStr);
-                if (!isNaN(n) && n > 0) setAmountStr(Math.round(n / price).toString());
-              }
-              setUsdMode((v) => !v);
-            }}
-            tone="muted"
-          >
-            {usdMode
-              ? (amountStr ? `≈ ${Number(amountStr).toLocaleString()} QU` : "QU")
-              : (fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : quote.currency)
-            }
-          </TextButton>
-
-          {amountError && (
-            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)" }}>{amountError}</span>
-          )}
-        </div>
-
-        {/* Recipient */}
-        <div style={{ flex: "0 0 auto", position: "relative" }}>
-          <div style={{
-            background: "var(--color-bg-surface)",
-            borderRadius: "var(--radius-card)",
-            padding: "var(--space-4) var(--space-4)",
-            boxShadow: "var(--shadow-surface)",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-              <UserCircleIcon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-              <EmbeddedInput
-                ref={destRef}
-                autoComplete="off"
-                value={destination}
-                onChange={(e) => { setDestination(e.target.value); setDestError(""); }}
-                placeholder="Enter identity or contact"
-                onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = "var(--color-text-secondary)"; }}
-                onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = "transparent"; }}
-                style={{ flex: 1 }}
-              />
-              {canOpenPicker && (
-                <button onClick={() => setShowPicker(true)}
-                  style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 4, color: "var(--color-text-disabled)", display: "flex" }}>
-                  <QrCodeIcon size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Suggestions overlay */}
-          {destination.trim() && suggestions.filter((s) => s.identity !== destUpper).length > 0 && (
-            <div style={{
-              position: "absolute", top: "100%", left: 8, right: 8, zIndex: 50,
-              marginTop: "var(--space-1)", paddingTop: "var(--space-2)", paddingBottom: "var(--space-2)",
-              background: "var(--color-bg-elevated)",
-              borderRadius: "var(--radius-card)",
-              border: "1px solid var(--color-border-subtle)",
-              boxShadow: "var(--shadow-overlay)",
-              maxHeight: 240, overflowY: "auto",
-              animation: "slide-down 0.15s ease-out",
-            }}>
-              <AddressSuggestions
-                suggestions={suggestions.filter((s) => s.identity !== destUpper)}
-                onSelect={(id) => { setDestination(id); setDestError(""); }}
-              />
-            </div>
-          )}
-          {!destError && matchedContact && (
-            <span style={{ ...labelStyle, color: "var(--color-accent)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{matchedContact.name}</span>
-          )}
-          {destError && (
-            <span style={{ ...labelStyle, color: "var(--color-status-error)", fontSize: "var(--text-label)", paddingLeft: "var(--space-1)", marginTop: "var(--space-1)", display: "block" }}>{destError}</span>
-          )}
-        </div>
-
-        {/* Available balance */}
-        {balance !== null && (
-          <div style={{ flex: "0 0 auto", textAlign: "center", paddingBottom: "var(--space-1)" }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-disabled)" }}>
-              {formatQu(balance)} available
-            </span>
-          </div>
-        )}
-
-        {/* Numpad */}
-        <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "flex-end", paddingTop: 0 }}>
-          <Numpad onPress={handleNumpad} onMax={balance !== null ? () => { setAmountStr(balance.toString()); setAmountError(""); if (price) setUsdStr((Number(balance) * price).toFixed(2)); } : undefined} />
-        </div>
-
-        {/* Actions */}
-        <div style={{ flex: "0 0 auto", padding: "var(--space-3) 0 var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <Button onClick={goReview} disabled={!wallet}>
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}>
-              Review <ArrowUpRight01Icon size={16} strokeWidth={2} />
-            </span>
-          </Button>
-        </div>
-
-        <ContactPicker
-          open={showPicker}
-          onClose={() => setShowPicker(false)}
-          onSelect={(id) => { setDestination(id); setDestError(""); setShowPicker(false); }}
-          contacts={contacts}
-          accounts={vaultAccountTargets}
-        />
-        <QrIntakeSheet
-          open={showQrIntake}
-          onClose={() => { setShowQrIntake(false); setQrIntakeError(""); }}
-          onScan={applyScannedPayload}
-          errorMessage={qrIntakeError}
-        />
-        </motion.div>
-      </AppShell>
+      <SendInputStep
+        statusBar={sendHeader}
+        draftRestored={draftRestored}
+        onDismissDraft={dismissDraft}
+        amountStr={amountStr}
+        amountError={amountError}
+        fiatEquiv={fiatEquiv}
+        amountUnit={amountUnit}
+        fiatInput={fiatInput}
+        currencyLabel={quote.currency}
+        canToggleAmountUnit={canToggleAmountUnit}
+        onAmountChange={handleAmountChange}
+        onFiatInputChange={handleFiatInputChange}
+        onToggleAmountUnit={toggleAmountUnit}
+        onPercent={handlePercent}
+        balance={balance}
+        destination={destination}
+        destError={destError}
+        destRef={destRef}
+        matchedContactName={matchedContact?.name ?? null}
+        canOpenPicker={canOpenPicker}
+        onChangeDestination={(value) => { setDestination(value); setDestError(""); }}
+        onPickerSelect={(value) => { setDestination(value); setDestError(""); setShowPicker(false); }}
+        onReview={goReview}
+        canReview={!!account}
+        contacts={contacts}
+        pickerAccounts={walletAccountTargets}
+        showPicker={showPicker}
+        onOpenPicker={() => setShowPicker(true)}
+        onClosePicker={() => setShowPicker(false)}
+      />
     );
   }
-
-  // ── Review step ──────────────────────────────────────────────────────────
 
   if (step === "review") {
-    const rowGroupStyle: React.CSSProperties = {
-      borderTop: "1px solid var(--color-border-subtle)",
-      borderBottom: "1px solid var(--color-border-subtle)",
-    };
-    const divider: React.CSSProperties = { height: 1, background: "var(--color-border-subtle)" };
-    const noticeStyle: React.CSSProperties = {
-      borderTop: "1px solid var(--color-border-subtle)",
-      borderBottom: "1px solid var(--color-border-subtle)",
-      padding: "var(--space-4) 0",
-      display: "flex",
-      flexDirection: "column",
-      gap: "var(--space-3)",
-    };
-    const targetTick = tickInfo ? String(estimateTargetTick(tickInfo.tick ?? 0, settings.tickOffset)) : "Unavailable";
-    const reviewAmount = BigInt(amountStr);
-    const balanceAfter = balance === null ? null : balance - reviewAmount;
-
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-4)" }}>
-
-        {/* Amount */}
-        <header style={{ paddingTop: "var(--space-3)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ ...labelStyle, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Review transfer</span>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {formatQu(amountStr)}
-          </div>
-          {price && amountStr && (
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", marginTop: "var(--space-1)" }}>
-              {fiatEquiv && fiatEquiv !== "—" ? fiatEquiv : null}
-            </div>
-          )}
-        </header>
-
-        {/* Parties */}
-        <section aria-label="Transfer parties" style={rowGroupStyle}>
-          <DetailRow
-            icon={<UserCircleIcon size={16} />}
-            label="To"
-            value={matchedContact ? matchedContact.name : truncateId(destUpper)}
-            mono={!matchedContact}
-            valueColor={matchedContact ? "var(--color-accent)" : undefined}
-          />
-          <div style={divider} />
-          <DetailRow
-            icon={<Wallet01Icon size={16} />}
-            label="From"
-            value={`${accountName} · ${truncateId(identity)}`}
-            mono={false}
-          />
-        </section>
-
-        {/* Details */}
-        <section aria-label="Transaction facts" style={rowGroupStyle}>
-          <DetailRow
-            icon={<WalletAdd01Icon size={16} />}
-            label="Balance after"
-            value={balanceAfter === null ? "Unavailable" : `${formatQu(balanceAfter)} QU`}
-            mono={false}
-            valueColor={balanceAfter === null ? undefined : "var(--color-text-primary)"}
-          />
-          <div style={divider} />
-          <DetailRow
-            icon={<Clock01Icon size={16} />}
-            label="Target tick"
-            value={targetTick}
-          />
-          <div style={divider} />
-          <DetailRow
-            icon={<FlashIcon size={16} />}
-            label="Fee"
-            value="None"
-            mono={false}
-          />
-        </section>
-
-        <aside
-          aria-label="Balance impact"
-          style={{
-            background: "var(--color-bg-surface-2)",
-            border: "1px solid var(--color-border-default)",
-            borderRadius: "var(--radius-control)",
-            padding: "var(--space-3) var(--space-4)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-1)",
-          }}
-        >
-          <span style={{ ...labelStyle, color: "var(--color-text-secondary)" }}>You will spend</span>
-          <strong style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-lg)", color: "var(--color-text-display)" }}>
-            {formatQu(reviewAmount)} QU
-          </strong>
-          {balanceAfter !== null ? (
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-              Remaining balance: {formatQu(balanceAfter)} QU
-            </span>
-          ) : null}
-        </aside>
-
-        {/* Pending warning */}
-        {hasPendingTx && (
-          <aside role="status" style={noticeStyle}>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", color: "var(--color-status-warning)" }}>
-              <Clock01Icon size={16} style={{ flexShrink: 0 }} />
-              <span style={{ ...labelStyle, color: "var(--color-status-warning)" }}>Pending transfer detected</span>
-            </div>
-            <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>Wait for confirmation before signing another transfer from this account.</p>
-          </aside>
-        )}
-
-        {/* High value confirmation */}
-        {needsHighValueConfirmation && !highValueVerified && (
-          <section aria-labelledby="high-value-confirmation" style={noticeStyle}>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", color: "var(--color-status-warning)" }}>
-              <ShieldAlertIcon size={16} style={{ flexShrink: 0 }} />
-              <span id="high-value-confirmation" style={{ ...labelStyle, color: "var(--color-status-warning)" }}>High-value confirmation required</span>
-            </div>
-            <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>Enter your wallet password to explicitly approve this amount.</p>
-            <Input type="password" label="Wallet01Icon password" value={highValuePassword}
-              onChange={(e) => { setHighValuePassword(e.target.value); setHighValuePasswordError(""); }}
-              onKeyDown={(e) => e.key === "Enter" && !highValueVerifying && verifyHighValue()}
-              error={highValuePasswordError} placeholder="••••••••••" autoComplete="current-password" />
-            <Button variant="secondary" onClick={verifyHighValue} loading={highValueVerifying} disabled={!highValuePassword}>Confirm high-value transfer</Button>
-          </section>
-        )}
-        {needsHighValueConfirmation && highValueVerified && (
-          <div role="status" style={{ ...noticeStyle, flexDirection: "row", alignItems: "center", color: "var(--color-accent)" }}>
-            <ShieldCheckIcon size={16} style={{ flexShrink: 0 }} />
-            <span style={{ ...labelStyle, color: "var(--color-accent)" }}>High-value transfer confirmed</span>
-          </div>
-        )}
-
-        {/* Memo */}
-        <label style={{
-          borderTop: "1px solid var(--color-border-subtle)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-          padding: "var(--space-3) 0",
-          display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
-        }}>
-          <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
-          <span style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>Transfer note</span>
-          <textarea
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            placeholder="Add a note (optional)"
-            rows={2}
-            style={{
-              flex: 1, background: "none", border: "none", outline: "none",
-              color: "var(--color-text-display)", fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-body)", lineHeight: 1.5, padding: 0,
-              resize: "none", boxSizing: "border-box", minWidth: 0,
-            }}
-          />
-        </label>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-          <Button onClick={send} loading={sending} disabled={!wallet || !tickInfo || hasPendingTx || (needsHighValueConfirmation && !highValueVerified)}>Sign and send</Button>
-          <motion.button {...gesture.pressSubtle} type="button" onClick={() => setStep("input")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
-            Edit transfer
-          </motion.button>
-        </div>
-        </motion.div>
-      </AppShell>
+      <SendReviewStep
+        amountStr={amountStr}
+        matchedContactName={matchedContact?.name ?? null}
+        destUpper={destUpper}
+        accountName={accountName}
+        identity={identity}
+        balance={balance}
+        hasPendingTx={hasPendingTx}
+        needsHighValueConfirmation={needsHighValueConfirmation}
+        highValueVerified={highValueVerified}
+        highValuePassword={highValuePassword}
+        highValuePasswordError={highValuePasswordError}
+        highValueVerifying={highValueVerifying}
+        onHighValuePasswordChange={(value) => { setHighValuePassword(value); setHighValuePasswordError(""); }}
+        onVerifyHighValue={verifyHighValue}
+        memo={memo}
+        onMemoChange={setMemo}
+        sending={sending}
+        refreshingBalance={balanceFetching}
+        onRefreshBalance={() => void refetchBalance()}
+        canSign={!!account && !!tickInfo}
+        onSend={send}
+        onBack={() => setStep("input")}
+      />
     );
   }
-
-  // ── Sending ──────────────────────────────────────────────────────────────
-
-  if (step === "sending") {
-    return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-        <motion.div {...stepMotion} aria-live="polite" aria-busy="true" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-5)" }}>
-        <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-          <span aria-hidden="true" style={{ width: 20, height: 20, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />
-          <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcasting transfer</div>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              {formatQu(amountStr)} to {matchedContact?.name ?? truncateId(destUpper)}
-            </div>
-          </div>
-        </div>
-        </motion.div>
-      </AppShell>
-    );
-  }
-
-  // ── Done ─────────────────────────────────────────────────────────────────
-
-  if (step === "done") {
-    const receiptStyle: React.CSSProperties = {
-      borderTop: "1px solid var(--color-border-subtle)",
-      borderBottom: "1px solid var(--color-border-subtle)",
-    };
-    const divider: React.CSSProperties = { height: 1, background: "var(--color-border-subtle)" };
-
-    const statusColor = watchResult === "confirmed" ? "var(--color-accent)" : watchResult === "failed" ? "var(--color-status-error)" : "var(--color-text-secondary)";
-    const statusLabel = watchResult === "confirmed" ? "Confirmed" : watchResult === "failed" ? "Failed" : "Watching…";
-
-    return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: "var(--space-3)" }}>
-
-        {/* Amount */}
-        <header className="flash-success" style={{ paddingTop: "var(--space-4)", paddingBottom: "var(--space-1)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span style={{ ...labelStyle, color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}><CheckmarkCircle01Icon size={16} /> Transaction sent</span>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-display)", color: "var(--color-text-display)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {formatQu(amountStr)}
-          </div>
-        </header>
-
-        {/* Details */}
-        <section aria-label="Broadcast receipt" style={receiptStyle}>
-          <DetailRow
-            icon={<UserCircleIcon size={16} />}
-            label="To"
-            value={matchedContact ? matchedContact.name : truncateId(destUpper)}
-            mono={!matchedContact}
-            valueColor={matchedContact ? "var(--color-accent)" : undefined}
-          />
-          <div style={divider} />
-          <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(txHash)} />
-          <div style={divider} />
-          <DetailRow icon={<Clock01Icon size={16} />} label="Tick" value={String(savedTargetTick)} valueColor="var(--color-text-secondary)" />
-          <div style={divider} />
-          <DetailRow
-            icon={watchResult === "confirmed" ? <ShieldCheckIcon size={16} style={{ color: "var(--color-accent)" }} /> : watchResult === "failed" ? <ShieldAlertIcon size={16} style={{ color: "var(--color-status-error)" }} /> : <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid var(--color-border-subtle)", borderTopColor: "var(--color-accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
-            label="Status"
-            value={statusLabel}
-            mono={false}
-            valueColor={statusColor}
-          />
-        </section>
-
-        {/* Save contact */}
-        {!destIsKnownContact && !saved && (
-          <form onSubmit={(e) => { e.preventDefault(); doSaveContact(); }} style={{
-            borderTop: "1px solid var(--color-border-subtle)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-            padding: "var(--space-3) 0",
-            display: "flex", alignItems: "center", gap: "var(--space-3)",
-          }}>
-            <Bookmark01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)" }} />
-            <input aria-label="Contact name" autoComplete="off" value={saveName}
-              onChange={(e) => setSaveName(e.target.value)}
-              placeholder="Save as contact"
-              style={{
-                flex: 1, background: "none", border: "none", outline: "none",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)",
-                color: "var(--color-text-display)", padding: 0, minWidth: 0,
-              }}
-            />
-            <button type="submit" disabled={!saveName.trim()}
-              style={{
-                background: "none", border: "none", cursor: saveName.trim() ? "pointer" : "default",
-                fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500,
-                color: saveName.trim() ? "var(--color-accent)" : "var(--color-text-disabled)",
-                padding: 0, flexShrink: 0,
-              }}>
-              Save
-            </button>
-          </form>
-        )}
-        {saved && (
-          <div style={{
-            borderTop: "1px solid var(--color-border-subtle)",
-            borderBottom: "1px solid var(--color-border-subtle)",
-            padding: "var(--space-3) 0",
-            display: "flex", alignItems: "center", gap: "var(--space-3)",
-          }}>
-            <CheckmarkCircle01Icon size={16} style={{ flexShrink: 0, color: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: "var(--color-accent)" }}>Contact saved</span>
-          </div>
-        )}
-
-        {/* Notes */}
-        <TxMemoField hash={txHash} />
-
-        <div style={{ flex: 1 }} />
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", paddingBottom: "var(--space-6)" }}>
-          <Button onClick={() => navigate("/dashboard")}>Done</Button>
-          <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/history")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
-            View history
-          </motion.button>
-        </div>
-        </motion.div>
-      </AppShell>
-    );
-  }
-
-  // ── Error ────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%" }}>
-      <motion.div {...stepMotion} role="alert" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, justifyContent: "center", gap: "var(--space-5)" }}>
-      <div style={{ borderTop: "1px solid var(--color-border-subtle)", borderBottom: "1px solid var(--color-border-subtle)", padding: "var(--space-5) 0", display: "flex", alignItems: "flex-start", gap: "var(--space-4)" }}>
-        <ShieldAlertIcon size={20} style={{ color: "var(--color-status-error)", flexShrink: 0, marginTop: 2 }} />
-        <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-title)", fontWeight: 600, color: "var(--color-text-display)" }}>Broadcast failed</div>
-          <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
-            {txError || "The transaction could not be broadcast."}
-          </p>
-          <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)", lineHeight: 1.5 }}>
-            Your draft was kept so you can review and try again.
-          </p>
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", paddingTop: "var(--space-2)" }}>
-        <Button onClick={() => setStep("review")}>Review and try again</Button>
-        <motion.button {...gesture.pressSubtle} type="button" onClick={() => navigate("/dashboard")}
-          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-disabled)", padding: "var(--space-2) 0", alignSelf: "center" }}>
-          Cancel
-        </motion.button>
-      </div>
-      </motion.div>
-    </AppShell>
+    <SendErrorStep txError={txError} onRetry={() => setStep("review")} />
   );
 }

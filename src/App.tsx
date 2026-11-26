@@ -1,20 +1,17 @@
 import { useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
-import { useShallow } from "zustand/react/shallow";
 import { router } from "@/router";
 import { useDeepLink } from "@/hooks/use-deep-link";
-import { usePayLink } from "@/hooks/use-pay-link";
 import { usePersistedStore } from "@/store/persisted";
-import { FONT_PAIRS, THEME_VARS, getThemeVars } from "@/lib/appearance";
+import { THEME_VARS, getThemeVars } from "@/lib/appearance";
 import { useNotificationTriggers } from "@/hooks/use-notification-triggers";
 import { useNotificationReconcile } from "@/hooks/use-notification-reconcile";
 import { useUpdater } from "@/hooks/use-updater";
 import { useLatestStats } from "@/hooks/use-latest-stats";
-import { configureRpc } from "@/lib/rpc";
+import { configureApiClient, getApiBaseUrl } from "@/lib/api/client";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { invoke } from "@tauri-apps/api/core";
-import { TitleBar } from "@/components/title-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const queryClient = new QueryClient({
@@ -27,20 +24,7 @@ const queryClient = new QueryClient({
 });
 
 function useAppearance() {
-  const { fontPair, themeMode } = usePersistedStore(
-    useShallow((s) => ({
-      fontPair: s.settings.fontPair,
-      themeMode: s.settings.themeMode,
-    }))
-  );
-
-  useEffect(() => {
-    const pair = FONT_PAIRS.find((p) => p.id === fontPair) ?? FONT_PAIRS[0];
-    const root = document.documentElement;
-    root.style.setProperty("--font-sans", pair.sans);
-    root.style.setProperty("--font-mono", pair.mono);
-    root.style.setProperty("--font-display", pair.sans);
-  }, [fontPair]);
+  const themeMode = usePersistedStore((s) => s.settings.themeMode);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -59,17 +43,17 @@ function useAppearance() {
 
 }
 
-function useRpcSync() {
-  const { liveApiUrl, queryApiUrl } = usePersistedStore(
-    useShallow((s) => ({
-      liveApiUrl: s.settings.network.liveApiUrl,
-      queryApiUrl: s.settings.network.queryApiUrl,
-    }))
-  );
+function useNetworkSync() {
+  const apiUrl = usePersistedStore((s) => s.settings.network.apiUrl);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    configureRpc(liveApiUrl, queryApiUrl);
-  }, [liveApiUrl, queryApiUrl]);
+    const previous = getApiBaseUrl();
+    const configured = configureApiClient(apiUrl);
+    // Generated query keys are path-based; clear the cache rather than serving
+    // data cached from a different network under the same keys.
+    if (configured !== previous) queryClient.clear();
+  }, [apiUrl, queryClient]);
 }
 
 function useHideToTray() {
@@ -130,18 +114,18 @@ function useRuntimeDiagnostics() {
 function usePriceSnapshotRecorder() {
   const { data: latestStats } = useLatestStats();
   const addPriceSnapshot = usePersistedStore((s) => s.addPriceSnapshot);
+  const price = latestStats?.price;
 
   useEffect(() => {
-    if (!latestStats || !Number.isFinite(latestStats.price)) return;
-    addPriceSnapshot({ timestamp: Date.now(), priceUsd: latestStats.price });
-  }, [addPriceSnapshot, latestStats?.price]);
+    if (price === undefined || !Number.isFinite(price)) return;
+    addPriceSnapshot({ timestamp: Date.now(), priceUsd: price });
+  }, [addPriceSnapshot, price]);
 }
 
 function AppHooks() {
   useAppearance();
-  useRpcSync();
+  useNetworkSync();
   useDeepLink();
-  usePayLink();
   useNotificationTriggers();
   useNotificationReconcile();
   useHideToTray();
@@ -156,7 +140,6 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AppHooks />
-        <TitleBar />
         <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <RouterProvider router={router} />
         </div>

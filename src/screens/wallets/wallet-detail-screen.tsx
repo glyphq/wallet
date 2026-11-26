@@ -1,0 +1,177 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import { AppShell } from "@/layouts/app-shell";
+import { Button } from "@/components/button";
+import { usePersistedStore, type AccountMeta } from "@/store/persisted";
+import { useWalletBalances } from "@/hooks/use-wallet-balances";
+import { useSessionStore } from "@/store/session";
+import { File02Icon, InformationCircleIcon, Key01Icon } from "@/lib/icons";
+import {
+  AddAccountScreen,
+  RemoveAccountScreen,
+  RenameAccountScreen,
+} from "./wallet-account-screens";
+import { RotatePasswordScreen } from "./wallet-admin-screens";
+import { WalletAccountList } from "./wallet-account-list";
+import { ManageAccountScreen } from "./wallet-manage-screen";
+import { SeedRevealScreen } from "./wallet-seed-screen";
+import { useSeedReveal } from "./use-seed-reveal";
+import { useWalletAccountActions } from "./use-wallet-account-actions";
+import { useWalletAddAccount } from "./use-wallet-add-account";
+import { useWalletAdmin } from "./use-wallet-admin";
+
+export default function WalletDetailScreen() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  const wallets = usePersistedStore((s) => s.wallets);
+  const settings = usePersistedStore((s) => s.settings);
+  const setActiveAccountIndex = usePersistedStore((s) => s.setActiveAccountIndex);
+  const sessionWallets = useSessionStore((s) => s.accounts);
+
+  const wallet = wallets.find((v) => v.id === id);
+  const isActive = wallet?.id === settings.activeWalletId;
+
+  const [selectedAccount, setSelectedAccount] = useState<AccountMeta | null>(null);
+  const { data: walletBalances } = useWalletBalances();
+
+  const addAccount = useWalletAddAccount(wallet, isActive);
+  const actions = useWalletAccountActions(wallet, isActive);
+  const reveal = useSeedReveal(wallet);
+  const admin = useWalletAdmin(wallet, isActive);
+
+  if (!wallet) return null;
+
+  function openAccountMenu(account: AccountMeta) {
+    setSelectedAccount(account);
+  }
+
+  function closeAccountMenu() {
+    setSelectedAccount(null);
+  }
+
+  function makeActive(account: AccountMeta) {
+    if (!isActive) return;
+    setActiveAccountIndex(account.index);
+    closeAccountMenu();
+  }
+
+  return (
+    <AppShell contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <WalletAccountList
+        accounts={wallet.accounts}
+        isActive={isActive}
+        activeAccountIndex={settings.activeAccountIndex}
+        sessionWallets={sessionWallets}
+        balances={walletBalances}
+        hideBalances={settings.hideBalances}
+        onAdd={addAccount.openAdd}
+        onManage={openAccountMenu}
+      />
+
+      <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--color-border-subtle)", display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/wallets/${wallet.id}/portfolio`)}>
+          <InformationCircleIcon size={14} strokeWidth={1.5} /> Portfolio
+        </Button>
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={() => navigate(`/accounts/export?wallet=${wallet.id}`)}>
+          <File02Icon size={14} strokeWidth={1.5} /> Export wallet
+        </Button>
+        <Button variant="ghost" shape="sharp" size="sm" style={{ width: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={admin.openRotate}>
+          <Key01Icon size={14} strokeWidth={1.5} /> Change password
+        </Button>
+      </div>
+
+      <AddAccountScreen
+        open={addAccount.addingAccount}
+        onClose={() => addAccount.setAddingAccount(false)}
+        accounts={wallet.accounts}
+        mode={addAccount.addMode}
+        setMode={addAccount.setAddMode}
+        name={addAccount.addName}
+        setName={addAccount.setAddName}
+        seed={addAccount.addSeed}
+        setSeed={addAccount.setAddSeed}
+        seedError={addAccount.addSeedError}
+        setSeedError={addAccount.setAddSeedError}
+        password={addAccount.addPassword}
+        setPassword={addAccount.setAddPassword}
+        error={addAccount.addError}
+        setError={addAccount.setAddError}
+        loading={addAccount.addLoading}
+        onAdd={addAccount.doAdd}
+      />
+
+      <RenameAccountScreen
+        open={!!actions.renamingAccount}
+        onClose={() => actions.setRenamingAccount(null)}
+        value={actions.renameValue}
+        onChange={actions.setRenameValue}
+        onSave={actions.doRename}
+      />
+
+      <RemoveAccountScreen
+        account={actions.removingAccount}
+        onClose={() => actions.setRemovingAccount(null)}
+        password={actions.removePassword}
+        setPassword={actions.setRemovePassword}
+        error={actions.removeError}
+        setError={actions.setRemoveError}
+        loading={actions.removeLoading}
+        onRemove={actions.doRemove}
+      />
+
+      <SeedRevealScreen
+        account={reveal.revealingAccount}
+        onClose={() => reveal.setRevealingAccount(null)}
+        verifyingBackup={reveal.verifyingBackup}
+        biometricRevealRequired={reveal.biometricRevealRequired}
+        revealedSeed={reveal.revealedSeed}
+        seedVisible={reveal.seedVisible}
+        onToggleSeedVisible={() => reveal.setSeedVisible((value) => !value)}
+        seedCopied={reveal.seedCopied}
+        seedSecsLeft={reveal.seedSecsLeft}
+        onCopy={reveal.copyRevealedSeed}
+        password={reveal.revealPassword}
+        onPasswordChange={(value) => { reveal.setRevealPassword(value); reveal.setRevealError(""); }}
+        error={reveal.revealError}
+        loading={reveal.revealLoading}
+        onReveal={reveal.doRevealSeed}
+        backupCheck={reveal.backupCheck}
+        onBackupCheckChange={(value) => { reveal.setBackupCheck(value); reveal.setBackupCheckStatus("idle"); }}
+        backupCheckStatus={reveal.backupCheckStatus}
+        onVerify={reveal.verifyBackupSeed}
+      />
+
+      <RotatePasswordScreen
+        open={admin.showRotate}
+        onClose={() => admin.setShowRotate(false)}
+        done={admin.rotateDone}
+        oldPassword={admin.rotateOldPassword}
+        setOldPassword={admin.setRotateOldPassword}
+        newPassword={admin.rotateNewPassword}
+        setNewPassword={admin.setRotateNewPassword}
+        confirmPassword={admin.rotateConfirm}
+        setConfirmPassword={admin.setRotateConfirm}
+        error={admin.rotateError}
+        setError={admin.setRotateError}
+        loading={admin.rotateLoading}
+        onSubmit={admin.doRotatePassword}
+      />
+
+      <ManageAccountScreen
+        account={selectedAccount}
+        onClose={closeAccountMenu}
+        isActive={isActive}
+        activeAccountIndex={settings.activeAccountIndex}
+        sessionWallets={sessionWallets}
+        balances={walletBalances}
+        hideBalances={settings.hideBalances}
+        onMakeActive={makeActive}
+        onRename={(account) => { actions.openRename(account); closeAccountMenu(); }}
+        onVerifyBackup={() => { reveal.openBackupVerification(); closeAccountMenu(); }}
+        onRevealSeed={(account) => { reveal.openReveal(account); closeAccountMenu(); }}
+        onRemove={(account) => { actions.openRemove(account); closeAccountMenu(); }}
+      />
+    </AppShell>
+  );
+}

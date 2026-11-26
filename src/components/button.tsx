@@ -14,14 +14,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT: Record<Variant, CSSProperties> = {
   primary: {
-    background: "var(--color-text-primary)",
-    color: "var(--color-text-inverse)",
-    borderColor: "var(--color-text-primary)",
+    background: "var(--color-accent)",
+    color: "var(--color-accent-contrast)",
+    borderColor: "transparent",
   },
   secondary: {
     background: "var(--color-bg-surface)",
     color: "var(--color-text-primary)",
-    borderColor: "var(--color-border-default)",
+    borderColor: "transparent",
   },
   ghost: {
     background: "transparent",
@@ -31,14 +31,14 @@ const VARIANT: Record<Variant, CSSProperties> = {
   danger: {
     background: "transparent",
     color: "var(--color-status-error)",
-    borderColor: "var(--color-status-error)",
+    borderColor: "transparent",
   },
 };
 
 const SIZE: Record<Size, CSSProperties> = {
-  lg: { minHeight: "var(--height-button-lg)", padding: "0 var(--space-5)", width: "100%" },
-  md: { minHeight: "var(--height-button-md)", padding: "0 var(--space-4)" },
-  sm: { minHeight: "var(--height-button-sm)", padding: "0 var(--space-3)", fontSize: "var(--text-label)" },
+  lg: { minHeight: 52, padding: "0 var(--space-5)", width: "100%", fontSize: 15 },
+  md: { minHeight: 48, padding: "0 var(--space-5)", fontSize: 15 },
+  sm: { minHeight: 36, padding: "0 var(--space-4)", fontSize: 13 },
 };
 
 const SHAPE: Record<Shape, CSSProperties> = {
@@ -49,7 +49,7 @@ const SHAPE: Record<Shape, CSSProperties> = {
 export function Button({
   variant = "primary",
   size = "lg",
-  shape = "pill",
+  shape = "sharp",
   loading = false,
   children,
   style,
@@ -64,7 +64,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       aria-live={loading ? "polite" : undefined}
-      className={`glyph-btn ${className}`}
+      className={`glyph-btn corner-frame ${className}`}
       data-variant={variant}
       data-size={size}
       data-shape={shape}
@@ -74,10 +74,10 @@ export function Button({
         justifyContent: "center",
         gap: "var(--space-2)",
         position: "relative",
-        fontFamily: "var(--font-sans)",
+        fontFamily: "var(--font-mono)",
         fontWeight: 500,
-        letterSpacing: "0.005em",
-        fontSize: "var(--text-body)",
+        letterSpacing: "0",
+        fontSize: 15,
         border: "1px solid",
         cursor: disabled || loading ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,

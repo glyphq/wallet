@@ -10,27 +10,30 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "withGlobalTauri": false,
     "windows": [
       {
         "title": "Glyph Wallet",
         "width": 380,
         "height": 680,
-        "minWidth": 360,
-        "minHeight": 640,
-        "maxWidth": 420,
-        "maxHeight": 760,
-        "resizable": true,
+        "minWidth": 380,
+        "minHeight": 680,
+        "maxWidth": 380,
+        "maxHeight": 680,
+        "resizable": false,
+        "minimizable": true,
         "maximizable": false,
         "fullscreen": false,
         "center": true,
         "decorations": false,
+        "dragDropEnabled": false,
         "devtools": false
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost https://wallet.glyphq.org https://rpc.qubic.org https://relay.glyphq.org https://api.coinbase.com https://github.com;",
-      "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420 https://wallet.glyphq.org https://rpc.qubic.org https://relay.glyphq.org https://api.coinbase.com https://github.com;"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost https://wallet.glyphq.org https://api.glyphq.org https://relay.glyphq.org https://api.coinbase.com https://github.com;",
+      "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420 http://localhost:8080 http://127.0.0.1:8080 https://wallet.glyphq.org https://api.glyphq.org https://relay.glyphq.org https://api.coinbase.com https://github.com;"
     }
   },
   "bundle": {

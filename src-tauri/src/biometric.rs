@@ -1,10 +1,10 @@
 use crate::session_crypto::NativeSessionState;
-use crate::vault_crypto::{SessionWalletMetadata, VaultData};
+use crate::wallet_crypto::{SessionWalletMetadata, WalletData};
 use tauri::{command, State};
 
-fn validate_vault_id(vault_id: &str) -> Result<(), String> {
-    let is_uuid = vault_id.len() == 36
-        && vault_id.chars().enumerate().all(|(idx, ch)| match idx {
+fn validate_wallet_id(wallet_id: &str) -> Result<(), String> {
+    let is_uuid = wallet_id.len() == 36
+        && wallet_id.chars().enumerate().all(|(idx, ch)| match idx {
             8 | 13 | 18 | 23 => ch == '-',
             _ => ch.is_ascii_hexdigit(),
         });
@@ -12,7 +12,7 @@ fn validate_vault_id(vault_id: &str) -> Result<(), String> {
     if is_uuid {
         Ok(())
     } else {
-        Err("invalid vault id".into())
+        Err("invalid wallet id".into())
     }
 }
 
@@ -36,12 +36,13 @@ mod cred_store {
         s.encode_utf16().chain(std::iter::once(0)).collect()
     }
 
-    fn target(vault_id: &str) -> Vec<u16> {
-        to_wide(&format!("glyph-vault/{}", vault_id))
+    fn target(wallet_id: &str) -> Vec<u16> {
+        // Keep the historical target prefix so existing biometric enrollments still resolve.
+        to_wide(&format!("glyph-vault/{wallet_id}"))
     }
 
-    pub fn store(vault_id: &str, password: &str) -> Result<(), String> {
-        let target = target(vault_id);
+    pub fn store(wallet_id: &str, password: &str) -> Result<(), String> {
+        let target = target(wallet_id);
         let mut blob = password.as_bytes().to_vec();
 
         let cred = CREDENTIALW {
@@ -62,8 +63,8 @@ mod cred_store {
         unsafe { CredWriteW(&cred, 0).map_err(|e| e.to_string()) }
     }
 
-    pub fn load(vault_id: &str) -> Result<String, String> {
-        let target = target(vault_id);
+    pub fn load(wallet_id: &str) -> Result<String, String> {
+        let target = target(wallet_id);
         let mut pcred: *mut CREDENTIALW = std::ptr::null_mut();
 
         unsafe {
@@ -82,8 +83,8 @@ mod cred_store {
         }
     }
 
-    pub fn delete(vault_id: &str) -> Result<(), String> {
-        let target = target(vault_id);
+    pub fn delete(wallet_id: &str) -> Result<(), String> {
+        let target = target(wallet_id);
         unsafe {
             CredDeleteW(PCWSTR(target.as_ptr()), CRED_TYPE_GENERIC, 0).map_err(|e| e.to_string())
         }
@@ -95,8 +96,8 @@ mod cred_store {
 mod cred_store {
     use keyring::Entry;
 
-    fn entry(vault_id: &str) -> Result<Entry, String> {
-        Entry::new("glyph-bio", vault_id).map_err(|e| e.to_string())
+    fn entry(wallet_id: &str) -> Result<Entry, String> {
+        Entry::new("glyph-bio", wallet_id).map_err(|e| e.to_string())
     }
 
     /// Probes the underlying secret-service backend with a real round-trip.
@@ -114,20 +115,20 @@ mod cred_store {
         ok
     }
 
-    pub fn store(vault_id: &str, password: &str) -> Result<(), String> {
-        let e = entry(vault_id)?;
+    pub fn store(wallet_id: &str, password: &str) -> Result<(), String> {
+        let e = entry(wallet_id)?;
         e.set_password(password).map_err(|e| e.to_string())?;
         e.get_password()
             .map_err(|e| format!("stored but unreadable: {e}"))?;
         Ok(())
     }
 
-    pub fn load(vault_id: &str) -> Result<String, String> {
-        entry(vault_id)?.get_password().map_err(|e| e.to_string())
+    pub fn load(wallet_id: &str) -> Result<String, String> {
+        entry(wallet_id)?.get_password().map_err(|e| e.to_string())
     }
 
-    pub fn delete(vault_id: &str) -> Result<(), String> {
-        entry(vault_id)?
+    pub fn delete(wallet_id: &str) -> Result<(), String> {
+        entry(wallet_id)?
             .delete_credential()
             .map_err(|e| e.to_string())
     }
@@ -142,39 +143,39 @@ pub async fn check_biometric_available() -> bool {
 
 #[command]
 pub async fn enable_biometric(
-    vault_id: String,
-    vault_data: VaultData,
+    wallet_id: String,
+    wallet_data: WalletData,
     password: String,
 ) -> Result<(), String> {
-    let _ = (vault_id, vault_data, password);
+    let _ = (wallet_id, wallet_data, password);
     Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
 pub async fn biometric_unlock(
-    vault_id: String,
-    vault_data: VaultData,
+    wallet_id: String,
+    wallet_data: WalletData,
     session: State<'_, NativeSessionState>,
 ) -> Result<Vec<SessionWalletMetadata>, String> {
-    let _ = (vault_id, vault_data, session);
+    let _ = (wallet_id, wallet_data, session);
     Err("biometric unlock is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
 pub async fn reveal_seed_with_biometric(
-    vault_id: String,
-    vault_data: VaultData,
+    wallet_id: String,
+    wallet_data: WalletData,
     account_index: usize,
 ) -> Result<String, String> {
-    let _ = (vault_id, vault_data, account_index);
+    let _ = (wallet_id, wallet_data, account_index);
     Err("biometric seed reveal is disabled until credentials can be hardware-bound".to_string())
 }
 
 #[command]
-pub async fn disable_biometric(vault_id: String) -> Result<(), String> {
+pub async fn disable_biometric(wallet_id: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        validate_vault_id(&vault_id)?;
-        cred_store::delete(&vault_id)
+        validate_wallet_id(&wallet_id)?;
+        cred_store::delete(&wallet_id)
     })
     .await
     .map_err(|e| e.to_string())?

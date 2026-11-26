@@ -1,7 +1,11 @@
-import { notify, type NotificationDeliveryResult } from "@/lib/notifications";
+import { invoke } from "@tauri-apps/api/core";
 import { useSessionStore } from "@/store/session";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
+
+export type NotificationDeliveryResult =
+  | { ok: true; state: "shown" }
+  | { ok: false; state: "locked" | "error"; message: string };
 
 function makeEventId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -40,21 +44,38 @@ export async function publishNotificationEvent(
   if (options?.desktop === false) {
     return null;
   }
-  const { notificationsEnabled, notifyWhenLocked } = usePersistedStore.getState().settings;
+  const settings = usePersistedStore.getState().settings;
   const isLocked = useSessionStore.getState().isLocked;
-  if (!notificationsEnabled) {
+  if (!settings.notificationsEnabled) {
     return null;
   }
-  if (isLocked && !notifyWhenLocked) {
-    return { ok: false, state: "locked", message: "Desktop notifications are suppressed while the Vault is locked." };
+  if (isLocked && !settings.notifyWhenLocked) {
+    return { ok: false, state: "locked", message: "Notifications are suppressed while the wallet is locked." };
   }
-  const result = await notify(event.title, event.body);
-  if (!result.ok) {
+  try {
+    await invoke("show_notification_window", {
+      notification: {
+        id: event.id,
+        title: event.title,
+        body: event.body,
+        kind: event.kind,
+        identity: event.identity ?? null,
+        txHash: event.txHash ?? null,
+        durationSecs: settings.notificationDurationSecs,
+        maxVisible: settings.notificationMaxVisible,
+        theme: settings.themeMode,
+        position: settings.notificationPosition,
+      },
+      position: settings.notificationPosition,
+    });
+    return { ok: true, state: "shown" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     recordRuntimeIssue({
       source: "native",
-      title: "Notification delivery failed",
-      detail: result.message,
+      title: "Notification window failed",
+      detail: message,
     });
+    return { ok: false, state: "error", message };
   }
-  return result;
 }

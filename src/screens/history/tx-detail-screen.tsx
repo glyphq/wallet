@@ -1,97 +1,29 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { motion } from "motion/react";
-import { presets } from "@/lib/animations";
-import { UserCircleIcon, Wallet01Icon, Clock01Icon, FlashIcon, ArrowUpRight01Icon, Note01Icon, ShieldCheckIcon, ShieldAlertIcon, Copy01Icon, CheckmarkCircle01Icon } from "@/lib/icons";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
+import { EmptyCollectionState } from "@/components/empty-collection-state";
+import { ArrowUpRight01Icon, CheckIcon, Copy01Icon } from "@/lib/icons";
+import { explorerTransactionUrl, openExplorer } from "@/lib/explorer";
+import { copyToClipboard } from "@/lib/clipboard";
 import { usePersistedStore, type PendingTx } from "@/store/persisted";
-import { useSessionStore } from "@/store/session";
 import { useTickInfo } from "@/hooks/use-tick-info";
 import { type TxHistoryItem } from "@/hooks/use-tx-history";
-import { KNOWN_CONTRACT_ADDRESSES, CONTRACT_PROCEDURE_NAMES, CONTRACT_NAMES } from "@/lib/contracts";
 import { usePreferredCurrencyQuote } from "@/hooks/use-preferred-currency-quote";
-import { formatQu, formatPreferredCurrencyFromQu, truncateId } from "@/lib/format";
-import { findClosestPriceSnapshot } from "@/lib/history-analytics";
-import { getVaultAccountIdentity } from "@/lib/accounts";
-import { copyToClipboard } from "@/lib/clipboard";
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500,
-  color: "var(--color-text-secondary)",
-};
-
-function DetailRow({ icon, label, value, valueColor, mono: useMono = true, copyValue }: {
-  icon: React.ReactNode; label: string; value: string; valueColor?: string; mono?: boolean; copyValue?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-  const [hovered, setHovered] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    if (!copyValue) return;
-    await copyToClipboard(copyValue);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }, [copyValue]);
-
-  const valueElement = (
-    <span
-      style={{
-        fontFamily: useMono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: "var(--text-body)", fontWeight: useMono ? 400 : 500,
-        color: valueColor ?? "var(--color-text-display)",
-        textAlign: "right", maxWidth: "55%", wordBreak: "break-all",
-        textDecoration: copyValue && hovered ? "underline" : "none",
-        textUnderlineOffset: 3,
-        cursor: copyValue ? "pointer" : "default",
-        display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={copyValue ? handleCopy : undefined}
-    >
-      {value}
-      {copyValue && !copied && <Copy01Icon size={12} style={{ flexShrink: 0, opacity: 0.4 }} />}
-      {copyValue && copied && <CheckmarkCircle01Icon size={12} style={{ flexShrink: 0, color: "var(--color-status-success)" }} />}
-    </span>
-  );
-
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) 0" }}>
-      <span style={{ flexShrink: 0, color: "var(--color-text-disabled)" }}>{icon}</span>
-      <span style={{ ...labelStyle, flex: 1 }}>{label}</span>
-      {valueElement}
-    </div>
-  );
-}
-
-const CARD_STYLE: React.CSSProperties = {
-  background: "var(--color-bg-surface)",
-  borderRadius: "var(--radius-card)",
-  padding: "var(--space-1) var(--space-4)",
-};
-
-const DIVIDER: React.CSSProperties = {
-  height: 1, background: "var(--color-border-subtle)", margin: "0 calc(var(--space-4) * -1)",
-};
-
-function resolveProcedureName(contractName: string | undefined, fromContract: string | undefined, inputType: number | null | undefined): string | undefined {
-  const scName = contractName ?? fromContract;
-  if (!scName) return undefined;
-  const contractIndex = Object.entries(CONTRACT_NAMES).find(([, name]) => name === scName)?.[0];
-  if (contractIndex == null || inputType == null) return undefined;
-  return CONTRACT_PROCEDURE_NAMES[`${contractIndex}:${inputType}`];
-}
+import { formatPreferredCurrencyFromQu } from "@/lib/format";
+import { findClosestPriceSnapshot } from "@/lib/price-snapshots";
+import { isPendingTx } from "./tx-detail-helpers";
+import { PendingTxDetail } from "./tx-detail-pending";
+import { ConfirmedTxDetail } from "./tx-detail-confirmed";
 
 export default function TxDetailScreen() {
   const { hash } = useParams<{ hash: string }>();
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
   const settings = usePersistedStore((s) => s.settings);
-  const vaults = usePersistedStore((s) => s.vaults);
-  const wallets = useSessionStore((s) => s.wallets);
   const pendingTxs = usePersistedStore((s) => s.pendingTxs);
   const txMemos = usePersistedStore((s) => s.txMemos);
   const setTxMemo = usePersistedStore((s) => s.setTxMemo);
@@ -100,209 +32,93 @@ export default function TxDetailScreen() {
   const hideBalances = settings.hideBalances;
   const quote = usePreferredCurrencyQuote();
 
-  const vault = vaults.find((v) => v.id === settings.activeVaultId) ?? vaults[0] ?? null;
-  const identity = getVaultAccountIdentity(vault, settings.activeAccountIndex, wallets);
-
   const { data: tickInfo } = useTickInfo();
   const currentTick = tickInfo?.tick ?? 0;
 
   // Look up the tx: check pending first, then history cache
   const pending = hash ? pendingTxs.find((p) => p.hash === hash) : undefined;
   const historyTx = hash && !pending
-    ? (queryClient.getQueriesData<InfiniteData<TxHistoryItem[]>>({ queryKey: ["tx-history"] })
-        .flatMap(([, data]) => data?.pages?.flat() ?? [])
+    ? (queryClient.getQueriesData<InfiniteData<{ items: TxHistoryItem[]; nextCursor: string | null }>>({ queryKey: ["tx-history"] })
+        .flatMap(([, data]) => data?.pages?.flatMap((page) => page.items) ?? [])
         .find((tx) => tx.hash === hash))
     : undefined;
 
   const detail: TxHistoryItem | PendingTx | undefined = pending ?? historyTx;
 
-  const [memo, setMemo] = useState(hash ? (txMemos[hash] ?? "") : "");
-  const [memoEditing, setMemoEditing] = useState(false);
-
-  function saveMemo() {
-    if (!hash) return;
-    if (memo.trim()) setTxMemo(hash, memo.trim());
-    else deleteTxMemo(hash);
-    setMemoEditing(false);
-  }
-
-  const isPendingTx = (d: TxHistoryItem | PendingTx): d is PendingTx => "broadcastAt" in d;
-
   if (!detail || !hash) {
     return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-12) 0", gap: "var(--space-3)" }}>
-          <ShieldAlertIcon size={32} style={{ color: "var(--color-text-disabled)" }} />
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)" }}>
-            Transaction not found
-          </span>
-          <Button variant="secondary" shape="sharp" size="sm" onClick={() => navigate("/history")}>Back to history</Button>
+      <AppShell fullBleed contentStyle={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-3)", padding: "var(--space-4)" }}>
+          <EmptyCollectionState
+            icon="search"
+            title="Transaction not found"
+            description="This transaction is not in the loaded history for the active account."
+          />
+          <Button variant="secondary" size="sm" style={{ width: "auto" }} onClick={() => navigate("/history")}>
+            Back to history
+          </Button>
         </div>
       </AppShell>
     );
   }
 
-  const contractName = detail.destination ? KNOWN_CONTRACT_ADDRESSES[detail.destination] : undefined;
-  const fromContract = detail.source ? KNOWN_CONTRACT_ADDRESSES[detail.source] : undefined;
-  const isSc = !!(contractName || fromContract);
   const snapshot = findClosestPriceSnapshot(isPendingTx(detail) ? detail.broadcastAt : detail.timestamp, priceSnapshots);
   const fiatValue = snapshot ? formatPreferredCurrencyFromQu(detail.amount ?? "0", { usdPrice: snapshot.priceUsd, ...quote }).text : "—";
 
-  if (isPendingTx(detail)) {
-    const expired = currentTick > 0 && currentTick > detail.targetTick;
-    const statusLabel = expired ? "Failed" : "Pending";
-    const statusColor = expired ? "var(--color-status-error)" : "var(--color-status-warning)";
-    const amountColor = expired ? "var(--color-text-disabled)" : "var(--color-accent)";
-    const displayTo = detail.contractName
-      ? detail.contractName
-      : truncateId(detail.destination ?? "—");
-
-    return (
-      <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-        <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          {/* Amount + Status */}
-          <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor }}>
-              {hideBalances ? "••••••" : `${formatQu(detail.amount ?? "0")} QU`}
-            </div>
-            {snapshot && !hideBalances && (
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-                {fiatValue}
-              </div>
-            )}
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
-              {statusLabel}
-            </div>
-          </div>
-
-          {/* Detail card */}
-          <div style={CARD_STYLE}>
-            <DetailRow icon={<UserCircleIcon size={16} />} label="From" value={detail.source ? truncateId(detail.source) : "—"} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
-            <div style={DIVIDER} />
-            <DetailRow icon={<Wallet01Icon size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
-            <div style={DIVIDER} />
-            <DetailRow icon={<Clock01Icon size={16} />} label="Target tick" value={String(detail.targetTick)} mono={false} />
-            <div style={DIVIDER} />
-            <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
-          </div>
-        </motion.div>
-      </AppShell>
-    );
-  }
-
-  // Confirmed tx
-  const isIn = detail.destination === identity;
-  const flew = detail.moneyFlew;
-  const procedureName = resolveProcedureName(contractName, fromContract, detail.inputType);
-
-  let statusLabel: string;
-  let statusColor: string;
-  let amountColor: string;
-
-  if (!flew) {
-    statusLabel = "Failed";
-    statusColor = "var(--color-status-error)";
-    amountColor = "var(--color-text-disabled)";
-  } else if (isSc) {
-    statusLabel = procedureName ?? "SC call";
-    statusColor = "var(--color-text-secondary)";
-    amountColor = "var(--color-text-display)";
-  } else if (isIn) {
-    statusLabel = "Received";
-    statusColor = "var(--color-accent)";
-    amountColor = "var(--color-accent)";
-  } else {
-    statusLabel = "Sent";
-    statusColor = "var(--color-text-secondary)";
-    amountColor = "var(--color-text-display)";
-  }
-
-  const displayTo = isSc
-    ? (contractName ?? fromContract ?? truncateId(detail.destination ?? "—"))
-    : truncateId(detail.destination ?? "—");
-
   return (
-    <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", height: "100%", overflow: "auto" }}>
-      <motion.div {...presets.fadeIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        {/* Amount + Status */}
-        <div style={{ textAlign: "center", padding: "var(--space-6) 0 var(--space-3)" }}>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-headline)", fontWeight: 500, color: amountColor }}>
-            {hideBalances ? "••••••" : `${isIn ? "+" : "−"}${formatQu(detail.amount ?? "0")} QU`}
-          </div>
-          {snapshot && !hideBalances && (
-            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-secondary)", marginTop: "var(--space-1)" }}>
-              {fiatValue}
-            </div>
-          )}
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", fontWeight: 500, color: statusColor, marginTop: "var(--space-2)" }}>
-            {statusLabel}
-          </div>
-        </div>
+    <AppShell fullBleed contentStyle={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", width: "100%", maxWidth: 600, padding: "var(--space-5)" }}>
+      {isPendingTx(detail) ? (
+        <PendingTxDetail
+          tx={detail}
+          hash={hash}
+          currentTick={currentTick}
+          hideBalances={hideBalances}
+          snapshot={snapshot}
+          fiatValue={fiatValue}
+        />
+      ) : (
+        <ConfirmedTxDetail
+          tx={detail}
+          hash={hash}
+          hideBalances={hideBalances}
+          snapshot={snapshot}
+          fiatValue={fiatValue}
+          memo={txMemos[hash] ?? ""}
+          onSaveMemo={(next) => {
+            if (next) setTxMemo(hash, next);
+            else deleteTxMemo(hash);
+          }}
+        />
+      )}
+      </div>
 
-        {/* Detail card */}
-        <div style={CARD_STYLE}>
-          <DetailRow icon={<ArrowUpRight01Icon size={16} />} label="From" value={isSc && !isIn ? (fromContract ?? truncateId(detail.source ?? "—")) : truncateId(detail.source ?? "—")} valueColor="var(--color-text-secondary)" copyValue={detail.source ?? undefined} />
-          <div style={DIVIDER} />
-          <DetailRow icon={<Wallet01Icon size={16} />} label="To" value={displayTo} valueColor="var(--color-text-secondary)" copyValue={detail.destination ?? undefined} />
-          <div style={DIVIDER} />
-          <DetailRow icon={<ShieldCheckIcon size={16} />} label="Tick" value={detail.tickNumber != null ? String(detail.tickNumber) : "—"} mono={false} />
-          <div style={DIVIDER} />
-          <DetailRow icon={<FlashIcon size={16} />} label="Hash" value={truncateId(hash)} copyValue={hash} />
-          {snapshot && !hideBalances && (
-            <>
-              <div style={DIVIDER} />
-              <DetailRow icon={<Wallet01Icon size={16} />} label="Fiat value" value={fiatValue} valueColor="var(--color-text-secondary)" mono={false} />
-            </>
-          )}
-        </div>
-
-        {/* Notes */}
-        {memoEditing ? (
-          <div style={{
-            background: "var(--color-bg-surface)",
-            borderRadius: "var(--radius-card)",
-            padding: "var(--space-4) var(--space-4)",
-            display: "flex", flexDirection: "column", gap: "var(--space-3)",
-          }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
-              <textarea
-                autoFocus
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                placeholder="Add a note"
-                rows={2}
-                style={{
-                  flex: 1, background: "none", border: "none", outline: "none",
-                  color: "var(--color-text-display)", fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-body)", lineHeight: 1.5, padding: 0, resize: "none",
-                  boxSizing: "border-box", minWidth: 0,
-                }}
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
-              <button type="button" onClick={() => { setMemo(txMemos[hash] ?? ""); setMemoEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-disabled)", padding: "var(--space-1) var(--space-2)" }}>Cancel</button>
-              <button type="button" onClick={saveMemo} style={{ background: "none", border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-sharp)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", fontWeight: 500, color: "var(--color-text-primary)", padding: "var(--space-1) var(--space-3)" }}>Save</button>
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            background: "var(--color-bg-surface)",
-            borderRadius: "var(--radius-card)",
-            padding: "var(--space-4) var(--space-4)",
-            display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
-            cursor: "pointer",
-          }} onClick={() => setMemoEditing(true)}>
-            <Note01Icon size={16} style={{ flexShrink: 0, color: "var(--color-text-disabled)", marginTop: 2 }} />
-            {memo.trim() ? (
-              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-display)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{memo.trim()}</span>
+      <footer style={{ flexShrink: 0, borderTop: "1px solid var(--color-border-subtle)", padding: "var(--space-3) var(--space-5) var(--space-4)" }}>
+        <div style={{ display: "flex", gap: "var(--space-2)", width: "100%", maxWidth: 600 }}>
+          <Button style={{ flex: 1 }} onClick={() => openExplorer(explorerTransactionUrl(hash))}>
+            Open in Explorer
+            <ArrowUpRight01Icon size={16} strokeWidth={2} aria-hidden="true" />
+          </Button>
+          <Button
+            variant="secondary"
+            aria-label={copied ? "Transaction ID copied" : "Copy transaction ID"}
+            title={copied ? "Copied" : "Copy transaction ID"}
+            style={{ width: 52, padding: 0, flexShrink: 0 }}
+            onClick={() => {
+              void copyToClipboard(hash).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              });
+            }}
+          >
+            {copied ? (
+              <CheckIcon size={18} color="var(--color-text-primary)" aria-hidden="true" />
             ) : (
-              <span style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-disabled)", lineHeight: 1.5 }}>Add a note</span>
+              <Copy01Icon size={18} aria-hidden="true" />
             )}
-          </div>
-        )}
-
-      </motion.div>
+          </Button>
+        </div>
+      </footer>
     </AppShell>
   );
 }

@@ -7,7 +7,7 @@ Thank you for improving Glyph. This project is a self-custodial desktop wallet, 
 - Search existing issues and pull requests for related work.
 - Base your branch on the current target branch. Stable work targets `main`; work intended for the prerelease channel targets `prerelease`.
 - Report vulnerabilities privately as described in [SECURITY.md](./SECURITY.md).
-- Never put real seeds, passwords, vault exports, signing keys, certificates, release credentials, `.env` files, or personal wallet data in source, fixtures, logs, screenshots, issues, or pull requests.
+- Never put real seeds, passwords, wallet exports, signing keys, certificates, release credentials, `.env` files, or personal wallet data in source, fixtures, logs, screenshots, issues, or pull requests.
 
 ## Development prerequisites
 
@@ -54,13 +54,30 @@ Commit both lockfiles when their dependency graphs change:
 ## Repository map
 
 - `src/`: React application, screens, state, request schemas, and shared UI
+- `src/lib/api/generated/`: Hey API output (types, fetch SDK, TanStack Query helpers); do not hand-edit
+- `openapi.json`: committed Glyph API contract snapshot used by the generator
+- `openapi-ts.config.ts`: generator input and plugin configuration
 - `src/styles/`: design tokens and global interaction styles
-- `src-tauri/src/`: Rust commands, vault and store cryptography, native signing, locking, clipboard handling, deep links, and callbacks
+- `src-tauri/src/`: Rust commands, wallet and store cryptography, native signing, locking, clipboard handling, deep links, and callbacks
 - `src-tauri/capabilities/`: renderer capability allowlist
 - `src-tauri/tauri.conf.json`: window, CSP, bundle, protocol, and updater configuration
 - `scripts/`: versioning, audit, packaging, validation, and release helpers
 - `.github/workflows/`: CI, Changesets, prerelease artifact, and release automation
 - `.changeset/`: release-note inputs and Changesets configuration
+
+### Regenerating the API client
+
+`openapi.json` is refreshed from the running Glyph API at `/openapi.json`, then
+the client is regenerated:
+
+```sh
+curl -fsS https://api.glyphq.org/openapi.json -o openapi.json
+bun run api:generate
+```
+
+Commit the spec and generated output together. The app reads chain data through
+these generated SDK functions and the generated TanStack Query options; do not
+add direct `rpc.qubic.org` calls.
 
 ## How to make a change
 
@@ -72,7 +89,7 @@ Commit both lockfiles when their dependency graphs change:
 6. Update documentation when behavior, security boundaries, setup, or operations change.
 7. Add a Changeset when the change belongs in release notes.
 
-See [DESIGN.md](./DESIGN.md) for interface rules and [.changeset/README.md](./.changeset/README.md) for Changeset policy.
+Follow the existing shared components, tokens, and screen patterns. See [.changeset/README.md](./.changeset/README.md) for Changeset policy.
 
 ## Validation
 
@@ -83,13 +100,18 @@ Run the checks that apply to the change and list them in the pull request.
 ```sh
 bun run check
 bun run build
+bun run lint:js
+bun run lint:rust
+bun run format:rust -- --check
 TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
   cargo check --manifest-path src-tauri/Cargo.toml --locked
 TAURI_CONFIG='{"bundle":{"externalBin":[]}}' \
   cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
-`bun run check` runs TypeScript checking and the Bun test suite. `bun run build` performs a TypeScript build followed by a production Vite build.
+`bun run check` runs the fast Oxlint pass, TypeScript checking, and the Bun test suite. `bun run build` performs a TypeScript build followed by a production Vite build.
+
+JavaScript linting uses [Oxlint](https://oxc.rs/docs/guide/usage/linter) with the rules in `.oxlintrc.json`. `bun run lint:js:fix` applies safe fixes. Rust linting uses `cargo clippy` with warnings denied, and formatting uses `cargo fmt`; both require the rustup components declared in `CONTRIBUTING.md` (`clippy`, `rustfmt`). `scripts/rust-tools.sh` prefers a rustup-managed Cargo so the pinned `1.88.0` toolchain is used locally.
 
 ### Release and workflow changes
 
@@ -113,10 +135,10 @@ If a check cannot run on your platform, say exactly which check was skipped and 
 
 Request explicit security review and targeted regression coverage for changes involving:
 
-- vault encryption, decryption, passwords, exports, or migrations
+- wallet encryption, decryption, passwords, exports, or migrations
 - seed creation, reveal, session retention, clearing, or native signing
 - auto-lock, sleep handling, clipboard clearing, or biometric behavior
-- Tauri commands, capabilities, CSP, filesystem, opener, notification, or updater access
+- Tauri commands, capabilities, CSP, filesystem, opener, notification window, or updater access
 - `glyph://` registration, link-broker behavior, parsing, nonce handling, request review, callbacks, or redirects
 - encrypted persisted metadata or key storage
 - dependencies, CI permissions, versioning, tags, release assets, native signing, notarization, updater signatures, or publication
@@ -158,7 +180,7 @@ A pull request should include:
 
 Use concise commit subjects that describe the outcome, for example:
 
-- `feat(vaults): add account notes`
+- `feat(accounts): add account labels`
 - `fix(requests): reject expired callbacks`
 - `docs: clarify stable release promotion`
 

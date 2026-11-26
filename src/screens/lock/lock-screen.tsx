@@ -1,131 +1,55 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { AnimatePresence, motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence, motion } from "motion/react";
-import { AddCircleIcon, ViewIcon, ViewOffIcon, LockKeyholeIcon } from "@/lib/icons";
-import { presets } from "@/lib/animations";
 import { FullPage } from "@/layouts/full-page";
-import { BrandLockup } from "@/components/brand-lockup";
 import { Button } from "@/components/button";
-import { FlowHeader } from "@/components/flow-header";
+import { FullScreen } from "@/components/full-screen";
+import { IconButton } from "@/components/icon-button";
 import { Input } from "@/components/input";
-import { Identicon } from "@/components/identicon";
+import { AddCircleIcon, ChevronLeft01Icon, ChevronRight01Icon, Exchange01Icon } from "@/lib/icons";
+import { PageBanner } from "@/components/page-header";
 import { recordAuditEvent } from "@/lib/audit-log";
-import { extractMessage, timeAgo } from "@/lib/format";
-import { unlockBiometricSession, unlockVaultSession } from "@/lib/vault";
-import { usePersistedStore } from "@/store/persisted";
+import { extractMessage } from "@/lib/format";
+import { stepMotion } from "@/lib/animations";
+import { unlockBiometricSession, unlockWalletSession, verifyWalletPassword } from "@/lib/wallet";
+import { usePersistedStore, type WalletMeta } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import type { SessionWallet } from "@/lib/session-wallet";
-
-interface FormValues {
-  password: string;
-}
+import type { SessionAccount } from "@/lib/session-account";
+import { LockForm, type FormValues } from "./lock-form";
+import { LockWalletTransition, type WalletChangeDirection } from "./lock-wallet-transition";
+import { LockWalletShelf } from "./lock-wallet-shelf";
+import { UnlockingPanel } from "./lock-unlocking-panel";
 
 const PASSWORD_MAX_ATTEMPTS = 5;
 const PASSWORD_LOCKOUT_SECS = 30;
 let biometricFailures = 0;
 
-function VaultShelfRow({
-  vault,
-  selected,
-  onSelect,
-  isLast,
-}: {
-  vault: NonNullable<ReturnType<typeof usePersistedStore.getState>["vaults"][number]>;
-  selected: boolean;
-  onSelect: () => void;
-  isLast: boolean;
-}) {
-  const lastOpened = vault.lastUnlockedAt ? `Last opened ${timeAgo(vault.lastUnlockedAt)}` : "Not opened yet";
-
+function PendingRequestNotch({ count }: { count: number }) {
   return (
-    <button
-      type="button"
-      className="vault-shelf-row"
-      data-selected={selected ? "true" : "false"}
-      onClick={onSelect}
-      aria-pressed={selected}
-      aria-label={`${vault.name}. ${lastOpened}`}
+    <div
       style={{
-        width: "100%",
-        minHeight: 64,
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-3)",
-        padding: "var(--space-3) var(--space-4)",
-        border: "none",
-        borderBottom: isLast ? "none" : "1px solid var(--color-border-subtle)",
-        color: "var(--color-text-primary)",
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "var(--font-sans)",
-        transition: "background var(--duration-fast) var(--ease-out)",
-      }}
-    >
-      <Identicon kind="vault" seed={`${vault.id}:${vault.color}`} label={vault.name} size={36} radius={9} padding={2} walletIcon={vault.icon} vaultColor={vault.color} />
-      <span style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-        <span
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            fontSize: "var(--text-body)",
-            fontWeight: 600,
-          }}
-        >
-          {vault.name}
-        </span>
-        <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-          {lastOpened}
-        </span>
-      </span>
-      <span
-        aria-hidden="true"
-        style={{
-          width: 18,
-          height: 18,
-          flexShrink: 0,
-          display: "grid",
-          placeItems: "center",
-          borderRadius: "var(--radius-pill)",
-          border: `1px solid ${selected ? "var(--color-text-primary)" : "var(--color-border-strong)"}`,
-        }}
-      >
-        {selected ? (
-          <span style={{ width: 8, height: 8, borderRadius: "var(--radius-pill)", background: "var(--color-text-primary)" }} />
-        ) : null}
-      </span>
-    </button>
-  );
-}
-
-function PasswordVisibilityButton({
-  visible,
-  onToggle,
-}: {
-  visible: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={visible ? "Hide password" : "Show password"}
-      aria-pressed={visible}
-      style={{
-        border: "none",
-        background: "transparent",
-        padding: 0,
         display: "inline-flex",
         alignItems: "center",
-        justifyContent: "center",
-        color: "var(--color-text-tertiary)",
-        cursor: "pointer",
+        gap: "var(--space-2)",
+        padding: "4px 10px",
+        background: "var(--color-bg-nav)",
+        borderLeft: "1px solid var(--color-border-subtle)",
+        borderTop: "1px solid var(--color-border-subtle)",
+        borderRight: "1px solid var(--color-border-subtle)",
+        borderBottom: "none",
+        borderRadius: "var(--radius-sharp) var(--radius-sharp) 0 0",
+        color: "var(--color-accent)",
       }}
     >
-      {visible ? <ViewOffIcon size={18} strokeWidth={1.5} /> : <ViewIcon size={18} strokeWidth={1.5} />}
-    </button>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", fontVariantNumeric: "tabular-nums", color: "var(--color-accent)", fontWeight: 600 }}>
+        {count}
+      </span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        {count === 1 ? "pending request" : "pending requests"}
+      </span>
+    </div>
   );
 }
 
@@ -133,29 +57,35 @@ export default function LockScreen() {
   const navigate = useNavigate();
   const isLinux = navigator.userAgent.toLowerCase().includes("linux");
 
-  const vaults = usePersistedStore((s) => s.vaults);
+  const wallets = usePersistedStore((s) => s.wallets);
   const settings = usePersistedStore((s) => s.settings);
-  const setActiveVault = usePersistedStore((s) => s.setActiveVault);
-  const touchVaultUnlocked = usePersistedStore((s) => s.touchVaultUnlocked);
+  const setActiveWallet = usePersistedStore((s) => s.setActiveWallet);
+  const removeWallet = usePersistedStore((s) => s.removeWallet);
+  const touchWalletUnlocked = usePersistedStore((s) => s.touchWalletUnlocked);
   const passwordLockoutUntil = usePersistedStore((s) => s.passwordLockoutUntil);
   const setPasswordLockoutUntil = usePersistedStore((s) => s.setPasswordLockoutUntil);
   const passwordAttempts = usePersistedStore((s) => s.passwordAttempts);
   const setPasswordAttempts = usePersistedStore((s) => s.setPasswordAttempts);
   const unlock = useSessionStore((s) => s.unlock);
-  const hasPendingRequest = useSessionStore((s) => s.pendingRequests.length > 0);
+  const resetSessionForSetup = useSessionStore((s) => s.resetForSetup);
+  const pendingRequestCount = useSessionStore((s) => s.pendingRequests.length);
+  const hasPendingRequest = pendingRequestCount > 0;
 
-  const lockedVaults = vaults
+  const lockedWallets = wallets
     .slice()
     .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0));
   useEffect(() => {
-    if (vaults.length > 0 && lockedVaults.length === 0) {
+    if (wallets.length > 0 && lockedWallets.length === 0) {
       navigate("/setup", { replace: true });
     }
-  }, [vaults.length, lockedVaults.length, navigate]);
+  }, [wallets.length, lockedWallets.length, navigate]);
 
-  const [selectedId, setSelectedId] = useState<string>(() => lockedVaults[0]?.id ?? "");
-  const selected = lockedVaults.find((vault) => vault.id === selectedId) ?? lockedVaults[0];
-  const biometricEnabled = selected ? (settings.biometricVaultIds ?? []).includes(selected.id) : false;
+  const [selectedId, setSelectedId] = useState<string>(() => lockedWallets[0]?.id ?? "");
+  const [walletDirection, setWalletDirection] = useState<WalletChangeDirection>(1);
+  const [animateWalletOnMount, setAnimateWalletOnMount] = useState(false);
+  const [view, setView] = useState<"unlock" | "switch">("unlock");
+  const selected = lockedWallets.find((wallet) => wallet.id === selectedId) ?? lockedWallets[0];
+  const biometricEnabled = selected ? (settings.biometricWalletIds ?? []).includes(selected.id) : false;
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -163,10 +93,14 @@ export default function LockScreen() {
   const [lockoutSecsLeft, setLockoutSecsLeft] = useState(0);
   const lockoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [unlocking, setUnlocking] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
+  const [deletingWallet, setDeletingWallet] = useState<WalletMeta | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const { register, handleSubmit, setValue, setFocus } = useForm<FormValues>();
+  const { register, handleSubmit, setValue, setFocus, watch } = useForm<FormValues>();
+  const passwordEntered = !!watch("password")?.trim();
 
   useEffect(() => () => {
     if (lockoutRef.current) clearInterval(lockoutRef.current);
@@ -210,17 +144,72 @@ export default function LockScreen() {
     startCountdown(PASSWORD_LOCKOUT_SECS);
   }
 
-  async function finishUnlock(wallets: SessionWallet[]) {
+  function cycleWallet(direction: WalletChangeDirection) {
+    if (loading || unlocking || lockedWallets.length < 2) return;
+    const index = lockedWallets.findIndex((wallet) => wallet.id === selected.id);
+    const next = lockedWallets[(index + direction + lockedWallets.length) % lockedWallets.length];
+    setWalletDirection(direction);
+    setSelectedId(next.id);
+    setView("unlock");
+  }
+
+  /** Shelf selection animates toward the new row's position relative to the old one. */
+  function selectWallet(id: string) {
+    const currentIndex = lockedWallets.findIndex((wallet) => wallet.id === selected.id);
+    const nextIndex = lockedWallets.findIndex((wallet) => wallet.id === id);
+    setWalletDirection(nextIndex >= 0 && currentIndex >= 0 && nextIndex < currentIndex ? -1 : 1);
+    setSelectedId(id);
+  }
+
+  function openDelete(wallet: WalletMeta) {
+    setDeletingWallet(wallet);
+    setDeletePassword("");
+    setDeleteError("");
+  }
+
+  async function doDelete() {
+    if (!deletingWallet?.encryptedData) return;
+    const removedId = deletingWallet.id;
+    setDeleteLoading(true);
+    setDeleteError("");
+    try {
+      await verifyWalletPassword(deletingWallet.encryptedData, deletePassword);
+      removeWallet(removedId);
+      const remaining = usePersistedStore.getState().wallets;
+      setDeletingWallet(null);
+      setDeletePassword("");
+      if (remaining.length === 0) {
+        resetSessionForSetup();
+        navigate("/setup", { replace: true });
+        return;
+      }
+      const next = remaining
+        .slice()
+        .sort((a, b) => (b.lastUnlockedAt ?? 0) - (a.lastUnlockedAt ?? 0))[0];
+      if (removedId === settings.activeWalletId) setActiveWallet(next.id);
+      if (removedId === selected?.id) {
+        setAnimateWalletOnMount(false);
+        setSelectedId(next.id);
+        setView("switch");
+      }
+    } catch {
+      setDeleteError("Wrong password");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  async function finishUnlock(wallets: SessionAccount[]) {
     if (!selected) return;
-    setActiveVault(selected.id);
+    setActiveWallet(selected.id);
     unlock(selected.id, wallets);
-    touchVaultUnlocked(selected.id);
+    touchWalletUnlocked(selected.id);
     recordAuditEvent({
       kind: "unlock_succeeded",
       status: "success",
-      title: "Vault unlocked",
+      title: "Wallet unlocked",
       detail: selected.name,
-      vaultId: selected.id,
+      walletId: selected.id,
     });
     biometricFailures = 0;
     setPasswordAttempts(0);
@@ -231,13 +220,13 @@ export default function LockScreen() {
 
   async function doUnlock(password: string) {
     if (!selected || !selected.encryptedData) return;
-    const wallets = await unlockVaultSession(selected.encryptedData, password);
-    await invoke("disable_biometric", { vaultId: selected.id }).catch(() => {});
+    const wallets = await unlockWalletSession(selected.encryptedData, password);
+    await invoke("disable_biometric", { walletId: selected.id }).catch(() => {});
     await finishUnlock(wallets);
   }
 
   async function onSubmit({ password }: FormValues) {
-    if (!selected || lockoutSecsLeft > 0) return;
+    if (!selected || !password.trim() || lockoutSecsLeft > 0) return;
     setLoading(true);
     setError("");
     try {
@@ -248,7 +237,7 @@ export default function LockScreen() {
         status: "failure",
         title: "Unlock failed",
         detail: selected.name,
-        vaultId: selected.id,
+        walletId: selected.id,
       });
       const nextAttempts = passwordAttempts + 1;
       setPasswordAttempts(nextAttempts);
@@ -271,7 +260,7 @@ export default function LockScreen() {
     setLoading(true);
     setError("");
     if (!selected.encryptedData) {
-      setError("Vault data is missing. Re-import the Vault and try again.");
+      setError("Wallet data is missing. Re-import the wallet and try again.");
       setLoading(false);
       return;
     }
@@ -284,7 +273,7 @@ export default function LockScreen() {
         status: "failure",
         title: "Biometric unlock failed",
         detail: selected.name,
-        vaultId: selected.id,
+        walletId: selected.id,
       });
       const nextFailures = bioFailures + 1;
       biometricFailures = nextFailures;
@@ -301,173 +290,161 @@ export default function LockScreen() {
 
   if (!selected) return null;
 
-  return (
-    <FullPage centered={false} style={{ justifyContent: "flex-start", paddingTop: "var(--space-6)", paddingBottom: "var(--space-6)" }}>
-      <AnimatePresence mode="wait">
-        {unlocking ? (
-          <motion.div
-            key="unlocking"
-            {...presets.fadeIn}
-            style={{
-              width: "100%",
-              maxWidth: 320,
-              margin: "0 auto",
-              height: "100%",
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "var(--space-4)",
-              textAlign: "center",
-            }}
-          >
-            <BrandLockup align="center" compact iconOnly />
-            <div
-              aria-hidden="true"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 999,
-                border: "2px solid var(--color-border-default)",
-                borderTopColor: "var(--color-accent)",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-body)",
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              Unlocking local session.
-            </p>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="form"
-            {...presets.fadeIn}
-            style={{
-              width: "100%",
-              maxWidth: 340,
-              margin: "0 auto",
-              height: "100%",
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-6)",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flexShrink: 0, minHeight: 0 }}>
-              <BrandLockup align="center" compact iconOnly />
-              <FlowHeader
-                align="center"
-                title="Unlock Vault"
-                description={hasPendingRequest ? "Unlock to review a pending request." : "Choose a Vault, then enter its password."}
-              />
+  const bannerTitle = view === "switch" ? "Switch wallet" : "Unlock wallet";
+  const bannerDescription = view === "switch"
+    ? "Choose a wallet to unlock."
+    : hasPendingRequest
+      ? "Unlock to review a pending request."
+      : "Enter the password for your last used wallet.";
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-2)",
-                }}
-              >
-                <div
-                  role="group"
-                  aria-label="Choose a Vault to unlock"
-                  style={{
-                    maxHeight: lockedVaults.length > 3 ? 194 : undefined,
-                    overflowY: lockedVaults.length > 3 ? "auto" : "hidden",
-                    border: "1px solid var(--color-border-default)",
-                    borderRadius: "var(--radius-card)",
-                    background: "var(--color-bg-surface-2)",
+  const actions = view === "unlock" ? (
+    <LockForm
+      register={register}
+      handleSubmit={handleSubmit}
+      onSubmit={onSubmit}
+      shakeKey={shakeKey}
+      error={error}
+      lockoutSecsLeft={lockoutSecsLeft}
+      loading={loading}
+      biometricEnabled={biometricEnabled}
+      bioFailures={bioFailures}
+      onBiometric={onBiometric}
+      isLinux={isLinux}
+      passwordEntered={passwordEntered}
+      secondaryAction={(
+        <Button variant="secondary" size="md" style={{ width: "100%" }} onClick={() => setView("switch")}>
+          <Exchange01Icon size={18} aria-hidden="true" />
+          Switch wallet
+        </Button>
+      )}
+    />
+  ) : (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <Button size="md" style={{ width: "100%" }} onClick={() => navigate("/setup")}>
+        <AddCircleIcon size={18} aria-hidden="true" />
+        Add wallet
+      </Button>
+      <Button
+        variant="ghost"
+        size="md"
+        style={{ width: "100%" }}
+        onClick={() => {
+          setAnimateWalletOnMount(false);
+          setView("unlock");
+        }}
+      >
+        Back to unlock
+      </Button>
+    </div>
+  );
+
+  return (
+    <FullPage centered={false} style={{ padding: 0 }}>
+      {unlocking ? (
+        <UnlockingPanel />
+      ) : (
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={view}
+            {...stepMotion}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+          >
+          <PageBanner
+            title={view === "switch" ? bannerTitle : undefined}
+            description={view === "switch" ? bannerDescription : undefined}
+            centered={view === "unlock"}
+            showBrand={view !== "unlock"}
+            bottomNotch={hasPendingRequest ? <PendingRequestNotch count={pendingRequestCount} /> : undefined}
+            style={
+              view === "unlock"
+                ? { flex: 1, minHeight: 0, height: "auto", borderBottom: "none" }
+                : { borderBottom: "1px solid var(--color-border-subtle)" }
+            }
+          >
+            {view === "unlock" ? (
+              <div style={{ marginTop: "var(--space-3)", width: "100%", position: "relative" }}>
+                {lockedWallets.length > 1 ? (
+                  <IconButton
+                    label="Previous wallet"
+                    onClick={() => cycleWallet(-1)}
+                    disabled={loading || unlocking}
+                    style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, zIndex: 1, pointerEvents: "auto" }}
+                  >
+                    <ChevronLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+                  </IconButton>
+                ) : null}
+                <LockWalletTransition wallet={selected} direction={walletDirection} animateOnMount={animateWalletOnMount} />
+                {lockedWallets.length > 1 ? (
+                  <IconButton
+                    label="Next wallet"
+                    onClick={() => cycleWallet(1)}
+                    disabled={loading || unlocking}
+                    style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, zIndex: 1, pointerEvents: "auto" }}
+                  >
+                    <ChevronRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+                  </IconButton>
+                ) : null}
+              </div>
+            ) : null}
+          </PageBanner>
+
+          {view === "switch" ? (
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--space-4)" }}>
+              <div style={{ width: "100%", maxWidth: 340, margin: "0 auto" }}>
+                <LockWalletShelf
+                  wallets={lockedWallets}
+                  selectedId={selected.id}
+                  onSelect={(id) => {
+                    setAnimateWalletOnMount(true);
+                    selectWallet(id);
+                    setView("unlock");
+                    window.setTimeout(() => setFocus("password"), 240);
                   }}
-                >
-                  {lockedVaults.map((vault, index) => (
-                    <VaultShelfRow
-                      key={vault.id}
-                      vault={vault}
-                      selected={vault.id === selected.id}
-                      isLast={index === lockedVaults.length - 1}
-                      onSelect={() => {
-                        setSelectedId(vault.id);
-                        window.requestAnimationFrame(() => setFocus("password"));
-                      }}
-                    />
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="vault-shelf-add"
-                  onClick={() => navigate("/setup")}
-                  aria-label="Add another Vault"
-                >
-                  <span className="vault-shelf-add-icon" aria-hidden="true">
-                    <AddCircleIcon size={17} strokeWidth={1.5} />
-                  </span>
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                    <span style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
-                      Add another Vault
-                    </span>
-                    <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-                      Create new or import existing
-                    </span>
-                  </span>
-                </button>
+                  onDelete={openDelete}
+                />
               </div>
             </div>
+          ) : null}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", width: "100%", marginTop: "auto" }}>
-              <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  <div key={shakeKey} className={error ? "lock-shake" : undefined}>
-                    <Input
-                      {...register("password")}
-                      id="wallet-password"
-                      aria-label="Vault password"
-                      type={showPassword ? "text" : "password"}
-                      style={{ minHeight: 56, fontSize: "var(--text-section)", padding: "var(--space-4) 44px var(--space-4) var(--space-4)" }}
-                      placeholder="Enter the Vault password"
-                      autoComplete="current-password"
-                      error={lockoutSecsLeft > 0 ? `Locked. Try again in ${lockoutSecsLeft} seconds.` : error}
-                      disabled={lockoutSecsLeft > 0}
-                      autoFocus
-                      rightElement={<PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />}
-                    />
-                  </div>
-                  <Button type="submit" loading={loading} disabled={lockoutSecsLeft > 0}>
-                    <LockKeyholeIcon size={16} strokeWidth={1.5} aria-hidden="true" />
-                    {lockoutSecsLeft > 0 ? `Wait ${lockoutSecsLeft} seconds` : "Unlock Vault"}
-                  </Button>
-                </form>
-
-              {biometricEnabled && bioFailures < 3 ? (
-                <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBiometric} disabled={loading}>
-                  <LockKeyholeIcon size={14} strokeWidth={1.5} />
-                  {isLinux ? "Quick unlock" : "Use biometrics"}
-                </Button>
-              ) : null}
-
-              {biometricEnabled && bioFailures >= 3 ? (
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-caption)",
-                    color: "var(--color-text-tertiary)",
-                    textAlign: "center",
-                  }}
-                >
-                  {isLinux ? "Quick unlock" : "Biometric unlock"} unavailable for this session.
-                </p>
-              ) : null}
-
-            </div>
+          <div className="page-frame-actions">
+            <div className="page-frame-actions-inner">{actions}</div>
+          </div>
           </motion.div>
+        </AnimatePresence>
+      )}
+      <FullScreen
+        open={!!deletingWallet}
+        onClose={() => setDeletingWallet(null)}
+        title={`Delete ${deletingWallet?.name ?? "wallet"}`}
+        footer={(
+          <Button variant="danger" shape="sharp" onClick={doDelete} loading={deleteLoading} disabled={!deletePassword}>
+            Delete wallet
+          </Button>
         )}
-      </AnimatePresence>
+      >
+        {deletingWallet && deletingWallet.accounts.length > 1 ? (
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-warning)" }}>
+            This wallet contains {deletingWallet.accounts.length} accounts. All seeds will be permanently lost.
+          </span>
+        ) : null}
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body)", color: "var(--color-text-secondary)" }}>
+          This action cannot be undone.
+        </span>
+        <Input
+          type="password"
+          label="Password to confirm"
+          value={deletePassword}
+          onChange={(event) => {
+            setDeletePassword(event.target.value);
+            setDeleteError("");
+          }}
+          onKeyDown={(event) => event.key === "Enter" && !deleteLoading && doDelete()}
+          error={deleteError}
+          placeholder="••••••••••"
+          autoComplete="current-password"
+          autoFocus
+        />
+      </FullScreen>
     </FullPage>
   );
 }

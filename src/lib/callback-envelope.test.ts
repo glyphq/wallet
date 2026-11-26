@@ -10,7 +10,6 @@ const relayEnvelope: GlyphEnvelope = {
     dapp: { name: "Demo", origin: "https://demo.app" },
     nonce: "request-nonce",
     exp: 1_900_000_000,
-    permissions: ["transfer", "sign_message"],
   },
   callback: "https://relay.glyphq.org/v2/callback/session_1234567890abcdef/callbackCapabilitySecret_1234567890abcdef",
   redirect_uri: null,
@@ -71,9 +70,9 @@ describe("callback envelope", () => {
       result,
       identity: "IDENTITY",
       accountIndex: 2,
-      signCallbackMessage: async (accountIndex, messageBytes, result) => {
+      signCallbackMessage: async (accountIndex, messageBytes, callbackResult) => {
         signedLength = messageBytes.length;
-        signedResult = result;
+        signedResult = callbackResult;
         return { signature: new Uint8Array([accountIndex, 7]), publicKey: new Uint8Array([1, 2, 3, 4]), identity: "IDENTITY" };
       },
       nowEpochSeconds: () => 1_899_999_000,

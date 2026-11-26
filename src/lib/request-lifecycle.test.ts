@@ -15,6 +15,16 @@ describe("pending request lifecycle", () => {
     expect(events).toEqual(["assembled-and-delivered", "removed"]);
   });
 
+  test("commits the result before removing the active request", async () => {
+    const events: string[] = [];
+    await completePendingRequest(
+      async () => "ok",
+      () => events.push("removed"),
+      (result) => events.push(`result:${result}`),
+    );
+    expect(events).toEqual(["result:ok", "removed"]);
+  });
+
   test("keeps a request when response construction fails", async () => {
     const removed: string[] = [];
     await expect(completePendingRequest(

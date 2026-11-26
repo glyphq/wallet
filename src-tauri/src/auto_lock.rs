@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::session_crypto::NativeSessionState;
 
 pub const MAX_LOCK_TIMEOUT_MINUTES: u64 = 24 * 60;
-pub const MIN_LOCK_TIMEOUT_MINUTES: u64 = 1;
+pub const MIN_LOCK_TIMEOUT_MINUTES: u64 = 0;
 
 pub struct AutoLockState {
     last_activity: Arc<Mutex<Instant>>,
@@ -45,6 +45,9 @@ impl AutoLockState {
 
     pub fn seconds_until_lock(&self) -> Option<u64> {
         let minutes = *Self::lock_recover(&self.timeout_minutes);
+        if minutes == 0 {
+            return None;
+        }
         let timeout_secs = minutes.checked_mul(60)?;
         let timeout = Duration::from_secs(timeout_secs);
         let elapsed = Self::lock_recover(&self.last_activity).elapsed();
@@ -84,6 +87,9 @@ pub fn spawn_lock_watcher(app: AppHandle) {
 
         // Idle timeout check
         let minutes = *timeout_minutes.lock().unwrap_or_else(|e| e.into_inner());
+        if minutes == 0 {
+            continue;
+        }
         let Some(timeout_secs) = minutes.checked_mul(60) else {
             continue;
         };
@@ -106,10 +112,10 @@ mod tests {
     use super::{AutoLockState, MAX_LOCK_TIMEOUT_MINUTES};
 
     #[test]
-    fn timeout_cannot_be_disabled_or_extended_beyond_policy() {
+    fn timeout_can_be_disabled_and_is_capped() {
         let state = AutoLockState::default();
         state.set_timeout(0);
-        assert!(state.seconds_until_lock().is_some());
+        assert!(state.seconds_until_lock().is_none());
 
         state.set_timeout(u64::MAX);
         let seconds = state

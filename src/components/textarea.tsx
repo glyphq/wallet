@@ -1,4 +1,5 @@
 import { useId, type CSSProperties, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { FieldError, FieldLabel } from "./field-parts";
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -7,6 +8,8 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   containerStyle?: CSSProperties;
   leftElement?: ReactNode;
   technical?: boolean;
+  /** Absolutely positioned content drawn over the field, such as a mask. */
+  overlay?: ReactNode;
 }
 
 export function Textarea({
@@ -18,6 +21,7 @@ export function Textarea({
   containerStyle,
   leftElement,
   technical = false,
+  overlay,
   className,
   ...props
 }: TextareaProps) {
@@ -30,22 +34,13 @@ export function Textarea({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", ...containerStyle }}>
-      {label ? (
-        <label
-          htmlFor={fieldId}
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-label)",
-            color: "var(--color-text-tertiary)",
-            fontWeight: 500,
-            lineHeight: "var(--leading-compact)",
-            letterSpacing: "0.015em",
-          }}
-        >
-          {label}
-        </label>
+      {label || error ? (
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-2)", minWidth: 0 }}>
+          {label ? <FieldLabel htmlFor={fieldId}>{label}</FieldLabel> : <span />}
+          {error ? <FieldError id={errorId} style={{ textAlign: "right" }}>{error}</FieldError> : null}
+        </div>
       ) : null}
-      <div className="glyph-field" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
+      <div className="glyph-field corner-frame" data-error={error ? "true" : undefined} style={{ position: "relative" }}>
         {leftElement ? (
           <div
             className="glyph-field-icon"
@@ -82,17 +77,18 @@ export function Textarea({
             paddingRight: "var(--space-4)",
             paddingBottom: "var(--space-3)",
             paddingLeft: leftElement ? 48 : "var(--space-4)",
-            borderRadius: "var(--radius-control)",
+            borderRadius: 3,
             color: "var(--color-text-primary)",
-            fontFamily: technical ? "var(--font-mono)" : "var(--font-sans)",
-            fontSize: technical ? "0.875rem" : "0.9375rem",
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.875rem",
             fontWeight: 400,
-            lineHeight: technical ? 1.7 : "var(--leading-body)",
-            letterSpacing: technical ? "0.015em" : "-0.005em",
+            lineHeight: "var(--leading-compact)",
+            letterSpacing: "0.015em",
             fontVariantNumeric: "tabular-nums",
             ...style,
           }}
         />
+        {overlay ? <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{overlay}</div> : null}
       </div>
       {hint ? (
         <span
@@ -105,20 +101,6 @@ export function Textarea({
           }}
         >
           {hint}
-        </span>
-      ) : null}
-      {error ? (
-        <span
-          id={errorId}
-          role="alert"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "var(--text-caption)",
-            lineHeight: "var(--leading-compact)",
-            color: "var(--color-status-error)",
-          }}
-        >
-          {error}
         </span>
       ) : null}
     </div>

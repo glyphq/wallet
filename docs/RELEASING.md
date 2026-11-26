@@ -232,7 +232,7 @@ The Linux job:
 
 ### Fresh Linux package smoke test
 
-The regular CI workflow also builds unsigned AppImage and Debian packages on a clean Ubuntu 22.04 runner. It extracts both payloads, starts each under Xvfb with an empty HOME and XDG profile, and fails if either process exits before the smoke interval. This verifies the packaged launch path without persisting a Vault or touching a developer's local profile.
+The regular CI workflow also builds unsigned AppImage and Debian packages on a clean Ubuntu 22.04 runner. It extracts both payloads, starts each under Xvfb with an empty HOME and XDG profile, and fails if either process exits before the smoke interval. This verifies the packaged launch path without persisting a Wallet or touching a developer's local profile.
 
 #### macOS
 

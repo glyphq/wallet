@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { clearSecureSession } from "@/lib/secure-session";
-import type { SessionWallet } from "@/lib/session-wallet";
+import type { SessionAccount } from "@/lib/session-account";
 
 export const MAX_PENDING_REQUESTS = 20;
 
@@ -17,9 +17,9 @@ export interface TxDraft {
 }
 
 interface SessionState {
-  unlockedVaultId: string | null;
-  wallets: SessionWallet[];
-  /** Last set of vault identities from the most recent unlock — used for balance polling while locked. */
+  unlockedWalletId: string | null;
+  accounts: SessionAccount[];
+  /** Last set of wallet identities from the most recent unlock — used for balance polling while locked. */
   cachedIdentities: string[];
   pendingRequests: string[];
   isLocked: boolean;
@@ -27,8 +27,8 @@ interface SessionState {
   txDraft: TxDraft | null;
 
   unlock: (
-    vaultId: string,
-    wallets: SessionWallet[],
+    walletId: string,
+    accounts: SessionAccount[],
     options?: { identities?: string[] },
   ) => void;
   lock: () => void;
@@ -42,33 +42,33 @@ interface SessionState {
 }
 
 export const useSessionStore = create<SessionState>()((set) => ({
-  unlockedVaultId: null,
-  wallets: [],
+  unlockedWalletId: null,
+  accounts: [],
   cachedIdentities: [],
   pendingRequests: [],
   isLocked: true,
   txAlerts: [],
   txDraft: null,
 
-  unlock: (vaultId, wallets, options) => {
+  unlock: (walletId, accounts, options) => {
     set({
-      unlockedVaultId: vaultId,
-      wallets,
+      unlockedWalletId: walletId,
+      accounts,
       isLocked: false,
-      cachedIdentities: options?.identities ?? wallets.map((w) => w.identity),
+      cachedIdentities: options?.identities ?? accounts.map((account) => account.identity),
     });
   },
 
   lock: () => {
     clearSecureSession();
-    set({ unlockedVaultId: null, wallets: [], isLocked: true, txAlerts: [], txDraft: null });
+    set({ unlockedWalletId: null, accounts: [], isLocked: true, txAlerts: [], txDraft: null });
   },
 
   resetForSetup: () => {
     clearSecureSession();
     set({
-      unlockedVaultId: null,
-      wallets: [],
+      unlockedWalletId: null,
+      accounts: [],
       cachedIdentities: [],
       isLocked: true,
       txAlerts: [],

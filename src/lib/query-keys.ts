@@ -1,10 +1,16 @@
 export const qk = {
-  vaultBalances: (rpcIdentity: string, identities: string[]) => ["vault-balances", rpcIdentity, identities] as const,
-  balance: (rpcIdentity: string, identity: string | null) => ["balance", rpcIdentity, identity] as const,
-  txHistory: (rpcIdentity: string, identity: string | null) => ["tx-history", rpcIdentity, identity] as const,
-  tickInfo: (rpcIdentity: string) => ["tick-info", rpcIdentity] as const,
-  lastProcessedTick: (rpcIdentity: string) => ["last-processed-tick", rpcIdentity] as const,
-  qearnEpochInfo: (rpcIdentity: string, epoch: number | null) => ["qearn-epoch-info", rpcIdentity, epoch] as const,
-  qearnPositions: (rpcIdentity: string, identity: string | null, epoch: number | null) => ["qearn-positions", rpcIdentity, identity, epoch] as const,
-  qutilSendManyFee: (rpcIdentity: string) => ["qutil-send-many-fee", rpcIdentity] as const,
+  walletBalances: (apiIdentity: string, identities: string[]) => ["wallet-balances", apiIdentity, identities] as const,
+  txHistory: (apiIdentity: string, identity: string | null) => ["tx-history", apiIdentity, identity] as const,
+  tickInfo: (apiIdentity: string) => ["tick-info", apiIdentity] as const,
+  lastProcessedTick: (apiIdentity: string) => ["last-processed-tick", apiIdentity] as const,
+  qutilSendManyFee: (apiIdentity: string) => ["qutil-send-many-fee", apiIdentity] as const,
+  msvaultFees: (apiIdentity: string) => ["msvault", "fees", apiIdentity] as const,
+  msvaultVaults: (apiIdentity: string, identity: string) =>
+    ["msvault", "vaults", apiIdentity, identity] as const,
+  msvaultVault: (apiIdentity: string, vaultId: string) =>
+    ["msvault", "vault", apiIdentity, vaultId] as const,
+  msvaultManagedAsset: (apiIdentity: string, identity: string, assetKey: string) =>
+    ["msvault", "managed-asset", apiIdentity, identity, assetKey] as const,
+  msvaultAssetMeta: (apiIdentity: string, issuer: string, name: string) =>
+    ["msvault", "asset-meta", apiIdentity, issuer, name] as const,
 } as const;

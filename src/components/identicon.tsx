@@ -1,12 +1,10 @@
 import type { CSSProperties, ReactNode } from "react";
-import Avatar from "boring-avatars";
+import { MarbleAvatar } from "@/components/marble-avatar";
 import { FlashIcon } from "@/lib/icons";
-import type { VaultColor, WalletIconId } from "@/store/persisted";
+import type { WalletColor, WalletIconId } from "@/store/persisted";
 import { CONTACT_ICON } from "@/lib/wallet-appearance";
 
-const MARBLE_COLORS = ["#ccfcfb", "#7dd3fc", "#6ee7b7", "#fbbf24", "#a78bfa", "#f87171"];
-
-type BadgeKind = "vault" | "account" | "contract" | "contact" | "identity" | "position";
+type BadgeKind = "wallet" | "account" | "contract" | "contact" | "identity" | "position";
 
 interface IdenticonProps {
   seed: string;
@@ -19,7 +17,8 @@ interface IdenticonProps {
   code?: string;
   icon?: ReactNode;
   walletIcon?: WalletIconId;
-  vaultColor?: VaultColor;
+  walletColor?: WalletColor;
+  square?: boolean;
 }
 
 function badgeLabel(seed: string, explicitLabel?: string): string {
@@ -36,7 +35,7 @@ function accountCode(label?: string, code?: string) {
 }
 
 const SURFACE_BY_KIND: Record<BadgeKind, { background: string; border: string; color: string }> = {
-  vault: {
+  wallet: {
     background: "var(--color-bg-subtle)",
     border: "var(--color-border-default)",
     color: "var(--color-text-primary)",
@@ -79,18 +78,20 @@ export function Identicon({
   code,
   icon,
   walletIcon: _walletIcon,
-  vaultColor: _vaultColor,
+  walletColor: _walletColor,
+  square = true,
 }: IdenticonProps) {
   const text = kind === "account" ? accountCode(label, code) : badgeLabel(seed, label);
   const fontSize = Math.max(10, Math.floor((size - padding * 2) * 0.34));
   const surface = SURFACE_BY_KIND[kind];
   const innerSize = Math.max(12, size - padding * 2);
 
-  if (kind === "vault") {
+  if (kind === "wallet" || kind === "identity") {
     return (
       <div
         aria-hidden="true"
         style={{
+          position: "relative",
           width: size,
           height: size,
           borderRadius: radius,
@@ -99,37 +100,7 @@ export function Identicon({
           ...style,
         }}
       >
-        <Avatar
-          size={size}
-          name={seed}
-          variant="marble"
-          colors={MARBLE_COLORS}
-          square={false}
-        />
-      </div>
-    );
-  }
-
-  if (kind === "identity") {
-    return (
-      <div
-        aria-hidden="true"
-        style={{
-          width: size,
-          height: size,
-          borderRadius: radius,
-          overflow: "hidden",
-          flexShrink: 0,
-          ...style,
-        }}
-      >
-        <Avatar
-          size={size}
-          name={seed}
-          variant="marble"
-          colors={MARBLE_COLORS}
-          square={false}
-        />
+        <MarbleAvatar seed={seed} size={size} square={square} />
       </div>
     );
   }

@@ -106,7 +106,7 @@ The sidecar preparation script writes a target-suffixed binary under `src-tauri/
 
 The production Tauri window uses an explicit `connect-src` allowlist in
 `src-tauri/tauri.conf.json`. The entries are limited to the wallet payment-link
-origin (`wallet.glyphq.org`), Qubic RPC (`rpc.qubic.org`), Glyph Relay
+origin (`wallet.glyphq.org`), Glyph API (`api.glyphq.org`), Glyph Relay
 callbacks (`relay.glyphq.org`), Coinbase exchange rates (`api.coinbase.com`),
 and the configured GitHub updater endpoint (`github.com`), plus Tauri IPC.
 
@@ -130,7 +130,7 @@ allowlisted or served through an approved proxy rather than broadening
 bun run dev
 ```
 
-This starts only Vite. It is useful for isolated visual work, but Tauri commands and plugins are not available in a normal browser tab. Vault cryptography, native session signing, store encryption, deep links, updater behavior, notifications, tray behavior, and platform integration cannot be validated this way.
+This starts only Vite. It is useful for isolated visual work, but Tauri commands and plugins are not available in a normal browser tab. Wallet cryptography, native session signing, store encryption, deep links, updater behavior, notifications, tray behavior, and platform integration cannot be validated this way.
 
 ### Preview a frontend production build
 
@@ -324,10 +324,9 @@ For changes to packaging, deep-link registration, the tray, credential stores, t
 
 Bun discovers tests in the frontend and scripts. Current test areas include:
 
-- RPC cache isolation by endpoint identity
+- Glyph API cache identity and response normalization
 - Formatting and amount behavior
-- History analytics
-- Notification event behavior
+- Notification persistence and retention limits
 - External-request orchestration
 - External-request schema validation
 - Secure-session adapters
@@ -358,7 +357,7 @@ Native tests cover important logic in:
 - Deep-link parsing and security validation
 - Application argument handling
 - Native signing and identity logic
-- Vault cryptography
+- Wallet cryptography
 
 Run a focused test through Cargo's filter:
 
@@ -433,10 +432,11 @@ CI Rust compilation is a platform matrix, but it is not a full GUI, installer, c
 
 ### Network-derived state
 
-- Put endpoint calls and client setup in `src/lib/rpc.ts` or the appropriate domain helper.
-- Use TanStack Query hooks in `src/hooks/`.
-- Include endpoint identity in query keys when cached results depend on the configured server.
-- Apply polling profiles rather than creating independent high-frequency timers.
+- Call generated SDK functions from `src/lib/api/generated/`; keep client setup in `src/lib/api/client.ts`.
+- Subscribe through `src/lib/api/stream-broker.ts`; it shares one SSE connection per feed or identity.
+- Load each resource once, then update or invalidate its query from tick, market, or identity frames.
+- Keep periodic polling only for sources without a stream, such as external exchange rates or a custom price feed.
+- Clear the query cache when the configured API origin changes.
 
 ### Persisted state
 
@@ -454,7 +454,7 @@ Do not put active seeds into Zustand, browser storage, query cache, logs, diagno
 - Treat every renderer argument as untrusted.
 - Validate sizes and numeric ranges before allocation, password derivation, network access, or signing.
 - Return narrow serializable results.
-- Avoid returning seeds or private key material unless the feature explicitly requires reveal or vault re-encryption.
+- Avoid returning seeds or private key material unless the feature explicitly requires reveal or wallet re-encryption.
 
 ### Qubic transaction features
 
@@ -505,13 +505,13 @@ A capability addition is a security-boundary change and should receive explicit 
 - Prefer Rust for secret processing.
 - Use `zeroize` or zeroizing containers for mutable native secret buffers.
 - Remember that JavaScript strings cannot be deterministically erased.
-- Do not claim that seeds never enter the renderer. They currently cross IPC during unlock and selected vault-management flows.
+- Do not claim that seeds never enter the renderer. They currently cross IPC during unlock and selected wallet-management flows.
 - Clear the native session before emitting lock state to the renderer.
-- Never log passwords, seeds, decrypted vaults, signing inputs that contain secret payloads, or callback result secrets.
+- Never log passwords, seeds, decrypted wallets, signing inputs that contain secret payloads, or callback result secrets.
 
 ### Cryptography
 
-Do not change vault format constants casually. Current new-vault parameters are AES-256-GCM with PBKDF2-HMAC-SHA256 at 600,000 iterations, a 32-byte random salt, and a 12-byte random nonce.
+Do not change wallet format constants casually. Current new-wallet parameters are AES-256-GCM with PBKDF2-HMAC-SHA256 at 600,000 iterations, a 32-byte random salt, and a 12-byte random nonce.
 
 A cryptographic-format change requires:
 
@@ -560,13 +560,13 @@ For dependency changes:
 
 Automated tests should be supplemented with targeted manual checks.
 
-### Vault and session changes
+### Wallet and session changes
 
-- Create a vault and verify seed confirmation.
+- Create a wallet and verify seed confirmation.
 - Import a seed.
 - Unlock with correct and incorrect passwords.
 - Trigger the five-attempt temporary lockout.
-- Add, reveal, remove, export, import, and delete accounts or vaults.
+- Add, reveal, remove, export, import, and delete accounts or wallets.
 - Verify explicit lock clears signing ability.
 - Verify inactivity, sleep, and optional blur locking.
 - Restart and confirm only intended state persists.
@@ -726,7 +726,7 @@ Documentation changes must distinguish:
 - Broadcast from confirmation
 - Read-only assets from transferable asset support
 - Scheduled templates from automatic payments
-- Stored dApp permissions from silent authorization
+- Address sharing from request authorization
 - Long-lived native seed storage from transient renderer exposure
 - Installation-local export HMAC verification from portable signature verification
 - AppImage updater behavior from Debian and RPM package management

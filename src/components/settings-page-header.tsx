@@ -8,18 +8,19 @@ import { useHeaderSlot } from "@/layouts/header-slot";
  */
 export function SettingsPageHeader({ title, backTo = "/settings" }: { title: string; backTo?: string }) {
   const navigate = useNavigate();
-  const { setHeader } = useHeaderSlot();
+  const { setHeader, clearHeader } = useHeaderSlot();
 
   useEffect(() => {
-    setHeader(
+    const header = (
       <ScreenHeader
         title={title}
         onBack={() => navigate(backTo)}
         backAriaLabel={backTo === "/settings" ? "Back to settings" : "Go back"}
-      />,
+      />
     );
-    return () => setHeader(null);
-  }, [backTo, navigate, setHeader, title]);
+    setHeader(header);
+    return () => clearHeader(header);
+  }, [backTo, clearHeader, navigate, setHeader, title]);
 
   return null;
 }

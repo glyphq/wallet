@@ -2,19 +2,19 @@
 
 This document describes the current Glyph desktop-wallet implementation for engineers, maintainers, and security reviewers. It focuses on runtime boundaries, state ownership, cryptography, network flows, platform integration, and known limitations.
 
-Glyph is a Tauri 2 desktop application. The user interface is a React and TypeScript renderer. Privileged operations, vault cryptography, active-session seed retention, Qubic signing, deep-link validation, secure-store encryption, auto-lock enforcement, and platform integration are implemented in Rust.
+Glyph is a Tauri 2 desktop application. The user interface is a React and TypeScript renderer. Privileged operations, wallet cryptography, active-session seed retention, Qubic signing, deep-link validation, secure-store encryption, auto-lock enforcement, and platform integration are implemented in Rust.
 
 ## 1. Design goals
 
 The implementation is designed to:
 
 - Provide a self-custody Qubic wallet without a Glyph-hosted seed or password service.
-- Encrypt vault seeds with a user-supplied password.
+- Encrypt wallet seeds with a user-supplied password.
 - Encrypt persisted application metadata with an installation-specific key.
 - Keep the long-lived unlocked signing session in native memory.
 - Sign Qubic transactions and messages in native Rust.
 - Require explicit UI review for transfers, smart-contract calls, and dApp requests.
-- Limit Tauri capabilities to the main window and required desktop functions.
+- Limit Tauri capabilities to the required window surfaces and desktop functions.
 - Validate untrusted protocol links before they become wallet actions.
 - Support signed application updates on supported package formats.
 
@@ -30,7 +30,7 @@ The current design does not provide:
 - Silent dApp transaction approval based on a stored connection
 - Deterministic zeroization of seed strings while they transiently exist in JavaScript
 - Protection against malware with the same privileges as an unlocked desktop user
-- Trustless balances, price data, or history when the configured RPC endpoints are malicious
+- Trustless balances, price data, or history when the configured Glyph API is malicious
 - Automatic updates for Debian or RPM installations
 
 ## 3. Runtime topology
@@ -42,39 +42,41 @@ graph LR
     Broker --> Native[Tauri Rust process]
     Link --> Native
     UI <-->|Tauri IPC and events| Native
-    UI <-->|HTTPS queries| LiveRPC[Qubic live RPC]
-    UI <-->|HTTPS queries| ArchiveRPC[Qubic archive RPC]
+    UI <-->|HTTPS| API[Glyph API]
+    API <-->|Qubic peer protocol| Peers[Qubic peers]
     Native -->|HTTPS callback POST| DApp[dApp callback]
     Native -->|Open HTTPS redirect| Browser[System browser]
-    Native --> OS[Credential store, clipboard, notifications, tray, filesystem]
+    Native --> Notification[Always-on-top notification window]
+    Native --> OS[Credential store, clipboard, tray, filesystem]
     Native --> Store[Local Tauri stores]
     Native --> Updater[Signed update endpoint]
 ```
 
-There is no Glyph application backend in the normal wallet data path. The renderer communicates with configured Qubic live and archive services. The native process communicates with operating-system facilities, the update service, and validated dApp callback destinations.
+The Glyph API is the only chain-data backend in the wallet path. It indexes Qubic data and exposes live peer passthrough; the renderer never calls Qubic RPC services directly. The native process communicates with operating-system facilities, the update service, and validated dApp callback destinations.
 
 ## 4. Repository structure
 
 ### Frontend
 
-- `src/main.tsx`: renderer entry point
+- `src/main.tsx`: main-window renderer entry point
+- `src/notification-main.tsx`: separate notification-window entry point
 - `src/App.tsx`: application composition and startup behavior
 - `src/router.tsx`: hash-based route tree
-- `src/screens/`: feature screens for setup, vaults, sends, history, settings, requests, and support
+- `src/screens/`: feature screens for setup, wallets, sends, multisig, history, settings, requests, and support
 - `src/layouts/`: application shell and animated route layouts
-- `src/components/`: reusable UI and request-review components
-- `src/hooks/`: RPC queries, polling, auto-lock integration, deep links, notifications, and updater hooks
-- `src/lib/`: wallet domain logic, RPC clients, request validation, export format, session adapters, analytics, and formatting
-- `src/store/`: persisted, session, updater, and UI state
+- `src/components/`: reusable UI, full-screen flows, and request-review components
+- `src/hooks/`: Glyph API queries, polling, auto-lock integration, deep links, notifications, and updater hooks
+- `src/lib/`: wallet domain logic, generated API client, request validation, export format, session adapters, notification copy, and formatting
+- `src/store/`: persisted, session, streaming tick, updater, and UI state
 - `src/styles/`: global application styles
 
 ### Native application
 
-- `src-tauri/src/lib.rs`: Tauri builder, plugin setup, state registration, events, tray, single-instance behavior, and command registration
-- `src-tauri/src/commands.rs`: command-facing validation and orchestration
-- `src-tauri/src/vault_crypto.rs`: password-based vault encryption and decryption
+- `src-tauri/src/app/`: builder, plugins, window lifecycle, tray, setup, and the notification window backend
+- `src-tauri/src/commands/`: command-facing validation and orchestration
+- `src-tauri/src/wallet_crypto.rs`: password-based wallet encryption and decryption
 - `src-tauri/src/store_crypto.rs`: installation-key management and persisted-value encryption
-- `src-tauri/src/session_crypto.rs`: native unlocked-session seed storage
+- `src-tauri/src/session_crypto.rs`: native unlocked-session seed storage and native seed copy
 - `src-tauri/src/qubic_native.rs`: identity derivation, transaction construction, and native signing
 - `src-tauri/src/auto_lock.rs`: native inactivity and sleep-lock state
 - `src-tauri/src/clipboard.rs`: scheduled clipboard clearing
@@ -108,10 +110,10 @@ The route tree separates:
 
 - Setup and import
 - Lock and unlock
-- Dashboard and vault management
-- Standard send, Send Many, burn, staking, and scheduled templates
+- Dashboard and wallet management
+- Standard send, multisig vaults, and scheduled templates
 - Receive and payment-link creation
-- History, transaction detail, analytics, and search
+- History, transaction detail, and search
 - Contacts
 - External request review and request history
 - Settings, security, audit, network, notifications, diagnostics, appearance, and support
@@ -124,8 +126,8 @@ The splash flow waits for persisted Zustand hydration before choosing the initia
 
 The route decision is:
 
-1. No configured vault: setup.
-2. Vault configured but no active session: lock.
+1. No configured wallet: setup.
+2. Wallet configured but no active session: lock.
 3. Active unlocked session: dashboard.
 
 The updater check is triggered once during startup.
@@ -136,15 +138,15 @@ Glyph divides state according to lifetime and sensitivity.
 
 ### Persisted Zustand state
 
-Persisted state includes encrypted vault records and local metadata such as:
+Persisted state includes encrypted wallet records and local metadata such as:
 
-- Vault descriptors and account metadata
+- Wallet descriptors and account metadata
 - Contacts
 - Pending transaction summaries
 - Transaction memos
 - Scheduled-transfer templates
 - Notification and audit history
-- Request history and approved dApps
+- Request history
 - Price samples and runtime issues
 - Application, network, security, and appearance settings
 
@@ -152,7 +154,7 @@ The persisted boundary sanitizes and caps collections before storage. Current im
 
 | Record | Maximum retained |
 | --- | ---: |
-| Accounts in one vault | 16 |
+| Accounts in one wallet | 16 |
 | Pending transactions | 50 |
 | Transaction memos | 500 |
 | Scheduled templates | 50 |
@@ -164,7 +166,7 @@ The persisted boundary sanitizes and caps collections before storage. Current im
 
 ### Session state
 
-Session state represents the currently selected vault and non-durable UI workflow state. It includes:
+Session state represents the currently selected wallet and non-durable UI workflow state. It includes:
 
 - Lock status
 - Derived public account identities and display state
@@ -182,7 +184,7 @@ Lock clears this native state synchronously before a `glyph:lock` event tells th
 
 ### TanStack Query state
 
-Network-derived balances, tick data, owned assets, transaction history, and related RPC results live in the query cache. Query keys include the relevant RPC endpoint identity so changing endpoints does not reuse data from another configured service.
+Network-derived balances, tick data, owned assets, transaction history, and related API results live in the query cache. The generated client points at one configured Glyph API origin, and the query cache is cleared when that origin changes so data from another service is never reused. Stream-backed resources load once and are then updated or invalidated by tick, market, and identity feeds.
 
 ## 7. Persistent storage architecture
 
@@ -225,27 +227,27 @@ This key protects local data at rest but is available to the running application
 
 ### Export integrity key
 
-Version 2 vault exports include HMAC-SHA256 over a canonical envelope. The HMAC key is installation-local and persisted through Glyph's protected storage path.
+Version 2 wallet exports include HMAC-SHA256 over a canonical envelope. The HMAC key is installation-local and persisted through Glyph's protected storage path.
 
 Consequences:
 
 - The originating installation can detect a modified export.
 - A different installation cannot verify that local HMAC and imports with an unverified-integrity warning.
-- The HMAC is not a portable digital signature, identity proof, or substitute for vault encryption.
+- The HMAC is not a portable digital signature, identity proof, or substitute for wallet encryption.
 - Legacy unsigned exports are intentionally accepted for compatibility.
 
-## 8. Vault cryptography
+## 8. Wallet cryptography
 
 ### Encryption format
 
-New vault encryption uses:
+New wallet encryption uses:
 
 - AES-256-GCM
 - PBKDF2-HMAC-SHA256
 - 600,000 iterations
 - Random 32-byte salt
 - Random 12-byte GCM nonce
-- Vault format version 1
+- Wallet format version 1
 
 The password-derived AES key exists in native code for the encryption or decryption operation and is then dropped. Sensitive Rust buffers use zeroizing containers where practical.
 
@@ -257,10 +259,10 @@ Decryption validates input sizes and resource bounds before deriving a key. It a
 
 Password strength rules are UI policy, not cryptographic-format constraints:
 
-- New-vault setup requires at least 10 characters and the screen's minimum strength level.
-- The current password-rotation screen accepts at least 8 characters.
+- New-wallet setup requires at least 10 characters and the screen's minimum strength level.
+- Password rotation uses the same 10-character minimum.
 
-The native vault format can decrypt any valid password bytes. Reviewers should not assume one consistent password rule across every UI path.
+The native wallet format can decrypt any valid password bytes, including legacy wallets whose password predates the current policy.
 
 ## 9. Unlock and signing data flow
 
@@ -268,13 +270,13 @@ The native vault format can decrypt any valid password bytes. Reviewers should n
 sequenceDiagram
     participant UI as React renderer
     participant Cmd as Native commands
-    participant Vault as Vault crypto
+    participant Wallet as Wallet crypto
     participant Session as Native session
-    participant RPC as Qubic RPC
+    participant API as Glyph API
 
-    UI->>Cmd: unlock(encrypted vault, password)
-    Cmd->>Vault: PBKDF2 and AES-GCM decrypt
-    Vault-->>Cmd: seed array
+    UI->>Cmd: unlock(encrypted wallet, password)
+    Cmd->>Wallet: PBKDF2 and AES-GCM decrypt
+    Wallet-->>Cmd: seed array
     Cmd-->>UI: seed array over Tauri IPC
     UI->>UI: derive public identities
     UI->>Cmd: store_session_seeds(seed array)
@@ -283,7 +285,7 @@ sequenceDiagram
     Cmd->>Session: read selected seed
     Cmd->>Cmd: validate and sign in Rust
     Cmd-->>UI: signed transaction payload
-    UI->>RPC: broadcast signed transaction
+    UI->>API: broadcast signed transaction
 ```
 
 ### Security interpretation
@@ -293,11 +295,11 @@ The architecture reduces seed residence in the renderer after unlock, but it is 
 Seeds transiently enter renderer memory during:
 
 - New-account creation
-- Vault import and unlock
-- Account addition or removal workflows that re-encrypt the vault
+- Wallet import and unlock
+- Account addition or removal workflows that re-encrypt the wallet
 - Explicit seed reveal
 
-They cross Tauri IPC as serialized command values. JavaScript strings and objects cannot be reliably overwritten. The native session is the long-lived signing location, but the renderer remains inside the sensitive trust boundary whenever a vault is being manipulated or unlocked.
+They cross Tauri IPC as serialized command values. JavaScript strings and objects cannot be reliably overwritten. The native session is the long-lived signing location, but the renderer remains inside the sensitive trust boundary whenever a wallet is being manipulated or unlocked.
 
 A compromised renderer in an unlocked session can invoke allowed signing commands with attacker-selected transaction fields. Native validation prevents malformed structures and some abuse, but the review UI is the primary intent-confirmation control.
 
@@ -355,39 +357,40 @@ Clipboard writes are performed through Tauri clipboard integration. Native sched
 - Identity copies use a configurable 15, 30, or 60 second timeout, or no automatic clear.
 - The default is 30 seconds.
 - Seed copies use 60 seconds.
-- Application close attempts to clear when a Glyph clipboard clear is pending.
+- Application close clears a pending Glyph clipboard value.
 
-The clear operation overwrites the entire clipboard. It does not compare the current clipboard value to the value originally copied by Glyph. A user copying different content before the timer expires can have that newer content cleared.
+Native keeps a SHA-256 digest of the value Glyph last copied. Scheduled clears, lock-time clears, and application-close clears blank the clipboard only while it still contains that value. If the clipboard cannot be read, the clear still runs so a copied seed does not remain. Content the user copies after Glyph is left intact.
 
-## 13. RPC and transaction architecture
+## 13. API and transaction architecture
 
 ### Network clients
 
-The frontend owns live and archive RPC clients. Custom endpoints must use HTTPS and can be tested in Network settings before being persisted.
+The frontend uses a generated Glyph API client for every chain read and broadcast. A custom API origin must use HTTPS and is tested in Network settings before being persisted.
 
-The live RPC supplies current network state and accepts signed transaction broadcasts. The archive RPC supplies paginated history and related indexed data.
+The Glyph API supplies current network state, paginated history, decoded events, typed contract queries, and signed-transaction broadcast. Contract reads are sent as hex input to `/v1/live/contracts/{index}/query`; the typed contract helpers only encode and decode payloads.
 
-### Query and polling profiles
+### Live streams and fallbacks
 
-Default polling intervals depend on application visibility and lock state:
+The renderer loads each resource once, then follows Glyph SSE feeds:
 
-| State | Default polling interval |
-| --- | ---: |
-| Active window | 5 seconds |
-| Background window | 10 seconds |
-| Hidden to tray | 15 seconds |
-| Locked | 20 seconds |
+| Feed | Updates |
+| --- | --- |
+| `/v1/stream/ticks` | Cached head, epoch, last-processed tick, network health, expiry |
+| `/v1/stream?types=price,market` | Price and market-cap cards |
+| `/v1/stream?types=transaction,event&identity={id}` | History, balances, assets, received notifications, confirmations |
 
-Persisted values are sanitized to a range of 2 through 60 seconds. Owned-asset queries enforce a minimum 30-second refresh interval.
+One shared connection is kept per identity, regardless of how many hooks subscribe. EventSource reconnects automatically; `open`, `lag`, window focus, and network-online events trigger a reconciliation fetch, as does the initial mount. Query caches are updated or invalidated from the stream rather than on a fixed interval. Polling remains for resources with no stream, including the optional custom price feed, external Coinbase exchange rates, and a 15-second wallet-balance fallback. Persisted polling profiles apply to those fallbacks.
+
+Balances and owned assets do not have a dedicated snapshot stream. They load once, poll periodically as a fallback, and are invalidated by identity transaction/event frames and by transaction resolution, with a per-identity throttle so a busy account cannot cause unbounded contract queries.
 
 ### Standard transfer flow
 
 1. The renderer validates source, recipient, amount, balance, and pending-transaction guard.
-2. It fetches the current tick and adds the configured offset, default 10.
+2. It reads the newest indexed or peer head from the API and adds the configured offset, default 10.
 3. Native Rust constructs and signs the transaction.
-4. The renderer broadcasts it to the live RPC.
+4. The renderer broadcasts it to the Glyph API.
 5. A local pending record is retained.
-6. Archive and event queries reconcile it to confirmed, failed, or expired.
+6. The identity transaction stream resolves it to confirmed, failed, or expired; lifecycle is read on connect, reconnect, lag, or focus to cover missed frames.
 
 Only one outgoing pending operation is allowed per source identity. This is an application-level guard, not a Qubic protocol lock.
 
@@ -395,11 +398,17 @@ Only one outgoing pending operation is allowed per source identity. This is an a
 
 History merges:
 
-- Paginated archive transactions, 50 per page
-- Recent event-log results for the initial time window
+- Cursor-paginated identity transactions, 50 per page
+- Recent decoded event results for the initial time window
 - Local pending records
 
-The frontend deduplicates merged results. Event supplementation mainly covers approximately two weeks of recent activity. Archive indexing delays can still produce temporary gaps.
+The first page is loaded from the API. New transactions and contract effects invalidate the active identity's history query; the query no longer polls on a timer. The frontend deduplicates merged results. Event supplementation mainly covers approximately two weeks of recent activity. Archive indexing delays can still produce temporary gaps.
+
+### Confirmation push
+
+Pending transactions are resolved from the shared identity feed, not by polling history. The wallet matches inserted transaction hashes and reads `/v1/transactions/{hash}/lifecycle` for the money-flow verdict. Lifecycle is also read when a stream opens, reconnects, reports `lag`, or when the app becomes visible or online, so a dropped frame or offline window cannot leave a transaction pending forever. Transaction-history queries are invalidated after resolution but are not used as the confirmation mechanism.
+
+The tick feed advances the cached head used by expiry. A pending transaction expires when the streamed tick passes `targetTick + 30`, independent of transaction-stream health.
 
 ### Local transaction metadata
 
@@ -407,24 +416,9 @@ Memos are local records keyed to transactions and are not included in a standard
 
 ## 14. Smart-contract feature boundaries
 
-### Send Many
+### Multisig vaults
 
-Send Many uses the QUtil `SendToMany` V1 contract:
-
-- Up to 25 validated recipients
-- One smart-contract transaction
-- Contract fee fetched before review
-- Balance check includes recipient total and fee
-
-CSV and JSON import is parsed in the renderer. Invalid rows are filtered and no more than 25 valid entries are retained, so review must not assume an import error is always fatal.
-
-### Burn
-
-Burn invokes the QUtil `BurnQubic` contract. It is irreversible. An optional application setting can require vault-password revalidation before signing.
-
-### QEarn
-
-QEarn lock and unlock use smart-contract transactions. The UI enforces a minimum lock amount of 10,000,000 QU and presents the 52-epoch lock period and early-unlock reward caveat. Position data is queried in bounded epoch batches.
+Multisig manages MSVault vaults. The wallet can create vaults, read owner and asset state, deposit QU or supported assets, request releases, and collect approvals before signing. Fee and holding-fee information is read from the contract and shown in review. Vault, owner, and asset views link to Glyph Explorer.
 
 ### Scheduled transfers
 
@@ -492,7 +486,7 @@ Native validation includes:
 
 A missing expiry is accepted for validation using an effective five-minute lifetime, but the normalized renderer request does not gain a synthesized `exp` field. As a result, the review UI cannot display a countdown for that compatibility case.
 
-There is a current cross-layer contract-index mismatch: renderer schema validation allows a wider smart-contract range, while native validation accepts only contract indexes 0 through 63. Native validation is authoritative, so some renderer-accepted inputs are rejected before execution.
+Renderer schema validation and native validation both accept smart-contract indexes 0 through 63. Native validation remains authoritative for request envelopes.
 
 ### Queues and replay timing
 
@@ -504,7 +498,7 @@ Requests received while locked remain queued and are presented after unlock.
 
 ### Approval semantics
 
-Every transfer, contract call, and message-sign request requires explicit review. A `connect` approval stores an origin, selected account scopes, and selected permissions. Those records support connection management and display. They do not create a transport session or authorize future silent operations.
+Every transfer, contract call, message-sign, verify, and connect request requires explicit review. A connection shares the selected account identity and echoes the requested permission labels for protocol compatibility, but the wallet does not store or enforce a permission policy and every later request is reviewed again.
 
 ### Result delivery
 
@@ -528,13 +522,13 @@ Delivery failure is recorded and the UI can retry, save, or copy the result.
 
 ## 16. Notifications and background behavior
 
-The native layer integrates operating-system notifications, tray behavior, and user-controlled startup registration. The frontend determines notification events from balances, history, and pending-state transitions.
+Notifications are rendered in a separate always-on-top Tauri window, independent of the main wallet. The native layer creates, positions, resizes, and hides that window; the main renderer sends notification events and the overlay renderer owns the visible card stack.
 
-- Desktop notifications are off by default.
-- The first delivery requests system permission.
+- Notification windows are off by default.
+- Position, visible duration, and maximum visible cards are configurable.
 - Notification records are capped at 200.
-- Locked-state desktop display follows the user's privacy setting, but events can still be persisted.
-- Startup reconciliation can examine up to 24 hours of received activity without replaying old desktop popups.
+- Locked-state display follows the user's privacy setting, but events can still be persisted.
+- Startup reconciliation can examine up to 24 hours of received activity without replaying old notification windows.
 
 If hide-to-tray is enabled, a close request hides the main window. Otherwise, it exits. Tray construction failure is nonfatal.
 
@@ -560,12 +554,20 @@ The Windows updater uses quiet installation. Linux AppImage update handling adju
 
 The main window is constrained to a desktop-wallet form factor:
 
-- Initial size: 380 by 680
-- Minimum: 360 by 640
-- Maximum: 420 by 760
+- Fixed size: 380 by 680
+- Resizing not enabled
 - Decorations disabled
 - Packaged developer tools disabled
-- Maximize and fullscreen not enabled by default
+- Maximize and fullscreen not enabled
+
+A separate `notification-overlay` window is created on demand:
+
+- Always on top
+- Transparent and undecorated
+- Skipped in the taskbar
+- Not focusable
+- Dynamically sized to the visible notification stack
+- Anchored to a configurable screen corner
 
 ### Content Security Policy
 
@@ -578,18 +580,18 @@ The packaged CSP permits:
 - Images from `self`, `data:`, and `blob:`
 - Connections to `self`, Tauri IPC endpoints, and HTTPS
 
-Remote scripts are not permitted by the configured CSP. The HTTPS connection allowance is broad because users can configure RPC endpoints and dApp callbacks are native.
+Remote scripts are not permitted by the configured CSP. The HTTPS connection allowance covers the bundled Glyph API, wallet, relay, exchange-rate, and updater origins; dApp callbacks are native.
 
 ### Main-window capabilities
 
 The main window receives only the declared Tauri capabilities, including:
 
-- Basic window close, minimize, drag, maximize toggle, and fullscreen operations
+- Basic window close and drag operations
 - External opener
 - Store get, set, load, save, and delete
 - Deep-link handling
 - Clipboard write
-- Notifications
+- Notification-window display
 - User-controlled startup registration
 - Updater check and install
 - Save dialog
@@ -630,7 +632,7 @@ A renderer compromise can exercise these allowed APIs and registered native comm
 
 The implementation provides meaningful controls against:
 
-- Offline inspection of vault ciphertext without the password
+- Offline inspection of wallet ciphertext without the password
 - Offline inspection of normal application-store values without the installation key
 - Accidental or local modification of an export when verified on its originating installation
 - Replayed dApp links within the nonce retention window
@@ -649,7 +651,7 @@ The design does not protect secrets or transaction intent from:
 - Screen capture, accessibility capture, or malicious input methods during seed reveal
 - Clipboard managers retaining copied values
 - A user approving a deceptive but structurally valid request
-- A malicious RPC lying about balances, prices, ticks, history, or broadcast success
+- A malicious or compromised Glyph API lying about balances, prices, ticks, history, or broadcast success
 - Loss of all seeds, exports, and passwords
 - Rollback or replacement of the entire local installation by an attacker with sufficient system privileges
 
@@ -670,23 +672,19 @@ Security and architecture reviews should explicitly account for these current be
 
 1. **Transient renderer seed exposure:** unlock returns seeds over IPC before the native session is populated.
 2. **Biometrics disabled:** all public biometric commands return unavailable or an error.
-3. **Potential seed-reveal configuration trap:** the persisted require-biometric setting can be enabled even though enrollment is disabled.
-4. **Inconsistent password minimums:** onboarding requires 10 characters while password rotation requires 8.
-5. **Clipboard ownership is not checked:** a scheduled clear can erase newer clipboard content.
-6. **Linux store key has a durable file copy:** Secret Service success does not eliminate the local key file.
-7. **Windows fallback ACL is implicit:** the fallback key file does not receive an explicitly configured Glyph ACL.
-8. **Scheduled transfers are not executed:** they are reminders and prefill templates.
-9. **Stored dApp permissions are not silent authorization:** every action still requires review.
-10. **Nonce consumption occurs before approval:** rejected requests cannot reuse the same nonce for one hour.
-11. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
-12. **Smart-contract index validation differs by layer:** native validation is narrower and authoritative.
-13. **Audit history is mutable:** it is local, capped, and clearable.
-14. **Diagnostics contain metadata:** reports omit vault secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
-15. **Network-derived data is trusted for display:** signatures remain local, but malicious RPC data can influence user decisions.
+3. **Linux store key has a durable file copy:** Secret Service success does not eliminate the local key file.
+4. **Windows fallback ACL is implicit:** the fallback key file does not receive an explicitly configured Glyph ACL.
+5. **Scheduled transfers are not executed:** they are reminders and prefill templates.
+6. **Connections do not pre-authorize requests:** every action still requires explicit review.
+7. **Nonce consumption occurs before approval:** rejected requests cannot reuse the same nonce for one hour.
+8. **Missing request expiry is not surfaced to the renderer:** native validation applies a five-minute effective lifetime without adding the field.
+9. **Audit history is mutable:** it is local, capped, and clearable.
+10. **Diagnostics contain metadata:** reports omit wallet secrets and unique device or network identifiers, but can disclose identities in scopes, origins, endpoints, recent security activity, and non-unique device state.
+11. **Network-derived data is trusted for display:** signatures remain local, but malicious API data can influence user decisions.
 
 ## 22. Review checklist for sensitive changes
 
-Changes involving vaults, signing, deep links, persistence, or platform integration should verify:
+Changes involving wallets, signing, deep links, persistence, or platform integration should verify:
 
 1. What process and state layer owns each secret at every step.
 2. Whether a value crosses Tauri IPC or enters JavaScript.

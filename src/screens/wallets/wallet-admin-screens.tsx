@@ -1,0 +1,59 @@
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
+import { FullScreen } from "@/components/full-screen";
+
+interface RotatePasswordScreenProps {
+  open: boolean;
+  onClose: () => void;
+  done: boolean;
+  oldPassword: string;
+  setOldPassword: (value: string) => void;
+  newPassword: string;
+  setNewPassword: (value: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (value: string) => void;
+  error: string;
+  setError: (value: string) => void;
+  loading: boolean;
+  onSubmit: () => void;
+}
+
+export function RotatePasswordScreen({
+  open,
+  onClose,
+  done,
+  oldPassword,
+  setOldPassword,
+  newPassword,
+  setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
+  error,
+  setError,
+  loading,
+  onSubmit,
+}: RotatePasswordScreenProps) {
+  return (
+    <FullScreen open={open} onClose={onClose} title="Change wallet password">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        {done ? (
+          <>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-mono-sm)", color: "var(--color-status-success)", letterSpacing: "0.05em" }}>
+              Password changed
+            </div>
+            <Button onClick={onClose}>Done</Button>
+          </>
+        ) : (
+          <>
+            <Input type="password" label="Current password" value={oldPassword} onChange={(e) => { setOldPassword(e.target.value); setError(""); }} error="" placeholder="••••••••••" autoComplete="current-password" autoFocus />
+            <Input type="password" label="New password" value={newPassword} onChange={(e) => { setNewPassword(e.target.value); setError(""); }} placeholder="••••••••••" autoComplete="new-password" />
+            <Input type="password" label="Confirm new password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} onKeyDown={(e) => e.key === "Enter" && !loading && onSubmit()} error={error} placeholder="•••••••••" autoComplete="new-password" />
+            <Button onClick={onSubmit} loading={loading} disabled={!oldPassword || !newPassword || !confirmPassword}>
+              Change password
+            </Button>
+          </>
+        )}
+      </div>
+    </FullScreen>
+  );
+}

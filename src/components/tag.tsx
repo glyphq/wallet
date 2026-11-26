@@ -18,16 +18,24 @@ const VARIANT_COLOR: Record<TagVariant, string> = {
 export function Tag({ children, variant = "neutral", style }: TagProps) {
   return (
     <span
+      className="corner-frame"
       style={{
+        display: "inline-flex",
+        alignItems: "center",
+        width: "fit-content",
         fontFamily: "var(--font-sans)",
         fontSize: "var(--text-caption)",
         color: VARIANT_COLOR[variant],
-        padding: "1px var(--space-1)",
-        border: "1px solid var(--color-border-strong)",
-        borderRadius: "var(--radius-pill)",
-        lineHeight: "16px",
+        padding: "1px var(--space-2)",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: "var(--radius-sharp)",
+        lineHeight: "18px",
+        whiteSpace: "nowrap",
+        "--corner-color": VARIANT_COLOR[variant],
+        "--corner-size": "5px",
+        "--corner-inset": "1px",
         ...style,
-      }}
+      } as CSSProperties}
     >
       {children}
     </span>

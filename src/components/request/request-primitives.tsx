@@ -1,4 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
+import { Button } from "@/components/button";
+import type { AccountMeta } from "@/store/persisted-types";
+import { DropdownSelect } from "@/components/dropdown-select";
+import { StickyFooter } from "@/components/sticky-footer";
+import { RequestExpiryNotch, RequestQueueNotch } from "@/screens/request/request-layout";
+import { FramedAvatar } from "@/components/framed-avatar";
+import { truncateId } from "@/lib/format";
+import { useRequestStatus } from "@/screens/request/request-status-context";
+import { DisconnectIcon } from "@/lib/icons";
 
 export function RequestSectionTitle({ children }: { children: ReactNode }) {
   return (
@@ -122,6 +131,84 @@ export function RequestDisclosure({ label, children }: { label: ReactNode; child
   );
 }
 
-export function RequestActionBar({ children }: { children: ReactNode }) {
-  return <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "auto", paddingTop: "var(--space-6)" }}>{children}</div>;
+function RequestActionBar({ children }: { children: ReactNode }) {
+  const { expirySecsLeft, pendingRequestCount } = useRequestStatus();
+  const queued = pendingRequestCount > 1 ? pendingRequestCount - 1 : 0;
+  return (
+    <StickyFooter
+      queueNotch={queued > 0 ? <RequestQueueNotch count={queued} /> : undefined}
+      notch={expirySecsLeft !== null ? <RequestExpiryNotch seconds={expirySecsLeft} /> : undefined}
+    >
+      {children}
+    </StickyFooter>
+  );
 }
+
+export function RequestApprovalActions({
+  onReject,
+  onApprove,
+  approveLabel,
+  approveDisabled,
+  approveLoading,
+  approveIcon,
+}: {
+  onReject: () => void;
+  onApprove: () => void;
+  approveLabel: string;
+  approveDisabled?: boolean;
+  approveLoading?: boolean;
+  approveIcon?: ReactNode;
+}) {
+  return (
+    <RequestActionBar>
+      <Button onClick={onApprove} loading={approveLoading} disabled={approveDisabled} style={{ flex: 1 }}>
+        {approveIcon}
+        {approveLabel}
+      </Button>
+      <Button variant="secondary" onClick={onReject} style={{ flex: 1 }}>
+        <DisconnectIcon size={15} aria-hidden="true" />
+        Reject
+      </Button>
+    </RequestActionBar>
+  );
+}
+
+const INLINE_NOTICE_COLOR = {
+  error: "var(--color-status-error)",
+  warning: "var(--color-status-warning)",
+} as const;
+
+/** Mono status line used inside previews for validation and transaction errors. */
+export function RequestInlineNotice({ tone, children }: { tone: "error" | "warning"; children: ReactNode }) {
+  return (
+    <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-mono-sm)", color: INLINE_NOTICE_COLOR[tone], letterSpacing: "0.05em" }}>
+      {children}
+    </div>
+  );
+}
+
+/** Account switcher shown when the dApp did not pin a `from` identity. */
+export function RequestSigningAccountPicker({
+  accounts,
+  selectedIndex,
+  onSelect,
+}: {
+  accounts: AccountMeta[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+}) {
+  return (
+    <DropdownSelect
+      label="Sign as"
+      value={String(selectedIndex)}
+      options={accounts.map((account) => ({
+        value: String(account.index),
+        label: account.identity ? truncateId(account.identity, 8, 8) : account.name,
+        icon: <FramedAvatar seed={account.identity ?? String(account.index)} size={28} />,
+      }))}
+      onChange={(value) => onSelect(Number(value))}
+    />
+  );
+}
+
+

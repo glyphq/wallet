@@ -5,19 +5,26 @@
  * All presets use GPU-accelerated properties (opacity, transform) only.
  *
  * Usage:
- *   import { presets, variants, transition } from "@/lib/animations";
+ *   import { presets, transition, stepMotion } from "@/lib/animations";
  *   <motion.div {...presets.fadeIn} />
- *   <motion.div variants={variants.staggerItem} />
  */
 
-import type { Transition, Variants } from "motion/react";
+import type { Transition } from "motion/react";
+
+/** Subtle in-section page change: content lifts while the shell header stays put. */
+export const sectionTransition = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4 },
+  transition: { duration: 0.16, ease: "easeOut" },
+} as const;
 
 // ── Easing curves ────────────────────────────────────────────────────────────
 
 /** Material-style ease-out — decelerating entrance */
-export const EASE_OUT = [0, 0, 0.2, 1] as const;
+const EASE_OUT = [0, 0, 0.2, 1] as const;
 /** Material-style ease-in — accelerating exit */
-export const EASE_IN = [0.4, 0, 1, 1] as const;
+const EASE_IN = [0.4, 0, 1, 1] as const;
 
 // ── Transition presets ───────────────────────────────────────────────────────
 
@@ -61,14 +68,14 @@ export const presets = {
     exit: { opacity: 0, scale: 0.96 },
     transition: transition.enter,
   },
-  /** Slide up from bottom. For sheets, bottom panels. */
+  /** Slide up from bottom. For temporary panels. */
   slideUp: {
     initial: { y: 24, opacity: 0 },
     animate: { y: 0, opacity: 1 },
     exit: { y: 24, opacity: 0 },
     transition: transition.enter,
   },
-  /** Slide down from top. For top sheets, dropdowns. */
+  /** Slide down from top. For dropdowns. */
   slideDown: {
     initial: { y: -16, opacity: 0 },
     animate: { y: 0, opacity: 1 },
@@ -84,30 +91,7 @@ export const presets = {
   },
 } as const;
 
-// ── Variant-based presets (for parent-child orchestration) ───────────────────
-
-/** Parent: orchestrates staggered children. */
-export const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.04,
-      delayChildren: 0.06,
-    },
-  },
-};
-
-/** Child: fade in. Use inside a stagger parent. */
-export const staggerItem: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.2, ease: EASE_OUT },
-  },
-};
-
-// ── Step motion (multi-step flows: send, stake, create vault) ────────────────
+// ── Step motion (multi-step flows: send, create wallet) ───────────────────────
 
 /**
  * Standard step transition for wizard-like flows.

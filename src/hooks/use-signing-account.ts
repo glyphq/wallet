@@ -1,24 +1,26 @@
 import { useState, useEffect } from "react";
 import { useSessionStore } from "@/store/session";
-import { usePersistedStore } from "@/store/persisted";
+import { usePersistedStore, type WalletMeta } from "@/store/persisted";
+import type { SessionAccount } from "@/lib/session-account";
 
 export interface SigningAccount {
-  wallet: ReturnType<typeof useSessionStore.getState>["wallets"][number] | null;
+  account: SessionAccount | null;
+  wallet: WalletMeta | null;
   accountName: string;
-  /** Set when `from` was specified but the identity isn't in the unlocked vault. */
+  /** Set when `from` was specified but the address isn't in the unlocked wallet. */
   fromError: string | null;
   selectedIndex: number;
   setSelectedIndex: (i: number) => void;
-  /** Show account picker — true when from is omitted and vault has >1 account. */
+  /** Show account picker — true when from is omitted and the wallet has >1 account. */
   showPicker: boolean;
 }
 
-/** Resolves the wallet and account name for signing, optionally pinned to a specific `from` identity. */
+/** Resolves the signing account and wallet metadata, optionally pinned to a specific `from` address. */
 export function useSigningAccount(from?: string): SigningAccount {
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const settings = usePersistedStore((s) => s.settings);
-  const vault = usePersistedStore((s) =>
-    s.vaults.find((v) => v.id === s.settings.activeVaultId),
+  const wallet = usePersistedStore((s) =>
+    s.wallets.find((w) => w.id === s.settings.activeWalletId) ?? null,
   );
 
   const [selectedIndex, setSelectedIndex] = useState(settings.activeAccountIndex);
@@ -29,26 +31,28 @@ export function useSigningAccount(from?: string): SigningAccount {
     setSelectedIndex(settings.activeAccountIndex);
   }, [settings.activeAccountIndex]);
 
-  const nameAt = (i: number) => vault?.accounts.find((a) => a.index === i)?.name ?? `Account ${i + 1}`;
+  const nameAt = (i: number) => wallet?.accounts.find((a) => a.index === i)?.name ?? `Account ${i + 1}`;
 
-  if (wallets.length === 0) {
-    return { wallet: null, accountName: "", fromError: null, selectedIndex: 0, setSelectedIndex, showPicker: false };
+  if (accounts.length === 0) {
+    return { account: null, wallet, accountName: "", fromError: null, selectedIndex: 0, setSelectedIndex, showPicker: false };
   }
 
   if (from) {
-    const idx = wallets.findIndex((w) => w.identity === from);
+    const idx = accounts.findIndex((account) => account.identity === from);
     if (idx === -1) {
       return {
-        wallet: null,
+        account: null,
+        wallet,
         accountName: "",
-        fromError: "Identity not in this wallet",
+        fromError: "Address not in this wallet",
         selectedIndex: -1,
         setSelectedIndex,
         showPicker: false,
       };
     }
     return {
-      wallet: wallets[idx],
+      account: accounts[idx],
+      wallet,
       accountName: nameAt(idx),
       fromError: null,
       selectedIndex: idx,
@@ -57,13 +61,14 @@ export function useSigningAccount(from?: string): SigningAccount {
     };
   }
 
-  const effectiveIndex = Math.min(Math.max(0, selectedIndex), wallets.length - 1);
+  const effectiveIndex = Math.min(Math.max(0, selectedIndex), accounts.length - 1);
   return {
-    wallet: wallets[effectiveIndex] ?? null,
+    account: accounts[effectiveIndex] ?? null,
+    wallet,
     accountName: nameAt(effectiveIndex),
     fromError: null,
     selectedIndex: effectiveIndex,
     setSelectedIndex,
-    showPicker: wallets.length > 1,
+    showPicker: accounts.length > 1,
   };
 }

@@ -1,3 +1,6 @@
+/** Minimum length for a new or rotated wallet password. */
+export const MIN_PASSWORD_LENGTH = 10;
+
 export interface PasswordStrength {
   label: string;
   level: 0 | 1 | 2 | 3;
@@ -5,7 +8,7 @@ export interface PasswordStrength {
 }
 
 export function passwordStrength(pw: string): PasswordStrength {
-  if (pw.length < 10) return { label: "Too short", level: 0, color: "var(--color-status-error)" };
+  if (pw.length < MIN_PASSWORD_LENGTH) return { label: "Too short", level: 0, color: "var(--color-status-error)" };
   const score =
     (pw.length >= 14 ? 1 : 0) +
     (/[A-Z]/.test(pw) ? 1 : 0) +

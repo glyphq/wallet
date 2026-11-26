@@ -10,7 +10,7 @@ TAURI_E2E_PASSWORD='<seeded-profile-password>' \
 scripts/tauri-e2e-smoke.sh
 ```
 
-The harness starts `tauri-driver`, launches the debug wallet, injects the request through the sibling `glyph-link-broker`, and drives the real webview. It requires a disposable profile that already contains one vault and starts locked. The request should use dApp name `Glyph E2E`, or set `TAURI_E2E_DAPP_NAME` to match the fixture.
+The harness starts `tauri-driver`, launches the debug wallet, injects the request through the sibling `glyph-link-broker`, and drives the real webview. It requires a disposable profile that already contains one wallet and starts locked. The request should use dApp name `Glyph E2E`, or set `TAURI_E2E_DAPP_NAME` to match the fixture.
 
 The scenario is intentionally a rejection flow because it is deterministic and does not need network signing or a funded account:
 

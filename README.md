@@ -8,7 +8,7 @@
 ### Your Qubic wallet for the desktop.
 
 **Glyph is an open-source, self-custodial desktop wallet for Qubic.**
-Create Vaults, manage Qubic identities, send and receive QU, follow your activity, and review requests from connected apps in one focused native application.
+Create wallets, manage Qubic addresses, send and receive QU, follow your activity, and review requests from connected apps in one focused native application.
 
 [![Latest release](https://img.shields.io/github/v/release/glyphq/wallet?style=flat-square&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
 [![Release downloads](https://img.shields.io/github/downloads/glyphq/wallet/latest/total?style=flat-square&label=downloads&color=0d0d0d&labelColor=1a1a1a)](https://github.com/glyphq/wallet/releases/latest)
@@ -25,41 +25,41 @@ Create Vaults, manage Qubic identities, send and receive QU, follow your activit
 ## Start here
 
 1. [Download the latest release](https://github.com/glyphq/wallet/releases/latest) for your desktop.
-2. Create a Vault, import a Qubic seed, or restore a Glyph Vault export.
+2. Create a wallet, import a Qubic seed, or restore a Glyph wallet backup.
 3. Back up every new seed offline before you add funds or continue.
 
-> **Your wallet, your recovery.** Glyph is self-custodial. It cannot recover a seed or reset a forgotten Vault password.
+> **Your wallet, your recovery.** Glyph is self-custodial. It cannot recover a seed or reset a forgotten wallet password.
 
 ## Why Glyph
 
 | | What it gives you |
 | --- | --- |
-| **Your Vaults, organized** | Create or import Vaults, keep Qubic accounts together, and make them easy to recognize with names, colors, icons, and notes. |
-| **QU without the guesswork** | Send to an identity, contact, or multiple recipients. Receive with a QR code or payment link. Review the amount and remaining balance before you sign. |
-| **Activity with context** | Searchable history, local memos, tags, contacts, saved transfer templates, exports, and account-level activity make your wallet easier to understand over time. |
+| **Your wallets, organized** | Create or import wallets, keep Qubic accounts together, and make them easy to recognize with names, colors, and icons. |
+| **QU without the guesswork** | Send to an address or contact. Receive with a QR code or copyable address. Review the amount and remaining balance before you sign. |
+| **Activity with context** | Searchable history, local memos, contacts, saved transfer templates, backup exports, and account-level activity make your wallet easier to understand over time. |
+| **Multisig when you need it** | Create shared vaults, manage owners, deposit funds and assets, request releases, and review pending approvals from the dashboard header. |
 | **Connected apps on your terms** | Open supported `glyph://` requests from Qubic apps and services, then review connection, transfer, contract-call, signing, and verification requests in Glyph. |
 
 ## Built for everyday Qubic
 
 ### Keep your setup in one place
 
-A Vault can hold the Qubic identities you use every day. Switch Vaults and accounts from anywhere in the app, hide balances when you need privacy, and choose the display settings that fit your workspace.
+A wallet can hold the Qubic addresses you use every day. Switch wallets and accounts from anywhere in the app, hide balances when you need privacy, and choose the display settings that fit your workspace.
 
-Your dashboard keeps balances, recent activity, owned assets, approximate fiat values, and QEarn information close at hand. Use a custom RPC endpoint when you need to work with a different Qubic service.
+Your dashboard keeps balances, the live network tick, recent activity, owned assets, and approximate fiat values close at hand. Use a custom Glyph API origin when you need to work with a different Glyph service.
 
 ### Send, receive, and stay informed
 
-- Send QU to an identity or a saved contact.
-- Send to multiple recipients in one reviewed flow.
-- Share an identity, QR code, or payment link to receive QU.
+- Send QU to an address or a saved contact.
+- Share an address or QR code to receive QU.
 - Track transactions from broadcast through confirmation, expiry, or failure.
-- Keep local notes and reusable transfer templates for recurring payments.
+- Keep local transaction memos and reusable transfer templates for recurring payments.
 
 ### Review requests before they happen
 
 Glyph can receive supported deep links from connected Qubic apps and services. Requests are shown in the wallet so you can inspect the relevant account, action, amount, and details before choosing to continue or decline.
 
-Manage connected apps and their permissions from **Settings → Connected apps**. Read [External requests and Glyph links](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links) for request behavior and limitations.
+Every request is reviewed individually. Connecting a dApp shares only the selected address and never pre-authorizes future actions. The requested permission list is echoed to the dApp for wire compatibility but is not stored or enforced by the wallet. Read [External requests and Glyph links](./docs/USER_GUIDE.md#14-external-requests-and-glyph-links) for request behavior and limitations.
 
 ## Download and install
 
@@ -84,10 +84,10 @@ Glyph is a native desktop application. It does not run in a browser, on mobile, 
 
 ## Self-custody, clearly
 
-- Your encrypted Vaults and local wallet data are stored on your computer.
-- Glyph does not upload your seed or Vault password to a Glyph account or recovery service.
+- Your encrypted Wallets and local wallet data are stored on your computer.
+- Glyph does not upload your seed or Wallet password to a Glyph account or recovery service.
 - Your seed is the recovery method. Store it offline, keep it private, and test backups before you need them.
-- Vault exports are sensitive encrypted files. Store them separately from their passwords.
+- Wallet backups are sensitive encrypted files. Store them separately from their passwords.
 
 For implementation details, platform behavior, and important limitations, read the [full user guide](./docs/USER_GUIDE.md).
 

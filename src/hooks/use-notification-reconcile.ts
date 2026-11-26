@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useRef } from "react";
-import { getRpcClient } from "@/lib/rpc";
+import { listIdentityTransactions } from "@/lib/api/generated";
+import { normalizeApiTransaction } from "@/lib/tx-domain";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { notificationAddress, notificationAmount } from "@/lib/notification-copy";
 import { usePersistedStore } from "@/store/persisted";
 import { useSessionStore } from "@/store/session";
-import { truncateId } from "@/lib/format";
 
 const STARTUP_RECEIVED_LOOKBACK_MS = 24 * 60 * 60 * 1000; // 24 h
 const PAGE_SIZE = 50;
 
 export function useNotificationReconcile() {
-  const wallets = useSessionStore((s) => s.wallets);
+  const accounts = useSessionStore((s) => s.accounts);
   const cachedIdentities = useSessionStore((s) => s.cachedIdentities);
   const setLastNotificationScanAt = usePersistedStore((s) => s.setLastNotificationScanAt);
 
   const identities = useMemo(() => {
-    const live = wallets.map((wallet) => wallet.identity);
+    const live = accounts.map((account) => account.identity);
     return live.length > 0 ? live : cachedIdentities;
-  }, [wallets, cachedIdentities]);
+  }, [accounts, cachedIdentities]);
 
   const identitiesKey = identities.join("|");
   const runKeyRef = useRef<string>("");
@@ -36,25 +37,36 @@ export function useNotificationReconcile() {
       if (!cancelled && lastNotificationScanAt > 0) {
         const results = await Promise.all(
           identities.map(async (identity) => {
-            const result = await getRpcClient().archive.getTransactionsForIdentity({
-              identity,
-              filters: { destination: identity },
-              ranges: { timestamp: { gte: String(Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS)) } },
-              pagination: { size: PAGE_SIZE, offset: 0 },
-            });
-            if (!result.ok) return false;
+            const cutoff = Math.max(lastNotificationScanAt, startedAt - STARTUP_RECEIVED_LOOKBACK_MS);
+            let cursor: string | undefined;
+            for (let page = 0; page < 5; page++) {
+              const { data } = await listIdentityTransactions({
+                path: { identity },
+                query: { limit: PAGE_SIZE, cursor },
+                throwOnError: true,
+              });
 
-            for (const tx of result.value.transactions ?? []) {
-              if (!tx.hash || tx.moneyFlew === false) continue;
-              await publishNotificationEvent(createNotificationEvent({
-                kind: "received",
-                title: "Funds received",
-                body: `${BigInt(tx.amount ?? "0").toLocaleString()} QU on ${truncateId(identity, 8, 4)}`,
-                identity,
-                txHash: tx.hash,
-                dedupeKey: `received:${tx.hash}:${identity}`,
-                createdAt: tx.timestamp ? Number(tx.timestamp) : startedAt,
-              }), { desktop: false });
+              for (const raw of data.data) {
+                const tx = normalizeApiTransaction(raw);
+                if (!tx?.hash || tx.destination !== identity || !tx.moneyFlew) continue;
+                if (tx.timestamp !== null && tx.timestamp < cutoff) continue;
+                await publishNotificationEvent(createNotificationEvent({
+                  kind: "received",
+                  title: "Transfer received",
+                  body: tx.source
+                    ? `A transfer of ${notificationAmount(tx.amount)} arrived from ${notificationAddress(tx.source)}.`
+                    : `A transfer of ${notificationAmount(tx.amount)} arrived in your account.`,
+                  identity,
+                  txHash: tx.hash,
+                  dedupeKey: `received:${tx.hash}:${identity}`,
+                  createdAt: tx.timestamp ?? startedAt,
+                }), { desktop: false });
+              }
+
+              const oldest = data.data[data.data.length - 1]?.timestamp;
+              const oldestMs = oldest ? Date.parse(oldest) : null;
+              cursor = data.meta.next_cursor ?? undefined;
+              if (!cursor || (oldestMs !== null && Number.isFinite(oldestMs) && oldestMs < cutoff)) break;
             }
             return true;
           }),

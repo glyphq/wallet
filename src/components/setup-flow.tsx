@@ -2,16 +2,15 @@ import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft01Icon, ArrowRight01Icon, ViewIcon, ViewOffIcon, LockKeyholeIcon, ShieldCheckIcon } from "@/lib/icons";
 import { Button } from "@/components/button";
-import { FlowHeader } from "@/components/flow-header";
 import { Input } from "@/components/input";
-import { StepProgress } from "@/components/step-progress";
+import { PageBanner, PageFrame } from "@/components/page-header";
+import { LandscapeOnboarding } from "@/layouts/landscape-onboarding";
 import { stepMotion } from "@/lib/animations";
-import { passwordStrength } from "@/lib/password-strength";
+import { MIN_PASSWORD_LENGTH, passwordStrength } from "@/lib/password-strength";
 
 interface SetupFlowProps {
-  current: number;
-  total: number;
   title: ReactNode;
+  description?: ReactNode;
   children: ReactNode;
   primaryLabel: string;
   onPrimary: () => void;
@@ -23,9 +22,8 @@ interface SetupFlowProps {
 }
 
 export function SetupFlow({
-  current,
-  total,
   title,
+  description,
   children,
   primaryLabel,
   onPrimary,
@@ -36,62 +34,61 @@ export function SetupFlow({
   error,
 }: SetupFlowProps) {
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: 340,
-        margin: "0 auto",
-        height: "100%",
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-6)",
-      }}
-    >
-      <StepProgress current={current} total={total} />
-      <motion.div
-        key={current}
-        {...stepMotion}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-6)",
-        }}
+    <LandscapeOnboarding>
+      <PageBanner title={title} description={description} />
+      <PageFrame
+        actions={(
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {secondaryActions}
+            <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
+              {primaryLabel}
+              <ArrowRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+            </Button>
+            <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
+              <ArrowLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+              Back
+            </Button>
+          </div>
+        )}
       >
         <div
           style={{
-            flex: 1,
+            width: "100%",
+            maxWidth: 480,
+            margin: "0 auto",
+            height: "100%",
             minHeight: 0,
-            overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: "var(--space-6)",
-            paddingRight: "var(--space-1)",
+            gap: "var(--space-5)",
           }}
         >
-          <FlowHeader title={title} />
-          {children}
-          {error ? <SetupError>{error}</SetupError> : null}
+          <motion.div
+            {...stepMotion}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-5)",
+                paddingRight: "var(--space-1)",
+              }}
+            >
+              {children}
+              {error ? <SetupError>{error}</SetupError> : null}
+            </div>
+          </motion.div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", flexShrink: 0 }}>
-          {secondaryActions}
-          <Button onClick={onPrimary} disabled={primaryDisabled} loading={primaryLoading}>
-            {primaryLabel}
-            <ArrowRight01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="md" style={{ width: "100%" }} onClick={onBack} disabled={primaryLoading}>
-            <ArrowLeft01Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-            Back
-          </Button>
-        </div>
-      </motion.div>
-    </div>
+      </PageFrame>
+    </LandscapeOnboarding>
   );
 }
 
-export function SetupError({ children }: { children: ReactNode }) {
+function SetupError({ children }: { children: ReactNode }) {
   return (
     <div
       role="alert"
@@ -110,6 +107,13 @@ export function SetupError({ children }: { children: ReactNode }) {
   );
 }
 
+const MASK_CHARS = "/\\|-_=+<>*#%&@$";
+
+export function asciiSeedMask(seed: string): string {
+  const length = seed.length || 55;
+  return Array.from({ length }, (_, index) => MASK_CHARS[index % MASK_CHARS.length]).join("");
+}
+
 export function SeedSurface({
   seed,
   revealed = true,
@@ -119,6 +123,7 @@ export function SeedSurface({
 }) {
   return (
     <div
+      className="seed-surface corner-frame"
       aria-label={revealed ? "Recovery seed" : "Recovery seed hidden"}
       style={{
         width: "100%",
@@ -127,9 +132,6 @@ export function SeedSurface({
         alignItems: "center",
         justifyContent: "center",
         padding: "var(--space-4)",
-        border: "1px solid var(--color-border-subtle)",
-        borderRadius: "var(--radius-control)",
-        background: "var(--color-bg-surface-2)",
         overflow: "hidden",
       }}
     >
@@ -148,7 +150,7 @@ export function SeedSurface({
           userSelect: revealed ? "text" : "none",
         }}
       >
-        {revealed ? seed : "••••••••••••"}
+        {revealed ? seed : asciiSeedMask(seed)}
       </code>
     </div>
   );
@@ -221,31 +223,32 @@ export function PasswordFields({
         autoComplete="new-password"
         error={mismatch ? "Passwords do not match" : undefined}
       />
-      {password ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }} aria-label={`Password strength: ${strength.label}`}>
-          <div style={{ display: "flex", gap: "var(--space-1)", flex: 1 }} aria-hidden="true">
-            {[0, 1, 2, 3].map((index) => (
-              <span
-                key={index}
-                style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 999,
-                  background: index <= strength.level ? "var(--color-text-secondary)" : "var(--color-border-default)",
-                }}
-              />
-            ))}
-          </div>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>
-            {strength.label}
-          </span>
-        </div>
-      ) : null}
+      <div
+        role="meter"
+        aria-valuemin={0}
+        aria-valuemax={3}
+        aria-valuenow={strength.level}
+        aria-label={`Password strength: ${strength.label}`}
+        style={{ display: "flex", gap: "var(--space-1)" }}
+      >
+        {[0, 1, 2, 3].map((index) => (
+          <span
+            key={index}
+            aria-hidden="true"
+            style={{
+              flex: 1,
+              height: 3,
+              borderRadius: 999,
+              background: password.length > 0 && index <= strength.level ? strength.color : "var(--color-border-default)",
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 export function passwordsAreValid(password: string, confirmation: string) {
   const strength = passwordStrength(password);
-  return password.length >= 10 && strength.level >= 1 && confirmation.length > 0 && password === confirmation;
+  return password.length >= MIN_PASSWORD_LENGTH && strength.level >= 1 && confirmation.length > 0 && password === confirmation;
 }

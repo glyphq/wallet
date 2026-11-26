@@ -11,7 +11,7 @@ function readVisibilityMode(hideToTray: boolean): PollingMode {
   return hideToTray ? "tray_hidden" : "background";
 }
 
-export function usePollingMode(): PollingMode {
+function usePollingMode(): PollingMode {
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const isLocked = useSessionStore((s) => s.isLocked);
   const [visibilityMode, setVisibilityMode] = useState<PollingMode>(() => readVisibilityMode(hideToTray));

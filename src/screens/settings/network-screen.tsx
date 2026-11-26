@@ -1,19 +1,15 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { stepMotion } from "@/lib/animations";
-import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/layouts/app-shell";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { SettingsPageHeader } from "@/components/settings-page-header";
 import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-section-elements";
-import { TextButton } from "@/components/text-button";
 import { usePersistedStore } from "@/store/persisted";
-import { createQubicClient, configureRpc, normalizeRpcUrl } from "@/lib/rpc";
-import { identifyNetworkPreset, NETWORK_PRESETS } from "@/lib/network-presets";
 
 const TICK_PRESETS = [5, 10, 15, 20, 30, 50] as const;
-type TestStatus = "idle" | "testing" | "ok" | "error";
+const MAX_TICK_OFFSET = 60;
 
 const sectionStyle = {
   display: "flex",
@@ -30,113 +26,64 @@ const helperStyle = {
 export default function NetworkScreen() {
   const settings = usePersistedStore((s) => s.settings);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
-  const queryClient = useQueryClient();
 
-  const [liveUrl, setLiveUrl] = useState(settings.network.liveApiUrl);
-  const [queryUrl, setQueryUrl] = useState(settings.network.queryApiUrl);
-  const [testStatus, setTestStatus] = useState<TestStatus>("idle");
-  const [testTick, setTestTick] = useState<number | null>(null);
-  const [testError, setTestError] = useState("");
+  const [customOffsetOpen, setCustomOffsetOpen] = useState(false);
+  const [customOffset, setCustomOffset] = useState("");
+  const [customOffsetError, setCustomOffsetError] = useState("");
 
-  async function testAndSave() {
-    const live = normalizeRpcUrl(liveUrl.trim());
-    const archive = normalizeRpcUrl(queryUrl.trim());
-    if (!live || !archive) {
-      setTestStatus("error");
-      setTestError("HTTPS URLs are required.");
+  const customTickOffset = !TICK_PRESETS.some((value) => value === settings.tickOffset);
+
+  function chooseTickOffset(offset: number) {
+    updateSettings({ tickOffset: offset });
+    setCustomOffsetOpen(false);
+    setCustomOffsetError("");
+  }
+
+  function openCustomTickOffset() {
+    setCustomOffsetOpen(true);
+    setCustomOffsetError("");
+    setCustomOffset(String(settings.tickOffset));
+  }
+
+  function applyCustomTickOffset() {
+    const offset = Number.parseInt(customOffset, 10);
+    if (!Number.isFinite(offset) || offset < 1 || offset > MAX_TICK_OFFSET) {
+      setCustomOffsetError(`Enter 1–${MAX_TICK_OFFSET} ticks.`);
       return;
     }
-    setTestStatus("testing");
-    setTestTick(null);
-    setTestError("");
-    try {
-      const client = createQubicClient({ liveBaseUrl: live, archiveBaseUrl: archive });
-      const result = await client.live.getTickInfo();
-      if (!result.ok) throw new Error("bad response");
-      setTestTick(result.value.tick ?? null);
-      setTestStatus("ok");
-      configureRpc(live, archive);
-      updateSettings({
-        network: {
-          ...settings.network,
-          liveApiUrl: live,
-          queryApiUrl: archive,
-          name: identifyNetworkPreset(live, archive),
-        },
-      });
-      queryClient.invalidateQueries();
-    } catch {
-      setTestStatus("error");
-      setTestError("Could not reach endpoints.");
-    }
+    chooseTickOffset(offset);
   }
-
-  function resetToDefaults() {
-    const mainnet = NETWORK_PRESETS[0];
-    const defaultLive = mainnet.liveApiUrl ?? "";
-    const defaultQuery = mainnet.queryApiUrl ?? "";
-    setLiveUrl(defaultLive); setQueryUrl(defaultQuery);
-    setTestStatus("idle"); setTestError("");
-    configureRpc(defaultLive, defaultQuery);
-    updateSettings({ network: { liveApiUrl: defaultLive, queryApiUrl: defaultQuery, name: "mainnet" } });
-    queryClient.invalidateQueries();
-  }
-
-  function choosePreset(preset: (typeof NETWORK_PRESETS)[number]) {
-    setTestStatus("idle"); setTestError("");
-    if (preset.liveApiUrl && preset.queryApiUrl) {
-      setLiveUrl(preset.liveApiUrl);
-      setQueryUrl(preset.queryApiUrl);
-    } else if (preset.id === "testnet") {
-      setLiveUrl("");
-      setQueryUrl("");
-    }
-  }
-
-  const activeNetwork = identifyNetworkPreset(liveUrl, queryUrl);
 
   return (
     <AppShell fullBleed contentStyle={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       <motion.div {...stepMotion} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
         <SettingsPageHeader title="Network" />
 
-        <section style={sectionStyle} aria-label="RPC endpoints">
+        <section style={sectionStyle} aria-label="Glyph API">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <SettingsSectionLabel>Network</SettingsSectionLabel>
-            <span id="rpc-endpoint-help" style={helperStyle}>
-              HTTPS RPC URLs only.
+            <SettingsSectionLabel>Glyph API</SettingsSectionLabel>
+            <span style={helperStyle}>
+              Fixed endpoint for all chain reads and broadcasts.
             </span>
           </div>
-          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            {NETWORK_PRESETS.map((preset) => (
-              <Button key={preset.id} size="sm" variant={activeNetwork === preset.id ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => choosePreset(preset)} aria-pressed={activeNetwork === preset.id}>
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-          <Input id="live-api-url" label="Live API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={liveUrl} onChange={(e) => { setLiveUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/live/v1" />
-          <Input id="archive-api-url" label="Archive API" type="url" inputMode="url" autoCapitalize="none" aria-describedby="rpc-endpoint-help" value={queryUrl} onChange={(e) => { setQueryUrl(e.target.value); setTestStatus("idle"); setTestError(""); }} placeholder="https://rpc.qubic.org/query/v1" />
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            <Button size="md" style={{ width: "auto" }} onClick={testAndSave} disabled={!liveUrl.trim() || !queryUrl.trim() || testStatus === "testing"} aria-busy={testStatus === "testing"}>
-              {testStatus === "testing" ? "Testing..." : "Test & save"}
-            </Button>
-            <TextButton onClick={resetToDefaults} tone="muted" style={{ minHeight: 44, padding: "0 var(--space-2)" }}>
-              Reset
-            </TextButton>
-          </div>
-          {testStatus === "ok" && testTick !== null && (
-            <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-success)" }}>
-              Connected. Current tick #{testTick}.
+          <div
+            className="settings-menu corner-frame"
+            style={{ padding: "var(--space-3) var(--space-4)" }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono-sm)",
+                color: "var(--color-text-secondary)",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {settings.network.apiUrl}
             </span>
-          )}
-          {testStatus === "error" && (
-            <span role="alert" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-status-error)" }}>
-              {testError || "Unreachable"}
-            </span>
-          )}
+          </div>
         </section>
 
-        <SettingsDivider />
+        <SettingsDivider fullBleed />
 
         <section style={sectionStyle} aria-label="Transaction tick offset">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
@@ -146,12 +93,56 @@ export default function NetworkScreen() {
             </span>
           </div>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-            {TICK_PRESETS.map((v) => (
-              <Button key={v} size="sm" variant={v === settings.tickOffset ? "primary" : "secondary"} style={{ width: "auto" }} onClick={() => updateSettings({ tickOffset: v })} aria-pressed={v === settings.tickOffset}>
-                +{v}
+            {TICK_PRESETS.map((value) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={value === settings.tickOffset ? "primary" : "secondary"}
+                style={{ width: "auto" }}
+                onClick={() => chooseTickOffset(value)}
+                aria-pressed={value === settings.tickOffset}
+              >
+                +{value}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant={customTickOffset || customOffsetOpen ? "primary" : "secondary"}
+              style={{ width: "auto" }}
+              aria-pressed={customTickOffset}
+              aria-expanded={customOffsetOpen}
+              onClick={openCustomTickOffset}
+            >
+              {customTickOffset ? `Custom · +${settings.tickOffset}` : "Custom"}
+            </Button>
           </div>
+          {customOffsetOpen ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxWidth: 260 }}>
+              <Input
+                label="Custom offset (ticks)"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={2}
+                value={customOffset}
+                onChange={(event) => {
+                  setCustomOffset(event.target.value.replace(/\D/g, ""));
+                  setCustomOffsetError("");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    applyCustomTickOffset();
+                  }
+                }}
+                error={customOffsetError || undefined}
+              />
+              <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                <Button size="sm" onClick={applyCustomTickOffset}>Apply</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setCustomOffsetOpen(false); setCustomOffsetError(""); }}>Cancel</Button>
+              </div>
+            </div>
+          ) : null}
         </section>
       </motion.div>
     </AppShell>
