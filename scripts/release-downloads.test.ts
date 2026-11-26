@@ -64,6 +64,14 @@ describe("release helpers avoid job-token-incompatible prefetches", () => {
     );
     expect(workflow).toContain("scripts/patch-appimage.sh --check-tools");
     expect(workflow).toContain('scripts/patch-appimage.sh "$appimage"');
+
+    const sparseBlocks = [...workflow.matchAll(/sparse-checkout: \|[\s\S]*?sparse-checkout-cone-mode:/g)]
+      .map((match) => match[0])
+      .filter((block) => block.includes("scripts/upload-release-assets.mjs"));
+    expect(sparseBlocks).toHaveLength(4);
+    for (const block of sparseBlocks) {
+      expect(block).toContain("scripts/release-asset-name.mjs");
+    }
   });
 
   test("production signing preflight checks out and runs only reviewed required inputs", async () => {

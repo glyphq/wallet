@@ -175,6 +175,7 @@ jobs:
           sparse-checkout: |
             .github/actions/setup-bun
             scripts/patch-appimage.sh
+            scripts/release-asset-name.mjs
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -339,6 +340,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .github/actions/setup-bun
+            scripts/release-asset-name.mjs
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -477,6 +479,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .github/actions/setup-bun
+            scripts/release-asset-name.mjs
             scripts/upload-release-assets.mjs
             scripts/validate-signing-config.mjs
           sparse-checkout-cone-mode: false
@@ -608,6 +611,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             scripts/create-updater-manifest.sh
+            scripts/release-asset-name.mjs
             scripts/upload-release-assets.mjs
           sparse-checkout-cone-mode: false
 
