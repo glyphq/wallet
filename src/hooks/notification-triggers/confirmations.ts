@@ -71,7 +71,7 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
         publishNotificationEvent(createNotificationEvent({
           kind: "confirmed",
           title: "Transaction confirmed",
-          body: `${transactionDescription} was confirmed on the Qubic network.`,
+          body: `${transactionDescription} was confirmed on the network.`,
           identity: pending.source,
           txHash: pending.hash,
           dedupeKey: `resolved:${pending.hash}:confirmed`,
@@ -86,7 +86,7 @@ export function useTransactionResolutionTriggers(input: TransactionResolutionTri
         publishNotificationEvent(createNotificationEvent({
           kind: "failed",
           title: "Transaction failed",
-          body: `${transactionDescription} could not be confirmed on the Qubic network.`,
+          body: `${transactionDescription} could not be confirmed on the network.`,
           identity: pending.source,
           txHash: pending.hash,
           dedupeKey: `resolved:${pending.hash}:failed`,

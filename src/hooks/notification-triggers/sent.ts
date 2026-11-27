@@ -25,7 +25,7 @@ export function useSentNotificationTriggers(input: SentNotificationTriggerInput)
             publishNotificationEvent(createNotificationEvent({
               kind: "sent",
               title: "Contract call submitted",
-              body: `Your ${contractPhrase(tx.contractName)} call was submitted to the Qubic network.`,
+              body: `Your ${contractPhrase(tx.contractName)} call was submitted to the network.`,
               identity: tx.source,
               txHash: tx.hash,
               dedupeKey: `sent:${tx.hash}`,

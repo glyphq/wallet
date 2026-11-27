@@ -525,7 +525,7 @@ Delivery failure is recorded and the UI can retry, save, or copy the result.
 
 ## 16. Notifications and background behavior
 
-Notifications are rendered in a separate always-on-top Tauri window, independent of the main wallet. The native layer creates, positions, resizes, and hides that window; the main renderer sends notification events and the overlay renderer owns the visible card stack. The overlay also plays the configured terminal sound for live deliveries, keeps one card per transaction hash, preserves active cards until resolution or dismissal, and updates that card with an animated state accent bar as lifecycle state changes; replayed pending cards remain silent.
+Notifications are rendered in a separate always-on-top Tauri window, independent of the main wallet. The native layer creates, positions, resizes, and hides that window; the main renderer sends notification events and the overlay renderer owns the visible card stack. The overlay also plays the configured terminal sound for live deliveries, keeps one card per transaction hash, preserves active cards until resolution or dismissal, and updates that card with an animated bottom state bar as lifecycle state changes; replayed pending cards remain silent.
 
 - Notification windows are off by default.
 - Position, visible duration, and maximum visible cards are configurable.
