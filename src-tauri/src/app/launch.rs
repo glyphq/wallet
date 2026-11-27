@@ -26,6 +26,18 @@ fn configure_linux_runtime() {
             std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
         }
     }
+
+    let wayland_session = std::env::var_os("WAYLAND_DISPLAY").is_some()
+        || std::env::var("XDG_SESSION_TYPE")
+            .map(|value| value.eq_ignore_ascii_case("wayland"))
+            .unwrap_or(false);
+    if wayland_session && std::env::var_os("APPIMAGE").is_some() {
+        // linuxdeploy's AppImage GTK hook forces GDK_BACKEND=x11. On Wayland
+        // compositors that makes the app an XWayland client, where fractional
+        // scaling and tiling/WM sizing diverge from the native window surface.
+        // Restore Wayland first, retaining X11 as a fallback when available.
+        std::env::set_var("GDK_BACKEND", "wayland,x11");
+    }
 }
 
 /// Platform-specific environment adjustments that must run before the Tauri
