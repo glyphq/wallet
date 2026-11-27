@@ -32,6 +32,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notificationPosition: "bottom-right",
   notificationDurationSecs: 6,
   notificationMaxVisible: 3,
+  notificationSoundsEnabled: true,
+  notificationSoundVolume: "medium",
   largeIncomingThreshold: "",
   priceAlertAbove: "",
   priceAlertBelow: "",

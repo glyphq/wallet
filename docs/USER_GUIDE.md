@@ -267,6 +267,8 @@ Notifications are disabled by default. In Settings, you can choose:
 - Position: top-left, top-right, bottom-left, or bottom-right. The default is bottom-right.
 - Visible duration: 4, 6, 8, 10, or 15 seconds. The default is 6 seconds.
 - Maximum visible notifications: 2, 3, 4, or 5. The default is 3.
+- Sounds: on by default. Choose low, medium, or high volume, and use **Preview** to hear the confirmation sound.
+- Sound mapping: sent, received, confirmed, expired, connection requests, and transaction requests use distinct terminal sounds.
 
 Clicking a notification opens its transaction or account in Glyph Explorer when an explorer target is available. Notification records are stored in the application even when the window is disabled or suppressed. By default, notification windows are suppressed while the wallet is locked unless the locked-notification option allows them.
 

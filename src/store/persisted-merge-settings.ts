@@ -5,6 +5,7 @@ import {
   sanitizeNotificationDurationSecs,
   sanitizeNotificationMaxVisible,
   sanitizeNotificationPosition,
+  sanitizeNotificationSoundVolume,
   sanitizePollingInterval,
 } from "./persisted-sanitizers";
 
@@ -86,6 +87,14 @@ export function mergeSettings(value: unknown, current: AppSettings): AppSettings
     notificationMaxVisible: sanitizeNotificationMaxVisible(
       settingsBase.notificationMaxVisible,
       current.notificationMaxVisible
+    ),
+    notificationSoundsEnabled:
+      typeof settingsBase.notificationSoundsEnabled === "boolean"
+        ? settingsBase.notificationSoundsEnabled
+        : current.notificationSoundsEnabled,
+    notificationSoundVolume: sanitizeNotificationSoundVolume(
+      settingsBase.notificationSoundVolume,
+      current.notificationSoundVolume
     ),
     sponsorAttribution:
       settingsBase.sponsorAttribution === "identity" ||

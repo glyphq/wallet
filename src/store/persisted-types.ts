@@ -21,6 +21,7 @@ export type {
   FontPairId,
   NetworkConfig,
   NotificationPosition,
+  NotificationSoundVolume,
   ThemeMode,
   WalletColor,
   WalletMeta,

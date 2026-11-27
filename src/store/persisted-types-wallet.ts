@@ -29,6 +29,7 @@ export type FontPairId =
   | "jetbrains";
 export type ThemeMode = "dark" | "light";
 export type NotificationPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type NotificationSoundVolume = "low" | "medium" | "high";
 
 export type AccentColorId =
   | "green"
@@ -101,6 +102,8 @@ export interface AppSettings {
   notificationPosition: NotificationPosition;
   notificationDurationSecs: number;
   notificationMaxVisible: number;
+  notificationSoundsEnabled: boolean;
+  notificationSoundVolume: NotificationSoundVolume;
   largeIncomingThreshold: string;
   priceAlertAbove: string;
   priceAlertBelow: string;

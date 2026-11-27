@@ -9,6 +9,7 @@ import { SettingsSectionLabel, SettingsDivider } from "@/components/settings-sec
 import { Toggle } from "@/components/toggle";
 import { Button } from "@/components/button";
 import { createNotificationEvent, publishNotificationEvent } from "@/lib/notification-events";
+import { previewNotificationSound } from "@/lib/notification-sounds";
 import { usePersistedStore } from "@/store/persisted";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
 import { Notification01Icon } from "@/lib/icons";
@@ -23,6 +24,8 @@ export default function NotificationsScreen() {
   const notificationPosition = usePersistedStore((s) => s.settings.notificationPosition);
   const notificationDurationSecs = usePersistedStore((s) => s.settings.notificationDurationSecs);
   const notificationMaxVisible = usePersistedStore((s) => s.settings.notificationMaxVisible);
+  const notificationSoundsEnabled = usePersistedStore((s) => s.settings.notificationSoundsEnabled);
+  const notificationSoundVolume = usePersistedStore((s) => s.settings.notificationSoundVolume);
   const hideToTray = usePersistedStore((s) => s.settings.hideToTray);
   const autostartEnabled = usePersistedStore((s) => s.settings.autostartEnabled);
   const updateSettings = usePersistedStore((s) => s.updateSettings);
@@ -206,6 +209,48 @@ export default function NotificationsScreen() {
                   {count}
                 </Button>
               ))}
+            </div>
+          </div>
+        </div>
+
+        <SettingsDivider fullBleed />
+
+        {/* Sound */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <SettingsSectionLabel>Sound</SettingsSectionLabel>
+          <Toggle
+            label="Play sounds"
+            description="Play a terminal sound when a notification appears"
+            checked={notificationSoundsEnabled}
+            onChange={(checked) => updateSettings({ notificationSoundsEnabled: checked })}
+            disabled={!enabled}
+          />
+          <SettingsDivider fullBleed />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", paddingTop: "var(--space-3)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-secondary)" }}>Volume</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+              {(["low", "medium", "high"] as const).map((value) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={notificationSoundVolume === value ? "primary" : "secondary"}
+                  style={{ width: "auto", textTransform: "capitalize" }}
+                  aria-pressed={notificationSoundVolume === value}
+                  disabled={!enabled || !notificationSoundsEnabled}
+                  onClick={() => updateSettings({ notificationSoundVolume: value })}
+                >
+                  {value}
+                </Button>
+              ))}
+              <Button
+                size="sm"
+                variant="secondary"
+                style={{ width: "auto" }}
+                disabled={!enabled || !notificationSoundsEnabled}
+                onClick={previewNotificationSound}
+              >
+                Preview
+              </Button>
             </div>
           </div>
         </div>
