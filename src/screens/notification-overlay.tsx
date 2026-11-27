@@ -30,25 +30,16 @@ function targetUrl(notification: NotificationPayload): string | null {
   return null;
 }
 
-interface NotificationStateVisual {
-  label: string;
-  color: string;
-}
-
-const NOTIFICATION_STATES: Record<string, NotificationStateVisual> = {
-  sent: { label: "Sent", color: "var(--color-status-warning)" },
-  received: { label: "Received", color: "var(--color-accent)" },
-  confirmed: { label: "Confirmed", color: "var(--color-status-success)" },
-  failed: { label: "Failed", color: "var(--color-status-error)" },
-  expired: { label: "Expired", color: "var(--color-status-error)" },
-  deep_link: { label: "Request", color: "var(--color-status-info)" },
-  price_alert: { label: "Alert", color: "var(--color-status-info)" },
-  system: { label: "System", color: "var(--color-text-tertiary)" },
+const NOTIFICATION_STATE_COLORS: Record<string, string> = {
+  sent: "var(--color-status-warning)",
+  received: "var(--color-accent)",
+  confirmed: "var(--color-status-success)",
+  failed: "var(--color-status-error)",
+  expired: "var(--color-status-error)",
+  deep_link: "var(--color-status-info)",
+  price_alert: "var(--color-status-info)",
+  system: "var(--color-text-tertiary)",
 };
-
-function notificationState(kind: string): NotificationStateVisual {
-  return NOTIFICATION_STATES[kind] ?? { label: "Status", color: "var(--color-text-tertiary)" };
-}
 
 function NotificationCard({
   notification,
@@ -62,7 +53,7 @@ function NotificationCard({
   const contentKey = `${notification.title}\n${notification.body}\n${notification.kind}`;
   const previousContentRef = useRef(contentKey);
   const url = targetUrl(notification);
-  const state = notificationState(notification.kind);
+  const stateColor = NOTIFICATION_STATE_COLORS[notification.kind] ?? "var(--color-text-tertiary)";
 
   useEffect(() => {
     if (previousContentRef.current !== contentKey) {
@@ -130,7 +121,7 @@ function NotificationCard({
           top: 0,
           bottom: 0,
           width: 3,
-          background: state.color,
+          background: stateColor,
           transformOrigin: "top",
         }}
       />
@@ -143,38 +134,18 @@ function NotificationCard({
         style={{ flexShrink: 0, marginTop: 2 }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-          <motion.span
-            key={notification.kind}
-            initial={{ opacity: 0, y: -2 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
-            style={{
-              flexShrink: 0,
-              fontFamily: "var(--font-mono)",
-              fontSize: 8,
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: state.color,
-            }}
-          >
-            {state.label}
-          </motion.span>
-          <span
-            style={{
-              minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              fontFamily: "var(--font-sans)",
-              fontSize: 13,
-              fontWeight: 600,
-              lineHeight: 1.3,
-            }}
-          >
-            {notification.title}
-          </span>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            fontWeight: 600,
+            lineHeight: 1.3,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {notification.title}
         </div>
         <div
           style={{
