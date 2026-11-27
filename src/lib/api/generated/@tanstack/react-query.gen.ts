@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { batchTransactions, broadcastTransaction, deleteWebhook, downloadTickBundle, getActivity, getAsset, getEpoch, getHealth, getIdentity, getIdentityActivity, getIdentityFlow, getInclusionRisk, getLatestPrice, getLiveIdentity, getLiveTransaction, getLiveTransactionStatus, getLiveWallet, getMarket, getNetworkIndex, getNetworkOverview, getNetworkRevenueIdentity, getNetworkSystem, getOracleOverview, getOracleQuery, getOracleRevenue, getOracleStats, getOracleSubscription, getPriceHistory, getPriceSnapshot, getStatus, getStatusPage, getTick, getTickCapacity, getTickQuorumEvidence, getTransaction, getTransactionEffects, getTransactionLifecycle, getTransactionStatus, getWallet, listAssetHolders, listAssets, listAssetTransfers, listEpochComputors, listEpochs, listEvents, listEventTypes, listIdentities, listIdentityAssets, listIdentityCounterparties, listIdentityEvents, listIdentityTransactions, listLiveTickTransactions, listNetworkPeers, listNetworkRevenue, listOracleQueries, listOracleSubscriptions, listPrices, listTickEvents, listTicks, listTickTransactions, listTopIdentities, listTransactions, listWalletAssets, listWebhookDeliveries, listWebhooks, type Options, queryContract, registerWebhook, search, streamMarket, streamPrices, streamWebSocket, validateTransaction } from '../sdk.gen';
-import type { BatchTransactionsData, BroadcastTransactionData, BroadcastTransactionResponse, DeleteWebhookData, DeleteWebhookResponse, DownloadTickBundleData, DownloadTickBundleResponse, GetActivityData, GetActivityResponse, GetAssetData, GetAssetResponse, GetEpochData, GetEpochResponse, GetHealthData, GetIdentityActivityData, GetIdentityActivityResponse, GetIdentityData, GetIdentityFlowData, GetIdentityFlowResponse, GetIdentityResponse, GetInclusionRiskData, GetInclusionRiskResponse, GetLatestPriceData, GetLatestPriceResponse, GetLiveIdentityData, GetLiveIdentityResponse, GetLiveTransactionData, GetLiveTransactionResponse, GetLiveTransactionStatusData, GetLiveTransactionStatusResponse, GetLiveWalletData, GetLiveWalletResponse, GetMarketData, GetMarketResponse, GetNetworkIndexData, GetNetworkIndexResponse, GetNetworkOverviewData, GetNetworkOverviewResponse, GetNetworkRevenueIdentityData, GetNetworkRevenueIdentityResponse, GetNetworkSystemData, GetNetworkSystemResponse, GetOracleOverviewData, GetOracleOverviewResponse, GetOracleQueryData, GetOracleQueryResponse, GetOracleRevenueData, GetOracleRevenueResponse, GetOracleStatsData, GetOracleStatsResponse, GetOracleSubscriptionData, GetOracleSubscriptionResponse, GetPriceHistoryData, GetPriceHistoryResponse, GetPriceSnapshotData, GetPriceSnapshotResponse, GetStatusData, GetStatusPageData, GetStatusPageResponse, GetStatusResponse, GetTickCapacityData, GetTickCapacityResponse, GetTickData, GetTickQuorumEvidenceData, GetTickQuorumEvidenceResponse, GetTickResponse, GetTransactionData, GetTransactionEffectsData, GetTransactionEffectsResponse, GetTransactionLifecycleData, GetTransactionLifecycleResponse, GetTransactionResponse, GetTransactionStatusData, GetWalletData, GetWalletResponse, ListAssetHoldersData, ListAssetHoldersResponse, ListAssetsData, ListAssetsResponse, ListAssetTransfersData, ListAssetTransfersResponse, ListEpochComputorsData, ListEpochComputorsResponse, ListEpochsData, ListEpochsResponse, ListEventsData, ListEventsResponse, ListEventTypesData, ListEventTypesResponse, ListIdentitiesData, ListIdentitiesResponse, ListIdentityAssetsData, ListIdentityAssetsResponse, ListIdentityCounterpartiesData, ListIdentityCounterpartiesResponse, ListIdentityEventsData, ListIdentityEventsResponse, ListIdentityTransactionsData, ListIdentityTransactionsResponse, ListLiveTickTransactionsData, ListLiveTickTransactionsResponse, ListNetworkPeersData, ListNetworkPeersResponse, ListNetworkRevenueData, ListNetworkRevenueResponse, ListOracleQueriesData, ListOracleQueriesResponse, ListOracleSubscriptionsData, ListOracleSubscriptionsResponse, ListPricesData, ListPricesResponse, ListTickEventsData, ListTickEventsResponse, ListTicksData, ListTicksResponse, ListTickTransactionsData, ListTickTransactionsResponse, ListTopIdentitiesData, ListTopIdentitiesResponse, ListTransactionsData, ListTransactionsResponse, ListWalletAssetsData, ListWalletAssetsResponse, ListWebhookDeliveriesData, ListWebhookDeliveriesResponse, ListWebhooksData, ListWebhooksResponse, QueryContractData, QueryContractResponse, RegisterWebhookData, RegisterWebhookResponse, SearchData, SearchResponse, StreamMarketData, StreamPricesData, StreamWebSocketData, ValidateTransactionData, ValidateTransactionResponse } from '../types.gen';
+import { assetOverview, batchReads, batchTransactions, broadcastTransaction, createTransactionLifecycleLink, deleteWebhook, downloadTickBundle, explorerOverview, exportCollection, getActivity, getAnalyticsNetwork, getAsset, getContract, getEpoch, getGraph, getHealth, getIdentity, getIdentityActivity, getIdentityBalanceHistory, getIdentityFlow, getIdentityGraph, getInclusionRisk, getLatestPrice, getLiveIdentity, getLiveTransaction, getLiveTransactionStatus, getLiveWallet, getMarket, getNetworkIndex, getNetworkOverview, getNetworkRevenueIdentity, getNetworkSystem, getOracleOverview, getOracleQuery, getOracleRevenue, getOracleStats, getOracleSubscription, getPriceHistory, getPriceSnapshot, getStatus, getStatusPage, getTick, getTickCapacity, getTickQuorumEvidence, getTransaction, getTransactionEffects, getTransactionLifecycle, getTransactionStatus, getWallet, identityOverview, listActiveIdentities, listAllDividends, listAssetHolders, listAssets, listAssetTransfers, listContractDividends, listContractEvents, listContracts, listEpochComputors, listEpochs, listEvents, listEventTypes, listIdentities, listIdentityAssets, listIdentityCounterparties, listIdentityEvents, listIdentityTransactions, listLabels, listLiveTickTransactions, listNetworkPeers, listNetworkRevenue, listOracleQueries, listOracleSubscriptions, listPrices, listTickEvents, listTicks, listTickTransactions, listTickVotes, listTopIdentities, listTransactions, listWalletAssets, listWebhookDeliveries, listWebhooks, listWhales, type Options, queryContract, registerWebhook, replayWebhook, search, streamMarket, streamPrices, streamWebSocket, testWebhook, validateTransaction, walletOverview } from '../sdk.gen';
+import type { AssetOverviewData, BatchReadsData, BatchTransactionsData, BroadcastTransactionData, BroadcastTransactionResponse, CreateTransactionLifecycleLinkData, CreateTransactionLifecycleLinkResponse, DeleteWebhookData, DeleteWebhookResponse, DownloadTickBundleData, DownloadTickBundleResponse, ExplorerOverviewData, ExportCollectionData, ExportCollectionResponse, GetActivityData, GetActivityResponse, GetAnalyticsNetworkData, GetAssetData, GetAssetResponse, GetContractData, GetEpochData, GetEpochResponse, GetGraphData, GetHealthData, GetIdentityActivityData, GetIdentityActivityResponse, GetIdentityBalanceHistoryData, GetIdentityData, GetIdentityFlowData, GetIdentityFlowResponse, GetIdentityGraphData, GetIdentityResponse, GetInclusionRiskData, GetInclusionRiskResponse, GetLatestPriceData, GetLatestPriceResponse, GetLiveIdentityData, GetLiveIdentityResponse, GetLiveTransactionData, GetLiveTransactionResponse, GetLiveTransactionStatusData, GetLiveTransactionStatusResponse, GetLiveWalletData, GetLiveWalletResponse, GetMarketData, GetMarketResponse, GetNetworkIndexData, GetNetworkIndexResponse, GetNetworkOverviewData, GetNetworkOverviewResponse, GetNetworkRevenueIdentityData, GetNetworkRevenueIdentityResponse, GetNetworkSystemData, GetNetworkSystemResponse, GetOracleOverviewData, GetOracleOverviewResponse, GetOracleQueryData, GetOracleQueryResponse, GetOracleRevenueData, GetOracleRevenueResponse, GetOracleStatsData, GetOracleStatsResponse, GetOracleSubscriptionData, GetOracleSubscriptionResponse, GetPriceHistoryData, GetPriceHistoryResponse, GetPriceSnapshotData, GetPriceSnapshotResponse, GetStatusData, GetStatusPageData, GetStatusPageResponse, GetStatusResponse, GetTickCapacityData, GetTickCapacityResponse, GetTickData, GetTickQuorumEvidenceData, GetTickQuorumEvidenceResponse, GetTickResponse, GetTransactionData, GetTransactionEffectsData, GetTransactionEffectsResponse, GetTransactionLifecycleData, GetTransactionLifecycleResponse, GetTransactionResponse, GetTransactionStatusData, GetWalletData, GetWalletResponse, IdentityOverviewData, ListActiveIdentitiesData, ListAllDividendsData, ListAssetHoldersData, ListAssetHoldersResponse, ListAssetsData, ListAssetsResponse, ListAssetTransfersData, ListAssetTransfersResponse, ListContractDividendsData, ListContractEventsData, ListContractsData, ListEpochComputorsData, ListEpochComputorsResponse, ListEpochsData, ListEpochsResponse, ListEventsData, ListEventsResponse, ListEventTypesData, ListEventTypesResponse, ListIdentitiesData, ListIdentitiesResponse, ListIdentityAssetsData, ListIdentityAssetsResponse, ListIdentityCounterpartiesData, ListIdentityCounterpartiesResponse, ListIdentityEventsData, ListIdentityEventsResponse, ListIdentityTransactionsData, ListIdentityTransactionsResponse, ListLabelsData, ListLiveTickTransactionsData, ListLiveTickTransactionsResponse, ListNetworkPeersData, ListNetworkPeersResponse, ListNetworkRevenueData, ListNetworkRevenueResponse, ListOracleQueriesData, ListOracleQueriesResponse, ListOracleSubscriptionsData, ListOracleSubscriptionsResponse, ListPricesData, ListPricesResponse, ListTickEventsData, ListTickEventsResponse, ListTicksData, ListTicksResponse, ListTickTransactionsData, ListTickTransactionsResponse, ListTickVotesData, ListTopIdentitiesData, ListTopIdentitiesResponse, ListTransactionsData, ListTransactionsResponse, ListWalletAssetsData, ListWalletAssetsResponse, ListWebhookDeliveriesData, ListWebhookDeliveriesResponse, ListWebhooksData, ListWebhooksResponse, ListWhalesData, QueryContractData, QueryContractResponse, RegisterWebhookData, RegisterWebhookResponse, ReplayWebhookData, SearchData, SearchResponse, StreamMarketData, StreamPricesData, StreamWebSocketData, TestWebhookData, ValidateTransactionData, ValidateTransactionResponse, WalletOverviewData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -79,6 +79,26 @@ export const getStatusPageOptions = (options?: Options<GetStatusPageData>) => qu
     queryKey: getStatusPageQueryKey(options)
 });
 
+export const listActiveIdentitiesQueryKey = (options?: Options<ListActiveIdentitiesData>) => createQueryKey('listActiveIdentities', options);
+
+/**
+ * Unique active identities per bucket
+ *
+ * Distinct identities seen in transfers and event participants per time bucket.
+ */
+export const listActiveIdentitiesOptions = (options?: Options<ListActiveIdentitiesData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listActiveIdentitiesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listActiveIdentities({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listActiveIdentitiesQueryKey(options)
+});
+
 export const getActivityQueryKey = (options?: Options<GetActivityData>) => createQueryKey('getActivity', options);
 
 /**
@@ -119,6 +139,26 @@ export const listEventTypesOptions = (options?: Options<ListEventTypesData>) => 
     queryKey: listEventTypesQueryKey(options)
 });
 
+export const getAnalyticsNetworkQueryKey = (options?: Options<GetAnalyticsNetworkData>) => createQueryKey('getAnalyticsNetwork', options);
+
+/**
+ * Index-wide network counts
+ *
+ * Head, epoch, tick, transaction, event, and identity counts from the index.
+ */
+export const getAnalyticsNetworkOptions = (options?: Options<GetAnalyticsNetworkData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getAnalyticsNetworkQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAnalyticsNetwork({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAnalyticsNetworkQueryKey(options)
+});
+
 export const listTopIdentitiesQueryKey = (options?: Options<ListTopIdentitiesData>) => createQueryKey('listTopIdentities', options);
 
 /**
@@ -137,6 +177,26 @@ export const listTopIdentitiesOptions = (options?: Options<ListTopIdentitiesData
         return data;
     },
     queryKey: listTopIdentitiesQueryKey(options)
+});
+
+export const listWhalesQueryKey = (options?: Options<ListWhalesData>) => createQueryKey('listWhales', options);
+
+/**
+ * List whale transfers
+ *
+ * Indexed transactions at or above the operator whale threshold.
+ */
+export const listWhalesOptions = (options?: Options<ListWhalesData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listWhalesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listWhales({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listWhalesQueryKey(options)
 });
 
 export const listAssetsQueryKey = (options?: Options<ListAssetsData>) => createQueryKey('listAssets', options);
@@ -260,6 +320,26 @@ export const listAssetHoldersOptions = (options: Options<ListAssetHoldersData>) 
     queryKey: listAssetHoldersQueryKey(options)
 });
 
+export const assetOverviewQueryKey = (options: Options<AssetOverviewData>) => createQueryKey('assetOverview', options);
+
+/**
+ * Asset overview
+ *
+ * Issuance, transfer statistics, recent transfers, and ranked holders.
+ */
+export const assetOverviewOptions = (options: Options<AssetOverviewData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof assetOverviewQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await assetOverview({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: assetOverviewQueryKey(options)
+});
+
 export const listAssetTransfersQueryKey = (options: Options<ListAssetTransfersData>) => createQueryKey('listAssetTransfers', options);
 
 /**
@@ -308,6 +388,253 @@ export const listAssetTransfersInfiniteOptions = (options: Options<ListAssetTran
             return data;
         },
         queryKey: listAssetTransfersInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Batch independent reads
+ *
+ * Up to 100 typed reads per request. Each result carries its own status.
+ */
+export const batchReadsMutation = (options?: Partial<Options<BatchReadsData>>): UseMutationOptions<unknown, DefaultError, Options<BatchReadsData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<BatchReadsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await batchReads({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listContractsQueryKey = (options?: Options<ListContractsData>) => createQueryKey('listContracts', options);
+
+/**
+ * List observed contracts
+ *
+ * Contract indices discovered from decoded events and dividend rows. Names come from optional operator labels.
+ */
+export const listContractsOptions = (options?: Options<ListContractsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listContractsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listContracts({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listContractsQueryKey(options)
+});
+
+export const listContractsInfiniteQueryKey = (options?: Options<ListContractsData>): QueryKey<Options<ListContractsData>> => createQueryKey('listContracts', options, true);
+
+/**
+ * List observed contracts
+ *
+ * Contract indices discovered from decoded events and dividend rows. Names come from optional operator labels.
+ */
+export const listContractsInfiniteOptions = (options?: Options<ListContractsData>) => {
+    const opts = infiniteQueryOptions<unknown, DefaultError, InfiniteData<unknown>, QueryKey<Options<ListContractsData>>, number | Pick<QueryKey<Options<ListContractsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListContractsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listContracts({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listContractsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const listAllDividendsQueryKey = (options?: Options<ListAllDividendsData>) => createQueryKey('listAllDividends', options);
+
+/**
+ * List dividend epochs across contracts
+ *
+ * Tick-level dividend rows grouped into one result per epoch and contract.
+ */
+export const listAllDividendsOptions = (options?: Options<ListAllDividendsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listAllDividendsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAllDividends({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAllDividendsQueryKey(options)
+});
+
+export const listAllDividendsInfiniteQueryKey = (options?: Options<ListAllDividendsData>): QueryKey<Options<ListAllDividendsData>> => createQueryKey('listAllDividends', options, true);
+
+/**
+ * List dividend epochs across contracts
+ *
+ * Tick-level dividend rows grouped into one result per epoch and contract.
+ */
+export const listAllDividendsInfiniteOptions = (options?: Options<ListAllDividendsData>) => {
+    const opts = infiniteQueryOptions<unknown, DefaultError, InfiniteData<unknown>, QueryKey<Options<ListAllDividendsData>>, number | Pick<QueryKey<Options<ListAllDividendsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListAllDividendsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listAllDividends({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listAllDividendsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getContractQueryKey = (options: Options<GetContractData>) => createQueryKey('getContract', options);
+
+/**
+ * Contract overview
+ *
+ * Observed contract summary with recent events and epoch-grouped dividends.
+ */
+export const getContractOptions = (options: Options<GetContractData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getContractQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getContract({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getContractQueryKey(options)
+});
+
+export const listContractDividendsQueryKey = (options: Options<ListContractDividendsData>) => createQueryKey('listContractDividends', options);
+
+/**
+ * List contract dividends
+ *
+ * Dividend distributions for one contract grouped by epoch, optionally expanded per tick.
+ */
+export const listContractDividendsOptions = (options: Options<ListContractDividendsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listContractDividendsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listContractDividends({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listContractDividendsQueryKey(options)
+});
+
+export const listContractDividendsInfiniteQueryKey = (options: Options<ListContractDividendsData>): QueryKey<Options<ListContractDividendsData>> => createQueryKey('listContractDividends', options, true);
+
+/**
+ * List contract dividends
+ *
+ * Dividend distributions for one contract grouped by epoch, optionally expanded per tick.
+ */
+export const listContractDividendsInfiniteOptions = (options: Options<ListContractDividendsData>) => {
+    const opts = infiniteQueryOptions<unknown, DefaultError, InfiniteData<unknown>, QueryKey<Options<ListContractDividendsData>>, number | Pick<QueryKey<Options<ListContractDividendsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListContractDividendsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listContractDividends({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listContractDividendsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const listContractEventsQueryKey = (options: Options<ListContractEventsData>) => createQueryKey('listContractEvents', options);
+
+/**
+ * List contract events
+ *
+ * Decoded events emitted by one contract index, newest first.
+ */
+export const listContractEventsOptions = (options: Options<ListContractEventsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listContractEventsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listContractEvents({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listContractEventsQueryKey(options)
+});
+
+export const listContractEventsInfiniteQueryKey = (options: Options<ListContractEventsData>): QueryKey<Options<ListContractEventsData>> => createQueryKey('listContractEvents', options, true);
+
+/**
+ * List contract events
+ *
+ * Decoded events emitted by one contract index, newest first.
+ */
+export const listContractEventsInfiniteOptions = (options: Options<ListContractEventsData>) => {
+    const opts = infiniteQueryOptions<unknown, DefaultError, InfiniteData<unknown>, QueryKey<Options<ListContractEventsData>>, number | Pick<QueryKey<Options<ListContractEventsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListContractEventsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    offset: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listContractEvents({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listContractEventsInfiniteQueryKey(options)
     });
     return opts as Omit<typeof opts, 'initialData'>;
 };
@@ -456,6 +783,66 @@ export const listEventsInfiniteOptions = (options?: Options<ListEventsData>) => 
     return opts as Omit<typeof opts, 'initialData'>;
 };
 
+export const explorerOverviewQueryKey = (options?: Options<ExplorerOverviewData>) => createQueryKey('explorerOverview', options);
+
+/**
+ * Explorer overview
+ *
+ * Head, recent collections, analytics, top identities, contracts, whales, price, and market in one response.
+ */
+export const explorerOverviewOptions = (options?: Options<ExplorerOverviewData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof explorerOverviewQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await explorerOverview({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: explorerOverviewQueryKey(options)
+});
+
+export const exportCollectionQueryKey = (options: Options<ExportCollectionData>) => createQueryKey('exportCollection', options);
+
+/**
+ * Export a bounded collection
+ *
+ * CSV or NDJSON snapshot of transactions, events, identities, assets, contracts, or dividends.
+ */
+export const exportCollectionOptions = (options: Options<ExportCollectionData>) => queryOptions<ExportCollectionResponse, DefaultError, ExportCollectionResponse, ReturnType<typeof exportCollectionQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await exportCollection({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: exportCollectionQueryKey(options)
+});
+
+export const getGraphQueryKey = (options: Options<GetGraphData>) => createQueryKey('getGraph', options);
+
+/**
+ * Get identity graph by query
+ *
+ * Query-parameter alias of the identity graph route.
+ */
+export const getGraphOptions = (options: Options<GetGraphData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getGraphQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getGraph({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getGraphQueryKey(options)
+});
+
 export const listIdentitiesQueryKey = (options?: Options<ListIdentitiesData>) => createQueryKey('listIdentities', options);
 
 /**
@@ -513,7 +900,7 @@ export const getIdentityQueryKey = (options: Options<GetIdentityData>) => create
 /**
  * Get identity
  *
- * Observed QU flow.
+ * Indexed QU flow plus the last cached peer spectrum balance when available. `balance` is indexed net flow and must not be used as an authoritative wallet balance; use `actual_balance` or `spectrum_balance`.
  */
 export const getIdentityOptions = (options: Options<GetIdentityData>) => queryOptions<GetIdentityResponse, DefaultError, GetIdentityResponse, ReturnType<typeof getIdentityQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -598,6 +985,26 @@ export const listIdentityAssetsOptions = (options: Options<ListIdentityAssetsDat
         return data;
     },
     queryKey: listIdentityAssetsQueryKey(options)
+});
+
+export const getIdentityBalanceHistoryQueryKey = (options: Options<GetIdentityBalanceHistoryData>) => createQueryKey('getIdentityBalanceHistory', options);
+
+/**
+ * Get cumulative balance history
+ *
+ * Zero-filled indexed transfer buckets in chronological order with a cumulative net delta. This is not the live spectrum balance.
+ */
+export const getIdentityBalanceHistoryOptions = (options: Options<GetIdentityBalanceHistoryData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getIdentityBalanceHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getIdentityBalanceHistory({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getIdentityBalanceHistoryQueryKey(options)
 });
 
 export const listIdentityCounterpartiesQueryKey = (options: Options<ListIdentityCounterpartiesData>) => createQueryKey('listIdentityCounterparties', options);
@@ -692,6 +1099,46 @@ export const getIdentityFlowOptions = (options: Options<GetIdentityFlowData>) =>
     queryKey: getIdentityFlowQueryKey(options)
 });
 
+export const getIdentityGraphQueryKey = (options: Options<GetIdentityGraphData>) => createQueryKey('getIdentityGraph', options);
+
+/**
+ * Get identity graph
+ *
+ * Bounded relationship graph derived from aggregated counterparty transfers.
+ */
+export const getIdentityGraphOptions = (options: Options<GetIdentityGraphData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getIdentityGraphQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getIdentityGraph({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getIdentityGraphQueryKey(options)
+});
+
+export const identityOverviewQueryKey = (options: Options<IdentityOverviewData>) => createQueryKey('identityOverview', options);
+
+/**
+ * Identity overview
+ *
+ * One identity with flow buckets, counterparties, recent transactions, activity, and events.
+ */
+export const identityOverviewOptions = (options: Options<IdentityOverviewData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof identityOverviewQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await identityOverview({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: identityOverviewQueryKey(options)
+});
+
 export const listIdentityTransactionsQueryKey = (options: Options<ListIdentityTransactionsData>) => createQueryKey('listIdentityTransactions', options);
 
 /**
@@ -744,6 +1191,26 @@ export const listIdentityTransactionsInfiniteOptions = (options: Options<ListIde
     return opts as Omit<typeof opts, 'initialData'>;
 };
 
+export const listLabelsQueryKey = (options?: Options<ListLabelsData>) => createQueryKey('listLabels', options);
+
+/**
+ * List operator labels
+ *
+ * Presentation labels for identities, assets, and contract indices.
+ */
+export const listLabelsOptions = (options?: Options<ListLabelsData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listLabelsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listLabels({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listLabelsQueryKey(options)
+});
+
 /**
  * Query contract
  *
@@ -768,7 +1235,7 @@ export const getLiveIdentityQueryKey = (options: Options<GetLiveIdentityData>) =
 /**
  * Get live identity
  *
- * Peer spectrum record, cached for up to two seconds.
+ * Peer spectrum record. Fresh for 60 seconds, then served immediately from the last persisted snapshot while a peer refresh runs in the background.
  */
 export const getLiveIdentityOptions = (options: Options<GetLiveIdentityData>) => queryOptions<GetLiveIdentityResponse, DefaultError, GetLiveIdentityResponse, ReturnType<typeof getLiveIdentityQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -848,7 +1315,7 @@ export const getLiveWalletQueryKey = (options: Options<GetLiveWalletData>) => cr
 /**
  * Get live wallet
  *
- * Point-in-time peer snapshot; not cached.
+ * Peer spectrum entity and asset snapshot, cached for 60 seconds and served stale while refreshing.
  */
 export const getLiveWalletOptions = (options: Options<GetLiveWalletData>) => queryOptions<GetLiveWalletResponse, DefaultError, GetLiveWalletResponse, ReturnType<typeof getLiveWalletQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1292,7 +1759,7 @@ export const searchQueryKey = (options: Options<SearchData>) => createQueryKey('
 /**
  * Search
  *
- * Resolve ticks, hashes, identities, and assets.
+ * Resolve ticks, epochs, contracts, hashes and hash prefixes, identities and identity prefixes, assets, asset names, and operator labels.
  */
 export const searchOptions = (options: Options<SearchData>) => queryOptions<SearchResponse, DefaultError, SearchResponse, ReturnType<typeof searchQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1603,6 +2070,26 @@ export const listTickTransactionsInfiniteOptions = (options: Options<ListTickTra
     return opts as Omit<typeof opts, 'initialData'>;
 };
 
+export const listTickVotesQueryKey = (options: Options<ListTickVotesData>) => createQueryKey('listTickVotes', options);
+
+/**
+ * List archived quorum votes
+ *
+ * Vote computor indices, signatures, and a signer bitmap. Votes require `ARCHIVE_VOTES=true`.
+ */
+export const listTickVotesOptions = (options: Options<ListTickVotesData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof listTickVotesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listTickVotes({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listTickVotesQueryKey(options)
+});
+
 export const listTransactionsQueryKey = (options?: Options<ListTransactionsData>) => createQueryKey('listTransactions', options);
 
 /**
@@ -1737,7 +2224,7 @@ export const getTransactionQueryKey = (options: Options<GetTransactionData>) => 
 /**
  * Get transaction
  *
- * By hash.
+ * By hash. Falls back to Glyph's durable tracking record for a transaction submitted through this API but not indexed yet. `meta.indexed=false` and `meta.source=tracking` mark the fallback; the response is not cached. Failed tracked transactions are retained indefinitely and return `state=failed`.
  */
 export const getTransactionOptions = (options: Options<GetTransactionData>) => queryOptions<GetTransactionResponse, DefaultError, GetTransactionResponse, ReturnType<typeof getTransactionQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1757,7 +2244,7 @@ export const getTransactionEffectsQueryKey = (options: Options<GetTransactionEff
 /**
  * Get transaction effects
  *
- * Transaction, tick, events, typed effects, and summary.
+ * Transaction, tick, events, typed effects, and summary. A transaction that is tracked but not indexed returns its decoded transaction with empty events and effects, `meta.source=tracking`, and `no-store`. Failed tracked transactions are retained indefinitely.
  */
 export const getTransactionEffectsOptions = (options: Options<GetTransactionEffectsData>) => queryOptions<GetTransactionEffectsResponse, DefaultError, GetTransactionEffectsResponse, ReturnType<typeof getTransactionEffectsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1777,7 +2264,7 @@ export const getTransactionLifecycleQueryKey = (options: Options<GetTransactionL
 /**
  * Get transaction lifecycle
  *
- * Indexed, tracked, and peer state with events, effects, and money-flow.
+ * Indexed, tracked, and peer state with events, effects, and money-flow. `state` is `confirmed` only when the explorer index can serve the transaction; a durable tracking record or active mempool entry reports `tracking`, and a peer-only hit is `network_seen` until the writer commits it. Failed tracked transactions are retained indefinitely.
  */
 export const getTransactionLifecycleOptions = (options: Options<GetTransactionLifecycleData>) => queryOptions<GetTransactionLifecycleResponse, DefaultError, GetTransactionLifecycleResponse, ReturnType<typeof getTransactionLifecycleQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1792,12 +2279,31 @@ export const getTransactionLifecycleOptions = (options: Options<GetTransactionLi
     queryKey: getTransactionLifecycleQueryKey(options)
 });
 
+/**
+ * Create a temporary encrypted lifecycle stream link
+ *
+ * Creates a short-lived AEAD token for the transaction lifecycle SSE stream. The token is self-contained, scoped to one hash, and expires. No account or API key is required.
+ */
+export const createTransactionLifecycleLinkMutation = (options?: Partial<Options<CreateTransactionLifecycleLinkData>>): UseMutationOptions<CreateTransactionLifecycleLinkResponse, DefaultError, Options<CreateTransactionLifecycleLinkData>> => {
+    const mutationOptions: UseMutationOptions<CreateTransactionLifecycleLinkResponse, DefaultError, Options<CreateTransactionLifecycleLinkData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createTransactionLifecycleLink({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getTransactionStatusQueryKey = (options: Options<GetTransactionStatusData>) => createQueryKey('getTransactionStatus', options);
 
 /**
  * Get transaction status
  *
- * Legacy status view. Use transaction lifecycle for events, effects, tracking, and timeline.
+ * Legacy status view. Use transaction lifecycle for events, effects, tracking, and timeline. Durable tracked rows keep pending, failed, and expired transactions readable without a peer.
  *
  * @deprecated
  */
@@ -1819,7 +2325,7 @@ export const getWalletQueryKey = (options: Options<GetWalletData>) => createQuer
 /**
  * Get wallet
  *
- * Indexed identity, recent transactions, and peer asset lists.
+ * Indexed identity, recent transactions, cached peer entity, and cached asset lists. Entity and assets are fresh for 60 seconds and served stale while refreshing.
  */
 export const getWalletOptions = (options: Options<GetWalletData>) => queryOptions<GetWalletResponse, DefaultError, GetWalletResponse, ReturnType<typeof getWalletQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1839,7 +2345,7 @@ export const listWalletAssetsQueryKey = (options: Options<ListWalletAssetsData>)
 /**
  * List wallet assets
  *
- * Issued, owned, and possessed.
+ * Issued, owned, and possessed asset lists, cached for 60 seconds and served stale while refreshing.
  */
 export const listWalletAssetsOptions = (options: Options<ListWalletAssetsData>) => queryOptions<ListWalletAssetsResponse, DefaultError, ListWalletAssetsResponse, ReturnType<typeof listWalletAssetsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1852,6 +2358,26 @@ export const listWalletAssetsOptions = (options: Options<ListWalletAssetsData>) 
         return data;
     },
     queryKey: listWalletAssetsQueryKey(options)
+});
+
+export const walletOverviewQueryKey = (options: Options<WalletOverviewData>) => createQueryKey('walletOverview', options);
+
+/**
+ * Wallet overview
+ *
+ * Wallet identity overview with a peer-backed wallet and asset section when peers are configured.
+ */
+export const walletOverviewOptions = (options: Options<WalletOverviewData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof walletOverviewQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await walletOverview({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: walletOverviewQueryKey(options)
 });
 
 export const listWebhooksQueryKey = (options?: Options<ListWebhooksData>) => createQueryKey('listWebhooks', options);
@@ -1877,7 +2403,7 @@ export const listWebhooksOptions = (options?: Options<ListWebhooksData>) => quer
 /**
  * Register webhook
  *
- * Signed single-attempt delivery for tracked transaction events. Secrets and full URLs are never returned.
+ * Signed single-attempt delivery for transaction lifecycle, on-chain event, and whale events. Secrets and full URLs are never returned.
  */
 export const registerWebhookMutation = (options?: Partial<Options<RegisterWebhookData>>): UseMutationOptions<RegisterWebhookResponse, DefaultError, Options<RegisterWebhookData>> => {
     const mutationOptions: UseMutationOptions<RegisterWebhookResponse, DefaultError, Options<RegisterWebhookData>> = {
@@ -1931,6 +2457,44 @@ export const listWebhookDeliveriesOptions = (options: Options<ListWebhookDeliver
     },
     queryKey: listWebhookDeliveriesQueryKey(options)
 });
+
+/**
+ * Replay stored deliveries
+ *
+ * Re-queues stored deliveries with their original payloads.
+ */
+export const replayWebhookMutation = (options?: Partial<Options<ReplayWebhookData>>): UseMutationOptions<unknown, DefaultError, Options<ReplayWebhookData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<ReplayWebhookData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await replayWebhook({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Queue a synthetic delivery
+ *
+ * Queues a webhook.test payload through the normal signed dispatcher.
+ */
+export const testWebhookMutation = (options?: Partial<Options<TestWebhookData>>): UseMutationOptions<unknown, DefaultError, Options<TestWebhookData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<TestWebhookData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await testWebhook({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const streamWebSocketQueryKey = (options?: Options<StreamWebSocketData>) => createQueryKey('streamWebSocket', options);
 

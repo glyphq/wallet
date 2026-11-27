@@ -16,6 +16,45 @@ interface LifecycleDocument {
   };
 }
 
+export interface LifecycleProgress {
+  state: string;
+  moneyFlew: boolean | null;
+  includedTick: number | null;
+}
+
+function terminalResolution(
+  hash: string,
+  state: string,
+  moneyFlew: boolean | null,
+  includedTick: number | null,
+): TxResolution | null {
+  switch (state) {
+    case "confirmed":
+      return {
+        hash,
+        status: moneyFlew === false ? "failed" : "confirmed",
+        moneyFlew,
+        includedTick,
+      };
+    case "failed":
+      return { hash, status: "failed", moneyFlew: false, includedTick };
+    case "expired":
+    case "missed":
+    case "cancelled":
+      return { hash, status: "expired", moneyFlew, includedTick };
+    default:
+      return null;
+  }
+}
+
+/** Maps a compact lifecycle-stream progress payload to a terminal resolution. */
+export function resolutionFromLifecycleProgress(
+  hash: string,
+  progress: LifecycleProgress,
+): TxResolution | null {
+  return terminalResolution(hash, progress.state, progress.moneyFlew, progress.includedTick);
+}
+
 /**
  * Maps a lifecycle document to a terminal resolution. Non-terminal states
  * (`queued`, `broadcast`, `pending`, `confirmed` without a peer verdict is
@@ -31,20 +70,5 @@ export function resolutionFromLifecycle(hash: string, payload: unknown): TxResol
   const includedTick =
     typeof data.included_tick === "number" ? data.included_tick : null;
 
-  switch (data.state) {
-    case "confirmed":
-      return {
-        hash,
-        status: moneyFlew === false ? "failed" : "confirmed",
-        moneyFlew,
-        includedTick,
-      };
-    case "failed":
-      return { hash, status: "failed", moneyFlew: false, includedTick };
-    case "expired":
-    case "missed":
-      return { hash, status: "expired", moneyFlew, includedTick };
-    default:
-      return null;
-  }
+  return terminalResolution(hash, data.state, moneyFlew, includedTick);
 }

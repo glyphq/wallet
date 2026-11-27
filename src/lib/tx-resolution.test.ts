@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolutionFromLifecycle } from "./tx-resolution";
+import { resolutionFromLifecycle, resolutionFromLifecycleProgress } from "./tx-resolution";
 
 const lifecycle = (state: string, extra: Record<string, unknown> = {}) => ({
   data: { state, ...extra },
@@ -19,6 +19,19 @@ describe("resolutionFromLifecycle", () => {
     expect(resolutionFromLifecycle("h", lifecycle("failed"))?.status).toBe("failed");
     expect(resolutionFromLifecycle("h", lifecycle("expired"))?.status).toBe("expired");
     expect(resolutionFromLifecycle("h", lifecycle("missed"))?.status).toBe("expired");
+  });
+
+  test("resolves terminal lifecycle stream progress", () => {
+    expect(resolutionFromLifecycleProgress("h", {
+      state: "confirmed",
+      moneyFlew: true,
+      includedTick: 42,
+    })).toEqual({ hash: "h", status: "confirmed", moneyFlew: true, includedTick: 42 });
+    expect(resolutionFromLifecycleProgress("h", {
+      state: "cancelled",
+      moneyFlew: null,
+      includedTick: null,
+    })?.status).toBe("expired");
   });
 
   test("leaves in-flight states unresolved", () => {
