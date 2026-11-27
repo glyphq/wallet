@@ -32,6 +32,13 @@ export function sanitizeNotificationMaxVisible(value: unknown, fallback: number)
     : fallback;
 }
 
+export function sanitizeNotificationSoundVolume(
+  value: unknown,
+  fallback: "low" | "medium" | "high"
+): "low" | "medium" | "high" {
+  return value === "low" || value === "medium" || value === "high" ? value : fallback;
+}
+
 export function sanitizeCustomPriceFeedUrl(
   value: unknown,
   fallback: string,

@@ -29,6 +29,7 @@ export {
 } from "./persisted-clamps";
 export {
   sanitizeCustomPriceFeedUrl,
+  sanitizeNotificationSoundVolume,
   sanitizePollingInterval,
 } from "./persisted-sanitizers";
 

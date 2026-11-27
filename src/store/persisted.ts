@@ -19,6 +19,7 @@ export type {
   NotificationEvent,
   NotificationEventKind,
   NotificationPosition,
+  NotificationSoundVolume,
   PendingTx,
   PriceSnapshot,
   RequestHistoryAction,

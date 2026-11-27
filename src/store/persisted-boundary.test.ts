@@ -10,6 +10,7 @@ import {
   clampTxMemos,
   mergePersistedState,
   sanitizeCustomPriceFeedUrl,
+  sanitizeNotificationSoundVolume,
   sanitizePollingInterval,
 } from "./persisted-boundary";
 import type { NotificationEvent, PersistedState } from "./persisted-types";
@@ -104,6 +105,13 @@ describe("persisted boundary helpers", () => {
     expect(clamped).toHaveLength(MAX_NOTIFICATION_EVENTS);
     expect(clamped[0]?.id).toBe(`event-${MAX_NOTIFICATION_EVENTS}`);
     expect(clamped.at(-1)?.id).toBe("event-1");
+  });
+
+  test("sanitizes notification sound volume", () => {
+    expect(sanitizeNotificationSoundVolume("low", "medium")).toBe("low");
+    expect(sanitizeNotificationSoundVolume("high", "medium")).toBe("high");
+    expect(sanitizeNotificationSoundVolume("loud", "medium")).toBe("medium");
+    expect(sanitizeNotificationSoundVolume(null, "low")).toBe("low");
   });
 
   test("sanitizes polling intervals within persisted bounds", () => {

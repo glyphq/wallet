@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useSessionStore } from "@/store/session";
 import { recordRuntimeIssue } from "@/lib/runtime-issues";
+import {
+  notificationSoundForKind,
+  notificationSoundGain,
+  notificationSoundSource,
+} from "@/lib/notification-sounds";
 import { usePersistedStore, type NotificationEvent, type NotificationEventKind } from "@/store/persisted";
 
 export type NotificationDeliveryResult =
@@ -52,6 +57,8 @@ export async function publishNotificationEvent(
   if (isLocked && !settings.notifyWhenLocked) {
     return { ok: false, state: "locked", message: "Notifications are suppressed while the wallet is locked." };
   }
+  const sound = notificationSoundForKind(event.kind, event.body);
+  const soundUrl = settings.notificationSoundsEnabled && sound ? notificationSoundSource(sound) : null;
   try {
     await invoke("show_notification_window", {
       notification: {
@@ -65,6 +72,8 @@ export async function publishNotificationEvent(
         maxVisible: settings.notificationMaxVisible,
         theme: settings.themeMode,
         position: settings.notificationPosition,
+        soundUrl,
+        soundVolume: notificationSoundGain(settings.notificationSoundVolume),
       },
       position: settings.notificationPosition,
     });

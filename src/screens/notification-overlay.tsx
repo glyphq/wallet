@@ -19,6 +19,8 @@ interface NotificationPayload {
   maxVisible: number;
   theme: "dark" | "light";
   position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  soundUrl?: string | null;
+  soundVolume?: number;
 }
 
 function targetUrl(notification: NotificationPayload): string | null {
@@ -160,6 +162,20 @@ function NotificationCard({
 export function NotificationOverlay() {
   const [notifications, setNotifications] = useState<NotificationPayload[]>([]);
   const [position, setPosition] = useState<NotificationPayload["position"]>("bottom-right");
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playSound = useCallback((notification: NotificationPayload) => {
+    if (!notification.soundUrl || typeof Audio === "undefined") return;
+    try {
+      activeAudioRef.current?.pause();
+      const audio = new Audio(notification.soundUrl);
+      audio.volume = Math.min(1, Math.max(0, notification.soundVolume ?? 0.65));
+      activeAudioRef.current = audio;
+      void audio.play().catch(() => {});
+    } catch {
+      // Audio is best effort; the card must still render if output is unavailable.
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.getElementById("root");
@@ -171,8 +187,9 @@ export function NotificationOverlay() {
   useEffect(() => {
     let active = true;
     let unlisten: UnlistenFn | null = null;
-    const push = (notification: NotificationPayload) => {
+    const push = (notification: NotificationPayload, withSound: boolean) => {
       if (!active) return;
+      if (withSound) playSound(notification);
       setPosition(notification.position);
       for (const name of THEME_VARS) document.documentElement.style.removeProperty(name);
       const vars = getThemeVars(notification.theme);
@@ -187,7 +204,7 @@ export function NotificationOverlay() {
 
     void (async () => {
       const stopListening = await listen<NotificationPayload>("glyph:notification", (event) => {
-        push(event.payload);
+        push(event.payload, true);
       });
       if (!active) {
         stopListening();
@@ -195,14 +212,15 @@ export function NotificationOverlay() {
       }
       unlisten = stopListening;
       const pending = await invoke<NotificationPayload[]>("get_pending_notifications");
-      for (const notification of pending) push(notification);
+      for (const notification of pending) push(notification, false);
     })();
 
     return () => {
       active = false;
       unlisten?.();
+      activeAudioRef.current?.pause();
     };
-  }, []);
+  }, [playSound]);
 
   const dismiss = useCallback((id: string) => {
     setNotifications((previous) => previous.filter((item) => item.id !== id));

@@ -16,6 +16,10 @@ const CARD_GAP: f64 = 8.0;
 const SCREEN_MARGIN: f64 = 12.0;
 const MAX_PENDING: usize = 20;
 
+fn default_sound_volume() -> f64 {
+    0.65
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationPayload {
@@ -29,6 +33,10 @@ pub struct NotificationPayload {
     pub max_visible: usize,
     pub theme: String,
     pub position: String,
+    #[serde(default)]
+    pub sound_url: Option<String>,
+    #[serde(default = "default_sound_volume")]
+    pub sound_volume: f64,
 }
 
 #[derive(Default)]
