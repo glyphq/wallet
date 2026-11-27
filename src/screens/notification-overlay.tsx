@@ -119,11 +119,11 @@ function NotificationCard({
         style={{
           position: "absolute",
           left: 0,
-          top: 0,
+          right: 0,
           bottom: 0,
-          width: 3,
+          height: 2,
           background: stateColor,
-          transformOrigin: "top",
+          transformOrigin: "left",
         }}
       />
       <img
