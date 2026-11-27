@@ -44,6 +44,8 @@ The universal application supports Apple Silicon and Intel Macs. Protocol links 
 - The tray icon uses the desktop's StatusNotifierItem support. Glyph still opens if a tray cannot be created.
 - On GNOME, an AppIndicator or KStatusNotifierItem extension may be required to display the tray icon.
 - AppImage bundles much of the GTK/WebKit stack but still uses the host graphics stack. Driver and compositor differences can affect rendering.
+- On Wayland sessions, the AppImage runs through the native Wayland backend instead of XWayland so fractional scaling and window constraints match the compositor. X11 remains a fallback.
+- Fixed-size windows are treated as floating by Niri. Hyprland also floats windows whose maximum size is smaller than a tile.
 - Glyph detects WSLg and disables WebKit compositing and DMABUF there to avoid known rendering failures.
 
 ## 3. First launch
