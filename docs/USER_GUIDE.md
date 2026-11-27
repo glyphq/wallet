@@ -272,7 +272,7 @@ Notifications are disabled by default. In Settings, you can choose:
 - Sounds: on by default. Choose low, medium, or high volume, and use **Preview** to hear the confirmation sound.
 - Sound mapping: sent, received, confirmed, expired, connection requests, and transaction requests use distinct terminal sounds.
 
-Transaction lifecycle updates reuse the same notification card, so sent, confirmed, failed, or expired states do not stack. Each update animates a state label and accent bar so the transition is visible. Clicking a notification opens its transaction or account in Glyph Explorer when an explorer target is available. Notification records are stored in the application even when the window is disabled or suppressed. By default, notification windows are suppressed while the wallet is locked unless the locked-notification option allows them.
+Transaction lifecycle updates reuse the same notification card, so sent, confirmed, failed, or expired states do not stack. Each update animates the card state accent bar so the transition is visible. Clicking a notification opens its transaction or account in Glyph Explorer when an explorer target is available. Notification records are stored in the application even when the window is disabled or suppressed. By default, notification windows are suppressed while the wallet is locked unless the locked-notification option allows them.
 
 At startup, Glyph can reconcile received transactions over a lookback of up to 24 hours. Reconciled events are normally stored without replaying old notification windows.
 
