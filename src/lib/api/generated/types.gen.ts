@@ -287,13 +287,28 @@ export type FlowBucket = {
 };
 
 export type Identity = {
+    /**
+     * Last cached peer spectrum balance
+     */
+    actual_balance?: number | null;
     balance?: number;
+    balance_source?: 'spectrum_snapshot' | 'indexed_net_flow';
     first_seen_tick?: number;
     identity?: string;
     incoming_amount?: number;
+    /**
+     * Net QU flow derived from indexed events
+     */
+    indexed_balance?: number;
     last_seen_tick?: number;
     outgoing_amount?: number;
     public_key?: string;
+    /**
+     * Alias of actual_balance
+     */
+    spectrum_balance?: number | null;
+    spectrum_observed_at?: string | null;
+    spectrum_tick?: number | null;
     transfer_count?: number;
 };
 
@@ -349,11 +364,13 @@ export type IssuedAsset = {
 
 export type LiveIdentity = {
     balance?: number;
+    balance_source?: 'spectrum' | 'unavailable';
     identity: string;
     incoming_amount?: number;
     incoming_transfers?: number;
     latest_incoming_tick?: number;
     latest_outgoing_tick?: number;
+    observed_at?: string;
     outgoing_amount?: number;
     outgoing_transfers?: number;
     public_key: string;
@@ -875,10 +892,12 @@ export type WalletAssets = {
 
 export type WalletEntity = {
     balance?: number;
+    balance_source?: 'spectrum' | 'unavailable';
     incoming_amount?: number;
     incoming_transfers?: number;
     latest_incoming_tick?: number;
     latest_outgoing_tick?: number;
+    observed_at?: string;
     outgoing_amount?: number;
     outgoing_transfers?: number;
     public_key?: string;
@@ -908,6 +927,8 @@ export type WalletSnapshot = {
 
 export type Webhook = {
     active: boolean;
+    asset?: string;
+    contract_index?: number;
     created_at: string;
     events?: Array<string>;
     id: string;
@@ -930,7 +951,10 @@ export type WebhookDelivery = {
     attempt: number;
     created_at: string;
     error?: string | null;
-    event: 'transaction.queued' | 'transaction.broadcast' | 'transaction.confirmed' | 'transaction.expired' | 'transaction.failed';
+    /**
+     * Lifecycle, onchain.<type>, onchain.whale, or webhook.test.
+     */
+    event: string;
     id: string;
     /**
      * Null after an outcome. A claimed row briefly carries the claim time.
@@ -951,11 +975,19 @@ export type WebhookDelivery = {
 
 export type WebhookRegistration = {
     /**
-     * Events to deliver. Empty means all.
+     * Optional {issuer}/{name} filter for on-chain asset events.
      */
-    events?: Array<'transaction.queued' | 'transaction.broadcast' | 'transaction.confirmed' | 'transaction.expired' | 'transaction.failed'>;
+    asset?: string;
     /**
-     * Source identity to match. Empty means all.
+     * Optional contract index filter for on-chain events.
+     */
+    contract_index?: number;
+    /**
+     * Events to deliver. Empty means all. Supports transaction lifecycle events, onchain, onchain.*, onchain.<type>, and event.<type>.
+     */
+    events?: Array<string>;
+    /**
+     * Source identity or on-chain participant to match. Empty means all.
      */
     identity?: string;
     /**
@@ -1002,6 +1034,23 @@ export type GetStatusPageResponses = {
 
 export type GetStatusPageResponse = GetStatusPageResponses[keyof GetStatusPageResponses];
 
+export type ListActiveIdentitiesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        interval?: number;
+        limit?: number;
+    };
+    url: '/v1/analytics/active-identities';
+};
+
+export type ListActiveIdentitiesResponses = {
+    /**
+     * Activity buckets, newest first
+     */
+    200: unknown;
+};
+
 export type GetActivityData = {
     body?: never;
     path?: never;
@@ -1042,6 +1091,20 @@ export type ListEventTypesResponses = {
 
 export type ListEventTypesResponse = ListEventTypesResponses[keyof ListEventTypesResponses];
 
+export type GetAnalyticsNetworkData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/analytics/network';
+};
+
+export type GetAnalyticsNetworkResponses = {
+    /**
+     * Head and collection counts
+     */
+    200: unknown;
+};
+
 export type ListTopIdentitiesData = {
     body?: never;
     path?: never;
@@ -1059,6 +1122,27 @@ export type ListTopIdentitiesResponses = {
 };
 
 export type ListTopIdentitiesResponse = ListTopIdentitiesResponses[keyof ListTopIdentitiesResponses];
+
+export type ListWhalesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Defaults to GLYPH_WHALE_MIN_AMOUNT.
+         */
+        min_amount?: number;
+        since_tick?: number;
+        limit?: number;
+    };
+    url: '/v1/analytics/whales';
+};
+
+export type ListWhalesResponses = {
+    /**
+     * Transactions at or above the threshold, newest tick first
+     */
+    200: unknown;
+};
 
 export type ListAssetsData = {
     body?: never;
@@ -1183,6 +1267,35 @@ export type ListAssetHoldersResponses = {
 
 export type ListAssetHoldersResponse = ListAssetHoldersResponses[keyof ListAssetHoldersResponses];
 
+export type AssetOverviewData = {
+    body?: never;
+    path: {
+        /**
+         * Issuer identity.
+         */
+        issuer: string;
+        name: string;
+    };
+    query?: {
+        holder_limit?: number;
+    };
+    url: '/v1/assets/{issuer}/{name}/overview';
+};
+
+export type AssetOverviewErrors = {
+    /**
+     * Asset not indexed
+     */
+    404: unknown;
+};
+
+export type AssetOverviewResponses = {
+    /**
+     * Issuance, stats, transfers, and holders
+     */
+    200: unknown;
+};
+
 export type ListAssetTransfersData = {
     body?: never;
     path: {
@@ -1230,6 +1343,167 @@ export type ListAssetTransfersResponses = {
 };
 
 export type ListAssetTransfersResponse = ListAssetTransfersResponses[keyof ListAssetTransfersResponses];
+
+export type BatchReadsData = {
+    body: {
+        requests: Array<{
+            contract_index?: number;
+            epoch?: number;
+            hash?: string;
+            id?: string;
+            identity?: string;
+            issuer?: string;
+            limit?: number;
+            name?: string;
+            offset?: number;
+            tick?: number;
+            type: string;
+        }>;
+    };
+    path?: never;
+    query?: never;
+    url: '/v1/batch';
+};
+
+export type BatchReadsErrors = {
+    /**
+     * Invalid batch
+     */
+    400: unknown;
+};
+
+export type BatchReadsResponses = {
+    /**
+     * Per-request results
+     */
+    200: unknown;
+};
+
+export type ListContractsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page size.
+         */
+        limit?: number;
+        /**
+         * Legacy offset.
+         *
+         * @deprecated
+         */
+        offset?: number;
+    };
+    url: '/v1/contracts';
+};
+
+export type ListContractsResponses = {
+    /**
+     * Contracts ordered by event count
+     */
+    200: unknown;
+};
+
+export type ListAllDividendsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        epoch?: number;
+        limit?: number;
+        offset?: number;
+        /**
+         * Pass distributions to expand tick-level rows.
+         */
+        include?: string;
+    };
+    url: '/v1/contracts/dividends';
+};
+
+export type ListAllDividendsResponses = {
+    /**
+     * Dividend rows grouped by epoch and contract
+     */
+    200: unknown;
+};
+
+export type GetContractData = {
+    body?: never;
+    path: {
+        contract_index: number;
+    };
+    query?: never;
+    url: '/v1/contracts/{contract_index}';
+};
+
+export type GetContractErrors = {
+    /**
+     * Contract not observed
+     */
+    404: unknown;
+};
+
+export type GetContractResponses = {
+    /**
+     * Summary, recent events, and dividends
+     */
+    200: unknown;
+};
+
+export type ListContractDividendsData = {
+    body?: never;
+    path: {
+        contract_index: number;
+    };
+    query?: {
+        epoch?: number;
+        /**
+         * Page size.
+         */
+        limit?: number;
+        /**
+         * Legacy offset.
+         *
+         * @deprecated
+         */
+        offset?: number;
+        include?: string;
+    };
+    url: '/v1/contracts/{contract_index}/dividends';
+};
+
+export type ListContractDividendsResponses = {
+    /**
+     * Dividend epochs
+     */
+    200: unknown;
+};
+
+export type ListContractEventsData = {
+    body?: never;
+    path: {
+        contract_index: number;
+    };
+    query?: {
+        /**
+         * Page size.
+         */
+        limit?: number;
+        /**
+         * Legacy offset.
+         *
+         * @deprecated
+         */
+        offset?: number;
+    };
+    url: '/v1/contracts/{contract_index}/events';
+};
+
+export type ListContractEventsResponses = {
+    /**
+     * Contract events
+     */
+    200: unknown;
+};
 
 export type ListEpochsData = {
     body?: never;
@@ -1368,6 +1642,78 @@ export type ListEventsResponses = {
 };
 
 export type ListEventsResponse = ListEventsResponses[keyof ListEventsResponses];
+
+export type ExplorerOverviewData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+        interval?: number;
+        min_amount?: number;
+    };
+    url: '/v1/explorer/overview';
+};
+
+export type ExplorerOverviewResponses = {
+    /**
+     * Composite overview
+     */
+    200: unknown;
+};
+
+export type ExportCollectionData = {
+    body?: never;
+    path: {
+        resource: 'transactions' | 'events' | 'identities' | 'assets' | 'contracts' | 'dividends';
+    };
+    query?: {
+        format?: 'csv' | 'ndjson';
+        limit?: number;
+    };
+    url: '/v1/export/{resource}';
+};
+
+export type ExportCollectionErrors = {
+    /**
+     * Unknown resource
+     */
+    404: unknown;
+};
+
+export type ExportCollectionResponses = {
+    /**
+     * Export body
+     */
+    200: string;
+};
+
+export type ExportCollectionResponse = ExportCollectionResponses[keyof ExportCollectionResponses];
+
+export type GetGraphData = {
+    body?: never;
+    path?: never;
+    query: {
+        identity: string;
+        depth?: number;
+        direction?: 'all' | 'incoming' | 'outgoing';
+        limit?: number;
+    };
+    url: '/v1/graph';
+};
+
+export type GetGraphErrors = {
+    /**
+     * Missing or invalid identity
+     */
+    400: unknown;
+};
+
+export type GetGraphResponses = {
+    /**
+     * Nodes and edges
+     */
+    200: unknown;
+};
 
 export type ListIdentitiesData = {
     body?: never;
@@ -1516,6 +1862,39 @@ export type ListIdentityAssetsResponses = {
 
 export type ListIdentityAssetsResponse = ListIdentityAssetsResponses[keyof ListIdentityAssetsResponses];
 
+export type GetIdentityBalanceHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * Uppercase base-26 identity.
+         */
+        identity: string;
+    };
+    query?: {
+        interval?: number;
+        limit?: number;
+    };
+    url: '/v1/identities/{identity}/balance-history';
+};
+
+export type GetIdentityBalanceHistoryErrors = {
+    /**
+     * Invalid identity or interval
+     */
+    400: unknown;
+    /**
+     * The index has no ticks yet
+     */
+    404: unknown;
+};
+
+export type GetIdentityBalanceHistoryResponses = {
+    /**
+     * Cumulative flow buckets
+     */
+    200: unknown;
+};
+
 export type ListIdentityCounterpartiesData = {
     body?: never;
     path: {
@@ -1635,6 +2014,66 @@ export type GetIdentityFlowResponses = {
 
 export type GetIdentityFlowResponse = GetIdentityFlowResponses[keyof GetIdentityFlowResponses];
 
+export type GetIdentityGraphData = {
+    body?: never;
+    path: {
+        /**
+         * Uppercase base-26 identity.
+         */
+        identity: string;
+    };
+    query?: {
+        depth?: number;
+        direction?: 'all' | 'incoming' | 'outgoing';
+        limit?: number;
+    };
+    url: '/v1/identities/{identity}/graph';
+};
+
+export type GetIdentityGraphErrors = {
+    /**
+     * Invalid identity or direction
+     */
+    400: unknown;
+};
+
+export type GetIdentityGraphResponses = {
+    /**
+     * Nodes and edges
+     */
+    200: unknown;
+};
+
+export type IdentityOverviewData = {
+    body?: never;
+    path: {
+        /**
+         * Uppercase base-26 identity.
+         */
+        identity: string;
+    };
+    query?: {
+        window?: number;
+        interval?: number;
+        limit?: number;
+    };
+    url: '/v1/identities/{identity}/overview';
+};
+
+export type IdentityOverviewErrors = {
+    /**
+     * Identity not found
+     */
+    404: unknown;
+};
+
+export type IdentityOverviewResponses = {
+    /**
+     * Identity, flow, counterparties, transactions, activity, and events
+     */
+    200: unknown;
+};
+
 export type ListIdentityTransactionsData = {
     body?: never;
     path: {
@@ -1677,6 +2116,55 @@ export type ListIdentityTransactionsResponses = {
 };
 
 export type ListIdentityTransactionsResponse = ListIdentityTransactionsResponses[keyof ListIdentityTransactionsResponses];
+
+export type ListLabelsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        q?: string;
+        limit?: number;
+    };
+    url: '/v1/labels';
+};
+
+export type ListLabelsResponses = {
+    /**
+     * Label registry entries
+     */
+    200: unknown;
+};
+
+export type StreamTransactionLifecycleData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Encrypted lifecycle link token.
+         */
+        token: string;
+    };
+    url: '/v1/lifecycle/stream';
+};
+
+export type StreamTransactionLifecycleErrors = {
+    /**
+     * Invalid or expired link
+     */
+    401: unknown;
+    /**
+     * Lifecycle links are not configured
+     */
+    503: unknown;
+};
+
+export type StreamTransactionLifecycleResponses = {
+    /**
+     * SSE lifecycle progress
+     */
+    200: string;
+};
+
+export type StreamTransactionLifecycleResponse = StreamTransactionLifecycleResponses[keyof StreamTransactionLifecycleResponses];
 
 export type QueryContractData = {
     body?: ContractQueryRequest;
@@ -2445,6 +2933,7 @@ export type SearchData = {
     path?: never;
     query: {
         q: string;
+        limit?: number;
     };
     url: '/v1/search';
 };
@@ -2491,7 +2980,7 @@ export type StreamAllData = {
     path?: never;
     query?: {
         /**
-         * Comma-separated subset of tick,transaction,event,price,market. The poll interval is set on the server with STREAM_POLL_MS.
+         * Comma-separated subset of tick,transaction,whale,event,price,market. The poll interval is set on the server with STREAM_POLL_MS.
          */
         types?: string;
         /**
@@ -2502,6 +2991,10 @@ export type StreamAllData = {
          * Only emit asset events for {issuer}/{name}.
          */
         asset?: string;
+        /**
+         * Replay indexed ticks after this tick before switching to live events. Capped at 500 ticks.
+         */
+        since_tick?: number;
     };
     url: '/v1/stream';
 };
@@ -2882,6 +3375,36 @@ export type ListTickTransactionsResponses = {
 
 export type ListTickTransactionsResponse = ListTickTransactionsResponses[keyof ListTickTransactionsResponses];
 
+export type ListTickVotesData = {
+    body?: never;
+    path: {
+        /**
+         * Tick number.
+         */
+        tick: number;
+    };
+    query?: never;
+    url: '/v1/ticks/{tick}/votes';
+};
+
+export type ListTickVotesErrors = {
+    /**
+     * Tick or votes not archived
+     */
+    404: unknown;
+    /**
+     * Archive not configured or unreadable
+     */
+    503: unknown;
+};
+
+export type ListTickVotesResponses = {
+    /**
+     * Archived votes and bitmap
+     */
+    200: unknown;
+};
+
 export type ListTransactionsData = {
     body?: never;
     path?: never;
@@ -3071,7 +3594,7 @@ export type GetTransactionErrors = {
      */
     400: unknown;
     /**
-     * Transaction not indexed
+     * Transaction is neither indexed nor tracked
      */
     404: unknown;
 };
@@ -3108,7 +3631,7 @@ export type GetTransactionEffectsErrors = {
      */
     400: unknown;
     /**
-     * Transaction not indexed
+     * Transaction is neither indexed nor tracked
      */
     404: unknown;
 };
@@ -3158,6 +3681,45 @@ export type GetTransactionLifecycleResponses = {
 
 export type GetTransactionLifecycleResponse = GetTransactionLifecycleResponses[keyof GetTransactionLifecycleResponses];
 
+export type CreateTransactionLifecycleLinkData = {
+    body?: never;
+    path: {
+        /**
+         * Lowercase base-26 transaction hash.
+         */
+        hash: string;
+    };
+    query?: {
+        /**
+         * Link lifetime. Default 900, range 30-3600.
+         */
+        ttl_seconds?: number;
+    };
+    url: '/v1/transactions/{hash}/lifecycle/link';
+};
+
+export type CreateTransactionLifecycleLinkErrors = {
+    /**
+     * Invalid hash or TTL
+     */
+    400: unknown;
+    /**
+     * Lifecycle links are not configured
+     */
+    503: unknown;
+};
+
+export type CreateTransactionLifecycleLinkResponses = {
+    /**
+     * Encrypted stream URL
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type CreateTransactionLifecycleLinkResponse = CreateTransactionLifecycleLinkResponses[keyof CreateTransactionLifecycleLinkResponses];
+
 export type GetTransactionStatusData = {
     body?: never;
     path: {
@@ -3176,18 +3738,18 @@ export type GetTransactionStatusErrors = {
      */
     400: unknown;
     /**
-     * Unknown to both index and peer
+     * Unknown to the index, tracking store, and peer
      */
     404: unknown;
     /**
-     * No peer and no indexed row
+     * No peer and no indexed or tracked row
      */
     503: unknown;
 };
 
 export type GetTransactionStatusResponses = {
     /**
-     * Indexed and/or peer transaction status
+     * Indexed, tracked, and/or peer transaction status
      */
     200: unknown;
 };
@@ -3271,6 +3833,36 @@ export type ListWalletAssetsResponses = {
 };
 
 export type ListWalletAssetsResponse = ListWalletAssetsResponses[keyof ListWalletAssetsResponses];
+
+export type WalletOverviewData = {
+    body?: never;
+    path: {
+        /**
+         * Uppercase base-26 identity.
+         */
+        identity: string;
+    };
+    query?: {
+        window?: number;
+        interval?: number;
+        limit?: number;
+    };
+    url: '/v1/wallets/{identity}/overview';
+};
+
+export type WalletOverviewErrors = {
+    /**
+     * Identity not found
+     */
+    404: unknown;
+};
+
+export type WalletOverviewResponses = {
+    /**
+     * Wallet overview including the peer wallet section when available
+     */
+    200: unknown;
+};
 
 export type ListWebhooksData = {
     body?: never;
@@ -3382,6 +3974,55 @@ export type ListWebhookDeliveriesResponses = {
 };
 
 export type ListWebhookDeliveriesResponse = ListWebhookDeliveriesResponses[keyof ListWebhookDeliveriesResponses];
+
+export type ReplayWebhookData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        event?: string;
+        limit?: number;
+    };
+    url: '/v1/webhooks/{id}/replay';
+};
+
+export type ReplayWebhookErrors = {
+    /**
+     * Webhook not found
+     */
+    404: unknown;
+};
+
+export type ReplayWebhookResponses = {
+    /**
+     * Deliveries queued
+     */
+    202: unknown;
+};
+
+export type TestWebhookData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/v1/webhooks/{id}/test';
+};
+
+export type TestWebhookErrors = {
+    /**
+     * Webhook not found
+     */
+    404: unknown;
+};
+
+export type TestWebhookResponses = {
+    /**
+     * Test delivery queued
+     */
+    202: unknown;
+};
 
 export type StreamWebSocketData = {
     body?: never;

@@ -378,6 +378,9 @@ The renderer loads each resource once, then follows Glyph SSE feeds:
 | `/v1/stream/ticks` | Cached head, epoch, last-processed tick, network health, expiry |
 | `/v1/stream?types=price,market` | Price and market-cap cards |
 | `/v1/stream?types=transaction,event&identity={id}` | History, balances, assets, received notifications, confirmations |
+| `/v1/lifecycle/stream?token={token}` | Per-pending-transaction lifecycle progress and terminal resolution |
+
+The wallet requests a short-lived lifecycle link from `POST /v1/transactions/{hash}/lifecycle/link` for each pending transaction and follows the returned SSE stream. Links are renewed after expiry or a closed connection. A slower lifecycle fetch remains as a fallback when the stream is unavailable.
 
 One shared connection is kept per identity, regardless of how many hooks subscribe. EventSource reconnects automatically; `open`, `lag`, window focus, and network-online events trigger a reconciliation fetch, as does the initial mount. Query caches are updated or invalidated from the stream rather than on a fixed interval. Polling remains for resources with no stream, including the optional custom price feed, external Coinbase exchange rates, and a 15-second wallet-balance fallback. Persisted polling profiles apply to those fallbacks.
 
@@ -522,7 +525,7 @@ Delivery failure is recorded and the UI can retry, save, or copy the result.
 
 ## 16. Notifications and background behavior
 
-Notifications are rendered in a separate always-on-top Tauri window, independent of the main wallet. The native layer creates, positions, resizes, and hides that window; the main renderer sends notification events and the overlay renderer owns the visible card stack.
+Notifications are rendered in a separate always-on-top Tauri window, independent of the main wallet. The native layer creates, positions, resizes, and hides that window; the main renderer sends notification events and the overlay renderer owns the visible card stack. The overlay also plays the configured terminal sound for live deliveries; replayed pending cards remain silent.
 
 - Notification windows are off by default.
 - Position, visible duration, and maximum visible cards are configurable.

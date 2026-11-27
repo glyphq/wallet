@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import { getTransactionLifecycle } from "@/lib/api/generated";
+import { subscribeTransactionLifecycle } from "@/lib/api/lifecycle-stream";
 import { subscribeIdentityStreams } from "@/lib/api/stream-broker";
-import { resolutionFromLifecycle, type TxResolution } from "@/lib/tx-resolution";
+import {
+  resolutionFromLifecycle,
+  resolutionFromLifecycleProgress,
+  type TxResolution,
+} from "@/lib/tx-resolution";
 import { useApiCacheIdentity } from "@/hooks/use-api-cache-identity";
 import type { PendingTx } from "@/store/persisted";
 
@@ -55,13 +60,32 @@ export function usePendingTransactionStream({ pendingTxs, onResolution }: Pendin
     if (pendingHashesKey) void reconcile();
   }, [pendingHashesKey, apiIdentity, reconcile]);
 
-  // The lifecycle endpoint is authoritative. Poll while a transaction is
-  // pending so a silently dropped SSE connection cannot leave it unresolved.
+  // Each pending hash gets its own temporary lifecycle SSE link. The link
+  // is renewed by the subscription after expiry or a closed connection.
+  useEffect(() => {
+    if (!pendingHashesKey) return;
+    const unsubscribes = pendingHashesKey.split("\n").map((hash) =>
+      subscribeTransactionLifecycle(hash, {
+        onTerminal: (progress) => {
+          const pending = pendingRef.current.find((tx) => tx.hash === hash);
+          if (!pending) return;
+          const resolution = resolutionFromLifecycleProgress(hash, progress);
+          if (resolution) onResolutionRef.current(pending, resolution);
+        },
+      })
+    );
+    return () => {
+      for (const unsubscribe of unsubscribes) unsubscribe();
+    };
+  }, [pendingHashesKey, apiIdentity]);
+
+  // Slow reconciliation fallback for clients without EventSource and for a
+  // dropped lifecycle link that could not be renewed.
   useEffect(() => {
     if (!pendingHashesKey) return;
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") void reconcile();
-    }, 5000);
+    }, 15_000);
     return () => clearInterval(timer);
   }, [pendingHashesKey, reconcile]);
 

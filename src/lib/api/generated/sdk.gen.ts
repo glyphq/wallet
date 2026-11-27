@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BatchTransactionsData, BatchTransactionsErrors, BatchTransactionsResponses, BroadcastTransactionData, BroadcastTransactionErrors, BroadcastTransactionResponses, DeleteWebhookData, DeleteWebhookErrors, DeleteWebhookResponses, DownloadTickBundleData, DownloadTickBundleErrors, DownloadTickBundleResponses, GetActivityData, GetActivityResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetEpochData, GetEpochErrors, GetEpochResponses, GetHealthData, GetHealthResponses, GetIdentityActivityData, GetIdentityActivityErrors, GetIdentityActivityResponses, GetIdentityData, GetIdentityErrors, GetIdentityFlowData, GetIdentityFlowErrors, GetIdentityFlowResponses, GetIdentityResponses, GetInclusionRiskData, GetInclusionRiskErrors, GetInclusionRiskResponses, GetLatestPriceData, GetLatestPriceErrors, GetLatestPriceResponses, GetLiveIdentityData, GetLiveIdentityErrors, GetLiveIdentityResponses, GetLiveTransactionData, GetLiveTransactionErrors, GetLiveTransactionResponses, GetLiveTransactionStatusData, GetLiveTransactionStatusErrors, GetLiveTransactionStatusResponses, GetLiveWalletData, GetLiveWalletErrors, GetLiveWalletResponses, GetMarketData, GetMarketErrors, GetMarketResponses, GetNetworkIndexData, GetNetworkIndexErrors, GetNetworkIndexResponses, GetNetworkOverviewData, GetNetworkOverviewErrors, GetNetworkOverviewResponses, GetNetworkRevenueIdentityData, GetNetworkRevenueIdentityErrors, GetNetworkRevenueIdentityResponses, GetNetworkSystemData, GetNetworkSystemErrors, GetNetworkSystemResponses, GetOracleOverviewData, GetOracleOverviewErrors, GetOracleOverviewResponses, GetOracleQueryData, GetOracleQueryErrors, GetOracleQueryResponses, GetOracleRevenueData, GetOracleRevenueErrors, GetOracleRevenueResponses, GetOracleStatsData, GetOracleStatsErrors, GetOracleStatsResponses, GetOracleSubscriptionData, GetOracleSubscriptionErrors, GetOracleSubscriptionResponses, GetPriceHistoryData, GetPriceHistoryResponses, GetPriceSnapshotData, GetPriceSnapshotErrors, GetPriceSnapshotResponses, GetStatusData, GetStatusPageData, GetStatusPageResponses, GetStatusResponses, GetTickCapacityData, GetTickCapacityErrors, GetTickCapacityResponses, GetTickData, GetTickErrors, GetTickQuorumEvidenceData, GetTickQuorumEvidenceErrors, GetTickQuorumEvidenceResponses, GetTickResponses, GetTransactionData, GetTransactionEffectsData, GetTransactionEffectsErrors, GetTransactionEffectsResponses, GetTransactionErrors, GetTransactionLifecycleData, GetTransactionLifecycleErrors, GetTransactionLifecycleResponses, GetTransactionResponses, GetTransactionStatusData, GetTransactionStatusErrors, GetTransactionStatusResponses, GetWalletData, GetWalletErrors, GetWalletResponses, ListAssetHoldersData, ListAssetHoldersErrors, ListAssetHoldersResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetTransfersData, ListAssetTransfersErrors, ListAssetTransfersResponses, ListEpochComputorsData, ListEpochComputorsErrors, ListEpochComputorsResponses, ListEpochsData, ListEpochsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListEventTypesData, ListEventTypesResponses, ListIdentitiesData, ListIdentitiesResponses, ListIdentityAssetsData, ListIdentityAssetsErrors, ListIdentityAssetsResponses, ListIdentityCounterpartiesData, ListIdentityCounterpartiesErrors, ListIdentityCounterpartiesResponses, ListIdentityEventsData, ListIdentityEventsErrors, ListIdentityEventsResponses, ListIdentityTransactionsData, ListIdentityTransactionsErrors, ListIdentityTransactionsResponses, ListLiveTickTransactionsData, ListLiveTickTransactionsErrors, ListLiveTickTransactionsResponses, ListNetworkPeersData, ListNetworkPeersResponses, ListNetworkRevenueData, ListNetworkRevenueErrors, ListNetworkRevenueResponses, ListOracleQueriesData, ListOracleQueriesErrors, ListOracleQueriesResponses, ListOracleSubscriptionsData, ListOracleSubscriptionsErrors, ListOracleSubscriptionsResponses, ListPricesData, ListPricesErrors, ListPricesResponses, ListTickEventsData, ListTickEventsErrors, ListTickEventsResponses, ListTicksData, ListTicksResponses, ListTickTransactionsData, ListTickTransactionsErrors, ListTickTransactionsResponses, ListTopIdentitiesData, ListTopIdentitiesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, ListWalletAssetsData, ListWalletAssetsErrors, ListWalletAssetsResponses, ListWebhookDeliveriesData, ListWebhookDeliveriesErrors, ListWebhookDeliveriesResponses, ListWebhooksData, ListWebhooksResponses, QueryContractData, QueryContractErrors, QueryContractResponses, RegisterWebhookData, RegisterWebhookErrors, RegisterWebhookResponses, SearchData, SearchErrors, SearchResponses, StreamAllData, StreamAllErrors, StreamAllResponse, StreamAllResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, StreamMarketData, StreamMarketErrors, StreamMarketResponses, StreamPricesData, StreamPricesErrors, StreamPricesResponses, StreamTicksData, StreamTicksErrors, StreamTicksResponse, StreamTicksResponses, StreamTransactionsData, StreamTransactionsErrors, StreamTransactionsResponse, StreamTransactionsResponses, StreamWebSocketData, StreamWebSocketErrors, StreamWebSocketResponses, ValidateTransactionData, ValidateTransactionErrors, ValidateTransactionResponses } from './types.gen';
+import type { AssetOverviewData, AssetOverviewErrors, AssetOverviewResponses, BatchReadsData, BatchReadsErrors, BatchReadsResponses, BatchTransactionsData, BatchTransactionsErrors, BatchTransactionsResponses, BroadcastTransactionData, BroadcastTransactionErrors, BroadcastTransactionResponses, CreateTransactionLifecycleLinkData, CreateTransactionLifecycleLinkErrors, CreateTransactionLifecycleLinkResponses, DeleteWebhookData, DeleteWebhookErrors, DeleteWebhookResponses, DownloadTickBundleData, DownloadTickBundleErrors, DownloadTickBundleResponses, ExplorerOverviewData, ExplorerOverviewResponses, ExportCollectionData, ExportCollectionErrors, ExportCollectionResponses, GetActivityData, GetActivityResponses, GetAnalyticsNetworkData, GetAnalyticsNetworkResponses, GetAssetData, GetAssetErrors, GetAssetResponses, GetContractData, GetContractErrors, GetContractResponses, GetEpochData, GetEpochErrors, GetEpochResponses, GetGraphData, GetGraphErrors, GetGraphResponses, GetHealthData, GetHealthResponses, GetIdentityActivityData, GetIdentityActivityErrors, GetIdentityActivityResponses, GetIdentityBalanceHistoryData, GetIdentityBalanceHistoryErrors, GetIdentityBalanceHistoryResponses, GetIdentityData, GetIdentityErrors, GetIdentityFlowData, GetIdentityFlowErrors, GetIdentityFlowResponses, GetIdentityGraphData, GetIdentityGraphErrors, GetIdentityGraphResponses, GetIdentityResponses, GetInclusionRiskData, GetInclusionRiskErrors, GetInclusionRiskResponses, GetLatestPriceData, GetLatestPriceErrors, GetLatestPriceResponses, GetLiveIdentityData, GetLiveIdentityErrors, GetLiveIdentityResponses, GetLiveTransactionData, GetLiveTransactionErrors, GetLiveTransactionResponses, GetLiveTransactionStatusData, GetLiveTransactionStatusErrors, GetLiveTransactionStatusResponses, GetLiveWalletData, GetLiveWalletErrors, GetLiveWalletResponses, GetMarketData, GetMarketErrors, GetMarketResponses, GetNetworkIndexData, GetNetworkIndexErrors, GetNetworkIndexResponses, GetNetworkOverviewData, GetNetworkOverviewErrors, GetNetworkOverviewResponses, GetNetworkRevenueIdentityData, GetNetworkRevenueIdentityErrors, GetNetworkRevenueIdentityResponses, GetNetworkSystemData, GetNetworkSystemErrors, GetNetworkSystemResponses, GetOracleOverviewData, GetOracleOverviewErrors, GetOracleOverviewResponses, GetOracleQueryData, GetOracleQueryErrors, GetOracleQueryResponses, GetOracleRevenueData, GetOracleRevenueErrors, GetOracleRevenueResponses, GetOracleStatsData, GetOracleStatsErrors, GetOracleStatsResponses, GetOracleSubscriptionData, GetOracleSubscriptionErrors, GetOracleSubscriptionResponses, GetPriceHistoryData, GetPriceHistoryResponses, GetPriceSnapshotData, GetPriceSnapshotErrors, GetPriceSnapshotResponses, GetStatusData, GetStatusPageData, GetStatusPageResponses, GetStatusResponses, GetTickCapacityData, GetTickCapacityErrors, GetTickCapacityResponses, GetTickData, GetTickErrors, GetTickQuorumEvidenceData, GetTickQuorumEvidenceErrors, GetTickQuorumEvidenceResponses, GetTickResponses, GetTransactionData, GetTransactionEffectsData, GetTransactionEffectsErrors, GetTransactionEffectsResponses, GetTransactionErrors, GetTransactionLifecycleData, GetTransactionLifecycleErrors, GetTransactionLifecycleResponses, GetTransactionResponses, GetTransactionStatusData, GetTransactionStatusErrors, GetTransactionStatusResponses, GetWalletData, GetWalletErrors, GetWalletResponses, IdentityOverviewData, IdentityOverviewErrors, IdentityOverviewResponses, ListActiveIdentitiesData, ListActiveIdentitiesResponses, ListAllDividendsData, ListAllDividendsResponses, ListAssetHoldersData, ListAssetHoldersErrors, ListAssetHoldersResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetTransfersData, ListAssetTransfersErrors, ListAssetTransfersResponses, ListContractDividendsData, ListContractDividendsResponses, ListContractEventsData, ListContractEventsResponses, ListContractsData, ListContractsResponses, ListEpochComputorsData, ListEpochComputorsErrors, ListEpochComputorsResponses, ListEpochsData, ListEpochsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListEventTypesData, ListEventTypesResponses, ListIdentitiesData, ListIdentitiesResponses, ListIdentityAssetsData, ListIdentityAssetsErrors, ListIdentityAssetsResponses, ListIdentityCounterpartiesData, ListIdentityCounterpartiesErrors, ListIdentityCounterpartiesResponses, ListIdentityEventsData, ListIdentityEventsErrors, ListIdentityEventsResponses, ListIdentityTransactionsData, ListIdentityTransactionsErrors, ListIdentityTransactionsResponses, ListLabelsData, ListLabelsResponses, ListLiveTickTransactionsData, ListLiveTickTransactionsErrors, ListLiveTickTransactionsResponses, ListNetworkPeersData, ListNetworkPeersResponses, ListNetworkRevenueData, ListNetworkRevenueErrors, ListNetworkRevenueResponses, ListOracleQueriesData, ListOracleQueriesErrors, ListOracleQueriesResponses, ListOracleSubscriptionsData, ListOracleSubscriptionsErrors, ListOracleSubscriptionsResponses, ListPricesData, ListPricesErrors, ListPricesResponses, ListTickEventsData, ListTickEventsErrors, ListTickEventsResponses, ListTicksData, ListTicksResponses, ListTickTransactionsData, ListTickTransactionsErrors, ListTickTransactionsResponses, ListTickVotesData, ListTickVotesErrors, ListTickVotesResponses, ListTopIdentitiesData, ListTopIdentitiesResponses, ListTransactionsData, ListTransactionsErrors, ListTransactionsResponses, ListWalletAssetsData, ListWalletAssetsErrors, ListWalletAssetsResponses, ListWebhookDeliveriesData, ListWebhookDeliveriesErrors, ListWebhookDeliveriesResponses, ListWebhooksData, ListWebhooksResponses, ListWhalesData, ListWhalesResponses, QueryContractData, QueryContractErrors, QueryContractResponses, RegisterWebhookData, RegisterWebhookErrors, RegisterWebhookResponses, ReplayWebhookData, ReplayWebhookErrors, ReplayWebhookResponses, SearchData, SearchErrors, SearchResponses, StreamAllData, StreamAllErrors, StreamAllResponse, StreamAllResponses, StreamEventsData, StreamEventsErrors, StreamEventsResponse, StreamEventsResponses, StreamMarketData, StreamMarketErrors, StreamMarketResponses, StreamPricesData, StreamPricesErrors, StreamPricesResponses, StreamTicksData, StreamTicksErrors, StreamTicksResponse, StreamTicksResponses, StreamTransactionLifecycleData, StreamTransactionLifecycleErrors, StreamTransactionLifecycleResponse, StreamTransactionLifecycleResponses, StreamTransactionsData, StreamTransactionsErrors, StreamTransactionsResponse, StreamTransactionsResponses, StreamWebSocketData, StreamWebSocketErrors, StreamWebSocketResponses, TestWebhookData, TestWebhookErrors, TestWebhookResponses, ValidateTransactionData, ValidateTransactionErrors, ValidateTransactionResponses, WalletOverviewData, WalletOverviewErrors, WalletOverviewResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -33,6 +33,13 @@ export const getHealth = <ThrowOnError extends boolean = false>(options?: Option
 export const getStatusPage = <ThrowOnError extends boolean = false>(options?: Options<GetStatusPageData, ThrowOnError>): RequestResult<GetStatusPageResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetStatusPageResponses, unknown, ThrowOnError>({ url: '/status', ...options });
 
 /**
+ * Unique active identities per bucket
+ *
+ * Distinct identities seen in transfers and event participants per time bucket.
+ */
+export const listActiveIdentities = <ThrowOnError extends boolean = false>(options?: Options<ListActiveIdentitiesData, ThrowOnError>): RequestResult<ListActiveIdentitiesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListActiveIdentitiesResponses, unknown, ThrowOnError>({ url: '/v1/analytics/active-identities', ...options });
+
+/**
  * Get activity
  *
  * Bucketed counts.
@@ -47,11 +54,25 @@ export const getActivity = <ThrowOnError extends boolean = false>(options?: Opti
 export const listEventTypes = <ThrowOnError extends boolean = false>(options?: Options<ListEventTypesData, ThrowOnError>): RequestResult<ListEventTypesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListEventTypesResponses, unknown, ThrowOnError>({ url: '/v1/analytics/event-types', ...options });
 
 /**
+ * Index-wide network counts
+ *
+ * Head, epoch, tick, transaction, event, and identity counts from the index.
+ */
+export const getAnalyticsNetwork = <ThrowOnError extends boolean = false>(options?: Options<GetAnalyticsNetworkData, ThrowOnError>): RequestResult<GetAnalyticsNetworkResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetAnalyticsNetworkResponses, unknown, ThrowOnError>({ url: '/v1/analytics/network', ...options });
+
+/**
  * List top identities
  *
  * By transfer count.
  */
 export const listTopIdentities = <ThrowOnError extends boolean = false>(options?: Options<ListTopIdentitiesData, ThrowOnError>): RequestResult<ListTopIdentitiesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListTopIdentitiesResponses, unknown, ThrowOnError>({ url: '/v1/analytics/top-identities', ...options });
+
+/**
+ * List whale transfers
+ *
+ * Indexed transactions at or above the operator whale threshold.
+ */
+export const listWhales = <ThrowOnError extends boolean = false>(options?: Options<ListWhalesData, ThrowOnError>): RequestResult<ListWhalesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListWhalesResponses, unknown, ThrowOnError>({ url: '/v1/analytics/whales', ...options });
 
 /**
  * List assets
@@ -75,11 +96,67 @@ export const getAsset = <ThrowOnError extends boolean = false>(options: Options<
 export const listAssetHolders = <ThrowOnError extends boolean = false>(options: Options<ListAssetHoldersData, ThrowOnError>): RequestResult<ListAssetHoldersResponses, ListAssetHoldersErrors, ThrowOnError> => (options.client ?? client).get<ListAssetHoldersResponses, ListAssetHoldersErrors, ThrowOnError>({ url: '/v1/assets/{issuer}/{name}/holders', ...options });
 
 /**
+ * Asset overview
+ *
+ * Issuance, transfer statistics, recent transfers, and ranked holders.
+ */
+export const assetOverview = <ThrowOnError extends boolean = false>(options: Options<AssetOverviewData, ThrowOnError>): RequestResult<AssetOverviewResponses, AssetOverviewErrors, ThrowOnError> => (options.client ?? client).get<AssetOverviewResponses, AssetOverviewErrors, ThrowOnError>({ url: '/v1/assets/{issuer}/{name}/overview', ...options });
+
+/**
  * List asset transfers
  *
  * Ownership and possession changes.
  */
 export const listAssetTransfers = <ThrowOnError extends boolean = false>(options: Options<ListAssetTransfersData, ThrowOnError>): RequestResult<ListAssetTransfersResponses, ListAssetTransfersErrors, ThrowOnError> => (options.client ?? client).get<ListAssetTransfersResponses, ListAssetTransfersErrors, ThrowOnError>({ url: '/v1/assets/{issuer}/{name}/transfers', ...options });
+
+/**
+ * Batch independent reads
+ *
+ * Up to 100 typed reads per request. Each result carries its own status.
+ */
+export const batchReads = <ThrowOnError extends boolean = false>(options: Options<BatchReadsData, ThrowOnError>): RequestResult<BatchReadsResponses, BatchReadsErrors, ThrowOnError> => (options.client ?? client).post<BatchReadsResponses, BatchReadsErrors, ThrowOnError>({
+    url: '/v1/batch',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List observed contracts
+ *
+ * Contract indices discovered from decoded events and dividend rows. Names come from optional operator labels.
+ */
+export const listContracts = <ThrowOnError extends boolean = false>(options?: Options<ListContractsData, ThrowOnError>): RequestResult<ListContractsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListContractsResponses, unknown, ThrowOnError>({ url: '/v1/contracts', ...options });
+
+/**
+ * List dividend epochs across contracts
+ *
+ * Tick-level dividend rows grouped into one result per epoch and contract.
+ */
+export const listAllDividends = <ThrowOnError extends boolean = false>(options?: Options<ListAllDividendsData, ThrowOnError>): RequestResult<ListAllDividendsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListAllDividendsResponses, unknown, ThrowOnError>({ url: '/v1/contracts/dividends', ...options });
+
+/**
+ * Contract overview
+ *
+ * Observed contract summary with recent events and epoch-grouped dividends.
+ */
+export const getContract = <ThrowOnError extends boolean = false>(options: Options<GetContractData, ThrowOnError>): RequestResult<GetContractResponses, GetContractErrors, ThrowOnError> => (options.client ?? client).get<GetContractResponses, GetContractErrors, ThrowOnError>({ url: '/v1/contracts/{contract_index}', ...options });
+
+/**
+ * List contract dividends
+ *
+ * Dividend distributions for one contract grouped by epoch, optionally expanded per tick.
+ */
+export const listContractDividends = <ThrowOnError extends boolean = false>(options: Options<ListContractDividendsData, ThrowOnError>): RequestResult<ListContractDividendsResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListContractDividendsResponses, unknown, ThrowOnError>({ url: '/v1/contracts/{contract_index}/dividends', ...options });
+
+/**
+ * List contract events
+ *
+ * Decoded events emitted by one contract index, newest first.
+ */
+export const listContractEvents = <ThrowOnError extends boolean = false>(options: Options<ListContractEventsData, ThrowOnError>): RequestResult<ListContractEventsResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListContractEventsResponses, unknown, ThrowOnError>({ url: '/v1/contracts/{contract_index}/events', ...options });
 
 /**
  * List epochs
@@ -110,6 +187,27 @@ export const listEpochComputors = <ThrowOnError extends boolean = false>(options
 export const listEvents = <ThrowOnError extends boolean = false>(options?: Options<ListEventsData, ThrowOnError>): RequestResult<ListEventsResponses, ListEventsErrors, ThrowOnError> => (options?.client ?? client).get<ListEventsResponses, ListEventsErrors, ThrowOnError>({ url: '/v1/events', ...options });
 
 /**
+ * Explorer overview
+ *
+ * Head, recent collections, analytics, top identities, contracts, whales, price, and market in one response.
+ */
+export const explorerOverview = <ThrowOnError extends boolean = false>(options?: Options<ExplorerOverviewData, ThrowOnError>): RequestResult<ExplorerOverviewResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ExplorerOverviewResponses, unknown, ThrowOnError>({ url: '/v1/explorer/overview', ...options });
+
+/**
+ * Export a bounded collection
+ *
+ * CSV or NDJSON snapshot of transactions, events, identities, assets, contracts, or dividends.
+ */
+export const exportCollection = <ThrowOnError extends boolean = false>(options: Options<ExportCollectionData, ThrowOnError>): RequestResult<ExportCollectionResponses, ExportCollectionErrors, ThrowOnError> => (options.client ?? client).get<ExportCollectionResponses, ExportCollectionErrors, ThrowOnError>({ url: '/v1/export/{resource}', ...options });
+
+/**
+ * Get identity graph by query
+ *
+ * Query-parameter alias of the identity graph route.
+ */
+export const getGraph = <ThrowOnError extends boolean = false>(options: Options<GetGraphData, ThrowOnError>): RequestResult<GetGraphResponses, GetGraphErrors, ThrowOnError> => (options.client ?? client).get<GetGraphResponses, GetGraphErrors, ThrowOnError>({ url: '/v1/graph', ...options });
+
+/**
  * List identities
  *
  * Most recently active first.
@@ -119,7 +217,7 @@ export const listIdentities = <ThrowOnError extends boolean = false>(options?: O
 /**
  * Get identity
  *
- * Observed QU flow.
+ * Indexed QU flow plus the last cached peer spectrum balance when available. `balance` is indexed net flow and must not be used as an authoritative wallet balance; use `actual_balance` or `spectrum_balance`.
  */
 export const getIdentity = <ThrowOnError extends boolean = false>(options: Options<GetIdentityData, ThrowOnError>): RequestResult<GetIdentityResponses, GetIdentityErrors, ThrowOnError> => (options.client ?? client).get<GetIdentityResponses, GetIdentityErrors, ThrowOnError>({ url: '/v1/identities/{identity}', ...options });
 
@@ -136,6 +234,13 @@ export const getIdentityActivity = <ThrowOnError extends boolean = false>(option
  * Live issued, owned, and possessed asset records from a peer. Not cached.
  */
 export const listIdentityAssets = <ThrowOnError extends boolean = false>(options: Options<ListIdentityAssetsData, ThrowOnError>): RequestResult<ListIdentityAssetsResponses, ListIdentityAssetsErrors, ThrowOnError> => (options.client ?? client).get<ListIdentityAssetsResponses, ListIdentityAssetsErrors, ThrowOnError>({ url: '/v1/identities/{identity}/assets', ...options });
+
+/**
+ * Get cumulative balance history
+ *
+ * Zero-filled indexed transfer buckets in chronological order with a cumulative net delta. This is not the live spectrum balance.
+ */
+export const getIdentityBalanceHistory = <ThrowOnError extends boolean = false>(options: Options<GetIdentityBalanceHistoryData, ThrowOnError>): RequestResult<GetIdentityBalanceHistoryResponses, GetIdentityBalanceHistoryErrors, ThrowOnError> => (options.client ?? client).get<GetIdentityBalanceHistoryResponses, GetIdentityBalanceHistoryErrors, ThrowOnError>({ url: '/v1/identities/{identity}/balance-history', ...options });
 
 /**
  * List counterparties
@@ -159,11 +264,39 @@ export const listIdentityEvents = <ThrowOnError extends boolean = false>(options
 export const getIdentityFlow = <ThrowOnError extends boolean = false>(options: Options<GetIdentityFlowData, ThrowOnError>): RequestResult<GetIdentityFlowResponses, GetIdentityFlowErrors, ThrowOnError> => (options.client ?? client).get<GetIdentityFlowResponses, GetIdentityFlowErrors, ThrowOnError>({ url: '/v1/identities/{identity}/flow', ...options });
 
 /**
+ * Get identity graph
+ *
+ * Bounded relationship graph derived from aggregated counterparty transfers.
+ */
+export const getIdentityGraph = <ThrowOnError extends boolean = false>(options: Options<GetIdentityGraphData, ThrowOnError>): RequestResult<GetIdentityGraphResponses, GetIdentityGraphErrors, ThrowOnError> => (options.client ?? client).get<GetIdentityGraphResponses, GetIdentityGraphErrors, ThrowOnError>({ url: '/v1/identities/{identity}/graph', ...options });
+
+/**
+ * Identity overview
+ *
+ * One identity with flow buckets, counterparties, recent transactions, activity, and events.
+ */
+export const identityOverview = <ThrowOnError extends boolean = false>(options: Options<IdentityOverviewData, ThrowOnError>): RequestResult<IdentityOverviewResponses, IdentityOverviewErrors, ThrowOnError> => (options.client ?? client).get<IdentityOverviewResponses, IdentityOverviewErrors, ThrowOnError>({ url: '/v1/identities/{identity}/overview', ...options });
+
+/**
  * List identity transactions
  *
  * Newest first.
  */
 export const listIdentityTransactions = <ThrowOnError extends boolean = false>(options: Options<ListIdentityTransactionsData, ThrowOnError>): RequestResult<ListIdentityTransactionsResponses, ListIdentityTransactionsErrors, ThrowOnError> => (options.client ?? client).get<ListIdentityTransactionsResponses, ListIdentityTransactionsErrors, ThrowOnError>({ url: '/v1/identities/{identity}/transactions', ...options });
+
+/**
+ * List operator labels
+ *
+ * Presentation labels for identities, assets, and contract indices.
+ */
+export const listLabels = <ThrowOnError extends boolean = false>(options?: Options<ListLabelsData, ThrowOnError>): RequestResult<ListLabelsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListLabelsResponses, unknown, ThrowOnError>({ url: '/v1/labels', ...options });
+
+/**
+ * Stream live transaction lifecycle progress
+ *
+ * SSE progress for one transaction. The token comes from `POST /v1/transactions/{hash}/lifecycle/link`. Events are `progress`, `waiting`, `warning`, `done`, and `link_expired`; `done` is terminal and the connection closes.
+ */
+export const streamTransactionLifecycle = <ThrowOnError extends boolean = false>(options: Options<StreamTransactionLifecycleData, ThrowOnError, StreamTransactionLifecycleResponse>): Promise<ServerSentEventsResult<StreamTransactionLifecycleResponses>> => (options.client ?? client).sse.get<StreamTransactionLifecycleResponses, StreamTransactionLifecycleErrors, ThrowOnError>({ url: '/v1/lifecycle/stream', ...options });
 
 /**
  * Query contract
@@ -182,7 +315,7 @@ export const queryContract = <ThrowOnError extends boolean = false>(options: Opt
 /**
  * Get live identity
  *
- * Peer spectrum record, cached for up to two seconds.
+ * Peer spectrum record. Fresh for 60 seconds, then served immediately from the last persisted snapshot while a peer refresh runs in the background.
  */
 export const getLiveIdentity = <ThrowOnError extends boolean = false>(options: Options<GetLiveIdentityData, ThrowOnError>): RequestResult<GetLiveIdentityResponses, GetLiveIdentityErrors, ThrowOnError> => (options.client ?? client).get<GetLiveIdentityResponses, GetLiveIdentityErrors, ThrowOnError>({ url: '/v1/live/identities/{identity}', ...options });
 
@@ -210,7 +343,7 @@ export const getLiveTransactionStatus = <ThrowOnError extends boolean = false>(o
 /**
  * Get live wallet
  *
- * Point-in-time peer snapshot; not cached.
+ * Peer spectrum entity and asset snapshot, cached for 60 seconds and served stale while refreshing.
  */
 export const getLiveWallet = <ThrowOnError extends boolean = false>(options: Options<GetLiveWalletData, ThrowOnError>): RequestResult<GetLiveWalletResponses, GetLiveWalletErrors, ThrowOnError> => (options.client ?? client).get<GetLiveWalletResponses, GetLiveWalletErrors, ThrowOnError>({ url: '/v1/live/wallets/{identity}', ...options });
 
@@ -343,7 +476,7 @@ export const getPriceSnapshot = <ThrowOnError extends boolean = false>(options?:
 /**
  * Search
  *
- * Resolve ticks, hashes, identities, and assets.
+ * Resolve ticks, epochs, contracts, hashes and hash prefixes, identities and identity prefixes, assets, asset names, and operator labels.
  */
 export const search = <ThrowOnError extends boolean = false>(options: Options<SearchData, ThrowOnError>): RequestResult<SearchResponses, SearchErrors, ThrowOnError> => (options.client ?? client).get<SearchResponses, SearchErrors, ThrowOnError>({ url: '/v1/search', ...options });
 
@@ -357,7 +490,7 @@ export const getStatus = <ThrowOnError extends boolean = false>(options?: Option
 /**
  * Stream all events
  *
- * SSE feed for ticks, transactions, events, prices, and market.
+ * SSE feed for ticks, transactions, whale transfers, events, prices, and market. Supports Last-Event-ID and since_tick replay.
  */
 export const streamAll = <ThrowOnError extends boolean = false>(options?: Options<StreamAllData, ThrowOnError, StreamAllResponse>): Promise<ServerSentEventsResult<StreamAllResponses>> => (options?.client ?? client).sse.get<StreamAllResponses, StreamAllErrors, ThrowOnError>({ url: '/v1/stream', ...options });
 
@@ -446,6 +579,13 @@ export const downloadTickBundle = <ThrowOnError extends boolean = false>(options
 export const listTickTransactions = <ThrowOnError extends boolean = false>(options: Options<ListTickTransactionsData, ThrowOnError>): RequestResult<ListTickTransactionsResponses, ListTickTransactionsErrors, ThrowOnError> => (options.client ?? client).get<ListTickTransactionsResponses, ListTickTransactionsErrors, ThrowOnError>({ url: '/v1/ticks/{tick}/transactions', ...options });
 
 /**
+ * List archived quorum votes
+ *
+ * Vote computor indices, signatures, and a signer bitmap. Votes require `ARCHIVE_VOTES=true`.
+ */
+export const listTickVotes = <ThrowOnError extends boolean = false>(options: Options<ListTickVotesData, ThrowOnError>): RequestResult<ListTickVotesResponses, ListTickVotesErrors, ThrowOnError> => (options.client ?? client).get<ListTickVotesResponses, ListTickVotesErrors, ThrowOnError>({ url: '/v1/ticks/{tick}/votes', ...options });
+
+/**
  * List transactions
  *
  * Newest first, filterable.
@@ -504,28 +644,35 @@ export const validateTransaction = <ThrowOnError extends boolean = false>(option
 /**
  * Get transaction
  *
- * By hash.
+ * By hash. Falls back to Glyph's durable tracking record for a transaction submitted through this API but not indexed yet. `meta.indexed=false` and `meta.source=tracking` mark the fallback; the response is not cached. Failed tracked transactions are retained indefinitely and return `state=failed`.
  */
 export const getTransaction = <ThrowOnError extends boolean = false>(options: Options<GetTransactionData, ThrowOnError>): RequestResult<GetTransactionResponses, GetTransactionErrors, ThrowOnError> => (options.client ?? client).get<GetTransactionResponses, GetTransactionErrors, ThrowOnError>({ url: '/v1/transactions/{hash}', ...options });
 
 /**
  * Get transaction effects
  *
- * Transaction, tick, events, typed effects, and summary.
+ * Transaction, tick, events, typed effects, and summary. A transaction that is tracked but not indexed returns its decoded transaction with empty events and effects, `meta.source=tracking`, and `no-store`. Failed tracked transactions are retained indefinitely.
  */
 export const getTransactionEffects = <ThrowOnError extends boolean = false>(options: Options<GetTransactionEffectsData, ThrowOnError>): RequestResult<GetTransactionEffectsResponses, GetTransactionEffectsErrors, ThrowOnError> => (options.client ?? client).get<GetTransactionEffectsResponses, GetTransactionEffectsErrors, ThrowOnError>({ url: '/v1/transactions/{hash}/effects', ...options });
 
 /**
  * Get transaction lifecycle
  *
- * Indexed, tracked, and peer state with events, effects, and money-flow.
+ * Indexed, tracked, and peer state with events, effects, and money-flow. `state` is `confirmed` only when the explorer index can serve the transaction; a durable tracking record or active mempool entry reports `tracking`, and a peer-only hit is `network_seen` until the writer commits it. Failed tracked transactions are retained indefinitely.
  */
 export const getTransactionLifecycle = <ThrowOnError extends boolean = false>(options: Options<GetTransactionLifecycleData, ThrowOnError>): RequestResult<GetTransactionLifecycleResponses, GetTransactionLifecycleErrors, ThrowOnError> => (options.client ?? client).get<GetTransactionLifecycleResponses, GetTransactionLifecycleErrors, ThrowOnError>({ url: '/v1/transactions/{hash}/lifecycle', ...options });
 
 /**
+ * Create a temporary encrypted lifecycle stream link
+ *
+ * Creates a short-lived AEAD token for the transaction lifecycle SSE stream. The token is self-contained, scoped to one hash, and expires. No account or API key is required.
+ */
+export const createTransactionLifecycleLink = <ThrowOnError extends boolean = false>(options: Options<CreateTransactionLifecycleLinkData, ThrowOnError>): RequestResult<CreateTransactionLifecycleLinkResponses, CreateTransactionLifecycleLinkErrors, ThrowOnError> => (options.client ?? client).post<CreateTransactionLifecycleLinkResponses, CreateTransactionLifecycleLinkErrors, ThrowOnError>({ url: '/v1/transactions/{hash}/lifecycle/link', ...options });
+
+/**
  * Get transaction status
  *
- * Legacy status view. Use transaction lifecycle for events, effects, tracking, and timeline.
+ * Legacy status view. Use transaction lifecycle for events, effects, tracking, and timeline. Durable tracked rows keep pending, failed, and expired transactions readable without a peer.
  *
  * @deprecated
  */
@@ -534,16 +681,23 @@ export const getTransactionStatus = <ThrowOnError extends boolean = false>(optio
 /**
  * Get wallet
  *
- * Indexed identity, recent transactions, and peer asset lists.
+ * Indexed identity, recent transactions, cached peer entity, and cached asset lists. Entity and assets are fresh for 60 seconds and served stale while refreshing.
  */
 export const getWallet = <ThrowOnError extends boolean = false>(options: Options<GetWalletData, ThrowOnError>): RequestResult<GetWalletResponses, GetWalletErrors, ThrowOnError> => (options.client ?? client).get<GetWalletResponses, GetWalletErrors, ThrowOnError>({ url: '/v1/wallets/{identity}', ...options });
 
 /**
  * List wallet assets
  *
- * Issued, owned, and possessed.
+ * Issued, owned, and possessed asset lists, cached for 60 seconds and served stale while refreshing.
  */
 export const listWalletAssets = <ThrowOnError extends boolean = false>(options: Options<ListWalletAssetsData, ThrowOnError>): RequestResult<ListWalletAssetsResponses, ListWalletAssetsErrors, ThrowOnError> => (options.client ?? client).get<ListWalletAssetsResponses, ListWalletAssetsErrors, ThrowOnError>({ url: '/v1/wallets/{identity}/assets', ...options });
+
+/**
+ * Wallet overview
+ *
+ * Wallet identity overview with a peer-backed wallet and asset section when peers are configured.
+ */
+export const walletOverview = <ThrowOnError extends boolean = false>(options: Options<WalletOverviewData, ThrowOnError>): RequestResult<WalletOverviewResponses, WalletOverviewErrors, ThrowOnError> => (options.client ?? client).get<WalletOverviewResponses, WalletOverviewErrors, ThrowOnError>({ url: '/v1/wallets/{identity}/overview', ...options });
 
 /**
  * List webhooks
@@ -555,7 +709,7 @@ export const listWebhooks = <ThrowOnError extends boolean = false>(options?: Opt
 /**
  * Register webhook
  *
- * Signed single-attempt delivery for tracked transaction events. Secrets and full URLs are never returned.
+ * Signed single-attempt delivery for transaction lifecycle, on-chain event, and whale events. Secrets and full URLs are never returned.
  */
 export const registerWebhook = <ThrowOnError extends boolean = false>(options: Options<RegisterWebhookData, ThrowOnError>): RequestResult<RegisterWebhookResponses, RegisterWebhookErrors, ThrowOnError> => (options.client ?? client).post<RegisterWebhookResponses, RegisterWebhookErrors, ThrowOnError>({
     url: '/v1/webhooks',
@@ -579,6 +733,20 @@ export const deleteWebhook = <ThrowOnError extends boolean = false>(options: Opt
  * Delivery outcomes, newest first. Each event is attempted once.
  */
 export const listWebhookDeliveries = <ThrowOnError extends boolean = false>(options: Options<ListWebhookDeliveriesData, ThrowOnError>): RequestResult<ListWebhookDeliveriesResponses, ListWebhookDeliveriesErrors, ThrowOnError> => (options.client ?? client).get<ListWebhookDeliveriesResponses, ListWebhookDeliveriesErrors, ThrowOnError>({ url: '/v1/webhooks/{id}/deliveries', ...options });
+
+/**
+ * Replay stored deliveries
+ *
+ * Re-queues stored deliveries with their original payloads.
+ */
+export const replayWebhook = <ThrowOnError extends boolean = false>(options: Options<ReplayWebhookData, ThrowOnError>): RequestResult<ReplayWebhookResponses, ReplayWebhookErrors, ThrowOnError> => (options.client ?? client).post<ReplayWebhookResponses, ReplayWebhookErrors, ThrowOnError>({ url: '/v1/webhooks/{id}/replay', ...options });
+
+/**
+ * Queue a synthetic delivery
+ *
+ * Queues a webhook.test payload through the normal signed dispatcher.
+ */
+export const testWebhook = <ThrowOnError extends boolean = false>(options: Options<TestWebhookData, ThrowOnError>): RequestResult<TestWebhookResponses, TestWebhookErrors, ThrowOnError> => (options.client ?? client).post<TestWebhookResponses, TestWebhookErrors, ThrowOnError>({ url: '/v1/webhooks/{id}/test', ...options });
 
 /**
  * WebSocket stream
