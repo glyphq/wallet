@@ -48,7 +48,11 @@ pub struct NotificationOverlayState {
 impl NotificationOverlayState {
     fn push(&self, payload: NotificationPayload) {
         let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
-        pending.retain(|item| item.id != payload.id);
+        let tx_hash = payload.tx_hash.clone();
+        pending.retain(|item| {
+            let same_transaction = tx_hash.is_some() && item.tx_hash.as_ref() == tx_hash.as_ref();
+            item.id != payload.id && !same_transaction
+        });
         pending.push(payload);
         let overflow = pending.len().saturating_sub(MAX_PENDING);
         if overflow > 0 {

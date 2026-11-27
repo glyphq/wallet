@@ -7,6 +7,7 @@ import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import glyphOnLight from "@/assets/brand/glyph-on-light.png";
 import { getThemeVars, THEME_VARS } from "@/lib/appearance";
 import { explorerAccountUrl, explorerTransactionUrl } from "@/lib/explorer";
+import { upsertNotificationCard } from "@/lib/notification-window-state";
 
 interface NotificationPayload {
   id: string;
@@ -38,9 +39,15 @@ function NotificationCard({
 }) {
   const [paused, setPaused] = useState(false);
   const remainingRef = useRef(notification.durationSecs * 1000);
+  const contentKey = `${notification.title}\n${notification.body}\n${notification.kind}`;
+  const previousContentRef = useRef(contentKey);
   const url = targetUrl(notification);
 
   useEffect(() => {
+    if (previousContentRef.current !== contentKey) {
+      previousContentRef.current = contentKey;
+      remainingRef.current = notification.durationSecs * 1000;
+    }
     if (paused || remainingRef.current <= 0) return;
     const startedAt = Date.now();
     const timer = window.setTimeout(() => onDismiss(notification.id), remainingRef.current);
@@ -48,7 +55,7 @@ function NotificationCard({
       window.clearTimeout(timer);
       remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startedAt));
     };
-  }, [notification.id, onDismiss, paused]);
+  }, [contentKey, notification.durationSecs, notification.id, onDismiss, paused]);
 
   function openTarget() {
     if (!url) return;
@@ -196,10 +203,9 @@ export function NotificationOverlay() {
       for (const [name, value] of Object.entries(vars)) {
         document.documentElement.style.setProperty(name, value);
       }
-      setNotifications((previous) => {
-        const next = [...previous.filter((item) => item.id !== notification.id), notification];
-        return next.slice(-Math.max(1, notification.maxVisible));
-      });
+      setNotifications((previous) =>
+        upsertNotificationCard(previous, notification).slice(-Math.max(1, notification.maxVisible)),
+      );
     };
 
     void (async () => {
