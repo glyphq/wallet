@@ -7,7 +7,7 @@ import glyphOnDark from "@/assets/brand/glyph-on-dark.png";
 import glyphOnLight from "@/assets/brand/glyph-on-light.png";
 import { getThemeVars, THEME_VARS } from "@/lib/appearance";
 import { explorerAccountUrl, explorerTransactionUrl } from "@/lib/explorer";
-import { upsertNotificationCard } from "@/lib/notification-window-state";
+import { trimNotificationCards, upsertNotificationCard } from "@/lib/notification-window-state";
 
 interface NotificationPayload {
   id: string;
@@ -54,20 +54,21 @@ function NotificationCard({
   const previousContentRef = useRef(contentKey);
   const url = targetUrl(notification);
   const stateColor = NOTIFICATION_STATE_COLORS[notification.kind] ?? "var(--color-text-tertiary)";
+  const activeTransaction = notification.kind === "sent" && notification.txHash !== null;
 
   useEffect(() => {
     if (previousContentRef.current !== contentKey) {
       previousContentRef.current = contentKey;
       remainingRef.current = notification.durationSecs * 1000;
     }
-    if (paused || remainingRef.current <= 0) return;
+    if (activeTransaction || paused || remainingRef.current <= 0) return;
     const startedAt = Date.now();
     const timer = window.setTimeout(() => onDismiss(notification.id), remainingRef.current);
     return () => {
       window.clearTimeout(timer);
       remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startedAt));
     };
-  }, [contentKey, notification.durationSecs, notification.id, onDismiss, paused]);
+  }, [activeTransaction, contentKey, notification.durationSecs, notification.id, onDismiss, paused]);
 
   function openTarget() {
     if (!url) return;
@@ -234,7 +235,10 @@ export function NotificationOverlay() {
         document.documentElement.style.setProperty(name, value);
       }
       setNotifications((previous) =>
-        upsertNotificationCard(previous, notification).slice(-Math.max(1, notification.maxVisible)),
+        trimNotificationCards(
+          upsertNotificationCard(previous, notification),
+          notification.maxVisible,
+        ),
       );
     };
 

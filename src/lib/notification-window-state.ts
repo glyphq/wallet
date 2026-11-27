@@ -1,5 +1,6 @@
 interface NotificationIdentity {
   id: string;
+  kind: string;
   txHash: string | null;
 }
 
@@ -28,4 +29,20 @@ export function upsertNotificationCard<T extends NotificationIdentity>(
   }
 
   return [...items, notification];
+}
+
+/**
+ * Enforces the visible-card limit without dropping an active sent transaction
+ * that has not resolved yet.
+ */
+export function trimNotificationCards<T extends NotificationIdentity>(
+  items: readonly T[],
+  maxVisible: number,
+): T[] {
+  const limit = Math.max(1, maxVisible);
+  const active = items.filter((item) => item.kind === "sent" && item.txHash !== null);
+  const inactive = items.filter((item) => item.kind !== "sent" || item.txHash === null);
+  const keepInactive = Math.max(0, limit - active.length);
+  const kept = new Set<T>([...active, ...inactive.slice(-keepInactive)]);
+  return items.filter((item) => kept.has(item));
 }
