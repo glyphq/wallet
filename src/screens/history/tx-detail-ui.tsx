@@ -21,11 +21,13 @@ export function TxBox({
   style,
   onClick,
   ariaLabel,
+  action,
 }: {
   children: ReactNode;
   style?: CSSProperties;
   onClick?: () => void;
   ariaLabel?: string;
+  action?: ReactNode;
 }) {
   const boxStyle: CSSProperties = {
     display: "flex",
@@ -44,6 +46,33 @@ export function TxBox({
     ...style,
   };
 
+  if (onClick && action) {
+    return (
+      <div style={boxStyle}>
+        <button
+          type="button"
+          aria-label={ariaLabel}
+          onClick={onClick}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            flex: 1,
+            minWidth: 0,
+            padding: 0,
+            border: 0,
+            background: "transparent",
+            color: "inherit",
+            textAlign: "left",
+            cursor: "pointer",
+          }}
+        >
+          {children}
+        </button>
+        {action}
+      </div>
+    );
+  }
   if (onClick) {
     return (
       <button type="button" aria-label={ariaLabel} onClick={onClick} style={boxStyle}>
@@ -51,7 +80,12 @@ export function TxBox({
       </button>
     );
   }
-  return <div style={boxStyle}>{children}</div>;
+  return (
+    <div style={boxStyle}>
+      {children}
+      {action}
+    </div>
+  );
 }
 
 export function IdentityValue({ identity }: { identity: string }) {

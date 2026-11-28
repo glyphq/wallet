@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { getTransactionLifecycle } from "@/lib/api/generated";
-import { subscribeTransactionLifecycle } from "@/lib/api/lifecycle-stream";
+import { subscribeTransactionLifecycle, type LifecycleStreamProgress } from "@/lib/api/lifecycle-stream";
 import { subscribeIdentityStreams } from "@/lib/api/stream-broker";
 import {
   resolutionFromLifecycle,
@@ -13,6 +13,7 @@ import type { PendingTx } from "@/store/persisted";
 export interface PendingTransactionStreamInput {
   pendingTxs: PendingTx[];
   onResolution: (pending: PendingTx, resolution: TxResolution) => void;
+  onProgress?: (pending: PendingTx, progress: LifecycleStreamProgress) => void;
 }
 
 /**
@@ -21,11 +22,13 @@ export interface PendingTransactionStreamInput {
  * Lifecycle is read on mount, reconnect, lag, and for a matched hash so a
  * dropped SSE frame cannot leave a pending transaction stuck.
  */
-export function usePendingTransactionStream({ pendingTxs, onResolution }: PendingTransactionStreamInput) {
+export function usePendingTransactionStream({ pendingTxs, onResolution, onProgress }: PendingTransactionStreamInput) {
   const pendingRef = useRef(pendingTxs);
   pendingRef.current = pendingTxs;
   const onResolutionRef = useRef(onResolution);
   onResolutionRef.current = onResolution;
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
   const inFlightRef = useRef<Set<string>>(new Set());
   const apiIdentity = useApiCacheIdentity();
 
@@ -66,6 +69,10 @@ export function usePendingTransactionStream({ pendingTxs, onResolution }: Pendin
     if (!pendingHashesKey) return;
     const unsubscribes = pendingHashesKey.split("\n").map((hash) =>
       subscribeTransactionLifecycle(hash, {
+        onProgress: (progress) => {
+          const pending = pendingRef.current.find((tx) => tx.hash === hash);
+          if (pending) onProgressRef.current?.(pending, progress);
+        },
         onTerminal: (progress) => {
           const pending = pendingRef.current.find((tx) => tx.hash === hash);
           if (!pending) return;

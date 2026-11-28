@@ -137,13 +137,16 @@ export function subscribeTransactionLifecycle(
       }
 
       source = new EventSource(url.toString());
-      source.addEventListener("progress", (event) => {
+      const handleProgress = (event: Event) => {
         const progress = parseLifecycleProgress((event as MessageEvent<string>).data);
         if (!progress) return;
         lastProgress = progress;
         handlers.onProgress?.(progress);
         if (TERMINAL_STATES.has(progress.state)) finish(progress);
-      });
+      };
+      source.addEventListener("progress", handleProgress);
+      source.addEventListener("waiting", handleProgress);
+      source.addEventListener("warning", handleProgress);
       source.addEventListener("done", (event) => {
         const progress = parseDoneProgress((event as MessageEvent<string>).data, lastProgress);
         if (progress) finish(progress);

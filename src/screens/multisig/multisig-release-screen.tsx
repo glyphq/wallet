@@ -422,6 +422,7 @@ export default function MultisigReleaseScreen() {
         amount: fees.releaseFee.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: kind === "qubic" ? "MSVault · Release" : "MSVault · Release asset",
       });
 

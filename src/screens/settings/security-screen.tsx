@@ -11,6 +11,9 @@ import { Toggle } from "@/components/toggle";
 import { usePersistedStore } from "@/store/persisted";
 import { verifyWalletPassword } from "@/lib/wallet";
 import { extractMessage } from "@/lib/format";
+import { Key01Icon } from "@/lib/icons";
+import { RotatePasswordScreen } from "@/screens/wallets/wallet-admin-screens";
+import { useWalletAdmin } from "@/screens/wallets/use-wallet-admin";
 
 const MAX_TIMEOUT_MINUTES = 24 * 60;
 
@@ -48,6 +51,7 @@ export default function SecurityScreen() {
   const biometricWalletIds = settings.biometricWalletIds ?? [];
   const wallet = wallets.find((v) => v.id === settings.activeWalletId) ?? wallets[0];
   const bioEnabled = wallet ? biometricWalletIds.includes(wallet.id) : false;
+  const walletAdmin = useWalletAdmin(wallet, wallet?.id === settings.activeWalletId);
 
   const [customOpen, setCustomOpen] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
@@ -191,6 +195,26 @@ export default function SecurityScreen() {
 
         <SettingsDivider fullBleed />
 
+        <section style={sectionStyle} aria-label="Wallet password">
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <SettingsSectionLabel>Wallet password</SettingsSectionLabel>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-caption)", color: "var(--color-text-secondary)" }}>
+              {wallet ? `Change the password that encrypts ${wallet.name}.` : "No wallet selected."}
+            </span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: "var(--space-2)" }}
+            disabled={!wallet}
+            onClick={walletAdmin.openRotate}
+          >
+            <Key01Icon size={14} strokeWidth={1.5} aria-hidden="true" /> Change password
+          </Button>
+        </section>
+
+        <SettingsDivider fullBleed />
+
         <section style={sectionStyle} aria-label="Clear clipboard after">
           <SettingsSectionLabel>Clear clipboard after</SettingsSectionLabel>
           <div style={optionGroupStyle}>
@@ -265,6 +289,22 @@ export default function SecurityScreen() {
           </>
         )}
       </motion.div>
+
+      <RotatePasswordScreen
+        open={walletAdmin.showRotate}
+        onClose={() => walletAdmin.setShowRotate(false)}
+        done={walletAdmin.rotateDone}
+        oldPassword={walletAdmin.rotateOldPassword}
+        setOldPassword={walletAdmin.setRotateOldPassword}
+        newPassword={walletAdmin.rotateNewPassword}
+        setNewPassword={walletAdmin.setRotateNewPassword}
+        confirmPassword={walletAdmin.rotateConfirm}
+        setConfirmPassword={walletAdmin.setRotateConfirm}
+        error={walletAdmin.rotateError}
+        setError={walletAdmin.setRotateError}
+        loading={walletAdmin.rotateLoading}
+        onSubmit={walletAdmin.doRotatePassword}
+      />
     </AppShell>
   );
 }

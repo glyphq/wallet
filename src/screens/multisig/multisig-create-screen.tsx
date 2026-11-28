@@ -348,6 +348,7 @@ export default function MultisigCreateScreen() {
         amount: fees.registeringFee.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick ?? 0,
         contractName: "MSVault · Create",
       });
       void queryClient.invalidateQueries({ queryKey: qk.msvaultVaults(apiIdentity, identity) });

@@ -12,6 +12,7 @@ import {
   TxBox,
   TxSection,
 } from "./tx-detail-ui";
+import { CopyButton } from "@/components/copy-button";
 import { describeConfirmedTx, formatTransactionTimestamp } from "./tx-detail-helpers";
 import { TxDetailMemo } from "./tx-detail-memo";
 
@@ -80,6 +81,7 @@ export function ConfirmedTxDetail({
         <TxBox
           ariaLabel="Open sender in Glyph Explorer"
           onClick={tx.source ? () => openExplorer(explorerAccountUrl(tx.source!)) : undefined}
+          action={tx.source ? <CopyButton value={tx.source} label="sender address" /> : undefined}
         >
           {fromContract && tx.source ? (
             <ContractValue name={fromContract} />
@@ -93,6 +95,7 @@ export function ConfirmedTxDetail({
         <TxBox
           ariaLabel="Open recipient in Glyph Explorer"
           onClick={tx.destination ? () => openExplorer(explorerAccountUrl(tx.destination!)) : undefined}
+          action={tx.destination ? <CopyButton value={tx.destination} label="recipient address" /> : undefined}
         >
           {contractName && tx.destination ? (
             <ContractValue name={contractName} />

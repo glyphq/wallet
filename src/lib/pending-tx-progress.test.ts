@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { pendingTxProgress } from "./pending-tx-progress";
+import { etaSecondsFromTicks, networkTicksPerSecond, pendingTxProgress } from "./pending-tx-progress";
 
 describe("pendingTxProgress", () => {
   test("counts ticks down to the target tick", () => {
@@ -35,5 +35,38 @@ describe("pendingTxProgress", () => {
       phase: "waiting",
       timingText: "Target tick 100",
     });
+  });
+});
+
+describe("networkTicksPerSecond", () => {
+  test("prefers the observed rate", () => {
+    expect(networkTicksPerSecond(2.5, 1000)).toBe(2.5);
+  });
+
+  test("falls back to peer duration in milliseconds", () => {
+    expect(networkTicksPerSecond(null, 500)).toBe(2);
+    expect(networkTicksPerSecond(0, 250)).toBe(4);
+  });
+
+  test("falls back to three ticks per second", () => {
+    expect(networkTicksPerSecond(null, 0)).toBe(3);
+  });
+});
+
+describe("etaSecondsFromTicks", () => {
+  test("converts remaining ticks using the observed rate", () => {
+    expect(etaSecondsFromTicks(10, 1)).toBe(10);
+    expect(etaSecondsFromTicks(10, 3)).toBe(4);
+    expect(etaSecondsFromTicks(10, 4)).toBe(3);
+  });
+
+  test("returns zero at or past the target tick", () => {
+    expect(etaSecondsFromTicks(0, 3)).toBe(0);
+    expect(etaSecondsFromTicks(-2, 3)).toBe(0);
+  });
+
+  test("returns null without a usable rate", () => {
+    expect(etaSecondsFromTicks(10, 0)).toBeNull();
+    expect(etaSecondsFromTicks(10, Number.NaN)).toBeNull();
   });
 });

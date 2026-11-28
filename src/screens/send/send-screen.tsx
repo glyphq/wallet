@@ -153,7 +153,7 @@ export default function SendScreen() {
       const { currentTick, targetTick } = await resolveTargetTick(settings.tickOffset);
       const { encoded, hash } = await buildTransferFromSession({ accountIndex: settings.activeAccountIndex, destination: destUpper, amount, targetTick, currentTick });
       await broadcastTx(encoded);
-      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now() });
+      addPendingTx({ hash, source: identity, destination: destUpper, amount: amount.toString(), targetTick, broadcastAt: Date.now(), broadcastTick: currentTick });
       void queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
       if (matchedContact) updateContact(matchedContact.id, { lastUsedAt: Date.now() });
       if (memo.trim()) setTxMemo(hash, memo.trim());

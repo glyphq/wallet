@@ -19,6 +19,8 @@ export interface PendingTx {
   amount: string;
   targetTick: number;
   broadcastAt: number;
+  /** Current network tick used to build the target tick. */
+  broadcastTick?: number;
   /** Present for SC calls — used as the notification label instead of the raw amount. */
   contractName?: string;
 }
@@ -43,6 +45,8 @@ export interface NotificationEvent {
   identity?: string;
   txHash?: string;
   dedupeKey?: string;
+  /** Initial estimate; lifecycle progress replaces it with live values. */
+  etaSeconds?: number;
 }
 
 export interface PriceSnapshot {

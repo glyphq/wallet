@@ -20,6 +20,25 @@ function tickWord(count: number): string {
   return count === 1 ? "tick" : "ticks";
 }
 
+/** Uses observed network rate, then peer duration in milliseconds, then a 3 tick/s fallback. */
+export function networkTicksPerSecond(
+  observed: number | null | undefined,
+  tickDurationMs: number | null | undefined,
+): number {
+  if (observed != null && Number.isFinite(observed) && observed > 0) return observed;
+  if (tickDurationMs != null && tickDurationMs > 0) return 1000 / tickDurationMs;
+  return 3;
+}
+
+/** Seconds until the target tick from the observed tick rate. */
+export function etaSecondsFromTicks(
+  remainingTicks: number,
+  ticksPerSecond: number,
+): number | null {
+  if (!Number.isFinite(ticksPerSecond) || ticksPerSecond <= 0) return null;
+  return Math.max(0, Math.ceil(remainingTicks / ticksPerSecond));
+}
+
 /** Describes pending-tx progress from the streamed index tick. */
 export function pendingTxProgress(targetTick: number, currentTick: number): PendingTxProgress {
   const expiryTick = targetTick + PENDING_EXPIRY_GRACE_TICKS;

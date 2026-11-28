@@ -334,6 +334,7 @@ export default function MultisigDepositScreen() {
         amount: qubicTotal.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: "MSVault · Deposit",
       });
 
@@ -379,6 +380,7 @@ export default function MultisigDepositScreen() {
         amount: fees.depositFee.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: "MSVault · Deposit asset",
       });
 
@@ -430,6 +432,7 @@ export default function MultisigDepositScreen() {
         amount: "0",
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: "QX · Multisig access",
       });
 
@@ -477,6 +480,7 @@ export default function MultisigDepositScreen() {
         amount: MSVAULT_REVOKE_FEE.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: "MSVault · Withdraw access",
       });
 

@@ -57,6 +57,7 @@ pub(crate) fn run() {
             biometric::reveal_seed_with_biometric,
             biometric::disable_biometric,
             notification_window::show_notification_window,
+            notification_window::update_notification_progress,
             notification_window::get_pending_notifications,
             notification_window::dismiss_notification,
             notification_window::layout_notification_overlay,

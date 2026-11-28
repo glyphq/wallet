@@ -7,16 +7,45 @@ if [ -z "${APPDIR}" ]; then
   export APPDIR
 fi
 
+# linuxdeploy's GTK hook forces GDK_BACKEND=x11. Remember an explicit user
+# choice before sourcing hooks, and whether this is a native Wayland session.
+_GLYPH_GDK_BACKEND_SET=0
+_GLYPH_GDK_BACKEND_VALUE=""
+if [ -n "${GDK_BACKEND+x}" ]; then
+  _GLYPH_GDK_BACKEND_SET=1
+  _GLYPH_GDK_BACKEND_VALUE="${GDK_BACKEND}"
+fi
+_GLYPH_WAYLAND_SESSION=0
+if [ -n "${WAYLAND_DISPLAY:-}" ] || [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+  _GLYPH_WAYLAND_SESSION=1
+fi
+
 # WebKitGTK subprocess helpers (WebKitNetworkProcess, WebKitWebProcess).
 # linuxdeploy only bundles .so files — the executables must be pointed to
 # explicitly or WebKit derives a garbage path (././/lib/...) and aborts.
 export WEBKIT_EXEC_PATH="${APPDIR}/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
-# WebKitGTK 2.40+ introduced a DMA-BUF renderer that creates an EGL display
-# before the apprun-hooks can force GDK_BACKEND=x11. This causes a hard abort
-# ("Could not create default EGL display: EGL_BAD_PARAMETER") on many systems.
-export WEBKIT_DISABLE_DMABUF_RENDERER=1
+# Keep WebKitGTK composited. The old unconditional disable flags forced
+# full-window CPU repaints (single-digit FPS with shadows/animations). Force
+# the DMA-BUF renderer's shared-memory transport instead: it keeps accelerated
+# compositing while avoiding the GPU-buffer handoff behind the EGL abort and
+# Wayland "Error 71" failures. Respect any renderer choice the user already
+# made. Escape hatch: GLYPH_WEBKIT_RENDERER=shm|native|legacy.
+if [ -z "${WEBKIT_DISABLE_DMABUF_RENDERER+x}" ] \
+  && [ -z "${WEBKIT_DISABLE_COMPOSITING_MODE+x}" ] \
+  && [ -z "${WEBKIT_DMABUF_RENDERER_FORCE_SHM+x}" ]; then
+  case "${GLYPH_WEBKIT_RENDERER:-shm}" in
+    legacy)
+      export WEBKIT_DISABLE_COMPOSITING_MODE=1
+      export WEBKIT_DISABLE_DMABUF_RENDERER=1
+      ;;
+    native)
+      ;;
+    shm|*)
+      export WEBKIT_DMABUF_RENDERER_FORCE_SHM=1
+      ;;
+  esac
+fi
 
 # Session D-Bus — not always inherited when launched from a file manager.
 # Without this, zbus can't reach org.freedesktop.Notifications.
@@ -133,6 +162,14 @@ fi
 for _hook in "${APPDIR}/apprun-hooks/"*.sh; do
   [ -f "${_hook}" ] && source "${_hook}"
 done
+
+if [ "${_GLYPH_GDK_BACKEND_SET}" = "1" ]; then
+  export GDK_BACKEND="${_GLYPH_GDK_BACKEND_VALUE}"
+elif [ "${_GLYPH_WAYLAND_SESSION}" = "1" ]; then
+  # Native Wayland keeps fractional scaling and tiling geometry correct.
+  # X11 stays as a fallback when the compositor cannot satisfy the request.
+  export GDK_BACKEND="wayland,x11"
+fi
 
 # Keep the bundled GLib from loading host GIO modules. Host modules such as
 # GVfs are built against the host GLib ABI and can emit unresolved-symbol
