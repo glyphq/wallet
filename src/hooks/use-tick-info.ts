@@ -12,6 +12,8 @@ export interface TickInfo {
   epoch: number | null;
   initialTick: number | null;
   duration: number | null;
+  /** Peer head advance observed between status requests, in ticks per second. */
+  ticksPerSecond: number | null;
   reachable: boolean;
 }
 
@@ -37,6 +39,7 @@ export function useTickInfo() {
         epoch: status?.head?.epoch ?? network?.epoch ?? null,
         initialTick: network?.initial_tick ?? null,
         duration: network?.tick_duration ?? null,
+        ticksPerSecond: network?.ticks_per_second ?? null,
         reachable: network?.reachable ?? true,
       };
     },

@@ -157,6 +157,7 @@ export function ScCallPreview({ request, onApprove, onReject, authorize }: Trans
         amount: amount.toString(),
         targetTick: tick,
         broadcastAt: Date.now(),
+        broadcastTick: currentTick,
         contractName: `${contractName} · ${procedureName}`,
       });
 

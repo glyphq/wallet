@@ -342,9 +342,9 @@ export default function AccountDetailScreen() {
                 <span role="status" style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
                   Seed copied. Clipboard clears in {SEED_CLIPBOARD_CLEAR_SECS} seconds.
                 </span>
-              ) : (
+              ) : canCopySeed ? null : (
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-label)", color: "var(--color-text-tertiary)" }}>
-                  {canCopySeed ? "Hold Copy seed for one second." : "Switch to this wallet to copy its seed."}
+                  Switch to this wallet to copy its seed.
                 </span>
               )}
             </>

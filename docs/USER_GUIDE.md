@@ -44,7 +44,8 @@ The universal application supports Apple Silicon and Intel Macs. Protocol links 
 - The tray icon uses the desktop's StatusNotifierItem support. Glyph still opens if a tray cannot be created.
 - On GNOME, an AppIndicator or KStatusNotifierItem extension may be required to display the tray icon.
 - AppImage bundles much of the GTK/WebKit stack but still uses the host graphics stack. Driver and compositor differences can affect rendering.
-- On Wayland sessions, the AppImage runs through the native Wayland backend instead of XWayland so fractional scaling and window constraints match the compositor. X11 remains a fallback.
+- The AppImage keeps WebKitGTK compositing enabled and uses its shared-memory DMA-BUF transport by default. If startup or rendering fails, launch it with `GLYPH_WEBKIT_RENDERER=legacy` for the older software path, or `GLYPH_WEBKIT_RENDERER=native` to leave WebKit's own renderer selection untouched. Explicit WebKit renderer environment variables take precedence.
+- On Wayland sessions, the AppImage runs through the native Wayland backend instead of XWayland so fractional scaling and window constraints match the compositor. X11 remains a fallback; set `GDK_BACKEND=x11` to force XWayland if native Wayland renders poorly on your driver.
 - Fixed-size windows are treated as floating by Niri. Hyprland also floats windows whose maximum size is smaller than a tile.
 - Glyph detects WSLg and disables WebKit compositing and DMABUF there to avoid known rendering failures.
 
@@ -129,7 +130,7 @@ Biometric commands are currently disabled on every platform, so the biometric se
 
 ### Change the wallet password
 
-Open the wallet detail screen, supply the current password, and choose a new one. New passwords use the same 10-character minimum as onboarding. A longer unique passphrase is still preferable.
+Open **Settings → Security** for the active wallet, or the wallet detail screen, supply the current password, and choose a new one. New passwords use the same 10-character minimum as onboarding. A longer unique passphrase is still preferable.
 
 Changing a password re-encrypts the wallet. It does not change account seeds or addresses.
 
@@ -272,7 +273,7 @@ Notifications are disabled by default. In Settings, you can choose:
 - Sounds: on by default. Choose low, medium, or high volume, and use **Preview** to hear the confirmation sound.
 - Sound mapping: sent, received, confirmed, expired, connection requests, and transaction requests use distinct terminal sounds.
 
-Transaction lifecycle updates reuse the same notification card, so sent, confirmed, failed, or expired states do not stack. An active transaction card stays on screen until it resolves or you dismiss it; each update animates the bottom state bar. Clicking a notification opens its transaction or account in Glyph Explorer when an explorer target is available. Notification records are stored in the application even when the window is disabled or suppressed. By default, notification windows are suppressed while the wallet is locked unless the locked-notification option allows them.
+Transaction lifecycle updates reuse the same notification card, so sent, confirmed, failed, or expired states do not stack. An active transaction card stays on screen until it resolves or you dismiss it; its bottom progress bar ramps from 30% to 60% before the target tick, holds 60% while confirming, and reaches 100% on confirmation or failure, and its ETA starts from the sign-time tick estimate and is corrected by the live lifecycle stream's observed tick rate. Cards enter from the configured screen corner. Clicking a notification opens its transaction or account in Glyph Explorer when an explorer target is available. Notification records are stored in the application even when the window is disabled or suppressed. By default, notification windows are suppressed while the wallet is locked unless the locked-notification option allows them.
 
 At startup, Glyph can reconcile received transactions over a lookback of up to 24 hours. Reconciled events are normally stored without replaying old notification windows.
 

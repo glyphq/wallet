@@ -71,6 +71,7 @@ export function TransferPreview({ request, onApprove, onReject, authorize }: Tra
         amount: amount.toString(),
         targetTick: tick,
         broadcastAt: Date.now(),
+        broadcastTick: currentTick,
       });
 
       await onApprove({ txHash: hash, targetTick: tick, identity, accountIndex: selectedIndex }, authorization);

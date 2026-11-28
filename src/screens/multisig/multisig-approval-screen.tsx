@@ -240,6 +240,7 @@ export default function MultisigApprovalScreen() {
         amount: fees.releaseFee.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: proposal.kind === "qubic" ? "MSVault · Release" : "MSVault · Release asset",
       });
       await invalidate(detail.id);
@@ -280,6 +281,7 @@ export default function MultisigApprovalScreen() {
         amount: fees.releaseResetFee.toString(),
         targetTick,
         broadcastAt: Date.now(),
+        broadcastTick: tickInfo.tick,
         contractName: proposal.kind === "asset" ? "MSVault · Reset asset release" : "MSVault · Reset release",
       });
       await invalidate(detail.id);

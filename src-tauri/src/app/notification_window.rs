@@ -11,7 +11,7 @@ use tauri::{
 const WINDOW_LABEL: &str = "notification-overlay";
 const WINDOW_WIDTH: f64 = 360.0;
 const WINDOW_PADDING: f64 = 10.0;
-const CARD_HEIGHT: f64 = 100.0;
+const CARD_HEIGHT: f64 = 120.0;
 const CARD_GAP: f64 = 8.0;
 const SCREEN_MARGIN: f64 = 12.0;
 const MAX_PENDING: usize = 20;
@@ -37,6 +37,23 @@ pub struct NotificationPayload {
     pub sound_url: Option<String>,
     #[serde(default = "default_sound_volume")]
     pub sound_volume: f64,
+    #[serde(default = "default_progress")]
+    pub progress: u8,
+    #[serde(default)]
+    pub eta_seconds: Option<u64>,
+}
+
+fn default_progress() -> u8 {
+    100
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NotificationProgressPayload {
+    hash: String,
+    progress: u8,
+    resolved: bool,
+    eta_seconds: Option<u64>,
 }
 
 #[derive(Default)]
@@ -124,6 +141,31 @@ pub async fn show_notification_window(
         .emit("glyph:notification", &notification)
         .map_err(|error| error.to_string())?;
     Ok(())
+}
+
+/// Updates the progress bar of an existing transaction notification.
+#[tauri::command]
+pub fn update_notification_progress(
+    app: AppHandle,
+    hash: String,
+    progress: u8,
+    resolved: bool,
+    eta_seconds: Option<u64>,
+) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
+        return Ok(());
+    };
+    window
+        .emit(
+            "glyph:notification-progress",
+            NotificationProgressPayload {
+                hash,
+                progress: progress.min(100),
+                resolved,
+                eta_seconds,
+            },
+        )
+        .map_err(|error| error.to_string())
 }
 
 /// Delivers notifications that arrived before the overlay webview was ready.

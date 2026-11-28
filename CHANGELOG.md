@@ -1,5 +1,17 @@
 # glyph
 
+## 1.1.1
+
+### Patch Changes
+
+- Polish transaction notifications and wallet controls.
+
+  - **Notifications:** Show a live ETA, ramp the progress bar through confirmation, and keep one card and one terminal sound per transaction.
+  - **Design:** Rework notification card typography, spacing, icon treatment, and corner-aware motion.
+  - **Wallet:** Change a wallet password from Settings → Security, and copy sender or recipient addresses from transaction details.
+
+- Keep WebKitGTK accelerated compositing in the AppImage instead of forcing full-window CPU repaints. The shared-memory DMA-BUF transport is the new default, with `GLYPH_WEBKIT_RENDERER=legacy|native|shm` as an override. Explicit `GDK_BACKEND` now survives the linuxdeploy GTK hooks, so `GDK_BACKEND=x11` can force XWayland when native Wayland renders poorly.
+
 ## 1.1.0
 
 ### Minor Changes

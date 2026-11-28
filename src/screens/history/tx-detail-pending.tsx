@@ -11,6 +11,7 @@ import {
   TxBox,
   TxSection,
 } from "./tx-detail-ui";
+import { CopyButton } from "@/components/copy-button";
 import { describePendingTx, formatTransactionTimestamp } from "./tx-detail-helpers";
 
 export function PendingTxDetail({
@@ -72,6 +73,7 @@ export function PendingTxDetail({
         <TxBox
           ariaLabel="Open sender in Glyph Explorer"
           onClick={tx.source ? () => openExplorer(explorerAccountUrl(tx.source!)) : undefined}
+          action={tx.source ? <CopyButton value={tx.source} label="sender address" /> : undefined}
         >
           <IdentityValue identity={tx.source ?? "—"} />
         </TxBox>
@@ -81,6 +83,7 @@ export function PendingTxDetail({
         <TxBox
           ariaLabel="Open recipient in Glyph Explorer"
           onClick={tx.destination ? () => openExplorer(explorerAccountUrl(tx.destination!)) : undefined}
+          action={tx.destination ? <CopyButton value={tx.destination} label="recipient address" /> : undefined}
         >
           {contractLabel && tx.destination ? (
             <ContractValue name={contractLabel} />

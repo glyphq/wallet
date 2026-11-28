@@ -27,6 +27,7 @@ export function createNotificationEvent(input: {
   txHash?: string;
   dedupeKey?: string;
   createdAt?: number;
+  etaSeconds?: number;
 }): NotificationEvent {
   return {
     id: makeEventId(),
@@ -38,6 +39,7 @@ export function createNotificationEvent(input: {
     identity: input.identity,
     txHash: input.txHash,
     dedupeKey: input.dedupeKey,
+    etaSeconds: input.etaSeconds,
   };
 }
 
@@ -45,7 +47,15 @@ export async function publishNotificationEvent(
   event: NotificationEvent,
   options?: { desktop?: boolean },
 ): Promise<NotificationDeliveryResult | null> {
-  usePersistedStore.getState().addNotificationEvent(event);
+  const store = usePersistedStore.getState();
+  const duplicate = Boolean(
+    event.dedupeKey &&
+    store.notificationEvents.some((existing) => existing.dedupeKey === event.dedupeKey),
+  );
+  store.addNotificationEvent(event);
+  if (duplicate) {
+    return null;
+  }
   if (options?.desktop === false) {
     return null;
   }
@@ -74,6 +84,8 @@ export async function publishNotificationEvent(
         position: settings.notificationPosition,
         soundUrl,
         soundVolume: notificationSoundGain(settings.notificationSoundVolume),
+        progress: event.txHash && event.kind === "sent" ? 30 : 100,
+        etaSeconds: event.etaSeconds ?? null,
       },
       position: settings.notificationPosition,
     });
