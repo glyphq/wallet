@@ -1,5 +1,15 @@
 # glyph
 
+## 1.1.0
+
+### Minor Changes
+
+- 6baf78d: Subscribe pending transactions to encrypted Glyph lifecycle streams and add terminal notification sounds with volume controls.
+
+### Patch Changes
+
+- 748ebeb: Run AppImage builds through native Wayland on Wayland sessions so tiling compositors use the correct window scale and sizing.
+
 ## 1.0.1
 
 ### Patch Changes
